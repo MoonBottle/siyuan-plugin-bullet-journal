@@ -139,8 +139,6 @@ export class MarkdownParser {
     // 解析 Kramdown 为块列表
     const blocks = this.parseKramdownBlocks(kramdown);
 
-    console.log('[Bullet Journal] Kramdown blocks:', blocks.length, blocks.slice(0, 5));
-
     const project: Project = {
       id: docId,
       name: '',
@@ -250,11 +248,6 @@ export class MarkdownParser {
       project.name = `项目 ${docId.substring(0, 6)}`;
     }
 
-    // 打印解析结果统计
-    const tasksWithBlockId = project.tasks.filter(t => t.blockId).length;
-    const itemsWithBlockId = project.tasks.reduce((sum, t) => sum + t.items.filter(i => i.blockId).length, 0);
-    console.log(`[Bullet Journal] Parsed project ${project.name}: ${project.tasks.length} tasks (${tasksWithBlockId} with blockId), ${itemsWithBlockId} items with blockId`);
-
     return project.name ? project : null;
   }
 
@@ -264,9 +257,6 @@ export class MarkdownParser {
    */
   private parseKramdownBlocks(kramdown: string): KramdownBlock[] {
     const blocks: KramdownBlock[] = [];
-
-    console.log('[Bullet Journal] Raw kramdown length:', kramdown.length);
-    console.log('[Bullet Journal] Kramdown preview:', kramdown.substring(0, 1000));
 
     // 分割为行，逐行解析
     const lines = kramdown.split('\n');
@@ -300,8 +290,6 @@ export class MarkdownParser {
         currentContent = line;
       }
     }
-
-    console.log('[Bullet Journal] Parsed blocks count:', blocks.length);
 
     return blocks;
   }

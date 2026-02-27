@@ -98,17 +98,12 @@ let unsubscribeNavigate: (() => void) | null = null;
 
 // 初始化数据
 onMounted(async () => {
-  console.log('[Bullet Journal] CalendarTab mounted');
-
   // 从插件加载设置
   settingsStore.loadFromPlugin();
-  console.log('[Bullet Journal] Settings loaded, enabled directories:', settingsStore.enabledDirectories.length);
 
   // 加载项目数据
   if (settingsStore.enabledDirectories.length > 0 && plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-    console.log('[Bullet Journal] Projects loaded:', projectStore.projects.length);
-    console.log('[Bullet Journal] Calendar events:', projectStore.calendarEvents.length);
   }
 
   // 监听事件
@@ -172,13 +167,11 @@ const handleEventClick = async (eventInfo: any) => {
 
 // 处理事件拖拽
 const handleEventDrop = async (eventInfo: any) => {
-  console.log('[Bullet Journal] Event dropped:', eventInfo);
   await handleEventChange(eventInfo, '移动');
 };
 
 // 处理事件调整大小
 const handleEventResize = async (eventInfo: any) => {
-  console.log('[Bullet Journal] Event resized:', eventInfo);
   await handleEventChange(eventInfo, '调整');
 };
 
@@ -186,8 +179,6 @@ const handleEventResize = async (eventInfo: any) => {
 const handleEventChange = async (eventInfo: any, action: string) => {
   const blockId = eventInfo.blockId || eventInfo.extendedProps?.blockId;
   const allDay = eventInfo.allDay;
-
-  console.log('[Bullet Journal] handleEventChange:', { eventInfo, blockId, allDay });
 
   if (!blockId) {
     showMessage('无法获取块 ID，请刷新后重试', 'error');
@@ -197,8 +188,6 @@ const handleEventChange = async (eventInfo: any, action: string) => {
   // 解析新的日期时间
   const startStr = eventInfo.start;
   const endStr = eventInfo.end;
-
-  console.log('[Bullet Journal] Time strings:', { startStr, endStr });
 
   // 解析日期和时间
   let newDate = '';
@@ -222,8 +211,6 @@ const handleEventChange = async (eventInfo: any, action: string) => {
       newEndTime = time.substring(0, 5); // HH:mm
     }
   }
-
-  console.log('[Bullet Journal] Parsed:', { newDate, newStartTime, newEndTime, allDay });
 
   // 更新块
   const success = await updateBlockDateTime(blockId, newDate, newStartTime, newEndTime, allDay);

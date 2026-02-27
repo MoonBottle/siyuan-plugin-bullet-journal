@@ -50,12 +50,10 @@ const groupOptions = computed(() => {
 
 // 数据刷新处理函数
 const handleDataRefresh = async () => {
-  console.log('[Bullet Journal] TodoDock received DATA_REFRESH event');
   if (plugin) {
     settingsStore.loadFromPlugin();
     if (settingsStore.enabledDirectories.length > 0) {
       await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-      console.log('[Bullet Journal] TodoDock refreshed, items:', projectStore.futureItems.length);
     }
   }
 };
@@ -128,8 +126,6 @@ let unsubscribeRefresh: (() => void) | null = null;
 
 // 初始化数据
 onMounted(async () => {
-  console.log('[Bullet Journal] TodoDock mounted');
-
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -140,7 +136,6 @@ onMounted(async () => {
   // 加载项目数据
   if (settingsStore.enabledDirectories.length > 0 && plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-    console.log('[Bullet Journal] Todo items loaded:', projectStore.futureItems.length);
   }
 
   // 监听数据刷新事件

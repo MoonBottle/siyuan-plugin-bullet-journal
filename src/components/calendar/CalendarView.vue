@@ -185,8 +185,6 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
 };
 
 onMounted(async () => {
-  console.log('[Bullet Journal] CalendarView mounted, calendarEl:', calendarEl.value);
-
   if (!calendarEl.value) {
     console.error('[Bullet Journal] calendarEl is null');
     return;
@@ -254,8 +252,6 @@ onMounted(async () => {
     });
 
     calendarInstance.render();
-    console.log('[Bullet Journal] Calendar rendered');
-
     updateEvents();
 
     // ResizeObserver to handle container size changes
@@ -282,19 +278,16 @@ onUnmounted(() => {
 });
 
 watch(() => props.events, () => {
-  console.log('[Bullet Journal] Events updated:', props.events.length);
   updateEvents();
 }, { deep: true });
 
 const updateEvents = () => {
   if (!calendarInstance) {
-    console.log('[Bullet Journal] Calendar instance not ready');
     return;
   }
   calendarInstance.removeAllEvents();
   calendarInstance.addEventSource(props.events);
   calendarInstance.updateSize();
-  console.log('[Bullet Journal] Events added to calendar:', props.events.length);
 };
 
 // 处理事件变化（拖拽或调整大小）
@@ -314,8 +307,6 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
   };
 
   emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData);
-
-  console.log(`[Bullet Journal] Event ${changeType}:`, emitData);
 };
 
 defineExpose({

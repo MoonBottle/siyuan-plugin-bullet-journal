@@ -12,9 +12,6 @@ export function usePlugin(pluginProps?: Plugin): Plugin | null {
   if (pluginProps) {
     plugin = pluginProps;
   }
-  if (!plugin && !pluginProps) {
-    console.error('[Bullet Journal] Plugin not initialized');
-  }
   return plugin;
 }
 
@@ -35,11 +32,8 @@ export async function init(pluginInstance: Plugin) {
   // 初始化国际化
   // @ts-ignore - 思源 API
   const language = pluginInstance?.languages?.[0] || 'zh_CN';
-  console.log('[Bullet Journal] Initializing with language:', language);
 
   initI18n(language);
-
-  console.log('[Bullet Journal] Plugin initialized');
 }
 
 /**

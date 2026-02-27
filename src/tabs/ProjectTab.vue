@@ -59,15 +59,12 @@ let unsubscribeRefresh: (() => void) | null = null;
 
 // 初始化数据
 onMounted(async () => {
-  console.log('[Bullet Journal] ProjectTab mounted');
-
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
   // 加载项目数据
   if (settingsStore.enabledDirectories.length > 0 && plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-    console.log('[Bullet Journal] Projects loaded:', projectStore.projects.length);
   }
 
   // 监听数据刷新事件

@@ -18,7 +18,7 @@ let PluginInfo = {
 try {
   PluginInfo = PluginInfoString;
 } catch (err) {
-  console.log('[Bullet Journal] Plugin info parse error:', err);
+  // Plugin info parse error
 }
 const { version } = PluginInfo;
 
@@ -85,8 +85,6 @@ export default class HKWorkPlugin extends Plugin {
       this.isElectron = false;
     }
 
-    console.log('[Bullet Journal] Plugin loaded');
-
     // 初始化插件
     await init(this);
 
@@ -113,7 +111,6 @@ export default class HKWorkPlugin extends Plugin {
    * 数据变化回调 - 思源会在数据索引完成后调用
    */
   onDataChanged() {
-    console.log('[Bullet Journal] onDataChanged called');
     this.scheduleRefresh();
   }
 
@@ -520,25 +517,20 @@ export default class HKWorkPlugin extends Plugin {
    * 注册自定义 Tab
    */
   private registerTabs() {
-    console.log('[Bullet Journal] Registering tabs...');
-
     // 日历视图 Tab
     this.addTab({
       type: TAB_TYPES.CALENDAR,
       init() {
-        console.log('[Bullet Journal] CalendarTab init called, element:', this.element);
         try {
           const pinia = createPinia();
           const app = createApp(CalendarTab);
           app.use(pinia);
           app.mount(this.element);
-          console.log('[Bullet Journal] CalendarTab mounted successfully');
         } catch (error) {
           console.error('[Bullet Journal] Failed to mount CalendarTab:', error);
         }
       },
       destroy() {
-        console.log('[Bullet Journal] CalendarTab destroy called');
         this.element.innerHTML = '';
       }
     });
@@ -547,13 +539,11 @@ export default class HKWorkPlugin extends Plugin {
     this.addTab({
       type: TAB_TYPES.GANTT,
       init() {
-        console.log('[Bullet Journal] GanttTab init called, element:', this.element);
         try {
           const pinia = createPinia();
           const app = createApp(GanttTab);
           app.use(pinia);
           app.mount(this.element);
-          console.log('[Bullet Journal] GanttTab mounted successfully');
         } catch (error) {
           console.error('[Bullet Journal] Failed to mount GanttTab:', error);
         }
@@ -567,13 +557,11 @@ export default class HKWorkPlugin extends Plugin {
     this.addTab({
       type: TAB_TYPES.PROJECT,
       init() {
-        console.log('[Bullet Journal] ProjectTab init called, element:', this.element);
         try {
           const pinia = createPinia();
           const app = createApp(ProjectTab);
           app.use(pinia);
           app.mount(this.element);
-          console.log('[Bullet Journal] ProjectTab mounted successfully');
         } catch (error) {
           console.error('[Bullet Journal] Failed to mount ProjectTab:', error);
         }
@@ -582,8 +570,6 @@ export default class HKWorkPlugin extends Plugin {
         this.element.innerHTML = '';
       }
     });
-
-    console.log('[Bullet Journal] Tabs registered');
   }
 
   /**
@@ -617,14 +603,11 @@ export default class HKWorkPlugin extends Plugin {
    * 注册顶栏按钮
    */
   private registerTopBar() {
-    console.log('[Bullet Journal] Registering top bar buttons...');
-
     // 日历按钮
     this.addTopBar({
       icon: 'iconCalendar',
       title: '日历视图',
       callback: () => {
-        console.log('[Bullet Journal] Calendar button clicked');
         this.openCustomTab(TAB_TYPES.CALENDAR);
       }
     });
@@ -634,7 +617,6 @@ export default class HKWorkPlugin extends Plugin {
       icon: 'iconGraph',
       title: '甘特图',
       callback: () => {
-        console.log('[Bullet Journal] Gantt button clicked');
         this.openCustomTab(TAB_TYPES.GANTT);
       }
     });
@@ -644,24 +626,17 @@ export default class HKWorkPlugin extends Plugin {
       icon: 'iconFolder',
       title: '项目列表',
       callback: () => {
-        console.log('[Bullet Journal] Project button clicked');
         this.openCustomTab(TAB_TYPES.PROJECT);
       }
     });
-
-    console.log('[Bullet Journal] Top bar buttons registered');
   }
 
   /**
    * 使用官方 API 打开 Tab
    */
   public openCustomTab(type: string, options?: { position?: 'right' | 'bottom' }) {
-    console.log('[Bullet Journal] openCustomTab called:', type);
-    console.log('[Bullet Journal] this.app:', this.app);
-
     // 根据 API 文档，custom.id 需要是 plugin.name + tab.type
     const customId = `${this.name}${type}`;
-    console.log('[Bullet Journal] customId:', customId);
 
     try {
       openTab({
@@ -675,7 +650,6 @@ export default class HKWorkPlugin extends Plugin {
         position: options?.position,
         openNewTab: true
       });
-      console.log('[Bullet Journal] openTab called successfully');
     } catch (error) {
       console.error('[Bullet Journal] Failed to open tab:', error);
     }
@@ -723,7 +697,6 @@ export default class HKWorkPlugin extends Plugin {
       // 这些命令表示数据可能发生变化
       const refreshCmds = ['txerr', 'savedoc', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
       if (refreshCmds.includes(data.cmd)) {
-        console.log('[Bullet Journal] ws-main event received:', data.cmd);
         this.scheduleRefresh();
       }
     }
@@ -738,7 +711,6 @@ export default class HKWorkPlugin extends Plugin {
     }
 
     this.refreshTimeout = setTimeout(() => {
-      console.log('[Bullet Journal] Triggering data refresh');
       eventBus.emit(Events.DATA_REFRESH);
     }, 1000);
   }

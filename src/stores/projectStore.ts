@@ -143,14 +143,6 @@ export const useProjectStore = defineStore('project', {
         this.projects = projects;
         this.items = items;
         this.calendarEvents = calendarEvents;
-
-        // 打印解析后的事项信息
-        console.log('[Bullet Journal] 解析结果:');
-        console.log('  - 项目数量:', projects.length);
-        console.log('  - 事项数量:', items.length);
-        console.log('  - 日历事件数量:', calendarEvents.length);
-        console.log('[Bullet Journal] 事项列表:', items);
-        console.log('[Bullet Journal] 项目列表:', projects);
       } catch (error) {
         console.error('[Bullet Journal] Failed to load projects:', error);
       } finally {
@@ -177,12 +169,6 @@ export const useProjectStore = defineStore('project', {
         this.projects = projects;
         this.items = items;
         this.calendarEvents = calendarEvents;
-
-        // 打印解析后的事项信息
-        console.log('[Bullet Journal] 刷新结果:');
-        console.log('  - 项目数量:', projects.length);
-        console.log('  - 事项数量:', items.length);
-        console.log('[Bullet Journal] 事项列表:', items);
       } catch (error) {
         console.error('[Bullet Journal] Failed to refresh projects:', error);
       } finally {

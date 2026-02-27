@@ -94,7 +94,6 @@ export async function updateBlockDateTime(
     // 更新块
     await updateBlock('markdown', newContent, blockId);
 
-    console.log('[Bullet Journal] Block updated:', { blockId, newContent });
     return true;
   } catch (error) {
     console.error('[Bullet Journal] Failed to update block:', error);
@@ -195,7 +194,6 @@ export async function updateBlockContent(
 
     await updateBlock('markdown', newContent, blockId);
 
-    console.log('[Bullet Journal] Block content updated:', { blockId, newContent });
     return true;
   } catch (error) {
     console.error('[Bullet Journal] Failed to update block content:', error);
