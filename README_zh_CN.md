@@ -17,11 +17,11 @@
 
 原始笔记格式：
 
-![原始笔记格式](./asset/note.png)
+![原始笔记格式](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/note.png)
 
 日历和待办 Dock 视图：
 
-![日历和待办 Dock](./asset/todo-dock.png)
+![日历和待办 Dock](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/todo-dock.png)
 
 **核心差异化特性：**
 - 📅 **记录驱动** - 专注于记录已完成和待完成的事项，而非提醒
@@ -29,7 +29,7 @@
 - 🎯 **无侵入式** - 使用标准 Markdown 格式，无专有格式锁定
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
 
-![插件预览图](./preview.png)
+![插件预览图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/preview.png)
 
 ## 设计思想
 
@@ -158,7 +158,7 @@
 
 **插件设置界面：**
 
-![插件设置](./asset/setting.png)
+![插件设置](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/setting.png)
 
 > ⚠️ **常见问题**：如果数据没有显示，请检查：
 > - 目录路径是否与实际文件夹结构匹配
@@ -301,7 +301,7 @@ Dock 中展示四类事项：
 - **甘特图**：展示任务的层级关系和时间跨度
 - **项目列表**：按项目分组，显示所有任务和事项
 
-![功能演示图](./asset/op.gif)
+![功能演示图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/op.gif)
 
 ### 配置午休时间
 

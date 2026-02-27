@@ -17,11 +17,11 @@ A Bullet Journal style task management plugin for SiYuan Note that provides cale
 
 Original Note Format:
 
-![Original Note Format](./asset/note.png)
+![Original Note Format](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/note.png)
 
 Calendar and Todo Dock View:
 
-![Calendar and Todo Dock](./asset/todo-dock.png)
+![Calendar and Todo Dock](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/todo-dock.png)
 
 **Key Differentiators:**
 - 📅 **Record-driven** - Focus on recording what you do, not reminders
@@ -29,7 +29,7 @@ Calendar and Todo Dock View:
 - 🎯 **Non-invasive** - Uses standard Markdown, no proprietary formats
 - ⚡ **Real-time sync** - Changes in notes automatically reflect in all views
 
-![Plugin Preview](./preview.png)
+![Plugin Preview](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/preview.png)
 
 ## Design Philosophy
 
@@ -159,7 +159,7 @@ Sub-task Item @2024-01-03
 
 **Plugin Settings:**
 
-![Plugin Settings](./asset/setting.png)
+![Plugin Settings](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/setting.png)
 
 > ⚠️ **Common Issue**: If no data appears, check that:
 > - The directory path matches your actual folder structure
@@ -302,7 +302,7 @@ After parsing, you'll see:
 - **Gantt Chart**: Displays task hierarchy and time span
 - **Project List**: Groups by project, shows all tasks and items
 
-![Feature Demo](./asset/op.gif)
+![Feature Demo](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/asset/op.gif)
 
 ### Configure Lunch Break
 
