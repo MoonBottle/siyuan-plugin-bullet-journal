@@ -1,0 +1,1183 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "bi8Au",
+      "x": -680,
+      "y": 21,
+      "name": "Frame",
+      "clip": true,
+      "width": 2177,
+      "height": 1990,
+      "fill": "#FFFFFF",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "h0yyU",
+          "x": 173,
+          "y": 145,
+          "name": "Logo Design",
+          "width": 160,
+          "height": 160,
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "gap": 24,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "pmj0G",
+              "name": "Logo Icon Bg",
+              "width": 160,
+              "height": 160,
+              "fill": "#F5F5F5",
+              "cornerRadius": 40,
+              "layout": "none",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "nxRZI",
+                  "x": 72,
+                  "y": 72,
+                  "name": "Center Dot",
+                  "fill": "#32D583",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "57f9q",
+                  "x": 78,
+                  "y": 30,
+                  "name": "Top Line",
+                  "fill": "#32D583",
+                  "width": 4,
+                  "height": 32
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "pfwrU",
+                  "x": 98,
+                  "y": 78,
+                  "name": "Right Line",
+                  "fill": "#6366F1",
+                  "width": 32,
+                  "height": 4
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "Q0Kqd",
+                  "x": 78,
+                  "y": 98,
+                  "name": "Bottom Line",
+                  "fill": "#E85A4F",
+                  "width": 4,
+                  "height": 32
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "gwi4S",
+                  "x": 30,
+                  "y": 78,
+                  "name": "Left Line",
+                  "fill": "#FFB547",
+                  "width": 32,
+                  "height": 4
+                },
+                {
+                  "type": "ellipse",
+                  "id": "xhfKT",
+                  "x": 50,
+                  "y": 50,
+                  "name": "Dot1",
+                  "fill": "#32D58350",
+                  "width": 8,
+                  "height": 8
+                },
+                {
+                  "type": "ellipse",
+                  "id": "FHnE9",
+                  "x": 102,
+                  "y": 50,
+                  "name": "Dot2",
+                  "fill": "#6366F150",
+                  "width": 8,
+                  "height": 8
+                },
+                {
+                  "type": "ellipse",
+                  "id": "WRZ3l",
+                  "x": 50,
+                  "y": 102,
+                  "name": "Dot3",
+                  "fill": "#E85A4F50",
+                  "width": 8,
+                  "height": 8
+                },
+                {
+                  "type": "ellipse",
+                  "id": "GODKV",
+                  "x": 102,
+                  "y": 102,
+                  "name": "Dot4",
+                  "fill": "#FFB54750",
+                  "width": 8,
+                  "height": 8
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "06B95",
+          "x": 194,
+          "y": 679,
+          "name": "Hero Banner",
+          "width": 1200,
+          "height": 600,
+          "fill": "#F5F5F5",
+          "layout": "none",
+          "children": [
+            {
+              "type": "frame",
+              "id": "JRAxf",
+              "x": 80,
+              "y": 100,
+              "name": "Left Content",
+              "width": 380,
+              "height": 340,
+              "fill": "transparent",
+              "layout": "vertical",
+              "gap": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0dsLk",
+                  "name": "Hero Title",
+                  "fill": "#1A1A1A",
+                  "content": "Bullet Journal",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 48,
+                  "fontWeight": "700",
+                  "letterSpacing": -1.5
+                },
+                {
+                  "type": "text",
+                  "id": "IVVm3",
+                  "name": "Hero Subtitle",
+                  "fill": "#32D583",
+                  "content": "子弹笔记",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 24,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "pk0jI",
+                  "name": "Desc Frame",
+                  "width": "fill_container",
+                  "fill": "transparent",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yJBIs",
+                      "name": "Hero Desc 1",
+                      "fill": "#666666",
+                      "content": "记录驱动的笔记管理方式",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 16,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "K9tWH",
+                      "name": "Hero Desc 2",
+                      "fill": "#999999",
+                      "content": "日历 · 甘特图 · 项目视图",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "E7VmI",
+                  "name": "Features Frame",
+                  "width": "fill_container",
+                  "fill": "transparent",
+                  "gap": 10,
+                  "padding": [
+                    20,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "4ypX2",
+                      "name": "Feature 1",
+                      "height": 32,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000010",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 4
+                      },
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qfuGo",
+                          "fill": "#333333",
+                          "content": "📅 日历视图",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hqPYO",
+                      "name": "Feature 2",
+                      "height": 32,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000010",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 4
+                      },
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "My4r4",
+                          "fill": "#333333",
+                          "content": "📊 甘特图",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "uMutt",
+                      "name": "Feature 3",
+                      "height": 32,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000010",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 4
+                      },
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "i0rVq",
+                          "name": "📋 待办事项",
+                          "fill": "#333333",
+                          "content": "📋 待办事项",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "l7PNv",
+              "x": 420,
+              "y": 80,
+              "name": "UI Preview",
+              "width": 520,
+              "height": 440,
+              "fill": "#FFFFFF",
+              "cornerRadius": 24,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#00000015",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 20,
+                "spread": -4
+              },
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "asSs5",
+                  "name": "Calendar Header",
+                  "width": "fill_container",
+                  "fill": "transparent",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JZ58I",
+                      "name": "Calendar Title",
+                      "fill": "#1A1A1A",
+                      "content": "2026年2月",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "JDZmp",
+                      "name": "Calendar Arrow",
+                      "fill": "#999999",
+                      "content": "›",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 20,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "0tvHj",
+                  "name": "Week Days",
+                  "width": "fill_container",
+                  "fill": "transparent",
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "81YKO",
+                      "name": "Week Day 1",
+                      "fill": "#999999",
+                      "content": "日",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "CjYvc",
+                      "name": "Week Day 2",
+                      "fill": "#999999",
+                      "content": "一",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hH2j0",
+                      "name": "Week Day 3",
+                      "fill": "#999999",
+                      "content": "二",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ZgyjR",
+                      "name": "Week Day 4",
+                      "fill": "#999999",
+                      "content": "三",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "K6gkk",
+                      "name": "Week Day 5",
+                      "fill": "#999999",
+                      "content": "四",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "7esy7",
+                      "name": "Week Day 6",
+                      "fill": "#999999",
+                      "content": "五",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jTF7h",
+                      "name": "Week Day 7",
+                      "fill": "#999999",
+                      "content": "六",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "9Yl4Q",
+                  "name": "Calendar Grid",
+                  "width": "fill_container",
+                  "height": 200,
+                  "fill": "transparent",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "D1ugj",
+                      "name": "Row 1",
+                      "width": "fill_container",
+                      "fill": "transparent",
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "wgYT9",
+                          "name": "Day 1",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "uMywO",
+                              "name": "Day 1 Text",
+                              "fill": "#4A4A50",
+                              "content": "26",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DOyxO",
+                          "name": "Day 2",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "avHqK",
+                              "name": "Day 2 Text",
+                              "fill": "#4A4A50",
+                              "content": "27",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ykz0d",
+                          "name": "Day 3",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "hVF8z",
+                              "name": "Day 3 Text",
+                              "fill": "#4A4A50",
+                              "content": "28",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "vbXEJ",
+                          "name": "Day 4",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "OMwVq",
+                              "name": "Day 4 Text",
+                              "fill": "#4A4A50",
+                              "content": "29",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "SWEk4",
+                          "name": "Day 5",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "OGfch",
+                              "name": "Day 5 Text",
+                              "fill": "#4A4A50",
+                              "content": "30",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "P5CmA",
+                          "name": "Day 6",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "#32D583",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "vIMCb",
+                              "name": "Day 6 Text",
+                              "fill": "#0B0B0E",
+                              "content": "31",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "6jul7",
+                          "name": "Day 7",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "MCxHB",
+                              "name": "Day 7 Text",
+                              "fill": "#FAFAF9",
+                              "content": "1",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f6Zxe",
+                      "name": "Row 2",
+                      "width": "fill_container",
+                      "fill": "transparent",
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "KE02N",
+                          "name": "Day 8",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "e7voW",
+                              "name": "Day 8 Text",
+                              "fill": "#FAFAF9",
+                              "content": "2",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "NPb6j",
+                          "name": "Day 9",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "vpAyr",
+                              "name": "Day 9 Text",
+                              "fill": "#FAFAF9",
+                              "content": "3",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "zw2YO",
+                          "name": "Day 10",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "hSpq6",
+                              "name": "Day 10 Text",
+                              "fill": "#FAFAF9",
+                              "content": "4",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "VALsL",
+                          "name": "Day 11",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "EnUWz",
+                              "name": "Day 11 Text",
+                              "fill": "#FAFAF9",
+                              "content": "5",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "FaIHD",
+                          "name": "Day 12",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "yku01",
+                              "name": "Day 12 Text",
+                              "fill": "#FAFAF9",
+                              "content": "6",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "OPFAI",
+                          "name": "Day 13",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wjSWc",
+                              "name": "Day 13 Text",
+                              "fill": "#FAFAF9",
+                              "content": "7",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Xvai6",
+                          "name": "Day 14",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "transparent",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "3k7oQ",
+                              "name": "Day 14 Text",
+                              "fill": "#FAFAF9",
+                              "content": "8",
+                              "fontFamily": "DM Sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vZB7w",
+                  "name": "Task Indicator",
+                  "width": "fill_container",
+                  "fill": "transparent",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "BOncH",
+                      "name": "Task 1",
+                      "width": "fill_container",
+                      "height": 24,
+                      "fill": "#1890FF",
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        10
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "CtrVi",
+                          "name": "Task 1 Dot",
+                          "fill": "#32D583",
+                          "width": 6,
+                          "height": 6
+                        },
+                        {
+                          "type": "text",
+                          "id": "GyPYC",
+                          "fill": "#FFFFFF",
+                          "content": "完成项目文档",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "8VKkB",
+                      "name": "Task 2",
+                      "width": "fill_container",
+                      "height": 24,
+                      "fill": "#1890FF",
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        10
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "te5Cq",
+                          "name": "Task 2 Dot",
+                          "fill": "#6366F1",
+                          "width": 6,
+                          "height": 6
+                        },
+                        {
+                          "type": "text",
+                          "id": "1eMnw",
+                          "fill": "#FFFFFF",
+                          "content": "团队会议",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "1f8c2",
+              "x": 60,
+              "y": 450,
+              "name": "Bottom Line",
+              "fill": "#E8E8E8",
+              "width": 1080,
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "vjQZp",
+              "x": 960,
+              "y": 80,
+              "name": "Task Panel",
+              "width": 220,
+              "height": 440,
+              "fill": "#FFFFFF",
+              "cornerRadius": 12,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#00000015",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 20,
+                "spread": -4
+              },
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "6bi3y",
+                  "name": "Panel Header",
+                  "width": "fill_container",
+                  "height": 32,
+                  "fill": "transparent",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "EcHyK",
+                      "fill": "#1A1A1A",
+                      "content": "待办事项",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "kgxyl",
+                      "fill": "#1890FF",
+                      "content": "全部分组",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ESDJB",
+                  "name": "Today Group",
+                  "width": "fill_container",
+                  "height": 28,
+                  "fill": "transparent",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vwciH",
+                      "fill": "#E85A4F",
+                      "content": "今天",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Xc2Sq",
+                      "fill": "#999999",
+                      "content": "(3)",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JdSMK",
+                  "name": "Task 1",
+                  "width": "fill_container",
+                  "height": 60,
+                  "fill": "#FFF2F0",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 4,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "G1JhE",
+                      "fill": "#1A1A1A",
+                      "content": "完成项目计划书",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SEcG9",
+                      "fill": "#999999",
+                      "content": "2026-02-27 截止",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 11
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "8ZP9l",
+                  "name": "Task 2",
+                  "width": "fill_container",
+                  "height": 60,
+                  "fill": "#FFF2F0",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 4,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZnVak",
+                      "fill": "#1A1A1A",
+                      "content": "设计会议准备",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "drZUB",
+                      "fill": "#999999",
+                      "content": "14:00 开始",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 11
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ysTzf",
+                  "name": "Week Group",
+                  "width": "fill_container",
+                  "height": 28,
+                  "fill": "transparent",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QIfZK",
+                      "fill": "#1890FF",
+                      "content": "明天",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "TIbwr",
+                      "fill": "#999999",
+                      "content": "(1)",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bAP0b",
+                  "name": "Task 3",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "#F5F5F5",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "NqTQM",
+                      "fill": "#666666",
+                      "content": "代码审查",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 13
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "2lFJT",
+                  "name": "Done Group",
+                  "width": "fill_container",
+                  "height": 28,
+                  "fill": "transparent",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Qjz8q",
+                      "fill": "#52C41A",
+                      "content": "已完成",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "QQNxH",
+                      "fill": "#999999",
+                      "content": "(2)",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "8mIrn",
+                  "name": "Task 5",
+                  "width": "fill_container",
+                  "height": 36,
+                  "fill": "#F6FFED",
+                  "cornerRadius": 8,
+                  "gap": 6,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RMlhM",
+                      "fill": "#52C41A",
+                      "content": "✓",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 13,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xVO8G",
+                      "fill": "#52C41A",
+                      "content": "周报提交",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+/* 子弹笔记插件全局样式 */
+/* FullCalendar v6 样式已内联到 JS 中，无需导入 CSS */
+/* DHTMLX Gantt 样式需要单独处理 */
+
+.hk-work-plugin-app {
+  font-family: var(--b3-font-family);
+}
+
+/* Tab 和 Dock 容器样式 */
+.hk-work-tab,
+.hk-work-dock {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 高亮动画效果 - 用于定位到特定行 */
+.hk-work-highlight {
+  animation: hk-work-pulse 2s ease-out;
+}
+
+@keyframes hk-work-pulse {
+  0% {
+    background-color: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* ============================================
+   思源原生弹框样式
+   ============================================ */
+
+.sy-dialog-content {
+  padding: 16px;
+}
+
+.sy-dialog-info-row {
+  display: flex;
+  margin-bottom: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.sy-dialog-label {
+  min-width: 80px;
+  font-size: 13px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.sy-dialog-value {
+  flex: 1;
+  font-size: 13px;
+  color: var(--b3-theme-on-background);
+  word-break: break-word;
+
+  &.content-value {
+    font-weight: 500;
+  }
+}
+
+.sy-dialog-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.sy-dialog-link {
+  color: var(--b3-theme-primary);
+  text-decoration: none;
+  font-size: 13px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.sy-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--b3-border-color);
+}
+
+.sy-dialog-message {
+  font-size: 14px;
+  color: var(--b3-theme-on-background);
+  line-height: 1.6;
+}
+
+/* 任务级别标签样式 */
+.task-level {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 6px;
+
+  &.level-l1 {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+  }
+
+  &.level-l2 {
+    background: rgba(255, 152, 0, 0.15);
+    color: #FF9800;
+  }
+
+  &.level-l3 {
+    background: rgba(33, 150, 243, 0.15);
+    color: #2196F3;
+  }
+}
+
+/* ============================================
+   日期选择器样式
+   ============================================ */
+
+.date-picker-dialog {
+  user-select: none;
+}
+
+.date-picker-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  
+  .b3-button {
+    min-width: 32px;
+    padding: 4px 8px;
+  }
+}
+
+.date-picker-month-label {
+  min-width: 100px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--b3-theme-on-background);
+}
+
+.date-picker-calendar {
+  background: var(--b3-theme-surface);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.date-picker-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.date-picker-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.6;
+  padding: 4px;
+}
+
+.date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.date-picker-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 13px;
+  color: var(--b3-theme-on-background);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  
+  &:hover:not(.empty) {
+    background: var(--b3-theme-surface-light);
+  }
+  
+  &.empty {
+    cursor: default;
+  }
+  
+  &.today {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    font-weight: 600;
+  }
+  
+  &.selected {
+    background: var(--b3-theme-primary-light);
+    color: var(--b3-theme-primary);
+    font-weight: 600;
+    
+    &.today {
+      background: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+    }
+  }
+}
