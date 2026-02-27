@@ -13,6 +13,10 @@ A Bullet Journal style task management plugin for SiYuan Note that provides cale
 | **Project List** | Group and display tasks by project with expandable details | Organizing and reviewing all project tasks |
 | **Todo Dock** | Show upcoming todo items in sidebar for quick access | Quick glance at today's and future tasks |
 
+**Calendar and Todo Dock Preview:**
+
+![Calendar and Todo Dock](./asset/todo-dock.png)
+
 **Key Differentiators:**
 - 📅 **Record-driven** - Focus on recording what you do, not reminders
 - 🔗 **Bidirectional links** - Click any task to jump directly to its location in your notes
@@ -20,7 +24,6 @@ A Bullet Journal style task management plugin for SiYuan Note that provides cale
 - ⚡ **Real-time sync** - Changes in notes automatically reflect in all views
 
 ![Plugin Preview](./preview.png)
-<!-- Image placeholder: Replace with your plugin screenshot -->
 
 ## Design Philosophy
 
@@ -140,6 +143,10 @@ Sub-task Item @2024-01-03
 - `@YYYY-MM-DD HH:mm~HH:mm` - Date with time range
 
 > 💡 **Tip**: Tasks themselves don't have dates - dates are assigned to work items under tasks. This allows a task to span multiple days with different items each day.
+
+**Original Note Format Example:**
+
+![Original Note Format](./asset/note.png)
 
 ### Step 4: Configure Plugin
 
@@ -289,8 +296,7 @@ After parsing, you'll see:
 - **Gantt Chart**: Displays task hierarchy and time span
 - **Project List**: Groups by project, shows all tasks and items
 
-![Feature Demo](./asset/action.png)
-<!-- Image placeholder: Replace with your feature demo screenshot -->
+![Feature Demo](./asset/op.gif)
 
 ### Configure Lunch Break
 
