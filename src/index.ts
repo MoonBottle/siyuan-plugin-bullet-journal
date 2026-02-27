@@ -1,4 +1,4 @@
-import { Plugin, getFrontend, openTab, Setting } from 'siyuan';
+import { Plugin, getFrontend, openTab, Setting, showMessage } from 'siyuan';
 import '@/index.scss';
 import PluginInfoString from '@/../plugin.json';
 import { init, destroy, usePlugin } from '@/main';
@@ -117,6 +117,16 @@ export default class HKWorkPlugin extends Plugin {
   onunload() {
     eventBus.clear();
     destroy();
+  }
+
+  /**
+   * 卸载插件时删除插件数据
+   * Delete plugin data when uninstalling the plugin
+   */
+  uninstall() {
+    this.removeData('settings').catch((e) => {
+      showMessage(`uninstall [${this.name}] remove data [settings] fail: ${e.msg}`);
+    });
   }
 
   /**
