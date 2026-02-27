@@ -1,0 +1,86 @@
+{
+  "title": "工作管理",
+  "calendar": {
+    "title": "日历视图",
+    "today": "今天",
+    "month": "月",
+    "week": "周",
+    "day": "日",
+    "list": "列表"
+  },
+  "gantt": {
+    "title": "甘特图",
+    "showItems": "显示事项",
+    "day": "日",
+    "week": "周",
+    "month": "月",
+    "timeFilter": "时间筛选",
+    "to": "至",
+    "taskName": "任务名称",
+    "startTime": "开始时间",
+    "endTime": "结束时间"
+  },
+  "project": {
+    "title": "项目列表",
+    "taskCount": "任务数",
+    "noProjects": "暂无项目",
+    "noTasks": "暂无任务"
+  },
+  "todo": {
+    "title": "待办事项",
+    "today": "今天",
+    "tomorrow": "明天",
+    "allDay": "全天",
+    "noTodos": "暂无待办事项"
+  },
+  "settings": {
+    "title": "设置",
+    "defaultView": {
+      "title": "默认视图",
+      "description": "选择打开插件时显示的默认视图"
+    },
+    "lunchBreak": {
+      "title": "午休时间",
+      "description": "用于计算工时时扣除午休时间",
+      "start": {
+        "title": "开始时间",
+        "description": "午休开始时间"
+      },
+      "end": {
+        "title": "结束时间",
+        "description": "午休结束时间"
+      }
+    },
+    "projectGroups": {
+      "title": "项目分组",
+      "description": "配置项目分组以便分类管理",
+      "addButton": "添加分组",
+      "namePlaceholder": "分组名称",
+      "deleteButton": "删除",
+      "emptyMessage": "暂无分组",
+      "defaultGroupTitle": "默认分组",
+      "defaultGroupDesc": "选择默认显示的分组",
+      "allGroups": "全部分组",
+      "noGroup": "无分组",
+      "unnamed": "未命名"
+    },
+    "projectDirectories": {
+      "title": "项目目录",
+      "addButton": "添加目录",
+      "selectButton": "选择",
+      "deleteButton": "删除",
+      "dialogTitle": "选择项目目录",
+      "emptyMessage": "暂无配置目录",
+      "noPath": "未设置路径"
+    }
+  },
+  "common": {
+    "loading": "加载中...",
+    "refresh": "刷新",
+    "back": "返回",
+    "confirm": "确认",
+    "cancel": "取消",
+    "save": "保存",
+    "dataRefreshed": "数据已刷新"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "title": "Work Management",
+  "calendar": {
+    "title": "Calendar",
+    "today": "Today",
+    "month": "Month",
+    "week": "Week",
+    "day": "Day",
+    "list": "List"
+  },
+  "gantt": {
+    "title": "Gantt Chart",
+    "showItems": "Show Items",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "timeFilter": "Time Filter",
+    "to": "to",
+    "taskName": "Task Name",
+    "startTime": "Start Time",
+    "endTime": "End Time"
+  },
+  "project": {
+    "title": "Projects",
+    "taskCount": "Tasks",
+    "noProjects": "No projects",
+    "noTasks": "No tasks"
+  },
+  "todo": {
+    "title": "Todo",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "allDay": "All Day",
+    "noTodos": "No pending items"
+  },
+  "settings": {
+    "title": "Settings",
+    "defaultView": {
+      "title": "Default View",
+      "description": "Choose the default view when opening the plugin"
+    },
+    "lunchBreak": {
+      "title": "Lunch Break",
+      "description": "Set lunch break time for work hour calculation",
+      "start": {
+        "title": "Start Time",
+        "description": "Lunch break start time"
+      },
+      "end": {
+        "title": "End Time",
+        "description": "Lunch break end time"
+      }
+    },
+    "projectGroups": {
+      "title": "Project Groups",
+      "description": "Configure project groups for categorization",
+      "addButton": "Add Group",
+      "namePlaceholder": "Group Name",
+      "deleteButton": "Delete",
+      "emptyMessage": "No groups",
+      "defaultGroupTitle": "Default Group",
+      "defaultGroupDesc": "Select the default group to display",
+      "allGroups": "All Groups",
+      "noGroup": "No Group",
+      "unnamed": "Unnamed"
+    },
+    "projectDirectories": {
+      "title": "Project Directories",
+      "addButton": "Add Directory",
+      "selectButton": "Select",
+      "deleteButton": "Delete",
+      "dialogTitle": "Select Project Directory",
+      "emptyMessage": "No directories configured",
+      "noPath": "No path set"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "back": "Back",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "dataRefreshed": "Data refreshed"
+  }
+}
