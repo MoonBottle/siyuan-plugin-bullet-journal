@@ -1,8 +1,8 @@
 {
-  "name": "plugin-sample-vite-vue",
-  "version": "0.0.1",
+  "name": "siyuan-plugin-bullet-journal",
+  "version": "0.1.0",
   "type": "module",
-  "description": "This is a sample plugin based on vite and vue for Siyuan (https://b3log.org/siyuan)",
+  "description": "Bullet Journal plugin for Siyuan (https://b3log.org/siyuan)",
   "author": "",
   "license": "MIT",
   "homepage": "",

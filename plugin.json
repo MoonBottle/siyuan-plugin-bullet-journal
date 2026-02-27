@@ -2,7 +2,7 @@
   "name": "siyuan-plugin-bullet-journal",
   "author": "MoonBottle",
   "url": "https://github.com/MoonBottle/siyuan-plugin-bullet-journal",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "minAppVersion": "2.10.14",
   "disabledInPublish": true,
   "backends": ["all"],
