@@ -157,6 +157,10 @@ Sub-task Item @2024-01-03
 3. Optionally create groups in "Group Management" to organize projects
 4. Save settings - the plugin will automatically scan for project files
 
+**Plugin Settings:**
+
+![Plugin Settings](./asset/setting.png)
+
 > ⚠️ **Common Issue**: If no data appears, check that:
 > - The directory path matches your actual folder structure
 > - Project documents contain the `#task` marker
