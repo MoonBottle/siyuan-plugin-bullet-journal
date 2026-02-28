@@ -33,7 +33,7 @@ Use simple marker syntax to record tasks and items:
 
 Task Name #task @L1
 Work Item @2026-02-28
-Another Item @2026-03-01 10:00~12:00
+Another Item @2026-03-01 10:00:00~12:00:00
 ```
 
 **Marker Reference:**
