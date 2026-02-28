@@ -58,7 +58,7 @@ Click any task in the view to jump directly to its location in your notes.
 
 ### Install from Marketplace (Recommended)
 
-1. Open SiYuan → Settings → Plugins → Marketplace
+1. Open SiYuan → Settings → Marketplace → Plugins
 2. Search for "Bullet Journal"
 3. Click Install
 
