@@ -42,17 +42,17 @@ Another Item @2026-03-01 10:00~12:00
 - `@YYYY-MM-DD` - Item date
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
 
-![Note with Markers](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/note.png)
+![Note with Markers](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/note.png)
 
 ### 2. View in Visual Interfaces
 
 The plugin automatically parses markers in notes and displays them in Calendar, Gantt, and Todo Dock:
 
-![View Display](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/todo-dock.png)
+![View Display](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/todo-dock.png)
 
 Click any task in the view to jump directly to its location in your notes.
 
-![Feature Demo](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/op.gif)
+![Feature Demo](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/op.gif)
 
 ## Installation
 

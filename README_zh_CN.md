@@ -42,17 +42,17 @@
 - `@YYYY-MM-DD` - 事项日期
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围
 
-![笔记标记示例](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/note.png)
+![笔记标记示例](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/note.png)
 
 ### 2. 在视图中查看
 
 插件自动解析笔记中的标记，在日历、甘特图、待办 Dock 中展示：
 
-![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/todo-dock.png)
+![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
 
 点击视图中的任务，可直接跳转到笔记中对应位置。
 
-![功能演示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/op.gif)
+![功能演示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/op.gif)
 
 ## 安装
 
