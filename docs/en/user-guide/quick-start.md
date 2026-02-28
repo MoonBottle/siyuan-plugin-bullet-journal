@@ -8,11 +8,9 @@ Choose one of the following methods:
 
 ### Option A: Install from Marketplace (Recommended)
 
-1. Open SiYuan Settings → Plugins → Marketplace
+1. Open SiYuan → Settings → Marketplace → Plugins
 2. Search for "Bullet Journal"
 3. Click Install
-
-![Marketplace Install Screenshot](./images/quick-start-market-install.png)
 
 ### Option B: Manual Installation
 
@@ -61,8 +59,6 @@ Sub-task Name #task @L2
 Sub-task Item @2024-01-03
 ```
 
-![Project Document Example Screenshot](./images/quick-start-project-doc.png)
-
 **Key markers explained:**
 - `#task` - Marks a line as a task
 - `@L1`, `@L2`, `@L3` - Task hierarchy levels (L1 = parent, L2/L3 = subtasks)
@@ -79,10 +75,6 @@ For more format details, see [Data Format](./data-format.md).
 2. In "Directory Configuration", add paths to scan (e.g., `Work/2026/Projects`)
 3. Optionally create groups in "Group Management" to organize projects
 4. Save settings - the plugin will automatically scan for project files
-
-**Plugin Settings:**
-
-![Plugin Settings](./images/quick-start-settings.png)
 
 > ⚠️ **Common Issue**: If no data appears, check that:
 > - The directory path matches your actual folder structure
@@ -101,8 +93,6 @@ Once configured, access your tasks through multiple views:
 | **Gantt** | Click 📊 Gantt icon in top bar | Project timeline visualization |
 | **Project List** | Click 📁 folder icon in top bar | Review all tasks by project |
 | **Todo Dock** | Right-click top bar → Closed Panels → Todo Items | Quick access to upcoming tasks |
-
-![View Entries Screenshot](./images/quick-start-view-entries.png)
 
 > 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes.
 

@@ -40,8 +40,6 @@ Grouping helps you organize and filter projects.
 3. Enter group name (e.g., "Frontend Projects", "Backend Projects")
 4. Assign directories to groups
 
-![Group Management Screenshot](./images/configuration-groups.png)
-
 ### Group Usage
 
 - Filter by group in Project List
@@ -58,8 +56,6 @@ Lunch break time is used to deduct lunch period when calculating work hours, aff
 2. Find "Lunch Break" setting
 3. Set start and end time (default 12:00-13:00)
 
-![Lunch Break Configuration Screenshot](./images/configuration-lunch-break.png)
-
 ### Calculation Rule
 
 When item time range spans lunch break period, lunch time is automatically deducted:
@@ -69,10 +65,6 @@ Item: 09:00 ~ 14:00
 Lunch: 12:00 ~ 13:00
 Actual work hours: 4 hours (not 5 hours)
 ```
-
-## Plugin Settings Interface
-
-![Full Settings Interface](./images/configuration-full-settings.png)
 
 ## FAQ
 

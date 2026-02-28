@@ -43,8 +43,6 @@ Select payment method @2026-02-26
 Order confirmation @2026-02-27
 ```
 
-![Project Document Screenshot](./images/examples-project-doc.png)
-
 ## Document Structure Analysis
 
 ### Project Info Area
@@ -91,8 +89,6 @@ In the calendar view, you can see:
 - Feb 26: Select shipping address, Select payment method
 - Feb 27: Order confirmation
 
-![Calendar View Example Screenshot](./images/examples-calendar.png)
-
 ### Gantt Chart
 
 The Gantt chart shows task hierarchy and time span:
@@ -107,8 +103,6 @@ User Login Module        [====================]
 Shopping Cart Optimization                 [==]
 Checkout Page Development                      [===]
 ```
-
-![Gantt Chart Example Screenshot](./images/examples-gantt.png)
 
 ### Project List
 
@@ -127,8 +121,6 @@ Project list groups by project:
 └── ...
 ```
 
-![Project List Example Screenshot](./images/examples-project-list.png)
-
 ## Task Status Update
 
 ### Complete Item
@@ -138,8 +130,6 @@ When an item is complete, add the `#done` tag:
 ```markdown
 Phone login development @2026-02-20 #done
 ```
-
-![Completed Item Display](./images/examples-status-done.png)
 
 ### Migrate Item
 
@@ -156,8 +146,6 @@ If decided not to do, add the `#abandoned` tag:
 ```markdown
 Third-party login development @2026-02-22 #abandoned
 ```
-
-![Abandoned Item Display](./images/examples-status-abandoned.png)
 
 ## Best Practices
 

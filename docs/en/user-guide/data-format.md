@@ -6,8 +6,6 @@ This document provides detailed explanation of the task and item marker syntax f
 
 A project document is divided into three main areas, each parsing different types of information:
 
-![Document Structure Diagram](./images/data-format-structure.png)
-
 ### 1. Project Info Area (Document Top)
 
 Location: Content before the task list
@@ -49,7 +47,7 @@ Location: Content below tasks (contains `@` but not `#task`)
 | `#task` | Task line identifier | `Develop login module #task` |
 | `@L1/@L2/@L3` | Task hierarchy | `@L1` parent task, `@L2` subtask |
 | `@YYYY-MM-DD` | Date marker | `@2026-02-25` |
-| `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Time range | `@2026-02-25 14:00~16:00` |
+| `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Time range | `@2026-02-25 14:00:00~16:00:00` |
 | `[Name](URL)` | Link | `[Requirements](siyuan://blocks/202602...)` |
 
 ## Status Tags
@@ -61,8 +59,6 @@ Items can be marked with status tags, supporting both Chinese and English:
 | Pending | None (default) | None (default) | Normal display |
 | Completed | `#已完成` | `#done` | Strikethrough |
 | Abandoned | `#已放弃` | `#abandoned` | Strikethrough + gray |
-
-![Status Tags Display](./images/data-format-status-tags.png)
 
 **Auto Recognition**: Parsing supports both Chinese and English tags. Tagging will use the system language automatically.
 
@@ -78,8 +74,6 @@ Item without status tag
     └─→ Abandon → Add #abandoned (or #已放弃)
 ```
 
-![Item Processing Flow Diagram](./images/data-format-workflow.png)
-
 ## Task and Item Relationship
 
 Tasks and items have a hierarchical relationship:
@@ -91,8 +85,6 @@ Task (#task @L1)           ← Task itself has no date
 └── Sub-task (#task @L2)
     └── Item @2026-02-22
 ```
-
-![Task and Item Hierarchy Diagram](./images/data-format-hierarchy.png)
 
 **Design Rationale**:
 - A task represents a goal or deliverable
@@ -110,7 +102,6 @@ Item name @2026-02-25
 ### With Time Range
 
 ```markdown
-Item name @2026-02-25 14:00~16:00
 Item name @2026-02-25 14:00:00~16:00:00
 ```
 

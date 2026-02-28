@@ -19,8 +19,6 @@ Click the 📅 calendar icon in the top bar
 | Day View | View today's specific items |
 | List View | Display tasks in list format |
 
-![Calendar View Screenshot](./images/views-calendar.png)
-
 ### Features
 
 - **Task Jump**: Click any task to jump directly to its location in notes
@@ -48,8 +46,6 @@ Click the 📊 Gantt icon in the top bar
 - **Work Hours**: Calculates and displays task work hours (lunch break can be deducted)
 - **Task Jump**: Click task to jump to note location
 
-![Gantt Chart Screenshot](./images/views-gantt.png)
-
 ### Use Cases
 
 - Understand overall project timeline
@@ -69,8 +65,6 @@ Click the 📁 folder icon in the top bar
 - **Project Grouping**: Display projects by document/group
 - **Hierarchy Expansion**: Expand to view task and item details
 - **Quick Filter**: Filter by group or status
-
-![Project List Screenshot](./images/views-project-list.png)
 
 ### Use Cases
 
@@ -97,8 +91,6 @@ The dock shows four types of items:
 | **Abandoned** | Items marked as abandoned | Strikethrough + gray |
 | **Expired** | Items past due without completion | Red marker |
 
-![Todo Dock Screenshot](./images/views-todo-dock.png)
-
 ### Use Cases
 
 - Quick view of today's todos
@@ -121,7 +113,5 @@ All views support bidirectional link functionality:
 - Click task → Jump to corresponding location in notes
 - Edit in notes → Auto-sync to all views
 - Each task has a unique persistent link
-
-![Bidirectional Link Demo](./images/views-bidirectional-link.png)
 
 This is implemented through SiYuan's Kramdown format, where each paragraph has a unique `blockId`.
