@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Bullet Journal plugin for Siyuan (https://b3log.org/siyuan)",
   "author": "",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "homepage": "",
   "repository": "",
   "scripts": {

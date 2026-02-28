@@ -69,4 +69,4 @@ Vue 3 + TypeScript + Pinia + FullCalendar + dhtmlx-gantt
 
 ## 许可证
 
-MIT
+AGPL-3.0

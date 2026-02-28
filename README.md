@@ -388,4 +388,4 @@ Open source projects used:
 
 ## License
 
-MIT
+AGPL-3.0
