@@ -1015,7 +1015,8 @@
                       "fill": "#999999",
                       "content": "2026-02-27 截止",
                       "fontFamily": "DM Sans",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -1049,7 +1050,8 @@
                       "fill": "#999999",
                       "content": "14:00 开始",
                       "fontFamily": "DM Sans",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -1104,7 +1106,8 @@
                       "fill": "#666666",
                       "content": "代码审查",
                       "fontFamily": "DM Sans",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -1172,6 +1175,1048 @@
                       "fontWeight": "500"
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "DpSV3",
+      "x": 1597,
+      "y": 679,
+      "name": "Hero Banner EN",
+      "width": 1200,
+      "height": 600,
+      "fill": "#F5F5F5",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "cBCeR",
+          "x": 80,
+          "y": 100,
+          "name": "Left Content",
+          "width": 380,
+          "height": 340,
+          "fill": "transparent",
+          "layout": "vertical",
+          "gap": 20,
+          "children": [
+            {
+              "type": "text",
+              "id": "Nrbzz",
+              "name": "Hero Title",
+              "fill": "#1A1A1A",
+              "content": "Bullet Journal",
+              "fontFamily": "DM Sans",
+              "fontSize": 48,
+              "fontWeight": "700",
+              "letterSpacing": -1.5
+            },
+            {
+              "type": "text",
+              "id": "Osd9I",
+              "name": "Hero Subtitle",
+              "fill": "#32D583",
+              "content": "Bullet Notes",
+              "fontFamily": "DM Sans",
+              "fontSize": 24,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "nCzqR",
+              "name": "Desc Frame",
+              "width": "fill_container",
+              "fill": "transparent",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "OAAJg",
+                  "name": "Hero Desc 1",
+                  "fill": "#666666",
+                  "content": "Record-driven note management",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 16,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "0pAef",
+                  "name": "Hero Desc 2",
+                  "fill": "#999999",
+                  "content": "Calendar · Gantt · Project View",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "laM1P",
+              "name": "Features Frame",
+              "width": "fill_container",
+              "fill": "transparent",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n72MO",
+                  "name": "Feature 1",
+                  "height": 32,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000010",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 4
+                  },
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Wx4yn",
+                      "fill": "#333333",
+                      "content": "📅 Calendar View",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "0GW7L",
+                  "name": "Feature 2",
+                  "height": 32,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000010",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 4
+                  },
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Q6Z64",
+                      "fill": "#333333",
+                      "content": "📊 Gantt Chart",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "W7QWu",
+                  "name": "Feature 3",
+                  "height": 32,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#00000010",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 4
+                  },
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "usd64",
+                      "name": "📋 待办事项",
+                      "fill": "#333333",
+                      "content": "📋 Tasks",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "QeFKF",
+          "x": 420,
+          "y": 80,
+          "name": "UI Preview",
+          "width": 520,
+          "height": 440,
+          "fill": "#FFFFFF",
+          "cornerRadius": 24,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000015",
+            "offset": {
+              "x": 0,
+              "y": 8
+            },
+            "blur": 20,
+            "spread": -4
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "3hruJ",
+              "name": "Calendar Header",
+              "width": "fill_container",
+              "fill": "transparent",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "d1U8V",
+                  "name": "Calendar Title",
+                  "fill": "#1A1A1A",
+                  "content": "Feb 2026",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 16,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "7cZPI",
+                  "name": "Calendar Arrow",
+                  "fill": "#999999",
+                  "content": "›",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 20,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vTyZG",
+              "name": "Week Days",
+              "width": "fill_container",
+              "fill": "transparent",
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "UdAYU",
+                  "name": "Week Day 1",
+                  "fill": "#999999",
+                  "content": "S",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "SAw6j",
+                  "name": "Week Day 2",
+                  "fill": "#999999",
+                  "content": "M",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "EP1e0",
+                  "name": "Week Day 3",
+                  "fill": "#999999",
+                  "content": "T",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "csvOV",
+                  "name": "Week Day 4",
+                  "fill": "#999999",
+                  "content": "W",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "9EPeE",
+                  "name": "Week Day 5",
+                  "fill": "#999999",
+                  "content": "T",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "ct8QQ",
+                  "name": "Week Day 6",
+                  "fill": "#999999",
+                  "content": "F",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "mUqlc",
+                  "name": "Week Day 7",
+                  "fill": "#999999",
+                  "content": "S",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tnpjr",
+              "name": "Calendar Grid",
+              "width": "fill_container",
+              "height": 200,
+              "fill": "transparent",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "wGzx7",
+                  "name": "Row 1",
+                  "width": "fill_container",
+                  "fill": "transparent",
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "m38t0",
+                      "name": "Day 1",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "uapaT",
+                          "name": "Day 1 Text",
+                          "fill": "#4A4A50",
+                          "content": "26",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LhY08",
+                      "name": "Day 2",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "gR3iB",
+                          "name": "Day 2 Text",
+                          "fill": "#4A4A50",
+                          "content": "27",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ex4Xc",
+                      "name": "Day 3",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "u1w8m",
+                          "name": "Day 3 Text",
+                          "fill": "#4A4A50",
+                          "content": "28",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "cEit2",
+                      "name": "Day 4",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "zEMXk",
+                          "name": "Day 4 Text",
+                          "fill": "#4A4A50",
+                          "content": "29",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Po7ke",
+                      "name": "Day 5",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Lwfhl",
+                          "name": "Day 5 Text",
+                          "fill": "#4A4A50",
+                          "content": "30",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2JX5a",
+                      "name": "Day 6",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "#32D583",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SY08e",
+                          "name": "Day 6 Text",
+                          "fill": "#0B0B0E",
+                          "content": "31",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "oxZrG",
+                      "name": "Day 7",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "bCQ4Z",
+                          "name": "Day 7 Text",
+                          "fill": "#FAFAF9",
+                          "content": "1",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TsZq3",
+                  "name": "Row 2",
+                  "width": "fill_container",
+                  "fill": "transparent",
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "dvoFA",
+                      "name": "Day 8",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FFxnI",
+                          "name": "Day 8 Text",
+                          "fill": "#FAFAF9",
+                          "content": "2",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "deeFI",
+                      "name": "Day 9",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "kCTNt",
+                          "name": "Day 9 Text",
+                          "fill": "#FAFAF9",
+                          "content": "3",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ePSXL",
+                      "name": "Day 10",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "5H6Lb",
+                          "name": "Day 10 Text",
+                          "fill": "#FAFAF9",
+                          "content": "4",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f40Zn",
+                      "name": "Day 11",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QThlC",
+                          "name": "Day 11 Text",
+                          "fill": "#FAFAF9",
+                          "content": "5",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gk3xl",
+                      "name": "Day 12",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "fbAKw",
+                          "name": "Day 12 Text",
+                          "fill": "#FAFAF9",
+                          "content": "6",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ShlrD",
+                      "name": "Day 13",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "X9vMM",
+                          "name": "Day 13 Text",
+                          "fill": "#FAFAF9",
+                          "content": "7",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XtmFd",
+                      "name": "Day 14",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "transparent",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "DAF2M",
+                          "name": "Day 14 Text",
+                          "fill": "#FAFAF9",
+                          "content": "8",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GSdyw",
+              "name": "Task Indicator",
+              "width": "fill_container",
+              "fill": "transparent",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iWE9b",
+                  "name": "Task 1",
+                  "width": "fill_container",
+                  "height": 24,
+                  "fill": "#1890FF",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "3pK5z",
+                      "name": "Task 1 Dot",
+                      "fill": "#32D583",
+                      "width": 6,
+                      "height": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "RFa7C",
+                      "fill": "#FFFFFF",
+                      "content": "Complete project docs",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "0yZ4t",
+                  "name": "Task 2",
+                  "width": "fill_container",
+                  "height": 24,
+                  "fill": "#1890FF",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "6s46t",
+                      "name": "Task 2 Dot",
+                      "fill": "#6366F1",
+                      "width": 6,
+                      "height": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "Uq7rv",
+                      "fill": "#FFFFFF",
+                      "content": "Team meeting",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "BoOmM",
+          "x": 60,
+          "y": 450,
+          "name": "Bottom Line",
+          "fill": "#E8E8E8",
+          "width": 1080,
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "ubSrl",
+          "x": 960,
+          "y": 80,
+          "name": "Task Panel",
+          "width": 220,
+          "height": 440,
+          "fill": "#FFFFFF",
+          "cornerRadius": 12,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000015",
+            "offset": {
+              "x": 0,
+              "y": 8
+            },
+            "blur": 20,
+            "spread": -4
+          },
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "GCqER",
+              "name": "Panel Header",
+              "width": "fill_container",
+              "height": 32,
+              "fill": "transparent",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "AocdH",
+                  "fill": "#1A1A1A",
+                  "content": "Tasks",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "BpF2V",
+                  "fill": "#1890FF",
+                  "content": "All Groups",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "D4Qob",
+              "name": "Today Group",
+              "width": "fill_container",
+              "height": 28,
+              "fill": "transparent",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Y5bj8",
+                  "fill": "#E85A4F",
+                  "content": "Today",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "mKosy",
+                  "fill": "#999999",
+                  "content": "(3)",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nlGoE",
+              "name": "Task 1",
+              "width": "fill_container",
+              "height": 60,
+              "fill": "#FFF2F0",
+              "cornerRadius": 8,
+              "layout": "vertical",
+              "gap": 4,
+              "padding": [
+                8,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "uN4v6",
+                  "fill": "#1A1A1A",
+                  "content": "Complete project proposal",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "JcTlb",
+                  "fill": "#999999",
+                  "content": "Due 2026-02-27",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iia2e",
+              "name": "Task 2",
+              "width": "fill_container",
+              "height": 60,
+              "fill": "#FFF2F0",
+              "cornerRadius": 8,
+              "layout": "vertical",
+              "gap": 4,
+              "padding": [
+                8,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qHTD3",
+                  "fill": "#1A1A1A",
+                  "content": "Design meeting prep",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "JbhpD",
+                  "fill": "#999999",
+                  "content": "Starts at 14:00",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "k7OfS",
+              "name": "Week Group",
+              "width": "fill_container",
+              "height": 28,
+              "fill": "transparent",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "1w8Cr",
+                  "fill": "#1890FF",
+                  "content": "Tomorrow",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "lsb8P",
+                  "fill": "#999999",
+                  "content": "(1)",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "0yiA6",
+              "name": "Task 3",
+              "width": "fill_container",
+              "height": 48,
+              "fill": "#F5F5F5",
+              "cornerRadius": 8,
+              "layout": "vertical",
+              "gap": 2,
+              "padding": [
+                8,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "LXHoI",
+                  "fill": "#666666",
+                  "content": "Code review",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "V17xI",
+              "name": "Done Group",
+              "width": "fill_container",
+              "height": 28,
+              "fill": "transparent",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "9o5cq",
+                  "fill": "#52C41A",
+                  "content": "Completed",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "ZjKwc",
+                  "fill": "#999999",
+                  "content": "(2)",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zrfwR",
+              "name": "Task 5",
+              "width": "fill_container",
+              "height": 36,
+              "fill": "#F6FFED",
+              "cornerRadius": 8,
+              "gap": 6,
+              "padding": [
+                8,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ZQgKj",
+                  "fill": "#52C41A",
+                  "content": "✓",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 13,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "ruAi7",
+                  "fill": "#52C41A",
+                  "content": "Weekly report submitted",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 12,
+                  "fontWeight": "500"
                 }
               ]
             }
