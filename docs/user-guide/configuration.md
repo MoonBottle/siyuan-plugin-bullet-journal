@@ -13,6 +13,8 @@
 3. 输入目录路径（如 `工作安排/2026/项目`）
 4. 保存设置
 
+![目录配置截图](./images/configuration-directory.png)
+
 ### 路径格式
 
 - 使用相对路径，相对于思源笔记本根目录
@@ -38,6 +40,8 @@
 3. 输入分组名称（如「前端项目」「后端项目」）
 4. 为目录分配分组
 
+![分组管理截图](./images/configuration-groups.png)
+
 ### 分组用途
 
 - 在项目列表中按分组筛选
@@ -54,6 +58,8 @@
 2. 找到「午休时间」设置
 3. 设置开始时间和结束时间（默认 12:00-13:00）
 
+![午休时间配置截图](./images/configuration-lunch-break.png)
+
 ### 计算规则
 
 当事项时间范围跨越午休时段时，会自动扣除午休时间：
@@ -66,7 +72,7 @@
 
 ## 插件设置界面
 
-![插件设置](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/setting.png)
+![插件设置完整界面](./images/configuration-full-settings.png)
 
 ## 常见问题
 

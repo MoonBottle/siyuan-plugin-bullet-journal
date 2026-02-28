@@ -12,6 +12,8 @@
 2. 搜索「子弹笔记」
 3. 点击安装
 
+![集市安装截图](./images/quick-start-market-install.png)
+
 ### 方式 B：手动安装
 
 1. 从 [GitHub Releases](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/releases) 下载最新的 `package.zip`
@@ -19,6 +21,8 @@
 3. 重启思源笔记，在设置 → 插件中启用插件
 
 > 💡 **提示**：安装完成后，顶栏工具栏会出现日历、甘特图和项目列表的新图标。
+
+![顶栏图标截图](./images/quick-start-toolbar-icons.png)
 
 ## 第二步：创建项目文档
 
@@ -57,6 +61,8 @@
 子任务事项 @2024-01-03
 ```
 
+![项目文档示例截图](./images/quick-start-project-doc.png)
+
 **关键标记说明：**
 - `#任务` - 标记该行为任务
 - `@L1`、`@L2`、`@L3` - 任务层级（L1 = 父任务，L2/L3 = 子任务）
@@ -76,7 +82,7 @@
 
 **插件设置界面：**
 
-![插件设置](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/setting.png)
+![插件设置](./images/quick-start-settings.png)
 
 > ⚠️ **常见问题**：如果数据没有显示，请检查：
 > - 目录路径是否与实际文件夹结构匹配
@@ -95,6 +101,8 @@
 | **甘特图** | 点击顶栏 📊 甘特图图标 | 项目时间线可视化 |
 | **项目列表** | 点击顶栏 📁 文件夹图标 | 按项目查看所有任务 |
 | **待办 Dock** | 右键顶栏 → 关闭的面板 → 待办事项 | 快速访问即将到来的任务 |
+
+![各视图入口截图](./images/quick-start-view-entries.png)
 
 > 💡 **专业提示**：点击日历或甘特图中的任意任务，可直接跳转到笔记中该任务的位置。
 
