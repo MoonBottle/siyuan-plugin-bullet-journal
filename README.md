@@ -42,18 +42,18 @@ A Bullet Journal style task management plugin for SiYuan Note that provides cale
 3. **Configure Plugin** - Add directory paths to scan in settings
 4. **View Tasks** - Access tasks through Calendar, Gantt, and Project List
 
-For detailed steps, see [Quick Start](./docs/en/user-guide/quick-start.md).
+For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
 
 ## Documentation
 
-- [User Guide](./docs/en/user-guide/index.md)
-  - [Quick Start](./docs/en/user-guide/quick-start.md)
-  - [Data Format](./docs/en/user-guide/data-format.md)
-  - [Views](./docs/en/user-guide/views.md)
-  - [Design Philosophy](./docs/en/user-guide/design-philosophy.md)
-  - [Configuration](./docs/en/user-guide/configuration.md)
-  - [Complete Example](./docs/en/user-guide/examples.md)
-- [API Documentation](./docs/API/)
+- [User Guide](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/index.md)
+  - [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md)
+  - [Data Format](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/data-format.md)
+  - [Views](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/views.md)
+  - [Design Philosophy](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/design-philosophy.md)
+  - [Configuration](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/configuration.md)
+  - [Complete Example](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/examples.md)
+- [API Documentation](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/API/)
 
 ## Development
 

@@ -42,18 +42,18 @@
 3. **配置插件** - 在设置中添加要扫描的目录路径
 4. **查看视图** - 通过日历、甘特图、项目列表查看任务
 
-详细步骤请参阅 [快速开始](./docs/user-guide/quick-start.md)。
+详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
 ## 文档
 
-- [用户指南](./docs/user-guide/index.md)
-  - [快速开始](./docs/user-guide/quick-start.md)
-  - [数据格式](./docs/user-guide/data-format.md)
-  - [视图功能](./docs/user-guide/views.md)
-  - [设计思想](./docs/user-guide/design-philosophy.md)
-  - [配置说明](./docs/user-guide/configuration.md)
-  - [完整示例](./docs/user-guide/examples.md)
-- [API 文档](./docs/API/)
+- [用户指南](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
+  - [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)
+  - [数据格式](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/data-format.md)
+  - [视图功能](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/views.md)
+  - [设计思想](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/design-philosophy.md)
+  - [配置说明](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/configuration.md)
+  - [完整示例](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/examples.md)
+- [API 文档](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/API/)
 
 ## 开发
 
