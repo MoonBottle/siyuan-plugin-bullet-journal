@@ -38,7 +38,7 @@ Location: Content below tasks (contains `@` but not `#task`)
 |---------|--------|-------------|
 | Work Item | Any text + `@Date` | Item content |
 | Date | `@YYYY-MM-DD` | Item date |
-| Time Range | `@YYYY-MM-DD HH:mm~HH:mm` | Item time range |
+| Time Range | `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Item time range |
 
 ## Markers Reference
 

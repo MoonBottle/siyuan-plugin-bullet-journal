@@ -67,7 +67,7 @@ Sub-task Item @2024-01-03
 - `#task` - Marks a line as a task
 - `@L1`, `@L2`, `@L3` - Task hierarchy levels (L1 = parent, L2/L3 = subtasks)
 - `@YYYY-MM-DD` - Date marker for work items
-- `@YYYY-MM-DD HH:mm~HH:mm` - Date with time range
+- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
 
 > 💡 **Tip**: Tasks themselves don't have dates - dates are assigned to work items under tasks. This allows a task to span multiple days with different items each day.
 

@@ -19,7 +19,40 @@ A Bullet Journal style task management plugin for SiYuan Note that provides cale
 - 🎯 **Non-invasive** - Uses standard Markdown, no proprietary formats
 - ⚡ **Real-time sync** - Changes in notes automatically reflect in all views
 
-![Plugin Preview](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/preview.png)
+## Core Workflow
+
+**Write notes with markers, then view them in visual interfaces.**
+
+### 1. Write Markers in Notes
+
+Use simple marker syntax to record tasks and items:
+
+```markdown
+## Project Name
+> Project description
+
+Task Name #task @L1
+Work Item @2026-02-28
+Another Item @2026-03-01 10:00~12:00
+```
+
+**Marker Reference:**
+- `#task` - Marks a line as a task
+- `@L1/@L2/@L3` - Task hierarchy levels
+- `@YYYY-MM-DD` - Item date
+- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
+
+![Note with Markers](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/note.png)
+
+### 2. View in Visual Interfaces
+
+The plugin automatically parses markers in notes and displays them in Calendar, Gantt, and Todo Dock:
+
+![View Display](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/todo-dock.png)
+
+Click any task in the view to jump directly to its location in your notes.
+
+![Feature Demo](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/op.gif)
 
 ## Installation
 

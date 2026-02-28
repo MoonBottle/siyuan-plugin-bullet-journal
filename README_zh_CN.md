@@ -19,7 +19,40 @@
 - 🎯 **无侵入式** - 使用标准 Markdown 格式，无专有格式锁定
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
 
-![插件预览图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/preview.png)
+## 核心工作流
+
+**用标记书写笔记，然后在视图中查看。**
+
+### 1. 在笔记中书写标记
+
+使用简单的标记语法记录任务和事项：
+
+```markdown
+## 项目名称
+> 项目描述
+
+任务名称 #任务 @L1
+工作事项 @2026-02-28
+另一个事项 @2026-03-01 10:00~12:00
+```
+
+**标记说明：**
+- `#任务` - 标记该行为任务
+- `@L1/@L2/@L3` - 任务层级
+- `@YYYY-MM-DD` - 事项日期
+- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围
+
+![笔记标记示例](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/note.png)
+
+### 2. 在视图中查看
+
+插件自动解析笔记中的标记，在日历、甘特图、待办 Dock 中展示：
+
+![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/todo-dock.png)
+
+点击视图中的任务，可直接跳转到笔记中对应位置。
+
+![功能演示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/asset/op.gif)
 
 ## 安装
 
