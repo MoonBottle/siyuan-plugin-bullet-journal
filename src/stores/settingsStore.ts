@@ -11,7 +11,6 @@ export const useSettingsStore = defineStore('settings', {
     directories: [] as ProjectDirectory[],
     groups: [] as ProjectGroup[],
     defaultGroup: '',
-    defaultView: 'calendar' as 'calendar' | 'gantt' | 'project',
     lunchBreakStart: '12:00',
     lunchBreakEnd: '13:00',
     todoDock: {
@@ -61,7 +60,6 @@ export const useSettingsStore = defineStore('settings', {
         this.directories = settings.directories || [];
         this.groups = settings.groups || [];
         this.defaultGroup = settings.defaultGroup || '';
-        this.defaultView = settings.defaultView || 'calendar';
         this.lunchBreakStart = settings.lunchBreakStart || '12:00';
         this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
         this.todoDock = settings.todoDock || { hideCompleted: false };
@@ -80,7 +78,6 @@ export const useSettingsStore = defineStore('settings', {
           directories: this.directories,
           groups: this.groups,
           defaultGroup: this.defaultGroup,
-          defaultView: this.defaultView,
           lunchBreakStart: this.lunchBreakStart,
           lunchBreakEnd: this.lunchBreakEnd,
           todoDock: this.todoDock

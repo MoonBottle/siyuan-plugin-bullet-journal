@@ -50,7 +50,6 @@ interface SettingsData {
   directories: ProjectDirectory[];
   groups: ProjectGroup[];
   defaultGroup: string;
-  defaultView: 'calendar' | 'gantt' | 'project';
   lunchBreakStart: string;
   lunchBreakEnd: string;
   todoDock: TodoDockSettings;
@@ -60,7 +59,6 @@ const defaultSettings: SettingsData = {
   directories: [],
   groups: [],
   defaultGroup: '',
-  defaultView: 'calendar',
   lunchBreakStart: '12:00',
   lunchBreakEnd: '13:00',
   todoDock: {
@@ -163,7 +161,6 @@ export default class HKWorkPlugin extends Plugin {
           directories: data.directories || [],
           groups: data.groups || [],
           defaultGroup: data.defaultGroup || '',
-          defaultView: data.defaultView || 'calendar',
           lunchBreakStart: data.lunchBreakStart || '12:00',
           lunchBreakEnd: data.lunchBreakEnd || '13:00',
           todoDock: {
@@ -294,25 +291,6 @@ export default class HKWorkPlugin extends Plugin {
         // 触发数据刷新（同上下文无 payload，各视图 loadFromPlugin；跨上下文通过 BC 下发完整设置）
         eventBus.emit(Events.DATA_REFRESH);
         broadcastDataRefresh(this.getSettings() as object);
-      }
-    });
-
-    // 默认视图
-    setting.addItem({
-      title: '默认视图',
-      description: '插件启动时默认显示的视图',
-      createActionElement: () => {
-        const select = document.createElement('select');
-        select.className = 'b3-select fn__flex-center';
-        select.innerHTML = `
-          <option value="calendar" ${settings.defaultView === 'calendar' ? 'selected' : ''}>日历</option>
-          <option value="gantt" ${settings.defaultView === 'gantt' ? 'selected' : ''}>甘特图</option>
-          <option value="project" ${settings.defaultView === 'project' ? 'selected' : ''}>项目</option>
-        `;
-        select.addEventListener('change', (e) => {
-          settings.defaultView = (e.target as HTMLSelectElement).value as 'calendar' | 'gantt' | 'project';
-        });
-        return select;
       }
     });
 

@@ -35,10 +35,6 @@
   },
   "settings": {
     "title": "Settings",
-    "defaultView": {
-      "title": "Default View",
-      "description": "Choose the default view when opening the plugin"
-    },
     "lunchBreak": {
       "title": "Lunch Break",
       "description": "Set lunch break time for work hour calculation",

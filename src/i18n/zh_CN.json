@@ -35,10 +35,6 @@
   },
   "settings": {
     "title": "设置",
-    "defaultView": {
-      "title": "默认视图",
-      "description": "选择打开插件时显示的默认视图"
-    },
     "lunchBreak": {
       "title": "午休时间",
       "description": "用于计算工时时扣除午休时间",
