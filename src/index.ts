@@ -214,7 +214,7 @@ export default class HKWorkPlugin extends Plugin {
     
     detail.menu.addItem({
       iconHTML: '📅',
-      label: '添加到子弹笔记',
+      label: '设置为子弹笔记目录',
       click: async () => {
         const paths: string[] = [];
         for (const docId of documentIds) {
@@ -249,8 +249,10 @@ export default class HKWorkPlugin extends Plugin {
         await this.saveSettings();
         
         if (addedCount > 0) {
-          showMessage(`已添加 ${addedCount} 个目录到子弹笔记`, 3000, 'info');
+          showMessage(`已设置 ${addedCount} 个子弹笔记目录`, 3000, 'info');
           eventBus.emit(Events.DATA_REFRESH);
+        } else {
+          showMessage('所选目录已存在于设置中', 3000, 'info');
         }
       }
     });
