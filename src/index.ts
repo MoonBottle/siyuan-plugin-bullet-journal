@@ -1,4 +1,5 @@
 import { Plugin, getFrontend, openTab, Setting, showMessage, Menu } from 'siyuan';
+import { getHPathByID } from '@/api';
 import '@/index.scss';
 import PluginInfoString from '@/../plugin.json';
 import { init, destroy, usePlugin } from '@/main';
@@ -105,6 +106,10 @@ export default class HKWorkPlugin extends Plugin {
 
     // 注册事件监听
     this.registerEventListeners();
+
+    // 监听文档树右键菜单事件
+    console.log('[Bullet Journal] Registering open-menu-doctree event listener');
+    this.eventBus.on('open-menu-doctree', this.handleDocTreeMenu.bind(this));
   }
 
   /**
@@ -115,6 +120,7 @@ export default class HKWorkPlugin extends Plugin {
   }
 
   onunload() {
+    this.eventBus.off('open-menu-doctree', this.handleDocTreeMenu.bind(this));
     eventBus.clear();
     destroy();
   }
@@ -185,6 +191,69 @@ export default class HKWorkPlugin extends Plugin {
    */
   public getEnabledDirectories(): ProjectDirectory[] {
     return settings.directories.filter(d => d.enabled);
+  }
+
+  /**
+   * 处理文档树右键菜单
+   */
+  private handleDocTreeMenu({ detail }) {
+    const elements = detail.elements;
+    if (!elements || !elements.length) {
+      return;
+    }
+    
+    console.log('[Bullet Journal] handleDocTreeMenu triggered', detail);
+    
+    const documentIds = Array.from(elements)
+      .map((element: Element) => element.getAttribute('data-node-id'))
+      .filter((id: string | null): id is string => id !== null);
+    
+    if (!documentIds.length) return;
+    
+    detail.menu.addSeparator();
+    
+    detail.menu.addItem({
+      iconHTML: '📅',
+      label: '添加到子弹笔记',
+      click: async () => {
+        const paths: string[] = [];
+        for (const docId of documentIds) {
+          try {
+            const hPath = await getHPathByID(docId);
+            if (hPath) {
+              paths.push(hPath);
+            }
+          } catch (error) {
+            console.error('[Bullet Journal] Failed to get doc path:', error);
+          }
+        }
+        
+        if (paths.length === 0) return;
+        
+        const existingPaths = settings.directories.map(d => d.path);
+        let addedCount = 0;
+        
+        paths.forEach(path => {
+          if (!existingPaths.includes(path)) {
+            const newDir: ProjectDirectory = {
+              id: 'dir-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+              path: path,
+              enabled: true,
+              groupId: settings.defaultGroup || undefined
+            };
+            settings.directories.push(newDir);
+            addedCount++;
+          }
+        });
+        
+        await this.saveSettings();
+        
+        if (addedCount > 0) {
+          showMessage(`已添加 ${addedCount} 个目录到子弹笔记`, 3000, 'info');
+          eventBus.emit(Events.DATA_REFRESH);
+        }
+      }
+    });
   }
 
   /**
