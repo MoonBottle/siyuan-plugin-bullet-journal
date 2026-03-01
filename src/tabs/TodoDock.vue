@@ -60,13 +60,19 @@ const handleDataRefresh = async (payload?: { directories?: ProjectDirectory[] })
   await nextTick();
   if (settingsStore.enabledDirectories.length > 0) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  } else {
+    projectStore.clearData();
   }
 };
 
 // 手动刷新
 const handleRefresh = async () => {
-  if (plugin && settingsStore.enabledDirectories.length > 0) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  if (plugin) {
+    if (settingsStore.enabledDirectories.length > 0) {
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    } else {
+      projectStore.clearData();
+    }
   }
 };
 
@@ -142,6 +148,8 @@ onMounted(async () => {
   // 加载项目数据
   if (settingsStore.enabledDirectories.length > 0 && plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
+  } else {
+    projectStore.clearData();
   }
 
   // 监听数据刷新事件（同上下文）

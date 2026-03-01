@@ -129,6 +129,15 @@ export const useProjectStore = defineStore('project', {
 
   actions: {
     /**
+     * 清空项目数据（无启用目录时使用）
+     */
+    clearData() {
+      this.projects = [];
+      this.items = [];
+      this.calendarEvents = [];
+    },
+
+    /**
      * 加载项目数据（首次加载，显示加载状态）
      */
     async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
