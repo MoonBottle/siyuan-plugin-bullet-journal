@@ -54,6 +54,10 @@
 
 ![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
 
+![甘特图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
+
+![事项详情](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/item-modal.png)
+
 点击视图中的任务，可直接跳转到笔记中对应位置。
 
 ![功能演示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/op.gif)
