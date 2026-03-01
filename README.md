@@ -25,7 +25,7 @@ A Bullet Journal style task management assistant plugin for SiYuan Note that pro
 
 ### 1. Write Markers in Notes
 
-Use simple marker syntax to record tasks and items:
+Enter the following in any document:
 
 ```markdown
 ## Project Name
@@ -50,6 +50,10 @@ The plugin automatically parses markers in notes and displays them in Calendar, 
 
 ![View Display](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/todo-dock.png)
 
+![Gantt Chart](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/gantt-view.png)
+
+![Item Details](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/item-modal.png)
+
 Click any task in the view to jump directly to its location in your notes.
 
 ![Feature Demo](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/op.gif)
@@ -72,8 +76,8 @@ Click any task in the view to jump directly to its location in your notes.
 
 1. **Create Project Document** - Create a document in SiYuan to record project tasks
 2. **Write Task Format** - Use `#task` to mark tasks, `@date` to mark items
-3. **Configure Plugin** - Add directory paths to scan in settings
-4. **View Tasks** - Access tasks through Calendar, Gantt, and Project List
+3. **Configure Plugin** (optional, recommended) - Add directory paths to scan in settings, or right-click a node in the document tree and choose "Set as Bullet Journal directory" to add quickly
+4. **View Tasks** - Access tasks through Calendar, Gantt, Project List, or Todo Dock
 
 For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
 
