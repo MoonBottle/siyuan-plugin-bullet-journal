@@ -78,8 +78,8 @@ export default defineConfig(({
 
         ],
       }),
-      // 只在生产构建时移除 console.log
-      ...(mode === 'production' ? [removeConsole()] : []),
+      // 只在生产构建且非监听模式时移除 console.log
+      ...(mode === 'production' && !isWatch ? [removeConsole()] : []),
     ],
 
     // https://github.com/vitejs/vite/issues/1930

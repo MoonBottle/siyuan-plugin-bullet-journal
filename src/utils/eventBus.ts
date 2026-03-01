@@ -27,8 +27,10 @@ class EventBus {
    * 触发事件
    */
   emit(event: string, ...args: any[]): void {
+    console.log(`[Bullet Journal] Event emitted: ${event}`, args);
     const handlers = this.handlers.get(event);
     if (handlers) {
+      console.log(`[Bullet Journal] Handlers count for ${event}: ${handlers.size}`);
       handlers.forEach(handler => {
         try {
           handler(...args);
@@ -36,6 +38,8 @@ class EventBus {
           console.error(`[Bullet Journal] Error in event handler for ${event}:`, error);
         }
       });
+    } else {
+      console.log(`[Bullet Journal] No handlers registered for ${event}`);
     }
   }
 
@@ -48,6 +52,22 @@ class EventBus {
 }
 
 export const eventBus = new EventBus();
+
+/** BroadcastChannel 名称，用于跨 iframe/上下文通知（如 Dock 与主窗口分离时） */
+export const DATA_REFRESH_CHANNEL = 'siyuan-bullet-journal-data-refresh';
+
+/**
+ * 通过 BroadcastChannel 发送 DATA_REFRESH，供无法收到 eventBus 的上下文（如 Dock）接收
+ */
+export function broadcastDataRefresh(payload?: { directories?: unknown[] }): void {
+  try {
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    channel.postMessage({ type: 'DATA_REFRESH', ...payload });
+    channel.close();
+  } catch {
+    // 忽略不支持或跨源场景
+  }
+}
 
 // 事件类型
 export const Events = {

@@ -3,7 +3,7 @@ import { getHPathByID } from '@/api';
 import '@/index.scss';
 import PluginInfoString from '@/../plugin.json';
 import { init, destroy, usePlugin } from '@/main';
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import CalendarTab from '@/tabs/CalendarTab.vue';
@@ -216,6 +216,7 @@ export default class HKWorkPlugin extends Plugin {
       iconHTML: '📅',
       label: '设置为子弹笔记目录',
       click: async () => {
+        console.log('[Bullet Journal] Setting bullet journal directories, documentIds:', documentIds);
         const paths: string[] = [];
         for (const docId of documentIds) {
           try {
@@ -228,6 +229,7 @@ export default class HKWorkPlugin extends Plugin {
           }
         }
         
+        console.log('[Bullet Journal] Paths to add:', paths);
         if (paths.length === 0) return;
         
         const existingPaths = settings.directories.map(d => d.path);
@@ -247,10 +249,13 @@ export default class HKWorkPlugin extends Plugin {
         });
         
         await this.saveSettings();
+        console.log('[Bullet Journal] Settings saved, directories:', settings.directories);
         
         if (addedCount > 0) {
           showMessage(`已设置 ${addedCount} 个子弹笔记目录`, 3000, 'info');
-          eventBus.emit(Events.DATA_REFRESH);
+          console.log('[Bullet Journal] Emitting DATA_REFRESH event');
+          eventBus.emit(Events.DATA_REFRESH, { directories: settings.directories });
+          broadcastDataRefresh({ directories: settings.directories });
         } else {
           showMessage('所选目录已存在于设置中', 3000, 'info');
         }
@@ -266,7 +271,8 @@ export default class HKWorkPlugin extends Plugin {
       confirmCallback: async () => {
         await this.saveSettings();
         // 触发数据刷新
-        eventBus.emit(Events.DATA_REFRESH);
+        eventBus.emit(Events.DATA_REFRESH, { directories: settings.directories });
+        broadcastDataRefresh({ directories: settings.directories });
       }
     });
 
@@ -801,6 +807,7 @@ export default class HKWorkPlugin extends Plugin {
 
     this.refreshTimeout = setTimeout(() => {
       eventBus.emit(Events.DATA_REFRESH);
+      broadcastDataRefresh();
     }, 1000);
   }
 }

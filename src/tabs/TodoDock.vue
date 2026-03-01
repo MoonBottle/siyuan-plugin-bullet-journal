@@ -26,13 +26,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { Menu } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import type { ProjectDirectory } from '@/types/models';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -48,13 +49,17 @@ const groupOptions = computed(() => {
   return options;
 });
 
-// 数据刷新处理函数
-const handleDataRefresh = async () => {
-  if (plugin) {
+// 数据刷新处理函数（支持 payload 直接更新 store，避免多 Pinia 实例下 getter 未更新）
+const handleDataRefresh = async (payload?: { directories?: ProjectDirectory[] }) => {
+  if (!plugin) return;
+  if (payload?.directories !== undefined) {
+    settingsStore.$patch({ directories: payload.directories });
+  } else {
     settingsStore.loadFromPlugin();
-    if (settingsStore.enabledDirectories.length > 0) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    }
+  }
+  await nextTick();
+  if (settingsStore.enabledDirectories.length > 0) {
+    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
 };
 
@@ -123,6 +128,7 @@ watch(selectedGroup, (groupId) => {
 
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据
 onMounted(async () => {
@@ -138,13 +144,32 @@ onMounted(async () => {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
   }
 
-  // 监听数据刷新事件
+  // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel.onmessage = (e: MessageEvent) => {
+      const data = e?.data;
+      if (data?.type === 'DATA_REFRESH') {
+        handleDataRefresh(
+          data.directories !== undefined ? { directories: data.directories } : undefined
+        );
+      }
+    };
+  } catch {
+    // 忽略
+  }
 });
 
 onUnmounted(() => {
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
   }
 });
 </script>

@@ -24,7 +24,10 @@ export const useSettingsStore = defineStore('settings', {
   getters: {
     // 获取启用的目录
     enabledDirectories: (state) => {
-      return state.directories.filter(d => d.enabled);
+      const result = state.directories.filter(d => d.enabled);
+      console.log('[Bullet Journal] enabledDirectories getter called, state.directories:', state.directories);
+      console.log('[Bullet Journal] enabledDirectories getter result:', result);
+      return result;
     },
 
     // 获取分组名称
@@ -50,8 +53,11 @@ export const useSettingsStore = defineStore('settings', {
      */
     loadFromPlugin() {
       const plugin = usePlugin() as any;
+      console.log('[Bullet Journal] loadFromPlugin called, plugin:', plugin);
       if (plugin && plugin.getSettings) {
         const settings = plugin.getSettings();
+        console.log('[Bullet Journal] getSettings returned:', settings);
+        console.log('[Bullet Journal] settings.directories:', settings.directories);
         this.directories = settings.directories || [];
         this.groups = settings.groups || [];
         this.defaultGroup = settings.defaultGroup || '';
@@ -60,6 +66,7 @@ export const useSettingsStore = defineStore('settings', {
         this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
         this.todoDock = settings.todoDock || { hideCompleted: false };
         this.loaded = true;
+        console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
       }
     },
 

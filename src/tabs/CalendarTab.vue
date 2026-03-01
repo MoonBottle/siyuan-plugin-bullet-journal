@@ -49,6 +49,7 @@ import { showMessage } from '@/utils/dialog';
 import { eventBus, Events } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
+import type { ProjectDirectory } from '@/types/models';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -75,13 +76,17 @@ const groupOptions = computed(() => {
   return options;
 });
 
-// 数据刷新处理函数
-const handleDataRefresh = async () => {
-  if (plugin) {
+// 数据刷新处理函数（支持 payload 直接更新 store）
+const handleDataRefresh = async (payload?: { directories?: ProjectDirectory[] }) => {
+  if (!plugin) return;
+  if (payload?.directories !== undefined) {
+    settingsStore.$patch({ directories: payload.directories });
+  } else {
     settingsStore.loadFromPlugin();
-    if (settingsStore.enabledDirectories.length > 0) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    }
+  }
+  await nextTick();
+  if (settingsStore.enabledDirectories.length > 0) {
+    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
 };
 
