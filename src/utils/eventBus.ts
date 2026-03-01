@@ -57,9 +57,10 @@ export const eventBus = new EventBus();
 export const DATA_REFRESH_CHANNEL = 'siyuan-bullet-journal-data-refresh';
 
 /**
- * 通过 BroadcastChannel 发送 DATA_REFRESH，供无法收到 eventBus 的上下文（如 Dock）接收
+ * 通过 BroadcastChannel 发送 DATA_REFRESH，供无法收到 eventBus 的上下文（如 Dock）接收。
+ * 同上下文可不传 payload（各端 loadFromPlugin）；跨上下文传入完整设置对象以便对端 $patch。
  */
-export function broadcastDataRefresh(payload?: { directories?: unknown[] }): void {
+export function broadcastDataRefresh(payload?: object): void {
   try {
     const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
     channel.postMessage({ type: 'DATA_REFRESH', ...payload });

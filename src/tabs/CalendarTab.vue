@@ -49,7 +49,6 @@ import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
-import type { ProjectDirectory } from '@/types/models';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -76,11 +75,15 @@ const groupOptions = computed(() => {
   return options;
 });
 
-// 数据刷新处理函数（支持 payload 直接更新 store）
-const handleDataRefresh = async (payload?: { directories?: ProjectDirectory[] }) => {
+// 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
+const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  if (payload?.directories !== undefined) {
-    settingsStore.$patch({ directories: payload.directories });
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'defaultView', 'lunchBreakStart', 'lunchBreakEnd', 'todoDock'];
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
+  if (hasStorePayload) {
+    const patch: Record<string, unknown> = {};
+    storeKeys.forEach(k => { if (payload[k] !== undefined) patch[k] = payload[k]; });
+    if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
   } else {
     settingsStore.loadFromPlugin();
   }
@@ -126,9 +129,8 @@ onMounted(async () => {
     refreshChannel.onmessage = (e: MessageEvent) => {
       const data = e?.data;
       if (data?.type === 'DATA_REFRESH') {
-        handleDataRefresh(
-          data.directories !== undefined ? { directories: data.directories } : undefined
-        );
+        const { type: _t, ...rest } = data;
+        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
       }
     };
   } catch {

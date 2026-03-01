@@ -271,8 +271,8 @@ export default class HKWorkPlugin extends Plugin {
         if (addedCount > 0) {
           showMessage(`已设置 ${addedCount} 个子弹笔记目录`, 3000, 'info');
           console.log('[Bullet Journal] Emitting DATA_REFRESH event');
-          eventBus.emit(Events.DATA_REFRESH, { directories: settings.directories });
-          broadcastDataRefresh({ directories: settings.directories });
+          eventBus.emit(Events.DATA_REFRESH);
+          broadcastDataRefresh(this.getSettings() as object);
         } else {
           showMessage('所选目录已存在于设置中', 3000, 'info');
         }
@@ -287,9 +287,9 @@ export default class HKWorkPlugin extends Plugin {
     const setting = new Setting({
       confirmCallback: async () => {
         await this.saveSettings();
-        // 触发数据刷新
-        eventBus.emit(Events.DATA_REFRESH, { directories: settings.directories });
-        broadcastDataRefresh({ directories: settings.directories });
+        // 触发数据刷新（同上下文无 payload，各视图 loadFromPlugin；跨上下文通过 BC 下发完整设置）
+        eventBus.emit(Events.DATA_REFRESH);
+        broadcastDataRefresh(this.getSettings() as object);
       }
     });
 
