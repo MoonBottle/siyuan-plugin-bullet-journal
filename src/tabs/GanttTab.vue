@@ -5,7 +5,7 @@
       <!-- 分组选择 -->
       <SySelect
         v-if="settingsStore.groups.length > 0"
-        v-model="projectStore.selectedGroup"
+        v-model="selectedGroup"
         :options="groupOptions"
         placeholder="全部分组"
       />
@@ -19,13 +19,13 @@
       </span>
     </div>
     <div class="tab-content">
-      <GanttView :projects="projectStore.filteredProjects" />
+      <GanttView :projects="filteredProjects" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
@@ -36,6 +36,9 @@ import GanttView from '@/components/gantt/GanttView.vue';
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+
+const selectedGroup = ref('');
+const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value));
 
 const groupOptions = computed(() => {
   const options = [{ value: '', text: '全部分组' }];
@@ -73,6 +76,10 @@ let refreshChannel: BroadcastChannel | null = null;
 onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
+
+  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+    selectedGroup.value = settingsStore.defaultGroup;
+  }
 
   // 加载项目数据
   if (settingsStore.enabledDirectories.length > 0 && plugin) {
@@ -118,11 +125,6 @@ const handleRefresh = async () => {
     }
   }
 };
-
-// 监听分组变化
-watch(() => projectStore.selectedGroup, (groupId) => {
-  projectStore.setSelectedGroup(groupId);
-});
 </script>
 
 <style lang="scss" scoped>

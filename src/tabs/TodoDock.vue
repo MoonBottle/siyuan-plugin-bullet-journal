@@ -19,14 +19,14 @@
         />
       </div>
       <div class="fn__flex-1 todo-dock-content">
-        <TodoSidebar />
+        <TodoSidebar :group-id="selectedGroup" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Menu } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
@@ -130,11 +130,6 @@ const handleMoreClick = (event: MouseEvent) => {
   });
 };
 
-// 监听分组变化
-watch(selectedGroup, (groupId) => {
-  projectStore.setSelectedGroup(groupId);
-});
-
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
@@ -143,6 +138,11 @@ let refreshChannel: BroadcastChannel | null = null;
 onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
+
+  // 初始默认分组（仅首次为空时应用）
+  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+    selectedGroup.value = settingsStore.defaultGroup;
+  }
 
   // 同步 todoDock 设置到 projectStore
   projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;

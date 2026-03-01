@@ -3,7 +3,7 @@
     <div class="block__icons">
       <SySelect
         v-if="settingsStore.groups.length > 0"
-        v-model="projectStore.selectedGroup"
+        v-model="selectedGroup"
         :options="groupOptions"
         placeholder="全部分组"
       />
@@ -18,7 +18,7 @@
     </div>
     <div class="tab-content">
       <ProjectView
-        :projects="projectStore.filteredProjects"
+        :projects="filteredProjects"
         @project-click="handleProjectClick"
       />
     </div>
@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine } from '@/utils/fileUtils';
@@ -37,6 +37,9 @@ import ProjectView from '@/components/project/ProjectView.vue';
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+
+const selectedGroup = ref('');
+const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value));
 
 const groupOptions = computed(() => {
   const options = [{ value: '', text: '全部分组' }];
@@ -74,6 +77,10 @@ let refreshChannel: BroadcastChannel | null = null;
 onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
+
+  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+    selectedGroup.value = settingsStore.defaultGroup;
+  }
 
   // 加载项目数据
   if (settingsStore.enabledDirectories.length > 0 && plugin) {
@@ -125,11 +132,6 @@ const handleProjectClick = async (project: any) => {
     await openDocumentAtLine(project.id);
   }
 };
-
-// 监听分组变化
-watch(() => projectStore.selectedGroup, (groupId) => {
-  projectStore.setSelectedGroup(groupId);
-});
 </script>
 
 <style lang="scss" scoped>

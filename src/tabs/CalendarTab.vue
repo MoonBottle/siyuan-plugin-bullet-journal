@@ -19,7 +19,7 @@
       <!-- 分组选择 -->
       <SySelect
         v-if="settingsStore.groups.length > 0"
-        v-model="projectStore.selectedGroup"
+        v-model="selectedGroup"
         :options="groupOptions"
         placeholder="全部分组"
       />
@@ -31,7 +31,7 @@
     <div class="tab-content">
       <CalendarView
         ref="calendarRef"
-        :events="projectStore.filteredCalendarEvents"
+        :events="filteredCalendarEvents"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
@@ -57,6 +57,10 @@ const projectStore = useProjectStore();
 const calendarRef = ref<any>(null);
 const currentView = ref('timeGridDay');
 const currentTitle = ref('');
+const selectedGroup = ref('');
+
+// 当前分组下的日历事件
+const filteredCalendarEvents = computed(() => projectStore.getFilteredCalendarEvents(selectedGroup.value));
 
 // 视图选项
 const viewOptions = [
@@ -111,6 +115,10 @@ let refreshChannel: BroadcastChannel | null = null;
 onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
+
+  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+    selectedGroup.value = settingsStore.defaultGroup;
+  }
 
   // 加载项目数据
   if (settingsStore.enabledDirectories.length > 0 && plugin) {
@@ -258,11 +266,6 @@ const handleEventChange = async (eventInfo: any, action: string) => {
     showMessage(`${action}失败，请重试`, 'error');
   }
 };
-
-// 监听分组变化
-watch(() => projectStore.selectedGroup, (groupId) => {
-  projectStore.setSelectedGroup(groupId);
-});
 
 // 监听视图切换
 watch(currentView, (newView) => {

@@ -317,6 +317,8 @@ import type { Item } from '@/types/models';
 import { getCurrentLocale } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 
+const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
+
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const plugin = usePlugin();
@@ -363,59 +365,50 @@ const getTomorrowStr = (): string => {
 };
 
 // 已完成事项
-const completedItems = computed(() => projectStore.completedItems);
+const completedItems = computed(() => projectStore.getCompletedItems(props.groupId));
 
 // 是否隐藏已完成事项
 const hideCompleted = computed(() => projectStore.hideCompleted);
 
 // 已放弃事项
-const abandonedItems = computed(() => projectStore.abandonedItems);
+const abandonedItems = computed(() => projectStore.getAbandonedItems(props.groupId));
 
 // 是否隐藏已放弃事项
 const hideAbandoned = computed(() => projectStore.hideAbandoned);
 
 // 过期事项
-const expiredItems = computed(() => projectStore.expiredItems);
+const expiredItems = computed(() => projectStore.getExpiredItems(props.groupId));
+
+// 当前分组下的未来待办（今日及以后，未完成未放弃）
+const futureItemsForGroup = computed(() => projectStore.getFutureItems(props.groupId));
 
 // 今日待办事项
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
-  return projectStore.futureItems.filter(item => item.date === todayStr);
+  return futureItemsForGroup.value.filter(item => item.date === todayStr);
 });
 
 // 明日待办事项
 const tomorrowItems = computed(() => {
   const tomorrowStr = getTomorrowStr();
-  return projectStore.futureItems.filter(item => item.date === tomorrowStr);
+  return futureItemsForGroup.value.filter(item => item.date === tomorrowStr);
 });
 
 // 未来待办事项（不包括今天和明天）
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return projectStore.futureItems.filter(item => item.date !== todayStr && item.date !== tomorrowStr);
+  return futureItemsForGroup.value.filter(item => item.date !== todayStr && item.date !== tomorrowStr);
 });
 
 // 按日期分组的未来待办事项
-const groupedFutureItems = computed(() => {
-  const items = futureItems.value;
-  const grouped = new Map<string, Item[]>();
+const groupedFutureItems = computed(() => projectStore.getGroupedFutureItems(props.groupId));
 
-  items.forEach(item => {
-    const existing = grouped.get(item.date);
-    if (existing) {
-      existing.push(item);
-    } else {
-      grouped.set(item.date, [item]);
-    }
-  });
-
-  return grouped;
-});
-
-// 排序后的未来日期
+// 排序后的未来日期（排除今天、明天，仅用于「未来」区块）
 const futureDates = computed(() => {
-  return Array.from(groupedFutureItems.value.keys()).sort();
+  const todayStr = getTodayStr();
+  const tomorrowStr = getTomorrowStr();
+  return Array.from(groupedFutureItems.value.keys()).filter(d => d !== todayStr && d !== tomorrowStr).sort();
 });
 
 // 格式化日期标签
