@@ -25,6 +25,20 @@ const { version } = PluginInfo;
 
 export { TAB_TYPES, DOCK_TYPES };
 
+/**
+ * 插件内共享的 Pinia 实例。
+ * 根因：思源每个 Tab/Dock 的 init() 各自挂载一个 Vue 应用，若各自 createPinia() 会得到多份 store，
+ * 导致「文档树添加目录」后 eventBus 只更新了当前上下文的 store，其他 Tab/Dock 的 settingsStore 未更新，
+ * enabledDirectories 仍为空、列表不刷新。改为在 onload 时创建唯一实例并复用于所有 init()，
+ * 同上下文下所有视图共享同一份 settings/project store。若某视图跑在另一上下文（如 iframe），
+ * 该处 sharedPinia 为 null，会 fallback 到 createPinia()，此时仍依赖 BroadcastChannel 同步数据。
+ */
+let sharedPinia: ReturnType<typeof createPinia> | null = null;
+
+export function getSharedPinia() {
+  return sharedPinia;
+}
+
 // TodoDock 设置
 interface TodoDockSettings {
   hideCompleted: boolean;
@@ -91,6 +105,9 @@ export default class HKWorkPlugin extends Plugin {
 
     // 加载设置
     await this.loadSettings();
+
+    // 创建唯一 Pinia 实例，供所有 Tab/Dock 复用，避免多实例导致 store 不同步
+    sharedPinia = createPinia();
 
     // 注册自定义 Tab
     this.registerTabs();
@@ -609,7 +626,7 @@ export default class HKWorkPlugin extends Plugin {
       type: TAB_TYPES.CALENDAR,
       init() {
         try {
-          const pinia = createPinia();
+          const pinia = sharedPinia ?? createPinia();
           const app = createApp(CalendarTab);
           app.use(pinia);
           app.mount(this.element);
@@ -627,7 +644,7 @@ export default class HKWorkPlugin extends Plugin {
       type: TAB_TYPES.GANTT,
       init() {
         try {
-          const pinia = createPinia();
+          const pinia = sharedPinia ?? createPinia();
           const app = createApp(GanttTab);
           app.use(pinia);
           app.mount(this.element);
@@ -645,7 +662,7 @@ export default class HKWorkPlugin extends Plugin {
       type: TAB_TYPES.PROJECT,
       init() {
         try {
-          const pinia = createPinia();
+          const pinia = sharedPinia ?? createPinia();
           const app = createApp(ProjectTab);
           app.use(pinia);
           app.mount(this.element);
@@ -675,7 +692,7 @@ export default class HKWorkPlugin extends Plugin {
       init() {
         this.element.style.height = '100%';
         this.element.style.overflow = 'hidden';
-        const pinia = createPinia();
+        const pinia = sharedPinia ?? createPinia();
         const app = createApp(TodoDock);
         app.use(pinia);
         app.mount(this.element);
