@@ -26,6 +26,7 @@ export class MarkdownParser {
    * 解析所有配置目录中的项目文档
    */
   public async parseAllProjects(): Promise<Project[]> {
+    console.log('[Bullet Journal][Parser] 开始解析项目，目录数量:', this.directories.length);
     const projects: Project[] = [];
     const processedDocIds = new Set<string>();
 
@@ -54,6 +55,8 @@ export class MarkdownParser {
       }
     }
 
+    console.log('[Bullet Journal][Parser] 解析完成，项目总数:', projects.length);
+
     return projects;
   }
 
@@ -64,6 +67,7 @@ export class MarkdownParser {
   private async getProjectDocs(
     directoryPath: string
   ): Promise<{ id: string; path: string; notebookId: string }[]> {
+    console.log('[Bullet Journal][Parser] SQL 查询路径:', directoryPath);
     try {
       // 使用 SQL 查询获取所有笔记本中匹配路径的文档
       // 不限制 notebook（box），扫描所有笔记本
@@ -76,6 +80,7 @@ export class MarkdownParser {
       `;
 
       const result = await sql(sqlQuery);
+      console.log('[Bullet Journal][Parser] 查询到的文档数量:', result.length);
       return result.map((row: any) => ({
         id: row.id,
         path: row.path,
@@ -243,12 +248,29 @@ export class MarkdownParser {
       project.tasks.push(currentTask);
     }
 
-    // 如果没有项目名，使用文档 ID
+    // 如果没有项目名，使用文档路径的文件名或文档 ID
     if (!project.name) {
-      project.name = `项目 ${docId.substring(0, 6)}`;
+      if (docPath) {
+        // 从路径中提取文件名（最后一个 / 后的内容）
+        const pathParts = docPath.split('/');
+        project.name = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || '';
+      }
+      // 如果还是没有项目名，使用文档 ID
+      if (!project.name) {
+        project.name = `项目 ${docId.substring(0, 6)}`;
+      }
     }
 
-    return project.name ? project : null;
+    // 过滤任务数量为 0 的项目
+    if (project.tasks.length === 0) {
+      return null;
+    }
+
+    console.log('[Bullet Journal][Parser] 解析项目:', project.name);
+    console.log('[Bullet Journal][Parser]  任务数量:', project.tasks.length);
+    console.log('[Bullet Journal][Parser]  项目链接:', project.links?.length || 0);
+
+    return project;
   }
 
   /**
@@ -257,6 +279,7 @@ export class MarkdownParser {
    */
   private parseKramdownBlocks(kramdown: string): KramdownBlock[] {
     const blocks: KramdownBlock[] = [];
+    console.log('[Bullet Journal][Parser] 开始解析 Kramdown 块...');
 
     // 分割为行，逐行解析
     const lines = kramdown.split('\n');
@@ -290,6 +313,8 @@ export class MarkdownParser {
         currentContent = line;
       }
     }
+
+    console.log('[Bullet Journal][Parser] 解析到的块数量:', blocks.length);
 
     return blocks;
   }
@@ -327,6 +352,8 @@ export class MarkdownParser {
         }
       }
     }
+
+    console.log('[Bullet Journal][Parser] 获取到事项总数:', items.length);
 
     return items;
   }

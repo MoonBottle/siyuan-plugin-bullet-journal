@@ -10,6 +10,7 @@ import {
 } from "vite"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import zipPack from "vite-plugin-zip-pack"
+import removeConsole from "vite-plugin-remove-console"
 
 const pluginInfo = require("./plugin.json")
 
@@ -77,6 +78,8 @@ export default defineConfig(({
 
         ],
       }),
+      // 只在生产构建时移除 console.log
+      ...(mode === 'production' ? [removeConsole()] : []),
     ],
 
     // https://github.com/vitejs/vite/issues/1930
