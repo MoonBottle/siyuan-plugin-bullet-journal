@@ -256,8 +256,9 @@ export class MarkdownParser {
         }
       }
 
-      // 解析任务行（包含 #任务）
-      if (content.includes('#任务')) {
+      // 解析任务行（包含 #任务，且不是文档里“说明语法”的写法）
+      // 若 #任务 只出现在反引号内（如 `#任务`），视为说明文字，不当作任务
+      if (content.includes('#任务') && !this.isTagInBackticks(content, '#任务') && !this.isTagInBackticks(content, '#task')) {
         if (currentTask) {
           currentTask.docId = docId;
           project.tasks.push(currentTask);
@@ -322,6 +323,15 @@ export class MarkdownParser {
     console.log('[Bullet Journal][Parser]  项目链接:', project.links?.length || 0);
 
     return project;
+  }
+
+  /**
+   * 判断内容中的 tag 是否仅出现在反引号内（说明性文字，如 `#任务`），不当作真实任务标记
+   */
+  private isTagInBackticks(content: string, tag: string): boolean {
+    // 存在 `#任务` 或 `#task` 这种“说明语法”的写法时，不解析为任务
+    const inBackticks = new RegExp('`#?' + (tag === '#任务' ? '任务' : 'task') + '`');
+    return inBackticks.test(content);
   }
 
   /**
