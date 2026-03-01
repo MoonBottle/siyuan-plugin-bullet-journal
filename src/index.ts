@@ -285,6 +285,10 @@ export default class HKWorkPlugin extends Plugin {
    */
   private registerSetting() {
     const setting = new Setting({
+      destroyCallback: () => {
+        // 关闭设置面板时从存储重新加载，避免未保存的修改在下次打开时仍显示
+        void this.loadSettings();
+      },
       confirmCallback: async () => {
         await this.saveSettings();
         // 触发数据刷新（同上下文无 payload，各视图 loadFromPlugin；跨上下文通过 BC 下发完整设置）
@@ -496,8 +500,21 @@ export default class HKWorkPlugin extends Plugin {
       deleteBtn.innerHTML = '<svg><use xlink:href="#iconTrashcan"></use></svg>';
       deleteBtn.style.padding = '4px';
       deleteBtn.addEventListener('click', () => {
+        const deletedGroupId = settings.groups[index].id;
         settings.groups.splice(index, 1);
+        // 删除分组后，将关联该分组的目录和默认分组自动清空
+        if (settings.defaultGroup === deletedGroupId) {
+          settings.defaultGroup = '';
+        }
+        settings.directories.forEach(d => {
+          if (d.groupId === deletedGroupId) {
+            d.groupId = undefined;
+          }
+        });
         this.renderGroupsList(container);
+        const defaultSelect = container.querySelector('#default-group-select') as HTMLSelectElement | null;
+        if (defaultSelect) this.updateDefaultGroupSelect(defaultSelect);
+        this.updateAllGroupSelects();
       });
 
       item.appendChild(nameInput);
