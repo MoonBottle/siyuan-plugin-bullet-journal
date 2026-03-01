@@ -2,7 +2,7 @@
   "name": "siyuan-plugin-bullet-journal",
   "version": "0.4.0",
   "type": "module",
-  "description": "Bullet Journal plugin for Siyuan (https://b3log.org/siyuan)",
+  "description": "Bullet Journal Assistant plugin for SiYuan (https://b3log.org/siyuan)",
   "author": "",
   "license": "AGPL-3.0",
   "homepage": "",

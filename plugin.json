@@ -8,12 +8,12 @@
   "backends": ["all"],
   "frontends": ["all"],
   "displayName": {
-    "default": "Bullet Journal",
-    "zh_CN": "子弹笔记"
+    "default": "Bullet Journal Assistant",
+    "zh_CN": "子弹笔记助手"
   },
   "description": {
-    "default": "A Bullet Journal style task management plugin with calendar, gantt chart and project views",
-    "zh_CN": "子弹笔记风格的工作管理插件，提供日历、甘特图和项目视图"
+    "default": "A Bullet Journal style task management assistant plugin with calendar, gantt chart and project views",
+    "zh_CN": "子弹笔记风格的工作管理辅助插件，提供日历、甘特图和项目视图"
   },
   "readme": {
     "default": "README.md",

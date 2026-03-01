@@ -1,8 +1,8 @@
-# Bullet Journal - SiYuan Plugin
+# Bullet Journal Assistant - SiYuan Plugin
 
 [简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README_zh_CN.md)
 
-A Bullet Journal style task management plugin for SiYuan Note that provides calendar view, Gantt chart, and project list features to help you visualize and manage your tasks.
+A Bullet Journal style task management assistant plugin for SiYuan Note that provides calendar view, Gantt chart, and project list features to help you visualize and manage your tasks.
 
 ## Features
 
