@@ -1,4 +1,4 @@
-import { Plugin, getFrontend, openTab, Setting, showMessage } from 'siyuan';
+import { Plugin, getFrontend, openTab, Setting, showMessage, Menu } from 'siyuan';
 import '@/index.scss';
 import PluginInfoString from '@/../plugin.json';
 import { init, destroy, usePlugin } from '@/main';
@@ -613,30 +613,38 @@ export default class HKWorkPlugin extends Plugin {
    * 注册顶栏按钮
    */
   private registerTopBar() {
-    // 日历按钮
+    // 子弹笔记主菜单按钮
     this.addTopBar({
       icon: 'iconCalendar',
-      title: '日历视图',
-      callback: () => {
-        this.openCustomTab(TAB_TYPES.CALENDAR);
-      }
-    });
-
-    // 甘特图按钮
-    this.addTopBar({
-      icon: 'iconGraph',
-      title: '甘特图',
-      callback: () => {
-        this.openCustomTab(TAB_TYPES.GANTT);
-      }
-    });
-
-    // 项目按钮
-    this.addTopBar({
-      icon: 'iconFolder',
-      title: '项目列表',
-      callback: () => {
-        this.openCustomTab(TAB_TYPES.PROJECT);
+      title: '子弹笔记助手',
+      callback: (event: MouseEvent) => {
+        const menu = new Menu('bullet-journal-menu');
+        menu.addItem({
+          icon: 'iconCalendar',
+          label: '日历视图',
+          click: () => {
+            this.openCustomTab(TAB_TYPES.CALENDAR);
+          }
+        });
+        menu.addItem({
+          icon: 'iconGraph',
+          label: '甘特图',
+          click: () => {
+            this.openCustomTab(TAB_TYPES.GANTT);
+          }
+        });
+        menu.addItem({
+          icon: 'iconFolder',
+          label: '项目列表',
+          click: () => {
+            this.openCustomTab(TAB_TYPES.PROJECT);
+          }
+        });
+        menu.open({
+          x: event.clientX,
+          y: event.clientY,
+          isLeft: true
+        });
       }
     });
   }
