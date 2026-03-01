@@ -1,17 +1,20 @@
 <template>
   <div class="hk-work-tab project-tab">
-    <div class="tab-header">
-      <div class="tab-toolbar">
-        <SySelect
-          v-if="settingsStore.groups.length > 0"
-          v-model="projectStore.selectedGroup"
-          :options="groupOptions"
-          placeholder="全部分组"
-        />
-        <SyButton @click="handleRefresh" :disabled="projectStore.loading">
-          {{ projectStore.loading ? '加载中...' : '刷新' }}
-        </SyButton>
-      </div>
+    <div class="block__icons">
+      <SySelect
+        v-if="settingsStore.groups.length > 0"
+        v-model="projectStore.selectedGroup"
+        :options="groupOptions"
+        placeholder="全部分组"
+      />
+      <span class="fn__flex-1 fn__space"></span>
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="projectStore.loading ? '加载中...' : '刷新'"
+        @click="handleRefresh"
+      >
+        <svg><use xlink:href="#iconRefresh"></use></svg>
+      </span>
     </div>
     <div class="tab-content">
       <ProjectView
@@ -28,7 +31,6 @@ import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events } from '@/utils/eventBus';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import ProjectView from '@/components/project/ProjectView.vue';
 
@@ -103,17 +105,17 @@ watch(() => projectStore.selectedGroup, (groupId) => {
   flex-direction: column;
 }
 
-.tab-header {
-  flex-shrink: 0;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--b3-border-color);
-  background: var(--b3-theme-surface);
-}
+.block__icons {
+  .block__icon {
+    opacity: 1;
+  }
 
-.tab-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  select.b3-select {
+    width: auto !important;
+    min-width: 60px;
+    margin-left: 8px;
+    padding: 4px 24px 4px 8px;
+  }
 }
 
 .tab-content {

@@ -1,0 +1,7 @@
+- [x] 代码实现: ProjectTab.vue 使用 `.block__icons` 作为顶栏容器
+- [x] 代码实现: 刷新按钮使用 `.block__icon` 样式和 `#iconRefresh` 图标
+- [x] 代码实现: 分组选择器在 `.block__icons` 中正确显示
+- [x] 代码实现: 移除或更新不再需要的 `.tab-header` 和 `.tab-toolbar` 样式
+- [x] 验证: 顶栏样式与日历标签页一致
+- [x] 验证: 刷新功能正常工作
+- [x] 验证: 分组选择功能正常工作
