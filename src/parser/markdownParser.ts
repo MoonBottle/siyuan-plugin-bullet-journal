@@ -23,27 +23,24 @@ export class MarkdownParser {
   }
 
   /**
-   * 解析所有配置目录中的项目文档
+   * 解析所有配置目录中的项目文档；目录为空时扫描所有文档
    */
   public async parseAllProjects(): Promise<Project[]> {
     console.log('[Bullet Journal][Parser] 开始解析项目，目录数量:', this.directories.length);
     const projects: Project[] = [];
     const processedDocIds = new Set<string>();
 
-    for (const directory of this.directories) {
-      // 获取匹配目录路径的文档
-      const docs = await this.getProjectDocs(directory.path);
-
+    if (this.directories.length === 0) {
+      // 目录配置为空：扫描所有文档
+      const docs = await this.getAllDocs();
       for (const doc of docs) {
-        // 避免重复处理同一文档
         if (processedDocIds.has(doc.id)) continue;
         processedDocIds.add(doc.id);
-
         try {
           const project = await this.parseProjectDocument(
             doc.id,
             doc.notebookId,
-            directory.groupId,
+            undefined,
             doc.path
           );
           if (project) {
@@ -53,11 +50,58 @@ export class MarkdownParser {
           console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error);
         }
       }
+    } else {
+      for (const directory of this.directories) {
+        const docs = await this.getProjectDocs(directory.path);
+        for (const doc of docs) {
+          if (processedDocIds.has(doc.id)) continue;
+          processedDocIds.add(doc.id);
+          try {
+            const project = await this.parseProjectDocument(
+              doc.id,
+              doc.notebookId,
+              directory.groupId,
+              doc.path
+            );
+            if (project) {
+              projects.push(project);
+            }
+          } catch (error) {
+            console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error);
+          }
+        }
+      }
     }
 
     console.log('[Bullet Journal][Parser] 解析完成，项目总数:', projects.length);
 
     return projects;
+  }
+
+  /**
+   * 获取所有笔记本中的文档（目录配置为空时使用）
+   */
+  private async getAllDocs(): Promise<{ id: string; path: string; notebookId: string }[]> {
+    console.log('[Bullet Journal][Parser] 目录为空，扫描所有文档');
+    try {
+      const sqlQuery = `
+        SELECT id, hpath as path, box as notebookId
+        FROM blocks
+        WHERE type = 'd'
+        ORDER BY updated DESC
+        LIMIT 1000
+      `;
+      const result = await sql(sqlQuery);
+      console.log('[Bullet Journal][Parser] 查询到的文档数量:', result.length);
+      return result.map((row: any) => ({
+        id: row.id,
+        path: row.path,
+        notebookId: row.notebookId
+      }));
+    } catch (error) {
+      console.error('[Bullet Journal] Failed to get all docs:', error);
+      return [];
+    }
   }
 
   /**

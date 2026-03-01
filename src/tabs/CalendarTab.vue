@@ -92,11 +92,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await nextTick();
-  if (settingsStore.enabledDirectories.length > 0) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-  } else {
-    projectStore.clearData();
-  }
+  await projectStore.refresh(plugin, settingsStore.enabledDirectories);
 };
 
 // 日历导航处理函数
@@ -121,10 +117,8 @@ onMounted(async () => {
   }
 
   // 加载项目数据
-  if (settingsStore.enabledDirectories.length > 0 && plugin) {
+  if (plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-  } else {
-    projectStore.clearData();
   }
 
   // 监听事件（同上下文）
@@ -165,11 +159,7 @@ onUnmounted(() => {
 
 const handleRefresh = async () => {
   if (plugin) {
-    if (settingsStore.enabledDirectories.length > 0) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    } else {
-      projectStore.clearData();
-    }
+    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
 };
 
