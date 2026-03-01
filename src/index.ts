@@ -227,10 +227,10 @@ export default class HKWorkPlugin extends Plugin {
     
     if (!documentIds.length) return;
     
-    detail.menu.addSeparator();
+    // detail.menu.addSeparator();
     
     detail.menu.addItem({
-      iconHTML: '📅',
+      icon: 'iconFolder',
       label: '设置为子弹笔记目录',
       click: async () => {
         console.log('[Bullet Journal] Setting bullet journal directories, documentIds:', documentIds);
