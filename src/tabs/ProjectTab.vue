@@ -30,7 +30,7 @@ import { computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine } from '@/utils/fileUtils';
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import ProjectView from '@/components/project/ProjectView.vue';
 import type { ProjectDirectory } from '@/types/models';
@@ -65,6 +65,7 @@ const handleDataRefresh = async (payload?: { directories?: ProjectDirectory[] })
 
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据
 onMounted(async () => {
@@ -78,13 +79,32 @@ onMounted(async () => {
     projectStore.clearData();
   }
 
-  // 监听数据刷新事件
+  // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel.onmessage = (e: MessageEvent) => {
+      const data = e?.data;
+      if (data?.type === 'DATA_REFRESH') {
+        handleDataRefresh(
+          data.directories !== undefined ? { directories: data.directories } : undefined
+        );
+      }
+    };
+  } catch {
+    // 忽略
+  }
 });
 
 onUnmounted(() => {
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
   }
 });
 

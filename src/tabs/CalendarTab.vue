@@ -46,7 +46,7 @@ import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine, updateBlockDateTime } from '@/utils/fileUtils';
 import { showMessage } from '@/utils/dialog';
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import type { ProjectDirectory } from '@/types/models';
@@ -102,6 +102,7 @@ const handleCalendarNavigate = (date: string) => {
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let unsubscribeNavigate: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据
 onMounted(async () => {
@@ -115,9 +116,24 @@ onMounted(async () => {
     projectStore.clearData();
   }
 
-  // 监听事件
+  // 监听事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
+
+  // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel.onmessage = (e: MessageEvent) => {
+      const data = e?.data;
+      if (data?.type === 'DATA_REFRESH') {
+        handleDataRefresh(
+          data.directories !== undefined ? { directories: data.directories } : undefined
+        );
+      }
+    };
+  } catch {
+    // 忽略
+  }
 
   // 等待日历初始化后更新标题
   await nextTick();
@@ -130,6 +146,10 @@ onUnmounted(() => {
   }
   if (unsubscribeNavigate) {
     unsubscribeNavigate();
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
   }
 });
 
