@@ -774,10 +774,8 @@ export default class HKWorkPlugin extends Plugin {
           id: customId,
           icon: this.getTabIcon(type),
           title: this.getTabTitle(type),
-          data: {}
-        },
-        position: options?.position,
-        openNewTab: true
+          data: { type }
+        }
       });
     } catch (error) {
       console.error('[Bullet Journal] Failed to open tab:', error);
