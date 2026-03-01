@@ -84,6 +84,9 @@ onMounted(() => {
   gantt.config.drag_progress = false;
   gantt.config.drag_links = false;
 
+  // 注释掉双击功能：禁用双击打开任务详情
+  gantt.config.details_on_dblclick = false;
+
   // 自定义任务条样式
   gantt.templates.task_class = function(start, end, task) {
     if (task.type === 'project') {
