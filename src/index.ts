@@ -294,38 +294,54 @@ export default class HKWorkPlugin extends Plugin {
       }
     });
 
-    // 午休时间
+    // 1. 目录配置（最重要：决定扫描哪些文档）
     setting.addItem({
-      title: '午休开始时间',
-      description: '用于计算工作时长时扣除午休时间',
+      title: '目录配置',
+      description: '配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为子弹笔记目录」快速添加。',
+      direction: 'row',
       createActionElement: () => {
-        const input = document.createElement('input');
-        input.type = 'time';
-        input.className = 'b3-text-field fn__flex-center';
-        input.value = settings.lunchBreakStart;
-        input.addEventListener('change', (e) => {
-          settings.lunchBreakStart = (e.target as HTMLInputElement).value;
+        const container = document.createElement('div');
+        container.className = 'fn__flex-column';
+        container.style.gap = '8px';
+
+        // 顶部操作栏：添加目录按钮
+        const topBar = document.createElement('div');
+        topBar.className = 'fn__flex';
+        topBar.style.alignItems = 'center';
+        topBar.style.justifyContent = 'flex-end';
+
+        const addDirBtn = document.createElement('button');
+        addDirBtn.className = 'b3-button b3-button--outline fn__flex-center';
+        addDirBtn.textContent = '+ 添加目录';
+        addDirBtn.addEventListener('click', () => {
+          const newDir: ProjectDirectory = {
+            id: 'dir-' + Date.now(),
+            path: '',
+            enabled: true,
+            groupId: settings.defaultGroup || undefined
+          };
+          settings.directories.push(newDir);
+          this.renderDirectoriesList(container);
         });
-        return input;
+        topBar.appendChild(addDirBtn);
+
+        container.appendChild(topBar);
+
+        // 目录列表容器
+        const listContainer = document.createElement('div');
+        listContainer.id = 'directory-list';
+        listContainer.className = 'fn__flex-column';
+        listContainer.style.gap = '4px';
+        container.appendChild(listContainer);
+
+        // 初始渲染目录列表
+        this.renderDirectoriesList(container);
+
+        return container;
       }
     });
 
-    setting.addItem({
-      title: '午休结束时间',
-      description: '用于计算工作时长时扣除午休时间',
-      createActionElement: () => {
-        const input = document.createElement('input');
-        input.type = 'time';
-        input.className = 'b3-text-field fn__flex-center';
-        input.value = settings.lunchBreakEnd;
-        input.addEventListener('change', (e) => {
-          settings.lunchBreakEnd = (e.target as HTMLInputElement).value;
-        });
-        return input;
-      }
-    });
-
-    // 分组管理
+    // 2. 分组管理
     setting.addItem({
       title: '分组管理',
       description: '创建和管理项目分组',
@@ -390,50 +406,34 @@ export default class HKWorkPlugin extends Plugin {
       }
     });
 
-    // 目录配置
+    // 3. 午休时间（用于工时计算）
     setting.addItem({
-      title: '目录配置',
-      description: '配置要扫描的项目目录路径（如：工作安排/2026/项目），将扫描所有笔记本中匹配的文档',
-      direction: 'row',
+      title: '午休开始时间',
+      description: '用于计算工作时长时扣除午休时间',
       createActionElement: () => {
-        const container = document.createElement('div');
-        container.className = 'fn__flex-column';
-        container.style.gap = '8px';
-
-        // 顶部操作栏：添加目录按钮
-        const topBar = document.createElement('div');
-        topBar.className = 'fn__flex';
-        topBar.style.alignItems = 'center';
-        topBar.style.justifyContent = 'flex-end';
-
-        const addDirBtn = document.createElement('button');
-        addDirBtn.className = 'b3-button b3-button--outline fn__flex-center';
-        addDirBtn.textContent = '+ 添加目录';
-        addDirBtn.addEventListener('click', () => {
-          const newDir: ProjectDirectory = {
-            id: 'dir-' + Date.now(),
-            path: '',
-            enabled: true,
-            groupId: settings.defaultGroup || undefined
-          };
-          settings.directories.push(newDir);
-          this.renderDirectoriesList(container);
+        const input = document.createElement('input');
+        input.type = 'time';
+        input.className = 'b3-text-field fn__flex-center';
+        input.value = settings.lunchBreakStart;
+        input.addEventListener('change', (e) => {
+          settings.lunchBreakStart = (e.target as HTMLInputElement).value;
         });
-        topBar.appendChild(addDirBtn);
+        return input;
+      }
+    });
 
-        container.appendChild(topBar);
-
-        // 目录列表容器
-        const listContainer = document.createElement('div');
-        listContainer.id = 'directory-list';
-        listContainer.className = 'fn__flex-column';
-        listContainer.style.gap = '4px';
-        container.appendChild(listContainer);
-
-        // 初始渲染目录列表
-        this.renderDirectoriesList(container);
-
-        return container;
+    setting.addItem({
+      title: '午休结束时间',
+      description: '用于计算工作时长时扣除午休时间',
+      createActionElement: () => {
+        const input = document.createElement('input');
+        input.type = 'time';
+        input.className = 'b3-text-field fn__flex-center';
+        input.value = settings.lunchBreakEnd;
+        input.addEventListener('change', (e) => {
+          settings.lunchBreakEnd = (e.target as HTMLInputElement).value;
+        });
+        return input;
       }
     });
 
@@ -528,6 +528,20 @@ export default class HKWorkPlugin extends Plugin {
       pathInput.addEventListener('input', (e) => {
         settings.directories[index].path = (e.target as HTMLInputElement).value;
       });
+      // 第一个输入框：避免弹框打开时被自动聚焦
+      if (index === 0) {
+        const created = Date.now();
+        pathInput.addEventListener(
+          'focus',
+          function onFirstFocus() {
+            if (Date.now() - created < 300) {
+              requestAnimationFrame(() => pathInput.blur());
+            }
+            pathInput.removeEventListener('focus', onFirstFocus);
+          },
+          { once: true }
+        );
+      }
 
       // 分组选择器
       const groupSelect = document.createElement('select');
