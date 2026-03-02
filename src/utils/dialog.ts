@@ -104,58 +104,72 @@ export function showItemDetailModal(item: Item): Dialog {
     );
   }
 
-  // 任务级别样式
-  const levelClass = `level-${item.task?.level?.toLowerCase() || 'l1'}`;
-  const levelHtml = item.task
-    ? `<span class="task-level ${levelClass}">${item.task.level}</span> ${item.task.name}`
-    : '';
-
-  // 项目链接
+  // 项目链接和任务链接
   const projectLinks = item.project?.links || [];
   const taskLinks = item.task?.links || [];
 
-  // 构建内容
+  // 构建链接 HTML
+  const projectLinksHtml = projectLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+  const taskLinksHtml = taskLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+
+  // 构建内容 - 垂直卡片布局
   let content = '<div class="sy-dialog-content">';
+  content += '<div class="sy-dialog-cards">';
 
-  // 内容
-  content += createInfoRow('内容:', item.content, 'content-value');
-
-  // 日期
-  content += createInfoRow('日期:', formatDateLabel(item.date, '今天', '明天'));
-
-  // 时间
-  if (timeDisplay) {
-    content += createInfoRow('时间:', timeDisplay);
-  }
-
-  // 时长
-  if (duration) {
-    content += createInfoRow('时长:', duration);
-  }
-
-  // 项目
+  // 项目卡片
   if (item.project) {
-    content += createInfoRow('项目:', item.project.name);
+    content += `
+      <div class="sy-dialog-card">
+        <div class="sy-dialog-card-title">📁 项目</div>
+        <div class="sy-dialog-card-content">${item.project.name}</div>
+        ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
+      </div>
+    `;
   }
 
-  // 项目链接（紧跟项目名）
-  content += createLinksRow('项目链接:', projectLinks);
-
-  // 任务
+  // 任务卡片
   if (item.task) {
-    content += createInfoRow('任务:', levelHtml);
+    const levelHtml = item.task.level
+      ? `<span class="task-level level-${item.task.level.toLowerCase()}">${item.task.level}</span>`
+      : '';
+    content += `
+      <div class="sy-dialog-card">
+        <div class="sy-dialog-card-title">📝 任务</div>
+        <div class="sy-dialog-card-content">${item.task.name}</div>
+        <div class="sy-dialog-card-footer">
+          ${levelHtml}
+          ${taskLinksHtml}
+        </div>
+      </div>
+    `;
   }
 
-  // 任务链接（紧跟任务名）
-  content += createLinksRow('任务链接:', taskLinks);
+  // 事项卡片
+  const dateLabel = formatDateLabel(item.date, '今天', '明天');
+  content += `
+    <div class="sy-dialog-card sy-dialog-item-card">
+      <div class="sy-dialog-card-title">📋 事项</div>
+      <div class="sy-dialog-item-meta">
+        <div class="sy-dialog-item-time">📅 ${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}</div>
+        ${duration ? `<div class="sy-dialog-item-time">⏱️ ${duration}</div>` : ''}
+      </div>
+      ${item.content ? `<div class="sy-dialog-item-content">${item.content}</div>` : ''}
+    </div>
+  `;
+
+  content += '</div>'; // 结束 cards
 
   // 按钮
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
-        { text: '打开文档', class: 'b3-button--outline', action: 'open-doc' },
+        { text: '取消', class: 'b3-button--outline', action: 'close' },
         { text: '在日历中查看', class: 'b3-button--outline', action: 'open-calendar' },
-        { text: '关闭', class: '', action: 'close' },
+        { text: '打开文档', class: 'b3-button--text', action: 'open-doc' },
       ])}
     </div>
   `;
@@ -165,7 +179,7 @@ export function showItemDetailModal(item: Item): Dialog {
   const dialog = createDialog({
     title: '事项详情',
     content,
-    width: '480px',
+    width: '520px',
   });
 
   // 绑定按钮事件
@@ -189,7 +203,38 @@ export function showItemDetailModal(item: Item): Dialog {
     });
   });
 
+  // 绑定链接点击事件
+  element.querySelectorAll('.sy-dialog-link-tag').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const url = (e.currentTarget as HTMLAnchorElement).href;
+      if (url) {
+        window.open(url, '_blank');
+      }
+    });
+  });
+
   return dialog;
+}
+
+/**
+ * 生成链接分组 HTML
+ */
+function createLinkGroup(title: string, links: Array<{ name: string; url: string }>): string {
+  if (!links || links.length === 0) return '';
+
+  const linksHtml = links.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+
+  return `
+    <div class="sy-dialog-link-group">
+      <div class="sy-dialog-link-group-title">${title}</div>
+      <div class="sy-dialog-link-group-items">
+        ${linksHtml}
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -221,54 +266,70 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     );
   }
 
-  // 项目链接
+  // 项目链接和任务链接
   const projectLinks = props.projectLinks || [];
   const taskLinks = props.taskLinks || [];
 
-  // 构建内容
+  // 构建链接 HTML
+  const projectLinksHtml = projectLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+  const taskLinksHtml = taskLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+
+  // 构建内容 - 垂直卡片布局
   let content = '<div class="sy-dialog-content">';
+  content += '<div class="sy-dialog-cards">';
 
-  // 时间
-  content += createInfoRow('时间:', timeDisplay);
-
-  // 时长
-  if (duration) {
-    content += createInfoRow('时长:', duration);
-  }
-
-  // 项目
+  // 项目卡片
   if (props.project) {
-    content += createInfoRow('项目:', props.project);
+    content += `
+      <div class="sy-dialog-card">
+        <div class="sy-dialog-card-title">📁 项目</div>
+        <div class="sy-dialog-card-content">${props.project}</div>
+        ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
+      </div>
+    `;
   }
 
-  // 项目链接（紧跟项目名）
-  content += createLinksRow('项目链接:', projectLinks);
-
-  // 任务
+  // 任务卡片
   if (props.task) {
-    content += createInfoRow('任务:', props.task);
+    const levelHtml = props.level
+      ? `<span class="task-level level-${props.level.toLowerCase()}">${props.level}</span>`
+      : '';
+    content += `
+      <div class="sy-dialog-card">
+        <div class="sy-dialog-card-title">📝 任务</div>
+        <div class="sy-dialog-card-content">${props.task}</div>
+        <div class="sy-dialog-card-footer">
+          ${levelHtml}
+          ${taskLinksHtml}
+        </div>
+      </div>
+    `;
   }
 
-  // 任务链接（紧跟任务名）
-  content += createLinksRow('任务链接:', taskLinks);
+  // 事项卡片
+  content += `
+    <div class="sy-dialog-card sy-dialog-item-card">
+      <div class="sy-dialog-card-title">📋 事项</div>
+      <div class="sy-dialog-item-meta">
+        <div class="sy-dialog-item-time">📅 ${timeDisplay}</div>
+        ${duration ? `<div class="sy-dialog-item-time">⏱️ ${duration}</div>` : ''}
+      </div>
+      ${props.item ? `<div class="sy-dialog-item-content">${props.item}</div>` : ''}
+    </div>
+  `;
 
-  // 级别
-  if (props.level) {
-    const levelClass = `level-${props.level.toLowerCase()}`;
-    content += createInfoRow('级别:', `<span class="task-level ${levelClass}">${props.level}</span>`);
-  }
-
-  // 事项内容
-  if (props.item) {
-    content += createInfoRow('事项:', props.item);
-  }
+  content += '</div>'; // 结束 cards
 
   // 按钮
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
-        { text: '打开文档', class: 'b3-button--outline', action: 'open-doc' },
-        { text: '关闭', class: '', action: 'close' },
+        { text: '取消', class: 'b3-button--outline', action: 'close' },
+        { text: '打开文档', class: 'b3-button--text', action: 'open-doc' },
       ])}
     </div>
   `;
@@ -276,9 +337,9 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   content += '</div>';
 
   const dialog = createDialog({
-    title: event.title || '事件详情',
+    title: event.title || '事项详情',
     content,
-    width: '480px',
+    width: '520px',
   });
 
   // 绑定按钮事件
@@ -292,6 +353,17 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
         dialog.destroy();
       } else if (action === 'close') {
         dialog.destroy();
+      }
+    });
+  });
+
+  // 绑定链接点击事件
+  element.querySelectorAll('.sy-dialog-link-tag').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const url = (e.currentTarget as HTMLAnchorElement).href;
+      if (url) {
+        window.open(url, '_blank');
       }
     });
   });
