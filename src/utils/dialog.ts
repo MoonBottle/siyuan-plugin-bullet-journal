@@ -11,6 +11,12 @@ import { usePlugin } from '@/main';
 import { eventBus, Events } from './eventBus';
 import { TAB_TYPES } from '@/constants';
 
+// 复制图标 SVG
+const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+// 对勾图标 SVG
+const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
 /**
  * 弹框配置
  */
@@ -125,7 +131,10 @@ export function showItemDetailModal(item: Item): Dialog {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">📁 项目</div>
-        <div class="sy-dialog-card-content">${item.project.name}</div>
+        <div class="sy-dialog-card-content">
+          <span>${item.project.name}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${item.project.name}">${copyIconSvg}</button>
+        </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
     `;
@@ -139,7 +148,10 @@ export function showItemDetailModal(item: Item): Dialog {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">📝 任务</div>
-        <div class="sy-dialog-card-content">${item.task.name}</div>
+        <div class="sy-dialog-card-content">
+          <span>${item.task.name}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${item.task.name}">${copyIconSvg}</button>
+        </div>
         <div class="sy-dialog-card-footer">
           ${levelHtml}
           ${taskLinksHtml}
@@ -150,14 +162,28 @@ export function showItemDetailModal(item: Item): Dialog {
 
   // 事项卡片
   const dateLabel = formatDateLabel(item.date, '今天', '明天');
+  const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">📋 事项</div>
       <div class="sy-dialog-item-meta">
-        <div class="sy-dialog-item-time">📅 ${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}</div>
-        ${duration ? `<div class="sy-dialog-item-time">⏱️ ${duration}</div>` : ''}
+        <div class="sy-dialog-item-time">
+          <span>📅 ${timeText}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${timeText}">${copyIconSvg}</button>
+        </div>
+        ${duration ? `
+          <div class="sy-dialog-item-time">
+            <span>⏱️ ${duration}</span>
+            <button class="sy-dialog-copy-btn" data-copy="${duration}">${copyIconSvg}</button>
+          </div>
+        ` : ''}
       </div>
-      ${item.content ? `<div class="sy-dialog-item-content">${item.content}</div>` : ''}
+      ${item.content ? `
+        <div class="sy-dialog-item-content">
+          <span>${item.content}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${item.content}">${copyIconSvg}</button>
+        </div>
+      ` : ''}
     </div>
   `;
 
@@ -210,6 +236,27 @@ export function showItemDetailModal(item: Item): Dialog {
       const url = (e.currentTarget as HTMLAnchorElement).href;
       if (url) {
         window.open(url, '_blank');
+      }
+    });
+  });
+
+  // 绑定复制按钮事件
+  element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const text = (e.currentTarget as HTMLElement).dataset.copy;
+      if (text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          const btnEl = e.currentTarget as HTMLElement;
+          btnEl.innerHTML = checkIconSvg;
+          btnEl.classList.add('copied');
+          setTimeout(() => {
+            btnEl.innerHTML = copyIconSvg;
+            btnEl.classList.remove('copied');
+          }, 2000);
+        } catch (err) {
+          console.error('复制失败:', err);
+        }
       }
     });
   });
@@ -287,7 +334,10 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">📁 项目</div>
-        <div class="sy-dialog-card-content">${props.project}</div>
+        <div class="sy-dialog-card-content">
+          <span>${props.project}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${props.project}">${copyIconSvg}</button>
+        </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
     `;
@@ -301,7 +351,10 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">📝 任务</div>
-        <div class="sy-dialog-card-content">${props.task}</div>
+        <div class="sy-dialog-card-content">
+          <span>${props.task}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${props.task}">${copyIconSvg}</button>
+        </div>
         <div class="sy-dialog-card-footer">
           ${levelHtml}
           ${taskLinksHtml}
@@ -315,10 +368,23 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">📋 事项</div>
       <div class="sy-dialog-item-meta">
-        <div class="sy-dialog-item-time">📅 ${timeDisplay}</div>
-        ${duration ? `<div class="sy-dialog-item-time">⏱️ ${duration}</div>` : ''}
+        <div class="sy-dialog-item-time">
+          <span>📅 ${timeDisplay}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${timeDisplay}">${copyIconSvg}</button>
+        </div>
+        ${duration ? `
+          <div class="sy-dialog-item-time">
+            <span>⏱️ ${duration}</span>
+            <button class="sy-dialog-copy-btn" data-copy="${duration}">${copyIconSvg}</button>
+          </div>
+        ` : ''}
       </div>
-      ${props.item ? `<div class="sy-dialog-item-content">${props.item}</div>` : ''}
+      ${props.item ? `
+        <div class="sy-dialog-item-content">
+          <span>${props.item}</span>
+          <button class="sy-dialog-copy-btn" data-copy="${props.item}">${copyIconSvg}</button>
+        </div>
+      ` : ''}
     </div>
   `;
 
@@ -364,6 +430,27 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       const url = (e.currentTarget as HTMLAnchorElement).href;
       if (url) {
         window.open(url, '_blank');
+      }
+    });
+  });
+
+  // 绑定复制按钮事件
+  element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const text = (e.currentTarget as HTMLElement).dataset.copy;
+      if (text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          const btnEl = e.currentTarget as HTMLElement;
+          btnEl.innerHTML = checkIconSvg;
+          btnEl.classList.add('copied');
+          setTimeout(() => {
+            btnEl.innerHTML = copyIconSvg;
+            btnEl.classList.remove('copied');
+          }, 2000);
+        } catch (err) {
+          console.error('复制失败:', err);
+        }
       }
     });
   });
