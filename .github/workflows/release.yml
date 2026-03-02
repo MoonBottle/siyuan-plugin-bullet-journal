@@ -47,5 +47,6 @@ jobs:
           files: |
             package.zip
           generate_release_notes: true
+          draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
