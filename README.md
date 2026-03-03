@@ -11,6 +11,7 @@ A Bullet Journal style task management plugin for SiYuan Note. Calendar, Gantt c
 - Todo sidebar: context menu and hover actions for all groups (detail, calendar, etc.)
 - Item detail modal: card layout, copy duration button, icons and tooltips
 - Calendar and dialog styles adapted to SiYuan theme
+- i18n: Plugin UI follows SiYuan language setting (Chinese/English)
 
 ## Features
 

@@ -10,6 +10,7 @@
 ### Fixes
 
 - 统一详情弹框标题为「事项详情」
+- 国际化修复：使用 `window.siyuan.config.lang` 检测语言；修复 en_US 等 locale 大小写不敏感匹配；右键菜单改用 `t()` 随思源语言切换
 
 ### Styles
 
