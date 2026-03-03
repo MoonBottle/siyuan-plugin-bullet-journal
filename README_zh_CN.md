@@ -1,6 +1,8 @@
 # 子弹笔记助手
 
-[English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md) | 当前版本：0.6.0 | [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md)
+![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
+
+[English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md) | [简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README_zh_CN.md)
 
 采用子弹笔记风格的任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
 
