@@ -109,19 +109,20 @@
     margin-bottom: 10px;
   }
 
-  .sy-dialog-item-time {
+  // 时间行（时间和时长在同一行）
+  .sy-dialog-item-time-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     font-size: 13px;
     color: var(--b3-theme-on-surface);
+  }
 
-    span {
-      display: inline;
-    }
-
-    .sy-dialog-copy-btn {
-      display: inline-flex;
-      vertical-align: middle;
-      margin-left: 6px;
-    }
+  .sy-dialog-time-text,
+  .sy-dialog-duration-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .sy-dialog-item-content {
@@ -159,6 +160,8 @@
   flex-shrink: 0;
   margin-left: 4px;
   color: var(--b3-theme-on-surface);
+  position: relative;
+  vertical-align: middle;
 
   &:hover {
     opacity: 1;
@@ -173,6 +176,9 @@
   svg {
     width: 14px;
     height: 14px;
+    display: block;
+    fill: currentColor;
+    pointer-events: none;
   }
 }
 

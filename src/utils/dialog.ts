@@ -11,11 +11,11 @@ import { usePlugin } from '@/main';
 import { eventBus, Events } from './eventBus';
 import { TAB_TYPES } from '@/constants';
 
-// 复制图标 SVG
-const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+// 复制图标 SVG (使用 fill 而不是 stroke)
+const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
 
 // 对勾图标 SVG
-const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
 
 /**
  * 弹框配置
@@ -133,7 +133,7 @@ export function showItemDetailModal(item: Item): Dialog {
         <div class="sy-dialog-card-title">📁 项目</div>
         <div class="sy-dialog-card-content">
           <span>${item.project.name}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${item.project.name}">${copyIconSvg}</button>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.project.name}" aria-label="复制">${copyIconSvg}</span>
         </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
@@ -150,7 +150,7 @@ export function showItemDetailModal(item: Item): Dialog {
         <div class="sy-dialog-card-title">📝 任务</div>
         <div class="sy-dialog-card-content">
           <span>${item.task.name}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${item.task.name}">${copyIconSvg}</button>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.task.name}" aria-label="复制">${copyIconSvg}</span>
         </div>
         <div class="sy-dialog-card-footer">
           ${levelHtml}
@@ -167,21 +167,15 @@ export function showItemDetailModal(item: Item): Dialog {
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">📋 事项</div>
       <div class="sy-dialog-item-meta">
-        <div class="sy-dialog-item-time">
-          <span>📅 ${timeText}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${timeText}">${copyIconSvg}</button>
+        <div class="sy-dialog-item-time-row">
+          <span class="sy-dialog-time-text">📅 ${timeText}</span>
+          ${duration ? `<span class="sy-dialog-duration-text">⏱️ ${duration}</span>` : ''}
         </div>
-        ${duration ? `
-          <div class="sy-dialog-item-time">
-            <span>⏱️ ${duration}</span>
-            <button class="sy-dialog-copy-btn" data-copy="${duration}">${copyIconSvg}</button>
-          </div>
-        ` : ''}
       </div>
       ${item.content ? `
         <div class="sy-dialog-item-content">
           <span>${item.content}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${item.content}">${copyIconSvg}</button>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.content}" aria-label="复制">${copyIconSvg}</span>
         </div>
       ` : ''}
     </div>
@@ -336,7 +330,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
         <div class="sy-dialog-card-title">📁 项目</div>
         <div class="sy-dialog-card-content">
           <span>${props.project}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${props.project}">${copyIconSvg}</button>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.project}" aria-label="复制">${copyIconSvg}</span>
         </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
@@ -353,7 +347,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
         <div class="sy-dialog-card-title">📝 任务</div>
         <div class="sy-dialog-card-content">
           <span>${props.task}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${props.task}">${copyIconSvg}</button>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="复制">${copyIconSvg}</span>
         </div>
         <div class="sy-dialog-card-footer">
           ${levelHtml}
@@ -368,21 +362,15 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">📋 事项</div>
       <div class="sy-dialog-item-meta">
-        <div class="sy-dialog-item-time">
-          <span>📅 ${timeDisplay}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${timeDisplay}">${copyIconSvg}</button>
+        <div class="sy-dialog-item-time-row">
+          <span class="sy-dialog-time-text">📅 ${timeDisplay}</span>
+          ${duration ? `<span class="sy-dialog-duration-text">⏱️ ${duration}</span>` : ''}
         </div>
-        ${duration ? `
-          <div class="sy-dialog-item-time">
-            <span>⏱️ ${duration}</span>
-            <button class="sy-dialog-copy-btn" data-copy="${duration}">${copyIconSvg}</button>
-          </div>
-        ` : ''}
       </div>
       ${props.item ? `
         <div class="sy-dialog-item-content">
           <span>${props.item}</span>
-          <button class="sy-dialog-copy-btn" data-copy="${props.item}">${copyIconSvg}</button>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.item}" aria-label="复制">${copyIconSvg}</span>
         </div>
       ` : ''}
     </div>
