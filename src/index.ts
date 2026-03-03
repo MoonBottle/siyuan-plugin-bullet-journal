@@ -313,7 +313,7 @@ export default class HKWorkPlugin extends Plugin {
 
         const addDirBtn = document.createElement('button');
         addDirBtn.className = 'b3-button b3-button--outline fn__flex-center';
-        addDirBtn.textContent = '+ 添加目录';
+        addDirBtn.textContent = '+ ' + t('settings').projectDirectories.addButton;
         addDirBtn.addEventListener('click', () => {
           const newDir: ProjectDirectory = {
             id: 'dir-' + Date.now(),
@@ -695,7 +695,7 @@ export default class HKWorkPlugin extends Plugin {
         position: 'RightBottom',
         size: { width: 320, height: 400 },
         icon: 'iconList',
-        title: '待办事项'
+        title: t('todo').title
       },
       data: {},
       type: DOCK_TYPES.TODO,
@@ -720,26 +720,26 @@ export default class HKWorkPlugin extends Plugin {
     // 子弹笔记主菜单按钮
     this.addTopBar({
       icon: 'iconCalendar',
-      title: '子弹笔记助手',
+      title: t('title'),
       callback: (event: MouseEvent) => {
         const menu = new Menu('bullet-journal-menu');
         menu.addItem({
           icon: 'iconCalendar',
-          label: '日历视图',
+          label: t('calendar').title,
           click: () => {
             this.openCustomTab(TAB_TYPES.CALENDAR);
           }
         });
         menu.addItem({
           icon: 'iconGraph',
-          label: '甘特图',
+          label: t('gantt').title,
           click: () => {
             this.openCustomTab(TAB_TYPES.GANTT);
           }
         });
         menu.addItem({
           icon: 'iconFolder',
-          label: '项目列表',
+          label: t('project').title,
           click: () => {
             this.openCustomTab(TAB_TYPES.PROJECT);
           }
@@ -792,11 +792,11 @@ export default class HKWorkPlugin extends Plugin {
    */
   private getTabTitle(type: string): string {
     const titles: Record<string, string> = {
-      [TAB_TYPES.CALENDAR]: '日历',
-      [TAB_TYPES.GANTT]: '甘特图',
-      [TAB_TYPES.PROJECT]: '项目'
+      [TAB_TYPES.CALENDAR]: t('calendar').title,
+      [TAB_TYPES.GANTT]: t('gantt').title,
+      [TAB_TYPES.PROJECT]: t('project').title
     };
-    return titles[type] || '子弹笔记';
+    return titles[type] || t('title');
   }
 
   /**
