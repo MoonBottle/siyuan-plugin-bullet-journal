@@ -2,6 +2,26 @@
 /* FullCalendar v6 样式已内联到 JS 中，无需导入 CSS */
 /* DHTMLX Gantt 样式需要单独处理 */
 
+/* ============================================
+   FullCalendar 样式 - 适配思源主题
+   ============================================ */
+
+.fc {
+  --fc-border-color: var(--b3-border-color);
+  --fc-button-bg-color: var(--b3-theme-primary);
+  --fc-button-border-color: var(--b3-theme-primary);
+  --fc-button-hover-bg-color: var(--b3-theme-primary-light);
+  --fc-button-hover-border-color: var(--b3-theme-primary-light);
+  --fc-button-active-bg-color: var(--b3-theme-primary);
+  --fc-button-active-border-color: var(--b3-theme-primary);
+  --fc-event-bg-color: var(--b3-theme-primary);
+  --fc-event-border-color: var(--b3-theme-primary);
+  --fc-page-bg-color: var(--b3-theme-background);
+  --fc-today-bg-color: var(--b3-theme-primary-lightest);
+  --fc-neutral-bg-color: var(--b3-theme-surface);
+  --fc-list-event-hover-bg-color: var(--b3-theme-surface-light);
+}
+
 .hk-work-plugin-app {
   font-family: var(--b3-font-family);
 }
