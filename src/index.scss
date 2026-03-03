@@ -131,6 +131,20 @@
     }
   }
 
+  // 图标样式（全局可用）
+  .sy-dialog-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+    cursor: default;
+    vertical-align: middle;
+    font-size: 14px;
+    line-height: 1;
+  }
+
   // 事项卡片特殊样式
   .sy-dialog-item-card {
     .sy-dialog-item-meta {
@@ -154,20 +168,6 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-    }
-
-    // 图标样式
-    .sy-dialog-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      opacity: 0.7;
-      cursor: default;
-      vertical-align: middle;
-      font-size: 14px;
-      line-height: 1;
     }
 
     .sy-dialog-item-content {
