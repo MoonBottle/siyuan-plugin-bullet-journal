@@ -2,7 +2,7 @@
 
 [English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md) | 当前版本：0.6.0 | [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md)
 
-思源笔记子弹笔记风格的工作管理辅助插件，提供日历视图、甘特图和项目列表功能，帮助您可视化管理工作任务。
+采用子弹笔记风格的任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
 
 ### 0.6.0 更新要点
 

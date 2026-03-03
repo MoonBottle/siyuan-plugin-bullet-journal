@@ -12,8 +12,8 @@
     "zh_CN": "子弹笔记助手"
   },
   "description": {
-    "default": "A Bullet Journal style task management assistant plugin with calendar, gantt chart and project views",
-    "zh_CN": "子弹笔记风格的工作管理辅助插件，提供日历、甘特图和项目视图"
+    "default": "Bullet Journal style task management — calendar, gantt chart and project views, all in one",
+    "zh_CN": "子弹笔记风格任务管理，日历、甘特图、项目视图一应俱全"
   },
   "readme": {
     "default": "README.md",
