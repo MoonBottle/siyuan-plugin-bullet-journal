@@ -169,7 +169,12 @@ export function showItemDetailModal(item: Item): Dialog {
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">📅 ${timeText}</span>
-          ${duration ? `<span class="sy-dialog-duration-text">⏱️ ${duration}</span>` : ''}
+          ${duration ? `
+            <span class="sy-dialog-duration-text">
+              ⏱️ ${duration}
+              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="复制">${copyIconSvg}</span>
+            </span>
+          ` : ''}
         </div>
       </div>
       ${item.content ? `
@@ -364,7 +369,12 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">📅 ${timeDisplay}</span>
-          ${duration ? `<span class="sy-dialog-duration-text">⏱️ ${duration}</span>` : ''}
+          ${duration ? `
+            <span class="sy-dialog-duration-text">
+              ⏱️ ${duration}
+              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="复制">${copyIconSvg}</span>
+            </span>
+          ` : ''}
         </div>
       </div>
       ${props.item ? `
