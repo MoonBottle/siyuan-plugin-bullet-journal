@@ -403,7 +403,8 @@ defineExpose({
 
     .fc-event-task {
       font-size: 10px;
-      color: rgba(255, 255, 255, 0.75);
+      color: var(--b3-theme-on-background);
+      opacity: 0.75;
     }
   }
 
