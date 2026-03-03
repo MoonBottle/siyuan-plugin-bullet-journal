@@ -52,6 +52,12 @@
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                    <svg><use xlink:href="#iconInfo"></use></svg>
+                  </span>
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                    <svg><use xlink:href="#iconCalendar"></use></svg>
+                  </span>
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
@@ -258,11 +264,20 @@
               :key="item.id"
               class="todo-item status-completed"
               @click="openItem(item)"
+              @contextmenu.prevent="handleContextMenu($event, item)"
             >
               <div class="item-header">
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                   <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                </div>
+                <div class="item-actions">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                    <svg><use xlink:href="#iconInfo"></use></svg>
+                  </span>
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                    <svg><use xlink:href="#iconCalendar"></use></svg>
+                  </span>
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
@@ -286,11 +301,20 @@
               :key="item.id"
               class="todo-item status-abandoned"
               @click="openItem(item)"
+              @contextmenu.prevent="handleContextMenu($event, item)"
             >
               <div class="item-header">
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                   <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                </div>
+                <div class="item-actions">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                    <svg><use xlink:href="#iconInfo"></use></svg>
+                  </span>
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                    <svg><use xlink:href="#iconCalendar"></use></svg>
+                  </span>
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
