@@ -2,13 +2,13 @@
   <div class="hk-work-tab calendar-tab">
     <div class="block__icons">
       <!-- 导航按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="上一页" @click="handlePrev">
+      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').prev" @click="handlePrev">
         <svg><use xlink:href="#iconLeft"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="下一页" @click="handleNext">
+      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').next" @click="handleNext">
         <svg><use xlink:href="#iconRight"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="今天" @click="handleToday">
+      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').today" @click="handleToday">
         <svg><use xlink:href="#iconCalendar"></use></svg>
       </span>
       <!-- 日期显示 -->
@@ -21,10 +21,10 @@
         v-if="settingsStore.groups.length > 0"
         v-model="selectedGroup"
         :options="groupOptions"
-        placeholder="全部分组"
+        :placeholder="t('settings').projectGroups.allGroups"
       />
       <!-- 刷新按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="刷新" @click="handleRefresh">
+      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
     </div>
@@ -49,6 +49,7 @@ import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
+import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -64,17 +65,17 @@ const filteredCalendarEvents = computed(() => projectStore.getFilteredCalendarEv
 
 // 视图选项
 const viewOptions = [
-  { value: 'dayGridMonth', text: '月' },
-  { value: 'timeGridWeek', text: '周' },
-  { value: 'timeGridDay', text: '日' },
-  { value: 'listWeek', text: '列表' }
+  { value: 'dayGridMonth', text: t('calendar').month },
+  { value: 'timeGridWeek', text: t('calendar').week },
+  { value: 'timeGridDay', text: t('calendar').day },
+  { value: 'listWeek', text: t('calendar').list }
 ];
 
 // 分组选项
 const groupOptions = computed(() => {
-  const options = [{ value: '', text: '全部分组' }];
+  const options = [{ value: '', text: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, text: g.name || '未命名' });
+    options.push({ value: g.id, text: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
 });
@@ -200,21 +201,21 @@ const handleEventClick = async (eventInfo: any) => {
 
 // 处理事件拖拽
 const handleEventDrop = async (eventInfo: any) => {
-  await handleEventChange(eventInfo, '移动');
+  await handleEventChange(eventInfo, 'move');
 };
 
 // 处理事件调整大小
 const handleEventResize = async (eventInfo: any) => {
-  await handleEventChange(eventInfo, '调整');
+  await handleEventChange(eventInfo, 'resize');
 };
 
 // 统一处理事件变化
-const handleEventChange = async (eventInfo: any, action: string) => {
+const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
   const blockId = eventInfo.blockId || eventInfo.extendedProps?.blockId;
   const allDay = eventInfo.allDay;
 
   if (!blockId) {
-    showMessage('无法获取块 ID，请刷新后重试', 'error');
+    showMessage(t('common').blockIdError, 'error');
     return;
   }
 
@@ -249,11 +250,11 @@ const handleEventChange = async (eventInfo: any, action: string) => {
   const success = await updateBlockDateTime(blockId, newDate, newStartTime, newEndTime, allDay);
 
   if (success) {
-    showMessage(`已${action}事项时间`);
+    showMessage(action === 'move' ? t('common').moveSuccess : t('common').resizeSuccess);
     // 刷新数据
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   } else {
-    showMessage(`${action}失败，请重试`, 'error');
+    showMessage(t('common').actionFailed, 'error');
   }
 };
 

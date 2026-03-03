@@ -15,7 +15,7 @@ import type { CalendarEvent } from '@/types/models';
 import { showEventDetailModal, showDatePickerDialog } from '@/utils/dialog';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
-import { getCurrentLocale } from '@/i18n';
+import { getCurrentLocale, t } from '@/i18n';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
 
@@ -145,7 +145,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       },
       onMigrateCustom: async () => {
         if (!item.blockId) return;
-        showDatePickerDialog('选择迁移日期', item.date, async (newDate) => {
+        showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
           await updateBlockDateTime(item.blockId, newDate);
           if (plugin) {
             await projectStore.refresh(plugin, settingsStore.enabledDirectories);
@@ -199,7 +199,7 @@ onMounted(async () => {
       initialView: 'timeGridDay',
       headerToolbar: false, // 禁用默认工具栏，使用自定义工具栏
       eventContent: renderEventContent, // 自定义事件渲染
-      locale: 'zh-cn',
+      locale: getCurrentLocale().startsWith('zh') ? 'zh-cn' : 'en',
       firstDay: 1,
       height: '100%',
       eventDisplay: 'block',

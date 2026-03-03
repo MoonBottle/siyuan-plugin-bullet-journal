@@ -34,6 +34,7 @@ import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
 import type { Project } from '@/types/models';
 import { DataConverter } from '@/utils/dataConverter';
+import { getCurrentLocale, t } from '@/i18n';
 
 interface Props {
   projects: Project[];
@@ -48,9 +49,9 @@ const endDate = ref('');
 const viewMode = ref<'day' | 'week' | 'month'>('day');
 
 const viewModes = [
-  { value: 'day', label: '日' },
-  { value: 'week', label: '周' },
-  { value: 'month', label: '月' }
+  { value: 'day', label: t('gantt').day },
+  { value: 'week', label: t('gantt').week },
+  { value: 'month', label: t('gantt').month }
 ];
 
 let ganttInitialized = false;
@@ -72,9 +73,9 @@ onMounted(() => {
   gantt.config.date_format = '%Y-%m-%d %H:%i';
   gantt.config.xml_date = '%Y-%m-%d %H:%i';
   gantt.config.columns = [
-    { name: 'text', label: '任务名称', width: '*', tree: true },
-    { name: 'start_date', label: '开始', align: 'center', width: 100 },
-    { name: 'end_date', label: '结束', align: 'center', width: 100 }
+    { name: 'text', label: t('gantt').taskName, width: '*', tree: true },
+    { name: 'start_date', label: t('gantt').startTime, align: 'center', width: 100 },
+    { name: 'end_date', label: t('gantt').endTime, align: 'center', width: 100 }
   ];
   gantt.config.open_tree_initially = true;
   gantt.config.bar_height = 28;
@@ -109,8 +110,8 @@ onMounted(() => {
     ">${task.text}</span>`;
   };
 
-  // 本地化 - 使用内置中文
-  gantt.i18n.setLocale('cn');
+  // 本地化 - 根据插件语言设置
+  gantt.i18n.setLocale(getCurrentLocale().startsWith('zh') ? 'cn' : 'en');
 
   // 设置初始视图模式
   setScaleConfig(viewMode.value);

@@ -11,6 +11,10 @@
   "gantt": {
     "title": "Gantt Chart",
     "showItems": "Show Items",
+    "showWorkItems": "Show work items",
+    "dateFilter": "Date filter",
+    "start": "Start",
+    "end": "End",
     "day": "Day",
     "week": "Week",
     "month": "Month",
@@ -23,15 +27,50 @@
   "project": {
     "title": "Projects",
     "taskCount": "Tasks",
+    "tasksUnit": "tasks",
+    "itemsLabel": "Items",
     "noProjects": "No projects",
-    "noTasks": "No tasks"
+    "noTasks": "No tasks",
+    "noProjectsData": "No project data",
+    "configureDirHint": "Please configure notebook directory in settings",
+    "dirStructureHint": "Project documents should be placed under work/YYYY/project/"
   },
   "todo": {
     "title": "Todo",
     "today": "Today",
     "tomorrow": "Tomorrow",
     "allDay": "All Day",
-    "noTodos": "No pending items"
+    "noTodos": "No pending items",
+    "expired": "Expired",
+    "completed": "Completed",
+    "abandoned": "Abandoned",
+    "future": "Future",
+    "complete": "Complete",
+    "migrate": "Migrate",
+    "migrateToday": "Today",
+    "migrateTomorrow": "Tomorrow",
+    "chooseDate": "Choose date...",
+    "chooseMigrateDate": "Choose migrate date",
+    "abandon": "Abandon",
+    "openDoc": "Open Document",
+    "viewDetail": "View Detail",
+    "viewCalendar": "View Calendar",
+    "detail": "Detail",
+    "itemDetail": "Item Detail",
+    "project": "Project",
+    "task": "Task",
+    "item": "Item",
+    "copy": "Copy",
+    "time": "Time",
+    "duration": "Duration",
+    "viewInCalendar": "View in Calendar",
+    "calendar": "Calendar",
+    "migrateToTomorrow": "Migrate to tomorrow",
+    "migrateToToday": "Migrate to today",
+    "showCompleted": "Show completed",
+    "hideCompleted": "Hide completed",
+    "showAbandoned": "Show abandoned",
+    "hideAbandoned": "Hide abandoned"
   },
   "settings": {
     "title": "Settings",
@@ -47,6 +86,11 @@
         "description": "Lunch break end time"
       }
     },
+    "groupManage": {
+      "title": "Group Management",
+      "description": "Create and manage project groups",
+      "defaultLabel": "Default: "
+    },
     "projectGroups": {
       "title": "Project Groups",
       "description": "Configure project groups for categorization",
@@ -60,6 +104,10 @@
       "noGroup": "No Group",
       "unnamed": "Unnamed"
     },
+    "dirConfig": {
+      "title": "Directory Config",
+      "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as bullet journal directory\" to add quickly."
+    },
     "projectDirectories": {
       "title": "Project Directories",
       "addButton": "Add Directory",
@@ -67,16 +115,30 @@
       "deleteButton": "Delete",
       "dialogTitle": "Select Project Directory",
       "emptyMessage": "No directories configured",
-      "noPath": "No path set"
+      "noPath": "No path set",
+      "pathPlaceholder": "e.g. work/2026/project"
     }
   },
+  "calendarNav": {
+    "prev": "Previous",
+    "next": "Next",
+    "today": "Today"
+  },
   "common": {
+    "more": "More",
     "loading": "Loading...",
     "refresh": "Refresh",
     "back": "Back",
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "copy": "Copy",
     "save": "Save",
-    "dataRefreshed": "Data refreshed"
+    "dataRefreshed": "Data refreshed",
+    "blockIdError": "Cannot get block ID, please refresh and retry",
+    "moveSuccess": "Item time moved",
+    "resizeSuccess": "Item time resized",
+    "actionFailed": "Failed, please retry",
+    "dirsSet": "{count} bullet journal directories set",
+    "dirsExist": "Selected directories already exist in settings"
   }
 }

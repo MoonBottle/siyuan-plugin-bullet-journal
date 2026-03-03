@@ -11,6 +11,10 @@
   "gantt": {
     "title": "甘特图",
     "showItems": "显示事项",
+    "showWorkItems": "显示工作事项",
+    "dateFilter": "日期筛选",
+    "start": "开始",
+    "end": "结束",
     "day": "日",
     "week": "周",
     "month": "月",
@@ -23,15 +27,50 @@
   "project": {
     "title": "项目列表",
     "taskCount": "任务数",
+    "tasksUnit": "个任务",
+    "itemsLabel": "事项",
     "noProjects": "暂无项目",
-    "noTasks": "暂无任务"
+    "noTasks": "暂无任务",
+    "noProjectsData": "暂无项目数据",
+    "configureDirHint": "请在设置中配置笔记本目录",
+    "dirStructureHint": "项目文档需放置在 工作安排/YYYY/项目/ 目录下"
   },
   "todo": {
     "title": "待办事项",
     "today": "今天",
     "tomorrow": "明天",
     "allDay": "全天",
-    "noTodos": "暂无待办事项"
+    "noTodos": "暂无待办事项",
+    "expired": "已过期",
+    "completed": "已完成",
+    "abandoned": "已放弃",
+    "future": "未来",
+    "complete": "完成",
+    "migrate": "迁移",
+    "migrateToday": "今天",
+    "migrateTomorrow": "明天",
+    "chooseDate": "选择日期...",
+    "chooseMigrateDate": "选择迁移日期",
+    "abandon": "放弃",
+    "openDoc": "打开文档",
+    "viewDetail": "查看详情",
+    "viewCalendar": "查看日历",
+    "detail": "详情",
+    "itemDetail": "事项详情",
+    "project": "项目",
+    "task": "任务",
+    "item": "事项",
+    "copy": "复制",
+    "time": "时间",
+    "duration": "时长",
+    "viewInCalendar": "在日历中查看",
+    "calendar": "日历",
+    "migrateToTomorrow": "迁移到明天",
+    "migrateToToday": "迁移到今天",
+    "showCompleted": "显示已完成",
+    "hideCompleted": "隐藏已完成",
+    "showAbandoned": "显示已放弃",
+    "hideAbandoned": "隐藏已放弃"
   },
   "settings": {
     "title": "设置",
@@ -47,6 +86,11 @@
         "description": "午休结束时间"
       }
     },
+    "groupManage": {
+      "title": "分组管理",
+      "description": "创建和管理项目分组",
+      "defaultLabel": "默认："
+    },
     "projectGroups": {
       "title": "项目分组",
       "description": "配置项目分组以便分类管理",
@@ -60,6 +104,10 @@
       "noGroup": "无分组",
       "unnamed": "未命名"
     },
+    "dirConfig": {
+      "title": "目录配置",
+      "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为子弹笔记目录」快速添加。"
+    },
     "projectDirectories": {
       "title": "项目目录",
       "addButton": "添加目录",
@@ -67,16 +115,30 @@
       "deleteButton": "删除",
       "dialogTitle": "选择项目目录",
       "emptyMessage": "暂无配置目录",
-      "noPath": "未设置路径"
+      "noPath": "未设置路径",
+      "pathPlaceholder": "如：工作安排/2026/项目"
     }
   },
+  "calendarNav": {
+    "prev": "上一页",
+    "next": "下一页",
+    "today": "今天"
+  },
   "common": {
+    "more": "更多",
     "loading": "加载中...",
     "refresh": "刷新",
     "back": "返回",
     "confirm": "确认",
     "cancel": "取消",
+    "copy": "复制",
     "save": "保存",
-    "dataRefreshed": "数据已刷新"
+    "dataRefreshed": "数据已刷新",
+    "blockIdError": "无法获取块 ID，请刷新后重试",
+    "moveSuccess": "已移动事项时间",
+    "resizeSuccess": "已调整事项时间",
+    "actionFailed": "失败，请重试",
+    "dirsSet": "已设置 {count} 个子弹笔记目录",
+    "dirsExist": "所选目录已存在于设置中"
   }
 }

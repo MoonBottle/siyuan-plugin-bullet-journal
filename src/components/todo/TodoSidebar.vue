@@ -1,10 +1,10 @@
 <template>
   <div class="todo-sidebar">
     <div class="todo-content">
-      <SyLoading v-if="loading" text="加载中..." />
+      <SyLoading v-if="loading" :text="t('common').loading" />
 
       <div v-else-if="todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty">
-        暂无待办事项
+        {{ t('todo').noTodos }}
       </div>
 
       <div v-else class="todo-list">
@@ -15,7 +15,7 @@
               <svg v-if="collapsedSections.expired"><use xlink:href="#iconRight"></use></svg>
               <svg v-else><use xlink:href="#iconDown"></use></svg>
             </span>
-            <span>已过期 ({{ expiredItems.length }})</span>
+            <span>{{ t('todo').expired }} ({{ expiredItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.expired" class="todo-items">
             <div
@@ -33,29 +33,29 @@
                 <div class="item-actions">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="完成"
+                    :aria-label="t('todo').complete"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="迁移到今天"
+                    :aria-label="t('todo').migrateToToday"
                     @click.stop="handleMigrateToday(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="放弃"
+                    :aria-label="t('todo').abandon"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -73,7 +73,7 @@
               <svg v-if="collapsedSections.today"><use xlink:href="#iconRight"></use></svg>
               <svg v-else><use xlink:href="#iconDown"></use></svg>
             </span>
-            <span>今天 ({{ todayItems.length }})</span>
+            <span>{{ t('todo').today }} ({{ todayItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.today" class="todo-items">
             <div
@@ -85,35 +85,35 @@
             >
               <div class="item-header">
                 <div class="item-header-left">
-                  <span class="item-time">{{ formatTime(item) || '全天' }}</span>
+                  <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                   <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
                 <div class="item-actions">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="完成"
+                    :aria-label="t('todo').complete"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="迁移到明天"
+                    :aria-label="t('todo').migrateToTomorrow"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="放弃"
+                    :aria-label="t('todo').abandon"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -131,7 +131,7 @@
               <svg v-if="collapsedSections.tomorrow"><use xlink:href="#iconRight"></use></svg>
               <svg v-else><use xlink:href="#iconDown"></use></svg>
             </span>
-            <span>明天 ({{ tomorrowItems.length }})</span>
+            <span>{{ t('todo').tomorrow }} ({{ tomorrowItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.tomorrow" class="todo-items">
             <div
@@ -143,35 +143,35 @@
             >
               <div class="item-header">
                 <div class="item-header-left">
-                  <span class="item-time">{{ formatTime(item) || '全天' }}</span>
+                  <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                   <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
                 <div class="item-actions">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="完成"
+                    :aria-label="t('todo').complete"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="迁移到明天"
+                    :aria-label="t('todo').migrateToTomorrow"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="放弃"
+                    :aria-label="t('todo').abandon"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -189,7 +189,7 @@
               <svg v-if="collapsedSections.future"><use xlink:href="#iconRight"></use></svg>
               <svg v-else><use xlink:href="#iconDown"></use></svg>
             </span>
-            <span>未来 ({{ futureItems.length }})</span>
+            <span>{{ t('todo').future }} ({{ futureItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.future" class="todo-items">
             <div
@@ -208,35 +208,35 @@
                 >
                   <div class="item-header">
                     <div class="item-header-left">
-                      <span class="item-time">{{ formatTime(item) || '全天' }}</span>
+                      <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                       <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                     </div>
                     <div class="item-actions">
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
-                        aria-label="完成"
+                        :aria-label="t('todo').complete"
                         @click.stop="handleDone(item)"
                       >
                         <svg><use xlink:href="#iconCheck"></use></svg>
                       </span>
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
-                        aria-label="迁移到明天"
+                        :aria-label="t('todo').migrateToTomorrow"
                         @click.stop="handleMigrate(item)"
                       >
                         <svg><use xlink:href="#iconForward"></use></svg>
                       </span>
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
-                        aria-label="放弃"
+                        :aria-label="t('todo').abandon"
                         @click.stop="handleAbandon(item)"
                       >
                         <svg><use xlink:href="#iconCloseRound"></use></svg>
                       </span>
-                      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                         <svg><use xlink:href="#iconInfo"></use></svg>
                       </span>
-                      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                         <svg><use xlink:href="#iconCalendar"></use></svg>
                       </span>
                     </div>
@@ -256,7 +256,7 @@
               <svg v-if="collapsedSections.completed"><use xlink:href="#iconRight"></use></svg>
               <svg v-else><use xlink:href="#iconDown"></use></svg>
             </span>
-            <span>已完成 ({{ completedItems.length }})</span>
+            <span>{{ t('todo').completed }} ({{ completedItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.completed" class="todo-items">
             <div
@@ -272,10 +272,10 @@
                   <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
                 <div class="item-actions">
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -293,7 +293,7 @@
               <svg v-if="collapsedSections.abandoned"><use xlink:href="#iconRight"></use></svg>
               <svg v-else><use xlink:href="#iconDown"></use></svg>
             </span>
-            <span>已放弃 ({{ abandonedItems.length }})</span>
+            <span>{{ t('todo').abandoned }} ({{ abandonedItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.abandoned" class="todo-items">
             <div
@@ -309,10 +309,10 @@
                   <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
                 <div class="item-actions">
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="详情" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="日历" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -338,7 +338,7 @@ import { usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
 import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
-import { getCurrentLocale } from '@/i18n';
+import { getCurrentLocale, t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 
 const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
@@ -437,7 +437,7 @@ const futureDates = computed(() => {
 
 // 格式化日期标签
 const formatDateLabel = (date: string): string => {
-  return formatDateLabelUtil(date, '今天', '明天');
+  return formatDateLabelUtil(date, t('todo').today, t('todo').tomorrow);
 };
 
 // 格式化时间
@@ -523,7 +523,7 @@ const handleMigrateToday = async (item: Item) => {
 const handleMigrateCustom = (item: Item) => {
   if (!item.blockId) return;
   
-  showDatePickerDialog('选择迁移日期', item.date, async (newDate) => {
+  showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
     const success = await updateBlockDateTime(
       item.blockId,
       newDate,

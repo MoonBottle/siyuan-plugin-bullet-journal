@@ -20,9 +20,30 @@ let currentLocale: Translations = zhCN;
 /**
  * 初始化国际化
  */
+function findLocale(lang: string): Translations | undefined {
+  const normalized = lang?.toLowerCase().replace(/_/g, '-') || '';
+  const normalizedAlt = normalized.replace(/-/g, '_');
+  const key = Object.keys(locales).find(
+    (k) =>
+      k.toLowerCase().replace(/_/g, '-') === normalized ||
+      k.toLowerCase().replace(/-/g, '_') === normalizedAlt
+  );
+  return key ? locales[key] : undefined;
+}
+
 export function initI18n(language?: string) {
   const lang = language?.toLowerCase().replace('_', '-') || 'zh-cn';
-  currentLocale = locales[lang] || locales[lang.replace('-', '_')] || zhCN;
+  const langAlt = lang.replace('-', '_');
+  const found = findLocale(language || '');
+  currentLocale = found || zhCN;
+
+  console.log('[Bullet Journal i18n] initI18n:', {
+    input: language,
+    normalized: lang,
+    langAlt,
+    matched: !!found,
+    usingLocale: currentLocale === zhCN ? 'zhCN' : 'enUS',
+  });
 }
 
 /**

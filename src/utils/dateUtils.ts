@@ -2,6 +2,7 @@
  * 日期工具函数
  * 从 obsidian-hk-work-plugin 移植
  */
+import { getCurrentLocale } from '@/i18n';
 
 // 模块级正则表达式，避免每次调用重新创建
 // 日期时间范围模式: @2026-02-04 10:06:04~11:06:04
@@ -57,15 +58,16 @@ export const formatDateTime = (dateStr: string, isAllDay?: boolean): string => {
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const seconds = date.getSeconds();
+  const locale = getCurrentLocale().startsWith('zh') ? 'zh-CN' : 'en-US';
   if (hours === 0 && minutes === 0 && seconds === 0) {
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
     });
   }
 
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleString(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

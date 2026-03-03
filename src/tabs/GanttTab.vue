@@ -7,7 +7,7 @@
         v-if="settingsStore.groups.length > 0"
         v-model="selectedGroup"
         :options="groupOptions"
-        placeholder="全部分组"
+        :placeholder="t('settings').projectGroups.allGroups"
       />
       <!-- 刷新按钮 -->
       <span
@@ -32,6 +32,7 @@ import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import GanttView from '@/components/gantt/GanttView.vue';
+import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -41,9 +42,9 @@ const selectedGroup = ref('');
 const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value));
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', text: '全部分组' }];
+  const options = [{ value: '', text: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, text: g.name || '未命名' });
+    options.push({ value: g.id, text: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
 });

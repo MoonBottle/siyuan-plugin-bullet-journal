@@ -5,12 +5,12 @@
         v-if="settingsStore.groups.length > 0"
         v-model="selectedGroup"
         :options="groupOptions"
-        placeholder="全部分组"
+        :placeholder="t('settings').projectGroups.allGroups"
       />
       <span class="fn__flex-1 fn__space"></span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="projectStore.loading ? '加载中...' : '刷新'"
+        :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
@@ -33,6 +33,7 @@ import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import ProjectView from '@/components/project/ProjectView.vue';
+import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -42,9 +43,9 @@ const selectedGroup = ref('');
 const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value));
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', text: '全部分组' }];
+  const options = [{ value: '', text: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, text: g.name || '未命名' });
+    options.push({ value: g.id, text: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
 });

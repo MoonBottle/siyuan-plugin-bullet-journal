@@ -1,15 +1,5 @@
-import { IMenu, App, Menu } from 'siyuan';
-import { usePlugin, useApp } from '@/main';
-
-function getAppInstance(): App | null {
-  const app = useApp();
-  if (app) return app;
-  
-  const plugin = usePlugin();
-  if (plugin) return plugin.app;
-  
-  return null;
-}
+import { IMenu, Menu } from 'siyuan';
+import { t } from '@/i18n';
 
 export interface MenuOptions {
   x: number;
@@ -19,26 +9,12 @@ export interface MenuOptions {
 
 export interface MenuItem {
   label?: string;
-  labelEn?: string;
   icon?: string;
   accelerator?: string;
   disabled?: boolean;
   type?: 'separator' | 'submenu';
   submenu?: MenuItem[];
   click?: () => void;
-}
-
-function translateLabel(label: string | undefined, labelEn: string | undefined): string {
-  const app = getAppInstance();
-  if (!app) return label || labelEn || '';
-  
-  const locale = app.i18n?.['core'] || 'zh_CN';
-  const isZh = locale.startsWith('zh');
-  
-  if (isZh) {
-    return label || labelEn || '';
-  }
-  return labelEn || label || '';
 }
 
 export function showContextMenu(options: MenuOptions) {
@@ -52,14 +28,14 @@ export function showContextMenu(options: MenuOptions) {
 
     if (item.submenu && item.submenu.length > 0) {
       const subItems: IMenu[] = item.submenu.map(sub => ({
-        label: translateLabel(sub.label, sub.labelEn),
+        label: sub.label,
         icon: sub.icon,
         disabled: sub.disabled,
         click: sub.click ? () => sub.click!() : undefined
       }));
-      
+
       menu.addItem({
-        label: translateLabel(item.label, item.labelEn),
+        label: item.label,
         type: 'submenu' as const,
         icon: item.icon,
         submenu: subItems
@@ -68,7 +44,7 @@ export function showContextMenu(options: MenuOptions) {
     }
 
     menu.addItem({
-      label: translateLabel(item.label, item.labelEn),
+      label: item.label,
       icon: item.icon,
       accelerator: item.accelerator,
       disabled: item.disabled,
@@ -114,32 +90,27 @@ export function createItemMenu(
 
   if (isPending) {
     items.push({
-      label: '完成',
-      labelEn: 'Complete',
+      label: t('todo').complete,
       icon: 'iconCheck',
       click: handlers.onComplete
     });
 
     items.push({
-      label: '迁移',
-      labelEn: 'Migrate',
+      label: t('todo').migrate,
       icon: 'iconForward',
       submenu: [
         {
-          label: '今天',
-          labelEn: 'Today',
+          label: t('todo').migrateToday,
           icon: 'iconCalendar',
           click: handlers.onMigrateToday
         },
         {
-          label: '明天',
-          labelEn: 'Tomorrow',
+          label: t('todo').migrateTomorrow,
           icon: 'iconCalendar',
           click: handlers.onMigrateTomorrow
         },
         {
-          label: '选择日期...',
-          labelEn: 'Choose date...',
+          label: t('todo').chooseDate,
           icon: 'iconCalendar',
           click: handlers.onMigrateCustom
         }
@@ -147,8 +118,7 @@ export function createItemMenu(
     });
 
     items.push({
-      label: '放弃',
-      labelEn: 'Abandon',
+      label: t('todo').abandon,
       icon: 'iconCloseRound',
       click: handlers.onAbandon
     });
@@ -157,23 +127,20 @@ export function createItemMenu(
   }
 
   items.push({
-    label: '打开文档',
-    labelEn: 'Open Document',
+    label: t('todo').openDoc,
     icon: 'iconOpen',
     click: handlers.onOpenDoc
   });
 
   items.push({
-    label: '查看详情',
-    labelEn: 'View Detail',
+    label: t('todo').viewDetail,
     icon: 'iconInfo',
     click: handlers.onShowDetail
   });
 
   if (showCalendarMenu && handlers.onShowCalendar) {
     items.push({
-      label: '查看日历',
-      labelEn: 'View Calendar',
+      label: t('todo').viewCalendar,
       icon: 'iconCalendar',
       click: handlers.onShowCalendar
     });

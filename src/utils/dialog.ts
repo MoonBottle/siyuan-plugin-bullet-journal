@@ -4,6 +4,7 @@
  */
 import { Dialog } from 'siyuan';
 import type { Item, CalendarEvent } from '@/types/models';
+import { t } from '@/i18n';
 import { formatDateTime, formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
@@ -130,10 +131,10 @@ export function showItemDetailModal(item: Item): Dialog {
   if (item.project) {
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">项目</div>
+        <div class="sy-dialog-card-title">${t('todo').project}</div>
         <div class="sy-dialog-card-content">
           <span>${item.project.name}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.project.name}" aria-label="复制">${copyIconSvg}</span>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.project.name}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
@@ -147,10 +148,10 @@ export function showItemDetailModal(item: Item): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">任务</div>
+        <div class="sy-dialog-card-title">${t('todo').task}</div>
         <div class="sy-dialog-card-content">
           <span>${item.task.name}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.task.name}" aria-label="复制">${copyIconSvg}</span>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.task.name}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
         <div class="sy-dialog-card-footer">
           ${levelHtml}
@@ -161,22 +162,22 @@ export function showItemDetailModal(item: Item): Dialog {
   }
 
   // 事项卡片
-  const dateLabel = formatDateLabel(item.date, '今天', '明天');
+  const dateLabel = formatDateLabel(item.date, t('todo').today, t('todo').tomorrow);
   const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">事项</div>
+      <div class="sy-dialog-card-title">${t('todo').item}</div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
-            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时间">📅</span>
+            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').time}">📅</span>
             ${timeText}
           </span>
           ${duration ? `
             <span class="sy-dialog-duration-text">
-              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时长">⏱️</span>
+              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
               ${duration}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="复制">${copyIconSvg}</span>
+              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="${t('common').copy}">${copyIconSvg}</span>
             </span>
           ` : ''}
         </div>
@@ -184,7 +185,7 @@ export function showItemDetailModal(item: Item): Dialog {
       ${item.content ? `
         <div class="sy-dialog-item-content">
           <span>${item.content}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.content}" aria-label="复制">${copyIconSvg}</span>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.content}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
       ` : ''}
     </div>
@@ -196,9 +197,9 @@ export function showItemDetailModal(item: Item): Dialog {
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
-        { text: '取消', class: 'b3-button--outline', action: 'close' },
-        { text: '在日历中查看', class: 'b3-button--outline', action: 'open-calendar' },
-        { text: '打开文档', class: 'b3-button--text', action: 'open-doc' },
+        { text: t('common').cancel, class: 'b3-button--outline', action: 'close' },
+        { text: t('todo').viewInCalendar, class: 'b3-button--outline', action: 'open-calendar' },
+        { text: t('todo').openDoc, class: 'b3-button--text', action: 'open-doc' },
       ])}
     </div>
   `;
@@ -206,7 +207,7 @@ export function showItemDetailModal(item: Item): Dialog {
   content += '</div>';
 
   const dialog = createDialog({
-    title: '事项详情',
+    title: t('todo').itemDetail,
     content,
     width: '520px',
   });
@@ -339,10 +340,10 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   if (props.project) {
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">项目</div>
+        <div class="sy-dialog-card-title">${t('todo').project}</div>
         <div class="sy-dialog-card-content">
           <span>${props.project}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.project}" aria-label="复制">${copyIconSvg}</span>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.project}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
@@ -356,10 +357,10 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">任务</div>
+        <div class="sy-dialog-card-title">${t('todo').task}</div>
         <div class="sy-dialog-card-content">
           <span>${props.task}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="复制">${copyIconSvg}</span>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
         <div class="sy-dialog-card-footer">
           ${levelHtml}
@@ -372,18 +373,18 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   // 事项卡片
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">事项</div>
+      <div class="sy-dialog-card-title">${t('todo').item}</div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
-            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时间">📅</span>
+            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').time}">📅</span>
             ${timeDisplay}
           </span>
           ${duration ? `
             <span class="sy-dialog-duration-text">
-              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时长">⏱️</span>
+              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
               ${duration}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="复制">${copyIconSvg}</span>
+              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="${t('common').copy}">${copyIconSvg}</span>
             </span>
           ` : ''}
         </div>
@@ -391,7 +392,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       ${props.item ? `
         <div class="sy-dialog-item-content">
           <span>${props.item}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.item}" aria-label="复制">${copyIconSvg}</span>
+          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.item}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
       ` : ''}
     </div>
@@ -403,8 +404,8 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
-        { text: '取消', class: 'b3-button--outline', action: 'close' },
-        { text: '打开文档', class: 'b3-button--text', action: 'open-doc' },
+        { text: t('common').cancel, class: 'b3-button--outline', action: 'close' },
+        { text: t('todo').openDoc, class: 'b3-button--text', action: 'open-doc' },
       ])}
     </div>
   `;
@@ -412,7 +413,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   content += '</div>';
 
   const dialog = createDialog({
-    title: '事项详情',
+    title: t('todo').itemDetail,
     content,
     width: '520px',
   });
@@ -484,8 +485,8 @@ export function showConfirmDialog(
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
-        { text: '取消', class: 'b3-button--cancel', action: 'cancel' },
-        { text: '确认', class: 'b3-button--text', action: 'confirm' },
+        { text: t('common').cancel, class: 'b3-button--cancel', action: 'cancel' },
+        { text: t('common').confirm, class: 'b3-button--text', action: 'confirm' },
       ])}
     </div>
   `;
@@ -605,9 +606,9 @@ export function showDatePickerDialog(
     // 按钮
     content += `
       <div class="sy-dialog-footer">
-        <button class="b3-button b3-button--outline" data-action="today">今天</button>
-        <button class="b3-button b3-button--cancel" data-action="cancel">取消</button>
-        <button class="b3-button b3-button--text" data-action="confirm">确认</button>
+        <button class="b3-button b3-button--outline" data-action="today">${t('todo').today}</button>
+        <button class="b3-button b3-button--cancel" data-action="cancel">${t('common').cancel}</button>
+        <button class="b3-button b3-button--text" data-action="confirm">${t('common').confirm}</button>
       </div>
     `;
     

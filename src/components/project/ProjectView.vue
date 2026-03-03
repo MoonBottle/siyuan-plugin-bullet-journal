@@ -6,9 +6,9 @@
           <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
         </svg>
       </div>
-      <h3>暂无项目数据</h3>
-      <p class="hint">请在设置中配置笔记本目录</p>
-      <p class="hint">项目文档需放置在 <code>工作安排/YYYY/项目/</code> 目录下</p>
+      <h3>{{ t('project').noProjectsData }}</h3>
+      <p class="hint">{{ t('project').configureDirHint }}</p>
+      <p class="hint">{{ t('project').dirStructureHint }}</p>
     </div>
 
     <div v-else class="project-grid">
@@ -20,7 +20,7 @@
       >
         <div class="project-header">
           <h3 class="project-name">{{ project.name }}</h3>
-          <span class="task-count">{{ project.tasks.length }} 个任务</span>
+          <span class="task-count">{{ project.tasks.length }} {{ t('project').tasksUnit }}</span>
         </div>
 
         <p v-if="project.description" class="project-desc">
@@ -42,7 +42,7 @@
           </div>
           <div class="stat">
             <span class="stat-value">{{ getItemCount(project) }}</span>
-            <span class="stat-label">事项</span>
+            <span class="stat-label">{{ t('project').itemsLabel }}</span>
           </div>
         </div>
 
@@ -68,6 +68,7 @@
 
 <script setup lang="ts">
 import type { Project, Task } from '@/types/models';
+import { t } from '@/i18n';
 
 interface Props {
   projects: Project[];

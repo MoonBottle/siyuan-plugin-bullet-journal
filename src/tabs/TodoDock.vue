@@ -3,10 +3,10 @@
     <div class="block__icons">
       <div class="block__logo">
         <svg class="block__logoicon"><use xlink:href="#iconList"></use></svg>
-        待办事项
+        {{ t('todo').title }}
       </div>
       <span class="fn__flex-1 fn__space"></span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="更多" @click="handleMoreClick">
+      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').more" @click="handleMoreClick">
         <svg><use xlink:href="#iconMore"></use></svg>
       </span>
     </div>
@@ -15,7 +15,7 @@
         <SySelect
           v-model="selectedGroup"
           :options="groupOptions"
-          placeholder="全部分组"
+          :placeholder="t('settings').projectGroups.allGroups"
         />
       </div>
       <div class="fn__flex-1 todo-dock-content">
@@ -33,6 +33,7 @@ import { useSettingsStore, useProjectStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -41,9 +42,9 @@ const projectStore = useProjectStore();
 const selectedGroup = ref('');
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', text: '全部分组' }];
+  const options = [{ value: '', text: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, text: g.name || '未命名' });
+    options.push({ value: g.id, text: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
 });
@@ -86,7 +87,7 @@ const handleMoreClick = (event: MouseEvent) => {
   // 刷新选项
   menu.addItem({
     icon: 'iconRefresh',
-    label: '刷新',
+    label: t('common').refresh,
     click: () => {
       handleRefresh();
     },
@@ -99,7 +100,7 @@ const handleMoreClick = (event: MouseEvent) => {
   const hideCompleted = projectStore.hideCompleted;
   menu.addItem({
     icon: hideCompleted ? 'iconEyeoff' : 'iconEye',
-    label: hideCompleted ? '显示已完成' : '隐藏已完成',
+    label: hideCompleted ? t('todo').showCompleted : t('todo').hideCompleted,
     click: () => {
       projectStore.toggleHideCompleted();
     },
@@ -109,7 +110,7 @@ const handleMoreClick = (event: MouseEvent) => {
   const hideAbandoned = projectStore.hideAbandoned;
   menu.addItem({
     icon: hideAbandoned ? 'iconEyeoff' : 'iconEye',
-    label: hideAbandoned ? '显示已放弃' : '隐藏已放弃',
+    label: hideAbandoned ? t('todo').showAbandoned : t('todo').hideAbandoned,
     click: () => {
       projectStore.toggleHideAbandoned();
     },

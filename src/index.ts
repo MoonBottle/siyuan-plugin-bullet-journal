@@ -12,6 +12,7 @@ import ProjectTab from '@/tabs/ProjectTab.vue';
 import TodoDock from '@/tabs/TodoDock.vue';
 import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory, ProjectGroup } from '@/types/models';
+import { t } from '@/i18n';
 
 let PluginInfo = {
   version: '',
@@ -266,12 +267,12 @@ export default class HKWorkPlugin extends Plugin {
         console.log('[Bullet Journal] Settings saved, directories:', settings.directories);
         
         if (addedCount > 0) {
-          showMessage(`已设置 ${addedCount} 个子弹笔记目录`, 3000, 'info');
+          showMessage((t('common') as any).dirsSet?.replace?.('{count}', String(addedCount)) ?? `已设置 ${addedCount} 个子弹笔记目录`, 3000, 'info');
           console.log('[Bullet Journal] Emitting DATA_REFRESH event');
           eventBus.emit(Events.DATA_REFRESH);
           broadcastDataRefresh(this.getSettings() as object);
         } else {
-          showMessage('所选目录已存在于设置中', 3000, 'info');
+          showMessage((t('common') as any).dirsExist ?? '所选目录已存在于设置中', 3000, 'info');
         }
       }
     });
@@ -296,8 +297,8 @@ export default class HKWorkPlugin extends Plugin {
 
     // 1. 目录配置（最重要：决定扫描哪些文档）
     setting.addItem({
-      title: '目录配置',
-      description: '配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为子弹笔记目录」快速添加。',
+      title: t('settings').dirConfig.title,
+      description: t('settings').dirConfig.description,
       direction: 'row',
       createActionElement: () => {
         const container = document.createElement('div');
@@ -343,8 +344,8 @@ export default class HKWorkPlugin extends Plugin {
 
     // 2. 分组管理
     setting.addItem({
-      title: '分组管理',
-      description: '创建和管理项目分组',
+      title: t('settings').groupManage.title,
+      description: t('settings').groupManage.description,
       direction: 'row',
       createActionElement: () => {
         const container = document.createElement('div');
@@ -358,7 +359,7 @@ export default class HKWorkPlugin extends Plugin {
         topBar.style.gap = '8px';
 
         const defaultGroupLabel = document.createElement('span');
-        defaultGroupLabel.textContent = '默认：';
+        defaultGroupLabel.textContent = t('settings').groupManage.defaultLabel;
         defaultGroupLabel.style.fontSize = '12px';
         defaultGroupLabel.style.color = 'var(--b3-theme-on-surface)';
         topBar.appendChild(defaultGroupLabel);
@@ -379,7 +380,7 @@ export default class HKWorkPlugin extends Plugin {
 
         const addGroupBtn = document.createElement('button');
         addGroupBtn.className = 'b3-button b3-button--outline fn__flex-center';
-        addGroupBtn.textContent = '+ 添加分组';
+        addGroupBtn.textContent = '+ ' + t('settings').projectGroups.addButton;
         addGroupBtn.addEventListener('click', () => {
           const newGroup: ProjectGroup = {
             id: 'group-' + Date.now(),
@@ -408,8 +409,8 @@ export default class HKWorkPlugin extends Plugin {
 
     // 3. 午休时间（用于工时计算）
     setting.addItem({
-      title: '午休开始时间',
-      description: '用于计算工作时长时扣除午休时间',
+      title: t('settings').lunchBreak.start.title,
+      description: t('settings').lunchBreak.description,
       createActionElement: () => {
         const input = document.createElement('input');
         input.type = 'time';
@@ -423,8 +424,8 @@ export default class HKWorkPlugin extends Plugin {
     });
 
     setting.addItem({
-      title: '午休结束时间',
-      description: '用于计算工作时长时扣除午休时间',
+      title: t('settings').lunchBreak.end.title,
+      description: t('settings').lunchBreak.description,
       createActionElement: () => {
         const input = document.createElement('input');
         input.type = 'time';
@@ -461,7 +462,7 @@ export default class HKWorkPlugin extends Plugin {
       nameInput.className = 'b3-text-field fn__flex-center';
       nameInput.style.flex = '1';
       nameInput.value = group.name;
-      nameInput.placeholder = '分组名称';
+      nameInput.placeholder = t('settings').projectGroups.namePlaceholder;
       nameInput.addEventListener('input', (e) => {
         settings.groups[index].name = (e.target as HTMLInputElement).value;
         // 更新默认分组下拉框
@@ -524,7 +525,7 @@ export default class HKWorkPlugin extends Plugin {
       pathInput.className = 'b3-text-field fn__flex-center';
       pathInput.style.flex = '1';
       pathInput.value = dir.path;
-      pathInput.placeholder = '如：工作安排/2026/项目';
+      pathInput.placeholder = t('settings').projectDirectories.pathPlaceholder;
       pathInput.addEventListener('input', (e) => {
         settings.directories[index].path = (e.target as HTMLInputElement).value;
       });
@@ -585,11 +586,11 @@ export default class HKWorkPlugin extends Plugin {
    */
   private updateDefaultGroupSelect(select: HTMLSelectElement) {
     const currentValue = settings.defaultGroup;
-    select.innerHTML = '<option value="">无</option>';
+    select.innerHTML = '<option value="">' + t('settings').projectGroups.noGroup + '</option>';
     settings.groups.forEach(group => {
       const option = document.createElement('option');
       option.value = group.id;
-      option.textContent = group.name || '未命名分组';
+      option.textContent = group.name || t('settings').projectGroups.unnamed;
       if (group.id === currentValue) {
         option.selected = true;
       }
@@ -601,11 +602,11 @@ export default class HKWorkPlugin extends Plugin {
    * 填充分组下拉框
    */
   private populateGroupSelect(select: HTMLSelectElement, selectedId?: string) {
-    select.innerHTML = '<option value="">无分组</option>';
+    select.innerHTML = '<option value="">' + t('settings').projectGroups.noGroup + '</option>';
     settings.groups.forEach(group => {
       const option = document.createElement('option');
       option.value = group.id;
-      option.textContent = group.name || '未命名分组';
+      option.textContent = group.name || t('settings').projectGroups.unnamed;
       if (group.id === selectedId) {
         option.selected = true;
       }
