@@ -168,10 +168,14 @@ export function showItemDetailModal(item: Item): Dialog {
       <div class="sy-dialog-card-title">📋 事项</div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
-          <span class="sy-dialog-time-text">📅 ${timeText}</span>
+          <span class="sy-dialog-time-text">
+            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时间">📅</span>
+            ${timeText}
+          </span>
           ${duration ? `
             <span class="sy-dialog-duration-text">
-              ⏱️ ${duration}
+              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时长">⏱️</span>
+              ${duration}
               <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="复制">${copyIconSvg}</span>
             </span>
           ` : ''}
@@ -242,16 +246,19 @@ export function showItemDetailModal(item: Item): Dialog {
   // 绑定复制按钮事件
   element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      const text = (e.currentTarget as HTMLElement).dataset.copy;
+      const btnEl = e.currentTarget as HTMLElement;
+      if (!btnEl) return;
+      const text = btnEl.dataset.copy;
       if (text) {
         try {
           await navigator.clipboard.writeText(text);
-          const btnEl = e.currentTarget as HTMLElement;
           btnEl.innerHTML = checkIconSvg;
           btnEl.classList.add('copied');
           setTimeout(() => {
-            btnEl.innerHTML = copyIconSvg;
-            btnEl.classList.remove('copied');
+            if (btnEl) {
+              btnEl.innerHTML = copyIconSvg;
+              btnEl.classList.remove('copied');
+            }
           }, 2000);
         } catch (err) {
           console.error('复制失败:', err);
@@ -368,10 +375,14 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       <div class="sy-dialog-card-title">📋 事项</div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
-          <span class="sy-dialog-time-text">📅 ${timeDisplay}</span>
+          <span class="sy-dialog-time-text">
+            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时间">📅</span>
+            ${timeDisplay}
+          </span>
           ${duration ? `
             <span class="sy-dialog-duration-text">
-              ⏱️ ${duration}
+              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="时长">⏱️</span>
+              ${duration}
               <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="复制">${copyIconSvg}</span>
             </span>
           ` : ''}
@@ -435,16 +446,19 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   // 绑定复制按钮事件
   element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      const text = (e.currentTarget as HTMLElement).dataset.copy;
+      const btnEl = e.currentTarget as HTMLElement;
+      if (!btnEl) return;
+      const text = btnEl.dataset.copy;
       if (text) {
         try {
           await navigator.clipboard.writeText(text);
-          const btnEl = e.currentTarget as HTMLElement;
           btnEl.innerHTML = checkIconSvg;
           btnEl.classList.add('copied');
           setTimeout(() => {
-            btnEl.innerHTML = copyIconSvg;
-            btnEl.classList.remove('copied');
+            if (btnEl) {
+              btnEl.innerHTML = copyIconSvg;
+              btnEl.classList.remove('copied');
+            }
           }, 2000);
         } catch (err) {
           console.error('复制失败:', err);
