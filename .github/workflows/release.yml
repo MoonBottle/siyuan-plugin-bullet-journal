@@ -36,17 +36,30 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: release
+
+      - name: Extract changelog for version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION_ESC=$(echo "$VERSION" | sed 's/\./\\./g')
+          awk -v ver="$VERSION_ESC" '
+            found && $0 ~ "^## \\[" && $0 !~ "^## \\[" ver "\\]" { exit }
+            $0 ~ "^## \\[" ver "\\]" { found=1 }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
 
       - name: Create Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
             package.zip
-          generate_release_notes: true
+          body_path: release_notes.md
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
