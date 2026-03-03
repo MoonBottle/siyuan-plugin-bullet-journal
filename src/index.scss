@@ -31,121 +31,46 @@
 }
 
 /* ============================================
-   思源原生弹框样式
+   思源原生弹框样式 - 所有样式都在 .sy-dialog-content 作用域内
    ============================================ */
 
 .sy-dialog-content {
   padding: 16px;
-}
 
-// 垂直卡片布局
-.sy-dialog-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-// 卡片样式
-.sy-dialog-card {
-  background: var(--b3-theme-background);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 8px;
-  padding: 12px 16px;
-}
-
-.sy-dialog-card-title {
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.7;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sy-dialog-card-content {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
-  margin-bottom: 10px;
-  word-break: break-word;
-  line-height: 1.4;
-}
-
-.sy-dialog-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-// 链接标签
-.sy-dialog-link-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  background: var(--b3-theme-surface);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-    border-color: var(--b3-theme-primary);
-  }
-}
-
-// 事项卡片特殊样式
-.sy-dialog-item-card {
-  .sy-dialog-item-meta {
+  // 垂直卡片布局
+  .sy-dialog-cards {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 10px;
+    gap: 12px;
   }
 
-  // 时间行（时间和时长在同一行）
-  .sy-dialog-item-time-row {
+  // 卡片样式
+  .sy-dialog-card {
+    background: var(--b3-theme-background);
+    border: 1px solid var(--b3-border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+
+  .sy-dialog-card-title {
+    font-size: 12px;
+    color: var(--b3-theme-on-surface);
+    opacity: 0.7;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    font-size: 13px;
-    color: var(--b3-theme-on-surface);
+    gap: 6px;
   }
 
-  .sy-dialog-time-text,
-  .sy-dialog-duration-text {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  // 图标样式
-  .sy-dialog-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    opacity: 0.7;
-    cursor: default;
-    vertical-align: middle;
-    font-size: 14px;
-    line-height: 1;
-  }
-
-  .sy-dialog-item-content {
-    font-size: 14px;
-    line-height: 1.6;
+  .sy-dialog-card-content {
+    font-size: 15px;
+    font-weight: 500;
     color: var(--b3-theme-on-background);
+    margin-bottom: 10px;
     word-break: break-word;
+    line-height: 1.4;
 
-    span {
+    > span {
       display: inline;
     }
 
@@ -155,122 +80,187 @@
       margin-left: 6px;
     }
   }
-}
 
-// 复制按钮样式
-.sy-dialog-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0.5;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  margin-left: 4px;
-  color: var(--b3-theme-on-surface);
-  position: relative;
-  vertical-align: middle;
+  .sy-dialog-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
-  &:hover {
-    opacity: 1;
+  // 链接标签
+  .sy-dialog-link-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
     background: var(--b3-theme-surface);
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--b3-theme-on-surface);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+      border-color: var(--b3-theme-primary);
+    }
   }
 
-  &.copied {
-    opacity: 1;
-    color: var(--b3-theme-primary);
+  // 事项卡片特殊样式
+  .sy-dialog-item-card {
+    .sy-dialog-item-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    // 时间行（时间和时长在同一行）
+    .sy-dialog-item-time-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--b3-theme-on-surface);
+    }
+
+    .sy-dialog-time-text,
+    .sy-dialog-duration-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    // 图标样式
+    .sy-dialog-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
+      cursor: default;
+      vertical-align: middle;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .sy-dialog-item-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--b3-theme-on-background);
+      word-break: break-word;
+
+      > span {
+        display: inline;
+      }
+
+      .sy-dialog-copy-btn {
+        display: inline-flex;
+        vertical-align: middle;
+        margin-left: 6px;
+      }
+    }
   }
 
-  svg {
-    width: 14px;
-    height: 14px;
-    display: block;
-    fill: currentColor;
-    pointer-events: none;
-  }
-}
-
-// 带复制按钮的内容行布局
-.sy-dialog-card-content {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
-  margin-bottom: 10px;
-  word-break: break-word;
-  line-height: 1.4;
-
-  span {
-    display: inline;
-  }
-
+  // 复制按钮样式
   .sy-dialog-copy-btn {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-left: 4px;
+    color: var(--b3-theme-on-surface);
+    position: relative;
     vertical-align: middle;
-    margin-left: 6px;
+
+    &:hover {
+      opacity: 1;
+      background: var(--b3-theme-surface);
+    }
+
+    &.copied {
+      opacity: 1;
+      color: var(--b3-theme-primary);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+      display: block;
+      fill: currentColor;
+      pointer-events: none;
+    }
+  }
+
+  // 兼容旧样式
+  .sy-dialog-info-row {
+    display: flex;
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .sy-dialog-label {
+    min-width: 80px;
+    font-size: 13px;
+    color: var(--b3-theme-on-surface);
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .sy-dialog-value {
+    flex: 1;
+    font-size: 13px;
+    color: var(--b3-theme-on-background);
+    word-break: break-word;
+
+    &.content-value {
+      font-weight: 500;
+    }
+  }
+
+  .sy-dialog-link {
+    color: var(--b3-theme-primary);
+    text-decoration: none;
+    font-size: 13px;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .sy-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--b3-border-color);
+  }
+
+  .sy-dialog-message {
+    font-size: 14px;
+    color: var(--b3-theme-on-background);
+    line-height: 1.6;
   }
 }
 
-// 兼容旧样式
-.sy-dialog-info-row {
-  display: flex;
-  margin-bottom: 12px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.sy-dialog-label {
-  min-width: 80px;
-  font-size: 13px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-.sy-dialog-value {
-  flex: 1;
-  font-size: 13px;
-  color: var(--b3-theme-on-background);
-  word-break: break-word;
-
-  &.content-value {
-    font-weight: 500;
-  }
-}
-
-.sy-dialog-link {
-  color: var(--b3-theme-primary);
-  text-decoration: none;
-  font-size: 13px;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.sy-dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--b3-border-color);
-}
-
-.sy-dialog-message {
-  font-size: 14px;
-  color: var(--b3-theme-on-background);
-  line-height: 1.6;
-}
-
-/* 任务级别标签样式 */
+/* 任务级别标签样式 - 全局可用 */
 .task-level {
   display: inline-block;
   padding: 2px 6px;
