@@ -412,7 +412,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   content += '</div>';
 
   const dialog = createDialog({
-    title: event.title || '事项详情',
+    title: '事项详情',
     content,
     width: '520px',
   });
