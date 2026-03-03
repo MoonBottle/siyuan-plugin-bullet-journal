@@ -130,7 +130,7 @@ export function showItemDetailModal(item: Item): Dialog {
   if (item.project) {
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title"><span class="sy-dialog-icon">📁</span>项目</div>
+        <div class="sy-dialog-card-title">项目</div>
         <div class="sy-dialog-card-content">
           <span>${item.project.name}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.project.name}" aria-label="复制">${copyIconSvg}</span>
@@ -147,7 +147,7 @@ export function showItemDetailModal(item: Item): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title"><span class="sy-dialog-icon">📝</span>任务</div>
+        <div class="sy-dialog-card-title">任务</div>
         <div class="sy-dialog-card-content">
           <span>${item.task.name}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.task.name}" aria-label="复制">${copyIconSvg}</span>
@@ -165,7 +165,7 @@ export function showItemDetailModal(item: Item): Dialog {
   const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title"><span class="sy-dialog-icon">📋</span>事项</div>
+      <div class="sy-dialog-card-title">事项</div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
@@ -339,7 +339,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   if (props.project) {
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title"><span class="sy-dialog-icon">📁</span>项目</div>
+        <div class="sy-dialog-card-title">项目</div>
         <div class="sy-dialog-card-content">
           <span>${props.project}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.project}" aria-label="复制">${copyIconSvg}</span>
@@ -356,7 +356,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title"><span class="sy-dialog-icon">📝</span>任务</div>
+        <div class="sy-dialog-card-title">任务</div>
         <div class="sy-dialog-card-content">
           <span>${props.task}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="复制">${copyIconSvg}</span>
@@ -372,7 +372,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   // 事项卡片
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title"><span class="sy-dialog-icon">📋</span>事项</div>
+      <div class="sy-dialog-card-title">事项</div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
