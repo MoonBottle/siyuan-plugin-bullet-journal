@@ -168,6 +168,11 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
+
+      .sy-dialog-copy-btn {
+        vertical-align: middle;
+        top: 0;
+      }
     }
 
     .sy-dialog-item-content {
@@ -206,7 +211,8 @@
     margin-left: 4px;
     color: var(--b3-theme-on-surface);
     position: relative;
-    vertical-align: middle;
+    vertical-align: text-bottom;
+    top: -1px;
 
     &:hover {
       opacity: 1;
