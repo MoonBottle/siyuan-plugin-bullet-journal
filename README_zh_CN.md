@@ -94,6 +94,23 @@
 
 详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
+## MCP（Model Context Protocol）
+
+插件内置 MCP 服务器（`sy-bullet-journal-assistant`），可将子弹笔记数据暴露给 Cursor、Claude 等 AI 助手。
+
+**工具：**
+- `list_groups` - 查询所有分组
+- `list_projects` - 查询所有项目（可按分组过滤）
+- `filter_items` - 按项目、时间范围、分组、状态筛选事项
+
+**配置：**
+1. 确保思源已启动且插件已配置
+2. 在思源 设置→关于 中获取 API Token
+3. 在插件设置中点击「复制 MCP 配置」获取 JSON
+4. 将配置添加到 Cursor 设置 → MCP（将 `SIYUAN_TOKEN` 替换为你的 Token；如需自定义思源 API 地址，可设置 `SIYUAN_API_URL`，默认 `http://127.0.0.1:6806`）
+
+**环境变量：** 必配 `SIYUAN_TOKEN`；可选 `SIYUAN_API_URL`，默认 `http://127.0.0.1:6806`。
+
 ## 文档
 
 - [用户指南](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)

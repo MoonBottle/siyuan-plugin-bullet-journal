@@ -90,6 +90,23 @@ Click any task in the view to jump directly to its location in your notes.
 
 For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
 
+## MCP (Model Context Protocol)
+
+The plugin includes an MCP server (`sy-bullet-journal-assistant`) that exposes bullet journal data to AI assistants like Cursor and Claude.
+
+**Tools:**
+- `list_groups` - Query all project groups
+- `list_projects` - Query all projects (optional filter by group)
+- `filter_items` - Filter items by project, time range, group, or status
+
+**Setup:**
+1. Ensure SiYuan is running and the plugin is configured
+2. Get your API Token from SiYuan → Settings → About
+3. In plugin settings, click "Copy MCP Config" to copy the JSON
+4. Add the config to Cursor Settings → MCP (replace `SIYUAN_TOKEN` with your token; optionally set `SIYUAN_API_URL` (default `http://127.0.0.1:6806`) if SiYuan is not on localhost)
+
+**Environment:** `SIYUAN_TOKEN` is required. `SIYUAN_API_URL` is optional (default `http://127.0.0.1:6806`).
+
 ## Documentation
 
 - [User Guide](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/index.md)

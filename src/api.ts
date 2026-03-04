@@ -426,6 +426,22 @@ export async function pandoc(args: PandocArgs[]) {
   return request(url, data);
 }
 
+// **************************************** System ****************************************
+
+/** 获取工作空间信息（含 workspaceDir 绝对路径），部分版本可能不支持 */
+export async function getWorkspaceInfo(): Promise<{ workspaceDir?: string } | null> {
+  const url = '/api/system/getWorkspaceInfo';
+  try {
+    const res = await fetchSyncPost(url, {});
+    if (res?.code === 0 && res?.data) {
+      return res.data as { workspaceDir?: string };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // **************************************** Notification ****************************************
 
 // /api/notification/pushMsg

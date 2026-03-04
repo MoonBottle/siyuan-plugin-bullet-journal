@@ -71,6 +71,10 @@ export default defineConfig(({
             src: "./plugin.json",
             dest: "./",
           },
+          // 开发模式：插件输出到 workspace，需复制 mcp-server.js；生产模式：mcp-server.js 已在 dist 中
+          ...(isWatch
+            ? [{ src: "./dist/mcp-server.js", dest: "./" }]
+            : []),
           {
             src: "./src/i18n/**",
             dest: "./i18n/",
@@ -94,7 +98,7 @@ export default defineConfig(({
     build: {
       // 输出路径
       outDir: distDir,
-      emptyOutDir: !isWatch,
+      emptyOutDir: !isWatch && process.env.EMPTY_OUT_DIR !== 'false',
 
       // 构建后是否生成 source map 文件
       sourcemap: false,
@@ -125,6 +129,7 @@ export default defineConfig(({
                       "src/i18n/*.json",
                       "./README*.md",
                       "./plugin.json",
+                      "dist/mcp-server.js",
                     ])
                     for (const file of files) {
                       this.addWatchFile(file)

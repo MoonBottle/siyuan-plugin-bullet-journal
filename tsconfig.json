@@ -45,7 +45,8 @@
     "tools/**/*.ts",
     "src/**/*.ts",
     "src/**/*.d.ts",
-    "src/**/*.vue"
+    "src/**/*.vue",
+    "test/**/*.ts"
   ],
   "exclude": [
     "node_modules",

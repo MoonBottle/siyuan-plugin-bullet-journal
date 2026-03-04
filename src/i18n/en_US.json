@@ -108,6 +108,13 @@
       "title": "Directory Config",
       "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as bullet journal directory\" to add quickly."
     },
+    "mcp": {
+      "title": "MCP Config",
+      "description": "Expose bullet journal data to AI assistants like Cursor and Claude. Add the config below to Cursor Settings → MCP, and replace SIYUAN_TOKEN with the API Token from SiYuan Settings → About.",
+      "copyButton": "Copy MCP Config",
+      "copySuccess": "MCP config copied to clipboard",
+      "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop"
+    },
     "projectDirectories": {
       "title": "Project Directories",
       "addButton": "Add Directory",

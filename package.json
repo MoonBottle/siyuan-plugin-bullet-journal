@@ -8,13 +8,16 @@
   "homepage": "",
   "repository": "",
   "scripts": {
-    "dev": "vite build --watch",
+    "dev": "vite build --config vite.mcp.config.ts && concurrently \"vite build --config vite.mcp.config.ts -w\" \"vite build -w\"",
     "release": "node ./release.js",
     "release:manual": "node ./release.js --mode=manual",
     "release:patch": "node ./release.js --mode=patch",
     "release:minor": "node ./release.js --mode=minor",
     "release:major": "node ./release.js --mode=major",
-    "build": "vite build"
+    "build": "vite build --config vite.mcp.config.ts && cross-env EMPTY_OUT_DIR=false vite build",
+    "mcp": "node dist/mcp-server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
@@ -28,9 +31,13 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.8.1",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@types/node": "^20.2.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.7.0",
+    "concurrently": "^9.1.0",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.3.1",
     "eslint": "^9.22.0",
     "eslint-plugin-format": "^1.0.1",
     "eslint-plugin-perfectionist": "^4.2.0",
@@ -45,6 +52,8 @@
     "vite": "^6.2.1",
     "vite-plugin-remove-console": "^2.2.0",
     "vite-plugin-static-copy": "^3.2.0",
-    "vite-plugin-zip-pack": "^1.0.5"
+    "vite-plugin-zip-pack": "^1.0.5",
+    "vitest": "^4.0.18",
+    "zod": "^3.25.76"
   }
 }

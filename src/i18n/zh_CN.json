@@ -108,6 +108,13 @@
       "title": "目录配置",
       "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为子弹笔记目录」快速添加。"
     },
+    "mcp": {
+      "title": "MCP 配置",
+      "description": "将子弹笔记数据暴露给 Cursor、Claude 等 AI 助手。在 Cursor 设置 → MCP 中添加以下配置，并将 SIYUAN_TOKEN 替换为思源 设置→关于 中的 API Token。",
+      "copyButton": "复制 MCP 配置",
+      "copySuccess": "MCP 配置已复制到剪贴板",
+      "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版"
+    },
     "projectDirectories": {
       "title": "项目目录",
       "addButton": "添加目录",
