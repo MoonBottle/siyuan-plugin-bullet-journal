@@ -111,6 +111,40 @@
 
 **环境变量：** 必配 `SIYUAN_TOKEN`；可选 `SIYUAN_API_URL`，默认 `http://127.0.0.1:6806`。
 
+### AI 智能体提示词
+
+在 AI 助手中使用此 MCP 服务器时，可以使用以下提示词帮助 AI 理解如何处理您的子弹笔记数据：
+
+```
+你可以访问一个子弹笔记 MCP 服务器，该服务器提供以下工具：
+
+1. **list_groups**：列出所有项目分组。首先使用此工具了解项目组织结构。
+2. **list_projects**：列出所有项目，支持 groupId 过滤。每个项目包含 id、name、description、path、groupId 和 taskCount。
+3. **filter_items**：筛选子弹笔记事项，参数包括：
+   - projectId/projectIds：按特定项目筛选
+   - groupId：按项目分组筛选
+   - startDate/endDate：按日期范围筛选（YYYY-MM-DD 格式）
+   - status：按状态筛选（'pending' 待办、'completed' 已完成、'abandoned' 已放弃）
+
+**何时使用这些工具：**
+- 用户询问任务、项目或日程安排时
+- 用户想要追踪进度或回顾已完成的工作时
+- 用户需要规划或组织工作时
+- 用户要求汇总或报告子弹笔记数据时
+
+**最佳实践：**
+1. 始终先调用 `list_groups` 了解项目结构
+2. 使用 `list_projects` 获取所有项目的概览
+3. 使用 `filter_items` 配合适当的筛选条件获取具体任务事项
+4. 组合使用筛选条件进行精确查询（例如：查询本周某项目的待办事项）
+
+**示例工作流：**
+- "我这周有哪些待办任务？" → 使用 startDate、endDate 和 status='pending' 调用 filter_items
+- "显示工作分组下的所有项目" → 先调用 list_groups → 再用 groupId 调用 list_projects
+- "我上个月完成了什么？" → 使用日期范围和 status='completed' 调用 filter_items
+- "帮我规划本周工作" → 先查询本周待办事项，再根据优先级和项目分组提供建议
+```
+
 ## 文档
 
 - [用户指南](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)

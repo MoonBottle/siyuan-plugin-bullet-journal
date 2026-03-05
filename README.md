@@ -107,6 +107,39 @@ The plugin includes an MCP server (`sy-bullet-journal-assistant`) that exposes b
 
 **Environment:** `SIYUAN_TOKEN` is required. `SIYUAN_API_URL` is optional (default `http://127.0.0.1:6806`).
 
+### AI Agent Prompt
+
+When using this MCP server with AI assistants, you can use the following prompt to help the AI understand how to work with your bullet journal data:
+
+```
+You have access to a bullet journal MCP server with the following tools:
+
+1. **list_groups**: Lists all project groups. Use this first to understand the project organization.
+2. **list_projects**: Lists all projects with optional groupId filter. Each project has id, name, description, path, groupId, and taskCount.
+3. **filter_items**: Filters bullet journal items with parameters:
+   - projectId/projectIds: Filter by specific project(s)
+   - groupId: Filter by project group
+   - startDate/endDate: Filter by date range (YYYY-MM-DD format)
+   - status: Filter by status ('pending', 'completed', 'abandoned')
+
+**When to use these tools:**
+- When the user asks about their tasks, projects, or schedule
+- When the user wants to track progress or review completed work
+- When the user needs to plan or organize their work
+- When the user asks for summaries or reports of their bullet journal data
+
+**Best practices:**
+1. Always start with `list_groups` to understand the project structure
+2. Use `list_projects` to get an overview of all projects
+3. Use `filter_items` with appropriate filters to get specific task items
+4. Combine filters for more precise queries (e.g., pending items in a specific project for this week)
+
+**Example workflows:**
+- "What tasks do I have pending this week?" → filter_items with startDate, endDate, and status='pending'
+- "Show me all projects in the Work group" → list_groups → list_projects with groupId
+- "What did I complete last month?" → filter_items with date range and status='completed'
+```
+
 ## Documentation
 
 - [User Guide](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/index.md)
