@@ -50,6 +50,17 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
 }
 
 /**
+ * 去掉思源列表项前的列表标记和行内块属性 {: id="..." updated="..." }，得到纯文本
+ * 用于有序/无序列表中的任务行、事项行，避免任务名/事项内容带上前缀
+ */
+export function stripListAndBlockAttr(line: string): string {
+  let s = line
+    .replace(/^\s*([-]|\d+\.)\s+/, '') // 列表标记 - 或 1. 等
+    .replace(/^\s*\{\:\s*[^}]*\}\s*/, ''); // 块属性 {: ... }
+  return s.trim();
+}
+
+/**
  * 判断内容中的 tag 是否仅出现在反引号内（说明性文字，如 `#任务`），不当作真实任务标记
  */
 function isTagInBackticks(content: string, tag: string): boolean {
@@ -127,7 +138,7 @@ export function parseKramdown(
         currentTask.docId = docId;
         project.tasks.push(currentTask);
       }
-      currentTask = LineParser.parseTaskLine(content, lineNumber);
+      currentTask = LineParser.parseTaskLine(stripListAndBlockAttr(content), lineNumber);
       if (currentTask) {
         currentTask.blockId = block.blockId;
       }
@@ -147,7 +158,7 @@ export function parseKramdown(
 
     // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
     if (currentTask && content.includes('@') && !hasTaskTag) {
-      const item = LineParser.parseItemLine(content, lineNumber);
+      const item = LineParser.parseItemLine(stripListAndBlockAttr(content), lineNumber);
       if (item) {
         item.docId = docId;
         item.blockId = block.blockId;
