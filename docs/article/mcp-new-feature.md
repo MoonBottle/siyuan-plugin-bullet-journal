@@ -1,6 +1,8 @@
 # 子弹笔记助手 v0.7.0 重磅更新：接入 AI，让你的笔记开口说话！
 
 > **子弹笔记助手**是思源笔记的一款任务管理插件，现已支持 MCP（Model Context Protocol）协议，可与 Trae 等 AI 助手无缝集成，实现智能化的任务管理和工作规划。
+> 
+> ⭐ **如果这个项目对你有帮助，请给我们一个 Star！** [GitHub 仓库](https://github.com/MoonBottle/siyuan-plugin-bullet-journal)
 
 ---
 
@@ -508,7 +510,19 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 - 你希望 AI 助手能帮你完成哪些任务管理场景？
 - 你对 MCP 功能有什么改进建议？
 
-在 GitHub Issues 或思源笔记社区留言，我们期待你的反馈！
+在 [GitHub Issues](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues) 或思源笔记社区留言，我们期待你的反馈！
+
+---
+
+## ⭐ 支持我们
+
+如果子弹笔记助手对你有帮助，欢迎：
+
+- 在 [GitHub](https://github.com/MoonBottle/siyuan-plugin-bullet-journal) 上给我们点亮 ⭐ Star
+- 分享给身边使用思源笔记的朋友
+- 在思源笔记集市留下你的评价
+
+你的支持是我们持续改进的动力！💪
 
 ---
 
