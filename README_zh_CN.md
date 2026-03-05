@@ -6,7 +6,7 @@
 
 采用子弹笔记风格的任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
 
-### v0.7.0 Highlights
+### v0.7.0 更新要点
 
 - **MCP 服务器**：内置 `sy-bullet-journal-assistant`，提供 `list_groups`、`list_projects`、`filter_items` 工具，供 Cursor、Claude 等 AI 助手调用子弹笔记数据
 - 插件设置「复制 MCP 配置」自动填入工作空间路径与 `SIYUAN_API_URL`，仅需替换 Token 即可使用
