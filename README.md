@@ -8,8 +8,8 @@ A Bullet Journal style task management plugin for SiYuan Note. Calendar, Gantt c
 
 ### v0.7.0 Highlights
 
-- **MCP server**: Built-in `sy-bullet-journal-assistant` with `list_groups`, `list_projects`, `filter_items` for Cursor, Claude, and other AI assistants
-- One-click "Copy MCP Config" in plugin settings (workspace path and `SIYUAN_API_URL` pre-filled; replace token only)
+- **MCP for AI**: Built-in `sy-bullet-journal-assistant` lets AI read your task data—smart Q&A, weekly reports, work planning
+- **Three-step setup**: "Copy MCP Config" in plugin settings generates complete JSON; replace token only to use with Trae, Cursor, Claude, and other AI assistants. See [MCP Setup Guide](https://ld246.com/article/1772677964043) for details
 
 ## Features
 

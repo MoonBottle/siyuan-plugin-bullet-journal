@@ -8,8 +8,14 @@
 
 ### v0.7.0 更新要点
 
-- **MCP 服务器**：内置 `sy-bullet-journal-assistant`，提供 `list_groups`、`list_projects`、`filter_items` 工具，供 Cursor、Claude 等 AI 助手调用子弹笔记数据
-- 插件设置「复制 MCP 配置」自动填入工作空间路径与 `SIYUAN_API_URL`，仅需替换 Token 即可使用
+- **MCP 接入 AI**：内置 `sy-bullet-journal-assistant`，让 AI 直接读取你的任务数据——智能问答、周报分析、工作规划
+- **三步即用**：插件设置中「复制 MCP 配置」生成完整 JSON，仅需替换 Token 即可在 Trae、Cursor、Claude 等 AI 助手中使用。详细说明见 [MCP 功能使用指南](https://ld246.com/article/1772677964043)
+
+![image.png](https://b3logfile.com/file/2026/03/image-wcoPri5.png)
+
+![image.png](https://b3logfile.com/file/2026/03/image-BcjpYvK.png)
+
+![image.png](https://b3logfile.com/file/2026/03/image-GvR2idc.png)
 
 ## 功能特性
 
