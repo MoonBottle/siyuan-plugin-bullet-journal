@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0] - 2026-03-04
+
+### Features
+
+- **MCP 服务器**：内置 `sy-bullet-journal-assistant`，提供 `list_groups`、`list_projects`、`filter_items` 三个工具，供 Cursor、Claude 等 AI 助手调用思源子弹笔记数据
+- 插件设置中「复制 MCP 配置」生成的 JSON 包含 `SIYUAN_TOKEN` 与 `SIYUAN_API_URL`（默认 `http://127.0.0.1:6806`）
+
+### Docs
+
+- README / README_zh_CN：MCP 配置说明补充 `SIYUAN_API_URL`（可选，默认 `http://127.0.0.1:6806`）
+
+### Dev / Test
+
+- 集成测试支持从 `.env` 读取 `SIYUAN_TOKEN`、`SIYUAN_API_URL`（vitest 通过 dotenv 加载）
+- 新增 `test/mcp/filterItems.test.ts`、`test/mcp/listProjects.test.ts`，含纯函数单测与可选思源 API 集成测试
+
 ## [0.6.0] - 2026-03-03
 
 ### Features
