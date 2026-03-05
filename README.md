@@ -6,12 +6,10 @@
 
 A Bullet Journal style task management plugin for SiYuan Note. Calendar, Gantt chart and project list — all in one place.
 
-### v0.6.0 Highlights
+### v0.7.0 Highlights
 
-- Todo sidebar: context menu and hover actions for all groups (detail, calendar, etc.)
-- Item detail modal: card layout, copy duration button, icons and tooltips
-- Calendar and dialog styles adapted to SiYuan theme
-- i18n: Plugin UI follows SiYuan language setting (Chinese/English)
+- **MCP server**: Built-in `sy-bullet-journal-assistant` with `list_groups`, `list_projects`, `filter_items` for Cursor, Claude, and other AI assistants
+- One-click "Copy MCP Config" in plugin settings (workspace path and `SIYUAN_API_URL` pre-filled; replace token only)
 
 ## Features
 
