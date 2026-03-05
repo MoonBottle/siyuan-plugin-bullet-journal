@@ -100,6 +100,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 const handleCalendarNavigate = (date: string) => {
   if (calendarRef.value && date) {
     calendarRef.value.gotoDate(date);
+    updateTitle();
   }
 };
 
