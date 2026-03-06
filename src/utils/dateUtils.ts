@@ -3,6 +3,7 @@
  * 从 obsidian-hk-work-plugin 移植
  */
 import { getCurrentLocale } from '@/i18n';
+import dayjs from './dayjs';
 
 // 模块级正则表达式，避免每次调用重新创建
 // 日期时间范围模式: @2026-02-04 10:06:04~11:06:04
@@ -13,17 +14,17 @@ export const SINGLE_DATE_TIME_PATTERN = /@\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/
 export const DATE_ONLY_PATTERN = /@\d{4}-\d{2}-\d{2}/;
 
 /**
- * 获取今天的日期字符串 (YYYY-MM-DD)
+ * 获取今天的日期字符串 (YYYY-MM-DD)，使用本地时间
  */
 export const getTodayISO = (): string => {
-  return new Date().toISOString().split('T')[0];
+  return dayjs().format('YYYY-MM-DD');
 };
 
 /**
- * 获取日期字符串 (YYYY-MM-DD)
+ * 获取日期字符串 (YYYY-MM-DD)，使用本地时间
  */
 export const toISODateString = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  return dayjs(date).format('YYYY-MM-DD');
 };
 
 /**

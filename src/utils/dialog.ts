@@ -9,8 +9,8 @@ import { formatDateTime, formatDateLabel, formatTimeRange, calculateDuration } f
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
-import { eventBus, Events } from './eventBus';
 import { TAB_TYPES } from '@/constants';
+import dayjs from './dayjs';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -148,15 +148,15 @@ export function showItemDetailModal(item: Item): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">${t('todo').task}</div>
+        <div class="sy-dialog-card-title">
+          <span class="sy-dialog-card-title-text">${t('todo').task}</span>
+          ${levelHtml}
+        </div>
         <div class="sy-dialog-card-content">
           <span>${item.task.name}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.task.name}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
-        <div class="sy-dialog-card-footer">
-          ${levelHtml}
-          ${taskLinksHtml}
-        </div>
+        ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
       </div>
     `;
   }
@@ -164,9 +164,33 @@ export function showItemDetailModal(item: Item): Dialog {
   // 事项卡片
   const dateLabel = formatDateLabel(item.date, t('todo').today, t('todo').tomorrow);
   const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
+
+  // 判断是否过期（待办状态且日期早于今天）
+  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date < dayjs().format('YYYY-MM-DD');
+
+  // 事项状态标签
+  const statusMap: Record<string, { text: string; class: string }> = {
+    'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'completed': { text: t('todo').completed, class: 'completed' },
+    'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
+    'expired': { text: t('todo').expired, class: 'expired' }
+  };
+  const statusKey = isExpired ? 'expired' : item.status;
+  const statusInfo = statusMap[statusKey] || statusMap['pending'];
+  const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
+
+  // 事项链接
+  const itemLinks = item.links || [];
+  const itemLinksHtml = itemLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">${t('todo').item}</div>
+      <div class="sy-dialog-card-title">
+        <span class="sy-dialog-card-title-text">${t('todo').item}</span>
+        ${statusHtml}
+      </div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
@@ -188,6 +212,7 @@ export function showItemDetailModal(item: Item): Dialog {
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.content}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
       ` : ''}
+      ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
     </div>
   `;
 
@@ -222,10 +247,10 @@ export function showItemDetailModal(item: Item): Dialog {
         await openDocumentAtLine(item.docId, item.lineNumber, item.blockId);
         dialog.destroy();
       } else if (action === 'open-calendar') {
+        console.warn('[Bullet Journal] dialog open-calendar', item.date);
         if (plugin && (plugin as any).openCustomTab) {
-          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR);
+          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
         }
-        eventBus.emit(Events.CALENDAR_NAVIGATE, item.date);
         dialog.destroy();
       } else if (action === 'close') {
         dialog.destroy();
@@ -357,23 +382,48 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">${t('todo').task}</div>
+        <div class="sy-dialog-card-title">
+          <span class="sy-dialog-card-title-text">${t('todo').task}</span>
+          ${levelHtml}
+        </div>
         <div class="sy-dialog-card-content">
           <span>${props.task}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
-        <div class="sy-dialog-card-footer">
-          ${levelHtml}
-          ${taskLinksHtml}
-        </div>
+        ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
       </div>
     `;
   }
 
   // 事项卡片
+  // 判断是否过期（待办状态且日期早于今天）
+  const itemStatus = props.itemStatus || 'pending';
+  const itemDate = props.date;
+  const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
+
+  // 事项状态标签
+  const statusMap: Record<string, { text: string; class: string }> = {
+    'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'completed': { text: t('todo').completed, class: 'completed' },
+    'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
+    'expired': { text: t('todo').expired, class: 'expired' }
+  };
+  const statusKey = isExpired ? 'expired' : itemStatus;
+  const statusInfo = statusMap[statusKey] || statusMap['pending'];
+  const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
+
+  // 事项链接
+  const itemLinks = props.itemLinks || [];
+  const itemLinksHtml = itemLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">${t('todo').item}</div>
+      <div class="sy-dialog-card-title">
+        <span class="sy-dialog-card-title-text">${t('todo').item}</span>
+        ${statusHtml}
+      </div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
@@ -395,6 +445,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.item}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
       ` : ''}
+      ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
     </div>
   `;
 
@@ -534,8 +585,7 @@ function generateCalendarGrid(year: number, month: number, selectedDate?: string
   const startDayOfWeek = firstDay.getDay();
   const daysInMonth = lastDay.getDate();
   
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = dayjs().format('YYYY-MM-DD');
   
   let html = '<div class="date-picker-calendar">';
   
@@ -584,7 +634,7 @@ export function showDatePickerDialog(
   const today = new Date();
   let currentYear = today.getFullYear();
   let currentMonth = today.getMonth();
-  let selectedDate = defaultDate || today.toISOString().split('T')[0];
+  let selectedDate = defaultDate || dayjs().format('YYYY-MM-DD');
   
   const generateContent = () => {
     let content = '<div class="sy-dialog-content date-picker-dialog">';
@@ -664,9 +714,9 @@ export function showDatePickerDialog(
             updateContent();
             break;
           case 'today':
-            selectedDate = new Date().toISOString().split('T')[0];
-            currentYear = new Date().getFullYear();
-            currentMonth = new Date().getMonth();
+            selectedDate = dayjs().format('YYYY-MM-DD');
+            currentYear = dayjs().year();
+            currentMonth = dayjs().month();
             updateContent();
             break;
           case 'confirm':

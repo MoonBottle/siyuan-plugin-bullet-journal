@@ -51,6 +51,7 @@ export interface FilterItemOutput {
   status: string;
   projectName?: string;
   taskName?: string;
+  links?: Array<{ name: string; url: string }>;
 }
 
 /**
@@ -72,7 +73,8 @@ export async function executeFilterItems(
     endDateTime: i.endDateTime,
     status: i.status,
     projectName: i.project?.name,
-    taskName: i.task?.name
+    taskName: i.task?.name,
+    links: i.links
   }));
   return { items: output };
 }

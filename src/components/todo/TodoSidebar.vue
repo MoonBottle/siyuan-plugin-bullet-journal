@@ -61,7 +61,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -177,7 +177,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -242,7 +242,7 @@
                     </div>
                   </div>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-                  <div class="item-content">{{ item.content }}</div>
+                  <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
                 </div>
               </div>
             </div>
@@ -281,7 +281,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -318,7 +318,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -335,17 +335,30 @@ import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { showItemDetailModal, showDatePickerDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
-import { eventBus, Events } from '@/utils/eventBus';
 import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
-import { getCurrentLocale, t } from '@/i18n';
+import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
+import dayjs from '@/utils/dayjs';
+
+// 获取状态 emoji
+const getStatusEmoji = (item: Item): string => {
+  const todayStr = dayjs().format('YYYY-MM-DD');
+  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
+  if (isExpired) return '⚠️ ';
+  if (item.status === 'completed') return '✅ ';
+  if (item.status === 'abandoned') return '❌ ';
+  return '⏳ ';
+};
 
 const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const plugin = usePlugin();
+
+// 从 store 获取当前日期，确保日期变化时 computed 会重新计算
+const currentDate = computed(() => projectStore.currentDate);
 
 const loading = computed(() => projectStore.loading);
 
@@ -364,28 +377,19 @@ const toggleSection = (section: keyof typeof collapsedSections.value) => {
   collapsedSections.value[section] = !collapsedSections.value[section];
 };
 
-// 根据语言获取标签
+// 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  const locale = getCurrentLocale();
-  const isZh = locale.startsWith('zh');
-  
-  if (status === 'completed') {
-    return isZh ? '#已完成' : '#done';
-  } else {
-    return isZh ? '#已放弃' : '#abandoned';
-  }
+  return t('statusTag')[status] || '';
 };
 
-// 获取今天的日期字符串
+// 获取今天的日期字符串（基于 store 的 currentDate）
 const getTodayStr = (): string => {
-  return new Date().toISOString().split('T')[0];
+  return currentDate.value;
 };
 
-// 获取明天的日期字符串
+// 获取明天的日期字符串（基于 store 的 currentDate）
 const getTomorrowStr = (): string => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split('T')[0];
+  return dayjs(currentDate.value).add(1, 'day').format('YYYY-MM-DD');
 };
 
 // 已完成事项
@@ -456,14 +460,12 @@ const openDetail = (item: Item) => {
   showItemDetailModal(item);
 };
 
-// 在日历中打开
+// 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
 const openCalendar = (item: Item) => {
-  // 使用插件 API 打开日历标签页
+  console.warn('[Bullet Journal] openCalendar', item.date);
   if (plugin && (plugin as any).openCustomTab) {
-    (plugin as any).openCustomTab(TAB_TYPES.CALENDAR);
+    (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
   }
-  // 发送导航事件
-  eventBus.emit(Events.CALENDAR_NAVIGATE, item.date);
 };
 
 // 标记完成
@@ -480,21 +482,32 @@ const handleDone = async (item: Item) => {
 // 迁移到明天
 const handleMigrate = async (item: Item) => {
   if (!item.blockId) return;
-  
+
   // 计算明天的日期
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  
+  const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   // 使用 updateBlockDateTime 更新日期，保留原时间
   const success = await updateBlockDateTime(
     item.blockId,
     tomorrowStr,
     item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
     item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    !item.startDateTime
+    !item.startDateTime,
+    item.date,
+    completeSiblingItems,
+    item.status
   );
-  
+
   if (success && plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
@@ -503,17 +516,30 @@ const handleMigrate = async (item: Item) => {
 // 迁移到今天
 const handleMigrateToday = async (item: Item) => {
   if (!item.blockId) return;
-  
-  const todayStr = new Date().toISOString().split('T')[0];
-  
+
+  const todayStr = dayjs().format('YYYY-MM-DD');
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   const success = await updateBlockDateTime(
     item.blockId,
     todayStr,
     item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
     item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    !item.startDateTime
+    !item.startDateTime,
+    item.date,
+    completeSiblingItems,
+    item.status
   );
-  
+
   if (success && plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
@@ -522,16 +548,29 @@ const handleMigrateToday = async (item: Item) => {
 // 迁移到自定义日期
 const handleMigrateCustom = (item: Item) => {
   if (!item.blockId) return;
-  
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
     const success = await updateBlockDateTime(
       item.blockId,
       newDate,
       item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
       item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-      !item.startDateTime
+      !item.startDateTime,
+      item.date,
+      completeSiblingItems,
+      item.status
     );
-    
+
     if (success && plugin) {
       await projectStore.refresh(plugin, settingsStore.enabledDirectories);
     }
@@ -617,18 +656,12 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
 }
 
 .todo-section {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--b3-border-color);
-
-  &:first-child {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
-  }
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 
   .section-label {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--b3-theme-on-surface);
     opacity: 0.7;

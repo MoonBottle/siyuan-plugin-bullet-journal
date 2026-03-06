@@ -6,6 +6,13 @@
 
 采用子弹笔记风格的任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
 
+### v0.7.2 更新要点
+
+- **多日期事项**：支持单个事项关联多个日期，实现跨天事项管理（格式：`@2026-03-06, 2026-03-10~03-12`）
+- **事项链接**：支持为事项添加外部或思源内部链接，详情弹框中可点击跳转
+- **状态图标**：日历视图和待办侧栏添加事项状态 emoji 显示（⏳待办 / ✅已完成 / ❌已放弃 / ⚠️过期）
+- **过期状态**：新增过期状态样式，逾期事项一目了然
+
 ### v0.7.0 更新要点
 
 - **MCP 接入 AI**：内置 `sy-bullet-journal-assistant`，让 AI 直接读取你的任务数据——智能问答、周报分析、工作规划
@@ -49,23 +56,26 @@
 任务名称 #任务 @L1
 [任务详情](http://doc.example.com)
 
-工作事项 @2026-02-28
-另一个事项 @2026-03-01 10:00:00~12:00:00
+事项A @2026-02-28
+[事项详情](http://doc.example.com)
+事项B @2026-03-01 10:00:00~12:00:00 #已完成
+事项C @2026-03-01 10:00:00~12:00:00 #已放弃
 ```
 
 **标记说明：**
+- `项目名称` - 文档中的第一个一级或二级标题会被识别为项目名称，若无标题，则默认项目名称为文档文件名
 - `#任务` - 标记该行为任务
 - `@L1/@L2/@L3` - 任务层级
 - `@YYYY-MM-DD` - 事项日期
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围
 
-![笔记标记示例](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/note.png)
+![笔记标记示例](https://b3logfile.com/file/2026/02/siyuan/1646651772150/assets/network-asset-note-20260228164606-ihf968l.png?imageView2/2/interlace/1/format/webp)
 
 ### 2. 在视图中查看
 
 插件自动解析笔记中的标记，在日历、甘特图、待办 Dock 中展示：
 
-![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
+![视图展示](https://b3logfile.com/file/2026/02/siyuan/1646651772150/assets/network-asset-todo-dock-20260228164613-8jwd1yj.png?imageView2/2/interlace/1/format/webp)
 
 ![甘特图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
 
@@ -73,7 +83,7 @@
 
 点击视图中的任务，可直接跳转到笔记中对应位置。
 
-![功能演示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/op.gif)
+![功能演示](https://b3logfile.com/file/2026/02/op-xYGmIM8.gif)
 
 ## 安装
 

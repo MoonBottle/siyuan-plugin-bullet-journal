@@ -20,10 +20,12 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
 
   const lines = kramdown.split('\n');
   let currentContent = '';
+  let currentRawContent = '';
   let currentBlockId = '';
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const rawLine = lines[i];
+    const line = rawLine.trim();
 
     if (line.startsWith('{:') && line.endsWith('}')) {
       const idMatch = line.match(/\bid="([^"]+)"/);
@@ -34,15 +36,17 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
           blocks.push({
             content: currentContent,
             blockId: currentBlockId,
-            raw: currentContent + '\n' + line
+            raw: currentRawContent + '\n' + rawLine
           });
         }
 
         currentContent = '';
+        currentRawContent = '';
         currentBlockId = '';
       }
     } else if (line) {
-      currentContent = line;
+      currentContent = currentContent ? currentContent + '\n' + line : line;
+      currentRawContent = currentRawContent ? currentRawContent + '\n' + rawLine : rawLine;
     }
   }
 
@@ -95,13 +99,19 @@ export function parseKramdown(
 
   for (const block of blocks) {
     lineNumber++;
-    const content = block.content.trim();
+    const content = block.content.split('\n')[0].trim();
 
     if (!content) continue;
 
-    if (content.startsWith('## ')) {
-      project.name = content.substring(3).trim();
-      continue;
+    if (!project.name) {
+      if (content.startsWith('# ')) {
+        project.name = content.substring(2).trim();
+        continue;
+      }
+      if (content.startsWith('## ')) {
+        project.name = content.substring(3).trim();
+        continue;
+      }
     }
 
     if (project.name && content.startsWith('> ')) {
@@ -158,8 +168,42 @@ export function parseKramdown(
 
     // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
     if (currentTask && content.includes('@') && !hasTaskTag) {
-      const item = LineParser.parseItemLine(stripListAndBlockAttr(content), lineNumber);
-      if (item) {
+      // 收集事项下方的链接行：先收集当前块内首行之后的链接行，再收集后续块中的链接行
+      const itemLinks: Array<{ name: string; url: string }> = [];
+      const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
+      for (let idx = 1; idx < blockLines.length; idx++) {
+        const lineContent = blockLines[idx];
+        const linkMatch = lineContent.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch && !lineContent.includes('@')) {
+          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+        } else {
+          break;
+        }
+      }
+      let nextBlockIndex = blocks.indexOf(block) + 1;
+
+      while (nextBlockIndex < blocks.length) {
+        const nextBlock = blocks[nextBlockIndex];
+        const nextContent = nextBlock.content.split('\n')[0].trim();
+
+        // 检查是否为链接行（Markdown 链接格式 [名称](URL)）
+        // 支持纯链接行或带列表标记的链接行
+        const linkMatch = nextContent.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch && !nextContent.includes('@')) {
+          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+          nextBlockIndex++;
+        } else {
+          // 不是链接行，停止收集
+          break;
+        }
+      }
+
+      const items = LineParser.parseItemLine(
+        stripListAndBlockAttr(content),
+        lineNumber,
+        itemLinks.length > 0 ? itemLinks : undefined
+      );
+      for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
         currentTask.items.push(item);

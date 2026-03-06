@@ -6,10 +6,23 @@
 
 A Bullet Journal style task management plugin for SiYuan Note. Calendar, Gantt chart and project list — all in one place.
 
+### v0.7.2 Highlights
+
+- **Multi-date Items**: Support for single items associated with multiple dates, enabling cross-day task management (format: `@2026-03-06, 2026-03-10~03-12`)
+- **Item Links**: Support for adding external or internal SiYuan links to items, clickable in detail modal
+- **Status Icons**: Added status emoji indicators in Calendar and Todo Dock (⏳pending / ✅completed / ❌abandoned / ⚠️expired)
+- **Expired Status**: New expired status styling for clearer visualization of overdue items
+
 ### v0.7.0 Highlights
 
 - **MCP for AI**: Built-in `sy-bullet-journal-assistant` lets AI read your task data—smart Q&A, weekly reports, work planning
 - **Three-step setup**: "Copy MCP Config" in plugin settings generates complete JSON; replace token only to use with Trae, Cursor, Claude, and other AI assistants. See [MCP Setup Guide](https://ld246.com/article/1772677964043) for details
+
+![image.png](https://b3logfile.com/file/2026/03/image-wcoPri5.png)
+
+![image.png](https://b3logfile.com/file/2026/03/image-BcjpYvK.png)
+
+![image.png](https://b3logfile.com/file/2026/03/image-GvR2idc.png)
 
 ## Features
 
@@ -38,12 +51,19 @@ Enter the following in any document:
 ## Project Name
 > Project description
 
+[Requirements](http://doc.example.com)
+
 Task Name #task @L1
-Work Item @2026-02-28
-Another Item @2026-03-01 10:00:00~12:00:00
+[Task Details](http://doc.example.com)
+
+Item A @2026-02-28
+[Item Details](http://doc.example.com)
+Item B @2026-03-01 10:00:00~12:00:00 #done
+Item C @2026-03-01 10:00:00~12:00:00 #abandoned
 ```
 
 **Marker Reference:**
+- `Project Name` - The first H1 or H2 heading in the document is recognized as the project name; if no heading, defaults to the document filename
 - `#task` - Marks a line as a task
 - `@L1/@L2/@L3` - Task hierarchy levels
 - `@YYYY-MM-DD` - Item date

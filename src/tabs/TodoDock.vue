@@ -11,7 +11,7 @@
       </span>
     </div>
     <div class="fn__flex-1 fn__flex-column todo-dock-body">
-      <div v-if="settingsStore.groups.length > 0" class="todo-filter-card">
+      <div class="todo-filter-card">
         <SySelect
           v-model="selectedGroup"
           :options="groupOptions"
@@ -34,6 +34,7 @@ import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
+import { showMessage } from '@/utils/dialog';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -69,6 +70,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 const handleRefresh = async () => {
   if (plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    showMessage(t('common').dataRefreshed);
   }
 };
 

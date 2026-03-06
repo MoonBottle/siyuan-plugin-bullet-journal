@@ -15,9 +15,10 @@ import type { CalendarEvent } from '@/types/models';
 import { showEventDetailModal, showDatePickerDialog } from '@/utils/dialog';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
-import { getCurrentLocale, t } from '@/i18n';
+import { t, getCurrentLocale } from '@/i18n';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
+import dayjs from '@/utils/dayjs';
 
 // 格式化时间显示
 const formatEventTime = (startStr: string, allDay: boolean): string => {
@@ -34,14 +35,25 @@ const renderEventContent = (arg: any) => {
   const startTime = formatEventTime(arg.event.startStr, arg.event.allDay);
   const title = arg.event.title;
   const taskName = arg.event.extendedProps?.task;
+  const status = arg.event.extendedProps?.itemStatus;
+  const date = arg.event.extendedProps?.date;
 
-  // 判断是否为事项（有 item 属性）或任务
+  const getStatusEmoji = (itemStatus: string | undefined, itemDate: string | undefined): string => {
+    // 判断是否过期（待办状态且日期早于今天）
+    const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
+    if (isExpired) return '⚠️ ';
+    if (itemStatus === 'completed') return '✅ ';
+    if (itemStatus === 'abandoned') return '❌ ';
+    return '⏳ ';
+  };
+
+  const statusEmoji = getStatusEmoji(status, date);
+
   const isItem = arg.event.extendedProps?.item !== undefined;
 
   const container = document.createElement('div');
   container.className = 'fc-event-custom';
 
-  // 时间部分
   if (startTime) {
     const timeEl = document.createElement('span');
     timeEl.className = 'fc-event-time';
@@ -49,13 +61,11 @@ const renderEventContent = (arg: any) => {
     container.appendChild(timeEl);
   }
 
-  // 标题部分
   const titleEl = document.createElement('span');
   titleEl.className = 'fc-event-title-text';
-  titleEl.textContent = title;
+  titleEl.textContent = statusEmoji + title;
   container.appendChild(titleEl);
 
-  // 任务名（仅事项显示，灰色小字，同一行）
   if (isItem && taskName && taskName !== title) {
     const taskEl = document.createElement('span');
     taskEl.className = 'fc-event-task';
@@ -75,33 +85,29 @@ const emit = defineEmits<{
   (e: 'event-click', event: any): void;
   (e: 'event-drop', event: any): void;
   (e: 'event-resize', event: any): void;
+  (e: 'navigated'): void;
 }>();
 
 const calendarEl = ref<HTMLElement | null>(null);
 let calendarInstance: Calendar | null = null;
 let resizeObserver: ResizeObserver | null = null;
+/** 实例创建前收到的待跳转日期，onMounted 完成后消费 */
+let pendingNavigateDate: string | null = null;
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const plugin = usePlugin();
 
-// 根据语言获取标签
+// 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  const locale = getCurrentLocale();
-  const isZh = locale.startsWith('zh');
-  
-  if (status === 'completed') {
-    return isZh ? '#已完成' : '#done';
-  } else {
-    return isZh ? '#已放弃' : '#abandoned';
-  }
+  return t('statusTag')[status] || '';
 };
 
 // 日历事件右键菜单
 const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
   const props = info.event.extendedProps;
   if (!props) return;
-  
+
   const isItem = !!props.item;
   const item = {
     id: info.event.id,
@@ -110,10 +116,23 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     blockId: props.blockId,
     docId: props.docId,
     lineNumber: props.lineNumber,
-    status: 'pending',
-    task: props.task ? { name: props.task } : undefined
+    status: props.status || 'pending',
+    task: props.task ? { name: props.task } : undefined,
+    startDateTime: props.originalStartDateTime,
+    endDateTime: props.originalEndDateTime,
+    siblingItems: props.siblingItems
   };
-  
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   const menuOptions = createItemMenu(
     item,
     {
@@ -127,18 +146,34 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       },
       onMigrateToday: async () => {
         if (!item.blockId) return;
-        const todayStr = new Date().toISOString().split('T')[0];
-        await updateBlockDateTime(item.blockId, todayStr);
+        const todayStr = dayjs().format('YYYY-MM-DD');
+        await updateBlockDateTime(
+          item.blockId,
+          todayStr,
+          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+          !item.startDateTime,
+          item.date,
+          completeSiblingItems,
+          item.status
+        );
         if (plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
       },
       onMigrateTomorrow: async () => {
         if (!item.blockId) return;
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        await updateBlockDateTime(item.blockId, tomorrowStr);
+        const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+        await updateBlockDateTime(
+          item.blockId,
+          tomorrowStr,
+          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+          !item.startDateTime,
+          item.date,
+          completeSiblingItems,
+          item.status
+        );
         if (plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
@@ -146,7 +181,16 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       onMigrateCustom: async () => {
         if (!item.blockId) return;
         showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-          await updateBlockDateTime(item.blockId, newDate);
+          await updateBlockDateTime(
+            item.blockId,
+            newDate,
+            item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+            item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+            !item.startDateTime,
+            item.date,
+            completeSiblingItems,
+            item.status
+          );
           if (plugin) {
             await projectStore.refresh(plugin, settingsStore.enabledDirectories);
           }
@@ -254,6 +298,13 @@ onMounted(async () => {
     calendarInstance.render();
     updateEvents();
 
+    if (pendingNavigateDate) {
+      console.warn('[Bullet Journal] CalendarView apply pendingNavigateDate', pendingNavigateDate);
+      calendarInstance.gotoDate(pendingNavigateDate);
+      pendingNavigateDate = null;
+      emit('navigated');
+    }
+
     // ResizeObserver to handle container size changes
     resizeObserver = new ResizeObserver(() => {
       if (calendarInstance) {
@@ -283,8 +334,10 @@ watch(() => props.events, () => {
 
 const updateEvents = () => {
   if (!calendarInstance) {
+    console.log('[Bullet Journal] Calendar instance not ready');
     return;
   }
+  console.log('[Bullet Journal] Updating events:', props.events?.length || 0);
   calendarInstance.removeAllEvents();
   calendarInstance.addEventSource(props.events);
   calendarInstance.updateSize();
@@ -303,7 +356,13 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
     allDay: event.allDay,
     docId: extendedProps?.docId,
     lineNumber: extendedProps?.lineNumber,
-    blockId: extendedProps?.blockId
+    blockId: extendedProps?.blockId,
+    // 多日期事项支持
+    date: extendedProps?.date,
+    originalStartDateTime: extendedProps?.originalStartDateTime,
+    originalEndDateTime: extendedProps?.originalEndDateTime,
+    siblingItems: extendedProps?.siblingItems,
+    status: extendedProps?.itemStatus
   };
 
   emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData);
@@ -315,7 +374,15 @@ defineExpose({
   prev: () => calendarInstance?.prev(),
   next: () => calendarInstance?.next(),
   today: () => calendarInstance?.today(),
-  gotoDate: (date: string) => calendarInstance?.gotoDate(date),
+  gotoDate: (date: string) => {
+    if (calendarInstance) {
+      console.warn('[Bullet Journal] CalendarView.gotoDate immediate', date);
+      calendarInstance.gotoDate(date);
+    } else if (date) {
+      console.warn('[Bullet Journal] CalendarView.gotoDate pending', date);
+      pendingNavigateDate = date;
+    }
+  },
   changeView: (view: string) => calendarInstance?.changeView(view),
   // 获取当前状态
   getView: () => calendarInstance?.view?.type,

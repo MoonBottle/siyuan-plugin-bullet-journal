@@ -1,5 +1,6 @@
 import { IMenu, Menu } from 'siyuan';
 import { t } from '@/i18n';
+import { getTodayISO, getTomorrowISO } from '@/utils/dayjs';
 
 export interface MenuOptions {
   x: number;
@@ -98,23 +99,31 @@ export function createItemMenu(
     items.push({
       label: t('todo').migrate,
       icon: 'iconForward',
-      submenu: [
-        {
-          label: t('todo').migrateToday,
-          icon: 'iconCalendar',
-          click: handlers.onMigrateToday
-        },
-        {
-          label: t('todo').migrateTomorrow,
-          icon: 'iconCalendar',
-          click: handlers.onMigrateTomorrow
-        },
-        {
+      submenu: (() => {
+        const todayStr = getTodayISO();
+        const tomorrowStr = getTomorrowISO();
+        const submenu: MenuItem[] = [];
+        if (item.date !== todayStr) {
+          submenu.push({
+            label: t('todo').migrateToday,
+            icon: 'iconCalendar',
+            click: handlers.onMigrateToday
+          });
+        }
+        if (item.date !== tomorrowStr) {
+          submenu.push({
+            label: t('todo').migrateTomorrow,
+            icon: 'iconCalendar',
+            click: handlers.onMigrateTomorrow
+          });
+        }
+        submenu.push({
           label: t('todo').chooseDate,
           icon: 'iconCalendar',
           click: handlers.onMigrateCustom
-        }
-      ]
+        });
+        return submenu;
+      })()
     });
 
     items.push({

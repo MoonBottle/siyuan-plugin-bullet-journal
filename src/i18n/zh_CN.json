@@ -131,6 +131,11 @@
     "next": "下一页",
     "today": "今天"
   },
+  "statusTag": {
+    "completed": "#已完成",
+    "abandoned": "#已放弃",
+    "pending": ""
+  },
   "common": {
     "more": "更多",
     "loading": "加载中...",

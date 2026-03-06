@@ -82,10 +82,16 @@ export class DataConverter {
         taskLinks: task.links,
         level: task.level,
         item: item.content,
+        itemStatus: item.status,
+        itemLinks: item.links,
         hasItems: true,
         docId: item.docId,
         lineNumber: item.lineNumber,
-        blockId: item.blockId
+        blockId: item.blockId,
+        date: item.date,
+        originalStartDateTime: item.startDateTime,
+        originalEndDateTime: item.endDateTime,
+        siblingItems: item.siblingItems
       }
     };
   }

@@ -51,6 +51,13 @@ export interface Item {
   docId: string;           // 所属文档 ID
   blockId?: string;        // 块 ID（用于精确定位）
   status: ItemStatus;      // 事项状态
+  links?: Link[];          // 事项链接（支持多个）
+  // 多日期支持：同一块中的其他日期时间信息
+  siblingItems?: Array<{
+    date: string;
+    startDateTime?: string;
+    endDateTime?: string;
+  }>;
 }
 
 // 分组
@@ -73,6 +80,8 @@ export interface CalendarEvent {
     taskLinks?: Link[];
     level?: string;
     item?: string;
+    itemStatus?: ItemStatus;
+    itemLinks?: Link[];
     hasItems: boolean;
     docId: string;
     lineNumber: number;

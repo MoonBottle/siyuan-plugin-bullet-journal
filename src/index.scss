@@ -74,14 +74,19 @@
   }
 
   .sy-dialog-card-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--b3-theme-on-surface);
     margin-bottom: 12px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    flex-wrap: nowrap;
     letter-spacing: 0.3px;
+
+    .sy-dialog-card-title-text {
+      flex-shrink: 0;
+    }
   }
 
   .sy-dialog-card-content {
@@ -128,6 +133,38 @@
       background: var(--b3-theme-primary);
       color: var(--b3-theme-on-primary);
       border-color: var(--b3-theme-primary);
+    }
+  }
+
+  // 状态标签
+  .sy-dialog-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-left: auto;
+    line-height: 1;
+
+    &.pending {
+      background: var(--b3-theme-surface);
+      color: var(--b3-theme-on-surface);
+    }
+
+    &.completed {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+    }
+
+    &.abandoned {
+      background: rgba(244, 67, 54, 0.15);
+      color: #f44336;
+    }
+
+    &.expired {
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
     }
   }
 
@@ -190,6 +227,11 @@
         vertical-align: middle;
         margin-left: 6px;
       }
+    }
+
+    // 事项卡片的链接 footer 添加顶部间距，与任务卡片保持一致
+    .sy-dialog-card-footer {
+      margin-top: 10px;
     }
   }
 
@@ -290,12 +332,14 @@
 
 /* 任务级别标签样式 - 全局可用 */
 .task-level {
-  display: inline-block;
-  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  margin-right: 6px;
+  line-height: 1;
+  margin-left: auto;
 
   &.level-l1 {
     background: rgba(76, 175, 80, 0.15);
