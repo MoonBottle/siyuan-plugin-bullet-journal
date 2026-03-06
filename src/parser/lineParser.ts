@@ -69,8 +69,11 @@ export class LineParser {
    * 格式: 事项内容 @2024-01-01 10:00:00~11:00:00, 2024-01-03 14:00:00~15:00:00 #done
    * 支持: @2024-01-01, @2024-01-01~2024-01-05, @2024-01-01~01-05（简写）
    * 支持中英文逗号分隔
+   * @param line 事项行内容
+   * @param lineNumber 行号
+   * @param links 关联的链接列表（可选，由上层解析器提供）
    */
-  public static parseItemLine(line: string, lineNumber: number): Item[] {
+  public static parseItemLine(line: string, lineNumber: number, links?: Link[]): Item[] {
     // 必须包含日期标记
     if (!line.match(/@\d{4}-\d{2}-\d{2}/)) {
       return [];
@@ -152,6 +155,7 @@ export class LineParser {
         lineNumber,
         docId: '',
         status,
+        links: links?.length ? links : undefined,  // 添加链接
         siblingItems: siblingItems.length > 0 ? siblingItems : undefined
       });
     }

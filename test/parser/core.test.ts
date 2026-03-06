@@ -93,7 +93,107 @@ describe('parseKramdown 列表项解析', () => {
     expect(project!.tasks).toHaveLength(1);
     expect(project!.tasks[0].items).toHaveLength(1);
     expect(project!.tasks[0].items[0].content).toBe('测试事项 B');
-    expect(project!.tasks[0].items[0].content).not.toContain('{:');
+    expect(project!.tasks[0].items[0].content).not.toContain('{:')
     expect(project!.tasks[0].items[0].content).not.toMatch(/^\d+\.\s/);
+  });
+});
+
+describe('parseKramdown 事项链接解析', () => {
+  it('事项下方单个链接：正确关联到事项', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-10
+{: id="after-i1" }
+  - {: id="link1" }[示例链接](https://example.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('工作事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('示例链接');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://example.com');
+  });
+
+  it('事项下方多个链接：正确关联到事项', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务B #任务#
+{: id="after-t" }
+  - {: id="i1" }多链接事项 @2026-03-15
+{: id="after-i1" }
+  - {: id="link1" }[需求文档](https://example.com/requirements)
+{: id="after-link1" }
+  - {: id="link2" }[设计稿](siyuan://blocks/20260220112000)
+{: id="after-link2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links).toHaveLength(2);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('需求文档');
+    expect(project!.tasks[0].items[0].links![1].name).toBe('设计稿');
+  });
+
+  it('事项无链接：links 为 undefined', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务C #任务#
+{: id="after-t" }
+  - {: id="i1" }无链接事项 @2026-03-20
+{: id="after-i1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('无链接事项');
+    expect(project!.tasks[0].items[0].links).toBeUndefined();
+  });
+
+  it('多日期事项带链接：所有展开的 Item 都有链接', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务D #任务#
+{: id="after-t" }
+  - {: id="i1" }多日期事项 @2026-03-06, 2026-03-10
+{: id="after-i1" }
+  - {: id="link1" }[GitHub](https://github.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(2);
+    // 所有展开的 Item 都应该有相同的链接
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[1].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('GitHub');
+    expect(project!.tasks[0].items[1].links![0].name).toBe('GitHub');
+  });
+
+  it('事项下方不缩进链接：也能正确关联', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务E #任务#
+{: id="after-t" }
+  - {: id="i1" }不缩进链接事项 @2026-03-25
+{: id="after-i1" }
+- {: id="link1" }[外部链接](https://example.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('不缩进链接事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('外部链接');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://example.com');
   });
 });

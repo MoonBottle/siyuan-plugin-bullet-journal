@@ -202,3 +202,50 @@ describe('parseTaskLine 任务解析', () => {
     expect(task.endDateTime).toBe('2024-01-01 10:00:00');
   });
 });
+
+describe('parseItemLine - 事项链接', () => {
+  it('事项带单个链接', () => {
+    const links = [{ name: '示例链接', url: 'https://example.com' }];
+    const items = LineParser.parseItemLine('工作事项 @2024-01-01', 1, links);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('工作事项');
+    expect(items[0].links).toHaveLength(1);
+    expect(items[0].links![0].name).toBe('示例链接');
+    expect(items[0].links![0].url).toBe('https://example.com');
+  });
+
+  it('事项带多个链接', () => {
+    const links = [
+      { name: '需求文档', url: 'https://example.com/requirements' },
+      { name: '设计稿', url: 'siyuan://blocks/20260220112000' }
+    ];
+    const items = LineParser.parseItemLine('工作事项 @2024-01-01', 1, links);
+    expect(items).toHaveLength(1);
+    expect(items[0].links).toHaveLength(2);
+    expect(items[0].links![0].name).toBe('需求文档');
+    expect(items[0].links![1].name).toBe('设计稿');
+  });
+
+  it('多日期事项带链接', () => {
+    const links = [{ name: 'GitHub', url: 'https://github.com' }];
+    const items = LineParser.parseItemLine('多日期事项 @2024-01-01, 2024-01-03', 1, links);
+    expect(items).toHaveLength(2);
+    // 所有展开的 Item 都应该有相同的链接
+    expect(items[0].links).toHaveLength(1);
+    expect(items[1].links).toHaveLength(1);
+    expect(items[0].links![0].name).toBe('GitHub');
+    expect(items[1].links![0].name).toBe('GitHub');
+  });
+
+  it('事项无链接时 links 为 undefined', () => {
+    const items = LineParser.parseItemLine('工作事项 @2024-01-01', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].links).toBeUndefined();
+  });
+
+  it('事项传入空链接数组时 links 为 undefined', () => {
+    const items = LineParser.parseItemLine('工作事项 @2024-01-01', 1, []);
+    expect(items).toHaveLength(1);
+    expect(items[0].links).toBeUndefined();
+  });
+});

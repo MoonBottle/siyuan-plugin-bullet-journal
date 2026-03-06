@@ -20,10 +20,12 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
 
   const lines = kramdown.split('\n');
   let currentContent = '';
+  let currentRawContent = '';
   let currentBlockId = '';
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const rawLine = lines[i];
+    const line = rawLine.trim();
 
     if (line.startsWith('{:') && line.endsWith('}')) {
       const idMatch = line.match(/\bid="([^"]+)"/);
@@ -34,15 +36,17 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
           blocks.push({
             content: currentContent,
             blockId: currentBlockId,
-            raw: currentContent + '\n' + line
+            raw: currentRawContent + '\n' + rawLine
           });
         }
 
         currentContent = '';
+        currentRawContent = '';
         currentBlockId = '';
       }
     } else if (line) {
       currentContent = line;
+      currentRawContent = rawLine;
     }
   }
 
@@ -158,7 +162,31 @@ export function parseKramdown(
 
     // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
     if (currentTask && content.includes('@') && !hasTaskTag) {
-      const items = LineParser.parseItemLine(stripListAndBlockAttr(content), lineNumber);
+      // 收集事项下方的链接行
+      const itemLinks: Array<{ name: string; url: string }> = [];
+      let nextBlockIndex = blocks.indexOf(block) + 1;
+
+      while (nextBlockIndex < blocks.length) {
+        const nextBlock = blocks[nextBlockIndex];
+        const nextContent = nextBlock.content.trim();
+
+        // 检查是否为链接行（Markdown 链接格式 [名称](URL)）
+        // 支持纯链接行或带列表标记的链接行
+        const linkMatch = nextContent.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch && !nextContent.includes('@')) {
+          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+          nextBlockIndex++;
+        } else {
+          // 不是链接行，停止收集
+          break;
+        }
+      }
+
+      const items = LineParser.parseItemLine(
+        stripListAndBlockAttr(content),
+        lineNumber,
+        itemLinks.length > 0 ? itemLinks : undefined
+      );
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
