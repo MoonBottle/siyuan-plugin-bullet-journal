@@ -255,6 +255,8 @@ export async function updateBlockDateTime(
 
     // 构建所有日期时间项列表
     const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
+    console.log('[Bullet Journal] updateBlockDateTime - siblingItems:', siblingItems?.length || 0, 'allItems:', allItems.length);
+    console.log('[Bullet Journal] updateBlockDateTime - originalDate:', originalDate, 'newDate:', newDate);
 
     // 更新当前修改的 Item
     // 如果没有结束时间但有开始时间，自动加1小时
@@ -287,9 +289,11 @@ export async function updateBlockDateTime(
       uniqueItems.set(item.date, item);
     }
     const dedupedItems = Array.from(uniqueItems.values());
+    console.log('[Bullet Journal] updateBlockDateTime - dedupedItems:', dedupedItems.length, dedupedItems.map(i => i.date));
 
     // 智能合并为最优表达式
     const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
+    console.log('[Bullet Journal] updateBlockDateTime - optimizedExpr:', optimizedExpr);
 
     // 构建状态标签（使用 i18n）
     const statusTag = buildStatusTag(status);

@@ -249,3 +249,38 @@ describe('parseItemLine - 事项链接', () => {
     expect(items[0].links).toBeUndefined();
   });
 });
+
+describe('parseItemLine - 中文逗号内容提取', () => {
+  it('中文逗号分隔的多日期：内容不包含日期', () => {
+    const items = LineParser.parseItemLine('多日期中文A @2024-01-01，2024-01-03，2024-01-05', 1);
+    expect(items).toHaveLength(3);
+    // 所有 Item 的内容应该相同，且不包含日期
+    expect(items[0].content).toBe('多日期中文A');
+    expect(items[1].content).toBe('多日期中文A');
+    expect(items[2].content).toBe('多日期中文A');
+  });
+
+  it('中英文逗号混合：内容不包含日期', () => {
+    const items = LineParser.parseItemLine('多日期混合 @2024-01-01，2024-01-03, 2024-01-05', 1);
+    expect(items).toHaveLength(3);
+    expect(items[0].content).toBe('多日期混合');
+    expect(items[1].content).toBe('多日期混合');
+    expect(items[2].content).toBe('多日期混合');
+  });
+
+  it('中文逗号带时间：内容不包含日期和时间', () => {
+    const items = LineParser.parseItemLine('多日期中文B @2024-01-01 09:00:00~10:00:00，2024-01-03 14:00:00~15:00:00', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].content).toBe('多日期中文B');
+    expect(items[1].content).toBe('多日期中文B');
+  });
+
+  it('中文逗号带状态标签：内容不包含日期和标签', () => {
+    const items = LineParser.parseItemLine('状态完成A @2024-01-01，2024-01-03 #已完成', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].content).toBe('状态完成A');
+    expect(items[0].status).toBe('completed');
+    expect(items[1].content).toBe('状态完成A');
+    expect(items[1].status).toBe('completed');
+  });
+});

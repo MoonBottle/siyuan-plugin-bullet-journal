@@ -92,16 +92,17 @@ export class LineParser {
 
     // 提取所有日期时间表达式（支持逗号分隔的多个日期）
     const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLine);
+    console.log('[Bullet Journal] parseItemLine - dateTimeExpressions:', dateTimeExpressions.length, dateTimeExpressions.map(e => e.fullMatch));
     if (dateTimeExpressions.length === 0) return [];
 
-    // 提取内容（移除所有日期时间表达式和状态标签）
-    let content = line;
+    // 提取内容（在 normalizedLine 上移除所有日期时间表达式和状态标签）
+    let content = normalizedLine;
     for (const expr of dateTimeExpressions) {
       content = content.replace(expr.fullMatch, '');
     }
     content = content
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
-      .replace(/[，,]/g, '')  // 移除残留的逗号
+      .replace(/,/g, '')  // 移除英文逗号（normalizedLine 中只有英文逗号）
       .trim();
 
     if (!content) return [];
@@ -132,6 +133,7 @@ export class LineParser {
         allDateTimeInfo.push({ date, startDateTime, endDateTime });
       }
     }
+    console.log('[Bullet Journal] parseItemLine - allDateTimeInfo:', allDateTimeInfo.length, allDateTimeInfo.map(i => i.date));
 
     // 为每个日期创建 Item，并填充 siblingItems
     for (let i = 0; i < allDateTimeInfo.length; i++) {

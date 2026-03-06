@@ -15,7 +15,7 @@ import type { CalendarEvent } from '@/types/models';
 import { showEventDetailModal, showDatePickerDialog } from '@/utils/dialog';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
-import { t } from '@/i18n';
+import { t, getCurrentLocale } from '@/i18n';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
 
@@ -276,8 +276,10 @@ watch(() => props.events, () => {
 
 const updateEvents = () => {
   if (!calendarInstance) {
+    console.log('[Bullet Journal] Calendar instance not ready');
     return;
   }
+  console.log('[Bullet Journal] Updating events:', props.events?.length || 0);
   calendarInstance.removeAllEvents();
   calendarInstance.addEventSource(props.events);
   calendarInstance.updateSize();
@@ -296,7 +298,13 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
     allDay: event.allDay,
     docId: extendedProps?.docId,
     lineNumber: extendedProps?.lineNumber,
-    blockId: extendedProps?.blockId
+    blockId: extendedProps?.blockId,
+    // 多日期事项支持
+    date: extendedProps?.date,
+    originalStartDateTime: extendedProps?.originalStartDateTime,
+    originalEndDateTime: extendedProps?.originalEndDateTime,
+    siblingItems: extendedProps?.siblingItems,
+    status: extendedProps?.status
   };
 
   emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData);

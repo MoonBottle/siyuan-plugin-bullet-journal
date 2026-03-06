@@ -142,13 +142,17 @@ export const useProjectStore = defineStore('project', {
      * 加载项目数据（首次加载，显示加载状态）
      */
     async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
+      console.log('[Bullet Journal] Loading projects, directories:', directories?.length || 0);
       this.loading = true;
 
       try {
         const parser = new MarkdownParser(directories);
         const projects = await parser.parseAllProjects();
+        console.log('[Bullet Journal] Parsed projects:', projects?.length || 0);
         const items = await parser.getAllItems();
+        console.log('[Bullet Journal] Parsed items:', items?.length || 0);
         const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
+        console.log('[Bullet Journal] Converted events:', calendarEvents?.length || 0);
 
         this.projects = projects;
         this.items = items;

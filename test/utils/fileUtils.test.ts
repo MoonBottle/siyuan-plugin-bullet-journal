@@ -359,4 +359,69 @@ describe('updateBlockDateTime', () => {
       'block-1'
     );
   });
+
+  it('多日期事项拖动更新：保留其他日期', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '边界闰年 @2024-02-28, 2024-02-29, 2024-03-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    // 模拟 siblingItems 包含其他两个日期（当前拖动的是 2024-02-29）
+    const siblingItems = [
+      { date: '2024-02-28' },
+      { date: '2024-03-01' }
+    ];
+
+    // 拖动 2024-02-29 并添加时间
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2024-02-29',
+      '08:00:00',
+      '09:00:00',
+      false,
+      '2024-02-29',
+      siblingItems
+    );
+
+    expect(result).toBe(true);
+    // 应该保留所有三个日期，其中 2024-02-29 带时间
+    // 注意：日期会按时间顺序排序
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '边界闰年 @2024-02-28, 2024-03-01, 2024-02-29 08:00:00~09:00:00',
+      'block-1'
+    );
+  });
+
+  it('多日期事项拖动到新日期：保留其他日期并更新拖动日期', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 @2024-01-01, 2024-01-03, 2024-01-05\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    // 模拟 siblingItems 包含其他两个日期（当前拖动的是 2024-01-03）
+    const siblingItems = [
+      { date: '2024-01-01' },
+      { date: '2024-01-05' }
+    ];
+
+    // 拖动 2024-01-03 到 2024-01-10
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2024-01-10',
+      undefined,
+      undefined,
+      true,
+      '2024-01-03',
+      siblingItems
+    );
+
+    expect(result).toBe(true);
+    // 应该保留 2024-01-01 和 2024-01-05，将 2024-01-03 替换为 2024-01-10
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 @2024-01-01, 2024-01-05, 2024-01-10',
+      'block-1'
+    );
+  });
 });

@@ -1,5 +1,11 @@
 <template>
   <div class="hk-work-tab calendar-tab">
+    <!-- 调试信息 -->
+    <div v-if="true" style="background: #f0f0f0; padding: 5px; font-size: 12px; color: #333;">
+      Debug: Projects={{ projectStore.projects?.length || 0 }}, 
+      Events={{ projectStore.calendarEvents?.length || 0 }},
+      Filtered={{ filteredCalendarEvents?.length || 0 }}
+    </div>
     <div class="block__icons">
       <!-- 导航按钮 -->
       <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').prev" @click="handlePrev">
@@ -61,7 +67,11 @@ const currentTitle = ref('');
 const selectedGroup = ref('');
 
 // 当前分组下的日历事件
-const filteredCalendarEvents = computed(() => projectStore.getFilteredCalendarEvents(selectedGroup.value));
+const filteredCalendarEvents = computed(() => {
+  const events = projectStore.getFilteredCalendarEvents(selectedGroup.value);
+  console.log('[Bullet Journal] Filtered calendar events:', events?.length || 0, 'group:', selectedGroup.value);
+  return events;
+});
 
 // 视图选项
 const viewOptions = [
@@ -111,6 +121,7 @@ let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据
 onMounted(async () => {
+  console.log('[Bullet Journal] CalendarTab onMounted');
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -119,8 +130,10 @@ onMounted(async () => {
   }
 
   // 加载项目数据
+  console.log('[Bullet Journal] Plugin:', !!plugin, 'Directories:', settingsStore.enabledDirectories?.length || 0);
   if (plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
+    console.log('[Bullet Journal] Projects loaded:', projectStore.projects?.length || 0, 'Events:', projectStore.calendarEvents?.length || 0);
   }
 
   // 监听事件（同上下文）
@@ -213,7 +226,6 @@ const handleEventResize = async (eventInfo: any) => {
 // 统一处理事件变化
 const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
   const blockId = eventInfo.blockId || eventInfo.extendedProps?.blockId;
-  const extendedProps = eventInfo.extendedProps;
   const allDay = eventInfo.allDay;
 
   if (!blockId) {
@@ -221,12 +233,23 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     return;
   }
 
-  // 获取原始日期时间信息
-  const originalDate = extendedProps?.date;
-  const originalStartDateTime = extendedProps?.originalStartDateTime;
-  const originalEndDateTime = extendedProps?.originalEndDateTime;
-  const siblingItems = extendedProps?.siblingItems;
-  const status = extendedProps?.status;
+  // 获取原始日期时间信息（直接从 eventInfo 获取，CalendarView 已传递）
+  const originalDate = eventInfo.date;
+  const originalStartDateTime = eventInfo.originalStartDateTime;
+  const originalEndDateTime = eventInfo.originalEndDateTime;
+  const siblingItems = eventInfo.siblingItems;
+  const status = eventInfo.status;
+
+  // 重建完整的 siblingItems（包含当前日期）
+  // siblingItems 原本只包含"其他日期"，需要加上当前正在修改的日期
+  const completeSiblingItems = [
+    ...(siblingItems || []),
+    ...(originalDate ? [{
+      date: originalDate,
+      startDateTime: originalStartDateTime,
+      endDateTime: originalEndDateTime
+    }] : [])
+  ];
 
   // 解析新的日期时间
   const startStr = eventInfo.start;
@@ -253,7 +276,7 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     newEndTime = time.substring(0, 8); // HH:mm:ss
   }
 
-  // 更新块（传递 siblingItems、status 以支持智能合并）
+  // 更新块（传递 completeSiblingItems、status 以支持智能合并）
   const success = await updateBlockDateTime(
     blockId,
     newDate,
@@ -261,7 +284,7 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     newEndTime,
     allDay,
     originalDate,
-    siblingItems,
+    completeSiblingItems,
     status
   );
 
