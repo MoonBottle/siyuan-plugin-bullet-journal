@@ -45,8 +45,8 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
         currentBlockId = '';
       }
     } else if (line) {
-      currentContent = line;
-      currentRawContent = rawLine;
+      currentContent = currentContent ? currentContent + '\n' + line : line;
+      currentRawContent = currentRawContent ? currentRawContent + '\n' + rawLine : rawLine;
     }
   }
 
@@ -99,7 +99,7 @@ export function parseKramdown(
 
   for (const block of blocks) {
     lineNumber++;
-    const content = block.content.trim();
+    const content = block.content.split('\n')[0].trim();
 
     if (!content) continue;
 
@@ -174,7 +174,7 @@ export function parseKramdown(
 
       while (nextBlockIndex < blocks.length) {
         const nextBlock = blocks[nextBlockIndex];
-        const nextContent = nextBlock.content.trim();
+        const nextContent = nextBlock.content.split('\n')[0].trim();
 
         // 检查是否为链接行（Markdown 链接格式 [名称](URL)）
         // 支持纯链接行或带列表标记的链接行
