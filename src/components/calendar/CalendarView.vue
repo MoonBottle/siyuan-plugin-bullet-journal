@@ -18,6 +18,7 @@ import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/u
 import { t, getCurrentLocale } from '@/i18n';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
+import dayjs from '@/utils/dayjs';
 
 // 格式化时间显示
 const formatEventTime = (startStr: string, allDay: boolean): string => {
@@ -141,7 +142,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       },
       onMigrateToday: async () => {
         if (!item.blockId) return;
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = dayjs().format('YYYY-MM-DD');
         await updateBlockDateTime(
           item.blockId,
           todayStr,
@@ -158,9 +159,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       },
       onMigrateTomorrow: async () => {
         if (!item.blockId) return;
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
         await updateBlockDateTime(
           item.blockId,
           tomorrowStr,

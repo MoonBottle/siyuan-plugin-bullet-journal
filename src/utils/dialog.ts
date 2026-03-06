@@ -10,6 +10,7 @@ import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
+import dayjs from './dayjs';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -533,8 +534,7 @@ function generateCalendarGrid(year: number, month: number, selectedDate?: string
   const startDayOfWeek = firstDay.getDay();
   const daysInMonth = lastDay.getDate();
   
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = dayjs().format('YYYY-MM-DD');
   
   let html = '<div class="date-picker-calendar">';
   
@@ -583,7 +583,7 @@ export function showDatePickerDialog(
   const today = new Date();
   let currentYear = today.getFullYear();
   let currentMonth = today.getMonth();
-  let selectedDate = defaultDate || today.toISOString().split('T')[0];
+  let selectedDate = defaultDate || dayjs().format('YYYY-MM-DD');
   
   const generateContent = () => {
     let content = '<div class="sy-dialog-content date-picker-dialog">';
@@ -663,9 +663,9 @@ export function showDatePickerDialog(
             updateContent();
             break;
           case 'today':
-            selectedDate = new Date().toISOString().split('T')[0];
-            currentYear = new Date().getFullYear();
-            currentMonth = new Date().getMonth();
+            selectedDate = dayjs().format('YYYY-MM-DD');
+            currentYear = dayjs().year();
+            currentMonth = dayjs().month();
             updateContent();
             break;
           case 'confirm':

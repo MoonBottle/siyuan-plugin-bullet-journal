@@ -7,6 +7,7 @@ import type { Project, Item, CalendarEvent, ProjectDirectory } from '@/types/mod
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
 import { useSettingsStore } from './settingsStore';
+import dayjs from '@/utils/dayjs';
 
 interface ProjectState {
   // 项目列表
@@ -32,6 +33,9 @@ interface ProjectState {
 
   // 是否隐藏已放弃的事项
   hideAbandoned: boolean;
+
+  // 当前日期（用于日期相关计算，刷新时更新）
+  currentDate: string;
 }
 
 export const useProjectStore = defineStore('project', {
@@ -43,7 +47,8 @@ export const useProjectStore = defineStore('project', {
     refreshing: false,
     refreshKey: 0,
     hideCompleted: false,
-    hideAbandoned: false
+    hideAbandoned: false,
+    currentDate: dayjs().format('YYYY-MM-DD')
   }),
 
   getters: {
@@ -70,10 +75,9 @@ export const useProjectStore = defineStore('project', {
 
     // 今日及以后的待办事项（排除已完成和已放弃）
     getFutureItems: (state) => (groupId: string) => {
-      const today = new Date().toISOString().split('T')[0];
       const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
       return items.filter(item =>
-        item.date >= today &&
+        item.date >= state.currentDate &&
         item.status !== 'completed' &&
         item.status !== 'abandoned'
       );
@@ -93,10 +97,9 @@ export const useProjectStore = defineStore('project', {
 
     // 过期的事项（时间过了但未完成未放弃）
     getExpiredItems: (state) => (groupId: string) => {
-      const today = new Date().toISOString().split('T')[0];
       const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
       return items.filter(item =>
-        item.date < today &&
+        item.date < state.currentDate &&
         item.status !== 'completed' &&
         item.status !== 'abandoned'
       );
@@ -104,9 +107,8 @@ export const useProjectStore = defineStore('project', {
 
     // 按日期分组的待办
     getGroupedFutureItems: (state) => (groupId: string) => {
-      const today = new Date().toISOString().split('T')[0];
       const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
-      const futureItems = items.filter(item => item.date >= today);
+      const futureItems = items.filter(item => item.date >= state.currentDate);
 
       const grouped = new Map<string, Item[]>();
       futureItems.forEach(item => {
@@ -157,6 +159,7 @@ export const useProjectStore = defineStore('project', {
         this.projects = projects;
         this.items = items;
         this.calendarEvents = calendarEvents;
+        this.currentDate = dayjs().format('YYYY-MM-DD');
       } catch (error) {
         console.error('[Bullet Journal] Failed to load projects:', error);
       } finally {
@@ -174,6 +177,9 @@ export const useProjectStore = defineStore('project', {
       this.refreshing = true;
       this.refreshKey++;
 
+      const newDate = dayjs().format('YYYY-MM-DD');
+      console.log('[Bullet Journal] Refresh started, old date:', this.currentDate, 'new date:', newDate);
+
       try {
         const parser = new MarkdownParser(directories);
         const projects = await parser.parseAllProjects();
@@ -183,6 +189,8 @@ export const useProjectStore = defineStore('project', {
         this.projects = projects;
         this.items = items;
         this.calendarEvents = calendarEvents;
+        this.currentDate = newDate;
+        console.log('[Bullet Journal] Refresh completed, currentDate updated to:', this.currentDate);
       } catch (error) {
         console.error('[Bullet Journal] Failed to refresh projects:', error);
       } finally {

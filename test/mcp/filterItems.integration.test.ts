@@ -38,11 +38,19 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
     const projectsResult = await executeListProjects(client, directories, {});
     const project = projectsResult.projects.find(p => p.name === TEST_PROJECT_NAME);
     if (!project) {
+      console.log('可用项目列表:', projectsResult.projects.map(p => p.name));
       throw new Error(`未找到测试项目: ${TEST_PROJECT_NAME}`);
     }
     testProjectId = project.id;
 
+    const kramdown = await client.getBlockKramdown(testProjectId);
+    console.log('========== 原始 Kramdown ==========');
+    console.log(kramdown);
+    console.log('========== Kramdown 结束 ==========');
+
     allItems = await fetchItems();
+    console.log('解析出的事项数量:', allItems.length);
+    console.log('事项内容列表:', [...new Set(allItems.map(i => i.content))].sort());
   });
 
   describe('基础验证', () => {

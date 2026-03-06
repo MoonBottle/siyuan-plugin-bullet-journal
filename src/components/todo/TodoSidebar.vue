@@ -339,12 +339,16 @@ import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
+import dayjs from '@/utils/dayjs';
 
 const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const plugin = usePlugin();
+
+// 从 store 获取当前日期，确保日期变化时 computed 会重新计算
+const currentDate = computed(() => projectStore.currentDate);
 
 const loading = computed(() => projectStore.loading);
 
@@ -368,16 +372,14 @@ const getStatusTag = (status: 'completed' | 'abandoned'): string => {
   return t('statusTag')[status] || '';
 };
 
-// 获取今天的日期字符串
+// 获取今天的日期字符串（基于 store 的 currentDate）
 const getTodayStr = (): string => {
-  return new Date().toISOString().split('T')[0];
+  return currentDate.value;
 };
 
-// 获取明天的日期字符串
+// 获取明天的日期字符串（基于 store 的 currentDate）
 const getTomorrowStr = (): string => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split('T')[0];
+  return dayjs(currentDate.value).add(1, 'day').format('YYYY-MM-DD');
 };
 
 // 已完成事项
@@ -472,9 +474,7 @@ const handleMigrate = async (item: Item) => {
   if (!item.blockId) return;
 
   // 计算明天的日期
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
 
   // 构建完整的 siblingItems（包含当前日期）
   const completeSiblingItems = [
@@ -507,7 +507,7 @@ const handleMigrate = async (item: Item) => {
 const handleMigrateToday = async (item: Item) => {
   if (!item.blockId) return;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = dayjs().format('YYYY-MM-DD');
 
   // 构建完整的 siblingItems（包含当前日期）
   const completeSiblingItems = [
