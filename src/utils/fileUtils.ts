@@ -183,7 +183,7 @@ function optimizeDateTimeExpressions(
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
 
-  // 2. 按时间分组（相同时间的日期可以合并为范围）
+  // 2. 按时间分组，合并连续日期，然后按日期排序
   const timeGroups = new Map<string, typeof sortedItems>();
 
   for (const item of sortedItems) {
@@ -200,34 +200,31 @@ function optimizeDateTimeExpressions(
     timeGroups.get(timeKey)!.push(item);
   }
 
-  // 3. 对每个时间组，将日期合并为连续范围
-  const expressions: string[] = [];
-
-  // 按时间组的出现顺序处理（保持排序后的顺序）
-  const processedDates = new Set<string>();
+  // 3. 对每个时间组合并连续日期，收集所有表达式
+  const expressionList: Array<{ expr: string; startDate: string }> = [];
 
   for (const [timeKey, groupItems] of timeGroups) {
-    // 过滤掉已处理的日期
-    const unprocessedItems = groupItems.filter(item => !processedDates.has(item.date));
-
-    if (unprocessedItems.length === 0) continue;
-
-    const dates = unprocessedItems.map(item => item.date);
+    const dates = groupItems.map(i => i.date);
     const ranges = groupDatesIntoRanges(dates);
 
     for (const range of ranges) {
-      if (range.length === 1) {
-        // 单个日期
-        expressions.push(buildDateTimeMark(range[0], timeKey || undefined));
-      } else {
-        // 日期范围
-        expressions.push(buildDateRangeMark(range[0], range[range.length - 1], timeKey || undefined));
-      }
-    }
+      const expr = range.length === 1
+        ? buildDateTimeMark(range[0], timeKey || undefined)
+        : buildDateRangeMark(range[0], range[range.length - 1], timeKey || undefined);
 
-    // 标记为已处理
-    unprocessedItems.forEach(item => processedDates.add(item.date));
+      expressionList.push({
+        expr,
+        startDate: range[0]
+      });
+    }
   }
+
+  // 4. 按开始日期排序
+  expressionList.sort((a, b) => {
+    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+  });
+
+  const expressions = expressionList.map(item => item.expr);
 
   // 4. 合并表达式，只保留第一个 @
   if (expressions.length === 0) return '';
