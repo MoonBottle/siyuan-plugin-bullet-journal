@@ -1,5 +1,5 @@
 <template>
-  <div class="hk-work-tab calendar-tab">
+  <div ref="tabRootRef" class="hk-work-tab calendar-tab">
     <div class="block__icons">
       <!-- 导航按钮 -->
       <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').prev" @click="handlePrev">
@@ -35,6 +35,7 @@
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
+        @navigated="updateTitle"
       />
     </div>
   </div>
@@ -55,6 +56,7 @@ const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
+const tabRootRef = ref<HTMLElement | null>(null);
 const calendarRef = ref<any>(null);
 const currentView = ref('timeGridDay');
 const currentTitle = ref('');
@@ -100,12 +102,13 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   await projectStore.refresh(plugin, settingsStore.enabledDirectories);
 };
 
-// 日历导航处理函数
+// 日历导航处理函数（仅当前 Tab 可见时处理，避免多 Tab 重复跳转）
 const handleCalendarNavigate = (date: string) => {
-  if (calendarRef.value && date) {
-    calendarRef.value.gotoDate(date);
-    updateTitle();
-  }
+  const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
+  console.warn('[Bullet Journal] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
+  if (!isVisible || !calendarRef.value || !date) return;
+  calendarRef.value.gotoDate(date);
+  updateTitle();
 };
 
 // 事件取消订阅函数
@@ -116,6 +119,10 @@ let refreshChannel: BroadcastChannel | null = null;
 // 初始化数据
 onMounted(async () => {
   console.log('[Bullet Journal] CalendarTab onMounted');
+  // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
+
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -129,10 +136,6 @@ onMounted(async () => {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
     console.log('[Bullet Journal] Projects loaded:', projectStore.projects?.length || 0, 'Events:', projectStore.calendarEvents?.length || 0);
   }
-
-  // 监听事件（同上下文）
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
-  unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
 
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {

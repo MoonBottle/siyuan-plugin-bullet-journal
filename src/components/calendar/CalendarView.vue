@@ -75,11 +75,14 @@ const emit = defineEmits<{
   (e: 'event-click', event: any): void;
   (e: 'event-drop', event: any): void;
   (e: 'event-resize', event: any): void;
+  (e: 'navigated'): void;
 }>();
 
 const calendarEl = ref<HTMLElement | null>(null);
 let calendarInstance: Calendar | null = null;
 let resizeObserver: ResizeObserver | null = null;
+/** 实例创建前收到的待跳转日期，onMounted 完成后消费 */
+let pendingNavigateDate: string | null = null;
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
@@ -287,6 +290,13 @@ onMounted(async () => {
     calendarInstance.render();
     updateEvents();
 
+    if (pendingNavigateDate) {
+      console.warn('[Bullet Journal] CalendarView apply pendingNavigateDate', pendingNavigateDate);
+      calendarInstance.gotoDate(pendingNavigateDate);
+      pendingNavigateDate = null;
+      emit('navigated');
+    }
+
     // ResizeObserver to handle container size changes
     resizeObserver = new ResizeObserver(() => {
       if (calendarInstance) {
@@ -356,7 +366,15 @@ defineExpose({
   prev: () => calendarInstance?.prev(),
   next: () => calendarInstance?.next(),
   today: () => calendarInstance?.today(),
-  gotoDate: (date: string) => calendarInstance?.gotoDate(date),
+  gotoDate: (date: string) => {
+    if (calendarInstance) {
+      console.warn('[Bullet Journal] CalendarView.gotoDate immediate', date);
+      calendarInstance.gotoDate(date);
+    } else if (date) {
+      console.warn('[Bullet Journal] CalendarView.gotoDate pending', date);
+      pendingNavigateDate = date;
+    }
+  },
   changeView: (view: string) => calendarInstance?.changeView(view),
   // 获取当前状态
   getView: () => calendarInstance?.view?.type,

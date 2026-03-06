@@ -805,9 +805,14 @@ export default class HKWorkPlugin extends Plugin {
   /**
    * 使用官方 API 打开 Tab
    */
-  public openCustomTab(type: string, options?: { position?: 'right' | 'bottom' }) {
+  public openCustomTab(type: string, options?: { position?: 'right' | 'bottom'; initialDate?: string }) {
     // 根据 API 文档，custom.id 需要是 plugin.name + tab.type
     const customId = `${this.name}${type}`;
+
+    // custom.data 仅传 type，避免不同 initialDate 导致创建多个 Tab
+    const customData = { type };
+    const initialDate = options?.initialDate;
+    console.warn('[Bullet Journal] openCustomTab', type, 'initialDate:', initialDate);
 
     try {
       openTab({
@@ -816,8 +821,12 @@ export default class HKWorkPlugin extends Plugin {
           id: customId,
           icon: this.getTabIcon(type),
           title: this.getTabTitle(type),
-          data: { type }
-        }
+          data: customData
+        },
+        afterOpen: initialDate ? () => {
+          console.warn('[Bullet Journal] afterOpen emit CALENDAR_NAVIGATE', initialDate);
+          eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
+        } : undefined
       });
     } catch (error) {
       console.error('[Bullet Journal] Failed to open tab:', error);

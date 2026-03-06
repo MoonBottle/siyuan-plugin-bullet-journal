@@ -9,7 +9,6 @@ import { formatDateTime, formatDateLabel, formatTimeRange, calculateDuration } f
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
-import { eventBus, Events } from './eventBus';
 import { TAB_TYPES } from '@/constants';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
@@ -222,10 +221,10 @@ export function showItemDetailModal(item: Item): Dialog {
         await openDocumentAtLine(item.docId, item.lineNumber, item.blockId);
         dialog.destroy();
       } else if (action === 'open-calendar') {
+        console.warn('[Bullet Journal] dialog open-calendar', item.date);
         if (plugin && (plugin as any).openCustomTab) {
-          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR);
+          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
         }
-        eventBus.emit(Events.CALENDAR_NAVIGATE, item.date);
         dialog.destroy();
       } else if (action === 'close') {
         dialog.destroy();

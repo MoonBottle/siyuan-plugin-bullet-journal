@@ -335,7 +335,6 @@ import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { showItemDetailModal, showDatePickerDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
-import { eventBus, Events } from '@/utils/eventBus';
 import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
 import { t } from '@/i18n';
@@ -449,14 +448,12 @@ const openDetail = (item: Item) => {
   showItemDetailModal(item);
 };
 
-// 在日历中打开
+// 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
 const openCalendar = (item: Item) => {
-  // 使用插件 API 打开日历标签页
+  console.warn('[Bullet Journal] openCalendar', item.date);
   if (plugin && (plugin as any).openCustomTab) {
-    (plugin as any).openCustomTab(TAB_TYPES.CALENDAR);
+    (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
   }
-  // 发送导航事件
-  eventBus.emit(Events.CALENDAR_NAVIGATE, item.date);
 };
 
 // 标记完成
