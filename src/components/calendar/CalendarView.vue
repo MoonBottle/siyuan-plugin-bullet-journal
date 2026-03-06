@@ -34,14 +34,21 @@ const renderEventContent = (arg: any) => {
   const startTime = formatEventTime(arg.event.startStr, arg.event.allDay);
   const title = arg.event.title;
   const taskName = arg.event.extendedProps?.task;
+  const status = arg.event.extendedProps?.status;
 
-  // 判断是否为事项（有 item 属性）或任务
+  const getStatusEmoji = (itemStatus: string | undefined): string => {
+    if (itemStatus === 'completed') return '✅ ';
+    if (itemStatus === 'abandoned') return '❌ ';
+    return '⏳ ';
+  };
+
+  const statusEmoji = getStatusEmoji(status);
+
   const isItem = arg.event.extendedProps?.item !== undefined;
 
   const container = document.createElement('div');
   container.className = 'fc-event-custom';
 
-  // 时间部分
   if (startTime) {
     const timeEl = document.createElement('span');
     timeEl.className = 'fc-event-time';
@@ -49,13 +56,11 @@ const renderEventContent = (arg: any) => {
     container.appendChild(timeEl);
   }
 
-  // 标题部分
   const titleEl = document.createElement('span');
   titleEl.className = 'fc-event-title-text';
-  titleEl.textContent = title;
+  titleEl.textContent = statusEmoji + title;
   container.appendChild(titleEl);
 
-  // 任务名（仅事项显示，灰色小字，同一行）
   if (isItem && taskName && taskName !== title) {
     const taskEl = document.createElement('span');
     taskEl.className = 'fc-event-task';
