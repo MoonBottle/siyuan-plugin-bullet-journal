@@ -68,6 +68,7 @@ export class LineParser {
    * 解析工作事项行（支持多日期）
    * 格式: 事项内容 @2024-01-01 10:00:00~11:00:00, 2024-01-03 14:00:00~15:00:00 #done
    * 支持: @2024-01-01, @2024-01-01~2024-01-05, @2024-01-01~01-05（简写）
+   * 支持中英文逗号分隔
    */
   public static parseItemLine(line: string, lineNumber: number): Item[] {
     // 必须包含日期标记
@@ -83,8 +84,11 @@ export class LineParser {
       status = 'abandoned';
     }
 
-    // 提取所有日期时间表达式
-    const dateTimeExpressions = this.extractDateTimeExpressions(line);
+    // 将中文逗号替换为英文逗号，便于统一处理
+    const normalizedLine = line.replace(/，/g, ',');
+
+    // 提取所有日期时间表达式（支持逗号分隔的多个日期）
+    const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLine);
     if (dateTimeExpressions.length === 0) return [];
 
     // 提取内容（移除所有日期时间表达式和状态标签）
@@ -94,6 +98,7 @@ export class LineParser {
     }
     content = content
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
+      .replace(/[，,]/g, '')  // 移除残留的逗号
       .trim();
 
     if (!content) return [];
@@ -156,6 +161,7 @@ export class LineParser {
 
   /**
    * 提取所有日期时间表达式
+   * 支持逗号分隔的多个日期，如: @2024-01-01, 2024-01-03, 2024-01-05
    */
   private static extractDateTimeExpressions(line: string): Array<{
     fullMatch: string;
@@ -164,18 +170,54 @@ export class LineParser {
   }> {
     const expressions: Array<{ fullMatch: string; datePart: string; timePart: string | null }> = [];
 
-    // 匹配 @日期 或 @日期 时间 或 @日期 时间~时间
-    // 日期格式: 2024-01-01 或 2024-01-01~2024-01-05 或 2024-01-01~01-05（简写）
-    // 时间格式: 09:00:00 或 09:00:00~10:00:00
-    const regex = /@(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/g;
+    // 首先找到所有以 @ 开头的日期时间块
+    // 匹配 @日期 或 @日期 时间 或 @日期 时间~时间，以及后续逗号分隔的日期
+    const mainRegex = /@(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/g;
 
-    let match;
-    while ((match = regex.exec(line)) !== null) {
+    let mainMatch;
+    while ((mainMatch = mainRegex.exec(line)) !== null) {
+      const startIndex = mainMatch.index;
+      const mainDatePart = mainMatch[1];
+      const mainTimePart = mainMatch[2] || null;
+      const mainFullMatch = mainMatch[0];
+
+      // 添加主日期表达式
       expressions.push({
-        fullMatch: match[0],
-        datePart: match[1],
-        timePart: match[2] || null
+        fullMatch: mainFullMatch,
+        datePart: mainDatePart,
+        timePart: mainTimePart
       });
+
+      // 查找该日期后的逗号分隔日期
+      // 从主日期结束位置开始查找
+      const afterMainDate = line.substring(startIndex + mainFullMatch.length);
+
+      // 匹配逗号或逗号+空格后跟着的日期（可能带时间）
+      // 格式: , 2024-01-03 或 , 2024-01-03 09:00:00~10:00:00
+      const continuationRegex = /^(?:\s*,\s*|\s+)(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/;
+
+      let remaining = afterMainDate;
+      let lastMatchEnd = 0;
+
+      while (remaining.length > 0) {
+        const contMatch = remaining.match(continuationRegex);
+        if (!contMatch) break;
+
+        // 检查是否遇到状态标签或行尾（不应再解析）
+        const beforeMatch = remaining.substring(0, contMatch.index || 0);
+        if (beforeMatch.includes('#')) break;
+
+        expressions.push({
+          fullMatch: contMatch[0],
+          datePart: contMatch[1],
+          timePart: contMatch[2] || null
+        });
+
+        remaining = remaining.substring(contMatch[0].length);
+
+        // 安全检查：防止无限循环
+        if (contMatch[0].length === 0) break;
+      }
     }
 
     return expressions;

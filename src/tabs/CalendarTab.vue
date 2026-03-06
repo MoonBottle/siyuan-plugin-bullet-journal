@@ -253,7 +253,7 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     newEndTime = time.substring(0, 8); // HH:mm:ss
   }
 
-  // 更新块（传递 siblingItems 和 status 以支持智能合并）
+  // 更新块（传递 siblingItems、status 以支持智能合并）
   const success = await updateBlockDateTime(
     blockId,
     newDate,

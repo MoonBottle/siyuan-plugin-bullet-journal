@@ -338,7 +338,7 @@ import { usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
 import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
-import { getCurrentLocale, t } from '@/i18n';
+import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 
 const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
@@ -364,16 +364,9 @@ const toggleSection = (section: keyof typeof collapsedSections.value) => {
   collapsedSections.value[section] = !collapsedSections.value[section];
 };
 
-// 根据语言获取标签
+// 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  const locale = getCurrentLocale();
-  const isZh = locale.startsWith('zh');
-  
-  if (status === 'completed') {
-    return isZh ? '#已完成' : '#done';
-  } else {
-    return isZh ? '#已放弃' : '#abandoned';
-  }
+  return t('statusTag')[status] || '';
 };
 
 // 获取今天的日期字符串

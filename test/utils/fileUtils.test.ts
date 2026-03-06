@@ -27,6 +27,22 @@ vi.mock('@/api', () => ({
   sql: (...args: any[]) => mockSql(...args)
 }));
 
+// Mock @/i18n
+const mockT = vi.fn((key: string) => {
+  if (key === 'statusTag') {
+    return {
+      completed: '#已完成',
+      abandoned: '#已放弃',
+      pending: ''
+    };
+  }
+  return key;
+});
+
+vi.mock('@/i18n', () => ({
+  t: (...args: any[]) => mockT(...args)
+}));
+
 // 导入被测函数（在 mock 之后）
 import { updateBlockDateTime } from '@/utils/fileUtils';
 
@@ -142,11 +158,8 @@ describe('updateBlockDateTime', () => {
 
     expect(result).toBe(true);
     const callArg = mockUpdateBlock.mock.calls[0][1];
-    // 应该拆分为不连续的日期
-    expect(callArg).toContain('@2026-03-06');
-    expect(callArg).toContain('@2026-03-10');
-    expect(callArg).toContain('@2026-03-12');
-    expect(callArg).toContain('@2026-03-20');
+    // 应该拆分为不连续的日期，只有一个 @ 前缀
+    expect(callArg).toBe('整理资料 @2026-03-06, 2026-03-10, 2026-03-12, 2026-03-20');
   });
 
   it('多日期场景：添加时间到某一天', async () => {
@@ -174,16 +187,13 @@ describe('updateBlockDateTime', () => {
 
     expect(result).toBe(true);
     const callArg = mockUpdateBlock.mock.calls[0][1];
-    // 03-11 应该带时间，其他日期保持无时间
-    expect(callArg).toContain('@2026-03-11 09:00:00~09:30:00');
-    expect(callArg).toContain('@2026-03-06');
-    expect(callArg).toContain('@2026-03-10');
-    expect(callArg).toContain('@2026-03-12');
+    // 03-11 应该带时间，其他日期保持无时间，只有一个 @ 前缀
+    expect(callArg).toBe('整理资料 @2026-03-06, 2026-03-10, 2026-03-12, 2026-03-11 09:00:00~09:30:00');
   });
 
-  it('多日期场景：保留状态标签', async () => {
+  it('多日期场景：保留状态标签（已完成）', async () => {
     mockGetBlockKramdown.mockResolvedValue({
-      kramdown: '整理资料 @2024-01-01, 2024-01-03 #done\n{: id="block-1" }'
+      kramdown: '整理资料 @2024-01-01, 2024-01-03 #已完成\n{: id="block-1" }'
     });
     mockUpdateBlock.mockResolvedValue(undefined);
 
@@ -203,10 +213,70 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该保留 #done 标签
+    // 应该使用 #已完成 标签（根据 i18n 配置）
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02~01-03 #done',
+      '整理资料 @2024-01-02~01-03 #已完成',
+      'block-1'
+    );
+  });
+
+  it('多日期场景：已放弃状态标签', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 @2024-01-01, 2024-01-03\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const siblingItems = [
+      { date: '2024-01-03' }
+    ];
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2024-01-02',
+      undefined,
+      undefined,
+      true,
+      '2024-01-01',
+      siblingItems,
+      'abandoned'
+    );
+
+    expect(result).toBe(true);
+    // 应该使用 #已放弃 标签（根据 i18n 配置）
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 @2024-01-02~01-03 #已放弃',
+      'block-1'
+    );
+  });
+
+  it('多日期场景：待办状态无标签', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 @2024-01-01, 2024-01-03\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const siblingItems = [
+      { date: '2024-01-03' }
+    ];
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2024-01-02',
+      undefined,
+      undefined,
+      true,
+      '2024-01-01',
+      siblingItems,
+      'pending'
+    );
+
+    expect(result).toBe(true);
+    // 待办状态不应该有标签
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 @2024-01-02~01-03',
       'block-1'
     );
   });
@@ -234,7 +304,7 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 03-06 和 03-07 应该合并为范围
+    // 03-06 和 03-07 应该合并为范围，只有一个 @ 前缀
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
       '整理资料 @2026-03-06~03-07, 2026-03-10',

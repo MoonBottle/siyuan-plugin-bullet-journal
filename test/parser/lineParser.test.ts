@@ -34,7 +34,7 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].siblingItems).toBeUndefined();
   });
 
-  it('多个日期', () => {
+  it('多个日期（英文逗号）', () => {
     const items = LineParser.parseItemLine('整理资料 @2024-01-01, 2024-01-03, 2024-01-05', 1);
     expect(items).toHaveLength(3);
     expect(items[0].date).toBe('2024-01-01');
@@ -47,6 +47,22 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].siblingItems).toHaveLength(2);
     expect(items[0].siblingItems?.[0].date).toBe('2024-01-03');
     expect(items[0].siblingItems?.[1].date).toBe('2024-01-05');
+  });
+
+  it('多个日期（中文逗号）', () => {
+    const items = LineParser.parseItemLine('整理资料 @2024-01-01，2024-01-03，2024-01-05', 1);
+    expect(items).toHaveLength(3);
+    expect(items[0].date).toBe('2024-01-01');
+    expect(items[1].date).toBe('2024-01-03');
+    expect(items[2].date).toBe('2024-01-05');
+  });
+
+  it('多个日期（中英文逗号混合）', () => {
+    const items = LineParser.parseItemLine('整理资料 @2024-01-01，2024-01-03, 2024-01-05', 1);
+    expect(items).toHaveLength(3);
+    expect(items[0].date).toBe('2024-01-01');
+    expect(items[1].date).toBe('2024-01-03');
+    expect(items[2].date).toBe('2024-01-05');
   });
 
   it('日期范围（完整格式）', () => {
@@ -67,6 +83,8 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].date).toBe('2024-01-01');
     expect(items[1].date).toBe('2024-01-02');
     expect(items[2].date).toBe('2024-01-03');
+    // 简写格式保留原始表达式
+    expect(items[0].siblingItems).toHaveLength(2);
   });
 
   it('多日期+时间（每个日期不同时间）', () => {

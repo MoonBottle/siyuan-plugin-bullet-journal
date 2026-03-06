@@ -131,6 +131,11 @@
     "next": "Next",
     "today": "Today"
   },
+  "statusTag": {
+    "completed": "#done",
+    "abandoned": "#abandoned",
+    "pending": ""
+  },
   "common": {
     "more": "More",
     "loading": "Loading...",

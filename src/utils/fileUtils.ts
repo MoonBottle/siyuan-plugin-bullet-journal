@@ -5,6 +5,7 @@ import { openTab } from 'siyuan';
 import { usePlugin } from '@/main';
 import { sql, getBlockKramdown, updateBlock } from '@/api';
 import type { ItemStatus } from '@/types/models';
+import { t } from '@/i18n';
 
 /**
  * 时间加一小时
@@ -67,8 +68,8 @@ function buildDateRangeMark(
 
   let datePart: string;
   if (startParts[0] === endParts[0] && startParts[1] === endParts[1]) {
-    // 同年同月，简写为 YYYY-MM-DD~DD
-    datePart = `${startDate}~${endParts[2]}`;
+    // 同年同月，简写为 YYYY-MM-DD~MM-DD（保留月份）
+    datePart = `${startDate}~${endParts[1]}-${endParts[2]}`;
   } else {
     // 不同月或不同年，完整格式
     datePart = `${startDate}~${endDate}`;
@@ -82,18 +83,11 @@ function buildDateRangeMark(
 }
 
 /**
- * 构建状态标签
+ * 构建状态标签（使用 i18n）
  */
 function buildStatusTag(status?: ItemStatus): string {
-  switch (status) {
-    case 'completed':
-      return '#done';
-    case 'abandoned':
-      return '#abandoned';
-    case 'pending':
-    default:
-      return '';
-  }
+  if (!status || status === 'pending') return '';
+  return t('statusTag')[status] || '';
 }
 
 /**
@@ -203,7 +197,15 @@ function optimizeDateTimeExpressions(
     }
   }
 
-  return expressions.join(', ');
+  // 合并表达式，只保留第一个 @
+  if (expressions.length === 0) return '';
+  
+  // 第一个表达式保留 @
+  const firstExpr = expressions[0];
+  // 后续表达式移除 @
+  const restExprs = expressions.slice(1).map(expr => expr.replace(/^@/, ''));
+  
+  return [firstExpr, ...restExprs].join(', ');
 }
 
 /**
@@ -243,19 +245,28 @@ export async function updateBlockDateTime(
     let content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
 
     // 提取事项内容（去除日期时间标记和状态标签）
+    // 先移除所有日期时间表达式（包括逗号分隔的多个日期）
     let itemContent = content
       .replace(/@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
+      // 移除残留的逗号和日期（如 ", 2024-01-03"）
+      .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/g, '')
       .trim();
 
     // 构建所有日期时间项列表
     const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
 
     // 更新当前修改的 Item
+    // 如果没有结束时间但有开始时间，自动加1小时
+    const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
+    const formattedEndTime = newEndTime
+      ? formatTimeToSeconds(newEndTime)
+      : (formattedStartTime ? addOneHour(formattedStartTime) : undefined);
+
     const updatedItem = {
       date: newDate,
-      startDateTime: allDay ? undefined : (newStartTime ? `${newDate} ${formatTimeToSeconds(newStartTime)}` : undefined),
-      endDateTime: allDay ? undefined : (newEndTime ? `${newDate} ${formatTimeToSeconds(newEndTime)}` : undefined)
+      startDateTime: allDay ? undefined : (formattedStartTime ? `${newDate} ${formattedStartTime}` : undefined),
+      endDateTime: allDay ? undefined : (formattedEndTime ? `${newDate} ${formattedEndTime}` : undefined)
     };
 
     // 替换或添加到列表
@@ -280,7 +291,7 @@ export async function updateBlockDateTime(
     // 智能合并为最优表达式
     const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
 
-    // 构建状态标签
+    // 构建状态标签（使用 i18n）
     const statusTag = buildStatusTag(status);
 
     // 拼接新内容：事项内容 + 优化后的日期时间标记 + 状态标签

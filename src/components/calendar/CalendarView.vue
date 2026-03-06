@@ -15,7 +15,7 @@ import type { CalendarEvent } from '@/types/models';
 import { showEventDetailModal, showDatePickerDialog } from '@/utils/dialog';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
-import { getCurrentLocale, t } from '@/i18n';
+import { t } from '@/i18n';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
 
@@ -85,16 +85,9 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const plugin = usePlugin();
 
-// 根据语言获取标签
+// 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  const locale = getCurrentLocale();
-  const isZh = locale.startsWith('zh');
-  
-  if (status === 'completed') {
-    return isZh ? '#已完成' : '#done';
-  } else {
-    return isZh ? '#已放弃' : '#abandoned';
-  }
+  return t('statusTag')[status] || '';
 };
 
 // 日历事件右键菜单
