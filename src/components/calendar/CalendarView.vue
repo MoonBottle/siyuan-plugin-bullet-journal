@@ -35,7 +35,7 @@ const renderEventContent = (arg: any) => {
   const startTime = formatEventTime(arg.event.startStr, arg.event.allDay);
   const title = arg.event.title;
   const taskName = arg.event.extendedProps?.task;
-  const status = arg.event.extendedProps?.status;
+  const status = arg.event.extendedProps?.itemStatus;
 
   const getStatusEmoji = (itemStatus: string | undefined): string => {
     if (itemStatus === 'completed') return '✅ ';
@@ -358,7 +358,7 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
     originalStartDateTime: extendedProps?.originalStartDateTime,
     originalEndDateTime: extendedProps?.originalEndDateTime,
     siblingItems: extendedProps?.siblingItems,
-    status: extendedProps?.status
+    status: extendedProps?.itemStatus
   };
 
   emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData);

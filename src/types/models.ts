@@ -80,6 +80,8 @@ export interface CalendarEvent {
     taskLinks?: Link[];
     level?: string;
     item?: string;
+    itemStatus?: ItemStatus;
+    itemLinks?: Link[];
     hasItems: boolean;
     docId: string;
     lineNumber: number;

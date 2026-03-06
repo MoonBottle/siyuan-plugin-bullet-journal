@@ -164,9 +164,28 @@ export function showItemDetailModal(item: Item): Dialog {
   // 事项卡片
   const dateLabel = formatDateLabel(item.date, t('todo').today, t('todo').tomorrow);
   const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
+
+  // 事项状态标签
+  const statusMap: Record<string, { text: string; class: string }> = {
+    'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'completed': { text: t('todo').completed, class: 'completed' },
+    'abandoned': { text: t('todo').abandoned, class: 'abandoned' }
+  };
+  const statusInfo = statusMap[item.status] || statusMap['pending'];
+  const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
+
+  // 事项链接
+  const itemLinks = item.links || [];
+  const itemLinksHtml = itemLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">${t('todo').item}</div>
+      <div class="sy-dialog-card-title">
+        ${t('todo').item}
+        ${statusHtml}
+      </div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
@@ -188,6 +207,7 @@ export function showItemDetailModal(item: Item): Dialog {
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.content}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
       ` : ''}
+      ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
     </div>
   `;
 
@@ -371,9 +391,28 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   }
 
   // 事项卡片
+  // 事项状态标签
+  const statusMap: Record<string, { text: string; class: string }> = {
+    'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'completed': { text: t('todo').completed, class: 'completed' },
+    'abandoned': { text: t('todo').abandoned, class: 'abandoned' }
+  };
+  const itemStatus = props.itemStatus || 'pending';
+  const statusInfo = statusMap[itemStatus] || statusMap['pending'];
+  const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
+
+  // 事项链接
+  const itemLinks = props.itemLinks || [];
+  const itemLinksHtml = itemLinks.map(link =>
+    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
+  ).join('');
+
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">${t('todo').item}</div>
+      <div class="sy-dialog-card-title">
+        ${t('todo').item}
+        ${statusHtml}
+      </div>
       <div class="sy-dialog-item-meta">
         <div class="sy-dialog-item-time-row">
           <span class="sy-dialog-time-text">
@@ -395,6 +434,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.item}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
       ` : ''}
+      ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
     </div>
   `;
 
