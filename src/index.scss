@@ -155,6 +155,11 @@
       background: rgba(244, 67, 54, 0.15);
       color: #f44336;
     }
+
+    &.expired {
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+    }
   }
 
   // 图标样式（全局可用）

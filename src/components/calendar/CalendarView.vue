@@ -36,14 +36,18 @@ const renderEventContent = (arg: any) => {
   const title = arg.event.title;
   const taskName = arg.event.extendedProps?.task;
   const status = arg.event.extendedProps?.itemStatus;
+  const date = arg.event.extendedProps?.date;
 
-  const getStatusEmoji = (itemStatus: string | undefined): string => {
+  const getStatusEmoji = (itemStatus: string | undefined, itemDate: string | undefined): string => {
+    // 判断是否过期（待办状态且日期早于今天）
+    const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
+    if (isExpired) return '⚠️ ';
     if (itemStatus === 'completed') return '✅ ';
     if (itemStatus === 'abandoned') return '❌ ';
     return '⏳ ';
   };
 
-  const statusEmoji = getStatusEmoji(status);
+  const statusEmoji = getStatusEmoji(status, date);
 
   const isItem = arg.event.extendedProps?.item !== undefined;
 

@@ -165,13 +165,18 @@ export function showItemDetailModal(item: Item): Dialog {
   const dateLabel = formatDateLabel(item.date, t('todo').today, t('todo').tomorrow);
   const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
 
+  // 判断是否过期（待办状态且日期早于今天）
+  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date < dayjs().format('YYYY-MM-DD');
+
   // 事项状态标签
   const statusMap: Record<string, { text: string; class: string }> = {
     'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
     'completed': { text: t('todo').completed, class: 'completed' },
-    'abandoned': { text: t('todo').abandoned, class: 'abandoned' }
+    'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
+    'expired': { text: t('todo').expired, class: 'expired' }
   };
-  const statusInfo = statusMap[item.status] || statusMap['pending'];
+  const statusKey = isExpired ? 'expired' : item.status;
+  const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 
   // 事项链接
@@ -391,14 +396,20 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   }
 
   // 事项卡片
+  // 判断是否过期（待办状态且日期早于今天）
+  const itemStatus = props.itemStatus || 'pending';
+  const itemDate = props.date;
+  const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
+
   // 事项状态标签
   const statusMap: Record<string, { text: string; class: string }> = {
     'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
     'completed': { text: t('todo').completed, class: 'completed' },
-    'abandoned': { text: t('todo').abandoned, class: 'abandoned' }
+    'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
+    'expired': { text: t('todo').expired, class: 'expired' }
   };
-  const itemStatus = props.itemStatus || 'pending';
-  const statusInfo = statusMap[itemStatus] || statusMap['pending'];
+  const statusKey = isExpired ? 'expired' : itemStatus;
+  const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 
   // 事项链接
