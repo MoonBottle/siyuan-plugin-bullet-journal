@@ -125,7 +125,7 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该智能合并为连续范围
+    // 连续日期合并为范围
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
       '整理资料 @2024-01-02~01-03',

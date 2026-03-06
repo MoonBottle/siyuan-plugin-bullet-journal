@@ -171,19 +171,48 @@ function groupByTime(
 /**
  * 智能优化日期时间表达式
  * 将多个日期时间合并为最简表达方式
+ * 按日期顺序排列，相同时间的连续日期合并为范围
  */
 function optimizeDateTimeExpressions(
   items: Array<{ date: string; startDateTime?: string; endDateTime?: string }>
 ): string {
   if (items.length === 0) return '';
 
-  // 1. 按时间分组（相同时间的日期可以合并为范围）
-  const timeGroups = groupByTime(items);
+  // 1. 按日期排序
+  const sortedItems = [...items].sort((a, b) => {
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
+  });
 
-  // 2. 对每个时间组，将日期合并为连续范围
+  // 2. 按时间分组（相同时间的日期可以合并为范围）
+  const timeGroups = new Map<string, typeof sortedItems>();
+
+  for (const item of sortedItems) {
+    let timeKey = '';
+    if (item.startDateTime) {
+      const startTime = item.startDateTime.split(' ')[1];
+      const endTime = item.endDateTime?.split(' ')[1];
+      timeKey = endTime ? `${startTime}~${endTime}` : startTime;
+    }
+
+    if (!timeGroups.has(timeKey)) {
+      timeGroups.set(timeKey, []);
+    }
+    timeGroups.get(timeKey)!.push(item);
+  }
+
+  // 3. 对每个时间组，将日期合并为连续范围
   const expressions: string[] = [];
 
-  for (const [timeKey, dates] of timeGroups) {
+  // 按时间组的出现顺序处理（保持排序后的顺序）
+  const processedDates = new Set<string>();
+
+  for (const [timeKey, groupItems] of timeGroups) {
+    // 过滤掉已处理的日期
+    const unprocessedItems = groupItems.filter(item => !processedDates.has(item.date));
+
+    if (unprocessedItems.length === 0) continue;
+
+    const dates = unprocessedItems.map(item => item.date);
     const ranges = groupDatesIntoRanges(dates);
 
     for (const range of ranges) {
@@ -195,16 +224,19 @@ function optimizeDateTimeExpressions(
         expressions.push(buildDateRangeMark(range[0], range[range.length - 1], timeKey || undefined));
       }
     }
+
+    // 标记为已处理
+    unprocessedItems.forEach(item => processedDates.add(item.date));
   }
 
-  // 合并表达式，只保留第一个 @
+  // 4. 合并表达式，只保留第一个 @
   if (expressions.length === 0) return '';
-  
+
   // 第一个表达式保留 @
   const firstExpr = expressions[0];
   // 后续表达式移除 @
   const restExprs = expressions.slice(1).map(expr => expr.replace(/^@/, ''));
-  
+
   return [firstExpr, ...restExprs].join(', ');
 }
 
@@ -255,8 +287,6 @@ export async function updateBlockDateTime(
 
     // 构建所有日期时间项列表
     const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
-    console.log('[Bullet Journal] updateBlockDateTime - siblingItems:', siblingItems?.length || 0, 'allItems:', allItems.length);
-    console.log('[Bullet Journal] updateBlockDateTime - originalDate:', originalDate, 'newDate:', newDate);
 
     // 更新当前修改的 Item
     // 如果没有结束时间但有开始时间，自动加1小时
@@ -289,11 +319,9 @@ export async function updateBlockDateTime(
       uniqueItems.set(item.date, item);
     }
     const dedupedItems = Array.from(uniqueItems.values());
-    console.log('[Bullet Journal] updateBlockDateTime - dedupedItems:', dedupedItems.length, dedupedItems.map(i => i.date));
 
     // 智能合并为最优表达式
     const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
-    console.log('[Bullet Journal] updateBlockDateTime - optimizedExpr:', optimizedExpr);
 
     // 构建状态标签（使用 i18n）
     const statusTag = buildStatusTag(status);
