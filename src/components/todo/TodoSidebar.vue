@@ -473,21 +473,34 @@ const handleDone = async (item: Item) => {
 // 迁移到明天
 const handleMigrate = async (item: Item) => {
   if (!item.blockId) return;
-  
+
   // 计算明天的日期
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   // 使用 updateBlockDateTime 更新日期，保留原时间
   const success = await updateBlockDateTime(
     item.blockId,
     tomorrowStr,
     item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
     item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    !item.startDateTime
+    !item.startDateTime,
+    item.date,
+    completeSiblingItems,
+    item.status
   );
-  
+
   if (success && plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
@@ -496,17 +509,30 @@ const handleMigrate = async (item: Item) => {
 // 迁移到今天
 const handleMigrateToday = async (item: Item) => {
   if (!item.blockId) return;
-  
+
   const todayStr = new Date().toISOString().split('T')[0];
-  
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   const success = await updateBlockDateTime(
     item.blockId,
     todayStr,
     item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
     item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    !item.startDateTime
+    !item.startDateTime,
+    item.date,
+    completeSiblingItems,
+    item.status
   );
-  
+
   if (success && plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
@@ -515,16 +541,29 @@ const handleMigrateToday = async (item: Item) => {
 // 迁移到自定义日期
 const handleMigrateCustom = (item: Item) => {
   if (!item.blockId) return;
-  
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
     const success = await updateBlockDateTime(
       item.blockId,
       newDate,
       item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
       item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-      !item.startDateTime
+      !item.startDateTime,
+      item.date,
+      completeSiblingItems,
+      item.status
     );
-    
+
     if (success && plugin) {
       await projectStore.refresh(plugin, settingsStore.enabledDirectories);
     }

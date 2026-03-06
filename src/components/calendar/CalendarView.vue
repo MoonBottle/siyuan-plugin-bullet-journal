@@ -94,7 +94,7 @@ const getStatusTag = (status: 'completed' | 'abandoned'): string => {
 const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
   const props = info.event.extendedProps;
   if (!props) return;
-  
+
   const isItem = !!props.item;
   const item = {
     id: info.event.id,
@@ -103,10 +103,23 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     blockId: props.blockId,
     docId: props.docId,
     lineNumber: props.lineNumber,
-    status: 'pending',
-    task: props.task ? { name: props.task } : undefined
+    status: props.status || 'pending',
+    task: props.task ? { name: props.task } : undefined,
+    startDateTime: props.originalStartDateTime,
+    endDateTime: props.originalEndDateTime,
+    siblingItems: props.siblingItems
   };
-  
+
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
   const menuOptions = createItemMenu(
     item,
     {
@@ -121,7 +134,16 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       onMigrateToday: async () => {
         if (!item.blockId) return;
         const todayStr = new Date().toISOString().split('T')[0];
-        await updateBlockDateTime(item.blockId, todayStr);
+        await updateBlockDateTime(
+          item.blockId,
+          todayStr,
+          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+          !item.startDateTime,
+          item.date,
+          completeSiblingItems,
+          item.status
+        );
         if (plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
@@ -131,7 +153,16 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        await updateBlockDateTime(item.blockId, tomorrowStr);
+        await updateBlockDateTime(
+          item.blockId,
+          tomorrowStr,
+          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+          !item.startDateTime,
+          item.date,
+          completeSiblingItems,
+          item.status
+        );
         if (plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
@@ -139,7 +170,16 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       onMigrateCustom: async () => {
         if (!item.blockId) return;
         showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-          await updateBlockDateTime(item.blockId, newDate);
+          await updateBlockDateTime(
+            item.blockId,
+            newDate,
+            item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+            item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+            !item.startDateTime,
+            item.date,
+            completeSiblingItems,
+            item.status
+          );
           if (plugin) {
             await projectStore.refresh(plugin, settingsStore.enabledDirectories);
           }
