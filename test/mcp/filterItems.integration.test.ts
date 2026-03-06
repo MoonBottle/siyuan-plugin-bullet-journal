@@ -77,8 +77,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items[0]).toMatchObject({
         content: '单日期事项B',
         date: '2026-03-10',
-        startDateTime: '14:00:00',
-        endDateTime: '15:00:00',
+        startDateTime: '2026-03-10 14:00:00',
+        endDateTime: '2026-03-10 15:00:00',
         status: 'pending'
       });
     });
@@ -127,8 +127,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(item10).toMatchObject({
         content: '多日期英文B',
         date: '2026-03-10',
-        startDateTime: '09:00:00',
-        endDateTime: '10:00:00',
+        startDateTime: '2026-03-10 09:00:00',
+        endDateTime: '2026-03-10 10:00:00',
         status: 'pending'
       });
 
@@ -137,8 +137,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(item12).toMatchObject({
         content: '多日期英文B',
         date: '2026-03-12',
-        startDateTime: '14:00:00',
-        endDateTime: '15:00:00',
+        startDateTime: '2026-03-12 14:00:00',
+        endDateTime: '2026-03-12 15:00:00',
         status: 'pending'
       });
     });
@@ -162,14 +162,14 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
 
       const item10 = items.find(i => i.date === '2026-03-10');
       expect(item10).toMatchObject({
-        startDateTime: '09:00:00',
-        endDateTime: '10:00:00'
+        startDateTime: '2026-03-10 09:00:00',
+        endDateTime: '2026-03-10 10:00:00'
       });
 
       const item12 = items.find(i => i.date === '2026-03-12');
       expect(item12).toMatchObject({
-        startDateTime: '14:00:00',
-        endDateTime: '15:00:00'
+        startDateTime: '2026-03-12 14:00:00',
+        endDateTime: '2026-03-12 15:00:00'
       });
     });
   });
@@ -205,8 +205,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
         '2026-03-10', '2026-03-11', '2026-03-12', '2026-03-13', '2026-03-14'
       ]);
       items.forEach((item) => {
-        expect(item.startDateTime).toBe('09:00:00');
-        expect(item.endDateTime).toBe('17:00:00');
+        expect(item.startDateTime).toBe(`${item.date} 09:00:00`);
+        expect(item.endDateTime).toBe(`${item.date} 17:00:00`);
         expect(item.status).toBe('pending');
       });
     });
@@ -224,8 +224,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       const items = getItemsByContent('范围简写B');
       expect(items).toHaveLength(3);
       items.forEach((item) => {
-        expect(item.startDateTime).toBe('09:00:00');
-        expect(item.endDateTime).toBe('10:00:00');
+        expect(item.startDateTime).toBe(`${item.date} 09:00:00`);
+        expect(item.endDateTime).toBe(`${item.date} 10:00:00`);
       });
     });
   });
@@ -237,22 +237,22 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
 
       const item06 = items.find(i => i.date === '2026-03-06');
       expect(item06).toMatchObject({
-        startDateTime: '09:00:00',
-        endDateTime: '09:30:00'
+        startDateTime: '2026-03-06 09:00:00',
+        endDateTime: '2026-03-06 09:30:00'
       });
 
       ['2026-03-10', '2026-03-11', '2026-03-12'].forEach((d) => {
         const item = items.find(i => i.date === d);
         expect(item).toMatchObject({
-          startDateTime: '14:00:00',
-          endDateTime: '15:00:00'
+          startDateTime: `${d} 14:00:00`,
+          endDateTime: `${d} 15:00:00`
         });
       });
 
       const item15 = items.find(i => i.date === '2026-03-15');
       expect(item15).toMatchObject({
-        startDateTime: '10:00:00',
-        endDateTime: '11:00:00'
+        startDateTime: '2026-03-15 10:00:00',
+        endDateTime: '2026-03-15 11:00:00'
       });
     });
 
@@ -335,7 +335,7 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items[0]).toMatchObject({
         content: '边界单时间',
         date: '2026-03-06',
-        startDateTime: '09:00:00'
+        startDateTime: '2026-03-06 09:00:00'
       });
       expect(items[0].endDateTime).toBeUndefined();
     });
@@ -346,8 +346,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items[0]).toMatchObject({
         content: '边界时间范围',
         date: '2026-03-06',
-        startDateTime: '09:00:00',
-        endDateTime: '10:00:00'
+        startDateTime: '2026-03-06 09:00:00',
+        endDateTime: '2026-03-06 10:00:00'
       });
     });
 
@@ -373,8 +373,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items[0]).toMatchObject({
         content: '层级事项A',
         date: '2026-03-10',
-        startDateTime: '09:00:00',
-        endDateTime: '10:00:00'
+        startDateTime: '2026-03-10 09:00:00',
+        endDateTime: '2026-03-10 10:00:00'
       });
     });
 
@@ -384,8 +384,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items[0]).toMatchObject({
         content: '层级事项B',
         date: '2026-03-11',
-        startDateTime: '14:00:00',
-        endDateTime: '15:00:00'
+        startDateTime: '2026-03-11 14:00:00',
+        endDateTime: '2026-03-11 15:00:00'
       });
     });
 
@@ -487,8 +487,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items[0]).toMatchObject({
         content: '有序事项B',
         date: '2026-04-02',
-        startDateTime: '09:00:00',
-        endDateTime: '10:00:00'
+        startDateTime: '2026-04-02 09:00:00',
+        endDateTime: '2026-04-02 10:00:00'
       });
     });
 
