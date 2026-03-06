@@ -103,9 +103,15 @@ export function parseKramdown(
 
     if (!content) continue;
 
-    if (content.startsWith('## ')) {
-      project.name = content.substring(3).trim();
-      continue;
+    if (!project.name) {
+      if (content.startsWith('# ')) {
+        project.name = content.substring(2).trim();
+        continue;
+      }
+      if (content.startsWith('## ')) {
+        project.name = content.substring(3).trim();
+        continue;
+      }
     }
 
     if (project.name && content.startsWith('> ')) {
