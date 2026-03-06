@@ -133,13 +133,13 @@
 
   // 状态标签
   .sy-dialog-status {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
+    display: inline-block;
+    padding: 2px 6px;
     border-radius: 4px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     margin-left: auto;
+    line-height: 1;
 
     &.pending {
       background: var(--b3-theme-surface);
@@ -221,6 +221,11 @@
         vertical-align: middle;
         margin-left: 6px;
       }
+    }
+
+    // 事项卡片的链接 footer 添加顶部间距，与任务卡片保持一致
+    .sy-dialog-card-footer {
+      margin-top: 10px;
     }
   }
 
@@ -326,7 +331,7 @@
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  margin-right: 6px;
+  margin-left: auto;
 
   &.level-l1 {
     background: rgba(76, 175, 80, 0.15);

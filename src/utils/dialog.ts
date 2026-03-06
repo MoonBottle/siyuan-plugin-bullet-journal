@@ -148,15 +148,15 @@ export function showItemDetailModal(item: Item): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">${t('todo').task}</div>
+        <div class="sy-dialog-card-title">
+          ${t('todo').task}
+          ${levelHtml}
+        </div>
         <div class="sy-dialog-card-content">
           <span>${item.task.name}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.task.name}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
-        <div class="sy-dialog-card-footer">
-          ${levelHtml}
-          ${taskLinksHtml}
-        </div>
+        ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
       </div>
     `;
   }
@@ -382,15 +382,15 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       : '';
     content += `
       <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">${t('todo').task}</div>
+        <div class="sy-dialog-card-title">
+          ${t('todo').task}
+          ${levelHtml}
+        </div>
         <div class="sy-dialog-card-content">
           <span>${props.task}</span>
           <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="${t('common').copy}">${copyIconSvg}</span>
         </div>
-        <div class="sy-dialog-card-footer">
-          ${levelHtml}
-          ${taskLinksHtml}
-        </div>
+        ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
       </div>
     `;
   }
