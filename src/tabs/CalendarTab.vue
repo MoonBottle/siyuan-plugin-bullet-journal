@@ -1,11 +1,5 @@
 <template>
   <div class="hk-work-tab calendar-tab">
-    <!-- 调试信息 -->
-    <div v-if="true" style="background: #f0f0f0; padding: 5px; font-size: 12px; color: #333;">
-      Debug: Projects={{ projectStore.projects?.length || 0 }}, 
-      Events={{ projectStore.calendarEvents?.length || 0 }},
-      Filtered={{ filteredCalendarEvents?.length || 0 }}
-    </div>
     <div class="block__icons">
       <!-- 导航按钮 -->
       <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').prev" @click="handlePrev">
