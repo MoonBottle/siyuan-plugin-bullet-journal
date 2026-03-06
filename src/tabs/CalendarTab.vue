@@ -213,12 +213,20 @@ const handleEventResize = async (eventInfo: any) => {
 // 统一处理事件变化
 const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
   const blockId = eventInfo.blockId || eventInfo.extendedProps?.blockId;
+  const extendedProps = eventInfo.extendedProps;
   const allDay = eventInfo.allDay;
 
   if (!blockId) {
     showMessage(t('common').blockIdError, 'error');
     return;
   }
+
+  // 获取原始日期时间信息
+  const originalDate = extendedProps?.date;
+  const originalStartDateTime = extendedProps?.originalStartDateTime;
+  const originalEndDateTime = extendedProps?.originalEndDateTime;
+  const siblingItems = extendedProps?.siblingItems;
+  const status = extendedProps?.status;
 
   // 解析新的日期时间
   const startStr = eventInfo.start;
@@ -234,21 +242,28 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     if (startStr.includes('T')) {
       const [date, time] = startStr.split('T');
       newDate = date;
-      newStartTime = time.substring(0, 5); // HH:mm
+      newStartTime = time.substring(0, 8); // HH:mm:ss
     } else {
       newDate = startStr;
     }
   }
 
-  if (endStr) {
-    if (endStr.includes('T')) {
-      const time = endStr.split('T')[1];
-      newEndTime = time.substring(0, 5); // HH:mm
-    }
+  if (endStr && endStr.includes('T')) {
+    const time = endStr.split('T')[1];
+    newEndTime = time.substring(0, 8); // HH:mm:ss
   }
 
-  // 更新块
-  const success = await updateBlockDateTime(blockId, newDate, newStartTime, newEndTime, allDay);
+  // 更新块（传递 siblingItems 和 status 以支持智能合并）
+  const success = await updateBlockDateTime(
+    blockId,
+    newDate,
+    newStartTime,
+    newEndTime,
+    allDay,
+    originalDate,
+    siblingItems,
+    status
+  );
 
   if (success) {
     showMessage(action === 'move' ? t('common').moveSuccess : t('common').resizeSuccess);

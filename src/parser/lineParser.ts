@@ -65,13 +65,14 @@ export class LineParser {
   }
 
   /**
-   * 解析工作事项行
-   * 格式: 事项内容 @2024-01-01 10:00:00~11:00:00 #done
+   * 解析工作事项行（支持多日期）
+   * 格式: 事项内容 @2024-01-01 10:00:00~11:00:00, 2024-01-03 14:00:00~15:00:00 #done
+   * 支持: @2024-01-01, @2024-01-01~2024-01-05, @2024-01-01~01-05（简写）
    */
-  public static parseItemLine(line: string, lineNumber: number): Item | null {
+  public static parseItemLine(line: string, lineNumber: number): Item[] {
     // 必须包含日期标记
     if (!line.match(/@\d{4}-\d{2}-\d{2}/)) {
-      return null;
+      return [];
     }
 
     // 解析状态标签（中英文兼容）
@@ -82,43 +83,180 @@ export class LineParser {
       status = 'abandoned';
     }
 
-    // 解析日期
-    const dateMatch = line.match(/@(\d{4}-\d{2}-\d{2})/);
-    const date = dateMatch ? dateMatch[1] : '';
+    // 提取所有日期时间表达式
+    const dateTimeExpressions = this.extractDateTimeExpressions(line);
+    if (dateTimeExpressions.length === 0) return [];
 
-    // 解析时间范围
-    const timeRangeMatch = line.match(
-      /@(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})/
-    );
-
-    // 解析单个时间
-    const singleTimeMatch = line.match(
-      /@(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?!~)/
-    );
-
-    // 提取事项内容（移除日期和状态标签，中英文）
-    const content = line
-      .replace(/@\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(~\d{2}:\d{2}:\d{2})?)?/g, '')
+    // 提取内容（移除所有日期时间表达式和状态标签）
+    let content = line;
+    for (const expr of dateTimeExpressions) {
+      content = content.replace(expr.fullMatch, '');
+    }
+    content = content
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
       .trim();
 
-    if (!content) return null;
+    if (!content) return [];
 
-    return {
-      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      content,
-      date,
-      startDateTime: timeRangeMatch
-        ? `${timeRangeMatch[1]} ${timeRangeMatch[2]}`
-        : singleTimeMatch
-          ? `${singleTimeMatch[1]} ${singleTimeMatch[2]}`
-          : undefined,
-      endDateTime: timeRangeMatch
-        ? `${timeRangeMatch[1]} ${timeRangeMatch[3]}`
-        : undefined,
-      lineNumber,
-      docId: '',
-      status
-    };
+    // 展开所有日期时间组合
+    const items: Item[] = [];
+
+    // 先收集所有日期时间信息
+    const allDateTimeInfo: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [];
+
+    for (const expr of dateTimeExpressions) {
+      const dates = this.parseDatePart(expr.datePart);
+      const timeInfo = this.parseTimePart(expr.timePart);
+
+      for (const date of dates) {
+        let startDateTime: string | undefined;
+        let endDateTime: string | undefined;
+
+        if (timeInfo) {
+          if (timeInfo.endTime) {
+            startDateTime = `${date} ${timeInfo.startTime}`;
+            endDateTime = `${date} ${timeInfo.endTime}`;
+          } else {
+            startDateTime = `${date} ${timeInfo.startTime}`;
+          }
+        }
+
+        allDateTimeInfo.push({ date, startDateTime, endDateTime });
+      }
+    }
+
+    // 为每个日期创建 Item，并填充 siblingItems
+    for (let i = 0; i < allDateTimeInfo.length; i++) {
+      const { date, startDateTime, endDateTime } = allDateTimeInfo[i];
+
+      // 构建 siblingItems（排除当前 Item 自身）
+      const siblingItems = allDateTimeInfo
+        .filter((_, index) => index !== i)
+        .map(info => ({
+          date: info.date,
+          startDateTime: info.startDateTime,
+          endDateTime: info.endDateTime
+        }));
+
+      items.push({
+        id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        content,
+        date,
+        startDateTime,
+        endDateTime,
+        lineNumber,
+        docId: '',
+        status,
+        siblingItems: siblingItems.length > 0 ? siblingItems : undefined
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * 提取所有日期时间表达式
+   */
+  private static extractDateTimeExpressions(line: string): Array<{
+    fullMatch: string;
+    datePart: string;
+    timePart: string | null;
+  }> {
+    const expressions: Array<{ fullMatch: string; datePart: string; timePart: string | null }> = [];
+
+    // 匹配 @日期 或 @日期 时间 或 @日期 时间~时间
+    // 日期格式: 2024-01-01 或 2024-01-01~2024-01-05 或 2024-01-01~01-05（简写）
+    // 时间格式: 09:00:00 或 09:00:00~10:00:00
+    const regex = /@(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/g;
+
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+      expressions.push({
+        fullMatch: match[0],
+        datePart: match[1],
+        timePart: match[2] || null
+      });
+    }
+
+    return expressions;
+  }
+
+  /**
+   * 解析日期部分，返回日期列表
+   */
+  private static parseDatePart(datePart: string): string[] {
+    if (datePart.includes('~')) {
+      const [startStr, endStr] = datePart.split('~');
+      const startDate = this.parseDate(startStr);
+      const endDate = this.parseDate(endStr, startDate);
+
+      if (startDate && endDate) {
+        return this.expandDateRange(startDate, endDate);
+      }
+    }
+
+    const date = this.parseDate(datePart);
+    return date ? [this.formatDate(date)] : [];
+  }
+
+  /**
+   * 解析时间部分
+   */
+  private static parseTimePart(timePart: string | null): { startTime: string; endTime?: string } | null {
+    if (!timePart) return null;
+
+    if (timePart.includes('~')) {
+      const [start, end] = timePart.split('~');
+      return { startTime: start, endTime: end };
+    }
+
+    return { startTime: timePart };
+  }
+
+  /**
+   * 解析日期字符串
+   */
+  private static parseDate(dateStr: string, referenceDate?: Date): Date | null {
+    // 完整格式: 2024-01-01
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    // 简写格式: 01-01（继承参考日期的年月）
+    if (dateStr.match(/^\d{2}-\d{2}$/) && referenceDate) {
+      const year = referenceDate.getFullYear();
+      const month = dateStr.substring(0, 2);
+      const day = dateStr.substring(3, 5);
+      const date = new Date(`${year}-${month}-${day}`);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    return null;
+  }
+
+  /**
+   * 展开日期范围
+   */
+  private static expandDateRange(start: Date, end: Date): string[] {
+    const dates: string[] = [];
+    const current = new Date(start);
+
+    while (current <= end) {
+      dates.push(this.formatDate(new Date(current)));
+      current.setDate(current.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  /**
+   * 格式化日期为 YYYY-MM-DD
+   */
+  private static formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

@@ -158,8 +158,8 @@ export function parseKramdown(
 
     // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
     if (currentTask && content.includes('@') && !hasTaskTag) {
-      const item = LineParser.parseItemLine(stripListAndBlockAttr(content), lineNumber);
-      if (item) {
+      const items = LineParser.parseItemLine(stripListAndBlockAttr(content), lineNumber);
+      for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
         currentTask.items.push(item);

@@ -51,6 +51,12 @@ export interface Item {
   docId: string;           // 所属文档 ID
   blockId?: string;        // 块 ID（用于精确定位）
   status: ItemStatus;      // 事项状态
+  // 多日期支持：同一块中的其他日期时间信息
+  siblingItems?: Array<{
+    date: string;
+    startDateTime?: string;
+    endDateTime?: string;
+  }>;
 }
 
 // 分组

@@ -85,7 +85,12 @@ export class DataConverter {
         hasItems: true,
         docId: item.docId,
         lineNumber: item.lineNumber,
-        blockId: item.blockId
+        blockId: item.blockId,
+        date: item.date,
+        originalStartDateTime: item.startDateTime,
+        originalEndDateTime: item.endDateTime,
+        siblingItems: item.siblingItems,
+        status: item.status
       }
     };
   }
