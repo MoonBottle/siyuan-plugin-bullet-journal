@@ -172,6 +172,7 @@ onUnmounted(() => {
 const handleRefresh = async () => {
   if (plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    showMessage(t('common').dataRefreshed);
   }
 };
 

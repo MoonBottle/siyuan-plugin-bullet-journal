@@ -30,6 +30,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine } from '@/utils/fileUtils';
+import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import ProjectView from '@/components/project/ProjectView.vue';
@@ -115,6 +116,7 @@ onUnmounted(() => {
 const handleRefresh = async () => {
   if (plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    showMessage(t('common').dataRefreshed);
   }
 };
 
