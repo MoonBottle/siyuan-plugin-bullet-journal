@@ -6,6 +6,13 @@
 
 A Bullet Journal style task management plugin for SiYuan Note. Calendar, Gantt chart and project list — all in one place.
 
+### v0.7.2 Highlights
+
+- **Multi-date Items**: Support for single items associated with multiple dates, enabling cross-day task management (format: `@2026-03-06, 2026-03-10~03-12`)
+- **Item Links**: Support for adding external or internal SiYuan links to items, clickable in detail modal
+- **Status Icons**: Added status emoji indicators in Calendar and Todo Dock (⏳pending / ✅completed / ❌abandoned / ⚠️expired)
+- **Expired Status**: New expired status styling for clearer visualization of overdue items
+
 ### v0.7.0 Highlights
 
 - **MCP for AI**: Built-in `sy-bullet-journal-assistant` lets AI read your task data—smart Q&A, weekly reports, work planning
