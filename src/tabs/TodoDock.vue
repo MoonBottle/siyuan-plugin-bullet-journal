@@ -11,7 +11,7 @@
       </span>
     </div>
     <div class="fn__flex-1 fn__flex-column todo-dock-body">
-      <div v-if="settingsStore.groups.length > 0" class="todo-filter-card">
+      <div class="todo-filter-card">
         <SySelect
           v-model="selectedGroup"
           :options="groupOptions"
