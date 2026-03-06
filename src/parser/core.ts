@@ -168,8 +168,18 @@ export function parseKramdown(
 
     // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
     if (currentTask && content.includes('@') && !hasTaskTag) {
-      // 收集事项下方的链接行
+      // 收集事项下方的链接行：先收集当前块内首行之后的链接行，再收集后续块中的链接行
       const itemLinks: Array<{ name: string; url: string }> = [];
+      const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
+      for (let idx = 1; idx < blockLines.length; idx++) {
+        const lineContent = blockLines[idx];
+        const linkMatch = lineContent.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch && !lineContent.includes('@')) {
+          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+        } else {
+          break;
+        }
+      }
       let nextBlockIndex = blocks.indexOf(block) + 1;
 
       while (nextBlockIndex < blocks.length) {

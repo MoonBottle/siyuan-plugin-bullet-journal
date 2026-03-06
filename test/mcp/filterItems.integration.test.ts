@@ -424,6 +424,8 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
         content: '链接缩进A',
         date: '2026-03-10'
       });
+      expect(items[0].links).toHaveLength(1);
+      expect(items[0].links![0]).toMatchObject({ name: '链接A1', url: 'https://example.com' });
     });
 
     it('链接缩进B: 展开为2条', async () => {
@@ -431,6 +433,11 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items).toHaveLength(2);
       const dates = items.map(i => i.date).sort();
       expect(dates).toEqual(['2026-03-06', '2026-03-10']);
+      items.forEach((item) => {
+        expect(item.links).toHaveLength(1);
+        expect(item.links![0].name).toBe('链接B1');
+        expect(item.links![0].url).toBe('https://github.com');
+      });
     });
 
     it('链接缩进C: date=2026-03-15', async () => {
@@ -440,6 +447,9 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
         content: '链接缩进C',
         date: '2026-03-15'
       });
+      expect(items[0].links).toHaveLength(2);
+      expect(items[0].links![0]).toMatchObject({ name: '链接C1', url: 'https://example.com/requirements' });
+      expect(items[0].links![1]).toMatchObject({ name: '链接C2', url: 'siyuan://blocks/20260220112000' });
     });
   });
 
@@ -451,6 +461,9 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
         content: '链接不缩进A',
         date: '2026-03-20'
       });
+      expect(items[0].links).toHaveLength(2);
+      expect(items[0].links![0]).toMatchObject({ name: '链接D1', url: 'https://example.com' });
+      expect(items[0].links![1]).toMatchObject({ name: '链接D2', url: 'https://github.com' });
     });
 
     it('链接不缩进B: 展开为2条', async () => {
@@ -458,6 +471,10 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items).toHaveLength(2);
       const dates = items.map(i => i.date).sort();
       expect(dates).toEqual(['2026-03-25', '2026-03-26']);
+      items.forEach((item) => {
+        expect(item.links).toHaveLength(1);
+        expect(item.links![0]).toMatchObject({ name: '链接E1', url: 'https://docs.example.com' });
+      });
     });
   });
 
@@ -469,6 +486,10 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
         content: '链接无序A',
         date: '2026-03-28'
       });
+      // 思源 kramdown 中下一块为 [链接F1]、[链接F2]，被解析为事项链接
+      expect(items[0].links).toHaveLength(2);
+      expect(items[0].links![0]).toMatchObject({ name: '链接F1', url: 'https://example.com' });
+      expect(items[0].links![1]).toMatchObject({ name: '链接F2', url: 'https://github.com' });
     });
 
     it('链接无序B: 展开为2条', async () => {
@@ -476,6 +497,11 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items).toHaveLength(2);
       const dates = items.map(i => i.date).sort();
       expect(dates).toEqual(['2026-03-29', '2026-03-30']);
+      // 思源 kramdown 中下一块为 [链接G1]，被解析为事项链接
+      items.forEach((item) => {
+        expect(item.links).toHaveLength(1);
+        expect(item.links![0]).toMatchObject({ name: '链接G1', url: 'https://docs.example.com' });
+      });
     });
   });
 
@@ -549,6 +575,9 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
         content: '有序链接A',
         date: '2026-04-20'
       });
+      expect(items[0].links).toHaveLength(2);
+      expect(items[0].links![0]).toMatchObject({ name: '有序链接1', url: 'https://example.com' });
+      expect(items[0].links![1]).toMatchObject({ name: '有序链接2', url: 'https://github.com' });
     });
 
     it('有序链接B: 展开为2条', async () => {
@@ -556,6 +585,10 @@ describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
       expect(items).toHaveLength(2);
       const dates = items.map(i => i.date).sort();
       expect(dates).toEqual(['2026-04-21', '2026-04-22']);
+      items.forEach((item) => {
+        expect(item.links).toHaveLength(1);
+        expect(item.links![0]).toMatchObject({ name: '有序链接3', url: 'https://docs.example.com' });
+      });
     });
   });
 
