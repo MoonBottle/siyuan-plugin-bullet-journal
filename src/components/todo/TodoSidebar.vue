@@ -646,18 +646,12 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
 }
 
 .todo-section {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--b3-border-color);
-
-  &:first-child {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
-  }
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 
   .section-label {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--b3-theme-on-surface);
     opacity: 0.7;
