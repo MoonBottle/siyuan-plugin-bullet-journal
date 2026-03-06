@@ -149,7 +149,7 @@ export function showItemDetailModal(item: Item): Dialog {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">
-          ${t('todo').task}
+          <span class="sy-dialog-card-title-text">${t('todo').task}</span>
           ${levelHtml}
         </div>
         <div class="sy-dialog-card-content">
@@ -188,7 +188,7 @@ export function showItemDetailModal(item: Item): Dialog {
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">
-        ${t('todo').item}
+        <span class="sy-dialog-card-title-text">${t('todo').item}</span>
         ${statusHtml}
       </div>
       <div class="sy-dialog-item-meta">
@@ -383,7 +383,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">
-          ${t('todo').task}
+          <span class="sy-dialog-card-title-text">${t('todo').task}</span>
           ${levelHtml}
         </div>
         <div class="sy-dialog-card-content">
@@ -421,7 +421,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">
-        ${t('todo').item}
+        <span class="sy-dialog-card-title-text">${t('todo').item}</span>
         ${statusHtml}
       </div>
       <div class="sy-dialog-item-meta">
