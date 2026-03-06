@@ -61,7 +61,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -177,7 +177,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -242,7 +242,7 @@
                     </div>
                   </div>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-                  <div class="item-content">{{ item.content }}</div>
+                  <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
                 </div>
               </div>
             </div>
@@ -281,7 +281,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -318,7 +318,7 @@
                 </div>
               </div>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -340,6 +340,16 @@ import type { Item } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import dayjs from '@/utils/dayjs';
+
+// 获取状态 emoji
+const getStatusEmoji = (item: Item): string => {
+  const todayStr = dayjs().format('YYYY-MM-DD');
+  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
+  if (isExpired) return '⚠️ ';
+  if (item.status === 'completed') return '✅ ';
+  if (item.status === 'abandoned') return '❌ ';
+  return '⏳ ';
+};
 
 const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
 
