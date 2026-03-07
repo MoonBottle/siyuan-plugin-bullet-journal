@@ -134,6 +134,7 @@
       "description": "Expose task data to AI assistants like Cursor and Claude. Add the config below to Cursor Settings → MCP, and replace SIYUAN_TOKEN with the API Token from SiYuan Settings → About.",
       "copyButton": "Copy MCP Config",
       "copySuccess": "MCP config copied to clipboard",
+      "copyFailed": "Copy failed, please copy manually",
       "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop"
     },
     "ai": {
@@ -143,8 +144,27 @@
       "providerLabel": "Provider",
       "modelLabel": "Model",
       "apiKeyPlaceholder": "Enter your API Key",
+      "apiKeyLabel": "API Key",
       "apiUrlLabel": "API URL",
-      "customProvider": "Custom"
+      "apiUrlPlaceholder": "https://api.example.com/v1/chat/completions",
+      "customProvider": "Custom",
+      "emptyProviders": "No providers configured, click below to add",
+      "collapse": "Collapse",
+      "edit": "Edit",
+      "configName": "Config Name",
+      "namePlaceholder": "e.g. Kimi-Personal",
+      "selectProvider": "Select Provider",
+      "defaultModelLabel": "Default Model",
+      "modelsLabel": "Model list (check to enable)",
+      "modelNamePlaceholder": "Enter model name",
+      "addCustomModel": "Add custom model",
+      "addProvider": "Add provider",
+      "messageEnterConfigName": "Please enter config name",
+      "messageAddOneModel": "Please add at least one model",
+      "messageSelectOneModel": "Please select at least one model",
+      "messageApplied": "Applied. Click \"Save\" below to write config",
+      "messageAdded": "Added. Click \"Save\" below to write config",
+      "confirmDeleteProvider": "Are you sure you want to delete \"{{name}}\"?"
     },
     "projectDirectories": {
       "title": "Project Directories",

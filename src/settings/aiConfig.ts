@@ -43,7 +43,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
 
         if (settings.ai!.providers.length === 0 && editingIndex === -1) {
           const emptyMsg = document.createElement('div');
-          emptyMsg.textContent = '暂无供应商配置，点击下方按钮添加';
+          emptyMsg.textContent = (t('settings') as any).ai?.emptyProviders ?? '暂无供应商配置，点击下方按钮添加';
           emptyMsg.style.color = 'var(--b3-theme-on-surface-light)';
           emptyMsg.style.fontSize = '13px';
           emptyMsg.style.padding = '12px';
@@ -98,7 +98,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
           // 编辑/展开按钮
           const editBtn = document.createElement('span');
           editBtn.className = 'b3-tooltips b3-tooltips__nw';
-          editBtn.setAttribute('aria-label', isEditing ? '收起' : '编辑');
+          editBtn.setAttribute('aria-label', isEditing ? ((t('settings') as any).ai?.collapse ?? '收起') : ((t('settings') as any).ai?.edit ?? '编辑'));
           editBtn.style.display = 'inline-flex';
           editBtn.style.alignItems = 'center';
           editBtn.style.justifyContent = 'center';
@@ -117,7 +117,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
           // 删除按钮
           const deleteBtn = document.createElement('span');
           deleteBtn.className = 'b3-tooltips b3-tooltips__nw';
-          deleteBtn.setAttribute('aria-label', '删除');
+          deleteBtn.setAttribute('aria-label', (t('settings') as any).projectGroups?.deleteButton ?? '删除');
           deleteBtn.style.display = 'inline-flex';
           deleteBtn.style.alignItems = 'center';
           deleteBtn.style.justifyContent = 'center';
@@ -129,7 +129,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
           deleteBtn.innerHTML = '<svg style="width:14px;height:14px;fill:currentColor;display:block;"><use xlink:href="#iconTrashcan"></use></svg>';
           deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm(`确定要删除 "${provider.name}" 吗？`)) {
+            if (confirm(((t('settings') as any).ai?.confirmDeleteProvider ?? '确定要删除 "{{name}}" 吗？').replace('{{name}}', provider.name))) {
               settings.ai!.providers.splice(index, 1);
               // 如果删除的是 activeProvider，重置
               if (settings.ai!.activeProviderId === provider.id) {
@@ -173,11 +173,11 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             nameRow.className = 'fn__flex';
             nameRow.style.alignItems = 'center';
             nameRow.style.gap = '8px';
-            nameRow.innerHTML = `<span style="min-width:80px;font-size:13px">配置名称</span>`;
+            nameRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.configName ?? '配置名称'}</span>`;
             const nameInput = document.createElement('input');
             nameInput.className = 'b3-text-field fn__flex-center';
             nameInput.style.flex = '1';
-            nameInput.placeholder = '如：Kimi-个人';
+            nameInput.placeholder = (t('settings') as any).ai?.namePlaceholder ?? '如：Kimi-个人';
             nameInput.value = provider.name;
             nameRow.appendChild(nameInput);
             editArea.appendChild(nameRow);
@@ -187,7 +187,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             typeRow.className = 'fn__flex';
             typeRow.style.alignItems = 'center';
             typeRow.style.gap = '8px';
-            typeRow.innerHTML = `<span style="min-width:80px;font-size:13px">选择供应商</span>`;
+            typeRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.selectProvider ?? '选择供应商'}</span>`;
             const typeSelect = document.createElement('select');
             typeSelect.className = 'b3-select fn__flex-center';
             typeSelect.style.flex = '1';
@@ -199,7 +199,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             });
             const customOption = document.createElement('option');
             customOption.value = 'custom';
-            customOption.textContent = '自定义';
+            customOption.textContent = (t('settings') as any).ai?.customProvider ?? '自定义';
             typeSelect.appendChild(customOption);
             typeSelect.value = provider.provider;
             typeRow.appendChild(typeSelect);
@@ -210,11 +210,11 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             urlRow.className = 'fn__flex';
             urlRow.style.alignItems = 'center';
             urlRow.style.gap = '8px';
-            urlRow.innerHTML = `<span style="min-width:80px;font-size:13px">API 地址</span>`;
+            urlRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.apiUrlLabel ?? 'API 地址'}</span>`;
             const urlInput = document.createElement('input');
             urlInput.className = 'b3-text-field fn__flex-center';
             urlInput.style.flex = '1';
-            urlInput.placeholder = 'https://api.example.com/v1/chat/completions';
+            urlInput.placeholder = (t('settings') as any).ai?.apiUrlPlaceholder ?? 'https://api.example.com/v1/chat/completions';
             urlInput.value = provider.apiUrl;
             urlRow.appendChild(urlInput);
             editArea.appendChild(urlRow);
@@ -224,19 +224,19 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             keyRow.className = 'fn__flex';
             keyRow.style.alignItems = 'center';
             keyRow.style.gap = '8px';
-            keyRow.innerHTML = `<span style="min-width:80px;font-size:13px">API Key</span>`;
+            keyRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.apiKeyLabel ?? 'API Key'}</span>`;
             const keyInput = document.createElement('input');
             keyInput.className = 'b3-text-field fn__flex-center';
             keyInput.style.flex = '1';
             keyInput.type = 'password';
-            keyInput.placeholder = '输入 API Key';
+            keyInput.placeholder = (t('settings') as any).ai?.apiKeyPlaceholder ?? '输入 API Key';
             keyInput.value = provider.apiKey;
             keyRow.appendChild(keyInput);
             editArea.appendChild(keyRow);
 
             // 模型列表
             const modelsLabel = document.createElement('div');
-            modelsLabel.textContent = '模型列表（勾选启用）';
+            modelsLabel.textContent = (t('settings') as any).ai?.modelsLabel ?? '模型列表（勾选启用）';
             modelsLabel.style.fontSize = '13px';
             editArea.appendChild(modelsLabel);
 
@@ -265,7 +265,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
                 nameInput.value = model;
                 nameInput.style.flex = '1';
                 nameInput.style.fontSize = '13px';
-                nameInput.placeholder = '请输入模型名称';
+                nameInput.placeholder = (t('settings') as any).ai?.modelNamePlaceholder ?? '请输入模型名称';
                 nameInput.addEventListener('change', () => {
                   const newName = nameInput.value.trim();
                   if (newName) {
@@ -278,7 +278,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
 
                 const deleteBtn = document.createElement('span');
                 deleteBtn.className = 'b3-tooltips b3-tooltips__ne';
-                deleteBtn.setAttribute('aria-label', '删除');
+                deleteBtn.setAttribute('aria-label', (t('settings') as any).projectGroups?.deleteButton ?? '删除');
                 deleteBtn.style.display = 'inline-flex';
                 deleteBtn.style.alignItems = 'center';
                 deleteBtn.style.justifyContent = 'center';
@@ -345,7 +345,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             // 添加自定义模型按钮
             const addModelBtn = document.createElement('button');
             addModelBtn.className = 'b3-button b3-button--outline';
-            addModelBtn.innerHTML = '<svg style="width:12px;height:12px;margin-right:4px"><use xlink:href="#iconAdd"></use></svg>添加自定义模型';
+            addModelBtn.innerHTML = '<svg style="width:12px;height:12px;margin-right:4px"><use xlink:href="#iconAdd"></use></svg>' + ((t('settings') as any).ai?.addCustomModel ?? '添加自定义模型');
             addModelBtn.style.alignSelf = 'flex-start';
             addModelBtn.addEventListener('click', () => {
               currentModels.push('');
@@ -365,7 +365,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             defaultModelRow.className = 'fn__flex';
             defaultModelRow.style.alignItems = 'center';
             defaultModelRow.style.gap = '8px';
-            defaultModelRow.innerHTML = `<span style="min-width:80px;font-size:13px">默认模型</span>`;
+            defaultModelRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.defaultModelLabel ?? '默认模型'}</span>`;
             defaultModelRow.appendChild(defaultModelSelect);
             editArea.appendChild(defaultModelRow);
 
@@ -379,7 +379,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             const cancelBtn = document.createElement('button');
             cancelBtn.type = 'button';
             cancelBtn.className = 'b3-button b3-button--cancel';
-            cancelBtn.textContent = '取消';
+            cancelBtn.textContent = t('common').cancel;
             cancelBtn.addEventListener('click', () => {
               editingIndex = -1;
               renderProviderList();
@@ -388,21 +388,21 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             const saveBtn = document.createElement('button');
             saveBtn.type = 'button';
             saveBtn.className = 'b3-button b3-button--primary';
-            saveBtn.textContent = '保存';
+            saveBtn.textContent = t('common').save;
             saveBtn.addEventListener('click', async (e) => {
               e.preventDefault();
               e.stopPropagation();
               e.stopImmediatePropagation();
               const name = nameInput.value.trim();
               if (!name) {
-                showMessage('请输入配置名称', 3000, 'error');
+                showMessage((t('settings') as any).ai?.messageEnterConfigName ?? '请输入配置名称', 3000, 'error');
                 return;
               }
 
               // 过滤掉空名称的模型
               const validModels = currentModels.filter(m => m.trim() !== '');
               if (validModels.length === 0) {
-                showMessage('请至少添加一个模型', 3000, 'error');
+                showMessage((t('settings') as any).ai?.messageAddOneModel ?? '请至少添加一个模型', 3000, 'error');
                 return;
               }
 
@@ -412,7 +412,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
               const checkedModels = checkedIndices.map(i => currentModels[i]);
 
               if (checkedModels.length === 0) {
-                showMessage('请至少选择一个模型', 3000, 'error');
+                showMessage((t('settings') as any).ai?.messageSelectOneModel ?? '请至少选择一个模型', 3000, 'error');
                 return;
               }
 
@@ -426,7 +426,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
 
               editingIndex = -1;
               renderProviderList();
-              showMessage('已应用，点击下方「保存」写入配置', 3000);
+              showMessage((t('settings') as any).ai?.messageApplied ?? '已应用，点击下方「保存」写入配置', 3000);
             });
 
             btnRow.appendChild(cancelBtn);
@@ -479,11 +479,11 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         nameRow.className = 'fn__flex';
         nameRow.style.alignItems = 'center';
         nameRow.style.gap = '8px';
-        nameRow.innerHTML = `<span style="min-width:80px;font-size:13px">配置名称</span>`;
+        nameRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.configName ?? '配置名称'}</span>`;
         const nameInput = document.createElement('input');
         nameInput.className = 'b3-text-field fn__flex-center';
         nameInput.style.flex = '1';
-        nameInput.placeholder = '如：Kimi-个人';
+        nameInput.placeholder = (t('settings') as any).ai?.namePlaceholder ?? '如：Kimi-个人';
         nameRow.appendChild(nameInput);
         editArea.appendChild(nameRow);
 
@@ -492,7 +492,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         typeRow.className = 'fn__flex';
         typeRow.style.alignItems = 'center';
         typeRow.style.gap = '8px';
-        typeRow.innerHTML = `<span style="min-width:80px;font-size:13px">选择供应商</span>`;
+        typeRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.selectProvider ?? '选择供应商'}</span>`;
         const typeSelect = document.createElement('select');
         typeSelect.className = 'b3-select fn__flex-center';
         typeSelect.style.flex = '1';
@@ -504,7 +504,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         });
         const customOption = document.createElement('option');
         customOption.value = 'custom';
-        customOption.textContent = '自定义';
+        customOption.textContent = (t('settings') as any).ai?.customProvider ?? '自定义';
         typeSelect.appendChild(customOption);
         typeRow.appendChild(typeSelect);
         editArea.appendChild(typeRow);
@@ -514,11 +514,11 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         urlRow.className = 'fn__flex';
         urlRow.style.alignItems = 'center';
         urlRow.style.gap = '8px';
-        urlRow.innerHTML = `<span style="min-width:80px;font-size:13px">API 地址</span>`;
+        urlRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.apiUrlLabel ?? 'API 地址'}</span>`;
         const urlInput = document.createElement('input');
         urlInput.className = 'b3-text-field fn__flex-center';
         urlInput.style.flex = '1';
-        urlInput.placeholder = 'https://api.example.com/v1/chat/completions';
+        urlInput.placeholder = (t('settings') as any).ai?.apiUrlPlaceholder ?? 'https://api.example.com/v1/chat/completions';
         urlRow.appendChild(urlInput);
         editArea.appendChild(urlRow);
 
@@ -527,18 +527,18 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         keyRow.className = 'fn__flex';
         keyRow.style.alignItems = 'center';
         keyRow.style.gap = '8px';
-        keyRow.innerHTML = `<span style="min-width:80px;font-size:13px">API Key</span>`;
+        keyRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.apiKeyLabel ?? 'API Key'}</span>`;
         const keyInput = document.createElement('input');
         keyInput.className = 'b3-text-field fn__flex-center';
         keyInput.style.flex = '1';
         keyInput.type = 'password';
-        keyInput.placeholder = '输入 API Key';
+        keyInput.placeholder = (t('settings') as any).ai?.apiKeyPlaceholder ?? '输入 API Key';
         keyRow.appendChild(keyInput);
         editArea.appendChild(keyRow);
 
         // 模型列表
         const modelsLabel = document.createElement('div');
-        modelsLabel.textContent = '模型列表（勾选启用）';
+        modelsLabel.textContent = (t('settings') as any).ai?.modelsLabel ?? '模型列表（勾选启用）';
         modelsLabel.style.fontSize = '13px';
         editArea.appendChild(modelsLabel);
 
@@ -569,7 +569,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             nameInput.value = model;
             nameInput.style.flex = '1';
             nameInput.style.fontSize = '13px';
-            nameInput.placeholder = '请输入模型名称';
+            nameInput.placeholder = (t('settings') as any).ai?.modelNamePlaceholder ?? '请输入模型名称';
             nameInput.addEventListener('change', () => {
               const newName = nameInput.value.trim();
               if (newName) {
@@ -583,7 +583,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
             // 删除按钮（与编辑部分统一样式）
             const deleteBtn = document.createElement('span');
             deleteBtn.className = 'b3-tooltips b3-tooltips__ne';
-            deleteBtn.setAttribute('aria-label', '删除');
+            deleteBtn.setAttribute('aria-label', (t('settings') as any).projectGroups?.deleteButton ?? '删除');
             deleteBtn.style.display = 'inline-flex';
             deleteBtn.style.alignItems = 'center';
             deleteBtn.style.justifyContent = 'center';
@@ -664,7 +664,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         // 添加自定义模型按钮
         const addModelBtn = document.createElement('button');
         addModelBtn.className = 'b3-button b3-button--outline';
-        addModelBtn.innerHTML = '<svg style="width:12px;height:12px;margin-right:4px"><use xlink:href="#iconAdd"></use></svg>添加自定义模型';
+        addModelBtn.innerHTML = '<svg style="width:12px;height:12px;margin-right:4px"><use xlink:href="#iconAdd"></use></svg>' + ((t('settings') as any).ai?.addCustomModel ?? '添加自定义模型');
         addModelBtn.style.alignSelf = 'flex-start';
         addModelBtn.addEventListener('click', () => {
           currentModels.push('');
@@ -685,7 +685,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         defaultModelRow.className = 'fn__flex';
         defaultModelRow.style.alignItems = 'center';
         defaultModelRow.style.gap = '8px';
-        defaultModelRow.innerHTML = `<span style="min-width:80px;font-size:13px">默认模型</span>`;
+        defaultModelRow.innerHTML = `<span style="min-width:80px;font-size:13px">${(t('settings') as any).ai?.defaultModelLabel ?? '默认模型'}</span>`;
         defaultModelRow.appendChild(defaultModelSelect);
         editArea.appendChild(defaultModelRow);
 
@@ -699,7 +699,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.className = 'b3-button b3-button--cancel';
-        cancelBtn.textContent = '取消';
+        cancelBtn.textContent = t('common').cancel;
         cancelBtn.addEventListener('click', () => {
           editingIndex = -1;
           renderProviderList();
@@ -708,21 +708,21 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
         const saveBtn = document.createElement('button');
         saveBtn.type = 'button';
         saveBtn.className = 'b3-button b3-button--primary';
-        saveBtn.textContent = '保存';
+        saveBtn.textContent = t('common').save;
         saveBtn.addEventListener('click', async (e) => {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
           const name = nameInput.value.trim();
           if (!name) {
-            showMessage('请输入配置名称', 3000, 'error');
+            showMessage((t('settings') as any).ai?.messageEnterConfigName ?? '请输入配置名称', 3000, 'error');
             return;
           }
 
           // 过滤掉空名称的模型
           const validModels = currentModels.filter(m => m.trim() !== '');
           if (validModels.length === 0) {
-            showMessage('请至少添加一个模型', 3000, 'error');
+            showMessage((t('settings') as any).ai?.messageAddOneModel ?? '请至少添加一个模型', 3000, 'error');
             return;
           }
 
@@ -732,7 +732,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
           const checkedModels = checkedIndices.map(i => currentModels[i]);
 
           if (checkedModels.length === 0) {
-            showMessage('请至少选择一个模型', 3000, 'error');
+            showMessage((t('settings') as any).ai?.messageSelectOneModel ?? '请至少选择一个模型', 3000, 'error');
             return;
           }
 
@@ -755,7 +755,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
 
           editingIndex = -1;
           renderProviderList();
-          showMessage('已添加，点击下方「保存」写入配置', 3000);
+          showMessage((t('settings') as any).ai?.messageAdded ?? '已添加，点击下方「保存」写入配置', 3000);
         });
 
         btnRow.appendChild(cancelBtn);
@@ -771,7 +771,7 @@ export function addAiConfigItem(setting: Setting, settings: SettingsData): void 
       // 添加供应商按钮
       const addBtn = document.createElement('button');
       addBtn.className = 'b3-button b3-button--outline';
-      addBtn.innerHTML = '<svg style="width:14px;height:14px;margin-right:4px"><use xlink:href="#iconAdd"></use></svg>添加供应商';
+      addBtn.innerHTML = '<svg style="width:14px;height:14px;margin-right:4px"><use xlink:href="#iconAdd"></use></svg>' + ((t('settings') as any).ai?.addProvider ?? '添加供应商');
       addBtn.addEventListener('click', () => {
         editingIndex = -2; // -2 表示新增
         renderProviderList();

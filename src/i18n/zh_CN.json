@@ -134,6 +134,7 @@
       "description": "将任务数据暴露给 Cursor、Claude 等 AI 助手。在 Cursor 设置 → MCP 中添加以下配置，并将 SIYUAN_TOKEN 替换为思源 设置→关于 中的 API Token。",
       "copyButton": "复制 MCP 配置",
       "copySuccess": "MCP 配置已复制到剪贴板",
+      "copyFailed": "复制失败，请手动复制",
       "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版"
     },
     "ai": {
@@ -143,8 +144,27 @@
       "providerLabel": "服务商",
       "modelLabel": "模型",
       "apiKeyPlaceholder": "输入你的 API Key",
+      "apiKeyLabel": "API Key",
       "apiUrlLabel": "API 地址",
-      "customProvider": "自定义"
+      "apiUrlPlaceholder": "https://api.example.com/v1/chat/completions",
+      "customProvider": "自定义",
+      "emptyProviders": "暂无供应商配置，点击下方按钮添加",
+      "collapse": "收起",
+      "edit": "编辑",
+      "configName": "配置名称",
+      "namePlaceholder": "如：Kimi-个人",
+      "selectProvider": "选择供应商",
+      "defaultModelLabel": "默认模型",
+      "modelsLabel": "模型列表（勾选启用）",
+      "modelNamePlaceholder": "请输入模型名称",
+      "addCustomModel": "添加自定义模型",
+      "addProvider": "添加供应商",
+      "messageEnterConfigName": "请输入配置名称",
+      "messageAddOneModel": "请至少添加一个模型",
+      "messageSelectOneModel": "请至少选择一个模型",
+      "messageApplied": "已应用，点击下方「保存」写入配置",
+      "messageAdded": "已添加，点击下方「保存」写入配置",
+      "confirmDeleteProvider": "确定要删除 \"{{name}}\" 吗？"
     },
     "projectDirectories": {
       "title": "项目目录",

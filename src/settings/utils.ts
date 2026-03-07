@@ -94,7 +94,7 @@ export function renderGroupsList(
 
     const deleteBtn = document.createElement('span');
     deleteBtn.className = 'b3-tooltips b3-tooltips__nw';
-    deleteBtn.setAttribute('aria-label', '删除');
+    deleteBtn.setAttribute('aria-label', t('settings').projectGroups.deleteButton);
     deleteBtn.style.display = 'inline-flex';
     deleteBtn.style.alignItems = 'center';
     deleteBtn.style.justifyContent = 'center';
@@ -187,7 +187,7 @@ export function renderDirectoriesList(
     // 删除按钮
     const deleteBtn = document.createElement('span');
     deleteBtn.className = 'b3-tooltips b3-tooltips__nw';
-    deleteBtn.setAttribute('aria-label', '删除');
+    deleteBtn.setAttribute('aria-label', t('settings').projectGroups.deleteButton);
     deleteBtn.style.display = 'inline-flex';
     deleteBtn.style.alignItems = 'center';
     deleteBtn.style.justifyContent = 'center';
