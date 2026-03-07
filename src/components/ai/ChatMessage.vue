@@ -141,7 +141,7 @@
           <!-- 分组模式下最后一条 AI 消息显示插入按钮 -->
           <div v-if="isGrouped && isLast && canInsertToNote" class="chat-message__insert-btn">
             <span
-              class="block__icon b3-tooltips b3-tooltips__ne"
+              class="block__icon b3-tooltips b3-tooltips__nw"
               :aria-label="t('aiChat').insertToNote"
               @click="handleInsertToNote"
             >
