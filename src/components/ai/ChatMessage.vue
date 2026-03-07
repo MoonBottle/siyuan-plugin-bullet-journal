@@ -442,6 +442,7 @@ function formatTime(timestamp: number): string {
     overflow-wrap: break-word;
     word-wrap: break-word;
     word-break: break-word;
+    user-select: text; /* 允许选中复制消息内容 */
   }
 
   &__header-row {
@@ -594,16 +595,22 @@ function formatTime(timestamp: number): string {
       &.level-3 { padding-left: 40px; }
     }
 
-    :deep(table.chat-table) {
+    // 表格样式：支持所有 Markdown 表格（marked 默认输出无 class 的 table）
+    :deep(table) {
+      display: table;
       width: 100%;
       border-collapse: collapse;
       margin: 12px 0;
       font-size: 13px;
+      table-layout: auto;
 
       th, td {
         border: 1px solid var(--b3-theme-surface-lighter);
         padding: 8px 12px;
         text-align: left;
+        white-space: normal;
+        word-break: break-word;
+        vertical-align: top;
       }
 
       th {
@@ -782,6 +789,7 @@ function formatTime(timestamp: number): string {
 
   &__text {
     min-width: 0;
+    overflow-x: auto; /* 表格过宽时可横向滚动 */
   }
 
   // 思考过程样式

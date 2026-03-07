@@ -526,6 +526,7 @@ function formatTime(timestamp: number): string {
     min-height: 0;
     max-height: 100%;
     scroll-behavior: smooth;
+    user-select: text; /* 允许选中复制对话内容 */
   }
 
   &__empty {
