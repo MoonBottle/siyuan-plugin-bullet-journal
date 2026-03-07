@@ -96,6 +96,8 @@ export function parseKramdown(
 
   let currentTask: Task | null = null;
   let lineNumber = 0;
+  /** 当前任务是否已遇到第一个事项，用于停止收集任务链接 */
+  let hasSeenItemForCurrentTask = false;
 
   for (const block of blocks) {
     lineNumber++;
@@ -148,6 +150,7 @@ export function parseKramdown(
         currentTask.docId = docId;
         project.tasks.push(currentTask);
       }
+      hasSeenItemForCurrentTask = false;
       currentTask = LineParser.parseTaskLine(stripListAndBlockAttr(content), lineNumber);
       if (currentTask) {
         currentTask.blockId = block.blockId;
@@ -155,7 +158,7 @@ export function parseKramdown(
       continue;
     }
 
-    if (currentTask && content.includes('](') && !content.includes('@')) {
+    if (currentTask && content.includes('](') && !content.includes('@') && !hasSeenItemForCurrentTask) {
       const linkMatch = content.match(/\[(.*?)\]\((.*?)\)/);
       if (linkMatch) {
         if (!currentTask.links) {
@@ -168,6 +171,7 @@ export function parseKramdown(
 
     // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
     if (currentTask && content.includes('@') && !hasTaskTag) {
+      hasSeenItemForCurrentTask = true;
       // 收集事项下方的链接行：先收集当前块内首行之后的链接行，再收集后续块中的链接行
       const itemLinks: Array<{ name: string; url: string }> = [];
       const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
