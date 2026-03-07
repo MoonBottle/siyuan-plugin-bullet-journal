@@ -98,6 +98,28 @@ ${pendingSummary}
 }
 
 /**
+ * 根据 provider 和 model 返回合适的 temperature
+ * Kimi API 要求 temperature 必须为 1
+ */
+function getTemperature(config: AIProviderConfig): number {
+  if (config.provider === 'kimi') {
+    return 1;
+  }
+  return 0.7;
+}
+
+/**
+ * 规范化消息以兼容各 API
+ * Kimi API 要求 assistant 消息的 content 不能为空
+ */
+function normalizeMessageContent(m: ChatMessage): string {
+  if (m.role === 'assistant' && !m.content?.trim()) {
+    return ' ';
+  }
+  return m.content ?? '';
+}
+
+/**
  * 流式 AI 响应结果
  */
 export interface StreamAIResponse {
@@ -125,7 +147,7 @@ export async function callAI(
     messages: messages.map(m => {
       const msg: Record<string, unknown> = {
         role: m.role,
-        content: m.content
+        content: normalizeMessageContent(m)
       };
       // tool 角色的消息必须包含 tool_call_id
       if (m.role === 'tool' && m.toolCallId) {
@@ -137,7 +159,7 @@ export async function callAI(
       }
       return msg;
     }),
-    temperature: 0.7,
+    temperature: getTemperature(config),
     max_tokens: 4000,
     stream: true
   };
@@ -333,13 +355,13 @@ export async function callAIWithTools(
     model: config.defaultModel,
     messages: messages.map(m => ({
       role: m.role,
-      content: m.content,
+      content: normalizeMessageContent(m),
       ...(m.toolCalls && { tool_calls: m.toolCalls }),
       ...(m.toolCallId && { tool_call_id: m.toolCallId })
     })),
     tools,
     tool_choice: 'auto',
-    temperature: 0.7,
+    temperature: getTemperature(config),
     max_tokens: 4000
   };
 
@@ -415,13 +437,13 @@ export async function callAIWithToolsStream(
     model: config.defaultModel,
     messages: messages.map(m => ({
       role: m.role,
-      content: m.content,
+      content: normalizeMessageContent(m),
       ...(m.toolCalls && { tool_calls: m.toolCalls }),
       ...(m.toolCallId && { tool_call_id: m.toolCallId })
     })),
     tools,
     tool_choice: 'auto',
-    temperature: 0.7,
+    temperature: getTemperature(config),
     max_tokens: 4000,
     stream: true
   };
