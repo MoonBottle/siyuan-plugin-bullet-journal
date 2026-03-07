@@ -1,9 +1,9 @@
 {
-  "title": "Bullet Journal Assistant",
+  "title": "Task Assistant",
   "aiChat": {
-    "title": "AI Assistant",
+    "title": "Task Assistant",
     "emptyTitle": "Start Conversation",
-    "emptyDesc": "Ask the AI assistant about your tasks and projects",
+    "emptyDesc": "Ask the task assistant about your tasks and projects",
     "placeholder": "Type a message...",
     "placeholderDisabled": "Please configure AI service first",
     "configHint": "AI service not configured",
@@ -127,11 +127,11 @@
     },
     "dirConfig": {
       "title": "Directory Config",
-      "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as bullet journal directory\" to add quickly."
+      "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as task assistant directory\" to add quickly."
     },
     "mcp": {
       "title": "MCP Config",
-      "description": "Expose bullet journal data to AI assistants like Cursor and Claude. Add the config below to Cursor Settings → MCP, and replace SIYUAN_TOKEN with the API Token from SiYuan Settings → About.",
+      "description": "Expose task data to AI assistants like Cursor and Claude. Add the config below to Cursor Settings → MCP, and replace SIYUAN_TOKEN with the API Token from SiYuan Settings → About.",
       "copyButton": "Copy MCP Config",
       "copySuccess": "MCP config copied to clipboard",
       "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop"
@@ -181,7 +181,7 @@
     "moveSuccess": "Item time moved",
     "resizeSuccess": "Item time resized",
     "actionFailed": "Failed, please retry",
-    "dirsSet": "{count} bullet journal directories set",
+    "dirsSet": "{count} task assistant directories set",
     "dirsExist": "Selected directories already exist in settings"
   }
 }

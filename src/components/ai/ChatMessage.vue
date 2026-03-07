@@ -198,7 +198,7 @@ const roleText = computed(() => {
     case 'user':
       return '我';
     case 'assistant':
-      return 'AI 助手';
+      return '任务助手';
     case 'system':
       return '系统';
     case 'tool':

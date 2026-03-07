@@ -230,7 +230,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
 
 onMounted(async () => {
   if (!calendarEl.value) {
-    console.error('[Bullet Journal] calendarEl is null');
+    console.error('[Task Assistant] calendarEl is null');
     return;
   }
 
@@ -299,7 +299,7 @@ onMounted(async () => {
     updateEvents();
 
     if (pendingNavigateDate) {
-      console.warn('[Bullet Journal] CalendarView apply pendingNavigateDate', pendingNavigateDate);
+      console.warn('[Task Assistant] CalendarView apply pendingNavigateDate', pendingNavigateDate);
       calendarInstance.gotoDate(pendingNavigateDate);
       pendingNavigateDate = null;
       emit('navigated');
@@ -313,7 +313,7 @@ onMounted(async () => {
     });
     resizeObserver.observe(calendarEl.value);
   } catch (error) {
-    console.error('[Bullet Journal] Failed to initialize calendar:', error);
+    console.error('[Task Assistant] Failed to initialize calendar:', error);
   }
 });
 
@@ -334,10 +334,10 @@ watch(() => props.events, () => {
 
 const updateEvents = () => {
   if (!calendarInstance) {
-    console.log('[Bullet Journal] Calendar instance not ready');
+    console.log('[Task Assistant] Calendar instance not ready');
     return;
   }
-  console.log('[Bullet Journal] Updating events:', props.events?.length || 0);
+  console.log('[Task Assistant] Updating events:', props.events?.length || 0);
   calendarInstance.removeAllEvents();
   calendarInstance.addEventSource(props.events);
   calendarInstance.updateSize();
@@ -376,10 +376,10 @@ defineExpose({
   today: () => calendarInstance?.today(),
   gotoDate: (date: string) => {
     if (calendarInstance) {
-      console.warn('[Bullet Journal] CalendarView.gotoDate immediate', date);
+      console.warn('[Task Assistant] CalendarView.gotoDate immediate', date);
       calendarInstance.gotoDate(date);
     } else if (date) {
-      console.warn('[Bullet Journal] CalendarView.gotoDate pending', date);
+      console.warn('[Task Assistant] CalendarView.gotoDate pending', date);
       pendingNavigateDate = date;
     }
   },

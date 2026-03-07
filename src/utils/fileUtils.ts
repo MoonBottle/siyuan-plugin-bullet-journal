@@ -265,7 +265,7 @@ export async function updateBlockDateTime(
     // 获取块的原始内容
     const result = await getBlockKramdown(blockId);
     if (!result?.kramdown) {
-      console.error('[Bullet Journal] Failed to get block kramdown');
+      console.error('[Task Assistant] Failed to get block kramdown');
       return false;
     }
 
@@ -331,7 +331,7 @@ export async function updateBlockDateTime(
 
     return true;
   } catch (error) {
-    console.error('[Bullet Journal] Failed to update block:', error);
+    console.error('[Task Assistant] Failed to update block:', error);
     return false;
   }
 }
@@ -352,7 +352,7 @@ export async function openDocument(docId: string): Promise<boolean> {
     });
     return true;
   } catch (error) {
-    console.error('[Bullet Journal] Failed to open document:', error);
+    console.error('[Task Assistant] Failed to open document:', error);
     return false;
   }
 }
@@ -399,7 +399,7 @@ export async function openDocumentAtLine(
 
     return true;
   } catch (error) {
-    console.error('[Bullet Journal] Failed to open document at line:', error);
+    console.error('[Task Assistant] Failed to open document at line:', error);
     return false;
   }
 }
@@ -418,7 +418,7 @@ export async function updateBlockContent(
   try {
     const result = await getBlockKramdown(blockId);
     if (!result?.kramdown) {
-      console.error('[Bullet Journal] Failed to get block kramdown');
+      console.error('[Task Assistant] Failed to get block kramdown');
       return false;
     }
 
@@ -431,7 +431,7 @@ export async function updateBlockContent(
 
     return true;
   } catch (error) {
-    console.error('[Bullet Journal] Failed to update block content:', error);
+    console.error('[Task Assistant] Failed to update block content:', error);
     return false;
   }
 }
@@ -461,7 +461,7 @@ async function getBlockIdByLine(docId: string, lineNumber: number): Promise<stri
 
     return null;
   } catch (error) {
-    console.error('[Bullet Journal] Failed to get block id by line:', error);
+    console.error('[Task Assistant] Failed to get block id by line:', error);
     return null;
   }
 }

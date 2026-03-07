@@ -6,9 +6,9 @@ import type { AIProviderConfig, ChatMessage, ToolCall, ToolDefinition, UsageInfo
 import type { Project, ProjectGroup, Item } from '@/types/models';
 
 // 系统提示词模板
-const SYSTEM_PROMPT_TEMPLATE = `你是一个子弹笔记助手，专门帮助用户管理和分析他们的任务数据。
+const SYSTEM_PROMPT_TEMPLATE = `你是一个任务助手，专门帮助用户管理和分析他们的任务数据。
 
-## 子弹笔记数据结构
+## 任务数据结构
 
 ### 项目（Project）
 - 每个文档代表一个项目

@@ -8,12 +8,12 @@
   "backends": ["all"],
   "frontends": ["all"],
   "displayName": {
-    "default": "Bullet Journal Assistant",
-    "zh_CN": "子弹笔记助手"
+    "default": "Task Assistant",
+    "zh_CN": "任务助手"
   },
   "description": {
-    "default": "Bullet Journal style task management — calendar, gantt chart and project views, all in one",
-    "zh_CN": "子弹笔记风格任务管理，日历、甘特图、项目视图一应俱全"
+    "default": "Task assistant for managing your todos and projects — calendar, gantt chart and project views, all in one",
+    "zh_CN": "任务管理助手，日历、甘特图、项目视图一应俱全"
   },
   "readme": {
     "default": "README.md",

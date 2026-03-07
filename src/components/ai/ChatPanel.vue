@@ -37,7 +37,7 @@
                 <div class="chat-message-group__avatar-inline">
                   <AiAssistantIcon />
                 </div>
-                <span class="chat-message-group__role">AI 助手</span>
+                <span class="chat-message-group__role">任务助手</span>
                 <span class="chat-message-group__time">
                   {{ formatTime(group.firstMessage.timestamp) }}
                 </span>
@@ -482,7 +482,7 @@ async function handleInsertToNote(message: ChatMessageType) {
     // 格式化消息内容（预处理 ATX 标题换行 + 压缩多余空行）
     const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
     const normalizedContent = normalizeExcessiveNewlines(ensureHeadingNewlines(message.content));
-    const contentToInsert = `> **AI 助手** ${timestamp}\n>\n> ${normalizedContent.replace(/\n/g, '\n> ')}`;
+    const contentToInsert = `> **任务助手** ${timestamp}\n>\n> ${normalizedContent.replace(/\n/g, '\n> ')}`;
 
     await appendBlock('markdown', contentToInsert, docId);
     await pushMsg('已插入到笔记', 3000);
@@ -631,7 +631,7 @@ function formatTime(timestamp: number): string {
     justify-content: center;
     flex-shrink: 0;
     background: transparent;
-    transform: translateY(-2px); /* 机器人图标视觉上略偏下，微调上移 */
+    transform: translateY(-1px); /* 机器人图标视觉上略偏下，微调上移 */
 
     svg,
     :deep(svg) {

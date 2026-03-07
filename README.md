@@ -1,21 +1,20 @@
-# Bullet Journal Assistant - SiYuan Plugin
+# Task Assistant - SiYuan Plugin
 
 ![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![Changelog](https://img.shields.io/badge/CHANGELOG-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md) | [![User Guide](https://img.shields.io/badge/docs-User%20Guide-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/index.md)
 
 [English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md) | [简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README_zh_CN.md)
 
-A Bullet Journal style task management plugin for SiYuan Note. Calendar, Gantt chart and project list — all in one place.
+A task management plugin for SiYuan Note. Calendar, Gantt chart and project list — all in one place.
 
 ### v0.7.2 Highlights
 
 - **Multi-date Items**: Support for single items associated with multiple dates, enabling cross-day task management (format: `@2026-03-06, 2026-03-10~03-12`)
 - **Item Links**: Support for adding external or internal SiYuan links to items, clickable in detail modal
 - **Status Icons**: Added status emoji indicators in Calendar and Todo Dock (⏳pending / ✅completed / ❌abandoned / ⚠️expired)
-- **Expired Status**: New expired status styling for clearer visualization of overdue items
 
 ### v0.7.0 Highlights
 
-- **MCP for AI**: Built-in `sy-bullet-journal-assistant` lets AI read your task data—smart Q&A, weekly reports, work planning
+- **MCP for AI**: Built-in `sy-task-assistant` lets AI read your task data—smart Q&A, weekly reports, work planning
 - **Three-step setup**: "Copy MCP Config" in plugin settings generates complete JSON; replace token only to use with Trae, Cursor, Claude, and other AI assistants. See [MCP Setup Guide](https://ld246.com/article/1772677964043) for details
 
 ![image.png](https://b3logfile.com/file/2026/03/image-wcoPri5.png)
@@ -90,7 +89,7 @@ Click any task in the view to jump directly to its location in your notes.
 ### Install from Marketplace (Recommended)
 
 1. Open SiYuan → Settings → Marketplace → Plugins
-2. Search for "Bullet Journal"
+2. Search for "Task Assistant"
 3. Click Install
 
 ### Manual Installation
@@ -103,14 +102,14 @@ Click any task in the view to jump directly to its location in your notes.
 
 1. **Create Project Document** - Create a document in SiYuan to record project tasks
 2. **Write Task Format** - Use `#task` to mark tasks, `@date` to mark items
-3. **Configure Plugin** (optional, recommended) - Add directory paths to scan in settings, or right-click a node in the document tree and choose "Set as Bullet Journal directory" to add quickly
+3. **Configure Plugin** (optional, recommended) - Add directory paths to scan in settings, or right-click a node in the document tree and choose "Set as Task Assistant directory" to add quickly
 4. **View Tasks** - Access tasks through Calendar, Gantt, Project List, or Todo Dock
 
 For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
 
 ## MCP (Model Context Protocol)
 
-The plugin includes an MCP server (`sy-bullet-journal-assistant`) that exposes bullet journal data to AI assistants like Cursor and Claude.
+The plugin includes an MCP server (`sy-task-assistant`) that exposes task data to AI assistants like Cursor and Claude.
 
 **Tools:**
 - `list_groups` - Query all project groups
@@ -127,14 +126,14 @@ The plugin includes an MCP server (`sy-bullet-journal-assistant`) that exposes b
 
 ### AI Agent Prompt
 
-When using this MCP server with AI assistants, you can use the following prompt to help the AI understand how to work with your bullet journal data:
+When using this MCP server with AI assistants, you can use the following prompt to help the AI understand how to work with your task data:
 
 ```
-You have access to a bullet journal MCP server with the following tools:
+You have access to a task assistant MCP server with the following tools:
 
 1. **list_groups**: Lists all project groups. Use this first to understand the project organization.
 2. **list_projects**: Lists all projects with optional groupId filter. Each project has id, name, description, path, groupId, and taskCount.
-3. **filter_items**: Filters bullet journal items with parameters:
+3. **filter_items**: Filters task items with parameters:
    - projectId/projectIds: Filter by specific project(s)
    - groupId: Filter by project group
    - startDate/endDate: Filter by date range (YYYY-MM-DD format)
@@ -144,7 +143,7 @@ You have access to a bullet journal MCP server with the following tools:
 - When the user asks about their tasks, projects, or schedule
 - When the user wants to track progress or review completed work
 - When the user needs to plan or organize their work
-- When the user asks for summaries or reports of their bullet journal data
+- When the user asks for summaries or reports of their task data
 
 **Best practices:**
 1. Always start with `list_groups` to understand the project structure

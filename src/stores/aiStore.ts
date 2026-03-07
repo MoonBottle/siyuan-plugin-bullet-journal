@@ -151,11 +151,11 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   // 系统提示词（支持工具调用版本）
-  const SYSTEM_PROMPT_WITH_TOOLS = `你是一个子弹笔记助手，专门帮助用户管理和分析他们的任务数据。
+  const SYSTEM_PROMPT_WITH_TOOLS = `你是一个任务助手，专门帮助用户管理和分析他们的任务数据。
 
 ## 你的能力
 
-你可以使用以下工具来查询用户的子弹笔记数据：
+你可以使用以下工具来查询用户的任务数据：
 
 1. **list_groups** - 查询所有分组
    - 用途：获取分组列表，了解用户的项目分类

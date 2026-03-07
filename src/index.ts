@@ -105,7 +105,7 @@ export default class HKWorkPlugin extends Plugin {
     this.registerEventListeners();
 
     // 监听文档树右键菜单事件
-    console.log('[Bullet Journal] Registering open-menu-doctree event listener');
+    console.log('[Task Assistant] Registering open-menu-doctree event listener');
     this.eventBus.on('open-menu-doctree', this.handleDocTreeMenu.bind(this));
   }
 
@@ -158,7 +158,7 @@ export default class HKWorkPlugin extends Plugin {
       // 加载聊天记录（从单独的文件）
       await this.loadAIChatHistory();
     } catch (error) {
-      console.error('[Bullet Journal] Failed to load settings:', error);
+      console.error('[Task Assistant] Failed to load settings:', error);
     }
   }
 
@@ -175,7 +175,7 @@ export default class HKWorkPlugin extends Plugin {
         };
       }
     } catch (error) {
-      console.error('[Bullet Journal] Failed to load AI chat history:', error);
+      console.error('[Task Assistant] Failed to load AI chat history:', error);
     }
   }
 
@@ -186,7 +186,7 @@ export default class HKWorkPlugin extends Plugin {
     try {
       await this.saveData('ai-chat-history', chatHistory);
     } catch (error) {
-      console.error('[Bullet Journal] Failed to save AI chat history:', error);
+      console.error('[Task Assistant] Failed to save AI chat history:', error);
     }
   }
 
@@ -201,7 +201,7 @@ export default class HKWorkPlugin extends Plugin {
     try {
       await this.saveData('settings', settings);
     } catch (error) {
-      console.error('[Bullet Journal] Failed to save settings:', error);
+      console.error('[Task Assistant] Failed to save settings:', error);
     }
   }
 
@@ -239,7 +239,7 @@ export default class HKWorkPlugin extends Plugin {
     try {
       await this.saveData('settings', settings);
     } catch (error) {
-      console.error('[Bullet Journal] Failed to save AI settings:', error);
+      console.error('[Task Assistant] Failed to save AI settings:', error);
     }
   }
 
@@ -252,11 +252,11 @@ export default class HKWorkPlugin extends Plugin {
       const merged: SettingsData = data
         ? { ...data, ai: { providers: aiData.providers, activeProviderId: aiData.activeProviderId } }
         : { ...defaultSettings, ai: { providers: aiData.providers, activeProviderId: aiData.activeProviderId } };
-      console.log('[Bullet Journal] Merged settings:', merged);
+      console.log('[Task Assistant] Merged settings:', merged);
       await this.saveData('settings', merged);
       this.lastAISettingsSaveTime = Date.now();
     } catch (error) {
-      console.error('[Bullet Journal] Failed to save AI settings only:', error);
+      console.error('[Task Assistant] Failed to save AI settings only:', error);
       throw error;
     }
   }
@@ -292,7 +292,7 @@ export default class HKWorkPlugin extends Plugin {
       return;
     }
     
-    console.log('[Bullet Journal] handleDocTreeMenu triggered', detail);
+    console.log('[Task Assistant] handleDocTreeMenu triggered', detail);
     
     const documentIds = Array.from(elements)
       .map((element: Element) => element.getAttribute('data-node-id'))
@@ -304,9 +304,9 @@ export default class HKWorkPlugin extends Plugin {
     
     detail.menu.addItem({
       icon: 'iconFolder',
-      label: '设置为子弹笔记目录',
+      label: '设置为任务助手目录',
       click: async () => {
-        console.log('[Bullet Journal] Setting bullet journal directories, documentIds:', documentIds);
+        console.log('[Task Assistant] Setting task assistant directories, documentIds:', documentIds);
         const paths: string[] = [];
         for (const docId of documentIds) {
           try {
@@ -315,11 +315,11 @@ export default class HKWorkPlugin extends Plugin {
               paths.push(hPath);
             }
           } catch (error) {
-            console.error('[Bullet Journal] Failed to get doc path:', error);
+            console.error('[Task Assistant] Failed to get doc path:', error);
           }
         }
         
-        console.log('[Bullet Journal] Paths to add:', paths);
+        console.log('[Task Assistant] Paths to add:', paths);
         if (paths.length === 0) return;
         
         const existingPaths = settings.directories.map(d => d.path);
@@ -339,11 +339,11 @@ export default class HKWorkPlugin extends Plugin {
         });
         
         await this.saveSettings();
-        console.log('[Bullet Journal] Settings saved, directories:', settings.directories);
+        console.log('[Task Assistant] Settings saved, directories:', settings.directories);
         
         if (addedCount > 0) {
-          showMessage((t('common') as any).dirsSet?.replace?.('{count}', String(addedCount)) ?? `已设置 ${addedCount} 个子弹笔记目录`, 3000, 'info');
-          console.log('[Bullet Journal] Emitting DATA_REFRESH event');
+          showMessage((t('common') as any).dirsSet?.replace?.('{count}', String(addedCount)) ?? `已设置 ${addedCount} 个任务助手目录`, 3000, 'info');
+          console.log('[Task Assistant] Emitting DATA_REFRESH event');
           eventBus.emit(Events.DATA_REFRESH);
           broadcastDataRefresh(this.getSettings() as object);
         } else {
@@ -384,7 +384,7 @@ export default class HKWorkPlugin extends Plugin {
           app.use(pinia);
           app.mount(this.element);
         } catch (error) {
-          console.error('[Bullet Journal] Failed to mount CalendarTab:', error);
+          console.error('[Task Assistant] Failed to mount CalendarTab:', error);
         }
       },
       destroy() {
@@ -402,7 +402,7 @@ export default class HKWorkPlugin extends Plugin {
           app.use(pinia);
           app.mount(this.element);
         } catch (error) {
-          console.error('[Bullet Journal] Failed to mount GanttTab:', error);
+          console.error('[Task Assistant] Failed to mount GanttTab:', error);
         }
       },
       destroy() {
@@ -420,7 +420,7 @@ export default class HKWorkPlugin extends Plugin {
           app.use(pinia);
           app.mount(this.element);
         } catch (error) {
-          console.error('[Bullet Journal] Failed to mount ProjectTab:', error);
+          console.error('[Task Assistant] Failed to mount ProjectTab:', error);
         }
       },
       destroy() {
@@ -530,7 +530,7 @@ export default class HKWorkPlugin extends Plugin {
     // custom.data 仅传 type，避免不同 initialDate 导致创建多个 Tab
     const customData = { type };
     const initialDate = options?.initialDate;
-    console.warn('[Bullet Journal] openCustomTab', type, 'initialDate:', initialDate);
+    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate);
 
     try {
       openTab({
@@ -542,12 +542,12 @@ export default class HKWorkPlugin extends Plugin {
           data: customData
         },
         afterOpen: initialDate ? () => {
-          console.warn('[Bullet Journal] afterOpen emit CALENDAR_NAVIGATE', initialDate);
+          console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
           eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
         } : undefined
       });
     } catch (error) {
-      console.error('[Bullet Journal] Failed to open tab:', error);
+      console.error('[Task Assistant] Failed to open tab:', error);
     }
   }
 

@@ -1,9 +1,9 @@
 {
-  "title": "子弹笔记助手",
+  "title": "任务助手",
   "aiChat": {
-    "title": "AI 助手",
+    "title": "任务助手",
     "emptyTitle": "开始对话",
-    "emptyDesc": "向 AI 助手询问关于你的任务和项目的问题",
+    "emptyDesc": "向任务助手询问关于你的任务和项目的问题",
     "placeholder": "输入消息...",
     "placeholderDisabled": "请先配置 AI 服务",
     "configHint": "AI 服务未配置",
@@ -127,11 +127,11 @@
     },
     "dirConfig": {
       "title": "目录配置",
-      "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为子弹笔记目录」快速添加。"
+      "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为任务助手目录」快速添加。"
     },
     "mcp": {
       "title": "MCP 配置",
-      "description": "将子弹笔记数据暴露给 Cursor、Claude 等 AI 助手。在 Cursor 设置 → MCP 中添加以下配置，并将 SIYUAN_TOKEN 替换为思源 设置→关于 中的 API Token。",
+      "description": "将任务数据暴露给 Cursor、Claude 等 AI 助手。在 Cursor 设置 → MCP 中添加以下配置，并将 SIYUAN_TOKEN 替换为思源 设置→关于 中的 API Token。",
       "copyButton": "复制 MCP 配置",
       "copySuccess": "MCP 配置已复制到剪贴板",
       "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版"
@@ -181,7 +181,7 @@
     "moveSuccess": "已移动事项时间",
     "resizeSuccess": "已调整事项时间",
     "actionFailed": "失败，请重试",
-    "dirsSet": "已设置 {count} 个子弹笔记目录",
+    "dirsSet": "已设置 {count} 个任务助手目录",
     "dirsExist": "所选目录已存在于设置中"
   }
 }

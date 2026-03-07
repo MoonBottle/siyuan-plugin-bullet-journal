@@ -5,7 +5,7 @@ import { getWorkspaceInfo } from '@/api';
 export function addMcpConfigItem(setting: Setting): void {
   setting.addItem({
     title: (t('settings') as any).mcp?.title ?? 'MCP 配置',
-    description: (t('settings') as any).mcp?.description ?? '将子弹笔记数据暴露给 Cursor、Claude 等 AI 助手',
+    description: (t('settings') as any).mcp?.description ?? '将任务数据暴露给 Cursor、Claude 等 AI 助手',
     direction: 'row',
     createActionElement: () => {
       const topBar = document.createElement('div');

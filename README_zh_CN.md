@@ -1,21 +1,20 @@
-# 子弹笔记助手
+# 任务助手
 
 ![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![更新日志](https://img.shields.io/badge/更新日志-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
 
 [English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md) | [简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README_zh_CN.md)
 
-采用子弹笔记风格的任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
+任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
 
 ### v0.7.2 更新要点
 
 - **多日期事项**：支持单个事项关联多个日期，实现跨天事项管理（格式：`@2026-03-06, 2026-03-10~03-12`）
 - **事项链接**：支持为事项添加外部或思源内部链接，详情弹框中可点击跳转
 - **状态图标**：日历视图和待办侧栏添加事项状态 emoji 显示（⏳待办 / ✅已完成 / ❌已放弃 / ⚠️过期）
-- **过期状态**：新增过期状态样式，逾期事项一目了然
 
 ### v0.7.0 更新要点
 
-- **MCP 接入 AI**：内置 `sy-bullet-journal-assistant`，让 AI 直接读取你的任务数据——智能问答、周报分析、工作规划
+- **MCP 接入 AI**：内置 `sy-task-assistant`，让 AI 直接读取你的任务数据——智能问答、周报分析、工作规划
 - **三步即用**：插件设置中「复制 MCP 配置」生成完整 JSON，仅需替换 Token 即可在 Trae、Cursor、Claude 等 AI 助手中使用。详细说明见 [MCP 功能使用指南](https://ld246.com/article/1772677964043)
 
 ![image.png](https://b3logfile.com/file/2026/03/image-wcoPri5.png)
@@ -90,7 +89,7 @@
 ### 从集市安装（推荐）
 
 1. 打开思源笔记 → 设置 → 集市 → 插件
-2. 搜索「子弹笔记」
+2. 搜索「任务助手」
 3. 点击安装
 
 ### 手动安装
@@ -103,14 +102,14 @@
 
 1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
 2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
-3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为子弹笔记目录」快速添加
+3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
 4. **查看视图** - 通过日历、甘特图、项目列表或待办 Dock 查看任务
 
 详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
 ## MCP（Model Context Protocol）
 
-插件内置 MCP 服务器（`sy-bullet-journal-assistant`），可将子弹笔记数据暴露给 Cursor、Claude 等 AI 助手。
+插件内置 MCP 服务器（`sy-task-assistant`），可将任务数据暴露给 Cursor、Claude 等 AI 助手。
 
 **工具：**
 - `list_groups` - 查询所有分组
@@ -127,14 +126,14 @@
 
 ### AI 智能体提示词
 
-在 AI 助手中使用此 MCP 服务器时，可以使用以下提示词帮助 AI 理解如何处理您的子弹笔记数据：
+在 AI 助手中使用此 MCP 服务器时，可以使用以下提示词帮助 AI 理解如何处理您的任务数据：
 
 ```
-你可以访问一个子弹笔记 MCP 服务器，该服务器提供以下工具：
+你可以访问一个任务助手 MCP 服务器，该服务器提供以下工具：
 
 1. **list_groups**：列出所有项目分组。首先使用此工具了解项目组织结构。
 2. **list_projects**：列出所有项目，支持 groupId 过滤。每个项目包含 id、name、description、path、groupId 和 taskCount。
-3. **filter_items**：筛选子弹笔记事项，参数包括：
+3. **filter_items**：筛选任务事项，参数包括：
    - projectId/projectIds：按特定项目筛选
    - groupId：按项目分组筛选
    - startDate/endDate：按日期范围筛选（YYYY-MM-DD 格式）
@@ -144,7 +143,7 @@
 - 用户询问任务、项目或日程安排时
 - 用户想要追踪进度或回顾已完成的工作时
 - 用户需要规划或组织工作时
-- 用户要求汇总或报告子弹笔记数据时
+- 用户要求汇总或报告任务数据时
 
 **最佳实践：**
 1. 始终先调用 `list_groups` 了解项目结构

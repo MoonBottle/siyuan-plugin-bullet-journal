@@ -35,10 +35,10 @@ export class SiYuanClient {
       if (result.code === 0) {
         return result.data as T;
       }
-      console.error('[Bullet Journal MCP] API non-zero:', path, 'code:', result.code, 'msg:', result.msg);
+      console.error('[Task Assistant MCP] API non-zero:', path, 'code:', result.code, 'msg:', result.msg);
       return null;
     } catch (error) {
-      console.error('[Bullet Journal MCP] API request failed:', error);
+      console.error('[Task Assistant MCP] API request failed:', error);
       return null;
     }
   }
@@ -80,13 +80,13 @@ export class SiYuanClient {
       }
       if (response.status === 202) {
         const result = await response.json();
-        console.error('[Bullet Journal MCP] getFile failed:', path, 'code:', result.code, 'msg:', result.msg);
+        console.error('[Task Assistant MCP] getFile failed:', path, 'code:', result.code, 'msg:', result.msg);
         return null;
       }
-      console.error('[Bullet Journal MCP] getFile unexpected status:', response.status);
+      console.error('[Task Assistant MCP] getFile unexpected status:', response.status);
       return null;
     } catch (error) {
-      console.error('[Bullet Journal MCP] getFile request failed:', error);
+      console.error('[Task Assistant MCP] getFile request failed:', error);
       return null;
     }
   }

@@ -27,19 +27,19 @@ class EventBus {
    * 触发事件
    */
   emit(event: string, ...args: any[]): void {
-    console.log(`[Bullet Journal] Event emitted: ${event}`, args);
+    console.log(`[Task Assistant] Event emitted: ${event}`, args);
     const handlers = this.handlers.get(event);
     if (handlers) {
-      console.log(`[Bullet Journal] Handlers count for ${event}: ${handlers.size}`);
+      console.log(`[Task Assistant] Handlers count for ${event}: ${handlers.size}`);
       handlers.forEach(handler => {
         try {
           handler(...args);
         } catch (error) {
-          console.error(`[Bullet Journal] Error in event handler for ${event}:`, error);
+          console.error(`[Task Assistant] Error in event handler for ${event}:`, error);
         }
       });
     } else {
-      console.log(`[Bullet Journal] No handlers registered for ${event}`);
+      console.log(`[Task Assistant] No handlers registered for ${event}`);
     }
   }
 

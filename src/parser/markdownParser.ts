@@ -18,7 +18,7 @@ export class MarkdownParser {
    * 解析所有配置目录中的项目文档；目录为空时扫描所有文档
    */
   public async parseAllProjects(): Promise<Project[]> {
-    console.log('[Bullet Journal][Parser] 开始解析项目，目录数量:', this.directories.length);
+    console.log('[Task Assistant][Parser] 开始解析项目，目录数量:', this.directories.length);
     const projects: Project[] = [];
     const processedDocIds = new Set<string>();
 
@@ -39,7 +39,7 @@ export class MarkdownParser {
             projects.push(project);
           }
         } catch (error) {
-          console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error);
+          console.error(`[Task Assistant] Error parsing project document ${doc.id}:`, error);
         }
       }
     } else {
@@ -65,7 +65,7 @@ export class MarkdownParser {
       }
     }
 
-    console.log('[Bullet Journal][Parser] 解析完成，项目总数:', projects.length);
+    console.log('[Task Assistant][Parser] 解析完成，项目总数:', projects.length);
 
     return projects;
   }
@@ -75,7 +75,7 @@ export class MarkdownParser {
    * 先查 content 含任务标记的 block，按 root_id 聚合成文档列表
    */
   private async getAllDocs(): Promise<{ id: string; path: string; notebookId: string }[]> {
-    console.log('[Bullet Journal][Parser] 目录为空，扫描含 #任务/#task 的文档');
+    console.log('[Task Assistant][Parser] 目录为空，扫描含 #任务/#task 的文档');
     try {
       const sqlQuery = `
         SELECT id, hpath as path, box as notebookId
@@ -91,14 +91,14 @@ export class MarkdownParser {
         LIMIT 1000
       `;
       const result = await sql(sqlQuery);
-      console.log('[Bullet Journal][Parser] 查询到的文档数量:', result.length);
+      console.log('[Task Assistant][Parser] 查询到的文档数量:', result.length);
       return result.map((row: any) => ({
         id: row.id,
         path: row.path,
         notebookId: row.notebookId
       }));
     } catch (error) {
-      console.error('[Bullet Journal] Failed to get all docs:', error);
+      console.error('[Task Assistant] Failed to get all docs:', error);
       return [];
     }
   }
@@ -110,7 +110,7 @@ export class MarkdownParser {
   private async getProjectDocs(
     directoryPath: string
   ): Promise<{ id: string; path: string; notebookId: string }[]> {
-    console.log('[Bullet Journal][Parser] SQL 查询路径:', directoryPath);
+    console.log('[Task Assistant][Parser] SQL 查询路径:', directoryPath);
     try {
       const sqlQuery = `
         SELECT id, hpath as path, box as notebookId
@@ -128,7 +128,7 @@ export class MarkdownParser {
         notebookId: row.notebookId
       }));
     } catch (error) {
-      console.error('[Bullet Journal] Failed to get project docs:', error);
+      console.error('[Task Assistant] Failed to get project docs:', error);
       return [];
     }
   }
@@ -157,7 +157,7 @@ export class MarkdownParser {
       const result = await getDocKramdown(docId);
       return result?.kramdown || null;
     } catch (error) {
-      console.error('[Bullet Journal] Failed to get kramdown content:', error);
+      console.error('[Task Assistant] Failed to get kramdown content:', error);
       return null;
     }
   }
@@ -195,7 +195,7 @@ export class MarkdownParser {
       }
     }
 
-    console.log('[Bullet Journal][Parser] 获取到事项总数:', items.length);
+    console.log('[Task Assistant][Parser] 获取到事项总数:', items.length);
 
     return items;
   }
