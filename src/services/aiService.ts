@@ -120,6 +120,29 @@ function normalizeMessageContent(m: ChatMessage): string {
 }
 
 /**
+ * 构建 API 请求用的消息对象
+ * Kimi thinking 模式下，含 tool_calls 的 assistant 消息必须包含 reasoning_content
+ */
+function buildMessageForApi(m: ChatMessage, config: AIProviderConfig): Record<string, unknown> {
+  const content = normalizeMessageContent(m);
+  const msg: Record<string, unknown> = {
+    role: m.role,
+    content
+  };
+  if (m.role === 'tool' && m.toolCallId) {
+    msg.tool_call_id = m.toolCallId;
+  }
+  if (m.toolCalls && m.toolCalls.length > 0) {
+    msg.tool_calls = m.toolCalls;
+    // Kimi thinking 模式要求 assistant 消息含 tool_calls 时必须有 reasoning_content
+    if (config.provider === 'kimi' && m.role === 'assistant') {
+      msg.reasoning_content = m.reasoning?.trim() || ' ';
+    }
+  }
+  return msg;
+}
+
+/**
  * 流式 AI 响应结果
  */
 export interface StreamAIResponse {
@@ -144,21 +167,7 @@ export async function callAI(
 
   const requestBody = {
     model: config.defaultModel,
-    messages: messages.map(m => {
-      const msg: Record<string, unknown> = {
-        role: m.role,
-        content: normalizeMessageContent(m)
-      };
-      // tool 角色的消息必须包含 tool_call_id
-      if (m.role === 'tool' && m.toolCallId) {
-        msg.tool_call_id = m.toolCallId;
-      }
-      // assistant 角色的消息如果包含 tool_calls，需要保留
-      if (m.toolCalls && m.toolCalls.length > 0) {
-        msg.tool_calls = m.toolCalls;
-      }
-      return msg;
-    }),
+    messages: messages.map(m => buildMessageForApi(m, config)),
     temperature: getTemperature(config),
     max_tokens: 4000,
     stream: true
@@ -353,12 +362,7 @@ export async function callAIWithTools(
 
   const requestBody = {
     model: config.defaultModel,
-    messages: messages.map(m => ({
-      role: m.role,
-      content: normalizeMessageContent(m),
-      ...(m.toolCalls && { tool_calls: m.toolCalls }),
-      ...(m.toolCallId && { tool_call_id: m.toolCallId })
-    })),
+    messages: messages.map(m => buildMessageForApi(m, config)),
     tools,
     tool_choice: 'auto',
     temperature: getTemperature(config),
@@ -435,12 +439,7 @@ export async function callAIWithToolsStream(
 
   const requestBody = {
     model: config.defaultModel,
-    messages: messages.map(m => ({
-      role: m.role,
-      content: normalizeMessageContent(m),
-      ...(m.toolCalls && { tool_calls: m.toolCalls }),
-      ...(m.toolCallId && { tool_call_id: m.toolCallId })
-    })),
+    messages: messages.map(m => buildMessageForApi(m, config)),
     tools,
     tool_choice: 'auto',
     temperature: getTemperature(config),
