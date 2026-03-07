@@ -6,11 +6,19 @@
 
 A task management plugin for SiYuan Note. Calendar, Gantt chart and project list — all in one place.
 
-### v0.7.2 Highlights
 
-- **Multi-date Items**: Support for single items associated with multiple dates, enabling cross-day task management (format: `@2026-03-06, 2026-03-10~03-12`)
-- **Item Links**: Support for adding external or internal SiYuan links to items, clickable in detail modal
-- **Status Icons**: Added status emoji indicators in Calendar and Todo Dock (⏳pending / ✅completed / ❌abandoned / ⚠️expired)
+### v0.8.0 Highlights
+
+- **AI Chat**: Built-in Task Assistant panel with support for OpenAI, Kimi, DeepSeek, Step, Zhipu AI, and all OpenAI-compatible providers. Query projects, tasks, and items through conversation, generate daily reports and insert them into notes with one click
+- **Multi-conversation Management**: Support creating multiple independent conversation contexts with automatic chat history saving
+
+![PixPin20260308011120.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif)
+
+![PixPin20260308005211.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_00-52-11-Ej0YLYU.gif)
+
+![PixPin20260308010147.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-01-47-jhWDwex.gif)
+
+![image.png](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
 
 ### v0.7.0 Highlights
 

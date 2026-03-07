@@ -11,14 +11,18 @@
 - **AI 对话功能**：内置任务助手面板，支持 OpenAI、Kimi、DeepSeek、阶跃星辰、智谱 AI 等所有 OpenAI 兼容的供应商。通过对话方式查询项目、任务和事项，支持生成日报并一键插入笔记
 - **多对话管理**：支持创建多个独立对话场景，对话历史自动保存
 
+![PixPin20260308011120.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif)
+
+![PixPin20260308005211.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_00-52-11-Ej0YLYU.gif)
+
+![PixPin20260308010147.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-01-47-jhWDwex.gif)
+
+![image.png](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
+
 ### v0.7.0 更新要点
 
 - **MCP 接入 AI**：内置 `sy-task-assistant`，让 AI 直接读取你的任务数据——智能问答、周报分析、工作规划
 - **三步即用**：插件设置中「复制 MCP 配置」生成完整 JSON，仅需替换 Token 即可在 Trae、Cursor、Claude 等 AI 助手中使用。详细说明见 [MCP 功能使用指南](https://ld246.com/article/1772677964043)
-
-![image.png](https://b3logfile.com/file/2026/03/image-wcoPri5.png)
-
-![image.png](https://b3logfile.com/file/2026/03/image-BcjpYvK.png)
 
 ![image.png](https://b3logfile.com/file/2026/03/image-GvR2idc.png)
 
