@@ -37,7 +37,7 @@
                 <div class="chat-message-group__avatar-inline">
                   <AiAssistantIcon />
                 </div>
-                <span class="chat-message-group__role">任务助手</span>
+                <span class="chat-message-group__role">{{ t('aiChat').title }}</span>
                 <span class="chat-message-group__time">
                   {{ formatTime(group.firstMessage.timestamp) }}
                 </span>
@@ -305,10 +305,10 @@ const inputPlaceholder = computed(() => {
 });
 
 const examples = [
-  '我这周有哪些待办任务？',
-  '帮我总结一下项目进度',
-  '有哪些延期的任务需要关注？',
-  '帮我规划下周的工作安排'
+  t('aiChat').example1,
+  t('aiChat').example2,
+  t('aiChat').example3,
+  t('aiChat').example4
 ];
 
 // 自动滚动到底部
@@ -482,13 +482,13 @@ async function handleInsertToNote(message: ChatMessageType) {
     // 格式化消息内容（预处理 ATX 标题换行 + 压缩多余空行）
     const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
     const normalizedContent = normalizeExcessiveNewlines(ensureHeadingNewlines(message.content));
-    const contentToInsert = `> **任务助手** ${timestamp}\n>\n> ${normalizedContent.replace(/\n/g, '\n> ')}`;
+    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${normalizedContent.replace(/\n/g, '\n> ')}`;
 
     await appendBlock('markdown', contentToInsert, docId);
-    await pushMsg('已插入到笔记', 3000);
+    await pushMsg(t('aiChat').insertSuccess, 3000);
   } catch (error) {
     console.error('插入到笔记失败:', error);
-    await pushMsg('插入失败，请重试', 3000);
+    await pushMsg(t('aiChat').insertFailed, 3000);
   }
 }
 

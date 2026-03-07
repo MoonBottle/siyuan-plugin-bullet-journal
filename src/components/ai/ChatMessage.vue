@@ -47,7 +47,7 @@
                 <use xlink:href="#iconRight"></use>
               </svg>
             </span>
-            <span class="chat-message__reasoning-title">思考过程</span>
+            <span class="chat-message__reasoning-title">{{ t('aiChat').reasoningTitle }}</span>
             <!-- 仅在没有 reasoning 内容时显示加载点，避免与思考内容同时闪 -->
             <span v-if="message.loading && !message.content && !message.reasoning" class="chat-message__reasoning-loading">
               <span class="loading-dot"></span>
@@ -89,12 +89,12 @@
           <div v-if="!isCollapsed" class="chat-message__tool-body">
             <!-- 显示工具参数 -->
             <div v-if="getToolParams()" class="chat-message__tool-params">
-              <div class="chat-message__tool-params-title">参数:</div>
+              <div class="chat-message__tool-params-title">{{ t('aiChat').toolParamsTitle }}</div>
               <pre class="chat-message__tool-params-content"><code>{{ getToolParams() }}</code></pre>
             </div>
             <!-- 显示工具结果 -->
             <div class="chat-message__tool-result">
-              <div class="chat-message__tool-result-title">结果:</div>
+              <div class="chat-message__tool-result-title">{{ t('aiChat').toolResultTitle }}</div>
               <div class="chat-message__tool-result-content">
                 <div v-html="renderedContent"></div>
               </div>
@@ -194,17 +194,18 @@ const showHeader = computed(() => {
 });
 
 const roleText = computed(() => {
+  const ai = t('aiChat') as Record<string, string>;
   switch (props.message.role) {
     case 'user':
-      return '我';
+      return ai.roleUser ?? '我';
     case 'assistant':
-      return '任务助手';
+      return ai.roleAssistant ?? '任务助手';
     case 'system':
-      return '系统';
+      return ai.roleSystem ?? '系统';
     case 'tool':
-      return '工具';
+      return ai.roleTool ?? '工具';
     default:
-      return '未知';
+      return ai.roleUnknown ?? '未知';
   }
 });
 
@@ -221,13 +222,14 @@ function handleInsertToNote() {
 }
 
 function getToolName(): string {
+  const ai = t('aiChat') as Record<string, string>;
   if (props.toolCallInfo?.name) {
     return props.toolCallInfo.name;
   }
   if (props.message.toolCallId) {
-    return '工具执行';
+    return ai.toolRun ?? '工具执行';
   }
-  return '工具';
+  return ai.tool ?? '工具';
 }
 
 // 获取工具调用的参数
