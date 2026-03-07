@@ -1,5 +1,26 @@
 {
   "title": "Bullet Journal Assistant",
+  "aiChat": {
+    "title": "AI Assistant",
+    "emptyTitle": "Start Conversation",
+    "emptyDesc": "Ask the AI assistant about your tasks and projects",
+    "placeholder": "Type a message...",
+    "placeholderDisabled": "Please configure AI service first",
+    "configHint": "AI service not configured",
+    "goToSettings": "Go to Settings",
+    "newConversation": "New Conversation",
+    "clearConversation": "Clear Conversation",
+    "deleteConversation": "Delete Conversation",
+    "conversationCleared": "Conversation cleared",
+    "conversationDeleted": "Conversation deleted",
+    "defaultConversationTitle": "New Conversation",
+    "conversations": "Conversations",
+    "insertToNote": "Insert to Note",
+    "inputTokens": "Input tokens",
+    "outputTokens": "Output tokens",
+    "totalTokens": "Total tokens",
+    "cachedTokens": "Cached tokens"
+  },
   "calendar": {
     "title": "Calendar",
     "today": "Today",
@@ -114,6 +135,16 @@
       "copyButton": "Copy MCP Config",
       "copySuccess": "MCP config copied to clipboard",
       "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop"
+    },
+    "ai": {
+      "title": "AI Service Config",
+      "description": "Configure AI service provider to enable sidebar AI chat",
+      "enableLabel": "Enable AI Chat",
+      "providerLabel": "Provider",
+      "modelLabel": "Model",
+      "apiKeyPlaceholder": "Enter your API Key",
+      "apiUrlLabel": "API URL",
+      "customProvider": "Custom"
     },
     "projectDirectories": {
       "title": "Project Directories",

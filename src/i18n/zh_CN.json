@@ -1,5 +1,26 @@
 {
   "title": "子弹笔记助手",
+  "aiChat": {
+    "title": "AI 助手",
+    "emptyTitle": "开始对话",
+    "emptyDesc": "向 AI 助手询问关于你的任务和项目的问题",
+    "placeholder": "输入消息...",
+    "placeholderDisabled": "请先配置 AI 服务",
+    "configHint": "AI 服务未配置",
+    "goToSettings": "去设置",
+    "newConversation": "新建对话",
+    "clearConversation": "清空对话",
+    "deleteConversation": "删除对话",
+    "conversationCleared": "对话已清空",
+    "conversationDeleted": "对话已删除",
+    "defaultConversationTitle": "新对话",
+    "conversations": "对话历史",
+    "insertToNote": "插入到笔记",
+    "inputTokens": "输入 tokens",
+    "outputTokens": "输出 tokens",
+    "totalTokens": "总计 tokens",
+    "cachedTokens": "缓存 tokens"
+  },
   "calendar": {
     "title": "日历视图",
     "today": "今天",
@@ -114,6 +135,16 @@
       "copyButton": "复制 MCP 配置",
       "copySuccess": "MCP 配置已复制到剪贴板",
       "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版"
+    },
+    "ai": {
+      "title": "AI 服务配置",
+      "description": "配置 AI 服务商，启用侧边栏 AI 对话功能",
+      "enableLabel": "启用 AI 对话",
+      "providerLabel": "服务商",
+      "modelLabel": "模型",
+      "apiKeyPlaceholder": "输入你的 API Key",
+      "apiUrlLabel": "API 地址",
+      "customProvider": "自定义"
     },
     "projectDirectories": {
       "title": "项目目录",

@@ -11,5 +11,6 @@ export const TAB_TYPES = {
 
 // Dock 类型常量
 export const DOCK_TYPES = {
-  TODO: 'bullet-journal-todo'
+  TODO: 'bullet-journal-todo',
+  AI_CHAT: 'bullet-journal-ai-chat'
 };
