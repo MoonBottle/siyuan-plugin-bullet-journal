@@ -351,8 +351,8 @@ function scrollToBottom() {
   }
 }
 
-async function handleSend(content?: string) {
-  const messageContent = content || inputContent.value.trim();
+async function handleSend(content?: string | Event) {
+  const messageContent = (typeof content === 'string' ? content : '').trim() || inputContent.value.trim();
   if (!messageContent || isLoading.value || !isAIEnabled.value) return;
 
   inputContent.value = '';
