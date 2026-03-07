@@ -43,16 +43,17 @@
                 </span>
               </div>
               <div class="chat-message-group__card">
-                <ChatMessage
-                  v-for="(message, msgIndex) in group.messages"
-                  :key="message.id"
-                  :message="message"
-                  :tool-call-info="getMessageToolCallInfo(message)"
-                  :is-grouped="true"
-                  :is-first="msgIndex === 0"
-                  :is-last="msgIndex === group.messages.length - 1"
-                  @insert-to-note="handleInsertToNote"
-                />
+                <template v-for="(message, msgIndex) in group.messages" :key="message.id">
+                  <ChatMessage
+                    v-if="shouldRenderMessage(message)"
+                    :message="message"
+                    :tool-call-info="getMessageToolCallInfo(message)"
+                    :is-grouped="true"
+                    :is-first="!group.messages.slice(0, msgIndex).some(m => shouldRenderMessage(m))"
+                    :is-last="!group.messages.slice(msgIndex + 1).some(m => shouldRenderMessage(m))"
+                    @insert-to-note="handleInsertToNote"
+                  />
+                </template>
               </div>
             </template>
             <!-- 用户组 -->
@@ -433,6 +434,19 @@ function focusInput() {
   chatInputRef.value?.focus();
 }
 
+// 无可见内容的消息不渲染，避免空 DOM 占高度（逻辑需与 ChatMessage 显示规则一致）
+function shouldRenderMessage(message: ChatMessageType): boolean {
+  const m = message;
+  if (m.role !== 'assistant') return true;
+  if (m.loading || m.error) return true;
+  if (m.content?.trim()) return true;
+  // reasoning 仅在没有 toolCalls 时显示
+  if (m.reasoning?.trim() && !(m.toolCalls && m.toolCalls.length)) return true;
+  // usage 仅在无 toolCalls 时显示
+  if (m.usage && !(m.toolCalls && m.toolCalls.length)) return true;
+  return false;
+}
+
 // 获取消息对应的工具调用信息
 function getMessageToolCallInfo(message: any) {
   if (message.role !== 'tool' || !message.toolCallId) {
@@ -806,7 +820,7 @@ function formatTime(timestamp: number): string {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     min-height: 24px;
   }
 
@@ -831,14 +845,14 @@ function formatTime(timestamp: number): string {
   &__card {
     background: var(--b3-theme-surface);
     border-radius: var(--b3-border-radius);
-    padding: 8px 12px;
+    padding: 6px 12px;
     display: flex;
     flex-direction: column;
     gap: 0;
   }
 
   &__card :deep(.chat-message + .chat-message) {
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   &__avatar {
