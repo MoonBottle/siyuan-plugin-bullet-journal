@@ -257,7 +257,19 @@ const renderedContent = computed(() => {
   }
 
   if (isJSON) {
-    // 是 JSON，格式化显示
+    // 是 JSON，格式化显示（仅对对象/数组，纯数字/字符串/布尔值按普通文本处理）
+    try {
+      const parsed = JSON.parse(content);
+      if (typeof parsed !== 'object' || parsed === null) {
+        // 纯数字、字符串、布尔值不按 JSON 代码块显示，避免气泡被拉成细长条
+        isJSON = false;
+      }
+    } catch {
+      isJSON = false;
+    }
+  }
+
+  if (isJSON) {
     try {
       const parsed = JSON.parse(content);
       const formatted = JSON.stringify(parsed, null, 2);
@@ -424,7 +436,7 @@ function formatTime(timestamp: number): string {
   }
 
   &__content {
-    flex: 1;
+    flex: 0 1 auto; /* 不拉伸，按内容自适应，避免纯数字等短内容时气泡被拉高 */
     min-width: 0;
     max-width: 100%;
     overflow-wrap: break-word;
