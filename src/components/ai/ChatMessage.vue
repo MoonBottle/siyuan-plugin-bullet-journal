@@ -111,28 +111,28 @@
         <div v-if="message.usage" class="chat-message__footer">
           <div class="chat-message__usage">
             <span class="chat-message__usage-item">
-              <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('aiChat').inputTokens">
+              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').inputTokens">
                 <svg><use xlink:href="#iconEdit"></use></svg>
               </span>
               {{ message.usage.prompt_tokens }}
             </span>
             <span class="chat-message__usage-divider">|</span>
             <span class="chat-message__usage-item">
-              <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('aiChat').outputTokens">
+              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').outputTokens">
                 <svg><use xlink:href="#iconSparkles"></use></svg>
               </span>
               {{ message.usage.completion_tokens }}
             </span>
             <span class="chat-message__usage-divider">|</span>
             <span class="chat-message__usage-item">
-              <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('aiChat').totalTokens">
+              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').totalTokens">
                 <svg><use xlink:href="#iconDatabase"></use></svg>
               </span>
               {{ message.usage.total_tokens }}
             </span>
             <span v-if="message.usage.cached_tokens" class="chat-message__usage-item">
               <span class="chat-message__usage-divider">|</span>
-              <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('aiChat').cachedTokens">
+              <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').cachedTokens">
                 <svg><use xlink:href="#iconHistory"></use></svg>
               </span>
               {{ message.usage.cached_tokens }}
@@ -141,7 +141,7 @@
           <!-- 分组模式下最后一条 AI 消息显示插入按钮 -->
           <div v-if="isGrouped && isLast && canInsertToNote" class="chat-message__insert-btn">
             <span
-              class="block__icon b3-tooltips b3-tooltips__sw"
+              class="block__icon b3-tooltips b3-tooltips__ne"
               :aria-label="t('aiChat').insertToNote"
               @click="handleInsertToNote"
             >
