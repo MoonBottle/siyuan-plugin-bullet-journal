@@ -3,3 +3,4 @@
  */
 export { useSettingsStore } from './settingsStore';
 export { useProjectStore } from './projectStore';
+export { useAIStore } from './aiStore';

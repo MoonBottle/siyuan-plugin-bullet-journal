@@ -22,7 +22,7 @@ export async function loadPluginSettingsFromSiYuan(
   const path = `/data/storage/petal/${pluginName}/settings`;
   const raw = await client.getFile(path);
   if (raw == null || raw === '') {
-    console.error('[Bullet Journal MCP] Failed to load settings from SiYuan API (path:', path, ')');
+    console.error('[Task Assistant MCP] Failed to load settings from SiYuan API (path:', path, ')');
     return { directories: [], groups: [] };
   }
   try {
@@ -31,10 +31,10 @@ export async function loadPluginSettingsFromSiYuan(
       directories: Array.isArray(parsed.directories) ? parsed.directories : [],
       groups: Array.isArray(parsed.groups) ? parsed.groups : []
     };
-    console.error('[Bullet Journal MCP] 配置已加载:', JSON.stringify(result, null, 2));
+    console.error('[Task Assistant MCP] 配置已加载:', JSON.stringify(result, null, 2));
     return result;
   } catch (e) {
-    console.error('[Bullet Journal MCP] Failed to parse settings JSON:', e);
+    console.error('[Task Assistant MCP] Failed to parse settings JSON:', e);
     return { directories: [], groups: [] };
   }
 }

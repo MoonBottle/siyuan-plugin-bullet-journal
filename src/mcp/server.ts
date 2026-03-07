@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 子弹笔记 MCP 服务器
+ * 任务助手 MCP 服务器
  * 提供 list_groups、list_projects、filter_items 三个工具
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
@@ -14,24 +14,24 @@ import { executeFilterItems } from './filterItems';
 async function main() {
   const token = process.env.SIYUAN_TOKEN;
   if (!token) {
-    console.error('[Bullet Journal MCP] SIYUAN_TOKEN is required');
+    console.error('[Task Assistant MCP] SIYUAN_TOKEN is required');
     process.exit(1);
   }
 
   const apiUrl = process.env.SIYUAN_API_URL || 'http://127.0.0.1:6806';
   const client = new SiYuanClient({ apiUrl, token });
 
-  console.error('[Bullet Journal MCP] 服务已就绪');
+  console.error('[Task Assistant MCP] 服务已就绪');
 
   const server = new McpServer({
-    name: 'sy-bullet-journal-assistant',
+    name: 'sy-task-assistant',
     version: '0.6.0'
   });
 
   server.registerTool(
     'list_groups',
     {
-      description: '查询子弹笔记中配置的所有分组。返回分组列表，每项含 id、name。id 可用于 filter_items 的 groupId 或 list_projects 的 groupId 参数进行过滤。无参数。',
+      description: '查询任务助手中配置的所有分组。返回分组列表，每项含 id、name。id 可用于 filter_items 的 groupId 或 list_projects 的 groupId 参数进行过滤。无参数。',
       inputSchema: z.object({})
     },
     async () => {
@@ -45,7 +45,7 @@ async function main() {
   server.registerTool(
     'list_projects',
     {
-      description: '查询子弹笔记中的所有项目。返回项目列表，每项含 id、name、description、path、groupId、taskCount。id 可用于 filter_items 的 projectId 或 projectIds 参数。可选 groupId 过滤，值来自 list_groups 返回的 id。',
+      description: '查询任务助手中的所有项目。返回项目列表，每项含 id、name、description、path、groupId、taskCount。id 可用于 filter_items 的 projectId 或 projectIds 参数。可选 groupId 过滤，值来自 list_groups 返回的 id。',
       inputSchema: z.object({
         groupId: z.string().optional().describe('分组 ID，来自 list_groups 返回的 id，不传则返回全部项目')
       })
@@ -62,7 +62,7 @@ async function main() {
   server.registerTool(
     'filter_items',
     {
-      description: '按项目、时间范围、分组、状态筛选子弹笔记事项。参数均为可选，可组合使用。projectId 与 projectIds 二选一；groupId 来自 list_groups；startDate/endDate 格式 YYYY-MM-DD；status 枚举：pending=待办、completed=已完成、abandoned=已放弃。',
+      description: '按项目、时间范围、分组、状态筛选任务事项。参数均为可选，可组合使用。projectId 与 projectIds 二选一；groupId 来自 list_groups；startDate/endDate 格式 YYYY-MM-DD；status 枚举：pending=待办、completed=已完成、abandoned=已放弃。',
       inputSchema: z.object({
         projectId: z.string().optional().describe('项目文档 ID，来自 list_projects 返回的 id'),
         projectIds: z.array(z.string()).optional().describe('项目 ID 数组，多选时使用'),
@@ -87,6 +87,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[Bullet Journal MCP] Fatal error:', err);
+  console.error('[Task Assistant MCP] Fatal error:', err);
   process.exit(1);
 });

@@ -144,24 +144,24 @@ export const useProjectStore = defineStore('project', {
      * 加载项目数据（首次加载，显示加载状态）
      */
     async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
-      console.log('[Bullet Journal] Loading projects, directories:', directories?.length || 0);
+      console.log('[Task Assistant] Loading projects, directories:', directories?.length || 0);
       this.loading = true;
 
       try {
         const parser = new MarkdownParser(directories);
         const projects = await parser.parseAllProjects();
-        console.log('[Bullet Journal] Parsed projects:', projects?.length || 0);
+        console.log('[Task Assistant] Parsed projects:', projects?.length || 0);
         const items = await parser.getAllItems();
-        console.log('[Bullet Journal] Parsed items:', items?.length || 0);
+        console.log('[Task Assistant] Parsed items:', items?.length || 0);
         const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
-        console.log('[Bullet Journal] Converted events:', calendarEvents?.length || 0);
+        console.log('[Task Assistant] Converted events:', calendarEvents?.length || 0);
 
         this.projects = projects;
         this.items = items;
         this.calendarEvents = calendarEvents;
         this.currentDate = dayjs().format('YYYY-MM-DD');
       } catch (error) {
-        console.error('[Bullet Journal] Failed to load projects:', error);
+        console.error('[Task Assistant] Failed to load projects:', error);
       } finally {
         this.loading = false;
       }
@@ -178,7 +178,7 @@ export const useProjectStore = defineStore('project', {
       this.refreshKey++;
 
       const newDate = dayjs().format('YYYY-MM-DD');
-      console.log('[Bullet Journal] Refresh started, old date:', this.currentDate, 'new date:', newDate);
+      console.log('[Task Assistant] Refresh started, old date:', this.currentDate, 'new date:', newDate);
 
       try {
         const parser = new MarkdownParser(directories);
@@ -190,9 +190,9 @@ export const useProjectStore = defineStore('project', {
         this.items = items;
         this.calendarEvents = calendarEvents;
         this.currentDate = newDate;
-        console.log('[Bullet Journal] Refresh completed, currentDate updated to:', this.currentDate);
+        console.log('[Task Assistant] Refresh completed, currentDate updated to:', this.currentDate);
       } catch (error) {
-        console.error('[Bullet Journal] Failed to refresh projects:', error);
+        console.error('[Task Assistant] Failed to refresh projects:', error);
       } finally {
         this.refreshing = false;
       }

@@ -163,7 +163,7 @@
                   "id": "0dsLk",
                   "name": "Hero Title",
                   "fill": "#1A1A1A",
-                  "content": "Bullet Journal",
+                  "content": "Task Assistant",
                   "fontFamily": "DM Sans",
                   "fontSize": 48,
                   "fontWeight": "700",
@@ -174,7 +174,7 @@
                   "id": "IVVm3",
                   "name": "Hero Subtitle",
                   "fill": "#32D583",
-                  "content": "子弹笔记",
+                  "content": "任务助手",
                   "fontFamily": "DM Sans",
                   "fontSize": 24,
                   "fontWeight": "600"
@@ -193,20 +193,10 @@
                       "id": "yJBIs",
                       "name": "Hero Desc 1",
                       "fill": "#666666",
-                      "content": "记录驱动的笔记管理方式",
+                      "content": "任务驱动的笔记管理方式",
                       "fontFamily": "DM Sans",
                       "fontSize": 16,
                       "fontWeight": "500"
-                    },
-                    {
-                      "type": "text",
-                      "id": "K9tWH",
-                      "name": "Hero Desc 2",
-                      "fill": "#999999",
-                      "content": "日历 · 甘特图 · 项目视图",
-                      "fontFamily": "DM Sans",
-                      "fontSize": 14,
-                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -1210,7 +1200,7 @@
               "id": "Nrbzz",
               "name": "Hero Title",
               "fill": "#1A1A1A",
-              "content": "Bullet Journal",
+              "content": "Task Assistant",
               "fontFamily": "DM Sans",
               "fontSize": 48,
               "fontWeight": "700",
@@ -1221,7 +1211,7 @@
               "id": "Osd9I",
               "name": "Hero Subtitle",
               "fill": "#32D583",
-              "content": "Bullet Notes",
+              "content": "任务助手",
               "fontFamily": "DM Sans",
               "fontSize": 24,
               "fontWeight": "600"
@@ -1240,20 +1230,10 @@
                   "id": "OAAJg",
                   "name": "Hero Desc 1",
                   "fill": "#666666",
-                  "content": "Record-driven note management",
+                  "content": "Task-driven note management",
                   "fontFamily": "DM Sans",
                   "fontSize": 16,
                   "fontWeight": "500"
-                },
-                {
-                  "type": "text",
-                  "id": "0pAef",
-                  "name": "Hero Desc 2",
-                  "fill": "#999999",
-                  "content": "Calendar · Gantt · Project View",
-                  "fontFamily": "DM Sans",
-                  "fontSize": 14,
-                  "fontWeight": "normal"
                 }
               ]
             },

@@ -247,7 +247,7 @@ export function showItemDetailModal(item: Item): Dialog {
         await openDocumentAtLine(item.docId, item.lineNumber, item.blockId);
         dialog.destroy();
       } else if (action === 'open-calendar') {
-        console.warn('[Bullet Journal] dialog open-calendar', item.date);
+        console.warn('[Task Assistant] dialog open-calendar', item.date);
         if (plugin && (plugin as any).openCustomTab) {
           (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
         }

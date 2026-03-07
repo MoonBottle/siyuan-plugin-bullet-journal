@@ -65,7 +65,7 @@ const selectedGroup = ref('');
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
   const events = projectStore.getFilteredCalendarEvents(selectedGroup.value);
-  console.log('[Bullet Journal] Filtered calendar events:', events?.length || 0, 'group:', selectedGroup.value);
+  console.log('[Task Assistant] Filtered calendar events:', events?.length || 0, 'group:', selectedGroup.value);
   return events;
 });
 
@@ -105,7 +105,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 // 日历导航处理函数（仅当前 Tab 可见时处理，避免多 Tab 重复跳转）
 const handleCalendarNavigate = (date: string) => {
   const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
-  console.warn('[Bullet Journal] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
+  console.warn('[Task Assistant] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
   if (!isVisible || !calendarRef.value || !date) return;
   calendarRef.value.gotoDate(date);
   updateTitle();
@@ -118,7 +118,7 @@ let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据
 onMounted(async () => {
-  console.log('[Bullet Journal] CalendarTab onMounted');
+  console.log('[Task Assistant] CalendarTab onMounted');
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
@@ -131,10 +131,10 @@ onMounted(async () => {
   }
 
   // 加载项目数据
-  console.log('[Bullet Journal] Plugin:', !!plugin, 'Directories:', settingsStore.enabledDirectories?.length || 0);
+  console.log('[Task Assistant] Plugin:', !!plugin, 'Directories:', settingsStore.enabledDirectories?.length || 0);
   if (plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-    console.log('[Bullet Journal] Projects loaded:', projectStore.projects?.length || 0, 'Events:', projectStore.calendarEvents?.length || 0);
+    console.log('[Task Assistant] Projects loaded:', projectStore.projects?.length || 0, 'Events:', projectStore.calendarEvents?.length || 0);
   }
 
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新

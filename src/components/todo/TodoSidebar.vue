@@ -462,7 +462,7 @@ const openDetail = (item: Item) => {
 
 // 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
 const openCalendar = (item: Item) => {
-  console.warn('[Bullet Journal] openCalendar', item.date);
+  console.warn('[Task Assistant] openCalendar', item.date);
   if (plugin && (plugin as any).openCustomTab) {
     (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
   }

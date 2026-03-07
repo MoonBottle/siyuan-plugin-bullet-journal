@@ -1,8 +1,8 @@
-import { Plugin, getFrontend, openTab, Setting, showMessage, Menu } from 'siyuan';
-import { getHPathByID, getWorkspaceInfo } from '@/api';
+import { Plugin, getFrontend, openTab, showMessage, Menu } from 'siyuan';
+import { getHPathByID } from '@/api';
 import '@/index.scss';
 import PluginInfoString from '@/../plugin.json';
-import { init, destroy, usePlugin } from '@/main';
+import { init, destroy } from '@/main';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
@@ -10,9 +10,12 @@ import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
 import TodoDock from '@/tabs/TodoDock.vue';
+import AiChatDock from '@/tabs/AiChatDock.vue';
 import { TAB_TYPES, DOCK_TYPES } from '@/constants';
-import type { ProjectDirectory, ProjectGroup } from '@/types/models';
+import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
+import type { AIProviderConfig } from '@/types/ai';
+import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, type AIChatHistory } from '@/settings';
 
 let PluginInfo = {
   version: '',
@@ -40,36 +43,11 @@ export function getSharedPinia() {
   return sharedPinia;
 }
 
-// TodoDock 设置
-interface TodoDockSettings {
-  hideCompleted: boolean;
-  hideAbandoned: boolean;
-}
-
-// 设置数据结构
-interface SettingsData {
-  directories: ProjectDirectory[];
-  groups: ProjectGroup[];
-  defaultGroup: string;
-  lunchBreakStart: string;
-  lunchBreakEnd: string;
-  todoDock: TodoDockSettings;
-}
-
-const defaultSettings: SettingsData = {
-  directories: [],
-  groups: [],
-  defaultGroup: '',
-  lunchBreakStart: '12:00',
-  lunchBreakEnd: '13:00',
-  todoDock: {
-    hideCompleted: false,
-    hideAbandoned: false
-  }
-};
-
 // 全局设置
 let settings: SettingsData = { ...defaultSettings };
+
+// 全局聊天记录（单独存储）
+let chatHistory: AIChatHistory = { ...defaultChatHistory };
 
 export default class HKWorkPlugin extends Plugin {
   public isMobile: boolean;
@@ -81,6 +59,9 @@ export default class HKWorkPlugin extends Plugin {
   public readonly version = version;
 
   private refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  /** 刚通过「仅保存 AI」写入的时间戳，用于避免同一次点击触发 confirmCallback 时再次 putFile */
+  private lastAISettingsSaveTime = 0;
 
   async onload() {
     const frontEnd = getFrontend();
@@ -124,7 +105,7 @@ export default class HKWorkPlugin extends Plugin {
     this.registerEventListeners();
 
     // 监听文档树右键菜单事件
-    console.log('[Bullet Journal] Registering open-menu-doctree event listener');
+    console.log('[Task Assistant] Registering open-menu-doctree event listener');
     this.eventBus.on('open-menu-doctree', this.handleDocTreeMenu.bind(this));
   }
 
@@ -167,22 +148,60 @@ export default class HKWorkPlugin extends Plugin {
           todoDock: {
             hideCompleted: data.todoDock?.hideCompleted ?? false,
             hideAbandoned: data.todoDock?.hideAbandoned ?? false
+          },
+          ai: {
+            providers: data.ai?.providers || [],
+            activeProviderId: data.ai?.activeProviderId || null
           }
         };
       }
+      // 加载聊天记录（从单独的文件）
+      await this.loadAIChatHistory();
     } catch (error) {
-      console.error('[Bullet Journal] Failed to load settings:', error);
+      console.error('[Task Assistant] Failed to load settings:', error);
+    }
+  }
+
+  /**
+   * 加载 AI 聊天记录
+   */
+  private async loadAIChatHistory() {
+    try {
+      const data = await this.loadData('ai-chat-history');
+      if (data) {
+        chatHistory = {
+          conversations: data.conversations || [],
+          currentConversationId: data.currentConversationId || null
+        };
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to load AI chat history:', error);
+    }
+  }
+
+  /**
+   * 保存 AI 聊天记录
+   */
+  private async saveAIChatHistory() {
+    try {
+      await this.saveData('ai-chat-history', chatHistory);
+    } catch (error) {
+      console.error('[Task Assistant] Failed to save AI chat history:', error);
     }
   }
 
   /**
    * 保存设置
    */
-  private async saveSettings() {
+  public async saveSettings() {
+    if (Date.now() - this.lastAISettingsSaveTime < 400) {
+      this.lastAISettingsSaveTime = 0;
+      return;
+    }
     try {
       await this.saveData('settings', settings);
     } catch (error) {
-      console.error('[Bullet Journal] Failed to save settings:', error);
+      console.error('[Task Assistant] Failed to save settings:', error);
     }
   }
 
@@ -202,6 +221,62 @@ export default class HKWorkPlugin extends Plugin {
   }
 
   /**
+   * 获取 AI 聊天记录
+   */
+  public getAIChatHistory(): AIChatHistory {
+    return chatHistory;
+  }
+
+  /**
+   * 保存 AI 设置（供 AI Store 调用，只保存供应商配置）
+   */
+  public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null }) {
+    if (!settings.ai) {
+      settings.ai = { providers: [], activeProviderId: null };
+    }
+    settings.ai.providers = aiData.providers;
+    settings.ai.activeProviderId = aiData.activeProviderId;
+    try {
+      await this.saveData('settings', settings);
+    } catch (error) {
+      console.error('[Task Assistant] Failed to save AI settings:', error);
+    }
+  }
+
+  /**
+   * 仅将 AI 配置写入文件（从磁盘读出完整配置，只替换 ai 后写回，不修改内存中其它区块，避免覆盖用户未保存的修改）
+   */
+  public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null }) {
+    try {
+      const data = await this.loadData('settings');
+      const merged: SettingsData = data
+        ? { ...data, ai: { providers: aiData.providers, activeProviderId: aiData.activeProviderId } }
+        : { ...defaultSettings, ai: { providers: aiData.providers, activeProviderId: aiData.activeProviderId } };
+      console.log('[Task Assistant] Merged settings:', merged);
+      await this.saveData('settings', merged);
+      this.lastAISettingsSaveTime = Date.now();
+    } catch (error) {
+      console.error('[Task Assistant] Failed to save AI settings only:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 保存 AI 聊天记录（供 AI Store 调用，保存到单独文件）
+   */
+  public async saveAIChatHistoryFromStore(aiData: { conversations: unknown[]; currentConversationId: string | null }) {
+    chatHistory = {
+      conversations: aiData.conversations,
+      currentConversationId: aiData.currentConversationId
+    };
+    try {
+      await this.saveData('ai-chat-history', chatHistory);
+    } catch (error) {
+      console.error('[Bullet Journal] Failed to save AI chat history:', error);
+    }
+  }
+
+  /**
    * 获取启用的目录
    */
   public getEnabledDirectories(): ProjectDirectory[] {
@@ -217,7 +292,7 @@ export default class HKWorkPlugin extends Plugin {
       return;
     }
     
-    console.log('[Bullet Journal] handleDocTreeMenu triggered', detail);
+    console.log('[Task Assistant] handleDocTreeMenu triggered', detail);
     
     const documentIds = Array.from(elements)
       .map((element: Element) => element.getAttribute('data-node-id'))
@@ -229,9 +304,9 @@ export default class HKWorkPlugin extends Plugin {
     
     detail.menu.addItem({
       icon: 'iconFolder',
-      label: '设置为子弹笔记目录',
+      label: '设置为任务助手目录',
       click: async () => {
-        console.log('[Bullet Journal] Setting bullet journal directories, documentIds:', documentIds);
+        console.log('[Task Assistant] Setting task assistant directories, documentIds:', documentIds);
         const paths: string[] = [];
         for (const docId of documentIds) {
           try {
@@ -240,11 +315,11 @@ export default class HKWorkPlugin extends Plugin {
               paths.push(hPath);
             }
           } catch (error) {
-            console.error('[Bullet Journal] Failed to get doc path:', error);
+            console.error('[Task Assistant] Failed to get doc path:', error);
           }
         }
         
-        console.log('[Bullet Journal] Paths to add:', paths);
+        console.log('[Task Assistant] Paths to add:', paths);
         if (paths.length === 0) return;
         
         const existingPaths = settings.directories.map(d => d.path);
@@ -264,11 +339,11 @@ export default class HKWorkPlugin extends Plugin {
         });
         
         await this.saveSettings();
-        console.log('[Bullet Journal] Settings saved, directories:', settings.directories);
+        console.log('[Task Assistant] Settings saved, directories:', settings.directories);
         
         if (addedCount > 0) {
-          showMessage((t('common') as any).dirsSet?.replace?.('{count}', String(addedCount)) ?? `已设置 ${addedCount} 个子弹笔记目录`, 3000, 'info');
-          console.log('[Bullet Journal] Emitting DATA_REFRESH event');
+          showMessage((t('common') as any).dirsSet?.replace?.('{count}', String(addedCount)) ?? `已设置 ${addedCount} 个任务助手目录`, 3000, 'info');
+          console.log('[Task Assistant] Emitting DATA_REFRESH event');
           eventBus.emit(Events.DATA_REFRESH);
           broadcastDataRefresh(this.getSettings() as object);
         } else {
@@ -282,397 +357,16 @@ export default class HKWorkPlugin extends Plugin {
    * 注册设置面板
    */
   private registerSetting() {
-    const setting = new Setting({
-      destroyCallback: () => {
-        // 关闭设置面板时从存储重新加载，避免未保存的修改在下次打开时仍显示
-        void this.loadSettings();
-      },
-      confirmCallback: async () => {
-        await this.saveSettings();
-        // 触发数据刷新（同上下文无 payload，各视图 loadFromPlugin；跨上下文通过 BC 下发完整设置）
-        eventBus.emit(Events.DATA_REFRESH);
-        broadcastDataRefresh(this.getSettings() as object);
-      }
-    });
-
-    // 1. 目录配置（最重要：决定扫描哪些文档）
-    setting.addItem({
-      title: t('settings').dirConfig.title,
-      description: t('settings').dirConfig.description,
-      direction: 'row',
-      createActionElement: () => {
-        const container = document.createElement('div');
-        container.className = 'fn__flex-column';
-        container.style.gap = '8px';
-
-        // 顶部操作栏：添加目录按钮
-        const topBar = document.createElement('div');
-        topBar.className = 'fn__flex';
-        topBar.style.alignItems = 'center';
-        topBar.style.justifyContent = 'flex-end';
-
-        const addDirBtn = document.createElement('button');
-        addDirBtn.className = 'b3-button b3-button--outline fn__flex-center';
-        addDirBtn.textContent = '+ ' + t('settings').projectDirectories.addButton;
-        addDirBtn.addEventListener('click', () => {
-          const newDir: ProjectDirectory = {
-            id: 'dir-' + Date.now(),
-            path: '',
-            enabled: true,
-            groupId: settings.defaultGroup || undefined
-          };
-          settings.directories.push(newDir);
-          this.renderDirectoriesList(container);
-        });
-        topBar.appendChild(addDirBtn);
-
-        container.appendChild(topBar);
-
-        // 目录列表容器
-        const listContainer = document.createElement('div');
-        listContainer.id = 'directory-list';
-        listContainer.className = 'fn__flex-column';
-        listContainer.style.gap = '4px';
-        container.appendChild(listContainer);
-
-        // 初始渲染目录列表
-        this.renderDirectoriesList(container);
-
-        return container;
-      }
-    });
-
-    // 2. 分组管理
-    setting.addItem({
-      title: t('settings').groupManage.title,
-      description: t('settings').groupManage.description,
-      direction: 'row',
-      createActionElement: () => {
-        const container = document.createElement('div');
-        container.className = 'fn__flex-column';
-        container.style.gap = '8px';
-
-        // 顶部操作栏：默认分组选择器 + 添加分组按钮
-        const topBar = document.createElement('div');
-        topBar.className = 'fn__flex';
-        topBar.style.alignItems = 'center';
-        topBar.style.gap = '8px';
-
-        const defaultGroupLabel = document.createElement('span');
-        defaultGroupLabel.textContent = t('settings').groupManage.defaultLabel;
-        defaultGroupLabel.style.fontSize = '12px';
-        defaultGroupLabel.style.color = 'var(--b3-theme-on-surface)';
-        topBar.appendChild(defaultGroupLabel);
-
-        const defaultGroupSelect = document.createElement('select');
-        defaultGroupSelect.className = 'b3-select fn__flex-center';
-        defaultGroupSelect.id = 'default-group-select';
-        this.updateDefaultGroupSelect(defaultGroupSelect);
-        defaultGroupSelect.addEventListener('change', (e) => {
-          settings.defaultGroup = (e.target as HTMLSelectElement).value;
-        });
-        topBar.appendChild(defaultGroupSelect);
-
-        // 弹性空间，将添加按钮推到右侧
-        const spacer = document.createElement('div');
-        spacer.style.flex = '1';
-        topBar.appendChild(spacer);
-
-        const addGroupBtn = document.createElement('button');
-        addGroupBtn.className = 'b3-button b3-button--outline fn__flex-center';
-        addGroupBtn.textContent = '+ ' + t('settings').projectGroups.addButton;
-        addGroupBtn.addEventListener('click', () => {
-          const newGroup: ProjectGroup = {
-            id: 'group-' + Date.now(),
-            name: ''
-          };
-          settings.groups.push(newGroup);
-          this.renderGroupsList(container);
-        });
-        topBar.appendChild(addGroupBtn);
-
-        container.appendChild(topBar);
-
-        // 分组列表容器
-        const listContainer = document.createElement('div');
-        listContainer.id = 'group-list';
-        listContainer.className = 'fn__flex-column';
-        listContainer.style.gap = '4px';
-        container.appendChild(listContainer);
-
-        // 初始渲染分组列表
-        this.renderGroupsList(container);
-
-        return container;
-      }
-    });
-
-    // 3. 午休时间（用于工时计算）
-    setting.addItem({
-      title: t('settings').lunchBreak.start.title,
-      description: t('settings').lunchBreak.description,
-      createActionElement: () => {
-        const input = document.createElement('input');
-        input.type = 'time';
-        input.className = 'b3-text-field fn__flex-center';
-        input.value = settings.lunchBreakStart;
-        input.addEventListener('change', (e) => {
-          settings.lunchBreakStart = (e.target as HTMLInputElement).value;
-        });
-        return input;
-      }
-    });
-
-    setting.addItem({
-      title: t('settings').lunchBreak.end.title,
-      description: t('settings').lunchBreak.description,
-      createActionElement: () => {
-        const input = document.createElement('input');
-        input.type = 'time';
-        input.className = 'b3-text-field fn__flex-center';
-        input.value = settings.lunchBreakEnd;
-        input.addEventListener('change', (e) => {
-          settings.lunchBreakEnd = (e.target as HTMLInputElement).value;
-        });
-        return input;
-      }
-    });
-
-    // 4. MCP 配置
-    setting.addItem({
-      title: (t('settings') as any).mcp?.title ?? 'MCP 配置',
-      description: (t('settings') as any).mcp?.description ?? '将子弹笔记数据暴露给 Cursor、Claude 等 AI 助手',
-      direction: 'row',
-      createActionElement: () => {
-        const topBar = document.createElement('div');
-        topBar.className = 'fn__flex';
-        topBar.style.alignItems = 'center';
-        topBar.style.justifyContent = 'flex-end';
-
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'b3-button b3-button--outline fn__flex-center';
-        copyBtn.textContent = (t('settings') as any).mcp?.copyButton ?? '复制 MCP 配置';
-        copyBtn.addEventListener('click', async () => {
-          const workspaceInfo = await getWorkspaceInfo();
-          const workspacePath = workspaceInfo?.workspaceDir ?? '';
-          if (!workspacePath) {
-            showMessage((t('settings') as any).mcp?.workspaceUnavailable ?? '无法获取工作空间路径，请使用思源桌面版', 4000, 'error');
-            return;
-          }
-
-          const mcpConfig = {
-            mcpServers: {
-              'sy-bullet-journal-assistant': {
-                command: 'node',
-                args: [`${workspacePath}/data/plugins/siyuan-plugin-bullet-journal/mcp-server.js`],
-                env: {
-                  SIYUAN_TOKEN: '{请从思源 设置→关于 获取 API Token}',
-                  SIYUAN_API_URL: 'http://127.0.0.1:6806'
-                }
-              }
-            }
-          };
-
-          const configStr = JSON.stringify(mcpConfig, null, 2);
-          try {
-            await navigator.clipboard.writeText(configStr);
-            showMessage((t('settings') as any).mcp?.copySuccess ?? 'MCP 配置已复制到剪贴板', 3000, 'info');
-          } catch (err) {
-            showMessage('复制失败，请手动复制', 3000, 'error');
-          }
-        });
-
-        topBar.appendChild(copyBtn);
-        return topBar;
-      }
-    });
-
-    this.setting = setting;
+    this.setting = createSettingsPanel(this);
   }
 
   /**
-   * 渲染分组列表
+   * 打开设置前先从文件加载一次，并重建设置面板，保证取消后再次打开看到的是文件中的配置
    */
-  private renderGroupsList(container: HTMLElement) {
-    const listContainer = container.querySelector('#group-list');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = '';
-
-    settings.groups.forEach((group, index) => {
-      const item = document.createElement('div');
-      item.className = 'fn__flex';
-      item.style.alignItems = 'center';
-      item.style.gap = '8px';
-      item.style.padding = '4px 0';
-
-      const nameInput = document.createElement('input');
-      nameInput.type = 'text';
-      nameInput.className = 'b3-text-field fn__flex-center';
-      nameInput.style.flex = '1';
-      nameInput.value = group.name;
-      nameInput.placeholder = t('settings').projectGroups.namePlaceholder;
-      nameInput.addEventListener('input', (e) => {
-        settings.groups[index].name = (e.target as HTMLInputElement).value;
-        // 更新默认分组下拉框
-        const defaultSelect = container.querySelector('#default-group-select') as HTMLSelectElement;
-        if (defaultSelect) {
-          this.updateDefaultGroupSelect(defaultSelect);
-        }
-        // 更新目录列表中的分组下拉框
-        this.updateAllGroupSelects();
-      });
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'b3-button b3-button--outline fn__flex-center';
-      deleteBtn.innerHTML = '<svg><use xlink:href="#iconTrashcan"></use></svg>';
-      deleteBtn.style.padding = '4px';
-      deleteBtn.addEventListener('click', () => {
-        const deletedGroupId = settings.groups[index].id;
-        settings.groups.splice(index, 1);
-        // 删除分组后，将关联该分组的目录和默认分组自动清空
-        if (settings.defaultGroup === deletedGroupId) {
-          settings.defaultGroup = '';
-        }
-        settings.directories.forEach(d => {
-          if (d.groupId === deletedGroupId) {
-            d.groupId = undefined;
-          }
-        });
-        this.renderGroupsList(container);
-        const defaultSelect = container.querySelector('#default-group-select') as HTMLSelectElement | null;
-        if (defaultSelect) this.updateDefaultGroupSelect(defaultSelect);
-        this.updateAllGroupSelects();
-      });
-
-      item.appendChild(nameInput);
-      item.appendChild(deleteBtn);
-      listContainer.appendChild(item);
-    });
-  }
-
-  /**
-   * 渲染目录列表
-   */
-  private renderDirectoriesList(container: HTMLElement) {
-    const listContainer = container.querySelector('#directory-list');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = '';
-
-    settings.directories.forEach((dir, index) => {
-      const item = document.createElement('div');
-      item.className = 'fn__flex';
-      item.style.alignItems = 'center';
-      item.style.gap = '8px';
-      item.style.padding = '8px 0';
-      item.style.borderBottom = '1px solid var(--b3-theme-surface-lighter)';
-
-      // 路径输入框
-      const pathInput = document.createElement('input');
-      pathInput.type = 'text';
-      pathInput.className = 'b3-text-field fn__flex-center';
-      pathInput.style.flex = '1';
-      pathInput.value = dir.path;
-      pathInput.placeholder = t('settings').projectDirectories.pathPlaceholder;
-      pathInput.addEventListener('input', (e) => {
-        settings.directories[index].path = (e.target as HTMLInputElement).value;
-      });
-      // 第一个输入框：避免弹框打开时被自动聚焦
-      if (index === 0) {
-        const created = Date.now();
-        pathInput.addEventListener(
-          'focus',
-          function onFirstFocus() {
-            if (Date.now() - created < 300) {
-              requestAnimationFrame(() => pathInput.blur());
-            }
-            pathInput.removeEventListener('focus', onFirstFocus);
-          },
-          { once: true }
-        );
-      }
-
-      // 分组选择器
-      const groupSelect = document.createElement('select');
-      groupSelect.className = 'b3-select fn__flex-center';
-      groupSelect.style.minWidth = '100px';
-      groupSelect.dataset.dirId = dir.id;
-      this.populateGroupSelect(groupSelect, dir.groupId);
-      groupSelect.addEventListener('change', (e) => {
-        settings.directories[index].groupId = (e.target as HTMLSelectElement).value || undefined;
-      });
-
-      // 启用开关
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'b3-switch fn__flex-center';
-      checkbox.checked = dir.enabled;
-      checkbox.addEventListener('change', (e) => {
-        settings.directories[index].enabled = (e.target as HTMLInputElement).checked;
-      });
-
-      // 删除按钮
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'b3-button b3-button--outline fn__flex-center';
-      deleteBtn.innerHTML = '<svg><use xlink:href="#iconTrashcan"></use></svg>';
-      deleteBtn.style.padding = '4px';
-      deleteBtn.addEventListener('click', () => {
-        settings.directories.splice(index, 1);
-        this.renderDirectoriesList(container);
-      });
-
-      item.appendChild(pathInput);
-      item.appendChild(groupSelect);
-      item.appendChild(checkbox);
-      item.appendChild(deleteBtn);
-      listContainer.appendChild(item);
-    });
-  }
-
-  /**
-   * 更新默认分组下拉框
-   */
-  private updateDefaultGroupSelect(select: HTMLSelectElement) {
-    const currentValue = settings.defaultGroup;
-    select.innerHTML = '<option value="">' + t('settings').projectGroups.noGroup + '</option>';
-    settings.groups.forEach(group => {
-      const option = document.createElement('option');
-      option.value = group.id;
-      option.textContent = group.name || t('settings').projectGroups.unnamed;
-      if (group.id === currentValue) {
-        option.selected = true;
-      }
-      select.appendChild(option);
-    });
-  }
-
-  /**
-   * 填充分组下拉框
-   */
-  private populateGroupSelect(select: HTMLSelectElement, selectedId?: string) {
-    select.innerHTML = '<option value="">' + t('settings').projectGroups.noGroup + '</option>';
-    settings.groups.forEach(group => {
-      const option = document.createElement('option');
-      option.value = group.id;
-      option.textContent = group.name || t('settings').projectGroups.unnamed;
-      if (group.id === selectedId) {
-        option.selected = true;
-      }
-      select.appendChild(option);
-    });
-  }
-
-  /**
-   * 更新所有分组下拉框（分组名称变化时调用）
-   */
-  private updateAllGroupSelects() {
-    const selects = document.querySelectorAll('[data-dir-id]');
-    selects.forEach((selectEl) => {
-      const select = selectEl as HTMLSelectElement;
-      const dirId = select.dataset.dirId;
-      const dir = settings.directories.find(d => d.id === dirId);
-      this.populateGroupSelect(select, dir?.groupId);
+  openSetting(): void {
+    void this.loadSettings().then(() => {
+      this.setting = createSettingsPanel(this);
+      super.openSetting();
     });
   }
 
@@ -690,7 +384,7 @@ export default class HKWorkPlugin extends Plugin {
           app.use(pinia);
           app.mount(this.element);
         } catch (error) {
-          console.error('[Bullet Journal] Failed to mount CalendarTab:', error);
+          console.error('[Task Assistant] Failed to mount CalendarTab:', error);
         }
       },
       destroy() {
@@ -708,7 +402,7 @@ export default class HKWorkPlugin extends Plugin {
           app.use(pinia);
           app.mount(this.element);
         } catch (error) {
-          console.error('[Bullet Journal] Failed to mount GanttTab:', error);
+          console.error('[Task Assistant] Failed to mount GanttTab:', error);
         }
       },
       destroy() {
@@ -726,7 +420,7 @@ export default class HKWorkPlugin extends Plugin {
           app.use(pinia);
           app.mount(this.element);
         } catch (error) {
-          console.error('[Bullet Journal] Failed to mount ProjectTab:', error);
+          console.error('[Task Assistant] Failed to mount ProjectTab:', error);
         }
       },
       destroy() {
@@ -739,6 +433,7 @@ export default class HKWorkPlugin extends Plugin {
    * 注册 Dock（侧边栏）
    */
   private registerDocks() {
+    // 待办 Dock
     this.addDock({
       config: {
         position: 'RightBottom',
@@ -753,6 +448,29 @@ export default class HKWorkPlugin extends Plugin {
         this.element.style.overflow = 'hidden';
         const pinia = sharedPinia ?? createPinia();
         const app = createApp(TodoDock);
+        app.use(pinia);
+        app.mount(this.element);
+      },
+      destroy() {
+        this.element.innerHTML = '';
+      }
+    });
+
+    // AI 对话 Dock
+    this.addDock({
+      config: {
+        position: 'RightBottom',
+        size: { width: 360, height: 500 },
+        icon: 'iconSparkles',
+        title: t('aiChat').title
+      },
+      data: {},
+      type: DOCK_TYPES.AI_CHAT,
+      init() {
+        this.element.style.height = '100%';
+        // 不设置 overflow: hidden，让 Vue 组件内部控制滚动
+        const pinia = sharedPinia ?? createPinia();
+        const app = createApp(AiChatDock);
         app.use(pinia);
         app.mount(this.element);
       },
@@ -812,7 +530,7 @@ export default class HKWorkPlugin extends Plugin {
     // custom.data 仅传 type，避免不同 initialDate 导致创建多个 Tab
     const customData = { type };
     const initialDate = options?.initialDate;
-    console.warn('[Bullet Journal] openCustomTab', type, 'initialDate:', initialDate);
+    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate);
 
     try {
       openTab({
@@ -824,12 +542,12 @@ export default class HKWorkPlugin extends Plugin {
           data: customData
         },
         afterOpen: initialDate ? () => {
-          console.warn('[Bullet Journal] afterOpen emit CALENDAR_NAVIGATE', initialDate);
+          console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
           eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
         } : undefined
       });
     } catch (error) {
-      console.error('[Bullet Journal] Failed to open tab:', error);
+      console.error('[Task Assistant] Failed to open tab:', error);
     }
   }
 
