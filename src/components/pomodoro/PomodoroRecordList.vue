@@ -19,7 +19,7 @@
               <div class="record-source">{{ getRecordSource(record) }}</div>
               <div v-if="record.description" class="record-desc">{{ record.description }}</div>
             </div>
-            <div class="record-duration">{{ record.durationMinutes }}m</div>
+            <div class="record-duration">{{ record.actualDurationMinutes !== undefined ? record.actualDurationMinutes : record.durationMinutes }}m</div>
           </div>
         </div>
       </div>
