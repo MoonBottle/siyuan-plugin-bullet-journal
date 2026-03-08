@@ -121,6 +121,7 @@ export function showPomodoroCompleteNotification(
 
   return showSystemNotification(title, body, {
     tag: 'pomodoro-complete',
+    icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
     onClick,
   });
 }

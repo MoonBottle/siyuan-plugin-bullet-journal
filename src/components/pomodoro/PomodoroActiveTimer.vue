@@ -40,7 +40,7 @@
       <div class="timeline-track">
         <div class="timeline-point start">
           <div class="timeline-time">{{ formattedStartTime }}</div>
-          <div class="timeline-dot"></div>
+          <PlayIcon :width="14" :height="14" class="timeline-icon" />
           <div class="timeline-desc">开始</div>
         </div>
         <div class="timeline-progress-container">
@@ -51,7 +51,7 @@
         </div>
         <div class="timeline-point end">
           <div class="timeline-time">{{ formattedEndTime }}</div>
-          <div class="timeline-dot"></div>
+          <StopIcon :width="14" :height="14" class="timeline-icon" />
           <div class="timeline-desc">预计结束</div>
         </div>
       </div>
@@ -194,6 +194,8 @@ import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import type { Item } from '@/types/models';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
+import PlayIcon from '@/components/icons/PlayIcon.vue';
+import StopIcon from '@/components/icons/StopIcon.vue';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -495,6 +497,10 @@ const endPomodoro = async () => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+}
+
+.timeline-icon {
+  color: var(--b3-theme-primary);
 }
 
 .timeline-desc {
