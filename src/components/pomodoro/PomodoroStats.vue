@@ -52,7 +52,7 @@ function formatDuration(minutes: number): string {
 <style lang="scss" scoped>
 .pomodoro-stats {
   padding: 16px;
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
 }
 
 .stats-grid {

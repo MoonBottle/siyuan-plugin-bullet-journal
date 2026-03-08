@@ -2,7 +2,7 @@
   <div class="fn__flex-1 fn__flex-column pomodoro-dock">
     <div class="block__icons">
       <div class="block__logo">
-        <svg class="block__logoicon"><use xlink:href="#iconClock"></use></svg>
+        <TomatoIcon :width="16" :height="16" class="block__logoicon" />
         番茄统计
       </div>
       <span class="fn__flex-1 fn__space"></span>
@@ -38,6 +38,7 @@ import PomodoroStats from '@/components/pomodoro/PomodoroStats.vue';
 import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
 import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import { showMessage } from '@/utils/dialog';
 import { requestNotificationPermission } from '@/utils/notification';
 
@@ -178,6 +179,7 @@ onUnmounted(() => {
 .pomodoro-dock-body {
   min-height: 0;
   overflow: hidden;
+  padding: 0 12px;
 }
 
 .block__icons {
