@@ -320,7 +320,8 @@ export class LineParser {
     if (match) {
       const attrContent = match[1];
       // 匹配 key="value" 或 key='value' 格式
-      const keyValueRegex = /(\w+)=['"]([^'"]*)['"]/g;
+      // key 支持字母、数字、下划线、连字符（如 custom-pomodoro-status）
+      const keyValueRegex = /([\w-]+)=['"]([^'"]*)['"]/g;
       let kvMatch;
       while ((kvMatch = keyValueRegex.exec(attrContent)) !== null) {
         attrs[kvMatch[1]] = kvMatch[2];
