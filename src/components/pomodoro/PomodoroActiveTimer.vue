@@ -345,17 +345,18 @@ const endPomodoro = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 20px;
   height: 100%;
   background: var(--b3-theme-background);
   overflow-y: auto;
+  gap: 16px;
 }
 
 .timer-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .timer-icon {
@@ -372,7 +373,6 @@ const endPomodoro = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
 
   &.is-paused {
     .progress-ring-fill {
@@ -441,8 +441,7 @@ const endPomodoro = async () => {
 // 专注时间线
 .pomodoro-timeline {
   width: 100%;
-  max-width: 320px;
-  margin-bottom: 16px;
+  max-width: 400px;
   padding: 12px 16px;
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
@@ -546,8 +545,7 @@ const endPomodoro = async () => {
 // 事项信息区域 - 参考 dialog.ts 的卡片式设计
 .item-info-section {
   width: 100%;
-  max-width: 320px;
-  margin-bottom: 16px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -692,7 +690,6 @@ const endPomodoro = async () => {
 .timer-stats {
   display: flex;
   gap: 16px;
-  margin-bottom: 16px;
   padding: 12px 16px;
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
