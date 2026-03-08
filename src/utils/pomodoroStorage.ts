@@ -54,6 +54,13 @@ export async function loadActivePomodoro(
       return null;
     }
 
+    // 如果返回的已经是对象，直接返回
+    if (typeof content === 'object' && content !== null) {
+      console.log('[PomodoroStorage] 已读取进行中的番茄钟:', content.itemContent);
+      return content as ActivePomodoroData;
+    }
+
+    // 如果是字符串，解析 JSON
     const data = JSON.parse(content) as ActivePomodoroData;
     console.log('[PomodoroStorage] 已读取进行中的番茄钟:', data.itemContent);
     return data;
