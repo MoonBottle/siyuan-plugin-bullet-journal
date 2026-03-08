@@ -125,7 +125,7 @@ function handleRecordClick(record: PomodoroRecord) {
   display: flex;
   flex-direction: column;
   margin: 0 16px 16px 16px;
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
   border-radius: var(--b3-border-radius);
   border: 1px solid var(--b3-theme-surface-lighter);
 }
