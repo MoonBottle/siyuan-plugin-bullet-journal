@@ -13,7 +13,9 @@
             class="record-item"
             @click="handleRecordClick(record)"
           >
-            <div class="record-icon">🍅</div>
+            <div class="record-icon">
+              <TomatoIcon :width="16" :height="16" />
+            </div>
             <div class="record-info">
               <div class="record-time">{{ formatTimeRange(record) }}</div>
               <div class="record-source">{{ getRecordSource(record) }}</div>
@@ -32,6 +34,7 @@ import { computed } from 'vue';
 import { useProjectStore } from '@/stores';
 import type { PomodoroRecord } from '@/types/models';
 import { openTab } from 'siyuan';
+import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 
 const projectStore = useProjectStore();
 
@@ -124,7 +127,7 @@ function handleRecordClick(record: PomodoroRecord) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  margin: 0 16px 16px 16px;
+  margin: 0 12px 12px 12px;
   background: var(--b3-theme-background);
   border-radius: var(--b3-border-radius);
   border: 1px solid var(--b3-theme-surface-lighter);
