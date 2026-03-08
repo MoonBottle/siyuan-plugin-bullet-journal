@@ -2,10 +2,10 @@
   <div class="pomodoro-active-timer">
     <div class="timer-header">
       <span class="timer-icon">⏱️</span>
-      <span class="timer-title">专注中</span>
+      <span class="timer-title">{{ isPaused ? '已暂停' : '专注中' }}</span>
     </div>
 
-    <div class="timer-display">
+    <div class="timer-display" :class="{ 'is-paused': isPaused }">
       <div class="timer-circle">
         <svg class="progress-ring" viewBox="0 0 120 120">
           <circle
@@ -26,11 +26,44 @@
         <div class="timer-content">
           <div class="time-remaining">{{ formattedTime }}</div>
           <div class="item-name" :title="itemContent">{{ itemContent }}</div>
+          <div v-if="isPaused" class="pause-badge">⏸️ 已暂停</div>
         </div>
       </div>
     </div>
 
+    <div class="timer-stats">
+      <div class="stat-item">
+        <span class="stat-label">已专注</span>
+        <span class="stat-value">{{ accumulatedMinutes }}分钟</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">目标</span>
+        <span class="stat-value">{{ targetMinutes }}分钟</span>
+      </div>
+      <div v-if="pauseCount > 0" class="stat-item">
+        <span class="stat-label">暂停</span>
+        <span class="stat-value">{{ pauseCount }}次</span>
+      </div>
+    </div>
+
     <div class="timer-actions">
+      <template v-if="!isPaused">
+        <button class="pause-btn" @click="pausePomodoro">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
+            <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+          </svg>
+          暂停
+        </button>
+      </template>
+      <template v-else>
+        <button class="resume-btn" @click="resumePomodoro">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+          </svg>
+          继续
+        </button>
+      </template>
       <button class="end-btn" @click="endPomodoro">
         <svg class="btn-icon"><use xlink:href="#iconCheck"></use></svg>
         结束专注
@@ -60,6 +93,27 @@ const itemContent = computed(() => {
   return pomodoroStore.activePomodoro?.itemContent || '未知事项';
 });
 
+// 是否处于暂停状态
+const isPaused = computed(() => {
+  return pomodoroStore.activePomodoro?.isPaused || false;
+});
+
+// 已专注分钟数
+const accumulatedMinutes = computed(() => {
+  if (!pomodoroStore.activePomodoro) return 0;
+  return Math.floor(pomodoroStore.activePomodoro.accumulatedSeconds / 60);
+});
+
+// 目标分钟数
+const targetMinutes = computed(() => {
+  return pomodoroStore.activePomodoro?.targetDurationMinutes || 25;
+});
+
+// 暂停次数
+const pauseCount = computed(() => {
+  return pomodoroStore.activePomodoro?.pauseCount || 0;
+});
+
 // 格式化的剩余时间（MM:SS）
 const formattedTime = computed(() => {
   const seconds = pomodoroStore.remainingTime;
@@ -71,13 +125,23 @@ const formattedTime = computed(() => {
 // 进度环偏移量
 const strokeDashoffset = computed(() => {
   if (!pomodoroStore.activePomodoro) return circumference;
-  
-  const totalSeconds = pomodoroStore.activePomodoro.durationMinutes * 60;
+
+  const totalSeconds = pomodoroStore.activePomodoro.targetDurationMinutes * 60;
   const remainingSeconds = pomodoroStore.remainingTime;
   const progress = remainingSeconds / totalSeconds;
-  
+
   return circumference * (1 - progress);
 });
+
+// 暂停专注
+const pausePomodoro = async () => {
+  await pomodoroStore.pausePomodoro(plugin);
+};
+
+// 继续专注
+const resumePomodoro = async () => {
+  await pomodoroStore.resumePomodoro(plugin);
+};
 
 // 结束专注
 const endPomodoro = async () => {
@@ -108,7 +172,7 @@ const cancelPomodoro = async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .timer-icon {
@@ -126,6 +190,17 @@ const cancelPomodoro = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+
+  &.is-paused {
+    .progress-ring-fill {
+      stroke: var(--b3-theme-on-surface);
+      opacity: 0.5;
+    }
+
+    .time-remaining {
+      color: var(--b3-theme-on-surface);
+    }
+  }
 }
 
 .timer-circle {
@@ -151,7 +226,7 @@ const cancelPomodoro = async () => {
   stroke: var(--b3-theme-primary);
   stroke-width: 8;
   stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s, opacity 0.3s;
 }
 
 .timer-content {
@@ -168,6 +243,7 @@ const cancelPomodoro = async () => {
   color: var(--b3-theme-on-background);
   font-variant-numeric: tabular-nums;
   letter-spacing: 2px;
+  transition: color 0.3s;
 }
 
 .item-name {
@@ -180,28 +256,85 @@ const cancelPomodoro = async () => {
   white-space: nowrap;
 }
 
-.timer-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
+.pause-badge {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  background: var(--b3-theme-surface-lighter);
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
+.timer-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--b3-theme-surface);
+  border-radius: var(--b3-border-radius);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--b3-theme-on-surface);
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
+}
+
+.timer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pause-btn,
+.resume-btn,
 .end-btn,
 .cancel-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 20px;
+  padding: 10px 16px;
   border-radius: var(--b3-border-radius);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
+  border: none;
+}
+
+.pause-btn {
+  background: var(--b3-theme-warning);
+  color: var(--b3-theme-on-warning, #fff);
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.resume-btn {
+  background: var(--b3-theme-success);
+  color: var(--b3-theme-on-success, #fff);
+
+  &:hover {
+    opacity: 0.9;
+  }
 }
 
 .end-btn {
   background: var(--b3-theme-primary);
   color: var(--b3-theme-on-primary);
-  border: none;
 
   &:hover {
     opacity: 0.9;

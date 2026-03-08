@@ -31,18 +31,23 @@ export interface PomodoroRecord {
 
 // 进行中的番茄钟数据（用于文件存储）
 export interface ActivePomodoroData {
-  blockId: string;         // 事项块ID（完成时在此块下添加番茄钟）
-  itemId: string;          // 事项ID
-  itemContent: string;     // 事项内容
-  startTime: number;       // 开始时间戳（毫秒）
-  durationMinutes: number; // 设定时长（分钟）
-  projectId?: string;      // 项目ID（可选）
-  taskId?: string;         // 任务ID（可选）
+  blockId: string;              // 事项块ID（完成时在此块下添加番茄钟）
+  itemId: string;               // 事项ID
+  itemContent: string;          // 事项内容
+  startTime: number;            // 开始时间戳（毫秒）
+  targetDurationMinutes: number;// 目标专注时长（分钟）
+  accumulatedSeconds: number;   // 已累计专注秒数（不含暂停时间）
+  isPaused: boolean;            // 是否处于暂停状态
+  pauseCount: number;           // 暂停次数（用于统计）
+  totalPausedSeconds: number;   // 总暂停秒数
+  currentPauseStartTime?: number;// 当前暂停开始时间戳（如果有）
+  projectId?: string;           // 项目ID（可选）
+  taskId?: string;              // 任务ID（可选）
 }
 
 // 当前专注状态（运行时，继承自 ActivePomodoroData）
 export interface ActivePomodoro extends ActivePomodoroData {
-  remainingSeconds: number;// 剩余秒数（运行时计算）
+  remainingSeconds: number;     // 剩余秒数 = targetDurationMinutes * 60 - accumulatedSeconds
 }
 
 // 项目
