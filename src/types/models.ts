@@ -42,7 +42,10 @@ export interface ActivePomodoroData {
   totalPausedSeconds: number;   // 总暂停秒数
   currentPauseStartTime?: number;// 当前暂停开始时间戳（如果有）
   projectId?: string;           // 项目ID（可选）
+  projectName?: string;         // 项目名称（可选）
   taskId?: string;              // 任务ID（可选）
+  taskName?: string;            // 任务名称（可选）
+  taskLevel?: string;           // 任务层级（可选）
 }
 
 // 当前专注状态（运行时，继承自 ActivePomodoroData）

@@ -25,9 +25,62 @@
         </svg>
         <div class="timer-content">
           <div class="time-remaining">{{ formattedTime }}</div>
-          <div class="item-name" :title="itemContent">{{ itemContent }}</div>
           <div v-if="isPaused" class="pause-badge">⏸️ 已暂停</div>
         </div>
+      </div>
+    </div>
+
+    <!-- 专注时间线 -->
+    <div class="pomodoro-timeline">
+      <div class="timeline-header">
+        <span class="timeline-label">专注时段</span>
+        <span class="timeline-duration">{{ targetMinutes }}分钟</span>
+      </div>
+      <div class="timeline-track">
+        <div class="timeline-point start">
+          <div class="timeline-time">{{ formattedStartTime }}</div>
+          <div class="timeline-dot"></div>
+          <div class="timeline-desc">开始</div>
+        </div>
+        <div class="timeline-progress-container">
+          <div class="timeline-progress-bar">
+            <div class="timeline-progress-fill" :style="{ width: timelineProgress + '%' }"></div>
+            <div class="timeline-progress-indicator" :style="{ left: timelineProgress + '%' }"></div>
+          </div>
+        </div>
+        <div class="timeline-point end">
+          <div class="timeline-time">{{ formattedEndTime }}</div>
+          <div class="timeline-dot"></div>
+          <div class="timeline-desc">预计结束</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 事项信息卡片 -->
+    <div class="item-info-section">
+      <div class="info-card" v-if="projectName">
+        <div class="info-card-header">
+          <span class="info-card-icon">📁</span>
+          <span class="info-card-label">项目</span>
+        </div>
+        <div class="info-card-content">{{ projectName }}</div>
+      </div>
+
+      <div class="info-card" v-if="taskName">
+        <div class="info-card-header">
+          <span class="info-card-icon">📋</span>
+          <span class="info-card-label">任务</span>
+          <span v-if="taskLevel" class="task-level" :class="'level-' + taskLevel.toLowerCase()">{{ taskLevel }}</span>
+        </div>
+        <div class="info-card-content">{{ taskName }}</div>
+      </div>
+
+      <div class="info-card item-card">
+        <div class="info-card-header">
+          <span class="info-card-icon">📝</span>
+          <span class="info-card-label">事项</span>
+        </div>
+        <div class="info-card-content">{{ itemContent }}</div>
       </div>
     </div>
 
@@ -65,12 +118,10 @@
         </button>
       </template>
       <button class="end-btn" @click="endPomodoro">
-        <svg class="btn-icon"><use xlink:href="#iconCheck"></use></svg>
+        <svg class="btn-icon" viewBox="0 0 24 24">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+        </svg>
         结束专注
-      </button>
-      <button class="cancel-btn" @click="cancelPomodoro">
-        <svg class="btn-icon"><use xlink:href="#iconClose"></use></svg>
-        取消
       </button>
     </div>
   </div>
@@ -80,6 +131,7 @@
 import { computed } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
+import dayjs from '@/utils/dayjs';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -91,6 +143,21 @@ const circumference = 2 * Math.PI * radius;
 // 当前专注的事项内容
 const itemContent = computed(() => {
   return pomodoroStore.activePomodoro?.itemContent || '未知事项';
+});
+
+// 项目名称
+const projectName = computed(() => {
+  return pomodoroStore.activePomodoro?.projectName || '';
+});
+
+// 任务名称
+const taskName = computed(() => {
+  return pomodoroStore.activePomodoro?.taskName || '';
+});
+
+// 任务层级
+const taskLevel = computed(() => {
+  return pomodoroStore.activePomodoro?.taskLevel || '';
 });
 
 // 是否处于暂停状态
@@ -122,6 +189,37 @@ const formattedTime = computed(() => {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 });
 
+// 专注开始时间戳
+const startTime = computed(() => {
+  return pomodoroStore.activePomodoro?.startTime || 0;
+});
+
+// 格式化的开始时间（HH:mm）
+const formattedStartTime = computed(() => {
+  if (!startTime.value) return '--:--';
+  return dayjs(startTime.value).format('HH:mm');
+});
+
+// 预计结束时间戳
+const endTime = computed(() => {
+  if (!startTime.value) return 0;
+  return startTime.value + targetMinutes.value * 60 * 1000;
+});
+
+// 格式化的预计结束时间（HH:mm）
+const formattedEndTime = computed(() => {
+  if (!endTime.value) return '--:--';
+  return dayjs(endTime.value).format('HH:mm');
+});
+
+// 时间线进度（0-100）
+const timelineProgress = computed(() => {
+  if (!pomodoroStore.activePomodoro) return 0;
+  const totalSeconds = pomodoroStore.activePomodoro.targetDurationMinutes * 60;
+  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  return Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
+});
+
 // 进度环偏移量
 const strokeDashoffset = computed(() => {
   if (!pomodoroStore.activePomodoro) return circumference;
@@ -145,15 +243,8 @@ const resumePomodoro = async () => {
 
 // 结束专注
 const endPomodoro = async () => {
-  if (confirm('确定要结束专注吗？这将删除当前的番茄钟记录。')) {
-    await pomodoroStore.endPomodoroEarly(plugin);
-  }
-};
-
-// 取消专注
-const cancelPomodoro = async () => {
-  if (confirm('确定要取消专注吗？这将删除当前的番茄钟记录。')) {
-    await pomodoroStore.cancelPomodoro(plugin);
+  if (confirm('确定要结束专注吗？这将保存当前的番茄钟记录。')) {
+    await pomodoroStore.completePomodoro(plugin);
   }
 };
 </script>
@@ -163,16 +254,17 @@ const cancelPomodoro = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px;
+  padding: 20px;
   height: 100%;
   background: var(--b3-theme-background);
+  overflow-y: auto;
 }
 
 .timer-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .timer-icon {
@@ -186,10 +278,10 @@ const cancelPomodoro = async () => {
 }
 
 .timer-display {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 16px;
 
   &.is-paused {
     .progress-ring-fill {
@@ -205,8 +297,8 @@ const cancelPomodoro = async () => {
 
 .timer-circle {
   position: relative;
-  width: 200px;
-  height: 200px;
+  width: 160px;
+  height: 160px;
 }
 
 .progress-ring {
@@ -238,22 +330,12 @@ const cancelPomodoro = async () => {
 }
 
 .time-remaining {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
   font-variant-numeric: tabular-nums;
   letter-spacing: 2px;
   transition: color 0.3s;
-}
-
-.item-name {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--b3-theme-on-surface);
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .pause-badge {
@@ -263,6 +345,180 @@ const cancelPomodoro = async () => {
   background: var(--b3-theme-surface-lighter);
   padding: 2px 8px;
   border-radius: 12px;
+}
+
+// 专注时间线
+.pomodoro-timeline {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--b3-theme-surface);
+  border-radius: var(--b3-border-radius);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.timeline-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--b3-theme-on-surface);
+}
+
+.timeline-duration {
+  font-size: 12px;
+  color: var(--b3-theme-primary);
+  font-weight: 500;
+}
+
+.timeline-track {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timeline-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  &.start {
+    .timeline-dot {
+      background: var(--b3-theme-primary);
+    }
+  }
+
+  &.end {
+    .timeline-dot {
+      background: var(--b3-theme-surface-lighter);
+      border: 2px solid var(--b3-theme-on-surface-light);
+    }
+  }
+}
+
+.timeline-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.timeline-desc {
+  font-size: 10px;
+  color: var(--b3-theme-on-surface);
+}
+
+.timeline-progress-container {
+  flex: 1;
+  padding: 0 12px;
+  margin-top: -12px;
+}
+
+.timeline-progress-bar {
+  position: relative;
+  height: 4px;
+  background: var(--b3-theme-surface-lighter);
+  border-radius: 2px;
+}
+
+.timeline-progress-fill {
+  height: 100%;
+  background: var(--b3-theme-primary);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.timeline-progress-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: var(--b3-theme-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--b3-theme-surface);
+  transition: left 1s linear;
+}
+
+// 事项信息区域
+.item-info-section {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-card {
+  padding: 12px;
+  background: var(--b3-theme-surface);
+  border-radius: var(--b3-border-radius);
+  border-left: 3px solid var(--b3-theme-primary);
+
+  &.item-card {
+    border-left-color: var(--b3-theme-success);
+  }
+}
+
+.info-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.info-card-icon {
+  font-size: 14px;
+}
+
+.info-card-label {
+  font-size: 11px;
+  color: var(--b3-theme-on-surface);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-card-content {
+  font-size: 13px;
+  color: var(--b3-theme-on-background);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.task-level {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+  margin-left: auto;
+
+  &.level-l1 {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  &.level-l2 {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  &.level-l3 {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
 }
 
 .timer-stats {
@@ -294,21 +550,20 @@ const cancelPomodoro = async () => {
 
 .timer-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 12px;
   justify-content: center;
 }
 
 .pause-btn,
 .resume-btn,
-.end-btn,
-.cancel-btn {
+.end-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 16px;
+  padding: 10px 20px;
   border-radius: var(--b3-border-radius);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
@@ -338,16 +593,6 @@ const cancelPomodoro = async () => {
 
   &:hover {
     opacity: 0.9;
-  }
-}
-
-.cancel-btn {
-  background: transparent;
-  color: var(--b3-theme-on-surface);
-  border: 1px solid var(--b3-theme-surface-lighter);
-
-  &:hover {
-    background: var(--b3-theme-surface-lighter);
   }
 }
 

@@ -63,7 +63,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
           pauseCount: 0,
           totalPausedSeconds: 0,
           projectId: item.project?.id,
-          taskId: item.task?.id
+          projectName: item.project?.name,
+          taskId: item.task?.id,
+          taskName: item.task?.name,
+          taskLevel: item.task?.level
         };
 
         // 保存到文件
