@@ -400,3 +400,87 @@ describe('parsePomodoroLine 带块属性解析', () => {
     expect(pomodoro!.itemContent).toBeUndefined();
   });
 });
+
+describe('parsePomodoroLine 实际时长解析', () => {
+  it('英文逗号格式：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+    expect(pomodoro!.description).toBe('完成代码审查');
+    // durationMinutes 仍然按时间计算，但统计时会优先使用 actualDurationMinutes
+    expect(pomodoro!.durationMinutes).toBe(5);
+  });
+
+  it('中文逗号格式：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5，2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+  });
+
+  it('逗号后1个空格：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5, 2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+  });
+
+  it('逗号后多个空格：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,   2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+  });
+
+  it('无结束时间但有实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,2026-03-08 15:45:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBeUndefined();
+    // 无结束时间时 durationMinutes 默认为25
+    expect(pomodoro!.durationMinutes).toBe(25);
+  });
+
+  it('无结束时间无实际时长（向后兼容）', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBeUndefined();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBeUndefined();
+    expect(pomodoro!.durationMinutes).toBe(25);
+  });
+
+  it('带实际时长的无序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('- 🍅5,2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+  });
+
+  it('带实际时长的有序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('1. 🍅5,2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+  });
+
+  it('实际时长与时间计算不一致时，actualDurationMinutes 优先', () => {
+    // 时间范围是 30 分钟，但实际时长标记为 5 分钟（暂停过）
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,2026-03-08 15:00:00~15:30:00 有暂停', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.durationMinutes).toBe(30); // 按时间计算是30分钟
+  });
+});

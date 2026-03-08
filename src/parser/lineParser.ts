@@ -335,6 +335,8 @@ export class LineParser {
    * 解析番茄钟行
    * 格式: 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字
    * 或: - 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（列表项形式）
+   * 或: 🍅N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（带实际时长）
+   * 支持中英文逗号，逗号后可有任意空格
    * @param line 番茄钟行内容
    * @param blockId 块 ID
    * @param attrs 可选的块属性
@@ -353,18 +355,20 @@ export class LineParser {
     }
 
     // 提取日期时间部分: YYYY-MM-DD HH:mm:ss~HH:mm:ss
+    // 支持可选的实际时长前缀: N, 或 N，（中英文逗号，逗号后任意空格）
     // 注意：Kramdown 中 ~ 可能被转义为 \~
-    const pomodoroRegex = /^🍅(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/;
+    const pomodoroRegex = /^🍅(?:(\d+)[,，]\s*)?(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/;
     const match = cleanedLine.match(pomodoroRegex);
 
     if (!match) {
       return null;
     }
 
-    const date = match[1];
-    const startTime = match[2];
-    const endTime = match[3];
-    const description = match[4]?.trim() || undefined;
+    const actualDurationMinutes = match[1] ? parseInt(match[1], 10) : undefined;
+    const date = match[2];
+    const startTime = match[3];
+    const endTime = match[4];
+    const description = match[5]?.trim() || undefined;
 
     // 计算专注时长（分钟）
     let durationMinutes = 25; // 默认25分钟
@@ -401,6 +405,7 @@ export class LineParser {
       endTime,
       description,
       durationMinutes,
+      actualDurationMinutes,
       blockId,
       status,
       itemContent

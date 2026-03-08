@@ -20,6 +20,7 @@ export interface PomodoroRecord {
   endTime?: string;        // 结束时间 HH:mm:ss（可选）
   description?: string;    // 描述
   durationMinutes: number; // 专注时长（分钟）
+  actualDurationMinutes?: number; // 实际专注时长（分钟），用于暂停/继续功能，优先级高于 durationMinutes
   blockId?: string;        // 块 ID（用于跳转到笔记）
   projectId?: string;      // 所属项目 ID
   taskId?: string;         // 所属任务 ID

@@ -164,7 +164,11 @@ export const useProjectStore = defineStore('project', {
     // 获取今日专注分钟数
     getTodayFocusMinutes: (state) => (groupId: string = ''): number => {
       const todayPomodoros = (state as any).getTodayPomodoros(groupId);
-      return todayPomodoros.reduce((sum: number, p: PomodoroRecord) => sum + p.durationMinutes, 0);
+      return todayPomodoros.reduce((sum: number, p: PomodoroRecord) => {
+        // 优先使用实际专注时长，否则使用计算时长
+        const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes;
+        return sum + minutes;
+      }, 0);
     },
 
     // 获取总番茄数
@@ -176,7 +180,11 @@ export const useProjectStore = defineStore('project', {
     // 获取总专注分钟数
     getTotalFocusMinutes: (state) => (groupId: string = ''): number => {
       const allPomodoros = (state as any).getAllPomodoros(groupId);
-      return allPomodoros.reduce((sum: number, p: PomodoroRecord) => sum + p.durationMinutes, 0);
+      return allPomodoros.reduce((sum: number, p: PomodoroRecord) => {
+        // 优先使用实际专注时长，否则使用计算时长
+        const minutes = p.actualDurationMinutes !== undefined ? p.actualDurationMinutes : p.durationMinutes;
+        return sum + minutes;
+      }, 0);
     },
 
     // 按日期分组获取番茄钟记录
