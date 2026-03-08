@@ -130,6 +130,9 @@ export default class HKWorkPlugin extends Plugin {
     this.removeData('settings').catch((e) => {
       showMessage(`uninstall [${this.name}] remove data [settings] fail: ${e.msg}`);
     });
+    this.removeData('ai-chat-history').catch((e) => {
+      showMessage(`uninstall [${this.name}] remove data [ai-chat-history] fail: ${e.msg}`);
+    });
   }
 
   /**
