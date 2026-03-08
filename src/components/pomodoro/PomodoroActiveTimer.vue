@@ -25,6 +25,7 @@
         </svg>
         <div class="timer-content">
           <div class="time-remaining">{{ formattedTime }}</div>
+          <div class="focused-time-badge">已专注 {{ accumulatedMinutes }}分钟</div>
           <div v-if="isPaused" class="pause-badge">⏸️ 已暂停</div>
         </div>
       </div>
@@ -54,11 +55,6 @@
           <div class="timeline-desc">预计结束</div>
         </div>
       </div>
-      <!-- 已专注统计 -->
-      <div class="timeline-focused-time">
-        <span class="timeline-focused-label">已专注</span>
-        <span class="timeline-focused-value">{{ accumulatedMinutes }}分钟</span>
-      </div>
     </div>
 
     <!-- 事项信息卡片 - 参考 dialog.ts 的卡片式设计 -->
@@ -66,7 +62,6 @@
       <!-- 项目卡片 -->
       <div class="info-card" v-if="currentItem?.project">
         <div class="info-card-header">
-          <span class="info-card-icon">📁</span>
           <span class="info-card-label">项目</span>
           <button
             class="copy-btn"
@@ -99,7 +94,6 @@
       <!-- 任务卡片 -->
       <div class="info-card" v-if="currentItem?.task">
         <div class="info-card-header">
-          <span class="info-card-icon">📋</span>
           <span class="info-card-label">任务</span>
           <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
             {{ currentItem.task.level }}
@@ -135,7 +129,6 @@
       <!-- 事项卡片 -->
       <div class="info-card item-card">
         <div class="info-card-header">
-          <span class="info-card-icon">📝</span>
           <span class="info-card-label">事项</span>
           <button
             class="copy-btn"
@@ -428,6 +421,13 @@ const endPomodoro = async () => {
   border-radius: 12px;
 }
 
+.focused-time-badge {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--b3-theme-primary);
+  font-weight: 500;
+}
+
 // 专注时间线
 .pomodoro-timeline {
   width: 100%;
@@ -531,28 +531,6 @@ const endPomodoro = async () => {
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--b3-theme-surface);
   transition: left 1s linear;
-}
-
-// 已专注时间显示
-.timeline-focused-time {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--b3-border-color);
-}
-
-.timeline-focused-label {
-  font-size: 11px;
-  color: var(--b3-theme-on-surface);
-}
-
-.timeline-focused-value {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
 }
 
 // 事项信息区域 - 参考 dialog.ts 的卡片式设计
