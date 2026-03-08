@@ -291,6 +291,66 @@ describe('parseKramdown 事项链接解析', () => {
     expect(project!.tasks[0].items[0].links![0].name).toBe('链接F1');
     expect(project!.tasks[0].items[0].links![1].name).toBe('链接F2');
   });
+
+  it('任务列表形式的链接：未选中 [ ] 状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-10
+{: id="after-i1" }
+  - {: id="link1" }[ ] [对对对](1)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('工作事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('对对对');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('1');
+  });
+
+  it('任务列表形式的链接：已选中 [x] 状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务B #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-11
+{: id="after-i1" }
+  - {: id="link1" }[x] [链接名称](https://example.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('工作事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('链接名称');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://example.com');
+  });
+
+  it('任务列表形式的链接：已选中 [X] 状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务C #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-12
+{: id="after-i1" }
+  - {: id="link1" }[X] [GitHub](https://github.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('工作事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('GitHub');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://github.com');
+  });
 });
 
 describe('parseKramdown 有序列表解析', () => {

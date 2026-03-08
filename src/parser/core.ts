@@ -189,7 +189,8 @@ export function parseKramdown(
 
     if (!currentTask) {
       if (content.includes('](')) {
-        const linkMatch = content.match(/\[(.*?)\]\((.*?)\)/);
+        const strippedContent = stripListAndBlockAttr(content);
+        const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch) {
           project.links!.push({ name: linkMatch[1], url: linkMatch[2] });
           continue;
@@ -227,7 +228,8 @@ export function parseKramdown(
     }
 
     if (currentTask && content.includes('](') && !content.includes('@') && !hasSeenItemForCurrentTask) {
-      const linkMatch = content.match(/\[(.*?)\]\((.*?)\)/);
+      const strippedContent = stripListAndBlockAttr(content);
+      const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
       if (linkMatch) {
         if (!currentTask.links) {
           currentTask.links = [];
@@ -245,7 +247,8 @@ export function parseKramdown(
       const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
       for (let idx = 1; idx < blockLines.length; idx++) {
         const lineContent = blockLines[idx];
-        const linkMatch = lineContent.match(/\[(.*?)\]\((.*?)\)/);
+        const strippedLineContent = stripListAndBlockAttr(lineContent);
+        const linkMatch = strippedLineContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !lineContent.includes('@')) {
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
         } else {
@@ -260,7 +263,8 @@ export function parseKramdown(
 
         // 检查是否为链接行（Markdown 链接格式 [名称](URL)）
         // 支持纯链接行或带列表标记的链接行
-        const linkMatch = nextContent.match(/\[(.*?)\]\((.*?)\)/);
+        const strippedNextContent = stripListAndBlockAttr(nextContent);
+        const linkMatch = strippedNextContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !nextContent.includes('@')) {
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
           nextBlockIndex++;
