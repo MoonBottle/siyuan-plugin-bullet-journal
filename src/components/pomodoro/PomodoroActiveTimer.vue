@@ -56,31 +56,108 @@
       </div>
     </div>
 
-    <!-- 事项信息卡片 -->
+    <!-- 事项信息卡片 - 参考 dialog.ts 的卡片式设计 -->
     <div class="item-info-section">
-      <div class="info-card" v-if="projectName">
+      <!-- 项目卡片 -->
+      <div class="info-card" v-if="currentItem?.project">
         <div class="info-card-header">
           <span class="info-card-icon">📁</span>
           <span class="info-card-label">项目</span>
+          <button
+            class="copy-btn"
+            @click="copyToClipboard(currentItem.project.name)"
+            :title="'复制'"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+          </button>
         </div>
-        <div class="info-card-content">{{ projectName }}</div>
+        <div class="info-card-content">
+          <span>{{ currentItem.project.name }}</span>
+        </div>
+        <!-- 项目链接 -->
+        <div class="info-card-footer" v-if="currentItem.project.links?.length">
+          <a
+            v-for="link in currentItem.project.links"
+            :key="link.url"
+            :href="link.url"
+            target="_blank"
+            class="link-tag"
+            @click.prevent="openLink(link.url)"
+          >
+            {{ link.name }}
+          </a>
+        </div>
       </div>
 
-      <div class="info-card" v-if="taskName">
+      <!-- 任务卡片 -->
+      <div class="info-card" v-if="currentItem?.task">
         <div class="info-card-header">
           <span class="info-card-icon">📋</span>
           <span class="info-card-label">任务</span>
-          <span v-if="taskLevel" class="task-level" :class="'level-' + taskLevel.toLowerCase()">{{ taskLevel }}</span>
+          <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
+            {{ currentItem.task.level }}
+          </span>
+          <button
+            class="copy-btn"
+            @click="copyToClipboard(currentItem.task.name)"
+            :title="'复制'"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+          </button>
         </div>
-        <div class="info-card-content">{{ taskName }}</div>
+        <div class="info-card-content">
+          <span>{{ currentItem.task.name }}</span>
+        </div>
+        <!-- 任务链接 -->
+        <div class="info-card-footer" v-if="currentItem.task.links?.length">
+          <a
+            v-for="link in currentItem.task.links"
+            :key="link.url"
+            :href="link.url"
+            target="_blank"
+            class="link-tag"
+            @click.prevent="openLink(link.url)"
+          >
+            {{ link.name }}
+          </a>
+        </div>
       </div>
 
+      <!-- 事项卡片 -->
       <div class="info-card item-card">
         <div class="info-card-header">
           <span class="info-card-icon">📝</span>
           <span class="info-card-label">事项</span>
+          <button
+            class="copy-btn"
+            @click="copyToClipboard(itemContent)"
+            :title="'复制'"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+          </button>
         </div>
-        <div class="info-card-content">{{ itemContent }}</div>
+        <div class="info-card-content">
+          <span>{{ itemContent }}</span>
+        </div>
+        <!-- 事项链接 -->
+        <div class="info-card-footer" v-if="currentItem?.links?.length">
+          <a
+            v-for="link in currentItem.links"
+            :key="link.url"
+            :href="link.url"
+            target="_blank"
+            class="link-tag"
+            @click.prevent="openLink(link.url)"
+          >
+            {{ link.name }}
+          </a>
+        </div>
       </div>
     </div>
 
@@ -129,35 +206,29 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { usePomodoroStore } from '@/stores';
+import { usePomodoroStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
+import type { Item } from '@/types/models';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
+const projectStore = useProjectStore();
 
 // 圆周长
 const radius = 54;
 const circumference = 2 * Math.PI * radius;
 
-// 当前专注的事项内容
+// 根据 blockId 从 projectStore 中查找对应的 item
+const currentItem = computed<Item | undefined>(() => {
+  const blockId = pomodoroStore.activePomodoro?.blockId;
+  if (!blockId) return undefined;
+  return projectStore.items.find(item => item.blockId === blockId);
+});
+
+// 当前专注的事项内容（优先使用 store 中的，但用 currentItem 作为后备）
 const itemContent = computed(() => {
-  return pomodoroStore.activePomodoro?.itemContent || '未知事项';
-});
-
-// 项目名称
-const projectName = computed(() => {
-  return pomodoroStore.activePomodoro?.projectName || '';
-});
-
-// 任务名称
-const taskName = computed(() => {
-  return pomodoroStore.activePomodoro?.taskName || '';
-});
-
-// 任务层级
-const taskLevel = computed(() => {
-  return pomodoroStore.activePomodoro?.taskLevel || '';
+  return currentItem.value?.content || pomodoroStore.activePomodoro?.itemContent || '未知事项';
 });
 
 // 是否处于暂停状态
@@ -230,6 +301,26 @@ const strokeDashoffset = computed(() => {
 
   return circumference * (1 - progress);
 });
+
+// 复制到剪贴板
+const copyToClipboard = async (text: string) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    // 可以在这里添加复制成功的提示
+    const { showMessage } = await import('@/utils/dialog');
+    showMessage('已复制到剪贴板');
+  } catch (err) {
+    console.error('复制失败:', err);
+  }
+};
+
+// 打开外部链接
+const openLink = (url: string) => {
+  if (url) {
+    window.open(url, '_blank');
+  }
+};
 
 // 暂停专注
 const pausePomodoro = async () => {
@@ -452,24 +543,24 @@ const endPomodoro = async () => {
   transition: left 1s linear;
 }
 
-// 事项信息区域
+// 事项信息区域 - 参考 dialog.ts 的卡片式设计
 .item-info-section {
   width: 100%;
   max-width: 320px;
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .info-card {
-  padding: 12px;
-  background: var(--b3-theme-surface);
-  border-radius: var(--b3-border-radius);
-  border-left: 3px solid var(--b3-theme-primary);
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
 
   &.item-card {
-    border-left-color: var(--b3-theme-success);
+    border-left: 3px solid var(--b3-theme-success);
   }
 }
 
@@ -477,47 +568,124 @@ const endPomodoro = async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .info-card-icon {
   font-size: 14px;
+  line-height: 1;
 }
 
 .info-card-label {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--b3-theme-on-surface);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  line-height: 1;
 }
 
 .info-card-content {
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--b3-theme-on-background);
   line-height: 1.4;
   word-break: break-word;
+
+  span {
+    display: inline;
+  }
 }
 
-.task-level {
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-weight: 500;
+.info-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+// 复制按钮样式 - 参考 dialog.ts
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   margin-left: auto;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.2s;
+  color: var(--b3-theme-on-surface);
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 1;
+    background: var(--b3-theme-surface);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+    fill: currentColor;
+    pointer-events: none;
+  }
+}
+
+// 链接标签样式 - 参考 dialog.ts
+.link-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: var(--b3-theme-surface);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+// 任务层级标签样式 - 与 dialog.ts 保持一致
+.task-level-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  margin-left: 4px;
 
   &.level-l1 {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
   }
 
   &.level-l2 {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
+    background: rgba(255, 152, 0, 0.15);
+    color: #FF9800;
   }
 
   &.level-l3 {
-    background: rgba(59, 130, 246, 0.15);
-    color: #3b82f6;
+    background: rgba(33, 150, 243, 0.15);
+    color: #2196F3;
   }
 }
 
