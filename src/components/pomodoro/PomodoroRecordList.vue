@@ -173,8 +173,9 @@ function handleRecordClick(record: PomodoroRecord) {
 .record-item {
   display: flex;
   align-items: flex-start;
-  padding: 10px 0;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
   cursor: pointer;
   transition: background-color 0.2s;
 
