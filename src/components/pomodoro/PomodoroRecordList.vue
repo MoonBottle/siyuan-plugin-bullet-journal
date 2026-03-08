@@ -134,7 +134,7 @@ function handleRecordClick(record: PomodoroRecord) {
 }
 
 .record-list-header {
-  padding: 12px 16px;
+  padding: 12px;
   border-bottom: 1px solid var(--b3-theme-surface-lighter);
 }
 
@@ -159,7 +159,7 @@ function handleRecordClick(record: PomodoroRecord) {
 }
 
 .date-header {
-  padding: 8px 16px;
+  padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
   color: var(--b3-theme-on-surface);
@@ -167,13 +167,13 @@ function handleRecordClick(record: PomodoroRecord) {
 }
 
 .record-items {
-  padding: 0 16px;
+  padding: 0 12px;
 }
 
 .record-item {
   display: flex;
   align-items: flex-start;
-  padding: 10px 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   cursor: pointer;
