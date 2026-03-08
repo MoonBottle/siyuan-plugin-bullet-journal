@@ -54,6 +54,21 @@
           <div class="timeline-desc">预计结束</div>
         </div>
       </div>
+      <!-- 统计信息 -->
+      <div class="timeline-stats">
+        <div class="timeline-stat-item">
+          <span class="timeline-stat-label">已专注</span>
+          <span class="timeline-stat-value">{{ accumulatedMinutes }}分钟</span>
+        </div>
+        <div class="timeline-stat-item">
+          <span class="timeline-stat-label">目标</span>
+          <span class="timeline-stat-value">{{ targetMinutes }}分钟</span>
+        </div>
+        <div v-if="pauseCount > 0" class="timeline-stat-item">
+          <span class="timeline-stat-label">暂停</span>
+          <span class="timeline-stat-value">{{ pauseCount }}次</span>
+        </div>
+      </div>
     </div>
 
     <!-- 事项信息卡片 - 参考 dialog.ts 的卡片式设计 -->
@@ -158,21 +173,6 @@
             {{ link.name }}
           </a>
         </div>
-      </div>
-    </div>
-
-    <div class="timer-stats">
-      <div class="stat-item">
-        <span class="stat-label">已专注</span>
-        <span class="stat-value">{{ accumulatedMinutes }}分钟</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">目标</span>
-        <span class="stat-value">{{ targetMinutes }}分钟</span>
-      </div>
-      <div v-if="pauseCount > 0" class="stat-item">
-        <span class="stat-label">暂停</span>
-        <span class="stat-value">{{ pauseCount }}次</span>
       </div>
     </div>
 
@@ -543,6 +543,34 @@ const endPomodoro = async () => {
   transition: left 1s linear;
 }
 
+// 时间线统计信息
+.timeline-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--b3-border-color);
+}
+
+.timeline-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.timeline-stat-label {
+  font-size: 11px;
+  color: var(--b3-theme-on-surface);
+}
+
+.timeline-stat-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
+}
+
 // 事项信息区域 - 参考 dialog.ts 的卡片式设计
 .item-info-section {
   width: 100%;
@@ -692,32 +720,6 @@ const endPomodoro = async () => {
     background: rgba(33, 150, 243, 0.15);
     color: #2196F3;
   }
-}
-
-.timer-stats {
-  display: flex;
-  gap: 16px;
-  padding: 12px 16px;
-  background: var(--b3-theme-surface);
-  border-radius: var(--b3-border-radius);
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.stat-label {
-  font-size: 11px;
-  color: var(--b3-theme-on-surface);
-}
-
-.stat-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
 }
 
 .timer-actions {
