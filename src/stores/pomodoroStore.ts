@@ -44,7 +44,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const pomodoroContent = `🍅${dateStr} ${timeStr}`;
 
         // 调用思源 API 在事项下添加子块
-        const result = await appendBlock('markdown', pomodoroContent, undefined, undefined, parentBlockId);
+        const result = await appendBlock('markdown', pomodoroContent, parentBlockId);
 
         if (!result || result.length === 0) {
           showMessage('创建番茄钟失败', 'error');
