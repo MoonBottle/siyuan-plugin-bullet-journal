@@ -409,31 +409,22 @@ export async function openDocumentAtLine(
  * 更新块内容（用于添加标签）
  * @param blockId 块 ID
  * @param suffix 要添加的后缀（如 #done、@2024-01-16）
- * @param rawContent 完整的块内容（多行，可选），用于保留行内番茄钟等
  */
 export async function updateBlockContent(
   blockId: string,
-  suffix: string,
-  rawContent?: string
+  suffix: string
 ): Promise<boolean> {
   if (!blockId) return false;
 
   try {
-    let kramdown: string;
-
-    // 如果有 rawContent，使用它作为基础
-    if (rawContent) {
-      kramdown = rawContent;
-    } else {
-      // 否则从 API 获取
-      const result = await getBlockKramdown(blockId);
-      if (!result?.kramdown) {
-        console.error('[Task Assistant] Failed to get block kramdown');
-        return false;
-      }
-      kramdown = result.kramdown;
+    // 统一从 API 获取
+    const result = await getBlockKramdown(blockId);
+    if (!result?.kramdown) {
+      console.error('[Task Assistant] Failed to get block kramdown');
+      return false;
     }
 
+    const kramdown = result.kramdown;
     const lines = kramdown.split('\n');
 
     // 找到事项行（包含 @日期 的行，且不是番茄钟行、不是块属性行）

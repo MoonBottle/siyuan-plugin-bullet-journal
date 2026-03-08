@@ -88,7 +88,6 @@ export class DataConverter {
         docId: item.docId,
         lineNumber: item.lineNumber,
         blockId: item.blockId,
-        rawContent: item.rawContent,
         date: item.date,
         originalStartDateTime: item.startDateTime,
         originalEndDateTime: item.endDateTime,

@@ -449,15 +449,15 @@ describe('updateBlockContent', () => {
     );
   });
 
-  it('使用 rawContent：保留行内番茄钟等多行内容', async () => {
+  it('保留行内番茄钟等多行内容', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="20260308203822-5gz124r"}[ ] 事项列表未完成事项内容 @2026-03-08
+  🍅2026-03-08 15:45:32~15:45:36 哈哈哈
+  {: id="20260308203822-j3j7gl8"}`
+    });
     mockUpdateBlock.mockResolvedValue(undefined);
 
-    // 模拟多行块：事项 + 行内番茄钟
-    const rawContent = `- {: id="20260308203822-5gz124r"}[ ] 事项列表未完成事项内容 @2026-03-08
-  🍅2026-03-08 15:45:32~15:45:36 哈哈哈
-  {: id="20260308203822-j3j7gl8"}`;
-
-    const result = await updateBlockContent('block-1', '#已完成', rawContent);
+    const result = await updateBlockContent('block-1', '#已完成');
 
     expect(result).toBe(true);
     // 应该只修改事项行，去除列表标记、任务标记、块属性，添加标签
@@ -471,14 +471,14 @@ describe('updateBlockContent', () => {
     );
   });
 
-  it('使用 rawContent：去除列表标记和任务标记', async () => {
+  it('去除列表标记和任务标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 待办事项 @2026-03-08
+  {: id="yyy"}`
+    });
     mockUpdateBlock.mockResolvedValue(undefined);
 
-    // 模拟任务列表项
-    const rawContent = `- {: id="xxx"}[ ] 待办事项 @2026-03-08
-  {: id="yyy"}`;
-
-    const result = await updateBlockContent('block-1', '#已完成', rawContent);
+    const result = await updateBlockContent('block-1', '#已完成');
 
     expect(result).toBe(true);
     // 应该去除 - [ ] 和块属性
@@ -490,13 +490,14 @@ describe('updateBlockContent', () => {
     );
   });
 
-  it('使用 rawContent：处理已完成的任务列表项 [X]', async () => {
+  it('处理已完成的任务列表项 [X]', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[X] 已完成事项 @2026-03-08
+  {: id="yyy"}`
+    });
     mockUpdateBlock.mockResolvedValue(undefined);
 
-    const rawContent = `- {: id="xxx"}[X] 已完成事项 @2026-03-08
-  {: id="yyy"}`;
-
-    const result = await updateBlockContent('block-1', '#已放弃', rawContent);
+    const result = await updateBlockContent('block-1', '#已放弃');
 
     expect(result).toBe(true);
     // 应该去除 - [X] 和块属性
@@ -508,16 +509,16 @@ describe('updateBlockContent', () => {
     );
   });
 
-  it('使用 rawContent：多个番茄钟都保留', async () => {
-    mockUpdateBlock.mockResolvedValue(undefined);
-
-    // 模拟多个行内番茄钟
-    const rawContent = `- {: id="xxx"}[ ] 工作事项 @2026-03-08
+  it('多个番茄钟都保留', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 工作事项 @2026-03-08
   🍅2026-03-08 09:00:00~09:25:00 第一个番茄
   🍅2026-03-08 10:00:00~10:25:00 第二个番茄
-  {: id="yyy"}`;
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
 
-    const result = await updateBlockContent('block-1', '#已完成', rawContent);
+    const result = await updateBlockContent('block-1', '#已完成');
 
     expect(result).toBe(true);
     // 两个番茄钟行都应该保留
@@ -527,24 +528,6 @@ describe('updateBlockContent', () => {
   🍅2026-03-08 09:00:00~09:25:00 第一个番茄
   🍅2026-03-08 10:00:00~10:25:00 第二个番茄
   {: id="yyy"}`,
-      'block-1'
-    );
-  });
-
-  it('无 rawContent 时从 API 获取', async () => {
-    mockGetBlockKramdown.mockResolvedValue({
-      kramdown: '整理资料 @2024-01-01\n{: id="block-1" }'
-    });
-    mockUpdateBlock.mockResolvedValue(undefined);
-
-    const result = await updateBlockContent('block-1', '#已完成');
-
-    expect(result).toBe(true);
-    expect(mockGetBlockKramdown).toHaveBeenCalledWith('block-1');
-    // 块属性行会被保留（因为是多行块的一部分）
-    expect(mockUpdateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '整理资料 @2024-01-01 #已完成\n{: id="block-1" }',
       'block-1'
     );
   });

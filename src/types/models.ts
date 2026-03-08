@@ -87,7 +87,6 @@ export interface Item {
   lineNumber: number;      // 行号
   docId: string;           // 所属文档 ID
   blockId?: string;        // 块 ID（用于精确定位）
-  rawContent?: string;     // 完整的块内容（多行），用于回写时保留行内番茄钟等
   status: ItemStatus;      // 事项状态
   links?: Link[];          // 事项链接（支持多个）
   // 多日期支持：同一块中的其他日期时间信息

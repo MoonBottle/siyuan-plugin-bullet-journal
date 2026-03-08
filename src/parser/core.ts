@@ -278,7 +278,6 @@ export function parseKramdown(
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
-        item.rawContent = block.content;  // 保存完整的块内容（多行）
         item.pomodoros = [];
 
         currentTask.items.push(item);

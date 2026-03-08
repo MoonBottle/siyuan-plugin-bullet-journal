@@ -473,8 +473,7 @@ const handleDone = async (item: Item) => {
   if (!item.blockId) return;
   
   const tag = getStatusTag('completed');
-  // 传入 rawContent 用于保留行内番茄钟
-  const success = await updateBlockContent(item.blockId, tag, item.rawContent);
+  const success = await updateBlockContent(item.blockId, tag);
   if (success && plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
@@ -583,8 +582,7 @@ const handleAbandon = async (item: Item) => {
   if (!item.blockId) return;
   
   const tag = getStatusTag('abandoned');
-  // 传入 rawContent 用于保留行内番茄钟
-  const success = await updateBlockContent(item.blockId, tag, item.rawContent);
+  const success = await updateBlockContent(item.blockId, tag);
   if (success && plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
   }
