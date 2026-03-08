@@ -250,6 +250,67 @@ function optimizeDateTimeExpressions(
  * @param status 事项状态
  * @returns Promise<boolean> 更新是否成功
  */
+/**
+ * 处理单行更新的辅助函数（用于 updateBlockDateTime 的单行内容回退处理）
+ */
+function handleSingleLineUpdate(
+  content: string,
+  newDate: string,
+  allDay: boolean,
+  formattedStartTime?: string,
+  formattedEndTime?: string,
+  originalDate?: string,
+  siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
+  status?: ItemStatus
+): string {
+  // 提取事项内容（去除日期时间标记和状态标签）
+  // 先移除所有日期时间表达式（包括逗号分隔的多个日期）
+  let itemContent = content
+    .replace(/@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+    .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
+    // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
+    .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+    .trim();
+
+  // 构建所有日期时间项列表
+  const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
+
+  // 更新当前修改的 Item
+  const updatedItem = {
+    date: newDate,
+    startDateTime: allDay ? undefined : (formattedStartTime ? `${newDate} ${formattedStartTime}` : undefined),
+    endDateTime: allDay ? undefined : (formattedEndTime ? `${newDate} ${formattedEndTime}` : undefined)
+  };
+
+  // 替换或添加到列表
+  if (originalDate) {
+    const itemIndex = allItems.findIndex(item => item.date === originalDate);
+    if (itemIndex >= 0) {
+      allItems[itemIndex] = updatedItem;
+    } else {
+      allItems.push(updatedItem);
+    }
+  } else {
+    allItems.push(updatedItem);
+  }
+
+  // 去重（按日期）
+  const uniqueItems = new Map<string, { date: string; startDateTime?: string; endDateTime?: string }>();
+  for (const item of allItems) {
+    uniqueItems.set(item.date, item);
+  }
+  const dedupedItems = Array.from(uniqueItems.values());
+
+  // 智能合并为最优表达式
+  const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
+
+  // 构建状态标签（使用 i18n）
+  const statusTag = buildStatusTag(status);
+
+  // 拼接新内容：事项内容 + 优化后的日期时间标记 + 状态标签
+  return `${itemContent} ${optimizedExpr} ${statusTag}`.trim();
+}
+
 export async function updateBlockDateTime(
   blockId: string,
   newDate: string,
@@ -270,13 +331,83 @@ export async function updateBlockDateTime(
       return false;
     }
 
-    // 解析原始内容，提取纯文本（去除属性块 {: ...}）
+    // 解析原始内容
     const kramdown = result.kramdown;
-    let content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
+
+    // 按行分割，处理多行内容
+    const lines = kramdown.split('\n');
+
+    // 检查是否有番茄钟行（以 🍅 开头）
+    const hasTomatoClock = lines.some(line => line.trim().startsWith('🍅'));
+
+    // 如果没有番茄钟行，使用单行处理逻辑（不保留块属性行）
+    if (!hasTomatoClock) {
+      const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
+      const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
+      const formattedEndTime = newEndTime
+        ? formatTimeToSeconds(newEndTime)
+        : (formattedStartTime ? addOneHour(formattedStartTime) : undefined);
+
+      const newContent = handleSingleLineUpdate(
+        content,
+        newDate,
+        allDay,
+        formattedStartTime,
+        formattedEndTime,
+        originalDate,
+        siblingItems,
+        status
+      );
+
+      await updateBlock('markdown', newContent, blockId);
+      return true;
+    }
+
+    // 有番茄钟行的情况：找到包含 @日期 的事项行（不是番茄钟行，不是块属性行）
+    let itemLineIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      // 跳过块属性行 {: ...}
+      if (line.trim().startsWith('{:')) continue;
+      // 跳过番茄钟行（以 🍅 开头）
+      if (line.trim().startsWith('🍅')) continue;
+      // 包含 @日期 的行是事项行
+      if (/@\d{4}-\d{2}-\d{2}/.test(line)) {
+        itemLineIndex = i;
+        break;
+      }
+    }
+
+    // 如果没有找到事项行，使用单行处理逻辑作为回退
+    if (itemLineIndex === -1) {
+      const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
+      const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
+      const formattedEndTime = newEndTime
+        ? formatTimeToSeconds(newEndTime)
+        : (formattedStartTime ? addOneHour(formattedStartTime) : undefined);
+
+      const newContent = handleSingleLineUpdate(
+        content,
+        newDate,
+        allDay,
+        formattedStartTime,
+        formattedEndTime,
+        originalDate,
+        siblingItems,
+        status
+      );
+
+      await updateBlock('markdown', newContent, blockId);
+      return true;
+    }
+
+    // 获取事项行内容并清理
+    const itemLine = lines[itemLineIndex];
+    const cleanedItemLine = stripListAndBlockAttr(itemLine);
 
     // 提取事项内容（去除日期时间标记和状态标签）
     // 先移除所有日期时间表达式（包括逗号分隔的多个日期）
-    let itemContent = content
+    let itemContent = cleanedItemLine
       .replace(/@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
       // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
@@ -324,8 +455,14 @@ export async function updateBlockDateTime(
     // 构建状态标签（使用 i18n）
     const statusTag = buildStatusTag(status);
 
-    // 拼接新内容：事项内容 + 优化后的日期时间标记 + 状态标签
-    const newContent = `${itemContent} ${optimizedExpr} ${statusTag}`.trim();
+    // 拼接新事项行内容：事项内容 + 优化后的日期时间标记 + 状态标签
+    const newItemLine = `${itemContent} ${optimizedExpr} ${statusTag}`.trim();
+
+    // 更新事项行
+    lines[itemLineIndex] = newItemLine;
+
+    // 重新组合所有行
+    const newContent = lines.join('\n');
 
     // 更新块
     await updateBlock('markdown', newContent, blockId);

@@ -424,6 +424,130 @@ describe('updateBlockDateTime', () => {
       'block-1'
     );
   });
+
+  it('行内番茄钟：修改日期时保留番茄钟行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 工作事项 @2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-03-09',
+      '10:00:00',
+      '11:00:00',
+      false,
+      '2026-03-08'
+    );
+
+    expect(result).toBe(true);
+    // 应该只修改事项行，保留番茄钟行和块属性行
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `工作事项 @2026-03-09 10:00:00~11:00:00
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('行内多个番茄钟：修改日期时保留所有番茄钟行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 复杂任务 @2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  🍅2026-03-08 10:00:00~10:25:00 第二个番茄
+  🍅2026-03-08 14:00:00~14:25:00 第三个番茄
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-03-10',
+      undefined,
+      undefined,
+      true,
+      '2026-03-08'
+    );
+
+    expect(result).toBe(true);
+    // 应该只修改事项行，保留所有番茄钟行
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `复杂任务 @2026-03-10
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  🍅2026-03-08 10:00:00~10:25:00 第二个番茄
+  🍅2026-03-08 14:00:00~14:25:00 第三个番茄
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('行内番茄钟多日期：拖动日期时保留番茄钟行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 跨天任务 @2026-03-08, 2026-03-10
+  🍅2026-03-08 09:00:00~09:25:00 第一天番茄
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const siblingItems = [
+      { date: '2026-03-10' }
+    ];
+
+    // 拖动 2026-03-08 到 2026-03-09
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-03-09',
+      undefined,
+      undefined,
+      true,
+      '2026-03-08',
+      siblingItems
+    );
+
+    expect(result).toBe(true);
+    // 应该更新日期并保留番茄钟行，连续日期合并为范围
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `跨天任务 @2026-03-09~03-10
+  🍅2026-03-08 09:00:00~09:25:00 第一天番茄
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('行内番茄钟带状态标签：修改日期时保留状态和番茄钟', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[X] 已完成任务 @2026-03-08 #已完成
+  🍅2026-03-08 09:00:00~09:25:00
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-03-09',
+      '14:00:00',
+      '15:00:00',
+      false,
+      '2026-03-08',
+      undefined,
+      'completed'
+    );
+
+    expect(result).toBe(true);
+    // 应该更新日期、保留状态标签和番茄钟行
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `已完成任务 @2026-03-09 14:00:00~15:00:00 #已完成
+  🍅2026-03-08 09:00:00~09:25:00
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
 });
 
 describe('updateBlockContent', () => {
