@@ -5,6 +5,7 @@ import { defineStore } from 'pinia';
 import type { ActivePomodoro, Item } from '@/types/models';
 import { appendBlock, setBlockAttrs, updateBlock, deleteBlock, getBlockAttrs } from '@/api';
 import { showMessage } from '@/utils/dialog';
+import { showPomodoroCompleteNotification } from '@/utils/notification';
 import dayjs from '@/utils/dayjs';
 
 interface PomodoroState {
@@ -145,7 +146,20 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 播放提示音
         this.playNotificationSound();
 
-        // 显示完成通知
+        // 显示系统级完成通知
+        showPomodoroCompleteNotification(itemContent, durationMinutes, () => {
+          // 点击通知时聚焦思源窗口
+          if (typeof window !== 'undefined' && (window as any).require) {
+            try {
+              const { ipcRenderer } = (window as any).require('electron');
+              ipcRenderer.send('focus-window');
+            } catch {
+              // 忽略错误
+            }
+          }
+        });
+
+        // 同时显示思源内部通知（作为备份）
         showMessage(`专注完成：${itemContent}`);
 
         // 清理状态

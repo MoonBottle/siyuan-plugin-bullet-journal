@@ -40,6 +40,7 @@ import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { showMessage } from '@/utils/dialog';
 import { getBlockAttrs } from '@/api';
+import { requestNotificationPermission } from '@/utils/notification';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -150,6 +151,9 @@ onMounted(async () => {
 
   // 恢复专注状态
   await restorePomodoroState();
+
+  // 请求通知权限（用于专注完成时的系统通知）
+  await requestNotificationPermission();
 
   // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
