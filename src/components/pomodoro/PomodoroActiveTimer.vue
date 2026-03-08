@@ -445,6 +445,7 @@ const endPomodoro = async () => {
   padding: 12px 16px;
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
+  box-sizing: border-box;
 }
 
 .timeline-header {
@@ -546,16 +547,22 @@ const endPomodoro = async () => {
 .item-info-section {
   width: 100%;
   max-width: 400px;
+  padding: 12px 16px;
+  background: var(--b3-theme-surface);
+  border-radius: var(--b3-border-radius);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-sizing: border-box;
 }
 
 .info-card {
+  width: 100%;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
   padding: 12px 16px;
+  box-sizing: border-box;
 
   &.item-card {
     border-left: 3px solid var(--b3-theme-success);
