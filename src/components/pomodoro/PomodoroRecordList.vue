@@ -124,6 +124,10 @@ function handleRecordClick(record: PomodoroRecord) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  margin: 0 16px 16px 16px;
+  background: var(--b3-theme-surface);
+  border-radius: var(--b3-border-radius);
+  border: 1px solid var(--b3-theme-surface-lighter);
 }
 
 .record-list-header {
@@ -144,7 +148,11 @@ function handleRecordClick(record: PomodoroRecord) {
 }
 
 .date-group {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .date-header {
@@ -162,7 +170,7 @@ function handleRecordClick(record: PomodoroRecord) {
 .record-item {
   display: flex;
   align-items: flex-start;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--b3-theme-surface-lighter);
   cursor: pointer;
   transition: background-color 0.2s;
