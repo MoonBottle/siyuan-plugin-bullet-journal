@@ -227,8 +227,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 计算实际专注分钟数
         const actualMinutes = Math.floor(accumulatedSeconds / 60);
 
-        // 在文档中创建带实际时长的番茄钟块
-        const pomodoroContent = `🍅${actualMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
+        // 在文档中创建番茄钟记录（正常完成的只显示时间范围）
+        const pomodoroContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
         await appendBlock('markdown', pomodoroContent, blockId);
 
         // 删除文件中的进行中的番茄钟记录
