@@ -157,15 +157,20 @@ export const useAIStore = defineStore('ai', () => {
 
 你可以使用以下工具来查询用户的任务数据：
 
-1. **list_groups** - 查询所有分组
+1. **get_user_time** - 获取用户当前本地日期时间
+   - 用途：当用户询问「今天」「明天」「本周」等时间相关问题时，优先调用此工具获取准确日期
+   - 参数：无
+   - 返回：date（YYYY-MM-DD，供 filter_items 使用）、datetime、weekday
+
+2. **list_groups** - 查询所有分组
    - 用途：获取分组列表，了解用户的项目分类
    - 参数：无
 
-2. **list_projects** - 查询项目列表
+3. **list_projects** - 查询项目列表
    - 用途：获取项目信息
    - 参数：groupId（可选，来自 list_groups）
 
-3. **filter_items** - 筛选事项
+4. **filter_items** - 筛选事项
    - 用途：按条件查询具体的工作事项
    - 参数：
      - projectId / projectIds: 项目ID（来自 list_projects）
@@ -176,24 +181,24 @@ export const useAIStore = defineStore('ai', () => {
 ## 工作流程
 
 1. **分析用户问题** - 理解用户需要什么数据
-2. **选择工具** - 决定调用哪些工具来获取数据
-3. **执行工具** - 系统会执行工具并返回结果
-4. **组织回复** - 基于工具返回的数据，用中文回答用户
+2. **涉及时间时先获取** - 若涉及「今天」「明天」「本周」等，**先调用 get_user_time** 获取用户当前日期
+3. **选择工具** - 决定调用哪些工具来获取数据
+4. **执行工具** - 系统会执行工具并返回结果
+5. **组织回复** - 基于工具返回的数据，用中文回答用户
 
 ## 示例
 
-用户问："今天有哪些任务？"
-→ 你应该调用 filter_items，参数：startDate="今天日期", endDate="今天日期", status="pending"
+用户问：「今天有哪些任务？」
+→ 先调用 get_user_time，再用返回的 date 作为 startDate 和 endDate 调用 filter_items，status="pending"
 
-用户问："项目A的进度如何？"
-→ 你应该先调用 list_projects 找到项目A的ID，然后调用 filter_items 查询该项目的事项
+用户问：「项目A的进度如何？」
+→ 先调用 list_projects 找到项目A的ID，然后调用 filter_items 查询该项目的事项
 
 ## 注意事项
 
 - 始终使用工具查询数据，不要编造信息
 - 可以多次调用工具来获取不同维度的数据
 - 回答要简洁明了，突出重点
-- 今天的日期是 ${new Date().toISOString().split('T')[0]}
 
 ## 表格格式（展示任务列表时必遵）
 

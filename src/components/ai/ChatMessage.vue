@@ -107,8 +107,8 @@
           v-html="renderedContent"
         ></div>
 
-        <!-- Token 统计和插入按钮 -->
-        <div v-if="message.usage" class="chat-message__footer">
+        <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示，仅在底部最终回答展示一次） -->
+        <div v-if="message.usage && !(message.role === 'assistant' && message.toolCalls?.length)" class="chat-message__footer">
           <div class="chat-message__usage">
             <span class="chat-message__usage-item">
               <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').inputTokens">
@@ -382,6 +382,7 @@ function formatTime(timestamp: number): string {
   }
 
   &--tool {
+    margin-top: 0!important;
     background: transparent;
     border-left: none;
 
@@ -506,10 +507,10 @@ function formatTime(timestamp: number): string {
 
     :deep(pre.code-block) {
       background: var(--b3-theme-surface-lighter);
-      padding: 12px;
+      padding: 8px;
       border-radius: var(--b3-border-radius);
       overflow-x: auto;
-      margin: 8px 0;
+      margin: 6px 0;
 
       code {
         background: none;
@@ -522,10 +523,10 @@ function formatTime(timestamp: number): string {
 
     :deep(pre.json-code) {
       background: var(--b3-theme-surface-lighter);
-      padding: 12px;
+      padding: 8px;
       border-radius: var(--b3-border-radius);
       overflow-x: auto;
-      margin: 8px 0;
+      margin: 6px 0;
 
       code {
         background: none;
@@ -650,7 +651,7 @@ function formatTime(timestamp: number): string {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    padding: 4px 0 4px 12px;
+    padding: 2px 0 2px 12px;
     border-radius: 4px;
     transition: background-color 0.2s;
 
@@ -699,22 +700,22 @@ function formatTime(timestamp: number): string {
   }
 
   &__tool-body {
-    margin-top: 8px;
-    padding: 8px;
+    margin-top: 4px;
+    padding: 6px;
     background: var(--b3-theme-surface-lighter);
     border-radius: var(--b3-border-radius);
     overflow-x: auto;
   }
 
   &__tool-params {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   &__tool-params-title {
     font-size: 12px;
     font-weight: 600;
     color: var(--b3-theme-secondary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   &__tool-params-content {
@@ -728,19 +729,19 @@ function formatTime(timestamp: number): string {
   }
 
   &__tool-result {
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
   &__tool-result-title {
     font-size: 12px;
     font-weight: 600;
     color: var(--b3-theme-secondary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   &__tool-result-content {
     background: var(--b3-theme-background);
-    padding: 8px;
+    padding: 6px;
     border-radius: 4px;
     font-family: monospace;
     font-size: 12px;
@@ -794,9 +795,14 @@ function formatTime(timestamp: number): string {
     overflow-x: auto; /* 表格过宽时可横向滚动 */
   }
 
-  // 思考过程样式
+  /* 仅助手回答内容增加上下留白，用户消息不受影响 */
+  &--assistant &__text {
+    margin: 6px 0;
+  }
+
+  // 思考过程样式（与下方 token 统计横线保持紧凑）
   &__reasoning {
-    margin-bottom: 12px;
+    margin-bottom: 2px;
     background: var(--b3-theme-surface-lighter);
     border-radius: var(--b3-border-radius);
     overflow: hidden;
@@ -806,7 +812,7 @@ function formatTime(timestamp: number): string {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    padding: 6px 12px;
     cursor: pointer;
     transition: background-color 0.2s;
 
@@ -863,7 +869,7 @@ function formatTime(timestamp: number): string {
   }
 
   &__reasoning-content {
-    padding: 8px 12px 12px;
+    padding: 6px 12px 8px;
     font-size: 12px;
     line-height: 1.6;
     color: var(--b3-theme-on-surface);
@@ -896,13 +902,13 @@ function formatTime(timestamp: number): string {
     color: var(--b3-theme-on-surface-lightest);
   }
 
-  // 底部区域：统计 + 插入按钮
+  // 底部区域：统计 + 插入按钮（横线分割，与上方内容保持紧凑）
   &__footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 8px;
-    padding-top: 8px;
+    margin-top: 2px;
+    padding-top: 4px;
     border-top: 1px solid var(--b3-theme-surface-lighter);
   }
 
