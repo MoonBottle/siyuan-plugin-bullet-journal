@@ -52,6 +52,7 @@ function formatDuration(minutes: number): string {
 <style lang="scss" scoped>
 .pomodoro-stats {
   padding: 16px;
+  background: var(--b3-theme-background);
 }
 
 .stats-grid {
@@ -63,14 +64,20 @@ function formatDuration(minutes: number): string {
 .stat-card {
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
-  padding: 16px;
-  text-align: center;
+  padding: 12px 16px;
+  text-align: left;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--b3-theme-surface-lighter);
 }
 
 .stat-label {
   font-size: 12px;
   color: var(--b3-theme-on-surface);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  opacity: 0.8;
 }
 
 .stat-value {
