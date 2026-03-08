@@ -315,11 +315,11 @@ const cancelPomodoro = async () => {
 }
 
 .pause-btn {
-  background: var(--b3-theme-warning);
-  color: var(--b3-theme-on-warning, #fff);
+  background: #f5a623;
+  color: #fff;
 
   &:hover {
-    opacity: 0.9;
+    background: #e09400;
   }
 }
 
