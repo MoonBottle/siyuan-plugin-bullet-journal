@@ -278,10 +278,25 @@ export function parseKramdown(
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
+        item.rawContent = block.content;  // 保存完整的块内容（多行）
         item.pomodoros = [];
+
         currentTask.items.push(item);
         currentItem = item;
         lastBlockType = 'item';
+
+        // 检查块内是否有行内番茄钟（多行块的情况）
+        const blockLines = block.content.split('\n');
+        for (let i = 1; i < blockLines.length; i++) {
+          const line = blockLines[i].trim();
+          if (isPomodoroLine(line)) {
+            const pomodoro = LineParser.parsePomodoroLine(line, block.blockId);
+            if (pomodoro) {
+              pomodoro.itemId = item.id;
+              item.pomodoros.push(pomodoro);
+            }
+          }
+        }
       }
     }
   }

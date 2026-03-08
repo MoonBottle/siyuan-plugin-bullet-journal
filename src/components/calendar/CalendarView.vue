@@ -114,6 +114,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     content: props.item || info.event.title,
     date: info.event.startStr.split('T')[0],
     blockId: props.blockId,
+    rawContent: props.rawContent,
     docId: props.docId,
     lineNumber: props.lineNumber,
     status: props.status || 'pending',
@@ -139,7 +140,8 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       onComplete: async () => {
         if (!item.blockId) return;
         const tag = getStatusTag('completed');
-        const success = await updateBlockContent(item.blockId, tag);
+        // 传入 rawContent 用于保留行内番茄钟
+        const success = await updateBlockContent(item.blockId, tag, item.rawContent);
         if (success && plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
@@ -199,7 +201,8 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       onAbandon: async () => {
         if (!item.blockId) return;
         const tag = getStatusTag('abandoned');
-        const success = await updateBlockContent(item.blockId, tag);
+        // 传入 rawContent 用于保留行内番茄钟
+        const success = await updateBlockContent(item.blockId, tag, item.rawContent);
         if (success && plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }

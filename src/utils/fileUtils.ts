@@ -6,6 +6,7 @@ import { usePlugin } from '@/main';
 import { sql, getBlockKramdown, updateBlock } from '@/api';
 import type { ItemStatus } from '@/types/models';
 import { t } from '@/i18n';
+import { stripListAndBlockAttr } from '@/parser/core';
 
 /**
  * 时间加一小时
@@ -408,25 +409,65 @@ export async function openDocumentAtLine(
  * 更新块内容（用于添加标签）
  * @param blockId 块 ID
  * @param suffix 要添加的后缀（如 #done、@2024-01-16）
+ * @param rawContent 完整的块内容（多行，可选），用于保留行内番茄钟等
  */
 export async function updateBlockContent(
   blockId: string,
-  suffix: string
+  suffix: string,
+  rawContent?: string
 ): Promise<boolean> {
   if (!blockId) return false;
 
   try {
-    const result = await getBlockKramdown(blockId);
-    if (!result?.kramdown) {
-      console.error('[Task Assistant] Failed to get block kramdown');
-      return false;
+    let kramdown: string;
+
+    // 如果有 rawContent，使用它作为基础
+    if (rawContent) {
+      kramdown = rawContent;
+    } else {
+      // 否则从 API 获取
+      const result = await getBlockKramdown(blockId);
+      if (!result?.kramdown) {
+        console.error('[Task Assistant] Failed to get block kramdown');
+        return false;
+      }
+      kramdown = result.kramdown;
     }
 
-    const kramdown = result.kramdown;
+    const lines = kramdown.split('\n');
+
+    // 找到事项行（包含 @日期 的行，且不是番茄钟行、不是块属性行）
+    let itemLineIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // 跳过块属性行
+      if (line.startsWith('{:')) continue;
+      // 跳过番茄钟行
+      if (line.startsWith('🍅')) continue;
+      // 找到包含 @日期 的事项行
+      if (line.includes('@') && /\d{4}-\d{2}-\d{2}/.test(line)) {
+        itemLineIndex = i;
+        break;
+      }
+    }
+
+    if (itemLineIndex >= 0) {
+      // 只修改事项行，添加后缀
+      let itemLine = lines[itemLineIndex];
+      // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
+      const cleanedContent = stripListAndBlockAttr(itemLine);
+      // 添加后缀
+      lines[itemLineIndex] = `${cleanedContent} ${suffix}`;
+
+      // 回写整个块
+      const newContent = lines.join('\n');
+      await updateBlock('markdown', newContent, blockId);
+      return true;
+    }
+
+    // 降级：如果没有找到事项行，使用原来的方式
     let content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
-
     const newContent = `${content} ${suffix}`;
-
     await updateBlock('markdown', newContent, blockId);
 
     return true;
