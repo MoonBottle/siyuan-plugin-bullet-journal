@@ -2,7 +2,7 @@
  * 行解析器
  * 从 obsidian-hk-work-plugin 移植
  */
-import type { Task, Item, Link, ItemStatus, PomodoroRecord } from '@/types/models';
+import type { Task, Item, Link, ItemStatus, PomodoroRecord, PomodoroStatus } from '@/types/models';
 
 export class LineParser {
   /**
@@ -307,14 +307,39 @@ export class LineParser {
   }
 
   /**
+   * 解析块属性
+   * 格式: {: custom-pomodoro-status="running" custom-pomodoro-start="1234567890" ...}
+   * @param line 包含块属性的行
+   * @returns 属性对象
+   */
+  public static parseBlockAttrs(line: string): { [key: string]: string } {
+    const attrs: { [key: string]: string } = {};
+    const attrRegex = /\{\:\s*([^}]*)\}/;
+    const match = line.match(attrRegex);
+
+    if (match) {
+      const attrContent = match[1];
+      // 匹配 key="value" 或 key='value' 格式
+      const keyValueRegex = /(\w+)=['"]([^'"]*)['"]/g;
+      let kvMatch;
+      while ((kvMatch = keyValueRegex.exec(attrContent)) !== null) {
+        attrs[kvMatch[1]] = kvMatch[2];
+      }
+    }
+
+    return attrs;
+  }
+
+  /**
    * 解析番茄钟行
    * 格式: 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字
    * 或: - 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（列表项形式）
    * @param line 番茄钟行内容
    * @param blockId 块 ID
+   * @param attrs 可选的块属性
    * @returns PomodoroRecord 对象，解析失败返回 null
    */
-  public static parsePomodoroLine(line: string, blockId?: string): PomodoroRecord | null {
+  public static parsePomodoroLine(line: string, blockId?: string, attrs?: { [key: string]: string }): PomodoroRecord | null {
     // 去除列表标记、块属性和缩进
     const cleanedLine = line
       .replace(/^\s*([-]|\d+\.)\s+/, '')  // 列表标记 - 或 1. 等
@@ -355,6 +380,19 @@ export class LineParser {
       }
     }
 
+    // 解析块属性中的专注状态
+    let status: PomodoroStatus | undefined;
+    let itemContent: string | undefined;
+
+    if (attrs) {
+      if (attrs['custom-pomodoro-status'] === 'running' || attrs['custom-pomodoro-status'] === 'completed') {
+        status = attrs['custom-pomodoro-status'];
+      }
+      if (attrs['custom-pomodoro-item-content']) {
+        itemContent = attrs['custom-pomodoro-item-content'];
+      }
+    }
+
     return {
       id: `pomodoro-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       date,
@@ -362,7 +400,9 @@ export class LineParser {
       endTime,
       description,
       durationMinutes,
-      blockId
+      blockId,
+      status,
+      itemContent
     };
   }
 

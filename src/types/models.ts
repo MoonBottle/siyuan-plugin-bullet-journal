@@ -9,6 +9,9 @@ export interface Link {
   url: string;
 }
 
+// 番茄钟状态
+export type PomodoroStatus = 'running' | 'completed';
+
 // 番茄钟记录
 export interface PomodoroRecord {
   id: string;              // 记录 ID
@@ -21,6 +24,18 @@ export interface PomodoroRecord {
   projectId?: string;      // 所属项目 ID
   taskId?: string;         // 所属任务 ID
   itemId?: string;         // 所属事项 ID
+  status?: PomodoroStatus; // 专注状态（新增）
+  itemContent?: string;    // 关联事项内容（新增）
+}
+
+// 当前专注状态
+export interface ActivePomodoro {
+  blockId: string;         // 番茄钟块 ID
+  itemId: string;          // 关联事项 ID
+  itemContent: string;     // 关联事项内容
+  startTime: number;       // 开始时间戳（毫秒）
+  durationMinutes: number; // 设定时长（分钟）
+  remainingSeconds: number;// 剩余秒数
 }
 
 // 项目

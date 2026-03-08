@@ -357,3 +357,46 @@ describe('parsePomodoroLine 番茄钟解析', () => {
     expect(pomodoro!.description).toBe('哈哈哈');
   });
 });
+
+describe('parseBlockAttrs 块属性解析', () => {
+  it('解析 custom-pomodoro-status 属性', () => {
+    const attrs = LineParser.parseBlockAttrs('{: custom-pomodoro-status="running"}');
+    expect(attrs['custom-pomodoro-status']).toBe('running');
+  });
+
+  it('解析多个属性', () => {
+    const attrs = LineParser.parseBlockAttrs('{: custom-pomodoro-status="running" custom-pomodoro-start="1741427132000" custom-pomodoro-duration="25"}');
+    expect(attrs['custom-pomodoro-status']).toBe('running');
+    expect(attrs['custom-pomodoro-start']).toBe('1741427132000');
+    expect(attrs['custom-pomodoro-duration']).toBe('25');
+  });
+
+  it('无属性返回空对象', () => {
+    const attrs = LineParser.parseBlockAttrs('普通文本内容');
+    expect(Object.keys(attrs)).toHaveLength(0);
+  });
+});
+
+describe('parsePomodoroLine 带块属性解析', () => {
+  it('解析带 running 状态的番茄钟', () => {
+    const attrs = { 'custom-pomodoro-status': 'running', 'custom-pomodoro-item-content': '测试事项' };
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32', 'block-1', attrs);
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.status).toBe('running');
+    expect(pomodoro!.itemContent).toBe('测试事项');
+  });
+
+  it('解析带 completed 状态的番茄钟', () => {
+    const attrs = { 'custom-pomodoro-status': 'completed' };
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36', 'block-1', attrs);
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.status).toBe('completed');
+  });
+
+  it('无属性时 status 为 undefined', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.status).toBeUndefined();
+    expect(pomodoro!.itemContent).toBeUndefined();
+  });
+});

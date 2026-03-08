@@ -6,29 +6,45 @@
         番茄统计
       </div>
       <span class="fn__flex-1 fn__space"></span>
+      <span
+        v-if="!pomodoroStore.isFocusing"
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        aria-label="开始专注"
+        @click="openTimerDialog"
+      >
+        <svg><use xlink:href="#iconPlay"></use></svg>
+      </span>
       <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="刷新" @click="handleRefresh">
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
     </div>
     <div class="fn__flex-1 fn__flex-column pomodoro-dock-body">
-      <PomodoroStats />
-      <PomodoroRecordList />
+      <PomodoroActiveTimer v-if="pomodoroStore.isFocusing" />
+      <template v-else>
+        <PomodoroStats />
+        <PomodoroRecordList />
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, h, createApp } from 'vue';
+import { Dialog } from 'siyuan';
 import { usePlugin } from '@/main';
-import { useSettingsStore, useProjectStore } from '@/stores';
+import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import PomodoroStats from '@/components/pomodoro/PomodoroStats.vue';
 import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
+import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { showMessage } from '@/utils/dialog';
+import { getBlockAttrs } from '@/api';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+const pomodoroStore = usePomodoroStore();
 
 // 数据刷新处理函数
 const handleDataRefresh = async () => {
@@ -45,9 +61,82 @@ const handleRefresh = async () => {
   }
 };
 
+// 打开开始专注弹框
+let timerDialog: Dialog | null = null;
+let dialogApp: any = null;
+
+const openTimerDialog = () => {
+  if (timerDialog) {
+    timerDialog.destroy();
+    timerDialog = null;
+  }
+  if (dialogApp) {
+    dialogApp.unmount();
+    dialogApp = null;
+  }
+
+  const closeDialog = () => {
+    if (timerDialog) {
+      timerDialog.destroy();
+      timerDialog = null;
+    }
+    if (dialogApp) {
+      dialogApp.unmount();
+      dialogApp = null;
+    }
+  };
+
+  // 先创建 Dialog，使用占位内容
+  timerDialog = new Dialog({
+    title: '开始专注',
+    content: '<div id="pomodoro-timer-dialog-mount"></div>',
+    width: '600px',
+    destroyCallback: () => {
+      if (dialogApp) {
+        dialogApp.unmount();
+        dialogApp = null;
+      }
+      timerDialog = null;
+    }
+  });
+
+  // Dialog 创建后，找到挂载点并渲染 Vue 组件
+  setTimeout(() => {
+    const mountEl = timerDialog?.element?.querySelector('#pomodoro-timer-dialog-mount');
+    if (mountEl) {
+      dialogApp = createApp(PomodoroTimerDialog, { closeDialog });
+      dialogApp.mount(mountEl);
+    }
+  }, 0);
+};
+
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+
+// 恢复专注状态
+const restorePomodoroState = async () => {
+  if (!plugin) return;
+
+  // 遍历所有番茄钟记录，查找正在进行的
+  const allPomodoros = projectStore.getAllPomodoros('');
+  const runningPomodoro = allPomodoros.find(p => p.status === 'running');
+
+  if (runningPomodoro && runningPomodoro.blockId) {
+    try {
+      // 获取块属性
+      const attrs = await getBlockAttrs(runningPomodoro.blockId);
+      if (attrs && attrs['custom-pomodoro-status'] === 'running') {
+        const restored = await pomodoroStore.restorePomodoro(runningPomodoro.blockId, attrs);
+        if (restored) {
+          showMessage(`已恢复专注：${attrs['custom-pomodoro-item-content'] || '未知事项'}`);
+        }
+      }
+    } catch (error) {
+      console.error('[PomodoroDock] 恢复专注状态失败:', error);
+    }
+  }
+};
 
 // 初始化数据
 onMounted(async () => {
@@ -58,6 +147,9 @@ onMounted(async () => {
   if (plugin) {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
   }
+
+  // 恢复专注状态
+  await restorePomodoroState();
 
   // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
