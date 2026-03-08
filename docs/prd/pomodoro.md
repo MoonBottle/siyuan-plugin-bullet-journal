@@ -60,9 +60,18 @@
 🍅2026-03-08 15:45:32~15:45:36 专注描述
 ```
 
+**支持实际专注时长（用于暂停/继续功能）：**
+
+```markdown
+🍅5,2026-03-08 15:45:32~15:50:32 专注描述（实际专注5分钟）
+🍅5，2026-03-08 15:45:32~15:50:32 专注描述（中文逗号）
+🍅5, 2026-03-08 15:45:32~15:50:32 专注描述（逗号后空格）
+```
+
 | 元素 | 格式 | 说明 |
 |------|------|------|
 | 标记 | `🍅` | 番茄钟标识 |
+| 实际时长 | `N,` 或 `N，` | 实际专注分钟数（可选），支持中英文逗号，逗号后可有空格 |
 | 日期 | `YYYY-MM-DD` | 番茄钟日期 |
 | 开始时间 | `HH:mm:ss` | 专注开始时间 |
 | 结束时间 | `HH:mm:ss` | 专注结束时间（可选）|
@@ -275,6 +284,7 @@ interface PomodoroRecord {
   endTime?: string;
   description?: string;
   durationMinutes: number;
+  actualDurationMinutes?: number; // 实际专注时长（分钟），用于暂停/继续功能
   blockId?: string;
   itemId?: string;
   itemContent?: string;
@@ -287,7 +297,8 @@ interface PomodoroRecord {
 
 1. 在事项下方手动添加番茄钟行
 2. 格式：`🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述`
-3. 查看 Dock 统计和记录列表
+3. 支持记录实际专注时长（用于暂停/继续）：`🍅N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述`
+4. 查看 Dock 统计和记录列表
 
 ### 3.2 使用专注计时
 
