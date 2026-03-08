@@ -7,6 +7,8 @@ import { describe, it, expect } from 'vitest';
 import { parseKramdown, stripListAndBlockAttr } from '@/parser/core';
 
 describe('stripListAndBlockAttr', () => {
+  // ========== 基础列表处理 ==========
+  
   it('剥离无序列表标记与行内块属性', () => {
     const line =
       '- {: id="20260305110707-woafasq" updated="20260305110347"}测试无序列表任务 #任务#';
@@ -31,6 +33,77 @@ describe('stripListAndBlockAttr', () => {
 
   it('仅有列表标记无块属性', () => {
     expect(stripListAndBlockAttr('- 任务名 #任务#')).toBe('任务名 #任务#');
+  });
+
+  // ========== 任务列表（思源实际格式）==========
+  
+  it('处理未选中任务列表 [ ]', () => {
+    const input = '- {: id="xxx"}[ ] 事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+  });
+
+  it('处理已选中任务列表 [X]', () => {
+    const input = '- {: id="xxx"}[X] 事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+  });
+
+  it('处理已选中任务列表 [x]', () => {
+    const input = '- {: id="xxx"}[x] 事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+  });
+
+  it('处理带缩进的任务列表', () => {
+    const input = '  - {: id="xxx"}[ ] 事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+  });
+
+  // ========== 实际 Kramdown 示例 ==========
+  
+  it('处理实际 Kramdown 未选中任务项', () => {
+    const input = '- {: id="20260308203822-5gz124r" updated="20260308204332"}[ ] 事项列表未完成事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项列表未完成事项内容 @2026-03-08');
+  });
+
+  it('处理实际 Kramdown 已选中任务项', () => {
+    const input = '- {: id="20260308203822-n577cpp" updated="20260308203634"}[X] 事项列表已完成状态事项 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项列表已完成状态事项 @2026-03-08');
+  });
+
+  it('处理实际 Kramdown 任务行', () => {
+    const input = '- {: id="20260308203827-fmms29h" updated="20260308204332"}任务 #任务#';
+    expect(stripListAndBlockAttr(input)).toBe('任务 #任务#');
+  });
+
+  it('处理实际 Kramdown 列表项番茄钟', () => {
+    const input = '- {: id="20260308203822-p5gpzvm" updated="20260308160041"}🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈';
+    expect(stripListAndBlockAttr(input)).toBe('🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈');
+  });
+
+  it('处理行内番茄钟（非列表项）', () => {
+    const input = '  🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈';
+    expect(stripListAndBlockAttr(input)).toBe('🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈');
+  });
+
+  // ========== 边缘情况 ==========
+  
+  it('处理内容中带方括号的情况', () => {
+    const input = '- {: id="xxx"}[ ] 事项[重要] @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项[重要] @2026-03-08');
+  });
+
+  it('处理空任务标记后内容为空', () => {
+    const input = '- {: id="xxx"}[ ]';
+    expect(stripListAndBlockAttr(input)).toBe('');
+  });
+
+  it('处理只有块属性', () => {
+    const input = '{: id="xxx"}';
+    expect(stripListAndBlockAttr(input)).toBe('');
+  });
+
+  it('处理只有任务标记', () => {
+    const input = '[ ]';
+    expect(stripListAndBlockAttr(input)).toBe('');
   });
 });
 
