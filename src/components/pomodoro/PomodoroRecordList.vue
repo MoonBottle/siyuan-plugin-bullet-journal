@@ -160,7 +160,7 @@ function handleRecordClick(record: PomodoroRecord) {
   font-size: 13px;
   font-weight: 500;
   color: var(--b3-theme-on-surface);
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
 }
 
 .record-items {
