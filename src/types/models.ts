@@ -9,6 +9,20 @@ export interface Link {
   url: string;
 }
 
+// 番茄钟记录
+export interface PomodoroRecord {
+  id: string;              // 记录 ID
+  date: string;            // 日期 YYYY-MM-DD
+  startTime: string;       // 开始时间 HH:mm:ss
+  endTime?: string;        // 结束时间 HH:mm:ss（可选）
+  description?: string;    // 描述
+  durationMinutes: number; // 专注时长（分钟）
+  blockId?: string;        // 块 ID（用于跳转到笔记）
+  projectId?: string;      // 所属项目 ID
+  taskId?: string;         // 所属任务 ID
+  itemId?: string;         // 所属事项 ID
+}
+
 // 项目
 export interface Project {
   id: string;              // 文档 ID
@@ -18,6 +32,7 @@ export interface Project {
   path: string;            // 文档路径
   groupId?: string;        // 分组 ID
   links?: Link[];          // 项目链接
+  pomodoros?: PomodoroRecord[]; // 项目级别番茄钟记录
 }
 
 // 任务
@@ -33,6 +48,7 @@ export interface Task {
   lineNumber: number;      // 行号
   docId?: string;          // 所属文档 ID
   blockId?: string;        // 块 ID（用于精确定位）
+  pomodoros?: PomodoroRecord[]; // 任务级别番茄钟记录
 }
 
 // 事项状态
@@ -58,6 +74,7 @@ export interface Item {
     startDateTime?: string;
     endDateTime?: string;
   }>;
+  pomodoros?: PomodoroRecord[]; // 事项级别番茄钟记录
 }
 
 // 分组

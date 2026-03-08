@@ -11,6 +11,7 @@ import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
 import TodoDock from '@/tabs/TodoDock.vue';
 import AiChatDock from '@/tabs/AiChatDock.vue';
+import PomodoroDock from '@/tabs/PomodoroDock.vue';
 import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
@@ -474,6 +475,29 @@ export default class HKWorkPlugin extends Plugin {
         // 不设置 overflow: hidden，让 Vue 组件内部控制滚动
         const pinia = sharedPinia ?? createPinia();
         const app = createApp(AiChatDock);
+        app.use(pinia);
+        app.mount(this.element);
+      },
+      destroy() {
+        this.element.innerHTML = '';
+      }
+    });
+
+    // 番茄钟统计 Dock
+    this.addDock({
+      config: {
+        position: 'RightBottom',
+        size: { width: 320, height: 500 },
+        icon: 'iconClock',
+        title: '番茄统计'
+      },
+      data: {},
+      type: DOCK_TYPES.POMODORO,
+      init() {
+        this.element.style.height = '100%';
+        this.element.style.overflow = 'hidden';
+        const pinia = sharedPinia ?? createPinia();
+        const app = createApp(PomodoroDock);
         app.use(pinia);
         app.mount(this.element);
       },

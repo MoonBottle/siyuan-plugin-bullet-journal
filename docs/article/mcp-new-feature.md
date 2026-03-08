@@ -1,8 +1,8 @@
 # 任务助手 v0.7.0 重磅更新：接入 AI，让你的笔记开口说话！
 
 > **任务助手**是思源笔记的一款任务管理插件，现已支持 MCP（Model Context Protocol）协议，可与 Trae 等 AI 助手无缝集成，实现智能化的任务管理和工作规划。
-> 
-> ⭐ **如果这个项目对你有帮助，请给我们一个 Star！** [GitHub 仓库](https://github.com/MoonBottle/siyuan-plugin-bullet-journal)
+>
+> ⭐ **如果这个项目对你有帮助，请给我们一个 Star！**
 
 ---
 
@@ -62,7 +62,7 @@ AI：自动查询思源笔记 → 分析 → 给出建议
 
 ### 第二步：获取 MCP 配置
 
-1. 打开思源笔记设置 → 子弹笔记 → MCP 配置
+1. 打开思源笔记设置 → 任务助手 → MCP 配置
 2. 点击「复制 MCP 配置」按钮
 3. 配置已自动复制到剪贴板
 
@@ -81,40 +81,47 @@ AI：自动查询思源笔记 → 分析 → 给出建议
 
 ![image.png](https://b3logfile.com/file/2026/03/image-MCEm1w1.png)
 
-配置 AI 智能体（可选但推荐）
+SIYUAN_API_URL 说明：多空间空间时，只有第一个工作空间会监听 6806 端口，其余工作空间需手动调整端口，获取方式如图：
 
-为了让 AI 更好地理解如何使用子弹笔记数据，建议在 Trae 中配置智能体提示词：
+![image.png](https://b3logfile.com/file/2026/03/image-Fk0jI9c.png)
+
+##### 配置 AI 智能体（可选但推荐）
+
+为了让 AI 更好地理解如何使用任务助手数据，建议在 Trae 中配置智能体提示词：
 
 1. 打开 Trae → 智能体 → 创建智能体
 2. 填写智能体名称，如「任务助手」
 3. 在提示词区域粘贴以下内容：
-   
-   你可以访问一个子弹笔记 MCP 服务器，该服务器提供以下工具：
-   
-   1. list_groups：列出所有项目分组。首先使用此工具了解项目组织结构。
-   2. list_projects：列出所有项目，支持 groupId 过滤。每个项目包含 id、name、description、path、groupId 和 taskCount。
-   3. filter_items：筛选子弹笔记事项，参数包括：
-      - projectId/projectIds：按特定项目筛选
-      - groupId：按项目分组筛选
-      - startDate/endDate：按日期范围筛选（YYYY-MM-DD 格式）
-      - status：按状态筛选（'pending' 待办、'completed' 已完成、'abandoned' 已放弃）
-   
-   何时使用这些工具：
-   
-   - 用户询问任务、项目或日程安排时
-   - 用户想要追踪进度或回顾已完成的工作时
-   - 用户需要规划或组织工作时
-   - 用户要求汇总或报告子弹笔记数据时
-   
-   最佳实践：
-   
-   1. 始终先调用 list_groups 了解项目结构
-   2. 使用 list_projects 获取所有项目的概览
-   3. 使用 filter_items 配合适当的筛选条件获取具体任务事项
-   4. 组合使用筛选条件进行精确查询（例如：查询本周某项目的待办事项）
+
+```
+你可以访问一个任务助手 MCP 服务器，该服务器提供以下工具：
+
+1. list_groups：列出所有项目分组。首先使用此工具了解项目组织结构。
+2. list_projects：列出所有项目，支持 groupId 过滤。每个项目包含 id、name、description、path、groupId 和 taskCount。
+3. filter_items：筛选任务助手事项，参数包括：
+   - projectId/projectIds：按特定项目筛选
+   - groupId：按项目分组筛选
+   - startDate/endDate：按日期范围筛选（YYYY-MM-DD 格式）
+   - status：按状态筛选（'pending' 待办、'completed' 已完成、'abandoned' 已放弃）
+
+何时使用这些工具：
+
+- 用户询问任务、项目或日程安排时
+- 用户想要追踪进度或回顾已完成的工作时
+- 用户需要规划或组织工作时
+- 用户要求汇总或报告任务助手数据时
+
+最佳实践：
+
+1. 始终先调用 list_groups 了解项目结构
+2. 使用 list_projects 获取所有项目的概览
+3. 使用 filter_items 配合适当的筛选条件获取具体任务事项
+4. 组合使用筛选条件进行精确查询（例如：查询本周某项目的待办事项）
+```
+
 4. 保存智能体配置
 
-配置完成后，在与该智能体对话时，AI 会自动调用 MCP 工具获取你的子弹笔记数据。
+配置完成后，在与该智能体对话时，AI 会自动调用 MCP 工具获取你的任务助手数据。
 
 ![image.png](https://b3logfile.com/file/2026/03/image-am4Ncl8.png)
 
@@ -153,17 +160,17 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 
 > **你：** 今天有哪些任务？帮我按优先级排序
 
-> **AI：** 根据你的子弹笔记数据，今天（2026-03-05）你有以下任务：
-> 
+> **AI：** 根据你的任务助手数据，今天（2026-03-05）你有以下任务：
+>
 > **🔴 高优先级：**
-> 
-> - [ ] 完成 MCP 功能文档 @2026-03-05
-> - [ ] 修复日历视图 bug @2026-03-05
-> 
+>
+> - [ ]  完成 MCP 功能文档 @2026-03-05
+> - [ ]  修复日历视图 bug @2026-03-05
+>
 > **🟡 中优先级：**
-> 
-> - [ ] 回复客户邮件 @2026-03-05
-> 
+>
+> - [ ]  回复客户邮件 @2026-03-05
+>
 > **建议：** 上午优先处理高优先级的开发任务，下午处理邮件和文档。
 
 ---
@@ -181,24 +188,24 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 > **你：** 回顾上周的工作完成情况
 
 > **AI：** 上周（2026-02-24 至 2026-03-02）工作总结：
-> 
+>
 > **📊 完成情况统计：**
-> 
+>
 > - 总任务数：15
 > - 已完成：12（80%）
 > - 待办：3
-> 
+>
 > **✅ 已完成项目：**
-> 
+>
 > - 项目 A：完成前端页面开发
 > - 项目 B：完成需求评审
-> 
+>
 > **⚠️ 延期任务：**
-> 
+>
 > - 项目 C：后端接口开发（延期 2 天）
-> 
+>
 > **📅 本周建议：**
-> 
+>
 > 1. 优先完成项目 C 的延期任务
 > 2. 合理分配时间，避免再次延期
 
@@ -217,21 +224,21 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 > **你：** 项目 A 的进度如何？预计什么时候能完成？
 
 > **AI：** 项目 A 当前进度分析：
-> 
+>
 > **📈 整体进度：65%**
-> 
+>
 > **任务分布：**
-> 
+>
 > - 总任务：20
 > - 已完成：13
 > - 进行中：4
 > - 待开始：3
-> 
+>
 > **⏱️ 预计完成时间：**
 > 根据当前进度和任务分布，预计还需要 **5 个工作日** 完成全部任务。
-> 
+>
 > **⚠️ 风险提示：**
-> 
+>
 > - 任务「后端性能优化」已延期 1 天，建议优先处理
 
 ---
@@ -249,27 +256,27 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 > **你：** 帮我规划下周的工作安排
 
 > **AI：** 基于你的任务数据和历史完成情况，为下周（2026-03-10 至 2026-03-16）生成工作规划：
-> 
+>
 > **📅 周一：**
-> 
+>
 > - 上午：项目 A 剩余开发任务（预计 4h）
 > - 下午：代码审查和测试（预计 3h）
-> 
+>
 > **📅 周二：**
-> 
+>
 > - 全天：项目 B 需求文档编写（预计 6h）
-> 
+>
 > **📅 周三-周四：**
-> 
+>
 > - 项目 C 开发工作（预计 12h）
-> 
+>
 > **📅 周五：**
-> 
+>
 > - 上午：周总结和文档整理
 > - 下午：团队会议和下周规划
-> 
+>
 > **💡 优化建议：**
-> 
+>
 > - 周二下午预留 1h 缓冲时间
 > - 建议将项目 C 的部分任务拆分到下周，避免过度安排
 
@@ -327,8 +334,6 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 - 状态: completed（已完成）
 - 所属项目: MCP 功能开发
 - 所属任务: 后端开发
-
-![工具功能图](./images/tools-overview.png)
 
 ---
 
@@ -426,7 +431,7 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 
 1. ✅ 思源笔记已启动且插件已启用
 2. ✅ API Token 正确配置（思源 → 设置 → 关于 → API Token）
-3. ✅ 插件版本为 v0.6.0 或更高
+3. ✅ 插件版本为 v0.7.0 或更高
 4. ✅ 查看 AI 助手的 MCP 日志获取详细错误
 
 ### Q2: AI 无法读取数据？
@@ -434,7 +439,7 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 **可能原因：**
 
 1. 项目目录未配置 - 检查插件设置中的目录路径
-2. 文件格式不正确 - 确保使用标准的子弹笔记格式
+2. 文件格式不正确 - 确保使用标准的任务助手格式
 3. 任务标签不匹配 - 默认使用 `#任务` 标签
 
 ### Q3: 数据更新后 AI 看不到最新内容？
@@ -487,7 +492,7 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 
 ### 立即体验
 
-1. **更新插件**：在思源笔记集市更新到 v0.6.0
+1. **更新插件**：在思源笔记集市更新到 v0.7.0
 2. **配置 MCP**：按本文指南配置 AI 助手
 3. **开始对话**：向 AI 提问，体验智能任务管理
 
@@ -495,10 +500,10 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 
 ## 📚 相关资源
 
-- **GitHub 仓库**：[siyuan-plugin-bullet-journal](https://github.com/MoonBottle/siyuan-plugin-bullet-journal)
-- **问题反馈**：[GitHub Issues](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues)
-- **使用文档**：[完整文档](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
-- **更新日志**：[CHANGELOG](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md)
+- **GitHub 仓库**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal
+- **问题反馈**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues
+- **使用文档**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md
+- **更新日志**：https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md
 
 ---
 
@@ -520,11 +525,10 @@ MCP 是开放协议，其他支持 MCP 的 AI 助手（如 Cursor、Claude Deskt
 
 - 在 [GitHub](https://github.com/MoonBottle/siyuan-plugin-bullet-journal) 上给我们点亮 ⭐ Star
 - 分享给身边使用思源笔记的朋友
-- 在思源笔记集市留下你的评价
 
 你的支持是我们持续改进的动力！💪
 
 ---
 
 *本文档最后更新于 2026-03-05*
-*任务助手 v0.7.0*
+*任务助手 v0.7.0* 

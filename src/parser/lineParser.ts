@@ -2,7 +2,7 @@
  * 行解析器
  * 从 obsidian-hk-work-plugin 移植
  */
-import type { Task, Item, Link, ItemStatus } from '@/types/models';
+import type { Task, Item, Link, ItemStatus, PomodoroRecord } from '@/types/models';
 
 export class LineParser {
   /**
@@ -304,5 +304,73 @@ export class LineParser {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * 解析番茄钟行
+   * 格式: 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字
+   * 或: - 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（列表项形式）
+   * @param line 番茄钟行内容
+   * @param blockId 块 ID
+   * @returns PomodoroRecord 对象，解析失败返回 null
+   */
+  public static parsePomodoroLine(line: string, blockId?: string): PomodoroRecord | null {
+    // 去除列表标记、块属性和缩进
+    const cleanedLine = line
+      .replace(/^\s*([-]|\d+\.)\s+/, '')  // 列表标记 - 或 1. 等
+      .replace(/^\{\:\s*[^}]*\}\s*/, '') // 块属性 {: ... }
+      .trim();
+
+    // 检查是否以 🍅 开头
+    if (!cleanedLine.startsWith('🍅')) {
+      return null;
+    }
+
+    // 提取日期时间部分: YYYY-MM-DD HH:mm:ss~HH:mm:ss
+    // 注意：Kramdown 中 ~ 可能被转义为 \~
+    const pomodoroRegex = /^🍅(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\\?~(\d{2}:\d{2}:\d{2}))?\s*(.*)$/;
+    const match = cleanedLine.match(pomodoroRegex);
+
+    if (!match) {
+      return null;
+    }
+
+    const date = match[1];
+    const startTime = match[2];
+    const endTime = match[3];
+    const description = match[4]?.trim() || undefined;
+
+    // 计算专注时长（分钟）
+    let durationMinutes = 25; // 默认25分钟
+    if (endTime) {
+      const startMinutes = this.timeToMinutes(startTime);
+      const endMinutes = this.timeToMinutes(endTime);
+      durationMinutes = endMinutes - startMinutes;
+      if (durationMinutes < 0) {
+        durationMinutes += 24 * 60; // 跨天情况
+      }
+      // 确保至少1分钟
+      if (durationMinutes < 1) {
+        durationMinutes = 1;
+      }
+    }
+
+    return {
+      id: `pomodoro-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      date,
+      startTime,
+      endTime,
+      description,
+      durationMinutes,
+      blockId
+    };
+  }
+
+  /**
+   * 将时间字符串转换为分钟数
+   */
+  private static timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
   }
 }

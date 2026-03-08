@@ -2,7 +2,7 @@
  * 纯解析逻辑
  * 不依赖 API，仅接受字符串输入，供插件和 MCP 共用
  */
-import type { Project, Task, Item } from '@/types/models';
+import type { Project, Task, Item, PomodoroRecord } from '@/types/models';
 import { LineParser } from './lineParser';
 
 export interface KramdownBlock {
@@ -73,6 +73,17 @@ function isTagInBackticks(content: string, tag: string): boolean {
 }
 
 /**
+ * 检查一行是否是番茄钟行
+ */
+function isPomodoroLine(line: string): boolean {
+  const cleaned = line
+    .replace(/^\s*([-]|\d+\.)\s+/, '')  // 列表标记
+    .replace(/^\{\:\s*[^}]*\}\s*/, '') // 块属性 {: ... }
+    .trim();
+  return cleaned.startsWith('🍅');
+}
+
+/**
  * 解析 Kramdown 内容为 Project
  * 纯函数，不依赖 API
  */
@@ -91,19 +102,52 @@ export function parseKramdown(
     tasks: [],
     path: docPath || '',
     groupId: groupId,
-    links: []
+    links: [],
+    pomodoros: []
   };
 
   let currentTask: Task | null = null;
+  let currentItem: Item | null = null;
   let lineNumber = 0;
   /** 当前任务是否已遇到第一个事项，用于停止收集任务链接 */
   let hasSeenItemForCurrentTask = false;
+  /** 上一个处理的块类型：'project' | 'task' | 'item' | null */
+  let lastBlockType: 'project' | 'task' | 'item' | null = null;
 
-  for (const block of blocks) {
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
     lineNumber++;
     const content = block.content.split('\n')[0].trim();
 
     if (!content) continue;
+
+    // 检查是否是番茄钟行
+    if (isPomodoroLine(content)) {
+      const pomodoro = LineParser.parsePomodoroLine(content, block.blockId);
+      if (pomodoro) {
+        // 根据上一个块类型决定关联到哪个父级
+        if (lastBlockType === 'item' && currentItem) {
+          // 关联到当前事项
+          if (!currentItem.pomodoros) {
+            currentItem.pomodoros = [];
+          }
+          pomodoro.itemId = currentItem.id;
+          currentItem.pomodoros.push(pomodoro);
+        } else if (lastBlockType === 'task' && currentTask) {
+          // 关联到当前任务
+          if (!currentTask.pomodoros) {
+            currentTask.pomodoros = [];
+          }
+          pomodoro.taskId = currentTask.id;
+          currentTask.pomodoros.push(pomodoro);
+        } else {
+          // 关联到项目
+          pomodoro.projectId = project.id;
+          project.pomodoros!.push(pomodoro);
+        }
+      }
+      continue;
+    }
 
     if (!project.name) {
       if (content.startsWith('# ')) {
@@ -119,6 +163,7 @@ export function parseKramdown(
     if (project.name && content.startsWith('> ')) {
       const descContent = content.substring(2).trim();
       project.description = descContent;
+      lastBlockType = 'project';
       continue;
     }
 
@@ -154,7 +199,10 @@ export function parseKramdown(
       currentTask = LineParser.parseTaskLine(stripListAndBlockAttr(content), lineNumber);
       if (currentTask) {
         currentTask.blockId = block.blockId;
+        currentTask.pomodoros = [];
       }
+      currentItem = null;
+      lastBlockType = 'task';
       continue;
     }
 
@@ -210,7 +258,10 @@ export function parseKramdown(
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
+        item.pomodoros = [];
         currentTask.items.push(item);
+        currentItem = item;
+        lastBlockType = 'item';
       }
     }
   }
@@ -230,7 +281,7 @@ export function parseKramdown(
     }
   }
 
-  if (project.tasks.length === 0) {
+  if (project.tasks.length === 0 && project.pomodoros!.length === 0) {
     return null;
   }
 

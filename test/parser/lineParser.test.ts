@@ -284,3 +284,76 @@ describe('parseItemLine - 中文逗号内容提取', () => {
     expect(items[1].status).toBe('completed');
   });
 });
+
+describe('parsePomodoroLine 番茄钟解析', () => {
+  it('完整格式：日期+时间范围+描述', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36 哈哈哈', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:45:36');
+    expect(pomodoro!.description).toBe('哈哈哈');
+    expect(pomodoro!.durationMinutes).toBe(1); // 4秒不足1分钟，最小为1分钟
+    expect(pomodoro!.blockId).toBe('block-1');
+  });
+
+  it('无描述格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36', 'block-2');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:45:36');
+    expect(pomodoro!.description).toBeUndefined();
+    expect(pomodoro!.durationMinutes).toBe(1); // 4秒不足1分钟，最小为1分钟
+  });
+
+  it('无结束时间格式（默认25分钟）', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32', 'block-3');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBeUndefined();
+    expect(pomodoro!.durationMinutes).toBe(25);
+  });
+
+  it('无序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('- 🍅2026-03-08 15:45:32~15:45:36 哈哈哈', 'block-4');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.description).toBe('哈哈哈');
+  });
+
+  it('有序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('1. 🍅2026-03-08 15:45:32~15:45:36 哈哈哈', 'block-5');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.description).toBe('哈哈哈');
+  });
+
+  it('跨天时间计算', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 23:30:00~00:30:00 跨天', 'block-6');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.durationMinutes).toBe(60);
+  });
+
+  it('非番茄钟行返回 null', () => {
+    const pomodoro = LineParser.parsePomodoroLine('普通文本内容', 'block-7');
+    expect(pomodoro).toBeNull();
+  });
+
+  it('格式不正确的番茄钟返回 null', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08', 'block-8');
+    expect(pomodoro).toBeNull();
+  });
+
+  it('Kramdown 转义格式：\~ 波浪号', () => {
+    const pomodoro = LineParser.parsePomodoroLine('- 🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈', 'block-9');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:45:36');
+    expect(pomodoro!.description).toBe('哈哈哈');
+  });
+});

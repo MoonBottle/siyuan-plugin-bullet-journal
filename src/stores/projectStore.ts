@@ -3,7 +3,7 @@
  * 分组筛选按视图独立：getters 接受 groupId 参数，各 Tab/Dock 维护本地 selectedGroup。
  */
 import { defineStore } from 'pinia';
-import type { Project, Item, CalendarEvent, ProjectDirectory } from '@/types/models';
+import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord } from '@/types/models';
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
 import { useSettingsStore } from './settingsStore';
@@ -124,6 +124,78 @@ export const useProjectStore = defineStore('project', {
         list.sort((a, b) => {
           return (a.startDateTime || a.date).localeCompare(b.startDateTime || b.date);
         });
+      });
+
+      return grouped;
+    },
+
+    // 获取所有番茄钟记录（包括项目、任务、事项的番茄钟）
+    getAllPomodoros: (state) => (groupId: string = ''): PomodoroRecord[] => {
+      const pomodoros: PomodoroRecord[] = [];
+      const projects = !groupId ? state.projects : state.projects.filter(p => p.groupId === groupId);
+
+      projects.forEach(project => {
+        // 项目级别番茄钟
+        if (project.pomodoros) {
+          pomodoros.push(...project.pomodoros);
+        }
+        // 任务和事项级别番茄钟
+        project.tasks.forEach(task => {
+          if (task.pomodoros) {
+            pomodoros.push(...task.pomodoros);
+          }
+          task.items.forEach(item => {
+            if (item.pomodoros) {
+              pomodoros.push(...item.pomodoros);
+            }
+          });
+        });
+      });
+
+      return pomodoros;
+    },
+
+    // 获取今日番茄钟记录
+    getTodayPomodoros: (state) => (groupId: string = ''): PomodoroRecord[] => {
+      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      return allPomodoros.filter((p: PomodoroRecord) => p.date === state.currentDate);
+    },
+
+    // 获取今日专注分钟数
+    getTodayFocusMinutes: (state) => (groupId: string = ''): number => {
+      const todayPomodoros = (state as any).getTodayPomodoros(groupId);
+      return todayPomodoros.reduce((sum: number, p: PomodoroRecord) => sum + p.durationMinutes, 0);
+    },
+
+    // 获取总番茄数
+    getTotalPomodoros: (state) => (groupId: string = ''): number => {
+      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      return allPomodoros.length;
+    },
+
+    // 获取总专注分钟数
+    getTotalFocusMinutes: (state) => (groupId: string = ''): number => {
+      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      return allPomodoros.reduce((sum: number, p: PomodoroRecord) => sum + p.durationMinutes, 0);
+    },
+
+    // 按日期分组获取番茄钟记录
+    getPomodorosByDate: (state) => (groupId: string = ''): Map<string, PomodoroRecord[]> => {
+      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      const grouped = new Map<string, PomodoroRecord[]>();
+
+      allPomodoros.forEach((p: PomodoroRecord) => {
+        const list = grouped.get(p.date);
+        if (list) {
+          list.push(p);
+        } else {
+          grouped.set(p.date, [p]);
+        }
+      });
+
+      // 每个日期内的番茄钟按开始时间排序
+      grouped.forEach(list => {
+        list.sort((a, b) => a.startTime.localeCompare(b.startTime));
       });
 
       return grouped;
