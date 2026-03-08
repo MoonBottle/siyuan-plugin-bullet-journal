@@ -34,7 +34,7 @@
     <div class="pomodoro-timeline">
       <div class="timeline-header">
         <span class="timeline-label">专注时段</span>
-        <span class="timeline-duration">{{ targetMinutes }}分钟</span>
+        <span class="timeline-duration">目标：{{ targetMinutes }}分钟</span>
       </div>
       <div class="timeline-track">
         <div class="timeline-point start">
@@ -54,20 +54,10 @@
           <div class="timeline-desc">预计结束</div>
         </div>
       </div>
-      <!-- 统计信息 -->
-      <div class="timeline-stats">
-        <div class="timeline-stat-item">
-          <span class="timeline-stat-label">已专注</span>
-          <span class="timeline-stat-value">{{ accumulatedMinutes }}分钟</span>
-        </div>
-        <div class="timeline-stat-item">
-          <span class="timeline-stat-label">目标</span>
-          <span class="timeline-stat-value">{{ targetMinutes }}分钟</span>
-        </div>
-        <div v-if="pauseCount > 0" class="timeline-stat-item">
-          <span class="timeline-stat-label">暂停</span>
-          <span class="timeline-stat-value">{{ pauseCount }}次</span>
-        </div>
+      <!-- 已专注统计 -->
+      <div class="timeline-focused-time">
+        <span class="timeline-focused-label">已专注</span>
+        <span class="timeline-focused-value">{{ accumulatedMinutes }}分钟</span>
       </div>
     </div>
 
@@ -543,29 +533,23 @@ const endPomodoro = async () => {
   transition: left 1s linear;
 }
 
-// 时间线统计信息
-.timeline-stats {
+// 已专注时间显示
+.timeline-focused-time {
   display: flex;
-  justify-content: center;
-  gap: 24px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--b3-border-color);
 }
 
-.timeline-stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.timeline-stat-label {
+.timeline-focused-label {
   font-size: 11px;
   color: var(--b3-theme-on-surface);
 }
 
-.timeline-stat-value {
+.timeline-focused-value {
   font-size: 13px;
   font-weight: 500;
   color: var(--b3-theme-on-background);
