@@ -1,7 +1,7 @@
 <template>
   <div class="pomodoro-active-timer">
     <div class="timer-header">
-      <span class="timer-icon">⏱️</span>
+      <TomatoIcon :width="20" :height="20" class="timer-icon" />
       <span class="timer-title">{{ isPaused ? '已暂停' : '专注中' }}</span>
     </div>
 
@@ -34,7 +34,7 @@
     <!-- 专注时间线 -->
     <div class="pomodoro-timeline">
       <div class="timeline-header">
-        <span class="timeline-label">专注时段</span>
+        <span class="timeline-label">番茄计时</span>
         <span class="timeline-duration">目标：{{ targetMinutes }}分钟</span>
       </div>
       <div class="timeline-track">
@@ -193,6 +193,7 @@ import { usePomodoroStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import type { Item } from '@/types/models';
+import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
