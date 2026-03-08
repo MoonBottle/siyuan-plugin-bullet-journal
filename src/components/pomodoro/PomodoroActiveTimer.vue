@@ -46,7 +46,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { usePomodoroStore } from '@/stores';
+import { usePlugin } from '@/main';
 
+const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
 
 // 圆周长
@@ -80,14 +82,14 @@ const strokeDashoffset = computed(() => {
 // 结束专注
 const endPomodoro = async () => {
   if (confirm('确定要结束专注吗？这将删除当前的番茄钟记录。')) {
-    await pomodoroStore.endPomodoroEarly();
+    await pomodoroStore.endPomodoroEarly(plugin);
   }
 };
 
 // 取消专注
 const cancelPomodoro = async () => {
   if (confirm('确定要取消专注吗？这将删除当前的番茄钟记录。')) {
-    await pomodoroStore.cancelPomodoro();
+    await pomodoroStore.cancelPomodoro(plugin);
   }
 };
 </script>

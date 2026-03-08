@@ -39,7 +39,6 @@ import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
 import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { showMessage } from '@/utils/dialog';
-import { getBlockAttrs } from '@/api';
 import { requestNotificationPermission } from '@/utils/notification';
 
 const plugin = usePlugin() as any;
@@ -119,23 +118,10 @@ let refreshChannel: BroadcastChannel | null = null;
 const restorePomodoroState = async () => {
   if (!plugin) return;
 
-  // 遍历所有番茄钟记录，查找正在进行的
-  const allPomodoros = projectStore.getAllPomodoros('');
-  const runningPomodoro = allPomodoros.find(p => p.status === 'running');
-
-  if (runningPomodoro && runningPomodoro.blockId) {
-    try {
-      // 获取块属性
-      const attrs = await getBlockAttrs(runningPomodoro.blockId);
-      if (attrs && attrs['custom-pomodoro-status'] === 'running') {
-        const restored = await pomodoroStore.restorePomodoro(runningPomodoro.blockId, attrs);
-        if (restored) {
-          showMessage(`已恢复专注：${attrs['custom-pomodoro-item-content'] || '未知事项'}`);
-        }
-      }
-    } catch (error) {
-      console.error('[PomodoroDock] 恢复专注状态失败:', error);
-    }
+  // 从文件读取进行中的番茄钟
+  const restored = await pomodoroStore.restorePomodoro(plugin);
+  if (!restored) {
+    console.log('[PomodoroDock] 没有进行中的番茄钟需要恢复');
   }
 };
 

@@ -91,6 +91,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useProjectStore, usePomodoroStore } from '@/stores';
+import { usePlugin } from '@/main';
 import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 
@@ -98,6 +99,7 @@ const props = defineProps<{
   closeDialog: () => void;
 }>();
 
+const plugin = usePlugin() as any;
 const projectStore = useProjectStore();
 const pomodoroStore = usePomodoroStore();
 
@@ -166,7 +168,8 @@ const startPomodoro = async () => {
   const success = await pomodoroStore.startPomodoro(
     selectedItem.value,
     selectedDuration.value,
-    parentBlockId
+    parentBlockId,
+    plugin
   );
 
   if (success) {

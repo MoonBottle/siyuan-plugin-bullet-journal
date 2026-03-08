@@ -1,11 +1,17 @@
 /**
  * 番茄钟专注状态管理
+ * 使用文件存储进行中的番茄钟信息
  */
 import { defineStore } from 'pinia';
-import type { ActivePomodoro, Item } from '@/types/models';
-import { appendBlock, setBlockAttrs, updateBlock, deleteBlock, getBlockAttrs } from '@/api';
+import type { ActivePomodoro, ActivePomodoroData, Item } from '@/types/models';
+import { appendBlock } from '@/api';
 import { showMessage } from '@/utils/dialog';
 import { showPomodoroCompleteNotification } from '@/utils/notification';
+import {
+  saveActivePomodoro,
+  loadActivePomodoro,
+  removeActivePomodoro
+} from '@/utils/pomodoroStorage';
 import dayjs from '@/utils/dayjs';
 
 interface PomodoroState {
@@ -33,47 +39,39 @@ export const usePomodoroStore = defineStore('pomodoro', {
      * @param item 选中的事项
      * @param durationMinutes 专注时长（分钟）
      * @param parentBlockId 父块ID（事项块ID）
+     * @param plugin 思源插件实例
      */
-    async startPomodoro(item: Item, durationMinutes: number, parentBlockId: string): Promise<boolean> {
+    async startPomodoro(
+      item: Item,
+      durationMinutes: number,
+      parentBlockId: string,
+      plugin: any
+    ): Promise<boolean> {
       try {
         const now = dayjs();
-        const dateStr = now.format('YYYY-MM-DD');
-        const timeStr = now.format('HH:mm:ss');
         const startTimestamp = now.valueOf();
 
-        // 创建番茄钟块内容
-        const pomodoroContent = `🍅${dateStr} ${timeStr}`;
-
-        // 调用思源 API 在事项下添加子块
-        const result = await appendBlock('markdown', pomodoroContent, parentBlockId);
-
-        if (!result || result.length === 0) {
-          showMessage('创建番茄钟失败', 'error');
-          return false;
-        }
-
-        const blockId = result[0].doOperations[0]?.id;
-        if (!blockId) {
-          showMessage('获取番茄钟块ID失败', 'error');
-          return false;
-        }
-
-        // 设置块属性
-        await setBlockAttrs(blockId, {
-          'custom-pomodoro-status': 'running',
-          'custom-pomodoro-start': String(startTimestamp),
-          'custom-pomodoro-duration': String(durationMinutes),
-          'custom-pomodoro-item-id': item.id,
-          'custom-pomodoro-item-content': item.content
-        });
-
-        // 设置当前专注状态
-        this.activePomodoro = {
-          blockId,
+        // 构建番茄钟数据
+        const pomodoroData: ActivePomodoroData = {
+          blockId: parentBlockId,
           itemId: item.id,
           itemContent: item.content,
           startTime: startTimestamp,
           durationMinutes,
+          projectId: item.project?.id,
+          taskId: item.task?.id
+        };
+
+        // 保存到文件
+        const saved = await saveActivePomodoro(plugin, pomodoroData);
+        if (!saved) {
+          showMessage('保存专注状态失败', 'error');
+          return false;
+        }
+
+        // 设置当前专注状态
+        this.activePomodoro = {
+          ...pomodoroData,
           remainingSeconds: durationMinutes * 60
         };
 
@@ -123,8 +121,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
     /**
      * 完成专注
+     * @param plugin 思源插件实例
      */
-    async completePomodoro(): Promise<boolean> {
+    async completePomodoro(plugin?: any): Promise<boolean> {
       if (!this.activePomodoro) return false;
 
       try {
@@ -134,14 +133,14 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const endTimeStr = now.format('HH:mm:ss');
         const startTimeStr = dayjs(startTime).format('HH:mm:ss');
 
-        // 更新块内容为完整格式（包含结束时间）
-        const updatedContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
-        await updateBlock('markdown', updatedContent, blockId);
+        // 在文档中创建完整的番茄钟块
+        const pomodoroContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
+        await appendBlock('markdown', pomodoroContent, blockId);
 
-        // 更新块属性为已完成
-        await setBlockAttrs(blockId, {
-          'custom-pomodoro-status': 'completed'
-        });
+        // 删除文件中的进行中的番茄钟记录
+        if (plugin) {
+          await removeActivePomodoro(plugin);
+        }
 
         // 播放提示音
         this.playNotificationSound();
@@ -175,16 +174,17 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
-     * 取消专注（删除番茄钟块）
+     * 取消专注
+     * @param plugin 思源插件实例
      */
-    async cancelPomodoro(): Promise<boolean> {
+    async cancelPomodoro(plugin?: any): Promise<boolean> {
       if (!this.activePomodoro) return false;
 
       try {
-        const { blockId } = this.activePomodoro;
-
-        // 删除番茄钟块
-        await deleteBlock(blockId);
+        // 删除文件中的进行中的番茄钟记录
+        if (plugin) {
+          await removeActivePomodoro(plugin);
+        }
 
         // 清理状态
         this.stopTimer();
@@ -200,51 +200,40 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
-     * 提前结束专注（与取消相同，删除块）
+     * 提前结束专注（与取消相同）
+     * @param plugin 思源插件实例
      */
-    async endPomodoroEarly(): Promise<boolean> {
-      return this.cancelPomodoro();
+    async endPomodoroEarly(plugin?: any): Promise<boolean> {
+      return this.cancelPomodoro(plugin);
     },
 
     /**
-     * 从块属性恢复专注状态
-     * @param blockId 番茄钟块ID
-     * @param attrs 块属性
+     * 从文件恢复专注状态
+     * @param plugin 思源插件实例
      */
-    async restorePomodoro(blockId: string, attrs: { [key: string]: string }): Promise<boolean> {
+    async restorePomodoro(plugin: any): Promise<boolean> {
       try {
-        const status = attrs['custom-pomodoro-status'];
-        if (status !== 'running') return false;
-
-        const startTimestamp = parseInt(attrs['custom-pomodoro-start'], 10);
-        const durationMinutes = parseInt(attrs['custom-pomodoro-duration'], 10);
-        const itemId = attrs['custom-pomodoro-item-id'];
-        const itemContent = attrs['custom-pomodoro-item-content'];
-
-        if (!startTimestamp || !durationMinutes || !itemId) {
-          console.warn('[Pomodoro] 块属性不完整，无法恢复专注状态');
+        // 从文件读取进行中的番茄钟
+        const data = await loadActivePomodoro(plugin);
+        if (!data) {
           return false;
         }
 
         // 计算剩余时间
-        const elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
-        const totalSeconds = durationMinutes * 60;
+        const elapsedSeconds = Math.floor((Date.now() - data.startTime) / 1000);
+        const totalSeconds = data.durationMinutes * 60;
         const remainingSeconds = totalSeconds - elapsedSeconds;
 
         if (remainingSeconds <= 0) {
           // 已经过期，自动标记为完成
           console.log('[Pomodoro] 专注已过期，自动标记为完成');
-          await this.markExpiredPomodoroComplete(blockId, startTimestamp, durationMinutes);
+          await this.markExpiredPomodoroComplete(data, plugin);
           return false;
         }
 
         // 恢复专注状态
         this.activePomodoro = {
-          blockId,
-          itemId,
-          itemContent: itemContent || '未知事项',
-          startTime: startTimestamp,
-          durationMinutes,
+          ...data,
           remainingSeconds
         };
 
@@ -252,6 +241,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         this.startTimer();
 
         console.log('[Pomodoro] 专注状态已恢复，剩余时间:', remainingSeconds, '秒');
+        showMessage(`已恢复专注：${data.itemContent}`);
         return true;
       } catch (error) {
         console.error('[Pomodoro] 恢复专注状态失败:', error);
@@ -261,27 +251,30 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
     /**
      * 标记过期的番茄钟为完成
+     * @param data 番茄钟数据
+     * @param plugin 思源插件实例
      */
     async markExpiredPomodoroComplete(
-      blockId: string,
-      startTimestamp: number,
-      durationMinutes: number
+      data: ActivePomodoroData,
+      plugin?: any
     ): Promise<void> {
       try {
-        const startTime = dayjs(startTimestamp);
-        const endTime = startTime.add(durationMinutes, 'minute');
+        const startTime = dayjs(data.startTime);
+        const endTime = startTime.add(data.durationMinutes, 'minute');
         const dateStr = startTime.format('YYYY-MM-DD');
         const startTimeStr = startTime.format('HH:mm:ss');
         const endTimeStr = endTime.format('HH:mm:ss');
 
-        // 更新块内容
-        const updatedContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
-        await updateBlock('markdown', updatedContent, blockId);
+        // 在文档中创建完整的番茄钟块
+        const pomodoroContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
+        await appendBlock('markdown', pomodoroContent, data.blockId);
 
-        // 更新块属性
-        await setBlockAttrs(blockId, {
-          'custom-pomodoro-status': 'completed'
-        });
+        // 删除文件
+        if (plugin) {
+          await removeActivePomodoro(plugin);
+        }
+
+        showMessage(`专注已自动完成：${data.itemContent}`);
       } catch (error) {
         console.error('[Pomodoro] 标记过期番茄钟失败:', error);
       }

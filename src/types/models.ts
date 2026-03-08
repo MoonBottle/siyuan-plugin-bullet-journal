@@ -28,14 +28,20 @@ export interface PomodoroRecord {
   itemContent?: string;    // 关联事项内容（新增）
 }
 
-// 当前专注状态
-export interface ActivePomodoro {
-  blockId: string;         // 番茄钟块 ID
-  itemId: string;          // 关联事项 ID
-  itemContent: string;     // 关联事项内容
+// 进行中的番茄钟数据（用于文件存储）
+export interface ActivePomodoroData {
+  blockId: string;         // 事项块ID（完成时在此块下添加番茄钟）
+  itemId: string;          // 事项ID
+  itemContent: string;     // 事项内容
   startTime: number;       // 开始时间戳（毫秒）
   durationMinutes: number; // 设定时长（分钟）
-  remainingSeconds: number;// 剩余秒数
+  projectId?: string;      // 项目ID（可选）
+  taskId?: string;         // 任务ID（可选）
+}
+
+// 当前专注状态（运行时，继承自 ActivePomodoroData）
+export interface ActivePomodoro extends ActivePomodoroData {
+  remainingSeconds: number;// 剩余秒数（运行时计算）
 }
 
 // 项目
