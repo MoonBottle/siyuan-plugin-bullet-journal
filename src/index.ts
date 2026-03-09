@@ -692,6 +692,11 @@ export default class HKWorkPlugin extends Plugin {
       this.showFloatingTomatoButton();
     });
 
+    // 监听番茄钟恢复事件（Dock 未打开时也需要显示悬浮按钮）
+    eventBus.on(Events.POMODORO_RESTORE, () => {
+      this.showFloatingTomatoButton();
+    });
+
     eventBus.on(Events.POMODORO_COMPLETED, () => {
       this.hideFloatingTomatoButton();
     });
