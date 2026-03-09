@@ -19,8 +19,9 @@ import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import type { Item } from '@/types/models';
 import { t, getCurrentLocale } from '@/i18n';
-import { useSettingsStore, useProjectStore } from '@/stores';
+import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
+import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 
 // 格式化时间显示
@@ -40,8 +41,13 @@ const renderEventContent = (arg: any) => {
   const taskName = arg.event.extendedProps?.task;
   const status = arg.event.extendedProps?.itemStatus;
   const date = arg.event.extendedProps?.date;
+  const blockId = arg.event.extendedProps?.blockId;
 
-  const getStatusEmoji = (itemStatus: string | undefined, itemDate: string | undefined): string => {
+  const getStatusEmoji = (itemStatus: string | undefined, itemDate: string | undefined, itemBlockId: string | undefined): string => {
+    // 如果是专注中的事项，显示番茄图标
+    if (pomodoroStore.activePomodoro?.blockId && itemBlockId === pomodoroStore.activePomodoro.blockId) {
+      return '🍅 ';
+    }
     // 判断是否过期（待办状态且日期早于今天）
     const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
     if (isExpired) return '⚠️ ';
@@ -50,7 +56,7 @@ const renderEventContent = (arg: any) => {
     return '⏳ ';
   };
 
-  const statusEmoji = getStatusEmoji(status, date);
+  const statusEmoji = getStatusEmoji(status, date, blockId);
 
   const isItem = arg.event.extendedProps?.item !== undefined;
 
@@ -99,6 +105,7 @@ let pendingNavigateDate: string | null = null;
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+const pomodoroStore = usePomodoroStore();
 const plugin = usePlugin();
 
 // 根据状态获取标签（使用 i18n）
@@ -343,7 +350,39 @@ onMounted(async () => {
   }
 });
 
+// 恢复番茄钟状态
+const restorePomodoroState = async () => {
+  if (!plugin) return;
+  if (pomodoroStore.isFocusing) return;
+
+  const restored = await pomodoroStore.restorePomodoro(plugin);
+  if (restored) {
+    console.log('[CalendarView] 番茄钟状态已恢复');
+    // 刷新日历以更新 emoji
+    updateEvents();
+  }
+};
+
+// 监听番茄钟恢复事件
+let unsubscribePomodoroRestore: (() => void) | null = null;
+
+onMounted(async () => {
+  // 恢复番茄钟状态
+  await restorePomodoroState();
+
+  // 监听番茄钟恢复事件
+  unsubscribePomodoroRestore = eventBus.on(Events.POMODORO_RESTORE, async () => {
+    if (!pomodoroStore.isFocusing && plugin) {
+      await pomodoroStore.restorePomodoro(plugin);
+      updateEvents();
+    }
+  });
+});
+
 onUnmounted(() => {
+  if (unsubscribePomodoroRestore) {
+    unsubscribePomodoroRestore();
+  }
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
