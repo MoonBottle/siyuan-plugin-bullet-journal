@@ -73,7 +73,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 保存到文件
         const saved = await saveActivePomodoro(plugin, pomodoroData);
         if (!saved) {
-          showMessage('保存专注状态失败', 'error');
+          showMessage('❌ 保存专注状态失败', 'error');
           return false;
         }
 
@@ -89,11 +89,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 触发专注开始事件
         eventBus.emit(Events.POMODORO_STARTED);
 
-        showMessage(`开始专注：${item.content}（${durationMinutes}分钟）`);
+        showMessage(`🍅 开始专注「${item.content}」· ${durationMinutes}分钟`);
         return true;
       } catch (error) {
         console.error('[Pomodoro] 开始专注失败:', error);
-        showMessage('开始专注失败', 'error');
+        showMessage('❌ 开始专注失败', 'error');
         return false;
       }
     },
@@ -119,11 +119,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
           await saveActivePomodoro(plugin, this.activePomodoro);
         }
 
-        showMessage(`已暂停（第${this.activePomodoro.pauseCount}次）`);
+        showMessage(`⏸️ 已暂停 · 第 ${this.activePomodoro.pauseCount} 次`);
         return true;
       } catch (error) {
         console.error('[Pomodoro] 暂停专注失败:', error);
-        showMessage('暂停专注失败', 'error');
+        showMessage('❌ 暂停专注失败', 'error');
         return false;
       }
     },
@@ -156,11 +156,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
           await saveActivePomodoro(plugin, this.activePomodoro);
         }
 
-        showMessage('继续专注');
+        showMessage('▶️ 继续专注');
         return true;
       } catch (error) {
         console.error('[Pomodoro] 继续专注失败:', error);
-        showMessage('继续专注失败', 'error');
+        showMessage('❌ 继续专注失败', 'error');
         return false;
       }
     },
@@ -267,7 +267,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         });
 
         // 同时显示思源内部通知（作为备份）
-        showMessage(`专注完成：${itemContent}（实际专注${actualMinutes}分钟）`);
+        showMessage(`✅ 专注完成「${itemContent}」· 实际专注 ${actualMinutes} 分钟`);
 
         // 清理状态
         this.stopTimer();
@@ -279,7 +279,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         return true;
       } catch (error) {
         console.error('[Pomodoro] 完成专注失败:', error);
-        showMessage('完成专注失败', 'error');
+        showMessage('❌ 完成专注失败', 'error');
         return false;
       }
     },
@@ -304,7 +304,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 触发专注取消事件
         eventBus.emit(Events.POMODORO_CANCELLED);
 
-        showMessage('已取消专注');
+        showMessage('❌ 已取消专注');
         return true;
       } catch (error) {
         console.error('[Pomodoro] 取消专注失败:', error);
@@ -368,10 +368,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (!data.isPaused) {
           this.startTimer();
           console.log('[Pomodoro] 专注状态已恢复，剩余时间:', remainingSeconds, '秒');
-          showMessage(`已恢复专注：${data.itemContent}`);
+          showMessage(`🔄 已恢复专注「${data.itemContent}」`);
         } else {
           console.log('[Pomodoro] 专注状态已恢复（暂停中），已专注:', effectiveAccumulatedSeconds, '秒');
-          showMessage(`已恢复专注（暂停中）：${data.itemContent}，第${data.pauseCount}次暂停`);
+          showMessage(`⏸️ 继续专注「${data.itemContent}」· 第 ${data.pauseCount} 次暂停`);
         }
 
         // 触发专注开始事件（恢复状态也触发，以便悬浮按钮显示）

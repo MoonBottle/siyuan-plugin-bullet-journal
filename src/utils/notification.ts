@@ -116,8 +116,8 @@ export function showPomodoroCompleteNotification(
   durationMinutes: number,
   onClick?: () => void
 ): Notification | null {
-  const title = '专注完成 🎉';
-  const body = `已完成：${itemContent}（${durationMinutes}分钟）`;
+  const title = '🎉 专注完成！';
+  const body = `「${itemContent}」专注了 ${durationMinutes} 分钟`;
 
   return showSystemNotification(title, body, {
     tag: 'pomodoro-complete',
