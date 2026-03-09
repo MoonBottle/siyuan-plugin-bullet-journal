@@ -83,9 +83,10 @@ export function createItemMenu(
   },
   options: {
     showCalendarMenu?: boolean;
+    isFocusing?: boolean;
   } = {}
 ): MenuOptions {
-  const { showCalendarMenu = true } = options;
+  const { showCalendarMenu = true, isFocusing = false } = options;
   const isPending = item.status !== 'completed' && item.status !== 'abandoned';
 
   const items: MenuItem[] = [];
@@ -97,11 +98,13 @@ export function createItemMenu(
       click: handlers.onComplete
     });
 
-    items.push({
-      label: '开始专注',
-      icon: 'iconFocus',
-      click: handlers.onStartPomodoro
-    });
+    if (!isFocusing) {
+      items.push({
+        label: '开始专注',
+        icon: 'iconFocus',
+        click: handlers.onStartPomodoro
+      });
+    }
 
     items.push({
       label: t('todo').migrate,

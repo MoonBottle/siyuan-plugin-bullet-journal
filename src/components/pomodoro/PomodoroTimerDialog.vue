@@ -102,7 +102,7 @@ import { useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
-import { TAB_TYPES } from '@/constants';
+import { DOCK_TYPES } from '@/constants';
 
 const props = defineProps<{
   closeDialog: () => void;
@@ -186,8 +186,9 @@ const startPomodoro = async () => {
   if (success) {
     props.closeDialog();
     // 自动切换到番茄 Dock
-    if (plugin && plugin.openCustomTab) {
-      plugin.openCustomTab(TAB_TYPES.POMODORO);
+    const rightDock = (window as any).siyuan?.layout?.rightDock;
+    if (rightDock) {
+      rightDock.toggleModel(`${plugin.name}${DOCK_TYPES.POMODORO}`, true);
     }
   }
 };

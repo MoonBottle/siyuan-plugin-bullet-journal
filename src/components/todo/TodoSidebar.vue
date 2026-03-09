@@ -39,6 +39,7 @@
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
+                    v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     aria-label="开始专注"
                     @click.stop="openPomodoroDialog(item)"
@@ -104,6 +105,7 @@
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
+                    v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     aria-label="开始专注"
                     @click.stop="openPomodoroDialog(item)"
@@ -169,6 +171,7 @@
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
+                    v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     aria-label="开始专注"
                     @click.stop="openPomodoroDialog(item)"
@@ -241,6 +244,7 @@
                         <svg><use xlink:href="#iconCheck"></use></svg>
                       </span>
                       <span
+                        v-if="!pomodoroStore.isFocusing"
                         class="block__icon b3-tooltips b3-tooltips__sw"
                         aria-label="开始专注"
                         @click.stop="openPomodoroDialog(item)"
@@ -357,7 +361,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useSettingsStore, useProjectStore } from '@/stores';
+import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
@@ -385,6 +389,7 @@ const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' })
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+const pomodoroStore = usePomodoroStore();
 const plugin = usePlugin();
 
 // 从 store 获取当前日期，确保日期变化时 computed 会重新计算
@@ -664,7 +669,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       onShowDetail: () => openDetail(item),
       onShowCalendar: () => openCalendar(item)
     },
-    { showCalendarMenu: true }
+    { showCalendarMenu: true, isFocusing: pomodoroStore.isFocusing }
   );
 
   menuOptions.x = event.clientX;
