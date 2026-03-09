@@ -69,7 +69,7 @@ const getOrCreateGanttTooltip = (): HTMLElement => {
     });
     el.addEventListener('mouseout', (e: Event) => {
       const related = (e as MouseEvent).relatedTarget as HTMLElement;
-      if (!related?.closest('.gantt-task-text')) hideGanttTooltip();
+      if (!related?.closest('.gantt_task_line')) hideGanttTooltip();
     });
     document.body.appendChild(el);
   }
@@ -110,10 +110,11 @@ const hideGanttTooltip = () => {
 };
 
 const handleGanttTooltipMouseOver = (e: MouseEvent) => {
-  const target = (e.target as HTMLElement).closest('.gantt-task-text');
-  if (target) {
-    const text = (target as HTMLElement).getAttribute('data-gantt-tooltip');
-    if (text) showGanttTooltip(text, target as HTMLElement);
+  const bar = (e.target as HTMLElement).closest('.gantt_task_line');
+  if (bar) {
+    const textEl = bar.querySelector('.gantt-task-text');
+    const text = textEl?.getAttribute('data-gantt-tooltip');
+    if (text) showGanttTooltip(text, bar as HTMLElement);
   } else {
     hideGanttTooltip();
   }
@@ -121,7 +122,7 @@ const handleGanttTooltipMouseOver = (e: MouseEvent) => {
 
 const handleGanttTooltipMouseOut = (e: MouseEvent) => {
   const related = e.relatedTarget as HTMLElement;
-  if (related?.closest(`#${GANTT_TOOLTIP_ID}`) || related?.closest('.gantt-task-text')) return;
+  if (related?.closest(`#${GANTT_TOOLTIP_ID}`) || related?.closest('.gantt_task_line')) return;
   hideGanttTooltip();
 };
 

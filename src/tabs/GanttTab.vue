@@ -4,7 +4,7 @@
       <!-- 左侧：甘特图控件 -->
       <label class="show-items">
         <input type="checkbox" v-model="showItems" />
-        显示工作事项
+        {{ t('gantt').showItems }}
       </label>
       <div class="date-filter">
         <span>日期筛选:</span>
@@ -170,7 +170,7 @@ const handleRefresh = async () => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 4px 12px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--b3-border-color);
   background: var(--b3-theme-surface);
 
@@ -184,6 +184,7 @@ const handleRefresh = async () => {
     gap: 4px;
     cursor: pointer;
     font-size: 12px;
+    min-height: 28px;
   }
 
   .date-filter {
@@ -193,7 +194,7 @@ const handleRefresh = async () => {
     font-size: 12px;
 
     input[type='date'] {
-      padding: 2px 6px;
+      padding: 5px 10px;
       border: 1px solid var(--b3-border-color);
       border-radius: var(--b3-border-radius);
       background: var(--b3-theme-background);
@@ -207,7 +208,7 @@ const handleRefresh = async () => {
   }
 
   .view-mode-btn {
-    padding: 2px 10px;
+    padding: 5px 12px;
     border: 1px solid var(--b3-border-color);
     background: var(--b3-theme-background);
     color: var(--b3-theme-on-surface);

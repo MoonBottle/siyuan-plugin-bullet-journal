@@ -51,7 +51,7 @@
   "gantt": {
     "title": "Gantt Chart",
     "showItems": "Show Items",
-    "showWorkItems": "Show work items",
+    "showWorkItems": "Show items",
     "dateFilter": "Date filter",
     "start": "Start",
     "end": "End",
@@ -61,8 +61,8 @@
     "timeFilter": "Time Filter",
     "to": "to",
     "taskName": "Task Name",
-    "startTime": "Start Time",
-    "endTime": "End Time"
+    "startTime": "Start Date",
+    "endTime": "End Date"
   },
   "project": {
     "title": "Projects",
