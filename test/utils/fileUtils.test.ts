@@ -599,7 +599,7 @@ describe('updateBlockContent', () => {
     );
   });
 
-  it('内容子块无 [ ] 时从父块解析出含 [ ] 的事项块 kramdown', async () => {
+  it('内容子块无 [ ] 时从父块解析出含 [ ] 的事项块 kramdown，应更新父块', async () => {
     mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
     mockGetBlockKramdown.mockImplementation((id: string) => {
       if (id === 'parent-block-1') {
@@ -621,10 +621,10 @@ describe('updateBlockContent', () => {
     expect(mockGetBlockKramdown).toHaveBeenCalledWith('parent-block-1');
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `[x] 事项列表未完成事项内容 @2026-03-08
+      `- {: id="parent-block-1"}[x] 事项列表未完成事项内容 @2026-03-08
   🍅2026-03-08 15:45:32~15:45:36 哈哈哈
   {: id="block-1"}`,
-      'block-1'
+      'parent-block-1'
     );
   });
 

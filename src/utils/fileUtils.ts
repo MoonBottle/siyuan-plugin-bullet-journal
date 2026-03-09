@@ -596,6 +596,9 @@ export async function updateBlockContent(
   try {
     // 统一先查父块：若父块 kramdown 中含 blockId 对应块且该块事项行有 [ ]/[x]，则用解析出的事项块 kramdown
     let kramdown: string | null = null;
+    let usedParentKramdown = false;
+    let parentKramdown: string | null = null;
+    let itemBlockRawForReplace: string | null = null;
     const block = await getBlockByID(blockId);
     if (block?.parent_id) {
       const parentResult = await getBlockKramdown(block.parent_id);
@@ -611,6 +614,9 @@ export async function updateBlockContent(
             if (trimmed.includes('@') && /\d{4}-\d{2}-\d{2}/.test(trimmed)) {
               if (isTaskListFormat(trimmed)) {
                 kramdown = itemBlock.raw;
+                usedParentKramdown = true;
+                parentKramdown = parentResult.kramdown;
+                itemBlockRawForReplace = itemBlock.raw;
               }
               break;
             }
@@ -667,14 +673,15 @@ export async function updateBlockContent(
           // 根据状态决定标记
           const newMarker = (suffix === '#done' || suffix === '#已完成') ? '[x] ' : '[ ] ';
           console.log('[Task Assistant] updateBlockContent - newMarker:', newMarker);
-          // 去除原任务列表标记后的内容
-          const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
-          console.log('[Task Assistant] updateBlockContent - contentWithoutMarker:', contentWithoutMarker);
-          // 使用 stripListAndBlockAttr 去除列表标记、块属性
-          const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
-          console.log('[Task Assistant] updateBlockContent - cleanedContent:', cleanedContent);
-          // 重新拼接：新任务列表标记 + 清理后的内容（不添加状态标签）
-          lines[itemLineIndex] = `${newMarker}${cleanedContent}`.trim();
+          if (usedParentKramdown) {
+            // 更新父块时保留完整列表项格式（- 和块属性），仅替换任务标记
+            lines[itemLineIndex] = itemLine.replace(taskListMatch[0], newMarker);
+          } else {
+            // 更新内容子块时 strip 后拼接
+            const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
+            const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+            lines[itemLineIndex] = `${newMarker}${cleanedContent}`.trim();
+          }
           console.log('[Task Assistant] updateBlockContent - new line:', lines[itemLineIndex]);
         } else {
           // 如果匹配失败，使用原来的方式
@@ -709,25 +716,35 @@ export async function updateBlockContent(
         lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
       }
 
-      // 回写整个块
-      const newContent = lines.join('\n');
+      // 回写整个块（父块解析时更新父块，否则更新当前块）
+      let newContent = lines.join('\n');
+      let targetBlockId = blockId;
+      if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
+        newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
+        targetBlockId = block!.parent_id!;
+      }
       console.log('[Task Assistant] updateBlockContent - updateBlock 调用:', {
-        blockId,
+        targetBlockId,
         newContent: JSON.stringify(newContent),
         newContentPreview: newContent.substring(0, 200) + (newContent.length > 200 ? '...' : '')
       });
-      await updateBlock('markdown', newContent, blockId);
+      await updateBlock('markdown', newContent, targetBlockId);
       return true;
     }
 
     // 降级：如果没有找到事项行，使用原来的方式
     let content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
-    const newContent = `${content} ${suffix}`;
+    let newContent = `${content} ${suffix}`;
+    let targetBlockId = blockId;
+    if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
+      newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
+      targetBlockId = block!.parent_id!;
+    }
     console.log('[Task Assistant] updateBlockContent - updateBlock 调用(降级):', {
-      blockId,
+      targetBlockId,
       newContent: JSON.stringify(newContent)
     });
-    await updateBlock('markdown', newContent, blockId);
+    await updateBlock('markdown', newContent, targetBlockId);
 
     return true;
   } catch (error) {
