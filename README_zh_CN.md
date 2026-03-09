@@ -30,13 +30,20 @@
 - 🎯 **无侵入式** - 文档即任务，只需要在笔记中添加标记，即可在视图中查看和管理任务
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
 
-## 核心工作流
+## 快速开始
 
 **用标记书写笔记，然后在视图中查看。**
 
+1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
+2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
+3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
+4. **查看视图** - 通过日历、甘特图、项目列表或待办 Dock 查看任务
+
+详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
+
 ### 1. 在笔记中书写标记
 
-在任意文档中输入以下内容：
+新建文档，输入以下内容：
 
 ```markdown
 ## 项目名称
@@ -49,13 +56,13 @@
 
 [任务详情](http://doc.example.com)
 
-事项A @2026-02-28
+事项A @2026-03-09
 
 [事项详情](http://doc.example.com)
 
-事项B @2026-03-01 10:00:00~12:00:00 #已完成
+事项B @2026-03-09 10:00:00~12:00:00 #已完成
 
-事项C @2026-03-01 10:00:00~12:00:00 #已放弃
+事项C @2026-03-08 10:00:00~12:00:00 #已放弃
 ```
 
 **标记说明：**
@@ -64,8 +71,6 @@
 - `@L1/@L2/@L3` - 任务层级，可选标记，默认层级为 L1
 - `@YYYY-MM-DD` - 事项日期，必选，带日期的行会被识别为事项
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围，与事项日期二选一，用于表示任务的具体时间范围
-
-![笔记标记示例](https://b3logfile.com/file/2026/02/siyuan/1646651772150/assets/network-asset-note-20260228164606-ihf968l.png?imageView2/2/interlace/1/format/webp)
 
 ### 2. 在视图中查看
 
@@ -94,15 +99,6 @@
 1. 从 [GitHub Release](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/releases) 下载 `package.zip`
 2. 解压到思源数据目录 `data/plugins/siyuan-plugin-bullet-journal`
 3. 在设置中启用插件
-
-## 快速开始
-
-1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
-2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
-3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
-4. **查看视图** - 通过日历、甘特图、项目列表或待办 Dock 查看任务
-
-详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
 ## MCP（Model Context Protocol）
 
