@@ -11,7 +11,7 @@
       />
       <!-- 刷新按钮 -->
       <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
+        class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
         :aria-label="projectStore.loading ? '加载中...' : '刷新'"
         @click="handleRefresh"
       >
@@ -138,6 +138,10 @@ const handleRefresh = async () => {
     min-width: 60px;
     margin-left: 8px;
     padding: 4px 24px 4px 8px;
+  }
+
+  .refresh-btn {
+    margin-left: 6px;
   }
 }
 

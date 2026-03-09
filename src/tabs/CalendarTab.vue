@@ -33,7 +33,7 @@
         :placeholder="t('settings').projectGroups.allGroups"
       />
       <!-- 刷新按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
+      <span class="block__icon refresh-btn b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
     </div>
@@ -353,6 +353,10 @@ watch(currentView, (newView) => {
     min-width: 60px;
     margin-left: 8px;
     padding: 4px 24px 4px 8px;
+  }
+
+  .refresh-btn {
+    margin-left: 6px;
   }
 }
 
