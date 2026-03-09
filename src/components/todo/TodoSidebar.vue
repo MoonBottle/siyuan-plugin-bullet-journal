@@ -360,7 +360,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
@@ -373,10 +373,17 @@ import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
+import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
+  // 如果是专注中的事项，显示番茄图标（用 blockId 匹配）
+  console.log('[getStatusEmoji] item.blockId:', item.blockId, 'activePomodoro:', JSON.stringify(pomodoroStore.activePomodoro));
+  if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
+    console.log('[getStatusEmoji] 匹配成功，返回🍅');
+    return '🍅 ';
+  }
   const todayStr = dayjs().format('YYYY-MM-DD');
   const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
   if (isExpired) return '⚠️ ';
@@ -676,6 +683,40 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
   menuOptions.y = event.clientY;
   showContextMenu(menuOptions);
 };
+
+// 恢复番茄钟状态
+const restorePomodoroState = async () => {
+  if (!plugin) return;
+  if (pomodoroStore.isFocusing) return; // 已经有专注状态，不需要恢复
+
+  console.log('[TodoSidebar] 尝试恢复番茄钟状态');
+  const restored = await pomodoroStore.restorePomodoro(plugin);
+  if (restored) {
+    console.log('[TodoSidebar] 番茄钟状态已恢复');
+  }
+};
+
+// 监听番茄钟恢复事件
+let unsubscribePomodoroRestore: (() => void) | null = null;
+
+onMounted(async () => {
+  // 恢复番茄钟状态
+  await restorePomodoroState();
+
+  // 监听番茄钟恢复事件（跨上下文）
+  unsubscribePomodoroRestore = eventBus.on(Events.POMODORO_RESTORE, async (data) => {
+    console.log('[TodoSidebar] 收到番茄钟恢复事件', data);
+    if (!pomodoroStore.isFocusing && plugin) {
+      await pomodoroStore.restorePomodoro(plugin);
+    }
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribePomodoroRestore) {
+    unsubscribePomodoroRestore();
+  }
+});
 </script>
 
 <style lang="scss" scoped>
