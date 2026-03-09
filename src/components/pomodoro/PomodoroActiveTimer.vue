@@ -127,12 +127,12 @@
       </div>
 
       <!-- 事项卡片 -->
-      <div class="info-card item-card">
+      <div class="info-card item-card clickable" @click="openItemDocument">
         <div class="info-card-header">
           <span class="info-card-label">事项</span>
           <button
             class="copy-btn"
-            @click="copyToClipboard(itemContent)"
+            @click.stop="copyToClipboard(itemContent)"
             :title="'复制'"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -151,7 +151,7 @@
             :href="link.url"
             target="_blank"
             class="link-tag"
-            @click.prevent="openLink(link.url)"
+            @click.prevent.stop="openLink(link.url)"
           >
             {{ link.name }}
           </a>
@@ -196,6 +196,7 @@ import type { Item } from '@/types/models';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
+import { openDocumentAtLine } from '@/utils/fileUtils';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -322,6 +323,15 @@ const resumePomodoro = async () => {
 const endPomodoro = async () => {
   if (confirm('确定要结束专注吗？这将保存当前的番茄钟记录。')) {
     await pomodoroStore.completePomodoro(plugin);
+  }
+};
+
+// 打开事项所在文档
+const openItemDocument = async () => {
+  if (!currentItem.value) return;
+  const { docId, lineNumber, blockId } = currentItem.value;
+  if (docId) {
+    await openDocumentAtLine(docId, lineNumber, blockId);
   }
 };
 </script>
@@ -563,6 +573,21 @@ const endPomodoro = async () => {
 
   &.item-card {
     border-left: 3px solid var(--b3-theme-success);
+  }
+
+  &.clickable {
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-surface);
+      border-color: var(--b3-theme-primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+      transform: scale(0.99);
+    }
   }
 }
 
