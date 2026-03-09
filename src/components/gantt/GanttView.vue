@@ -381,18 +381,21 @@ onMounted(() => {
   // 注释掉双击功能：禁用双击打开任务详情
   gantt.config.details_on_dblclick = false;
 
-  // 自定义任务条样式
+  // 自定义任务条样式 - 项目/任务/事项区分
   gantt.templates.task_class = function(_start, _end, task) {
-    if (task.type === 'project') {
-      return 'gantt-project';
-    }
+    if (task.type === 'project') return 'gantt-project';
+    if (String(task.id).startsWith('item-')) return 'gantt-item';
     return 'gantt-task';
   };
 
-  // 自定义任务文本 - 任务条用 on-primary，项目条用 on-secondary
+  // 自定义任务文本 - 项目/任务/事项对应文字颜色
   gantt.templates.task_text = function(_start, _end, task) {
     const escapedText = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const textColor = task.type === 'project' ? 'var(--b3-theme-on-secondary)' : 'var(--b3-theme-on-primary)';
+    const textColor = task.type === 'project'
+      ? 'var(--b3-theme-on-secondary)'
+      : String(task.id).startsWith('item-')
+        ? 'var(--b3-theme-on-success)'
+        : 'var(--b3-theme-on-primary)';
     return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="
       color: ${textColor};
       font-weight: 500;
@@ -508,6 +511,10 @@ const loadGanttStyles = () => {
     .gantt-project {
       background-color: var(--b3-theme-secondary) !important;
       border-color: var(--b3-theme-secondary) !important;
+    }
+    .gantt-item {
+      background-color: var(--b3-theme-success) !important;
+      border-color: var(--b3-theme-success) !important;
     }
     .gantt_task,
     .gantt_task_bg {
