@@ -504,6 +504,11 @@ const loadGanttStyles = () => {
     .gantt_tree_icon {
       color: var(--b3-theme-on-surface) !important;
     }
+    /* 任务条内文字垂直居中 */
+    .gantt_task_line > div {
+      display: flex !important;
+      align-items: center !important;
+    }
     .gantt-task {
       background-color: var(--b3-theme-primary) !important;
       border-color: var(--b3-theme-primary) !important;
