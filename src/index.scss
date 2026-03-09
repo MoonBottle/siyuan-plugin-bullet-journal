@@ -449,3 +449,63 @@
     }
   }
 }
+
+/* ============================================
+   悬浮番茄钟按钮样式
+   ============================================ */
+
+.floating-tomato-btn {
+  position: fixed !important;
+  right: 20px !important;
+  bottom: 20px !important;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2147483647;
+  transition: transform 0.2s, box-shadow 0.2s;
+  user-select: none;
+  pointer-events: auto;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &.dragging {
+    cursor: grabbing;
+    transition: none;
+  }
+
+  .tomato-icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+  }
+
+  .remaining-time {
+    font-size: 11px;
+    font-weight: 500;
+    font-family: monospace;
+    line-height: 1;
+  }
+}

@@ -64,6 +64,11 @@ export default class HKWorkPlugin extends Plugin {
   /** 刚通过「仅保存 AI」写入的时间戳，用于避免同一次点击触发 confirmCallback 时再次 putFile */
   private lastAISettingsSaveTime = 0;
 
+  /** 悬浮番茄按钮元素 */
+  private floatingTomatoEl: HTMLElement | null = null;
+  /** 悬浮按钮更新定时器 */
+  private floatingTomatoTimer: number | null = null;
+
   async onload() {
     const frontEnd = getFrontend();
     this.platform = frontEnd as SyFrontendTypes;
@@ -108,6 +113,9 @@ export default class HKWorkPlugin extends Plugin {
     // 监听文档树右键菜单事件
     console.log('[Task Assistant] Registering open-menu-doctree event listener');
     this.eventBus.on('open-menu-doctree', this.handleDocTreeMenu.bind(this));
+
+    // 初始化悬浮番茄按钮
+    this.initFloatingTomatoButton();
   }
 
   /**
@@ -121,6 +129,8 @@ export default class HKWorkPlugin extends Plugin {
     this.eventBus.off('open-menu-doctree', this.handleDocTreeMenu.bind(this));
     eventBus.clear();
     destroy();
+    // 清理悬浮番茄按钮
+    this.hideFloatingTomatoButton();
   }
 
   /**
@@ -637,5 +647,181 @@ export default class HKWorkPlugin extends Plugin {
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
     }, 1000);
+  }
+
+  // ============================================
+  // 悬浮番茄按钮相关方法
+  // ============================================
+
+  /**
+   * 初始化悬浮番茄按钮
+   * 检查是否有进行中的专注，如果有则显示按钮
+   * 注册事件监听
+   */
+  private initFloatingTomatoButton() {
+    // 监听专注状态变化（无论是否有进行中的专注都要监听）
+    eventBus.on(Events.POMODORO_STARTED, () => {
+      this.showFloatingTomatoButton();
+    });
+
+    eventBus.on(Events.POMODORO_COMPLETED, () => {
+      this.hideFloatingTomatoButton();
+    });
+
+    eventBus.on(Events.POMODORO_CANCELLED, () => {
+      this.hideFloatingTomatoButton();
+    });
+  }
+
+  /**
+   * 创建悬浮番茄按钮 DOM
+   */
+  private createFloatingTomatoButton(): HTMLElement {
+    const btn = document.createElement('div');
+    btn.className = 'floating-tomato-btn';
+    btn.innerHTML = `
+      <div class="tomato-icon">
+        <svg viewBox="0 0 24 24"><use xlink:href="#iconFocus"></use></svg>
+      </div>
+      <div class="remaining-time">--:--</div>
+    `;
+
+    // 点击打开番茄 Dock
+    btn.addEventListener('click', (e) => {
+      // 如果不是拖拽操作，则打开 Dock
+      if (!btn.classList.contains('dragging')) {
+        this.openCustomTab(TAB_TYPES.POMODORO);
+      }
+    });
+
+    // 添加拖拽功能
+    this.makeDraggable(btn);
+
+    return btn;
+  }
+
+  /**
+   * 使元素可拖拽
+   */
+  private makeDraggable(el: HTMLElement) {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialRight = 0;
+    let initialBottom = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      const rect = el.getBoundingClientRect();
+      const parentRect = el.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
+      initialRight = parentRect.right - rect.right;
+      initialBottom = parentRect.bottom - rect.bottom;
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        isDragging = true;
+        el.classList.add('dragging');
+      }
+
+      if (isDragging) {
+        const newRight = initialRight - dx;
+        const newBottom = initialBottom - dy;
+        
+        // 限制在视窗内
+        const maxRight = window.innerWidth - el.offsetWidth;
+        const maxBottom = window.innerHeight - el.offsetHeight;
+        
+        el.style.right = `${Math.max(0, Math.min(newRight, maxRight))}px`;
+        el.style.bottom = `${Math.max(0, Math.min(newBottom, maxBottom))}px`;
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      
+      setTimeout(() => {
+        el.classList.remove('dragging');
+      }, 100);
+    };
+
+    el.addEventListener('mousedown', onMouseDown);
+  }
+
+  /**
+   * 显示悬浮番茄按钮
+   */
+  private showFloatingTomatoButton() {
+    if (this.floatingTomatoEl) {
+      console.log('[Task Assistant] Floating tomato button already exists');
+      return; // 已经显示
+    }
+
+    console.log('[Task Assistant] Creating floating tomato button');
+    this.floatingTomatoEl = this.createFloatingTomatoButton();
+    document.body.appendChild(this.floatingTomatoEl);
+    console.log('[Task Assistant] Floating tomato button added to body', this.floatingTomatoEl);
+
+    // 启动定时器更新剩余时间
+    this.updateFloatingTomatoDisplay(); // 立即更新一次
+    this.floatingTomatoTimer = window.setInterval(() => {
+      this.updateFloatingTomatoDisplay();
+    }, 1000);
+  }
+
+  /**
+   * 隐藏悬浮番茄按钮
+   */
+  private hideFloatingTomatoButton() {
+    if (this.floatingTomatoTimer) {
+      window.clearInterval(this.floatingTomatoTimer);
+      this.floatingTomatoTimer = null;
+    }
+
+    if (this.floatingTomatoEl) {
+      this.floatingTomatoEl.remove();
+      this.floatingTomatoEl = null;
+    }
+  }
+
+  /**
+   * 更新悬浮按钮显示（剩余时间）
+   */
+  private updateFloatingTomatoDisplay() {
+    if (!this.floatingTomatoEl) return;
+
+    try {
+      // 动态导入 store 避免初始化问题
+      const { usePomodoroStore } = require('@/stores');
+      const pomodoroStore = usePomodoroStore();
+      const remainingSeconds = pomodoroStore.remainingTime;
+
+      if (remainingSeconds <= 0) {
+        this.hideFloatingTomatoButton();
+        return;
+      }
+
+      const minutes = Math.floor(remainingSeconds / 60);
+      const seconds = remainingSeconds % 60;
+      const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
+      if (timeEl) {
+        timeEl.textContent = timeStr;
+      }
+    } catch (error) {
+      // Pinia 可能还未初始化，忽略错误
+      console.log('[Task Assistant] Failed to update floating tomato display:', error);
+    }
   }
 }

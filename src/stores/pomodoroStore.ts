@@ -7,6 +7,7 @@ import type { ActivePomodoro, ActivePomodoroData, Item } from '@/types/models';
 import { appendBlock } from '@/api';
 import { showMessage } from '@/utils/dialog';
 import { showPomodoroCompleteNotification } from '@/utils/notification';
+import { eventBus, Events } from '@/utils/eventBus';
 import {
   saveActivePomodoro,
   loadActivePomodoro,
@@ -84,6 +85,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         // 启动倒计时
         this.startTimer();
+
+        // 触发专注开始事件
+        eventBus.emit(Events.POMODORO_STARTED);
 
         showMessage(`开始专注：${item.content}（${durationMinutes}分钟）`);
         return true;
@@ -259,6 +263,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
         this.stopTimer();
         this.activePomodoro = null;
 
+        // 触发专注完成事件
+        eventBus.emit(Events.POMODORO_COMPLETED);
+
         return true;
       } catch (error) {
         console.error('[Pomodoro] 完成专注失败:', error);
@@ -283,6 +290,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 清理状态
         this.stopTimer();
         this.activePomodoro = null;
+
+        // 触发专注取消事件
+        eventBus.emit(Events.POMODORO_CANCELLED);
 
         showMessage('已取消专注');
         return true;
@@ -347,6 +357,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
           console.log('[Pomodoro] 专注状态已恢复（暂停中），已专注:', effectiveAccumulatedSeconds, '秒');
           showMessage(`已恢复专注（暂停中）：${data.itemContent}，第${data.pauseCount}次暂停`);
         }
+
+        // 触发专注开始事件（恢复状态也触发，以便悬浮按钮显示）
+        eventBus.emit(Events.POMODORO_STARTED);
 
         return true;
       } catch (error) {
