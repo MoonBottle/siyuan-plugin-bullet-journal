@@ -602,7 +602,9 @@ export async function updateBlockContent(
     }
 
     const kramdown = result.kramdown;
+    console.log('[Task Assistant] updateBlockContent - raw kramdown:', JSON.stringify(kramdown));
     const lines = kramdown.split('\n');
+    console.log('[Task Assistant] updateBlockContent - lines:', lines);
 
     // 找到事项行（包含 @日期 的行，且不是番茄钟行、不是块属性行）
     let itemLineIndex = -1;
@@ -625,9 +627,39 @@ export async function updateBlockContent(
 
       // 检测是否使用任务列表格式
       const isTaskList = isTaskListFormat(itemLine);
+      console.log('[Task Assistant] updateBlockContent - isTaskList:', isTaskList, 'itemLine:', itemLine);
 
-      if (isTaskList) {
-        // 任务列表格式：需要保留 [x] 或 [ ] 标记在行首
+      // 检测后缀是否是状态标签
+      const isStatusTag = suffix === '#done' || suffix === '#abandoned' || suffix === '#已完成' || suffix === '#已放弃';
+      console.log('[Task Assistant] updateBlockContent - suffix:', suffix, 'isStatusTag:', isStatusTag);
+
+      if (isTaskList && isStatusTag) {
+        // 任务列表格式 + 状态标签：将 [ ] 改为 [x] 或保持 [ ]，不添加标签
+        // 提取任务列表标记
+        const taskListMatch = itemLine.match(/(\[\s*)([xX]?)(\s*\]\s*)/);
+        console.log('[Task Assistant] updateBlockContent - taskListMatch:', taskListMatch);
+        if (taskListMatch) {
+          // 根据状态决定标记
+          const newMarker = (suffix === '#done' || suffix === '#已完成') ? '[x] ' : '[ ] ';
+          console.log('[Task Assistant] updateBlockContent - newMarker:', newMarker);
+          // 去除原任务列表标记后的内容
+          const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
+          console.log('[Task Assistant] updateBlockContent - contentWithoutMarker:', contentWithoutMarker);
+          // 使用 stripListAndBlockAttr 去除列表标记、块属性
+          const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          console.log('[Task Assistant] updateBlockContent - cleanedContent:', cleanedContent);
+          // 重新拼接：新任务列表标记 + 清理后的内容（不添加状态标签）
+          lines[itemLineIndex] = `${newMarker}${cleanedContent}`.trim();
+          console.log('[Task Assistant] updateBlockContent - new line:', lines[itemLineIndex]);
+        } else {
+          // 如果匹配失败，使用原来的方式
+          console.log('[Task Assistant] updateBlockContent - match failed, using fallback');
+          const cleanedContent = stripListAndBlockAttr(itemLine);
+          lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
+        }
+      } else if (isTaskList) {
+        // 任务列表格式 + 非状态标签（如日期）：保留 [x] 或 [ ] 标记
+        console.log('[Task Assistant] updateBlockContent - task list + non-status tag');
         // 提取任务列表标记
         const taskListMatch = itemLine.match(/(\[\s*[xX]?\s*\]\s*)/);
         if (taskListMatch) {
@@ -645,6 +677,7 @@ export async function updateBlockContent(
         }
       } else {
         // 非任务列表格式：使用原来的方式
+        console.log('[Task Assistant] updateBlockContent - non-task list format');
         // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
         const cleanedContent = stripListAndBlockAttr(itemLine);
         // 添加后缀
