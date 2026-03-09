@@ -2,13 +2,13 @@
   <div ref="tabRootRef" class="hk-work-tab calendar-tab">
     <div class="block__icons">
       <!-- 导航按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').prev" @click="handlePrev">
+      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').prev" @click="handlePrev">
         <svg><use xlink:href="#iconLeft"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').next" @click="handleNext">
+      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').next" @click="handleNext">
         <svg><use xlink:href="#iconRight"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').today" @click="handleToday">
+      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').today" @click="handleToday">
         <svg><use xlink:href="#iconCalendar"></use></svg>
       </span>
       <!-- 日期显示 -->
