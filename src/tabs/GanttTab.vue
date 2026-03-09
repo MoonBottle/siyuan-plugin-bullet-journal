@@ -168,7 +168,7 @@ const handleRefresh = async () => {
 .block__icons {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
   padding: 6px 12px;
   border-bottom: 1px solid var(--b3-border-color);
@@ -236,7 +236,7 @@ const handleRefresh = async () => {
   }
 
   .refresh-btn {
-    margin-left: 6px;
+    margin-left: 0;
   }
 }
 
