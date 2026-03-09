@@ -77,7 +77,7 @@
         <div v-if="hideItemList && selectedItem" class="preselected-item-info">
           <div class="info-label">专注事项</div>
           <div class="info-content">{{ selectedItem.content }}</div>
-          <div v-if="selectedItem.project" class="info-project">{{ selectedItem.project.name }}</div>
+          <div v-if="selectedItem.task" class="info-task">{{ selectedItem.task.name }}</div>
         </div>
 
         <div class="action-section">
@@ -220,6 +220,10 @@ onMounted(() => {
   display: flex;
   gap: 24px;
   min-height: 400px;
+
+  &.no-left-panel {
+    justify-content: center;
+  }
 }
 
 .left-panel {
@@ -235,6 +239,24 @@ onMounted(() => {
   flex-direction: column;
   border-left: 1px solid var(--b3-theme-surface-lighter);
   padding-left: 24px;
+
+  &.full-width {
+    width: 100%;
+    border-left: none;
+    padding-left: 0;
+    align-items: center;
+
+    .duration-section,
+    .preselected-item-info,
+    .action-section {
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .panel-title {
+      text-align: center;
+    }
+  }
 }
 
 .panel-title {
@@ -397,7 +419,7 @@ onMounted(() => {
     word-break: break-word;
   }
 
-  .info-project {
+  .info-task {
     font-size: 11px;
     color: var(--b3-theme-on-surface);
   }
