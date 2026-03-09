@@ -489,22 +489,22 @@
   }
 
   .tomato-icon {
-    font-size: 20px;
+    font-size: 14px;
     margin-bottom: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
 
     svg {
-      width: 20px;
-      height: 20px;
+      width: 14px;
+      height: 14px;
       fill: currentColor;
     }
   }
 
   .remaining-time {
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     font-family: monospace;
     line-height: 1;
   }

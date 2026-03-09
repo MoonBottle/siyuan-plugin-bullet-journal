@@ -708,13 +708,17 @@ export default class HKWorkPlugin extends Plugin {
 
   /**
    * 创建悬浮番茄按钮 DOM
+   * 使用 TomatoIcon 组件的 SVG 内容
    */
   private createFloatingTomatoButton(): HTMLElement {
     const btn = document.createElement('div');
     btn.className = 'floating-tomato-btn';
     btn.innerHTML = `
       <div class="tomato-icon">
-        <svg viewBox="0 0 24 24"><use xlink:href="#iconFocus"></use></svg>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
       </div>
       <div class="remaining-time">--:--</div>
     `;
