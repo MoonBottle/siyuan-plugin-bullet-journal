@@ -1,15 +1,35 @@
 <template>
   <div class="hk-work-tab gantt-tab">
     <div class="block__icons">
+      <!-- 左侧：甘特图控件 -->
+      <label class="show-items">
+        <input type="checkbox" v-model="showItems" />
+        显示工作事项
+      </label>
+      <div class="date-filter">
+        <span>日期筛选:</span>
+        <input type="date" v-model="startDate" />
+        <span>至</span>
+        <input type="date" v-model="endDate" />
+      </div>
+      <div class="view-modes">
+        <button
+          v-for="mode in viewModes"
+          :key="mode.value"
+          :class="['view-mode-btn', { active: viewMode === mode.value }]"
+          @click="viewMode = mode.value"
+        >
+          {{ mode.label }}
+        </button>
+      </div>
       <span class="fn__flex-1 fn__space"></span>
-      <!-- 分组选择 -->
+      <!-- 右侧：分组、刷新 -->
       <SySelect
         v-if="settingsStore.groups.length > 0"
         v-model="selectedGroup"
         :options="groupOptions"
         :placeholder="t('settings').projectGroups.allGroups"
       />
-      <!-- 刷新按钮 -->
       <span
         class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
         :aria-label="projectStore.loading ? '加载中...' : '刷新'"
@@ -19,7 +39,13 @@
       </span>
     </div>
     <div class="tab-content">
-      <GanttView :projects="filteredProjects" />
+      <GanttView
+        :projects="filteredProjects"
+        :show-items="showItems"
+        :start-date="startDate"
+        :end-date="endDate"
+        :view-mode="viewMode"
+      />
     </div>
   </div>
 </template>
@@ -40,6 +66,17 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const selectedGroup = ref('');
+const showItems = ref(false);
+const startDate = ref('');
+const endDate = ref('');
+const viewMode = ref<'day' | 'week' | 'month'>('day');
+
+const viewModes: Array<{ value: 'day' | 'week' | 'month'; label: string }> = [
+  { value: 'day', label: t('gantt').day },
+  { value: 'week', label: t('gantt').week },
+  { value: 'month', label: t('gantt').month }
+];
+
 const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value));
 
 const groupOptions = computed(() => {
@@ -129,8 +166,65 @@ const handleRefresh = async () => {
 }
 
 .block__icons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--b3-border-color);
+  background: var(--b3-theme-surface);
+
   .block__icon {
     opacity: 1;
+  }
+
+  .show-items {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .date-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+
+    input[type='date'] {
+      padding: 2px 6px;
+      border: 1px solid var(--b3-border-color);
+      border-radius: var(--b3-border-radius);
+      background: var(--b3-theme-background);
+      color: var(--b3-theme-on-background);
+    }
+  }
+
+  .view-modes {
+    display: flex;
+    gap: 4px;
+  }
+
+  .view-mode-btn {
+    padding: 2px 10px;
+    border: 1px solid var(--b3-border-color);
+    background: var(--b3-theme-background);
+    color: var(--b3-theme-on-surface);
+    cursor: pointer;
+    border-radius: var(--b3-border-radius);
+    font-size: 12px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-surface-light);
+    }
+
+    &.active {
+      background: var(--b3-theme-primary);
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+    }
   }
 
   select.b3-select {

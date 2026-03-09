@@ -1,27 +1,5 @@
 <template>
   <div class="gantt-view">
-    <div class="gantt-toolbar">
-      <label class="show-items">
-        <input type="checkbox" v-model="showItems" />
-        显示工作事项
-      </label>
-      <div class="date-filter">
-        <span>日期筛选:</span>
-        <input type="date" v-model="startDate" />
-        <span>至</span>
-        <input type="date" v-model="endDate" />
-      </div>
-      <div class="view-modes">
-        <button
-          v-for="mode in viewModes"
-          :key="mode.value"
-          :class="['view-mode-btn', { active: viewMode === mode.value }]"
-          @click="viewMode = mode.value"
-        >
-          {{ mode.label }}
-        </button>
-      </div>
-    </div>
     <div class="gantt-wrapper" :class="{ 'gantt-ready': ganttReady }">
       <div ref="ganttEl" class="gantt-inner"></div>
     </div>
@@ -47,9 +25,18 @@ import { usePlugin } from '@/main';
 
 interface Props {
   projects: Project[];
+  showItems?: boolean;
+  startDate?: string;
+  endDate?: string;
+  viewMode?: 'day' | 'week' | 'month';
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showItems: false,
+  startDate: '',
+  endDate: '',
+  viewMode: 'day'
+});
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
@@ -57,16 +44,6 @@ const pomodoroStore = usePomodoroStore();
 const plugin = usePlugin();
 
 const ganttEl = ref<HTMLElement | null>(null);
-const showItems = ref(false);
-const startDate = ref('');
-const endDate = ref('');
-const viewMode = ref<'day' | 'week' | 'month'>('day');
-
-const viewModes: Array<{ value: 'day' | 'week' | 'month'; label: string }> = [
-  { value: 'day', label: t('gantt').day },
-  { value: 'week', label: t('gantt').week },
-  { value: 'month', label: t('gantt').month }
-];
 
 let ganttInitialized = false;
 let resizeObserver: ResizeObserver | null = null;
@@ -341,10 +318,10 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
 };
 
 const ganttData = computed(() => {
-  const dateFilter = startDate.value || endDate.value
-    ? { start: startDate.value, end: endDate.value }
+  const dateFilter = props.startDate || props.endDate
+    ? { start: props.startDate, end: props.endDate }
     : undefined;
-  return DataConverter.projectsToGanttTasks(props.projects, showItems.value, dateFilter);
+  return DataConverter.projectsToGanttTasks(props.projects, props.showItems, dateFilter);
 });
 
 onMounted(() => {
@@ -415,7 +392,7 @@ onMounted(() => {
   gantt.templates.rightside_text = function(start, end, task) {
     const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0);
     if (duration > SHORT_BAR_THRESHOLD_MS || !task.text) return '';
-    if (viewMode.value !== 'month' && task.text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return '';
+    if (props.viewMode !== 'month' && task.text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return '';
     const escaped = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return `<span class="gantt-task-text gantt-rightside-text" data-gantt-tooltip="${escaped}" aria-label="${escaped}" style="
       color: var(--b3-theme-on-background);
@@ -429,7 +406,7 @@ onMounted(() => {
   gantt.i18n.setLocale(getCurrentLocale().startsWith('zh') ? 'cn' : 'en');
 
   // 设置初始视图模式
-  setScaleConfig(viewMode.value);
+  setScaleConfig(props.viewMode);
 
   gantt.init(ganttEl.value);
   ganttInitialized = true;
@@ -641,11 +618,11 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-watch([ganttData, showItems, startDate, endDate], () => {
+watch([ganttData, () => props.showItems, () => props.startDate, () => props.endDate], () => {
   nextTick(() => updateGantt());
 }, { flush: 'post' });
 
-watch(viewMode, (newMode) => {
+watch(() => props.viewMode, (newMode) => {
   if (ganttInitialized) {
     setScaleConfig(newMode);
     gantt.render();
@@ -668,66 +645,6 @@ const updateGantt = () => {
   width: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.gantt-toolbar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--b3-border-color);
-  background: var(--b3-theme-surface);
-  flex-wrap: wrap;
-}
-
-.show-items {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.date-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-
-  input[type='date'] {
-    padding: 4px 8px;
-    border: 1px solid var(--b3-border-color);
-    border-radius: var(--b3-border-radius);
-    background: var(--b3-theme-background);
-    color: var(--b3-theme-on-background);
-  }
-}
-
-.view-modes {
-  display: flex;
-  gap: 4px;
-}
-
-.view-mode-btn {
-  padding: 4px 12px;
-  border: 1px solid var(--b3-border-color);
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-surface);
-  cursor: pointer;
-  border-radius: var(--b3-border-radius);
-  font-size: 12px;
-  transition: all 0.2s;
-
-  &:hover {
-    background: var(--b3-theme-surface-light);
-  }
-
-  &.active {
-    background: var(--b3-theme-primary);
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-  }
 }
 
 /* 外层容器 - 类似 Obsidian 的 gantt-container */
