@@ -197,6 +197,7 @@ import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import { openDocumentAtLine } from '@/utils/fileUtils';
+import { showConfirmDialog } from '@/utils/dialog';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -320,10 +321,14 @@ const resumePomodoro = async () => {
 };
 
 // 结束专注
-const endPomodoro = async () => {
-  if (confirm('确定要结束专注吗？这将保存当前的番茄钟记录。')) {
-    await pomodoroStore.completePomodoro(plugin);
-  }
+const endPomodoro = () => {
+  showConfirmDialog(
+    '结束专注',
+    '确定要结束专注吗？这将保存当前的番茄钟记录。',
+    async () => {
+      await pomodoroStore.completePomodoro(plugin);
+    }
+  );
 };
 
 // 打开事项所在文档
