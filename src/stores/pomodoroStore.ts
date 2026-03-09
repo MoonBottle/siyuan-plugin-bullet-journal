@@ -324,8 +324,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
     /**
      * 从文件恢复专注状态
      * @param plugin 思源插件实例
+     * @param options 可选配置
+     * @param options.silent 是否静默恢复（不显示提示）
      */
-    async restorePomodoro(plugin: any): Promise<boolean> {
+    async restorePomodoro(plugin: any, options?: { silent?: boolean }): Promise<boolean> {
       try {
         // 从文件读取进行中的番茄钟
         const data = await loadActivePomodoro(plugin);
@@ -362,10 +364,14 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (!data.isPaused) {
           this.startTimer();
           console.log('[Pomodoro] 专注状态已恢复，剩余时间:', remainingSeconds, '秒');
-          showMessage(`已恢复专注：${data.itemContent}`);
+          if (!options?.silent) {
+            showMessage(`已恢复专注：${data.itemContent}`);
+          }
         } else {
           console.log('[Pomodoro] 专注状态已恢复（暂停中），已专注:', effectiveAccumulatedSeconds, '秒');
-          showMessage(`已恢复专注（暂停中）：${data.itemContent}，第${data.pauseCount}次暂停`);
+          if (!options?.silent) {
+            showMessage(`已恢复专注（暂停中）：${data.itemContent}，第${data.pauseCount}次暂停`);
+          }
         }
 
         // 触发专注开始事件（恢复状态也触发，以便悬浮按钮显示）

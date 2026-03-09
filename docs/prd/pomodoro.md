@@ -124,7 +124,91 @@ Dock 展示 PomodoroActiveTimer
     └──► 取消：删除文件
 ```
 
-#### 2.1.2 状态管理
+#### 2.1.2 数据流转时序图
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant TodoSidebar
+    participant PomodoroTimerDialog
+    participant PomodoroStore
+    participant PomodoroStorage
+    participant PomodoroDock
+    participant SiYuanAPI
+
+    User->>TodoSidebar: 点击"开始专注"
+    TodoSidebar->>PomodoroTimerDialog: openPomodoroDialog(item)
+    PomodoroTimerDialog->>User: 显示弹窗（选择事项+设置时长）
+    User->>PomodoroTimerDialog: 确认开始专注
+    PomodoroTimerDialog->>PomodoroStore: startPomodoro(item, duration, blockId, plugin)
+    
+    PomodoroStore->>PomodoroStorage: saveActivePomodoro(data)
+    PomodoroStorage->>SiYuanAPI: plugin.saveData()
+    SiYuanAPI-->>PomodoroStorage: 保存成功
+    PomodoroStorage-->>PomodoroStore: 返回保存的数据
+    
+    PomodoroStore->>PomodoroStore: 启动倒计时定时器
+    PomodoroStore->>PomodoroDock: 触发状态更新（通过事件总线）
+    PomodoroDock->>User: 显示倒计时和事项信息
+    
+    alt 正常完成
+        PomodoroStore->>PomodoroStore: 倒计时结束
+        PomodoroStore->>SiYuanAPI: appendBlock() 创建番茄钟记录
+        SiYuanAPI-->>PomodoroStore: 返回创建的块ID
+        PomodoroStore->>PomodoroStorage: removeActivePomodoro()
+        PomodoroStorage->>SiYuanAPI: plugin.removeData()
+        PomodoroStore->>PomodoroStore: 清理本地状态
+        PomodoroStore->>User: 播放提示音 + 系统通知
+    else 用户取消
+        User->>PomodoroDock: 点击"取消专注"
+        PomodoroDock->>PomodoroStore: cancelPomodoro(plugin)
+        PomodoroStore->>PomodoroStorage: removeActivePomodoro()
+        PomodoroStorage->>SiYuanAPI: plugin.removeData()
+        PomodoroStore->>PomodoroStore: 清理本地状态
+    else 插件重启恢复
+        PomodoroDock->>PomodoroStore: restorePomodoro(plugin)
+        PomodoroStore->>PomodoroStorage: loadActivePomodoro()
+        PomodoroStorage->>SiYuanAPI: plugin.loadData()
+        SiYuanAPI-->>PomodoroStorage: 返回保存的数据
+        PomodoroStorage-->>PomodoroStore: 返回 ActivePomodoroData
+        
+        alt 已过期
+            PomodoroStore->>SiYuanAPI: appendBlock() 自动完成记录
+            PomodoroStore->>PomodoroStorage: removeActivePomodoro()
+        else 未过期
+            PomodoroStore->>PomodoroStore: 恢复倒计时
+            PomodoroStore->>PomodoroDock: 显示恢复后的倒计时
+        end
+    end
+```
+
+#### 2.1.3 跨组件状态同步
+
+由于 Dock 可能在 iframe 中运行，与主窗口不共享内存，使用以下机制同步状态：
+
+```mermaid
+sequenceDiagram
+    participant MainWindow
+    participant BroadcastChannel
+    participant DockIframe
+    participant PomodoroStoreMain
+    participant PomodoroStoreDock
+
+    MainWindow->>PomodoroStoreMain: startPomodoro()
+    PomodoroStoreMain->>BroadcastChannel: postMessage({ type: 'POMODORO_START', data })
+    BroadcastChannel->>DockIframe: onmessage
+    DockIframe->>PomodoroStoreDock: 更新本地状态
+    DockIframe->>User: 显示倒计时
+
+    alt 专注完成
+        DockIframe->>PomodoroStoreDock: completePomodoro()
+        PomodoroStoreDock->>BroadcastChannel: postMessage({ type: 'POMODORO_COMPLETE' })
+        BroadcastChannel->>MainWindow: onmessage
+        MainWindow->>PomodoroStoreMain: 刷新待办列表状态
+    end
+```
+
+#### 2.1.4 状态管理
 
 使用 Pinia Store 管理专注状态：
 
@@ -133,24 +217,61 @@ Dock 展示 PomodoroActiveTimer
 {
   activePomodoro: ActivePomodoro | null;  // 当前专注状态
   timerInterval: number | null;           // 倒计时定时器
+  isFocusing: boolean;                    // 是否正在专注（计算属性）
+  remainingTime: string;                  // 剩余时间格式化显示
 }
 
+// Getters
+- isFocusing: 基于 activePomodoro 是否为 null
+- remainingTime: 格式化剩余秒数为 MM:SS
+
 // Actions
-- startPomodoro()      // 开始专注，保存到文件
-- completePomodoro()   // 完成专注，删除文件，创建块
-- cancelPomodoro()     // 取消专注，删除文件
-- restorePomodoro()    // 从文件恢复专注状态
+- startPomodoro(item, durationMinutes, parentBlockId, plugin)
+  // 开始专注，保存到文件，启动定时器
+  
+- completePomodoro(plugin)
+  // 完成专注，创建番茄钟记录块，删除状态文件，播放提示音，显示通知
+  
+- cancelPomodoro(plugin)
+  // 取消专注，删除状态文件，清理本地状态
+  
+- restorePomodoro(plugin)
+  // 从文件恢复专注状态，计算剩余时间，如已过期则自动完成
+  
+- pausePomodoro()
+  // 暂停专注，停止定时器，记录暂停开始时间
+  
+- resumePomodoro()
+  // 恢复专注，重新启动定时器，计算暂停时长
 ```
 
 ### 2.2 核心模块
 
 #### 2.2.1 文件存储模块 (`src/utils/pomodoroStorage.ts`)
 
-| 函数 | 功能 | 思源 API |
-|------|------|----------|
-| `saveActivePomodoro()` | 保存进行中的番茄钟 | `plugin.saveData()` |
-| `loadActivePomodoro()` | 读取进行中的番茄钟 | `plugin.loadData()` |
-| `removeActivePomodoro()` | 删除进行中的番茄钟 | `plugin.removeData()` |
+负责番茄钟状态的持久化存储，使用思源笔记的插件数据存储 API。
+
+| 函数 | 功能 | 思源 API | 说明 |
+|------|------|----------|------|
+| `saveActivePomodoro(plugin, data)` | 保存进行中的番茄钟 | `plugin.saveData()` | 保存到 `active-pomodoro.json` |
+| `loadActivePomodoro(plugin)` | 读取进行中的番茄钟 | `plugin.loadData()` | 返回 `ActivePomodoroData \| null` |
+| `removeActivePomodoro(plugin)` | 删除进行中的番茄钟 | `plugin.removeData()` | 完成后清理文件 |
+
+**存储数据结构：**
+
+```typescript
+interface ActivePomodoroData {
+  blockId: string;         // 事项块ID（用于创建番茄钟记录）
+  itemId: string;          // 事项ID（用于关联待办事项）
+  itemContent: string;     // 事项内容（显示在专注界面）
+  startTime: number;       // 开始时间戳（毫秒）
+  durationMinutes: number; // 设定专注时长（分钟）
+  projectId?: string;      // 项目ID（可选）
+  taskId?: string;         // 任务ID（可选）
+  pauseCount?: number;     // 暂停次数（用于实际时长计算）
+  totalPausedSeconds?: number; // 累计暂停秒数
+}
+```
 
 #### 2.2.2 专注状态 Store (`src/stores/pomodoroStore.ts`)
 
@@ -180,26 +301,93 @@ Dock 展示 PomodoroActiveTimer
 
 #### 2.2.3 UI 组件
 
-| 组件 | 功能 | 位置 |
-|------|------|------|
-| `PomodoroTimerDialog.vue` | 开始专注弹框 | `src/components/pomodoro/` |
-| `PomodoroActiveTimer.vue` | 专注中展示 | `src/components/pomodoro/` |
-| `PomodoroStats.vue` | 统计概览 | `src/components/pomodoro/` |
-| `PomodoroRecordList.vue` | 记录列表 | `src/components/pomodoro/` |
-| `PomodoroDock.vue` | Dock 主组件 | `src/tabs/` |
+| 组件 | 功能 | 位置 | 说明 |
+|------|------|------|------|
+| `PomodoroTimerDialog.vue` | 开始专注弹框 | `src/components/pomodoro/` | 选择事项、设置时长 |
+| `PomodoroActiveTimer.vue` | 专注中展示 | `src/components/pomodoro/` | 显示倒计时、事项信息、控制按钮 |
+| `PomodoroStats.vue` | 统计概览 | `src/components/pomodoro/` | 今日/总番茄数、专注时长 |
+| `PomodoroRecordList.vue` | 记录列表 | `src/components/pomodoro/` | 按日期分组展示历史记录 |
+| `PomodoroDock.vue` | Dock 主组件 | `src/tabs/` | 番茄钟 Dock 容器 |
+| `FloatingTomatoButton.vue` | 悬浮按钮 | `src/components/pomodoro/` | 全局悬浮显示倒计时 |
+| `TomatoIcon.vue` | 番茄图标 | `src/components/icons/` | SVG 图标组件 |
+
+**组件关系图：**
+
+```
+PomodoroDock (Dock 容器)
+├── PomodoroStats (统计概览)
+├── PomodoroActiveTimer (专注中展示) - 条件渲染
+├── PomodoroRecordList (记录列表)
+└── FloatingTomatoButton (悬浮按钮) - 全局
+
+TodoSidebar (待办列表)
+├── 事项项
+│   ├── 开始专注图标 - 条件显示 (v-if="!isFocusing")
+│   └── 状态 emoji (⏳/⚠️/✅/❌/🍅)
+└── 右键菜单
+    └── 开始专注选项 - 条件显示
+
+CalendarView (日历视图)
+├── 日历事件
+│   └── 状态 emoji (⏳/⚠️/✅/❌/🍅)
+└── 右键菜单
+    └── 开始专注选项 - 条件显示
+
+PomodoroTimerDialog (弹窗)
+├── 事项选择列表
+├── 时长设置
+└── 开始/取消按钮
+```
 
 ### 2.3 思源 API 使用
 
-| 操作 | API | 用途 |
-|------|-----|------|
-| 保存文件 | `plugin.saveData()` | 保存进行中的番茄钟 |
-| 读取文件 | `plugin.loadData()` | 读取进行中的番茄钟 |
-| 删除文件 | `plugin.removeData()` | 删除进行中的番茄钟 |
-| 创建块 | `appendBlock()` | 完成时在文档中创建番茄钟块 |
+| 操作 | API | 用途 | 调用位置 |
+|------|-----|------|----------|
+| 保存文件 | `plugin.saveData()` | 保存进行中的番茄钟 | `pomodoroStorage.ts` |
+| 读取文件 | `plugin.loadData()` | 读取进行中的番茄钟 | `pomodoroStorage.ts` |
+| 删除文件 | `plugin.removeData()` | 删除进行中的番茄钟 | `pomodoroStorage.ts` |
+| 创建块 | `appendBlock()` | 完成时在文档中创建番茄钟块 | `pomodoroStore.ts` |
+| 打开文档 | `openDocumentAtLine()` | 点击事项时打开对应文档 | `TodoSidebar.vue` |
+| 更新块 | `updateBlockContent()` | 完成/放弃待办事项 | `TodoSidebar.vue` |
+| 显示菜单 | `Menu` | 右键菜单 | `contextMenu.ts` |
+| 显示消息 | `showMessage()` | 操作反馈提示 | 各组件 |
+| 切换 Dock | `rightDock.toggleModel()` | 激活番茄钟 Dock | `index.ts` |
 
-### 2.4 通知机制
+### 2.4 事件机制
 
-#### 2.4.1 系统通知
+#### 2.4.1 EventBus 事件
+
+用于同上下文组件间的通信：
+
+| 事件名 | 触发位置 | 监听位置 | 说明 |
+|--------|----------|----------|------|
+| `POMODORO_START` | `pomodoroStore.ts` | `PomodoroDock.vue` | 开始专注时通知 Dock |
+| `POMODORO_COMPLETE` | `pomodoroStore.ts` | `TodoSidebar.vue` | 完成专注时刷新列表 |
+| `POMODORO_CANCEL` | `pomodoroStore.ts` | `TodoSidebar.vue` | 取消专注时刷新列表 |
+| `POMODORO_RESTORE` | `index.ts` | `TodoSidebar.vue`, `CalendarView.vue` | 恢复专注状态时通知各组件 |
+| `DATA_REFRESH` | `index.ts` | `TodoSidebar.vue` | 数据刷新事件 |
+
+#### 2.4.2 BroadcastChannel
+
+用于跨上下文（iframe）通信：
+
+```typescript
+const DATA_REFRESH_CHANNEL = 'bullet-journal-data-refresh';
+
+// 发送消息
+refreshChannel.postMessage({ type: 'DATA_REFRESH', ...data });
+
+// 接收消息
+refreshChannel.onmessage = (e) => {
+  if (e.data?.type === 'DATA_REFRESH') {
+    // 处理刷新
+  }
+};
+```
+
+### 2.5 通知机制
+
+#### 2.5.1 系统通知
 
 使用 Web Notifications API：
 
@@ -214,7 +402,7 @@ new Notification('专注完成 🎉', {
 })
 ```
 
-#### 2.4.2 提示音
+#### 2.5.2 提示音
 
 使用 Web Audio API：
 
@@ -225,9 +413,9 @@ oscillator.frequency.value = 800
 oscillator.start()
 ```
 
-### 2.5 状态恢复流程
+### 2.6 状态恢复流程
 
-插件加载时（`PomodoroDock.vue onMounted`）：
+插件加载时（`PomodoroDock.vue` / `TodoSidebar.vue` / `CalendarView.vue` 的 `onMounted`）：
 
 1. 调用 `pomodoroStore.restorePomodoro(plugin)`
 2. 读取 `active-pomodoro.json` 文件
@@ -237,7 +425,7 @@ oscillator.start()
    - 如果剩余时间 <= 0：自动完成，创建块，删除文件
 4. 如果文件不存在：无进行中的番茄钟
 
-### 2.6 文件结构
+### 2.7 文件结构
 
 ```
 src/
@@ -257,7 +445,7 @@ src/
     └── models.ts                  # 数据模型
 ```
 
-### 2.7 类型定义
+### 2.8 类型定义
 
 ```typescript
 // 进行中的番茄钟数据（文件存储）
