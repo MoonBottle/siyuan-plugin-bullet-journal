@@ -248,9 +248,13 @@ onMounted(() => {
     align-items: center;
 
     .duration-section,
-    .preselected-item-info,
     .action-section,
     .panel-title {
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .preselected-item-info {
       width: 100%;
       max-width: 280px;
     }
@@ -402,6 +406,8 @@ onMounted(() => {
   background: var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   border-left: 3px solid var(--b3-theme-primary);
+  box-sizing: border-box;
+  width: 100%;
 
   .info-label {
     font-size: 11px;
