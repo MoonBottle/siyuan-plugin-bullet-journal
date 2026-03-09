@@ -408,11 +408,13 @@ onMounted(() => {
     ">${task.text}</span>`;
   };
 
-  // 短条（≤1 天）在右侧显示文字，避免条内文字不可见
+  // 短条（≤1 天）在右侧显示文字，避免条内文字不可见；短文字（如「ddd」「测试」）条内可读则不重复显示
   const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+  const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6; // 少于该字符数时条内通常可显示，不启用右侧
   gantt.templates.rightside_text = function(start, end, task) {
     const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0);
     if (duration > SHORT_BAR_THRESHOLD_MS || !task.text) return '';
+    if (task.text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return '';
     const escaped = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return `<span class="gantt-task-text gantt-rightside-text" data-gantt-tooltip="${escaped}" aria-label="${escaped}" style="
       color: var(--b3-theme-on-background);
