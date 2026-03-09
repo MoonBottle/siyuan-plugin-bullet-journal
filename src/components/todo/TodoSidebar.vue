@@ -851,6 +851,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
+  position: relative;
 }
 
 .item-header-left {
@@ -900,9 +901,12 @@ onUnmounted(() => {
 .item-actions {
   display: flex;
   gap: 4px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   opacity: 0;
   transition: opacity 0.2s;
-  margin-left: auto;
   flex-shrink: 0;
 
   .todo-item:hover & {
