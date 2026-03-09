@@ -116,6 +116,34 @@ export default class HKWorkPlugin extends Plugin {
 
     // 初始化悬浮番茄按钮
     this.initFloatingTomatoButton();
+
+    // 自动恢复进行中的番茄钟（不依赖 dock 是否打开）
+    // 延迟执行，确保所有模块已加载
+    setTimeout(() => {
+      this.checkAndRestorePomodoro();
+    }, 1000);
+  }
+
+  /**
+   * 检查并恢复进行中的番茄钟
+   * 通过 eventBus 触发，让已加载的组件处理恢复逻辑
+   */
+  private async checkAndRestorePomodoro() {
+    try {
+      // 直接读取存储文件，不通过 store
+      const { loadActivePomodoro } = await import('@/utils/pomodoroStorage');
+      const data = await loadActivePomodoro(this);
+
+      if (data) {
+        console.log('[HKWorkPlugin] 发现进行中的番茄钟，触发恢复事件');
+        // 触发恢复事件，让 PomodoroDock 组件处理
+        eventBus.emit(Events.POMODORO_RESTORE, data);
+      } else {
+        console.log('[HKWorkPlugin] 没有进行中的番茄钟需要恢复');
+      }
+    } catch (error) {
+      console.error('[HKWorkPlugin] 检查番茄钟状态失败:', error);
+    }
   }
 
   /**

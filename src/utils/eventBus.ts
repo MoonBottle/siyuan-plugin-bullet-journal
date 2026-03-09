@@ -78,5 +78,6 @@ export const Events = {
   CALENDAR_NAVIGATE: 'calendar:navigate', // 导航到指定日期
   POMODORO_STARTED: 'pomodoro:started',
   POMODORO_COMPLETED: 'pomodoro:completed',
-  POMODORO_CANCELLED: 'pomodoro:cancelled'
+  POMODORO_CANCELLED: 'pomodoro:cancelled',
+  POMODORO_RESTORE: 'pomodoro:restore' // 恢复进行中的番茄钟
 };

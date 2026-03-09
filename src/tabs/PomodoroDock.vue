@@ -113,6 +113,7 @@ const openTimerDialog = () => {
 
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
+let unsubscribePomodoroRestore: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 // 恢复专注状态
@@ -126,6 +127,20 @@ const restorePomodoroState = async () => {
   }
 };
 
+// 处理番茄钟恢复事件（从插件主逻辑触发）
+const handlePomodoroRestore = async (data: any) => {
+  console.log('[PomodoroDock] 收到番茄钟恢复事件');
+  if (!plugin) return;
+
+  // 如果当前没有进行中的番茄钟，则恢复
+  if (!pomodoroStore.isFocusing) {
+    const restored = await pomodoroStore.restorePomodoro(plugin);
+    if (restored) {
+      console.log('[PomodoroDock] 番茄钟状态已从事件恢复');
+    }
+  }
+};
+
 // 初始化数据
 onMounted(async () => {
   // 从插件加载设置
@@ -136,7 +151,7 @@ onMounted(async () => {
     await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
   }
 
-  // 恢复专注状态
+  // 恢复专注状态（如果插件启动时没有恢复）
   await restorePomodoroState();
 
   // 请求通知权限（用于专注完成时的系统通知）
@@ -144,6 +159,9 @@ onMounted(async () => {
 
   // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  // 监听番茄钟恢复事件（从插件主逻辑触发）
+  unsubscribePomodoroRestore = eventBus.on(Events.POMODORO_RESTORE, handlePomodoroRestore);
 
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
@@ -162,6 +180,9 @@ onMounted(async () => {
 onUnmounted(() => {
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (unsubscribePomodoroRestore) {
+    unsubscribePomodoroRestore();
   }
   if (refreshChannel) {
     refreshChannel.close();
