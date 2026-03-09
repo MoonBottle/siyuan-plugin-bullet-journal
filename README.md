@@ -56,16 +56,21 @@ Enter the following in any document:
 
 ```markdown
 ## Project Name
+
 > Project description
 
 [Requirements](http://doc.example.com)
 
 Task Name #task @L1
+
 [Task Details](http://doc.example.com)
 
 Item A @2026-02-28
+
 [Item Details](http://doc.example.com)
+
 Item B @2026-03-01 10:00:00~12:00:00 #done
+
 Item C @2026-03-01 10:00:00~12:00:00 #abandoned
 ```
 

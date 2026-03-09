@@ -1,12 +1,12 @@
-# Bullet Journal User Guide
+# Task Assistant User Guide
 
-Welcome to the SiYuan Bullet Journal plugin! This guide will help you get started and explore all the features.
+Welcome to the SiYuan Task Assistant plugin! This guide will help you get started and explore all the features.
 
 ## Documentation Index
 
 ### Getting Started
 
-- [Quick Start](./quick-start.md) - Install the plugin and complete basic configuration to start using Bullet Journal
+- [Quick Start](./quick-start.md) - Install the plugin and complete basic configuration to start using Task Assistant
 
 ### Core Concepts
 

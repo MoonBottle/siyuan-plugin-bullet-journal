@@ -2203,6 +2203,135 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "n9skr",
+      "x": 400,
+      "y": 145,
+      "name": "任务助手 Logo",
+      "width": 160,
+      "height": 160,
+      "fill": "#0A0A0A",
+      "layout": "none",
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "YXbqA",
+          "x": 48,
+          "y": 28,
+          "name": "Main Body",
+          "fill": "#10B981",
+          "width": 64,
+          "height": 88
+        },
+        {
+          "type": "rectangle",
+          "id": "cDusw",
+          "x": 56,
+          "y": 36,
+          "name": "Inner Area",
+          "fill": "#0A0A0A",
+          "width": 48,
+          "height": 72
+        },
+        {
+          "type": "rectangle",
+          "id": "6SRW0",
+          "x": 66,
+          "y": 56,
+          "name": "Eye Left",
+          "fill": "#10B981",
+          "width": 8,
+          "height": 8
+        },
+        {
+          "type": "rectangle",
+          "id": "HNlP2",
+          "x": 86,
+          "y": 56,
+          "name": "Eye Right",
+          "fill": "#10B981",
+          "width": 8,
+          "height": 8
+        },
+        {
+          "type": "rectangle",
+          "id": "osbiA",
+          "x": 70,
+          "y": 80,
+          "name": "Mouth",
+          "fill": "#10B981",
+          "width": 20,
+          "height": 4
+        },
+        {
+          "type": "rectangle",
+          "cornerRadius": 4,
+          "id": "upBZ5",
+          "x": 100,
+          "y": 92,
+          "name": "Task Mark Outer",
+          "fill": "#10B981",
+          "width": 24,
+          "height": 24
+        },
+        {
+          "type": "rectangle",
+          "cornerRadius": 2,
+          "id": "5OqNM",
+          "x": 104,
+          "y": 96,
+          "name": "Task Mark Inner",
+          "fill": "#0A0A0A",
+          "width": 16,
+          "height": 16
+        },
+        {
+          "type": "rectangle",
+          "id": "eB6Yx",
+          "x": 108,
+          "y": 104,
+          "name": "Check Part 1",
+          "fill": "#FFFFFF",
+          "width": 4,
+          "height": 8
+        },
+        {
+          "type": "rectangle",
+          "id": "LHf8n",
+          "x": 110,
+          "y": 108,
+          "name": "Check Part 2",
+          "fill": "#FFFFFF",
+          "width": 8,
+          "height": 4
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "A7Dtn",
+      "x": 400,
+      "y": 320,
+      "name": "Label",
+      "width": 160,
+      "height": 32,
+      "fill": "#0A0A0A",
+      "layout": "none"
+    },
+    {
+      "type": "text",
+      "id": "Flq1N",
+      "x": 480,
+      "y": 336,
+      "name": "Label Text",
+      "fill": "#10B981",
+      "content": "任务助手",
+      "textAlign": "center",
+      "fontFamily": "Inter",
+      "fontSize": 14,
+      "fontWeight": "600"
     }
   ]
 }

@@ -1,6 +1,6 @@
 # Complete Example
 
-This document demonstrates the complete usage of the Bullet Journal plugin through an "E-commerce Order System Refactoring" project.
+This document demonstrates the complete usage of the Task Assistant plugin through an "E-commerce Order System Refactoring" project.
 
 ## Project Background
 
@@ -20,26 +20,35 @@ Create a document `E-commerce-Order-System-Refactoring.sy.md` in SiYuan with the
 ### Work Tasks
 
 User Login Module #task @L1
+
 [Login Module Design](siyuan://blocks/20260220112000)
 
 Phone login #task @L2
+
 Phone login development @2026-02-20
 
 SMS verification #task @L2
+
 SMS verification development @2026-02-21
 
 Third-party login (WeChat/Google) #task @L2
+
 Third-party login development @2026-02-22
 
 Login module testing @2026-02-23
 
 Shopping Cart Optimization #task @L1
+
 Shopping cart requirements review @2026-02-24
+
 Shopping cart unit test @2026-02-25 10:00:00~12:00:00
 
 Checkout Page Development #task @L1
+
 Select shipping address @2026-02-26
+
 Select payment method @2026-02-26
+
 Order confirmation @2026-02-27
 ```
 

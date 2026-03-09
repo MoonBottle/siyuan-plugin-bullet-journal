@@ -1,12 +1,12 @@
 # Design Philosophy
 
-This document introduces the design philosophy of the Bullet Journal plugin to help you understand its core concepts and usage.
+This document introduces the design philosophy of the Task Assistant plugin to help you understand its core concepts and usage.
 
 ## Differences from Traditional Todo Apps
 
-This plugin has a fundamentally different philosophy compared to traditional todo apps (like TickTick, Todoist), closer to the **Bullet Journal** approach:
+This plugin has a fundamentally different philosophy compared to traditional todo apps (like TickTick, Todoist), closer to the **Task Assistant** approach:
 
-| Traditional Todo Apps | Bullet Journal (This Plugin) |
+| Traditional Todo Apps | Task Assistant (This Plugin) |
 |----------------------|----------------------------|
 | Focus on reminders and scheduling | Focus on recording and reviewing |
 | Support recurring tasks | **No recurring tasks** |
@@ -22,7 +22,7 @@ Not for pushing reminders, but to record what you need to do or have done today 
 
 Traditional todo apps focus on "reminders" - you set a time, and the system sends a notification at the specified time. This works well for tasks with clear deadlines but not for daily work recording.
 
-Bullet Journal focuses on "recording" - you record what you need to do and what you've done, managing tasks through review. This is better suited for knowledge workers since much work is hard to estimate time for.
+Task Assistant focuses on "recording" - you record what you need to do and what you've done, managing tasks through review. This is better suited for knowledge workers since much work is hard to estimate time for.
 
 ### Write Scattered, View Centralized
 
@@ -93,7 +93,7 @@ By leveraging SiYuan's Kramdown format, the plugin can obtain unique `blockId` f
 
 The problem with traditional todo apps: todo lists and notes are separate. You see a task in the todo list, but need to look elsewhere for details.
 
-Bullet Journal plugin solves this through bidirectional links:
+Task Assistant plugin solves this through bidirectional links:
 
 - See task in calendar → Click to jump directly to note
 - Edit in note → Auto-sync to all views
