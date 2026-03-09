@@ -6,6 +6,30 @@
 
 任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
 
+### v0.9.0 更新要点
+
+- **番茄钟功能**：全新上线番茄钟专注计时器
+  - 番茄钟计时器：支持自定义专注时长（默认 25/45/60 分钟），预设快捷选项
+  - 悬浮番茄按钮：页面右下角显示悬浮按钮，支持快速开始/暂停/继续
+  - 番茄钟自动恢复：刷新页面或重启后自动恢复之前的专注状态
+  - 番茄钟记录：自动记录每次专注时长，统计今日专注数据
+  - 待办事项专注：为待办事项添加「专注」按钮，一键开始番茄钟
+  - 日历番茄钟状态：日历视图中显示当日番茄钟完成状态
+  - 通知支持：专注完成时发送系统通知提醒
+
+![番茄钟专注中](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png)
+
+![番茄钟记录](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-dock.png)
+
+- **甘特图增强**：
+  - 任务文字显示：任务条上直接显示任务名称，悬停显示完整信息
+  - 任务上下文菜单：右键任务支持查看详情、在日历中打开
+  - 日/周视图优化：优化不同时间粒度下的任务显示效果
+
+- **日历增强**：
+  - 日视图导航：支持日视图切换和返回按钮
+  - 番茄钟状态显示：专注中的事项状态图标显示为 🍅
+
 ### v0.8.0 更新要点
 
 - **AI 对话功能**：内置任务助手面板，支持 OpenAI、Kimi、DeepSeek、阶跃星辰、智谱 AI 等所有 OpenAI 兼容的供应商。通过对话方式查询项目、任务和事项，支持生成日报并一键插入笔记
@@ -76,7 +100,7 @@
 
 插件自动解析笔记中的标记，在日历、甘特图、待办 Dock 中展示：
 
-![视图展示](https://b3logfile.com/file/2026/02/siyuan/1646651772150/assets/network-asset-todo-dock-20260228164613-8jwd1yj.png?imageView2/2/interlace/1/format/webp)
+![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
 
 ![甘特图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
 
