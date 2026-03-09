@@ -3,7 +3,7 @@
     <div class="block__icons">
       <div class="block__logo">
         <TomatoIcon :width="16" :height="16" class="block__logoicon" />
-        番茄统计
+        番茄专注
       </div>
       <span class="fn__flex-1 fn__space"></span>
       <span

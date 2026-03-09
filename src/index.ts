@@ -529,7 +529,7 @@ export default class HKWorkPlugin extends Plugin {
         position: 'RightBottom',
         size: { width: 320, height: 500 },
         icon: 'iconClock',
-        title: '番茄统计'
+        title: '番茄专注'
       },
       data: {},
       type: DOCK_TYPES.POMODORO,

@@ -124,7 +124,7 @@ private openPomodoroDock() {
       custom: {
         id: `${this.name}${TAB_TYPES.POMODORO}`,
         icon: 'iconClock',
-        title: '番茄统计',
+        title: '番茄专注',
         data: { type: TAB_TYPES.POMODORO }
       }
     });
