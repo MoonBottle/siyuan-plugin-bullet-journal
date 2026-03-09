@@ -389,11 +389,12 @@ onMounted(() => {
     return 'gantt-task';
   };
 
-  // 自定义任务文本 - gantt-task-text + data-gantt-tooltip 用于事件委托显示思源样式 tooltip
+  // 自定义任务文本 - 任务条用 on-primary，项目条用 on-secondary
   gantt.templates.task_text = function(_start, _end, task) {
     const escapedText = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const textColor = task.type === 'project' ? 'var(--b3-theme-on-secondary)' : 'var(--b3-theme-on-primary)';
     return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="
-      color: var(--b3-theme-on-background);
+      color: ${textColor};
       font-weight: 500;
       font-size: 12px;
       padding: 2px 6px;
@@ -464,6 +465,7 @@ const loadGanttStyles = () => {
   style.textContent = `
     /* 思源主题覆盖 */
     .gantt_container {
+      font-family: var(--b3-font-family) !important;
       background-color: var(--b3-theme-background) !important;
     }
     .gantt_grid_scale,
@@ -507,7 +509,18 @@ const loadGanttStyles = () => {
       background-color: var(--b3-theme-secondary) !important;
       border-color: var(--b3-theme-secondary) !important;
     }
-    /* 甘特图自定义 tooltip - 与思源刷新按钮一致（深色背景、白色文字、圆角、箭头） */
+    .gantt_task,
+    .gantt_task_bg {
+      background-color: var(--b3-theme-background) !important;
+    }
+    .gantt_layout,
+    .gantt_layout_content {
+      border-color: var(--b3-border-color) !important;
+    }
+    .gantt_grid_data {
+      background-color: var(--b3-theme-background) !important;
+    }
+    /* 甘特图自定义 tooltip - 深色背景、白色文字（与思源刷新按钮一致） */
     #gantt-tooltip.gantt-tooltip-custom {
       position: fixed;
       z-index: 2147483647;
