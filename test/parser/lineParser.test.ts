@@ -284,3 +284,278 @@ describe('parseItemLine - 中文逗号内容提取', () => {
     expect(items[1].status).toBe('completed');
   });
 });
+
+describe('parsePomodoroLine 番茄钟解析', () => {
+  it('完整格式：日期+时间范围+描述', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36 哈哈哈', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:45:36');
+    expect(pomodoro!.description).toBe('哈哈哈');
+    expect(pomodoro!.durationMinutes).toBe(1); // 4秒不足1分钟，最小为1分钟
+    expect(pomodoro!.blockId).toBe('block-1');
+  });
+
+  it('无描述格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36', 'block-2');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:45:36');
+    expect(pomodoro!.description).toBeUndefined();
+    expect(pomodoro!.durationMinutes).toBe(1); // 4秒不足1分钟，最小为1分钟
+  });
+
+  it('无结束时间格式（默认25分钟）', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32', 'block-3');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBeUndefined();
+    expect(pomodoro!.durationMinutes).toBe(25);
+  });
+
+  it('无序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('- 🍅2026-03-08 15:45:32~15:45:36 哈哈哈', 'block-4');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.description).toBe('哈哈哈');
+  });
+
+  it('有序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('1. 🍅2026-03-08 15:45:32~15:45:36 哈哈哈', 'block-5');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.description).toBe('哈哈哈');
+  });
+
+  it('跨天时间计算', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 23:30:00~00:30:00 跨天', 'block-6');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.durationMinutes).toBe(60);
+  });
+
+  it('非番茄钟行返回 null', () => {
+    const pomodoro = LineParser.parsePomodoroLine('普通文本内容', 'block-7');
+    expect(pomodoro).toBeNull();
+  });
+
+  it('格式不正确的番茄钟返回 null', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08', 'block-8');
+    expect(pomodoro).toBeNull();
+  });
+
+  it('Kramdown 转义格式：\~ 波浪号', () => {
+    const pomodoro = LineParser.parsePomodoroLine('- 🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈', 'block-9');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:45:36');
+    expect(pomodoro!.description).toBe('哈哈哈');
+  });
+});
+
+describe('parseBlockAttrs 块属性解析', () => {
+  it('解析 custom-pomodoro-status 属性', () => {
+    const attrs = LineParser.parseBlockAttrs('{: custom-pomodoro-status="running"}');
+    expect(attrs['custom-pomodoro-status']).toBe('running');
+  });
+
+  it('解析多个属性', () => {
+    const attrs = LineParser.parseBlockAttrs('{: custom-pomodoro-status="running" custom-pomodoro-start="1741427132000" custom-pomodoro-duration="25"}');
+    expect(attrs['custom-pomodoro-status']).toBe('running');
+    expect(attrs['custom-pomodoro-start']).toBe('1741427132000');
+    expect(attrs['custom-pomodoro-duration']).toBe('25');
+  });
+
+  it('无属性返回空对象', () => {
+    const attrs = LineParser.parseBlockAttrs('普通文本内容');
+    expect(Object.keys(attrs)).toHaveLength(0);
+  });
+});
+
+describe('parsePomodoroLine 带块属性解析', () => {
+  it('解析带 running 状态的番茄钟', () => {
+    const attrs = { 'custom-pomodoro-status': 'running', 'custom-pomodoro-item-content': '测试事项' };
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32', 'block-1', attrs);
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.status).toBe('running');
+    expect(pomodoro!.itemContent).toBe('测试事项');
+  });
+
+  it('解析带 completed 状态的番茄钟', () => {
+    const attrs = { 'custom-pomodoro-status': 'completed' };
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36', 'block-1', attrs);
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.status).toBe('completed');
+  });
+
+  it('无属性时 status 为 undefined', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32~15:45:36', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.status).toBeUndefined();
+    expect(pomodoro!.itemContent).toBeUndefined();
+  });
+});
+
+describe('parsePomodoroLine 实际时长解析', () => {
+  it('英文逗号格式：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+    expect(pomodoro!.description).toBe('完成代码审查');
+    // durationMinutes 仍然按时间计算，但统计时会优先使用 actualDurationMinutes
+    expect(pomodoro!.durationMinutes).toBe(5);
+  });
+
+  it('中文逗号格式：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5，2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+  });
+
+  it('逗号后1个空格：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5, 2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+  });
+
+  it('逗号后多个空格：带实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,   2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBe('15:50:32');
+  });
+
+  it('无结束时间但有实际时长', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,2026-03-08 15:45:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBeUndefined();
+    // 无结束时间时 durationMinutes 默认为25
+    expect(pomodoro!.durationMinutes).toBe(25);
+  });
+
+  it('无结束时间无实际时长（向后兼容）', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅2026-03-08 15:45:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBeUndefined();
+    expect(pomodoro!.date).toBe('2026-03-08');
+    expect(pomodoro!.startTime).toBe('15:45:32');
+    expect(pomodoro!.endTime).toBeUndefined();
+    expect(pomodoro!.durationMinutes).toBe(25);
+  });
+
+  it('带实际时长的无序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('- 🍅5,2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+  });
+
+  it('带实际时长的有序列表格式', () => {
+    const pomodoro = LineParser.parsePomodoroLine('1. 🍅5,2026-03-08 15:45:32~15:50:32 完成代码审查', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.date).toBe('2026-03-08');
+  });
+
+  it('实际时长与时间计算不一致时，actualDurationMinutes 优先', () => {
+    // 时间范围是 30 分钟，但实际时长标记为 5 分钟（暂停过）
+    const pomodoro = LineParser.parsePomodoroLine('🍅5,2026-03-08 15:00:00~15:30:00 有暂停', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.actualDurationMinutes).toBe(5);
+    expect(pomodoro!.durationMinutes).toBe(30); // 按时间计算是30分钟
+  });
+});
+
+describe('parseItemLine - 任务列表状态解析', () => {
+  it('任务列表 [ ] 未选中状态', () => {
+    const items = LineParser.parseItemLine('[ ] 整理资料 @2024-01-01', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [x] 已完成状态', () => {
+    const items = LineParser.parseItemLine('[x] 整理资料 @2024-01-01', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [X] 已完成状态', () => {
+    const items = LineParser.parseItemLine('[X] 整理资料 @2024-01-01', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [x] 与 #abandoned 共存时状态标签优先', () => {
+    const items = LineParser.parseItemLine('[x] 整理资料 @2024-01-01 #abandoned', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('abandoned');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [ ] 与 #done 共存时状态标签优先', () => {
+    const items = LineParser.parseItemLine('[ ] 整理资料 @2024-01-01 #done', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('思源笔记格式：块属性 + [ ] 未选中', () => {
+    // parseItemLine 接收的是已去除列表标记和块属性的内容
+    const items = LineParser.parseItemLine('[ ] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('事项内容');
+    expect(items[0].date).toBe('2026-03-08');
+  });
+
+  it('思源笔记格式：块属性 + [x] 已完成', () => {
+    const items = LineParser.parseItemLine('[x] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('事项内容');
+  });
+
+  it('思源笔记格式：块属性 + [X] 已完成', () => {
+    const items = LineParser.parseItemLine('[X] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('事项内容');
+  });
+
+  it('思源笔记格式：带缩进的任务列表', () => {
+    const items = LineParser.parseItemLine('[ ] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('事项内容');
+  });
+
+  it('任务列表 [x] 与多日期组合', () => {
+    const items = LineParser.parseItemLine('[x] 整理资料 @2024-01-01, 2024-01-03', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].status).toBe('completed');
+    expect(items[1].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+});

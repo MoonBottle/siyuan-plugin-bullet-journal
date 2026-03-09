@@ -1,6 +1,6 @@
 # Data Format
 
-This document provides detailed explanation of the task and item marker syntax for the Bullet Journal plugin.
+This document provides detailed explanation of the task and item marker syntax for the Task Assistant plugin.
 
 ## Document Structure
 
@@ -138,8 +138,11 @@ Create multiple items under a task, each with a different date:
 
 ```markdown
 Develop login module #task @L1
+
 Requirements review @2026-02-20
+
 Coding @2026-02-21
+
 Testing @2026-02-22
 ```
 

@@ -39,6 +39,14 @@
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
+                    v-if="!pomodoroStore.isFocusing"
+                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    aria-label="开始专注"
+                    @click.stop="openPomodoroDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     :aria-label="t('todo').migrateToToday"
                     @click.stop="handleMigrateToday(item)"
@@ -97,6 +105,14 @@
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
+                    v-if="!pomodoroStore.isFocusing"
+                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    aria-label="开始专注"
+                    @click.stop="openPomodoroDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     :aria-label="t('todo').migrateToTomorrow"
                     @click.stop="handleMigrate(item)"
@@ -153,6 +169,14 @@
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
+                  </span>
+                  <span
+                    v-if="!pomodoroStore.isFocusing"
+                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    aria-label="开始专注"
+                    @click.stop="openPomodoroDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -218,6 +242,14 @@
                         @click.stop="handleDone(item)"
                       >
                         <svg><use xlink:href="#iconCheck"></use></svg>
+                      </span>
+                      <span
+                        v-if="!pomodoroStore.isFocusing"
+                        class="block__icon b3-tooltips b3-tooltips__sw"
+                        aria-label="开始专注"
+                        @click.stop="openPomodoroDialog(item)"
+                      >
+                        <svg><use xlink:href="#iconClock"></use></svg>
                       </span>
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
@@ -328,21 +360,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useSettingsStore, useProjectStore } from '@/stores';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import { createApp } from 'vue';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
+import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
+  // 如果是专注中的事项，显示番茄图标（用 blockId 匹配）
+  console.log('[getStatusEmoji] item.blockId:', item.blockId, 'activePomodoro:', JSON.stringify(pomodoroStore.activePomodoro));
+  if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
+    console.log('[getStatusEmoji] 匹配成功，返回🍅');
+    return '🍅 ';
+  }
   const todayStr = dayjs().format('YYYY-MM-DD');
   const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
   if (isExpired) return '⚠️ ';
@@ -355,6 +396,7 @@ const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' })
 
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+const pomodoroStore = usePomodoroStore();
 const plugin = usePlugin();
 
 // 从 store 获取当前日期，确保日期变化时 computed 会重新计算
@@ -588,6 +630,28 @@ const handleAbandon = async (item: Item) => {
   }
 };
 
+// 打开番茄钟弹框
+const openPomodoroDialog = (item: Item) => {
+  const dialog = createDialog({
+    title: '开始专注',
+    content: '<div id="pomodoro-timer-dialog-mount"></div>',
+    width: '400px',
+    height: 'auto'
+  });
+
+  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
+  if (mountEl) {
+    const app = createApp(PomodoroTimerDialog, {
+      closeDialog: () => {
+        dialog.destroy();
+      },
+      preselectedItem: item,
+      hideItemList: true
+    });
+    app.mount(mountEl);
+  }
+};
+
 // 右键菜单处理
 const handleContextMenu = (event: MouseEvent, item: Item) => {
   const menuOptions = createItemMenu(
@@ -603,6 +667,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
     },
     {
       onComplete: () => handleDone(item),
+      onStartPomodoro: () => openPomodoroDialog(item),
       onMigrateToday: () => handleMigrateToday(item),
       onMigrateTomorrow: () => handleMigrate(item),
       onMigrateCustom: () => handleMigrateCustom(item),
@@ -611,13 +676,47 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       onShowDetail: () => openDetail(item),
       onShowCalendar: () => openCalendar(item)
     },
-    { showCalendarMenu: true }
+    { showCalendarMenu: true, isFocusing: pomodoroStore.isFocusing }
   );
-  
+
   menuOptions.x = event.clientX;
   menuOptions.y = event.clientY;
   showContextMenu(menuOptions);
 };
+
+// 恢复番茄钟状态
+const restorePomodoroState = async () => {
+  if (!plugin) return;
+  if (pomodoroStore.isFocusing) return; // 已经有专注状态，不需要恢复
+
+  console.log('[TodoSidebar] 尝试恢复番茄钟状态');
+  const restored = await pomodoroStore.restorePomodoro(plugin);
+  if (restored) {
+    console.log('[TodoSidebar] 番茄钟状态已恢复');
+  }
+};
+
+// 监听番茄钟恢复事件
+let unsubscribePomodoroRestore: (() => void) | null = null;
+
+onMounted(async () => {
+  // 恢复番茄钟状态
+  await restorePomodoroState();
+
+  // 监听番茄钟恢复事件（跨上下文）
+  unsubscribePomodoroRestore = eventBus.on(Events.POMODORO_RESTORE, async (data) => {
+    console.log('[TodoSidebar] 收到番茄钟恢复事件', data);
+    if (!pomodoroStore.isFocusing && plugin) {
+      await pomodoroStore.restorePomodoro(plugin);
+    }
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribePomodoroRestore) {
+    unsubscribePomodoroRestore();
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -752,6 +851,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
+  position: relative;
 }
 
 .item-header-left {
@@ -801,9 +901,12 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
 .item-actions {
   display: flex;
   gap: 4px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   opacity: 0;
   transition: opacity 0.2s;
-  margin-left: auto;
   flex-shrink: 0;
 
   .todo-item:hover & {

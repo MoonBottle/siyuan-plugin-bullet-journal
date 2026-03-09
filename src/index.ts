@@ -11,6 +11,7 @@ import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
 import TodoDock from '@/tabs/TodoDock.vue';
 import AiChatDock from '@/tabs/AiChatDock.vue';
+import PomodoroDock from '@/tabs/PomodoroDock.vue';
 import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
@@ -63,6 +64,13 @@ export default class HKWorkPlugin extends Plugin {
   /** 刚通过「仅保存 AI」写入的时间戳，用于避免同一次点击触发 confirmCallback 时再次 putFile */
   private lastAISettingsSaveTime = 0;
 
+  /** 悬浮番茄按钮元素 */
+  private floatingTomatoEl: HTMLElement | null = null;
+  /** 悬浮按钮更新定时器 */
+  private floatingTomatoTimer: number | null = null;
+  /** 番茄钟 Dock model */
+  private pomodoroDockModel: any = null;
+
   async onload() {
     const frontEnd = getFrontend();
     this.platform = frontEnd as SyFrontendTypes;
@@ -107,6 +115,37 @@ export default class HKWorkPlugin extends Plugin {
     // 监听文档树右键菜单事件
     console.log('[Task Assistant] Registering open-menu-doctree event listener');
     this.eventBus.on('open-menu-doctree', this.handleDocTreeMenu.bind(this));
+
+    // 初始化悬浮番茄按钮
+    this.initFloatingTomatoButton();
+
+    // 自动恢复进行中的番茄钟（不依赖 dock 是否打开）
+    // 延迟执行，确保所有模块已加载
+    setTimeout(() => {
+      this.checkAndRestorePomodoro();
+    }, 1000);
+  }
+
+  /**
+   * 检查并恢复进行中的番茄钟
+   * 通过 eventBus 触发，让已加载的组件处理恢复逻辑
+   */
+  private async checkAndRestorePomodoro() {
+    try {
+      // 直接读取存储文件，不通过 store
+      const { loadActivePomodoro } = await import('@/utils/pomodoroStorage');
+      const data = await loadActivePomodoro(this);
+
+      if (data) {
+        console.log('[HKWorkPlugin] 发现进行中的番茄钟，触发恢复事件');
+        // 触发恢复事件，让 PomodoroDock 组件处理
+        eventBus.emit(Events.POMODORO_RESTORE, data);
+      } else {
+        console.log('[HKWorkPlugin] 没有进行中的番茄钟需要恢复');
+      }
+    } catch (error) {
+      console.error('[HKWorkPlugin] 检查番茄钟状态失败:', error);
+    }
   }
 
   /**
@@ -120,6 +159,8 @@ export default class HKWorkPlugin extends Plugin {
     this.eventBus.off('open-menu-doctree', this.handleDocTreeMenu.bind(this));
     eventBus.clear();
     destroy();
+    // 清理悬浮番茄按钮
+    this.hideFloatingTomatoButton();
   }
 
   /**
@@ -132,6 +173,9 @@ export default class HKWorkPlugin extends Plugin {
     });
     this.removeData('ai-chat-history').catch((e) => {
       showMessage(`uninstall [${this.name}] remove data [ai-chat-history] fail: ${e.msg}`);
+    });
+    this.removeData('active-pomodoro.json').catch((e) => {
+      showMessage(`uninstall [${this.name}] remove data [active-pomodoro.json] fail: ${e.msg}`);
     });
   }
 
@@ -481,6 +525,30 @@ export default class HKWorkPlugin extends Plugin {
         this.element.innerHTML = '';
       }
     });
+
+    // 番茄钟统计 Dock
+    const pomodoroDock = this.addDock({
+      config: {
+        position: 'RightBottom',
+        size: { width: 320, height: 500 },
+        icon: 'iconClock',
+        title: '番茄专注'
+      },
+      data: {},
+      type: DOCK_TYPES.POMODORO,
+      init() {
+        this.element.style.height = '100%';
+        this.element.style.overflow = 'hidden';
+        const pinia = sharedPinia ?? createPinia();
+        const app = createApp(PomodoroDock);
+        app.use(pinia);
+        app.mount(this.element);
+      },
+      destroy() {
+        this.element.innerHTML = '';
+      }
+    });
+    this.pomodoroDockModel = pomodoroDock.model;
   }
 
   /**
@@ -613,5 +681,227 @@ export default class HKWorkPlugin extends Plugin {
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
     }, 1000);
+  }
+
+  // ============================================
+  // 悬浮番茄按钮相关方法
+  // ============================================
+
+  /**
+   * 初始化悬浮番茄按钮
+   * 检查是否有进行中的专注，如果有则显示按钮
+   * 注册事件监听
+   */
+  private initFloatingTomatoButton() {
+    // 监听专注状态变化（无论是否有进行中的专注都要监听）
+    eventBus.on(Events.POMODORO_STARTED, () => {
+      this.showFloatingTomatoButton();
+    });
+
+    // 监听番茄钟恢复事件（Dock 未打开时也需要显示悬浮按钮）
+    eventBus.on(Events.POMODORO_RESTORE, () => {
+      this.showFloatingTomatoButton();
+    });
+
+    eventBus.on(Events.POMODORO_COMPLETED, () => {
+      this.hideFloatingTomatoButton();
+    });
+
+    eventBus.on(Events.POMODORO_CANCELLED, () => {
+      this.hideFloatingTomatoButton();
+    });
+  }
+
+  /**
+   * 创建悬浮番茄按钮 DOM
+   * 使用 TomatoIcon 组件的 SVG 内容
+   */
+  private createFloatingTomatoButton(): HTMLElement {
+    const btn = document.createElement('div');
+    btn.className = 'floating-tomato-btn';
+    btn.innerHTML = `
+      <div class="tomato-icon">
+        <svg
+          class="tomato-icon"
+          viewBox="0 0 1024 1024"
+          version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+        >
+          <path
+            d="M963.05566 345.393457c-34.433245-59.444739-83.5084-112.04244-142.458001-152.926613 3.805482-11.402299 2.23519-23.908046-4.272326-34.008842a39.5855 39.5855 0 0 0-29.198939-17.938108L617.888552 123.076923l-73.365164-105.421751c-7.398762-10.638373-19.55084-16.976127-32.509284-16.976127s-25.110522 6.337754-32.509283 16.976127L406.111363 123.076923 236.887668 140.505747A39.625111 39.625111 0 0 0 207.688729 158.443855a39.676039 39.676039 0 0 0-4.286473 34.008842C77.170603 279.724138 2.716138 415.179487 2.716138 560.311229c-0.04244 62.72679 13.849691 124.689655 40.671972 181.38992 25.916888 55.129973 62.924845 104.587091 110.005305 146.956676 46.769231 42.100796 101.177719 75.119363 161.683466 98.164456a559.214854 559.214854 0 0 0 393.846153 0c60.519894-23.030946 114.928382-56.06366 161.71176-98.164456 47.08046-42.369584 84.088417-91.826702 110.005305-146.956676A423.347834 423.347834 0 0 0 1021.283777 560.311229a429.629001 429.629001 0 0 0-58.228117-214.917772z m-530.786914-145.372237c11.473033-1.188329 21.856764-7.299735 28.44916-16.778072L511.999958 109.609195l51.239611 73.633953c6.592396 9.464191 16.976127 15.589744 28.44916 16.778072l80.580017 8.304156-47.278514 32.679045a39.601061 39.601061 0 0 0-15.971707 41.874447l14.458002 59.784262-97.655172-36.413793a39.633599 39.633599 0 0 0-27.671088 0l-97.655172 36.399646 14.458001-59.784262a39.601061 39.601061 0 0 0-15.971706-41.874447l-47.278515-32.679045 80.565871-8.290009zM817.570249 829.778957a434.642617 434.642617 0 0 1-136.94076 83.013262 480.025464 480.025464 0 0 1-337.457118 0 434.642617 434.642617 0 0 1-136.94076-83.013262C126.132584 757.545535 81.938065 661.842617 81.938065 560.311229c0-125.496021 68.923077-242.758621 184.615385-314.553492l65.018568 44.944297-25.563219 105.81786a39.619452 39.619452 0 0 0 52.34306 46.401415L511.999958 385.669319l153.676392 57.280283c13.72237 5.106985 29.142352 2.23519 40.106101-7.483643a39.58267 39.58267 0 0 0 12.222812-38.917772l-25.605659-105.81786 65.018568-44.93015c2.900088 1.79664 5.78603 3.621574 8.629531 5.488948 53.616269 35.083996 98.022989 81.343943 128.43855 133.842617 31.56145 54.507515 47.533156 113.471264 47.533156 175.221927 0.04244 101.488948-44.152078 197.191866-124.44916 269.425288z m0 0"
+            fill="currentColor"
+          />
+        </svg>
+      </div>
+      <div class="remaining-time">--:--</div>
+    `;
+
+    // 点击打开番茄 Dock
+    btn.addEventListener('click', (e) => {
+      // 如果不是拖拽操作，则打开 Dock
+      if (!btn.classList.contains('dragging')) {
+        this.openPomodoroDock();
+      }
+    });
+
+    // 添加拖拽功能
+    this.makeDraggable(btn);
+
+    return btn;
+  }
+
+  /**
+   * 打开番茄钟 Dock
+   */
+  private openPomodoroDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.POMODORO}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open pomodoro dock:', error);
+    }
+  }
+
+  /**
+   * 使元素可拖拽
+   */
+  private makeDraggable(el: HTMLElement) {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialRight = 0;
+    let initialBottom = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      const rect = el.getBoundingClientRect();
+      const parentRect = el.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
+      initialRight = parentRect.right - rect.right;
+      initialBottom = parentRect.bottom - rect.bottom;
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        isDragging = true;
+        el.classList.add('dragging');
+      }
+
+      if (isDragging) {
+        const newRight = initialRight - dx;
+        const newBottom = initialBottom - dy;
+        
+        // 限制在视窗内
+        const maxRight = window.innerWidth - el.offsetWidth;
+        const maxBottom = window.innerHeight - el.offsetHeight;
+        
+        el.style.right = `${Math.max(0, Math.min(newRight, maxRight))}px`;
+        el.style.bottom = `${Math.max(0, Math.min(newBottom, maxBottom))}px`;
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      
+      setTimeout(() => {
+        el.classList.remove('dragging');
+      }, 100);
+    };
+
+    el.addEventListener('mousedown', onMouseDown);
+  }
+
+  /**
+   * 显示悬浮番茄按钮
+   */
+  private showFloatingTomatoButton() {
+    if (this.floatingTomatoEl) {
+      console.log('[Task Assistant] Floating tomato button already exists');
+      return; // 已经显示
+    }
+
+    console.log('[Task Assistant] Creating floating tomato button');
+    this.floatingTomatoEl = this.createFloatingTomatoButton();
+    document.body.appendChild(this.floatingTomatoEl);
+    console.log('[Task Assistant] Floating tomato button added to body', this.floatingTomatoEl);
+
+    // 启动定时器更新剩余时间
+    this.updateFloatingTomatoDisplay(); // 立即更新一次
+    this.floatingTomatoTimer = window.setInterval(() => {
+      this.updateFloatingTomatoDisplay();
+    }, 1000);
+  }
+
+  /**
+   * 隐藏悬浮番茄按钮
+   */
+  private hideFloatingTomatoButton() {
+    if (this.floatingTomatoTimer) {
+      window.clearInterval(this.floatingTomatoTimer);
+      this.floatingTomatoTimer = null;
+    }
+
+    if (this.floatingTomatoEl) {
+      this.floatingTomatoEl.remove();
+      this.floatingTomatoEl = null;
+    }
+  }
+
+  /**
+   * 更新悬浮按钮显示（剩余时间）
+   * 直接从存储文件读取数据，不依赖 Pinia Store
+   */
+  private async updateFloatingTomatoDisplay() {
+    if (!this.floatingTomatoEl) return;
+
+    try {
+      // 从存储文件读取进行中的番茄钟数据，而不是依赖 Pinia Store
+      const { loadActivePomodoro } = await import('@/utils/pomodoroStorage');
+      const data = await loadActivePomodoro(this);
+
+      if (!data) {
+        this.hideFloatingTomatoButton();
+        return;
+      }
+
+      // 计算剩余时间
+      let effectiveAccumulatedSeconds = data.accumulatedSeconds;
+      if (!data.isPaused) {
+        const elapsedSinceLastSave = Math.floor((Date.now() - data.startTime) / 1000);
+        effectiveAccumulatedSeconds = data.accumulatedSeconds + elapsedSinceLastSave;
+      }
+
+      const targetSeconds = data.targetDurationMinutes * 60;
+      const remainingSeconds = targetSeconds - effectiveAccumulatedSeconds;
+
+      if (remainingSeconds <= 0) {
+        this.hideFloatingTomatoButton();
+        return;
+      }
+
+      const minutes = Math.floor(remainingSeconds / 60);
+      const seconds = remainingSeconds % 60;
+      const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
+      if (timeEl) {
+        timeEl.textContent = timeStr;
+      }
+    } catch (error) {
+      console.log('[Task Assistant] Failed to update floating tomato display:', error);
+    }
   }
 }

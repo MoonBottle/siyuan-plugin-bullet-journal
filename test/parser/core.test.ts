@@ -7,6 +7,8 @@ import { describe, it, expect } from 'vitest';
 import { parseKramdown, stripListAndBlockAttr } from '@/parser/core';
 
 describe('stripListAndBlockAttr', () => {
+  // ========== 基础列表处理 ==========
+  
   it('剥离无序列表标记与行内块属性', () => {
     const line =
       '- {: id="20260305110707-woafasq" updated="20260305110347"}测试无序列表任务 #任务#';
@@ -31,6 +33,80 @@ describe('stripListAndBlockAttr', () => {
 
   it('仅有列表标记无块属性', () => {
     expect(stripListAndBlockAttr('- 任务名 #任务#')).toBe('任务名 #任务#');
+  });
+
+  // ========== 任务列表（思源实际格式）==========
+  
+  it('处理未选中任务列表 [ ]', () => {
+    const input = '- {: id="xxx"}[ ] 事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+  });
+
+  it('处理已选中任务列表 [X]', () => {
+    const input = '- {: id="xxx"}[X] 事项内容 @2026-03-08';
+    // [X] 标记会转换为 #done 标签
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08 #done');
+  });
+
+  it('处理已选中任务列表 [x]', () => {
+    const input = '- {: id="xxx"}[x] 事项内容 @2026-03-08';
+    // [x] 标记会转换为 #done 标签
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08 #done');
+  });
+
+  it('处理带缩进的任务列表', () => {
+    const input = '  - {: id="xxx"}[ ] 事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+  });
+
+  // ========== 实际 Kramdown 示例 ==========
+  
+  it('处理实际 Kramdown 未选中任务项', () => {
+    const input = '- {: id="20260308203822-5gz124r" updated="20260308204332"}[ ] 事项列表未完成事项内容 @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项列表未完成事项内容 @2026-03-08');
+  });
+
+  it('处理实际 Kramdown 已选中任务项', () => {
+    const input = '- {: id="20260308203822-n577cpp" updated="20260308203634"}[X] 事项列表已完成状态事项 @2026-03-08';
+    // [X] 标记会转换为 #done 标签
+    expect(stripListAndBlockAttr(input)).toBe('事项列表已完成状态事项 @2026-03-08 #done');
+  });
+
+  it('处理实际 Kramdown 任务行', () => {
+    const input = '- {: id="20260308203827-fmms29h" updated="20260308204332"}任务 #任务#';
+    expect(stripListAndBlockAttr(input)).toBe('任务 #任务#');
+  });
+
+  it('处理实际 Kramdown 列表项番茄钟', () => {
+    const input = '- {: id="20260308203822-p5gpzvm" updated="20260308160041"}🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈';
+    expect(stripListAndBlockAttr(input)).toBe('🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈');
+  });
+
+  it('处理行内番茄钟（非列表项）', () => {
+    const input = '  🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈';
+    expect(stripListAndBlockAttr(input)).toBe('🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈');
+  });
+
+  // ========== 边缘情况 ==========
+  
+  it('处理内容中带方括号的情况', () => {
+    const input = '- {: id="xxx"}[ ] 事项[重要] @2026-03-08';
+    expect(stripListAndBlockAttr(input)).toBe('事项[重要] @2026-03-08');
+  });
+
+  it('处理空任务标记后内容为空', () => {
+    const input = '- {: id="xxx"}[ ]';
+    expect(stripListAndBlockAttr(input)).toBe('');
+  });
+
+  it('处理只有块属性', () => {
+    const input = '{: id="xxx"}';
+    expect(stripListAndBlockAttr(input)).toBe('');
+  });
+
+  it('处理只有任务标记', () => {
+    const input = '[ ]';
+    expect(stripListAndBlockAttr(input)).toBe('');
   });
 });
 
@@ -218,6 +294,66 @@ describe('parseKramdown 事项链接解析', () => {
     expect(project!.tasks[0].items[0].links![0].name).toBe('链接F1');
     expect(project!.tasks[0].items[0].links![1].name).toBe('链接F2');
   });
+
+  it('任务列表形式的链接：未选中 [ ] 状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-10
+{: id="after-i1" }
+  - {: id="link1" }[ ] [对对对](1)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('工作事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('对对对');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('1');
+  });
+
+  it('任务列表形式的链接：已选中 [x] 状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务B #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-11
+{: id="after-i1" }
+  - {: id="link1" }[x] [链接名称](https://example.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('工作事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('链接名称');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://example.com');
+  });
+
+  it('任务列表形式的链接：已选中 [X] 状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务C #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-12
+{: id="after-i1" }
+  - {: id="link1" }[X] [GitHub](https://github.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content).toBe('工作事项');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('GitHub');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://github.com');
+  });
 });
 
 describe('parseKramdown 有序列表解析', () => {
@@ -283,5 +419,156 @@ describe('parseKramdown 有序列表解析', () => {
     expect(project!.tasks[0].items).toHaveLength(3); // 1 + 2个日期
     expect(project!.tasks[0].items[0].links).toHaveLength(2);
     expect(project!.tasks[0].items[1].links).toHaveLength(1);
+  });
+});
+
+describe('parseKramdown 番茄钟解析', () => {
+  it('项目级别番茄钟（普通文本行）', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+> 项目描述
+{: id="desc-block" }
+🍅2026-03-08 09:00:00~09:25:00 项目规划
+{: id="pomodoro-1" }
+🍅2026-03-08 10:00:00~10:25:00 项目复盘
+{: id="pomodoro-2" }
+## 任务A #任务
+{: id="task-block" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.pomodoros).toHaveLength(2);
+    expect(project!.pomodoros![0].date).toBe('2026-03-08');
+    expect(project!.pomodoros![0].startTime).toBe('09:00:00');
+    expect(project!.pomodoros![0].description).toBe('项目规划');
+    expect(project!.pomodoros![0].projectId).toBe('test-doc');
+    expect(project!.pomodoros![0].blockId).toBe('pomodoro-1');
+  });
+
+  it('任务级别番茄钟（普通文本行）', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务A #任务
+{: id="task-block" }
+🍅2026-03-08 14:00:00~14:25:00 任务专注
+{: id="pomodoro-1" }
+🍅2026-03-08 15:00:00~15:25:00 任务复盘
+{: id="pomodoro-2" }
+- [ ] 事项A @2026-03-08
+{: id="item-block" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].pomodoros).toHaveLength(2);
+    expect(project!.tasks[0].pomodoros![0].description).toBe('任务专注');
+    expect(project!.tasks[0].pomodoros![0].taskId).toBe(project!.tasks[0].id);
+  });
+
+  it('普通文本行事项下的番茄钟', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务A #任务
+{: id="task-block" }
+事项A @2026-03-08
+{: id="item-block" }
+🍅2026-03-08 16:00:00~16:25:00 事项专注1
+{: id="pomodoro-1" }
+🍅2026-03-08 17:00:00~17:25:00 事项专注2
+{: id="pomodoro-2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].pomodoros).toHaveLength(2);
+    expect(project!.tasks[0].items[0].pomodoros![0].description).toBe('事项专注1');
+    expect(project!.tasks[0].items[0].pomodoros![0].itemId).toBe(project!.tasks[0].items[0].id);
+  });
+
+  it('无序列表事项下的番茄钟（使用 - 标记）', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务A #任务
+{: id="task-block" }
+- [ ] 事项A @2026-03-08
+{: id="item-block" }
+  - 🍅2026-03-08 18:00:00~18:25:00 无序番茄1
+{: id="pomodoro-1" }
+  - 🍅2026-03-08 19:00:00~19:25:00 无序番茄2
+{: id="pomodoro-2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].pomodoros).toHaveLength(2);
+    expect(project!.tasks[0].items[0].pomodoros![0].description).toBe('无序番茄1');
+  });
+
+  it('有序列表事项下的番茄钟（使用 1. 标记）', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务A #任务
+{: id="task-block" }
+1. [ ] 事项A @2026-03-08
+{: id="item-block" }
+   1. 🍅2026-03-08 20:00:00~20:25:00 有序番茄1
+{: id="pomodoro-1" }
+   2. 🍅2026-03-08 21:00:00~21:25:00 有序番茄2
+{: id="pomodoro-2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].pomodoros).toHaveLength(2);
+    expect(project!.tasks[0].items[0].pomodoros![0].description).toBe('有序番茄1');
+  });
+
+  it('混合层级番茄钟解析', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+> 描述
+{: id="desc-block" }
+🍅2026-03-08 08:00:00~08:25:00 项目番茄
+{: id="pomodoro-project" }
+## 任务A #任务
+{: id="task-block" }
+🍅2026-03-08 09:00:00~09:25:00 任务番茄
+{: id="pomodoro-task" }
+- [ ] 事项A @2026-03-08
+{: id="item-block" }
+  - 🍅2026-03-08 10:00:00~10:25:00 事项番茄
+{: id="pomodoro-item" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.pomodoros).toHaveLength(1);
+    expect(project!.pomodoros![0].description).toBe('项目番茄');
+    expect(project!.tasks[0].pomodoros).toHaveLength(1);
+    expect(project!.tasks[0].pomodoros![0].description).toBe('任务番茄');
+    expect(project!.tasks[0].items[0].pomodoros).toHaveLength(1);
+    expect(project!.tasks[0].items[0].pomodoros![0].description).toBe('事项番茄');
+  });
+
+  it('实际 Kramdown 格式：列表项番茄钟带转义波浪号', () => {
+    // 模拟实际 API 返回的 Kramdown 格式（简化版）
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务名称 #任务 @L1
+{: id="20260308155948-4lcqs3u" updated="20260308155948"}
+- [ ] 事项内容 @2026-03-08
+{: id="20260308160041-iz1angi" updated="20260308160041"}
+  - {: id="20260308160041-pv22iji" updated="20260308160041"}🍅2026-03-08 15:45:32\\~15:45:36 哈哈哈
+{: id="20260308160041-ha4uxl2" updated="20260308160041"}
+  - {: id="20260308160041-z94dgo5" updated="20260308160041"}🍅2026-03-08 16:00:00\\~16:25:00 专注工作
+{: id="20260308160041-5audoq6" updated="20260308160041"}
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].pomodoros).toHaveLength(2);
+    expect(project!.tasks[0].items[0].pomodoros![0].description).toBe('哈哈哈');
+    expect(project!.tasks[0].items[0].pomodoros![0].endTime).toBe('15:45:36');
+    expect(project!.tasks[0].items[0].pomodoros![1].description).toBe('专注工作');
+    expect(project!.tasks[0].items[0].pomodoros![1].endTime).toBe('16:25:00');
   });
 });

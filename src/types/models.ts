@@ -9,6 +9,50 @@ export interface Link {
   url: string;
 }
 
+// 番茄钟状态
+export type PomodoroStatus = 'running' | 'completed';
+
+// 番茄钟记录
+export interface PomodoroRecord {
+  id: string;              // 记录 ID
+  date: string;            // 日期 YYYY-MM-DD
+  startTime: string;       // 开始时间 HH:mm:ss
+  endTime?: string;        // 结束时间 HH:mm:ss（可选）
+  description?: string;    // 描述
+  durationMinutes: number; // 专注时长（分钟）
+  actualDurationMinutes?: number; // 实际专注时长（分钟），用于暂停/继续功能，优先级高于 durationMinutes
+  blockId?: string;        // 块 ID（用于跳转到笔记）
+  projectId?: string;      // 所属项目 ID
+  taskId?: string;         // 所属任务 ID
+  itemId?: string;         // 所属事项 ID
+  status?: PomodoroStatus; // 专注状态（新增）
+  itemContent?: string;    // 关联事项内容（新增）
+}
+
+// 进行中的番茄钟数据（用于文件存储）
+export interface ActivePomodoroData {
+  blockId: string;              // 事项块ID（完成时在此块下添加番茄钟）
+  itemId: string;               // 事项ID
+  itemContent: string;          // 事项内容
+  startTime: number;            // 开始时间戳（毫秒）
+  targetDurationMinutes: number;// 目标专注时长（分钟）
+  accumulatedSeconds: number;   // 已累计专注秒数（不含暂停时间）
+  isPaused: boolean;            // 是否处于暂停状态
+  pauseCount: number;           // 暂停次数（用于统计）
+  totalPausedSeconds: number;   // 总暂停秒数
+  currentPauseStartTime?: number;// 当前暂停开始时间戳（如果有）
+  projectId?: string;           // 项目ID（可选）
+  projectName?: string;         // 项目名称（可选）
+  taskId?: string;              // 任务ID（可选）
+  taskName?: string;            // 任务名称（可选）
+  taskLevel?: string;           // 任务层级（可选）
+}
+
+// 当前专注状态（运行时，继承自 ActivePomodoroData）
+export interface ActivePomodoro extends ActivePomodoroData {
+  remainingSeconds: number;     // 剩余秒数 = targetDurationMinutes * 60 - accumulatedSeconds
+}
+
 // 项目
 export interface Project {
   id: string;              // 文档 ID
@@ -18,6 +62,7 @@ export interface Project {
   path: string;            // 文档路径
   groupId?: string;        // 分组 ID
   links?: Link[];          // 项目链接
+  pomodoros?: PomodoroRecord[]; // 项目级别番茄钟记录
 }
 
 // 任务
@@ -33,6 +78,7 @@ export interface Task {
   lineNumber: number;      // 行号
   docId?: string;          // 所属文档 ID
   blockId?: string;        // 块 ID（用于精确定位）
+  pomodoros?: PomodoroRecord[]; // 任务级别番茄钟记录
 }
 
 // 事项状态
@@ -58,6 +104,7 @@ export interface Item {
     startDateTime?: string;
     endDateTime?: string;
   }>;
+  pomodoros?: PomodoroRecord[]; // 事项级别番茄钟记录
 }
 
 // 分组
@@ -86,7 +133,39 @@ export interface CalendarEvent {
     docId: string;
     lineNumber: number;
     blockId?: string;
+    date?: string;
+    originalStartDateTime?: string;
+    originalEndDateTime?: string;
+    siblingItems?: Array<{
+      date: string;
+      startDateTime?: string;
+      endDateTime?: string;
+    }>;
   };
+}
+
+// 甘特图任务扩展属性（仅事项节点有，用于弹框和右键菜单）
+export interface GanttTaskExtendedProps {
+  project?: string;
+  projectLinks?: Link[];
+  task?: string;
+  taskLinks?: Link[];
+  level?: string;
+  item?: string;
+  itemStatus?: ItemStatus;
+  itemLinks?: Link[];
+  hasItems?: boolean;
+  docId?: string;
+  lineNumber?: number;
+  blockId?: string;
+  date?: string;
+  originalStartDateTime?: string;
+  originalEndDateTime?: string;
+  siblingItems?: Array<{
+    date: string;
+    startDateTime?: string;
+    endDateTime?: string;
+  }>;
 }
 
 // 甘特图数据
@@ -99,6 +178,8 @@ export interface GanttTask {
   type?: string;
   open?: boolean;
   progress?: number;
+  /** 仅事项节点有，用于点击弹框和右键菜单 */
+  extendedProps?: GanttTaskExtendedProps;
 }
 
 // 目录配置（替代 NotebookConfig）

@@ -79,12 +79,14 @@ export function createItemMenu(
     onOpenDoc?: () => void;
     onShowDetail?: () => void;
     onShowCalendar?: () => void;
+    onStartPomodoro?: () => void;
   },
   options: {
     showCalendarMenu?: boolean;
+    isFocusing?: boolean;
   } = {}
 ): MenuOptions {
-  const { showCalendarMenu = true } = options;
+  const { showCalendarMenu = true, isFocusing = false } = options;
   const isPending = item.status !== 'completed' && item.status !== 'abandoned';
 
   const items: MenuItem[] = [];
@@ -95,6 +97,14 @@ export function createItemMenu(
       icon: 'iconCheck',
       click: handlers.onComplete
     });
+
+    if (!isFocusing) {
+      items.push({
+        label: '开始专注',
+        icon: 'iconClock',
+        click: handlers.onStartPomodoro
+      });
+    }
 
     items.push({
       label: t('todo').migrate,

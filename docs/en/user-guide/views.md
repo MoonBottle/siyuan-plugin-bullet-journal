@@ -1,6 +1,6 @@
 # Views
 
-The Bullet Journal plugin provides four main views to help you view and manage tasks from different perspectives.
+The Task Assistant plugin provides four main views to help you view and manage tasks from different perspectives.
 
 ## Calendar View
 

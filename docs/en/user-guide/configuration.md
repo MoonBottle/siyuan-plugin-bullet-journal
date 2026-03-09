@@ -1,6 +1,6 @@
 # Configuration
 
-This document introduces the various configuration options for the Bullet Journal plugin.
+This document introduces the various configuration options for the Task Assistant plugin.
 
 ## Directory Configuration
 
@@ -8,7 +8,7 @@ Directory configuration determines which documents the plugin scans to extract t
 
 ### Add Scan Directory
 
-1. Open SiYuan Settings → Plugins → Bullet Journal
+1. Open SiYuan Settings → Plugins → Task Assistant
 2. Click "Add Directory" in the "Directory Configuration" area
 3. Enter the directory path (e.g., `Work/2026/Projects`)
 4. Save settings

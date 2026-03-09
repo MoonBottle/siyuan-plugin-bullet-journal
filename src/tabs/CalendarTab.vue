@@ -2,14 +2,23 @@
   <div ref="tabRootRef" class="hk-work-tab calendar-tab">
     <div class="block__icons">
       <!-- 导航按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').prev" @click="handlePrev">
+      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').prev" @click="handlePrev">
         <svg><use xlink:href="#iconLeft"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').next" @click="handleNext">
+      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').next" @click="handleNext">
         <svg><use xlink:href="#iconRight"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('calendarNav').today" @click="handleToday">
+      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').today" @click="handleToday">
         <svg><use xlink:href="#iconCalendar"></use></svg>
+      </span>
+      <!-- 返回按钮（仅在点击日期进入日视图时显示） -->
+      <span
+        v-if="isDayViewFromClick && previousView"
+        class="block__icon b3-tooltips b3-tooltips__se"
+        :aria-label="t('calendarNav').back"
+        @click="handleBack"
+      >
+        <svg><use xlink:href="#iconUndo"></use></svg>
       </span>
       <!-- 日期显示 -->
       <span class="date-title">{{ currentTitle }}</span>
@@ -24,7 +33,7 @@
         :placeholder="t('settings').projectGroups.allGroups"
       />
       <!-- 刷新按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
+      <span class="block__icon refresh-btn b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
     </div>
@@ -36,6 +45,7 @@
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
         @navigated="updateTitle"
+        @day-view-from-click="handleDayViewFromClick"
       />
     </div>
   </div>
@@ -61,6 +71,8 @@ const calendarRef = ref<any>(null);
 const currentView = ref('timeGridDay');
 const currentTitle = ref('');
 const selectedGroup = ref('');
+const previousView = ref('');
+const isDayViewFromClick = ref(false);
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
@@ -192,6 +204,24 @@ const handleToday = () => {
   updateTitle();
 };
 
+// 点击日期进入日视图时的回调
+const handleDayViewFromClick = (view: string) => {
+  previousView.value = view;
+  isDayViewFromClick.value = true;
+};
+
+// 返回上一级视图（月/周）
+const handleBack = () => {
+  if (previousView.value) {
+    const viewToRestore = previousView.value;
+    isDayViewFromClick.value = false;
+    previousView.value = '';
+    currentView.value = viewToRestore;
+    calendarRef.value?.changeView(viewToRestore);  // 显式切换，不依赖 watch
+    updateTitle();
+  }
+};
+
 // 更新标题
 const updateTitle = () => {
   if (calendarRef.value) {
@@ -298,6 +328,9 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
 // 监听视图切换
 watch(currentView, (newView) => {
   calendarRef.value?.changeView(newView);
+  if (newView !== 'timeGridDay') {
+    isDayViewFromClick.value = false;
+  }
   updateTitle();
 });
 </script>
@@ -320,6 +353,10 @@ watch(currentView, (newView) => {
     min-width: 60px;
     margin-left: 8px;
     padding: 4px 24px 4px 8px;
+  }
+
+  .refresh-btn {
+    margin-left: 6px;
   }
 }
 

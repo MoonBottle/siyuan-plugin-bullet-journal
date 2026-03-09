@@ -1,6 +1,6 @@
 # Quick Start
 
-This guide will help you complete the plugin installation and basic configuration in 5 minutes to start using Bullet Journal for task management.
+This guide will help you complete the plugin installation and basic configuration in 5 minutes to start using Task Assistant for task management.
 
 ## Step 1: Install Plugin
 
@@ -9,7 +9,7 @@ Choose one of the following methods:
 ### Option A: Install from Marketplace (Recommended)
 
 1. Open SiYuan → Settings → Marketplace → Plugins
-2. Search for "Bullet Journal"
+2. Search for "Task Assistant"
 3. Click Install
 
 ### Option B: Manual Installation
@@ -71,7 +71,7 @@ For more format details, see [Data Format](./data-format.md).
 
 ## Step 4: Configure Plugin
 
-1. Open SiYuan Settings → Plugins → Bullet Journal
+1. Open SiYuan Settings → Plugins → Task Assistant
 2. In "Directory Configuration", add paths to scan (e.g., `Work/2026/Projects`)
 3. Optionally create groups in "Group Management" to organize projects
 4. Save settings - the plugin will automatically scan for project files
@@ -100,6 +100,5 @@ For more view details, see [Views](./views.md).
 
 ## Next Steps
 
-- Understand [Design Philosophy](./design-philosophy.md) to grasp the plugin's concepts
 - Learn [Data Format](./data-format.md) in depth to master all marker syntax
 - Check [Complete Example](./examples.md) to see how real projects are organized

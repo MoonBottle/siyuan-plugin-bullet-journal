@@ -6,6 +6,30 @@
 
 任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
 
+### v0.9.0 更新要点
+
+- **番茄钟功能**：全新上线番茄钟专注计时器
+  - 番茄钟计时器：支持自定义专注时长（默认 25/45/60 分钟），预设快捷选项
+  - 悬浮番茄按钮：页面右下角显示悬浮按钮，支持快速开始/暂停/继续
+  - 番茄钟自动恢复：刷新页面或重启后自动恢复之前的专注状态
+  - 番茄钟记录：自动记录每次专注时长，统计今日专注数据
+  - 待办事项专注：为待办事项添加「专注」按钮，一键开始番茄钟
+  - 日历番茄钟状态：日历视图中显示当日番茄钟完成状态
+  - 通知支持：专注完成时发送系统通知提醒
+
+![番茄钟专注中](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png)
+
+![番茄钟记录](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-dock.png)
+
+- **甘特图增强**：
+  - 任务文字显示：任务条上直接显示任务名称，悬停显示完整信息
+  - 任务上下文菜单：右键任务支持查看详情、在日历中打开
+  - 日/周视图优化：优化不同时间粒度下的任务显示效果
+
+- **日历增强**：
+  - 日视图导航：支持日视图切换和返回按钮
+  - 番茄钟状态显示：专注中的事项状态图标显示为 🍅
+
 ### v0.8.0 更新要点
 
 - **AI 对话功能**：内置任务助手面板，支持 OpenAI、Kimi、DeepSeek、阶跃星辰、智谱 AI 等所有 OpenAI 兼容的供应商。通过对话方式查询项目、任务和事项，支持生成日报并一键插入笔记
@@ -13,18 +37,7 @@
 
 ![PixPin20260308011120.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif)
 
-![PixPin20260308005211.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_00-52-11-Ej0YLYU.gif)
-
-![PixPin20260308010147.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-01-47-jhWDwex.gif)
-
 ![image.png](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
-
-### v0.7.0 更新要点
-
-- **MCP 接入 AI**：内置 `sy-task-assistant`，让 AI 直接读取你的任务数据——智能问答、周报分析、工作规划
-- **三步即用**：插件设置中「复制 MCP 配置」生成完整 JSON，仅需替换 Token 即可在 Trae、Cursor、Claude 等 AI 助手中使用。详细说明见 [MCP 功能使用指南](https://ld246.com/article/1772677964043)
-
-![image.png](https://b3logfile.com/file/2026/03/image-GvR2idc.png)
 
 ## 功能特性
 
@@ -38,46 +51,56 @@
 **核心特性：**
 - 📅 **记录驱动** - 专注于记录已完成和待完成的事项，而非提醒
 - 🔗 **双向链接** - 点击任意任务可直接跳转到笔记中的对应位置
-- 🎯 **无侵入式** - 使用标准 Markdown 格式，无专有格式锁定
+- 🎯 **无侵入式** - 文档即任务，只需要在笔记中添加标记，即可在视图中查看和管理任务
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
 
-## 核心工作流
+## 快速开始
 
 **用标记书写笔记，然后在视图中查看。**
 
+1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
+2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
+3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
+4. **查看视图** - 通过日历、甘特图、项目列表或待办 Dock 查看任务
+
+详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
+
 ### 1. 在笔记中书写标记
 
-在任意文档中输入以下内容：
+新建文档，输入以下内容：
 
 ```markdown
 ## 项目名称
+
 > 项目描述
 
 [需求文档](http://doc.example.com)
 
 任务名称 #任务 @L1
+
 [任务详情](http://doc.example.com)
 
-事项A @2026-02-28
+事项A @2026-03-09
+
 [事项详情](http://doc.example.com)
-事项B @2026-03-01 10:00:00~12:00:00 #已完成
-事项C @2026-03-01 10:00:00~12:00:00 #已放弃
+
+事项B @2026-03-09 10:00:00~12:00:00 #已完成
+
+事项C @2026-03-08 10:00:00~12:00:00 #已放弃
 ```
 
 **标记说明：**
 - `项目名称` - 文档中的第一个一级或二级标题会被识别为项目名称，若无标题，则默认项目名称为文档文件名
 - `#任务` - 标记该行为任务
-- `@L1/@L2/@L3` - 任务层级
-- `@YYYY-MM-DD` - 事项日期
-- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围
-
-![笔记标记示例](https://b3logfile.com/file/2026/02/siyuan/1646651772150/assets/network-asset-note-20260228164606-ihf968l.png?imageView2/2/interlace/1/format/webp)
+- `@L1/@L2/@L3` - 任务层级，可选标记，默认层级为 L1
+- `@YYYY-MM-DD` - 事项日期，必选，带日期的行会被识别为事项
+- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围，与事项日期二选一，用于表示任务的具体时间范围
 
 ### 2. 在视图中查看
 
 插件自动解析笔记中的标记，在日历、甘特图、待办 Dock 中展示：
 
-![视图展示](https://b3logfile.com/file/2026/02/siyuan/1646651772150/assets/network-asset-todo-dock-20260228164613-8jwd1yj.png?imageView2/2/interlace/1/format/webp)
+![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
 
 ![甘特图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
 
@@ -100,15 +123,6 @@
 1. 从 [GitHub Release](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/releases) 下载 `package.zip`
 2. 解压到思源数据目录 `data/plugins/siyuan-plugin-bullet-journal`
 3. 在设置中启用插件
-
-## 快速开始
-
-1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
-2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
-3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
-4. **查看视图** - 通过日历、甘特图、项目列表或待办 Dock 查看任务
-
-详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
 ## MCP（Model Context Protocol）
 

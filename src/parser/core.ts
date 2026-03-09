@@ -2,7 +2,7 @@
  * 纯解析逻辑
  * 不依赖 API，仅接受字符串输入，供插件和 MCP 共用
  */
-import type { Project, Task, Item } from '@/types/models';
+import type { Project, Task, Item, PomodoroRecord } from '@/types/models';
 import { LineParser } from './lineParser';
 
 export interface KramdownBlock {
@@ -56,12 +56,44 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
 /**
  * 去掉思源列表项前的列表标记和行内块属性 {: id="..." updated="..." }，得到纯文本
  * 用于有序/无序列表中的任务行、事项行，避免任务名/事项内容带上前缀
+ *
+ * 思源笔记的格式特点：
+ * - 块属性在列表标记之后、内容之前: "- {: id=\"xxx\"}[ ] 事项内容"
+ * - 支持任务列表标记: "[ ]" 未选中, "[x]" 或 "[X]" 已选中
+ * - 支持无序列表: "- " 和有序列表: "1. "
  */
 export function stripListAndBlockAttr(line: string): string {
-  let s = line
-    .replace(/^\s*([-]|\d+\.)\s+/, '') // 列表标记 - 或 1. 等
-    .replace(/^\s*\{\:\s*[^}]*\}\s*/, ''); // 块属性 {: ... }
-  return s.trim();
+  let s = line;
+  let hasCompletedTaskList = false;
+
+  // 第一步：去除行首的列表标记（- 或 1.）
+  // 匹配: "- "、"1. "、"  - " 等
+  s = s.replace(/^\s*([-]|\d+\.)\s*/, '');
+
+  // 第二步：去除块属性 {: ... }
+  // 块属性可能在任何位置（行首、行中、行尾），需要全局替换
+  s = s.replace(/\{\:\s*[^}]*\}/g, '');
+
+  // 第三步：检测任务列表状态，然后移除标记
+  // 匹配: "[ ] "、"[x] "、"[X] " 等（支持空格变化）
+  // 如果检测到 [x] 或 [X]，记录状态
+  if (s.match(/^\s*\[\s*[xX]\s*\]/)) {
+    hasCompletedTaskList = true;
+  }
+  s = s.replace(/^\s*\[\s*[xX]?\s*\]\s*/, '');
+
+  // 第四步：再次去除可能残留的列表标记
+  // 块属性去除后可能暴露出来的 "- " 或 "1. "
+  s = s.replace(/^\s*([-]|\d+\.)\s*/, '');
+
+  s = s.trim();
+
+  // 如果原内容有 [x] 标记，添加 #done 标签以便 parseItemLine 解析
+  if (hasCompletedTaskList && !s.includes('#done') && !s.includes('#已完成')) {
+    s = s + ' #done';
+  }
+
+  return s;
 }
 
 /**
@@ -70,6 +102,17 @@ export function stripListAndBlockAttr(line: string): string {
 function isTagInBackticks(content: string, tag: string): boolean {
   const inBackticks = new RegExp('`#?' + (tag === '#任务' ? '任务' : 'task') + '`');
   return inBackticks.test(content);
+}
+
+/**
+ * 检查一行是否是番茄钟行
+ */
+function isPomodoroLine(line: string): boolean {
+  const cleaned = line
+    .replace(/^\s*([-]|\d+\.)\s+/, '')  // 列表标记
+    .replace(/^\{\:\s*[^}]*\}\s*/, '') // 块属性 {: ... }
+    .trim();
+  return cleaned.startsWith('🍅');
 }
 
 /**
@@ -91,19 +134,52 @@ export function parseKramdown(
     tasks: [],
     path: docPath || '',
     groupId: groupId,
-    links: []
+    links: [],
+    pomodoros: []
   };
 
   let currentTask: Task | null = null;
+  let currentItem: Item | null = null;
   let lineNumber = 0;
   /** 当前任务是否已遇到第一个事项，用于停止收集任务链接 */
   let hasSeenItemForCurrentTask = false;
+  /** 上一个处理的块类型：'project' | 'task' | 'item' | null */
+  let lastBlockType: 'project' | 'task' | 'item' | null = null;
 
-  for (const block of blocks) {
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
     lineNumber++;
     const content = block.content.split('\n')[0].trim();
 
     if (!content) continue;
+
+    // 检查是否是番茄钟行
+    if (isPomodoroLine(content)) {
+      const pomodoro = LineParser.parsePomodoroLine(content, block.blockId);
+      if (pomodoro) {
+        // 根据上一个块类型决定关联到哪个父级
+        if (lastBlockType === 'item' && currentItem) {
+          // 关联到当前事项
+          if (!currentItem.pomodoros) {
+            currentItem.pomodoros = [];
+          }
+          pomodoro.itemId = currentItem.id;
+          currentItem.pomodoros.push(pomodoro);
+        } else if (lastBlockType === 'task' && currentTask) {
+          // 关联到当前任务
+          if (!currentTask.pomodoros) {
+            currentTask.pomodoros = [];
+          }
+          pomodoro.taskId = currentTask.id;
+          currentTask.pomodoros.push(pomodoro);
+        } else {
+          // 关联到项目
+          pomodoro.projectId = project.id;
+          project.pomodoros!.push(pomodoro);
+        }
+      }
+      continue;
+    }
 
     if (!project.name) {
       if (content.startsWith('# ')) {
@@ -119,12 +195,14 @@ export function parseKramdown(
     if (project.name && content.startsWith('> ')) {
       const descContent = content.substring(2).trim();
       project.description = descContent;
+      lastBlockType = 'project';
       continue;
     }
 
     if (!currentTask) {
       if (content.includes('](')) {
-        const linkMatch = content.match(/\[(.*?)\]\((.*?)\)/);
+        const strippedContent = stripListAndBlockAttr(content);
+        const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch) {
           project.links!.push({ name: linkMatch[1], url: linkMatch[2] });
           continue;
@@ -154,12 +232,16 @@ export function parseKramdown(
       currentTask = LineParser.parseTaskLine(stripListAndBlockAttr(content), lineNumber);
       if (currentTask) {
         currentTask.blockId = block.blockId;
+        currentTask.pomodoros = [];
       }
+      currentItem = null;
+      lastBlockType = 'task';
       continue;
     }
 
     if (currentTask && content.includes('](') && !content.includes('@') && !hasSeenItemForCurrentTask) {
-      const linkMatch = content.match(/\[(.*?)\]\((.*?)\)/);
+      const strippedContent = stripListAndBlockAttr(content);
+      const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
       if (linkMatch) {
         if (!currentTask.links) {
           currentTask.links = [];
@@ -177,7 +259,8 @@ export function parseKramdown(
       const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
       for (let idx = 1; idx < blockLines.length; idx++) {
         const lineContent = blockLines[idx];
-        const linkMatch = lineContent.match(/\[(.*?)\]\((.*?)\)/);
+        const strippedLineContent = stripListAndBlockAttr(lineContent);
+        const linkMatch = strippedLineContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !lineContent.includes('@')) {
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
         } else {
@@ -192,7 +275,8 @@ export function parseKramdown(
 
         // 检查是否为链接行（Markdown 链接格式 [名称](URL)）
         // 支持纯链接行或带列表标记的链接行
-        const linkMatch = nextContent.match(/\[(.*?)\]\((.*?)\)/);
+        const strippedNextContent = stripListAndBlockAttr(nextContent);
+        const linkMatch = strippedNextContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !nextContent.includes('@')) {
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
           nextBlockIndex++;
@@ -210,7 +294,24 @@ export function parseKramdown(
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
+        item.pomodoros = [];
+
         currentTask.items.push(item);
+        currentItem = item;
+        lastBlockType = 'item';
+
+        // 检查块内是否有行内番茄钟（多行块的情况）
+        const blockLines = block.content.split('\n');
+        for (let i = 1; i < blockLines.length; i++) {
+          const line = blockLines[i].trim();
+          if (isPomodoroLine(line)) {
+            const pomodoro = LineParser.parsePomodoroLine(line, block.blockId);
+            if (pomodoro) {
+              pomodoro.itemId = item.id;
+              item.pomodoros.push(pomodoro);
+            }
+          }
+        }
       }
     }
   }
@@ -230,7 +331,7 @@ export function parseKramdown(
     }
   }
 
-  if (project.tasks.length === 0) {
+  if (project.tasks.length === 0 && project.pomodoros!.length === 0) {
     return null;
   }
 
