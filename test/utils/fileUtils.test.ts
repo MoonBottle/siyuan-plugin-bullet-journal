@@ -18,11 +18,13 @@ vi.mock('@/main', () => ({
 
 // Mock @/api
 const mockGetBlockKramdown = vi.fn();
+const mockGetBlockByID = vi.fn();
 const mockUpdateBlock = vi.fn();
 const mockSql = vi.fn();
 
 vi.mock('@/api', () => ({
   getBlockKramdown: (...args: any[]) => mockGetBlockKramdown(...args),
+  getBlockByID: (...args: any[]) => mockGetBlockByID(...args),
   updateBlock: (...args: any[]) => mockUpdateBlock(...args),
   sql: (...args: any[]) => mockSql(...args)
 }));
@@ -553,7 +555,9 @@ describe('updateBlockDateTime', () => {
 describe('updateBlockContent', () => {
   beforeEach(() => {
     mockGetBlockKramdown.mockReset();
+    mockGetBlockByID.mockReset();
     mockUpdateBlock.mockReset();
+    mockGetBlockByID.mockResolvedValue(undefined);
   });
 
   it('基本功能：添加标签到块内容', async () => {
@@ -591,6 +595,35 @@ describe('updateBlockContent', () => {
       `[x] 事项列表未完成事项内容 @2026-03-08
   🍅2026-03-08 15:45:32~15:45:36 哈哈哈
   {: id="20260308203822-j3j7gl8"}`,
+      'block-1'
+    );
+  });
+
+  it('内容子块无 [ ] 时从父块解析出含 [ ] 的事项块 kramdown', async () => {
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'parent-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="parent-block-1"}[ ] 事项列表未完成事项内容 @2026-03-08
+  🍅2026-03-08 15:45:32~15:45:36 哈哈哈
+  {: id="block-1"}`
+        });
+      }
+      return Promise.resolve({
+        kramdown: '事项列表未完成事项内容 @2026-03-08\n🍅2026-03-08 15:45:32~15:45:36 哈哈哈\n{: id="block-1"}'
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '#已完成');
+
+    expect(result).toBe(true);
+    expect(mockGetBlockKramdown).toHaveBeenCalledWith('parent-block-1');
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 事项列表未完成事项内容 @2026-03-08
+  🍅2026-03-08 15:45:32~15:45:36 哈哈哈
+  {: id="block-1"}`,
       'block-1'
     );
   });

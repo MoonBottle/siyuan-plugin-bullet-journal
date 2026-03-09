@@ -3,10 +3,10 @@
  */
 import { openTab } from 'siyuan';
 import { usePlugin } from '@/main';
-import { sql, getBlockKramdown, updateBlock } from '@/api';
+import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
 import type { ItemStatus } from '@/types/models';
 import { t } from '@/i18n';
-import { stripListAndBlockAttr } from '@/parser/core';
+import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
 
 /**
  * 时间加一小时
@@ -594,14 +594,39 @@ export async function updateBlockContent(
   if (!blockId) return false;
 
   try {
-    // 统一从 API 获取
-    const result = await getBlockKramdown(blockId);
-    if (!result?.kramdown) {
-      console.error('[Task Assistant] Failed to get block kramdown');
-      return false;
+    // 统一先查父块：若父块 kramdown 中含 blockId 对应块且该块事项行有 [ ]/[x]，则用解析出的事项块 kramdown
+    let kramdown: string | null = null;
+    const block = await getBlockByID(blockId);
+    if (block?.parent_id) {
+      const parentResult = await getBlockKramdown(block.parent_id);
+      if (parentResult?.kramdown) {
+        const blocks = parseKramdownBlocks(parentResult.kramdown);
+        const itemBlock = blocks.find((b) => b.blockId === blockId);
+        if (itemBlock) {
+          const itemBlockLines = itemBlock.content.split('\n');
+          for (const line of itemBlockLines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('{:')) continue;
+            if (trimmed.startsWith('🍅')) continue;
+            if (trimmed.includes('@') && /\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+              if (isTaskListFormat(trimmed)) {
+                kramdown = itemBlock.raw;
+              }
+              break;
+            }
+          }
+        }
+      }
     }
-
-    const kramdown = result.kramdown;
+    if (!kramdown) {
+      const result = await getBlockKramdown(blockId);
+      if (!result?.kramdown) {
+        console.error('[Task Assistant] Failed to get block kramdown');
+        return false;
+      }
+      kramdown = result.kramdown;
+    }
+    console.log('[Task Assistant] updateBlockContent - kramdown 来源:', kramdown ? (block?.parent_id ? '父块解析' : '当前块') : '无', '| blockId:', blockId, '| parent_id:', block?.parent_id);
     console.log('[Task Assistant] updateBlockContent - raw kramdown:', JSON.stringify(kramdown));
     const lines = kramdown.split('\n');
     console.log('[Task Assistant] updateBlockContent - lines:', lines);
@@ -686,6 +711,11 @@ export async function updateBlockContent(
 
       // 回写整个块
       const newContent = lines.join('\n');
+      console.log('[Task Assistant] updateBlockContent - updateBlock 调用:', {
+        blockId,
+        newContent: JSON.stringify(newContent),
+        newContentPreview: newContent.substring(0, 200) + (newContent.length > 200 ? '...' : '')
+      });
       await updateBlock('markdown', newContent, blockId);
       return true;
     }
@@ -693,6 +723,10 @@ export async function updateBlockContent(
     // 降级：如果没有找到事项行，使用原来的方式
     let content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
     const newContent = `${content} ${suffix}`;
+    console.log('[Task Assistant] updateBlockContent - updateBlock 调用(降级):', {
+      blockId,
+      newContent: JSON.stringify(newContent)
+    });
     await updateBlock('markdown', newContent, blockId);
 
     return true;
