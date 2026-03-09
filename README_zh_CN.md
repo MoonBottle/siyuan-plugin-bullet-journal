@@ -13,18 +13,7 @@
 
 ![PixPin20260308011120.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif)
 
-![PixPin20260308005211.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_00-52-11-Ej0YLYU.gif)
-
-![PixPin20260308010147.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-01-47-jhWDwex.gif)
-
 ![image.png](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
-
-### v0.7.0 更新要点
-
-- **MCP 接入 AI**：内置 `sy-task-assistant`，让 AI 直接读取你的任务数据——智能问答、周报分析、工作规划
-- **三步即用**：插件设置中「复制 MCP 配置」生成完整 JSON，仅需替换 Token 即可在 Trae、Cursor、Claude 等 AI 助手中使用。详细说明见 [MCP 功能使用指南](https://ld246.com/article/1772677964043)
-
-![image.png](https://b3logfile.com/file/2026/03/image-GvR2idc.png)
 
 ## 功能特性
 
@@ -38,7 +27,7 @@
 **核心特性：**
 - 📅 **记录驱动** - 专注于记录已完成和待完成的事项，而非提醒
 - 🔗 **双向链接** - 点击任意任务可直接跳转到笔记中的对应位置
-- 🎯 **无侵入式** - 使用标准 Markdown 格式，无专有格式锁定
+- 🎯 **无侵入式** - 文档即任务，只需要在笔记中添加标记，即可在视图中查看和管理任务
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
 
 ## 核心工作流
@@ -72,9 +61,9 @@
 **标记说明：**
 - `项目名称` - 文档中的第一个一级或二级标题会被识别为项目名称，若无标题，则默认项目名称为文档文件名
 - `#任务` - 标记该行为任务
-- `@L1/@L2/@L3` - 任务层级
-- `@YYYY-MM-DD` - 事项日期
-- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围
+- `@L1/@L2/@L3` - 任务层级，可选标记，默认层级为 L1
+- `@YYYY-MM-DD` - 事项日期，必选，带日期的行会被识别为事项
+- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围，与事项日期二选一，用于表示任务的具体时间范围
 
 ![笔记标记示例](https://b3logfile.com/file/2026/02/siyuan/1646651772150/assets/network-asset-note-20260228164606-ihf968l.png?imageView2/2/interlace/1/format/webp)
 

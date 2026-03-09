@@ -174,6 +174,9 @@ export default class HKWorkPlugin extends Plugin {
     this.removeData('ai-chat-history').catch((e) => {
       showMessage(`uninstall [${this.name}] remove data [ai-chat-history] fail: ${e.msg}`);
     });
+    this.removeData('active-pomodoro.json').catch((e) => {
+      showMessage(`uninstall [${this.name}] remove data [active-pomodoro.json] fail: ${e.msg}`);
+    });
   }
 
   /**

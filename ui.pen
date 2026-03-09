@@ -34,7 +34,6 @@
               "width": 160,
               "height": 160,
               "fill": "#F5F5F5",
-              "cornerRadius": 40,
               "layout": "none",
               "children": [
                 {
