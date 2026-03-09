@@ -18,12 +18,16 @@ import dayjs from '@/utils/dayjs';
 interface PomodoroState {
   activePomodoro: ActivePomodoro | null;
   timerInterval: number | null;
+  timerStartTimestamp: number | null; // 计时器启动时的时间戳
+  lastAccumulatedSeconds: number; // 用于计算时间差的基础累计秒数
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
   state: (): PomodoroState => ({
     activePomodoro: null,
-    timerInterval: null
+    timerInterval: null,
+    timerStartTimestamp: null,
+    lastAccumulatedSeconds: 0
   }),
 
   getters: {
@@ -106,10 +110,16 @@ export const usePomodoroStore = defineStore('pomodoro', {
       if (!this.activePomodoro || this.activePomodoro.isPaused) return false;
 
       try {
+        // 先更新一次计时，确保 accumulatedSeconds 是最新的
+        this.updateTimer();
+
         // 设置暂停状态
         this.activePomodoro.isPaused = true;
         this.activePomodoro.pauseCount++;
         this.activePomodoro.currentPauseStartTime = Date.now();
+
+        // 更新 lastAccumulatedSeconds，以便恢复时正确计算
+        this.lastAccumulatedSeconds = this.activePomodoro.accumulatedSeconds;
 
         // 停止定时器
         this.stopTimer();
@@ -148,6 +158,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
         this.activePomodoro.isPaused = false;
         this.activePomodoro.currentPauseStartTime = undefined;
 
+        // 重新设置时间戳，从当前时间开始计算
+        this.timerStartTimestamp = Date.now();
+        // lastAccumulatedSeconds 已经在暂停时保存了
+
         // 重新启动定时器
         this.startTimer();
 
@@ -167,35 +181,87 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
     /**
      * 启动倒计时定时器
+     * 使用 Date.now() 时间戳计算，避免页面后台时 setInterval 被节流导致计时不准
      */
     startTimer() {
       if (this.timerInterval) {
         window.clearInterval(this.timerInterval);
       }
 
+      // 记录计时器启动时的时间戳和基础累计秒数
+      this.timerStartTimestamp = Date.now();
+      this.lastAccumulatedSeconds = this.activePomodoro?.accumulatedSeconds || 0;
+
+      // 添加页面可见性变化监听
+      this.setupVisibilityListener();
+
       this.timerInterval = window.setInterval(() => {
-        if (!this.activePomodoro) {
-          this.stopTimer();
-          return;
-        }
-
-        // 如果处于暂停状态，不增加 accumulatedSeconds
-        if (this.activePomodoro.isPaused) {
-          return;
-        }
-
-        // 增加累计专注秒数
-        this.activePomodoro.accumulatedSeconds++;
-
-        // 更新剩余时间
-        const targetSeconds = this.activePomodoro.targetDurationMinutes * 60;
-        this.activePomodoro.remainingSeconds = targetSeconds - this.activePomodoro.accumulatedSeconds;
-
-        // 检查是否达到目标时长
-        if (this.activePomodoro.accumulatedSeconds >= targetSeconds) {
-          this.completePomodoro();
-        }
+        this.updateTimer();
       }, 1000);
+    },
+
+    /**
+     * 更新计时器状态
+     * 基于时间戳计算经过的时间
+     */
+    updateTimer() {
+      if (!this.activePomodoro) {
+        this.stopTimer();
+        return;
+      }
+
+      // 如果处于暂停状态，不更新计时
+      if (this.activePomodoro.isPaused) {
+        return;
+      }
+
+      // 基于时间戳计算经过的时间（不受 setInterval 节流影响）
+      const elapsedMs = Date.now() - this.timerStartTimestamp!;
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+      // 更新累计专注秒数（加上之前已经专注的时间）
+      this.activePomodoro.accumulatedSeconds = this.lastAccumulatedSeconds + elapsedSeconds;
+
+      // 更新剩余时间
+      const targetSeconds = this.activePomodoro.targetDurationMinutes * 60;
+      this.activePomodoro.remainingSeconds = Math.max(0, targetSeconds - this.activePomodoro.accumulatedSeconds);
+
+      // 检查是否达到目标时长
+      if (this.activePomodoro.accumulatedSeconds >= targetSeconds) {
+        this.completePomodoro();
+      }
+    },
+
+    /**
+     * 设置页面可见性变化监听
+     * 当页面重新可见时，立即校准时间
+     */
+    setupVisibilityListener() {
+      // 先移除已有的监听
+      this.removeVisibilityListener();
+
+      // 创建监听函数
+      const visibilityHandler = () => {
+        if (document.visibilityState === 'visible' && this.activePomodoro && !this.activePomodoro.isPaused) {
+          // 页面重新可见，立即校准时间
+          this.updateTimer();
+        }
+      };
+
+      // 保存引用以便后续移除
+      (this as any)._visibilityHandler = visibilityHandler;
+      document.addEventListener('visibilitychange', visibilityHandler);
+    },
+
+    /**
+     * 移除页面可见性变化监听
+     */
+    removeVisibilityListener() {
+      const handler = (this as any)._visibilityHandler;
+      if (handler) {
+        document.removeEventListener('visibilitychange', handler);
+        (this as any)._visibilityHandler = null;
+      }
     },
 
     /**
@@ -206,6 +272,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
         window.clearInterval(this.timerInterval);
         this.timerInterval = null;
       }
+      // 清理页面可见性监听
+      this.removeVisibilityListener();
+      // 重置时间戳
+      this.timerStartTimestamp = null;
     },
 
     /**
