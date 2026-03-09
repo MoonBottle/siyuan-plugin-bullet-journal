@@ -63,15 +63,6 @@
       <div class="info-card" v-if="currentItem?.project">
         <div class="info-card-header">
           <span class="info-card-label">项目</span>
-          <button
-            class="copy-btn"
-            @click="copyToClipboard(currentItem.project.name)"
-            :title="'复制'"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-            </svg>
-          </button>
         </div>
         <div class="info-card-content">
           <span>{{ currentItem.project.name }}</span>
@@ -98,15 +89,6 @@
           <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
             {{ currentItem.task.level }}
           </span>
-          <button
-            class="copy-btn"
-            @click="copyToClipboard(currentItem.task.name)"
-            :title="'复制'"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-            </svg>
-          </button>
         </div>
         <div class="info-card-content">
           <span>{{ currentItem.task.name }}</span>
@@ -130,15 +112,6 @@
       <div class="info-card item-card clickable" @click="openItemDocument">
         <div class="info-card-header">
           <span class="info-card-label">事项</span>
-          <button
-            class="copy-btn"
-            @click.stop="copyToClipboard(itemContent)"
-            :title="'复制'"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-            </svg>
-          </button>
         </div>
         <div class="info-card-content">
           <span>{{ itemContent }}</span>
@@ -289,19 +262,6 @@ const strokeDashoffset = computed(() => {
 
   return circumference * (1 - progress);
 });
-
-// 复制到剪贴板
-const copyToClipboard = async (text: string) => {
-  if (!text) return;
-  try {
-    await navigator.clipboard.writeText(text);
-    // 可以在这里添加复制成功的提示
-    const { showMessage } = await import('@/utils/dialog');
-    showMessage('已复制到剪贴板');
-  } catch (err) {
-    console.error('复制失败:', err);
-  }
-};
 
 // 打开外部链接
 const openLink = (url: string) => {
@@ -635,42 +595,6 @@ const openItemDocument = async () => {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 10px;
-}
-
-// 复制按钮样式 - 参考 dialog.ts
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0.5;
-  transition: all 0.2s;
-  color: var(--b3-theme-on-surface);
-  flex-shrink: 0;
-
-  &:hover {
-    opacity: 1;
-    background: var(--b3-theme-surface);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  svg {
-    width: 14px;
-    height: 14px;
-    display: block;
-    fill: currentColor;
-    pointer-events: none;
-  }
 }
 
 // 链接标签样式 - 参考 dialog.ts
