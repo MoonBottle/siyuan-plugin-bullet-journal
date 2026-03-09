@@ -253,9 +253,9 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
         showEventDetailModal(eventData);
       }
     },
-    { showCalendarMenu: false }
+    { showCalendarMenu: false, isFocusing: pomodoroStore.isFocusing }
   );
-  
+
   menuOptions.x = mouseEvent?.clientX ?? 0;
   menuOptions.y = mouseEvent?.clientY ?? 0;
   showContextMenu(menuOptions);
