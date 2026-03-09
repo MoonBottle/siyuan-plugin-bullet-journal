@@ -40,6 +40,13 @@
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
+                    aria-label="开始专注"
+                    @click.stop="openPomodoroDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconFocus"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon b3-tooltips b3-tooltips__sw"
                     :aria-label="t('todo').migrateToToday"
                     @click.stop="handleMigrateToday(item)"
                   >
@@ -98,6 +105,13 @@
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
+                    aria-label="开始专注"
+                    @click.stop="openPomodoroDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconTomato"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon b3-tooltips b3-tooltips__sw"
                     :aria-label="t('todo').migrateToTomorrow"
                     @click.stop="handleMigrate(item)"
                   >
@@ -153,6 +167,13 @@
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    aria-label="开始专注"
+                    @click.stop="openPomodoroDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconTomato"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -218,6 +239,13 @@
                         @click.stop="handleDone(item)"
                       >
                         <svg><use xlink:href="#iconCheck"></use></svg>
+                      </span>
+                      <span
+                        class="block__icon b3-tooltips b3-tooltips__sw"
+                        aria-label="开始专注"
+                        @click.stop="openPomodoroDialog(item)"
+                      >
+                        <svg><use xlink:href="#iconTomato"></use></svg>
                       </span>
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
@@ -333,7 +361,9 @@ import { useSettingsStore, useProjectStore } from '@/stores';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import { createApp } from 'vue';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
@@ -588,6 +618,28 @@ const handleAbandon = async (item: Item) => {
   }
 };
 
+// 打开番茄钟弹框
+const openPomodoroDialog = (item: Item) => {
+  const dialog = createDialog({
+    title: '开始专注',
+    content: '<div id="pomodoro-timer-dialog-mount"></div>',
+    width: '400px',
+    height: 'auto'
+  });
+
+  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
+  if (mountEl) {
+    const app = createApp(PomodoroTimerDialog, {
+      closeDialog: () => {
+        dialog.destroy();
+      },
+      preselectedItem: item,
+      hideItemList: true
+    });
+    app.mount(mountEl);
+  }
+};
+
 // 右键菜单处理
 const handleContextMenu = (event: MouseEvent, item: Item) => {
   const menuOptions = createItemMenu(
@@ -603,6 +655,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
     },
     {
       onComplete: () => handleDone(item),
+      onStartPomodoro: () => openPomodoroDialog(item),
       onMigrateToday: () => handleMigrateToday(item),
       onMigrateTomorrow: () => handleMigrate(item),
       onMigrateCustom: () => handleMigrateCustom(item),
@@ -613,7 +666,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
     },
     { showCalendarMenu: true }
   );
-  
+
   menuOptions.x = event.clientX;
   menuOptions.y = event.clientY;
   showContextMenu(menuOptions);

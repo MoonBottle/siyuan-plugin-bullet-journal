@@ -79,6 +79,7 @@ export function createItemMenu(
     onOpenDoc?: () => void;
     onShowDetail?: () => void;
     onShowCalendar?: () => void;
+    onStartPomodoro?: () => void;
   },
   options: {
     showCalendarMenu?: boolean;
@@ -94,6 +95,12 @@ export function createItemMenu(
       label: t('todo').complete,
       icon: 'iconCheck',
       click: handlers.onComplete
+    });
+
+    items.push({
+      label: '开始专注',
+      icon: 'iconFocus',
+      click: handlers.onStartPomodoro
     });
 
     items.push({

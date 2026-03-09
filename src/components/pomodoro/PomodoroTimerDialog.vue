@@ -1,8 +1,8 @@
 <template>
   <div ref="dialogContent" class="pomodoro-timer-dialog">
-    <div class="dialog-body">
-      <!-- 左侧：待办事项列表 -->
-      <div class="left-panel">
+    <div class="dialog-body" :class="{ 'no-left-panel': hideItemList }">
+      <!-- 左侧：待办事项列表（仅在非预选模式下显示） -->
+      <div v-if="!hideItemList" class="left-panel">
         <div class="panel-title">选择待办事项</div>
         <div class="item-list">
           <!-- 过期事项 -->
@@ -45,7 +45,7 @@
       </div>
 
       <!-- 右侧：专注时长设置 -->
-      <div class="right-panel">
+      <div class="right-panel" :class="{ 'full-width': hideItemList }">
         <div class="panel-title">设置专注时长</div>
         <div class="duration-section">
           <div class="quick-buttons">
@@ -73,6 +73,13 @@
           </div>
         </div>
 
+        <!-- 预选事项信息（仅在预选模式下显示） -->
+        <div v-if="hideItemList && selectedItem" class="preselected-item-info">
+          <div class="info-label">专注事项</div>
+          <div class="info-content">{{ selectedItem.content }}</div>
+          <div v-if="selectedItem.project" class="info-project">{{ selectedItem.project.name }}</div>
+        </div>
+
         <div class="action-section">
           <button
             class="start-btn"
@@ -94,10 +101,13 @@ import { useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
+import { TAB_TYPES } from '@/constants';
 
 const props = defineProps<{
   closeDialog: () => void;
-}>();
+  preselectedItem?: Item;
+  hideItemList?: boolean;
+}>()
 
 const plugin = usePlugin() as any;
 const projectStore = useProjectStore();
@@ -174,6 +184,10 @@ const startPomodoro = async () => {
 
   if (success) {
     props.closeDialog();
+    // 自动切换到番茄 Dock
+    if (plugin && plugin.openCustomTab) {
+      plugin.openCustomTab(TAB_TYPES.POMODORO);
+    }
   }
 };
 
@@ -183,11 +197,16 @@ const closeDialog = () => {
 };
 
 onMounted(() => {
-  // 默认选中第一个事项（如果有）
-  if (expiredItems.value.length > 0) {
-    selectedItem.value = expiredItems.value[0];
-  } else if (todayItems.value.length > 0) {
-    selectedItem.value = todayItems.value[0];
+  // 如果有预选事项，直接使用
+  if (props.preselectedItem) {
+    selectedItem.value = props.preselectedItem;
+  } else {
+    // 默认选中第一个事项（如果有）
+    if (expiredItems.value.length > 0) {
+      selectedItem.value = expiredItems.value[0];
+    } else if (todayItems.value.length > 0) {
+      selectedItem.value = todayItems.value[0];
+    }
   }
 });
 </script>
@@ -355,6 +374,33 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.preselected-item-info {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  border-left: 3px solid var(--b3-theme-primary);
+
+  .info-label {
+    font-size: 11px;
+    color: var(--b3-theme-on-surface);
+    margin-bottom: 4px;
+  }
+
+  .info-content {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--b3-theme-on-background);
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+
+  .info-project {
+    font-size: 11px;
+    color: var(--b3-theme-on-surface);
+  }
 }
 
 .start-btn {
