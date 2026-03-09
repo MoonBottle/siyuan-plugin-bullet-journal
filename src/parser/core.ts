@@ -64,6 +64,7 @@ export function parseKramdownBlocks(kramdown: string): KramdownBlock[] {
  */
 export function stripListAndBlockAttr(line: string): string {
   let s = line;
+  let hasCompletedTaskList = false;
 
   // 第一步：去除行首的列表标记（- 或 1.）
   // 匹配: "- "、"1. "、"  - " 等
@@ -73,15 +74,26 @@ export function stripListAndBlockAttr(line: string): string {
   // 块属性可能在任何位置（行首、行中、行尾），需要全局替换
   s = s.replace(/\{\:\s*[^}]*\}/g, '');
 
-  // 第三步：去除任务列表标记 [ ] 或 [x] 或 [X]
+  // 第三步：检测任务列表状态，然后移除标记
   // 匹配: "[ ] "、"[x] "、"[X] " 等（支持空格变化）
+  // 如果检测到 [x] 或 [X]，记录状态
+  if (s.match(/^\s*\[\s*[xX]\s*\]/)) {
+    hasCompletedTaskList = true;
+  }
   s = s.replace(/^\s*\[\s*[xX]?\s*\]\s*/, '');
 
   // 第四步：再次去除可能残留的列表标记
   // 块属性去除后可能暴露出来的 "- " 或 "1. "
   s = s.replace(/^\s*([-]|\d+\.)\s*/, '');
 
-  return s.trim();
+  s = s.trim();
+
+  // 如果原内容有 [x] 标记，添加 #done 标签以便 parseItemLine 解析
+  if (hasCompletedTaskList && !s.includes('#done') && !s.includes('#已完成')) {
+    s = s + ' #done';
+  }
+
+  return s;
 }
 
 /**

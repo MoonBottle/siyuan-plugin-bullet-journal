@@ -443,10 +443,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该只修改事项行，保留番茄钟行和块属性行
+    // 应该只修改事项行，保留番茄钟行和块属性行，保留任务列表标记
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `工作事项 @2026-03-09 10:00:00~11:00:00
+      `[ ] 工作事项 @2026-03-09 10:00:00~11:00:00
   🍅2026-03-08 09:00:00~09:25:00 第一个番茄
   {: id="yyy"}`,
       'block-1'
@@ -473,10 +473,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该只修改事项行，保留所有番茄钟行
+    // 应该只修改事项行，保留所有番茄钟行，保留任务列表标记
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `复杂任务 @2026-03-10
+      `[ ] 复杂任务 @2026-03-10
   🍅2026-03-08 09:00:00~09:25:00 第一个番茄
   🍅2026-03-08 10:00:00~10:25:00 第二个番茄
   🍅2026-03-08 14:00:00~14:25:00 第三个番茄
@@ -509,10 +509,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该更新日期并保留番茄钟行，连续日期合并为范围
+    // 应该更新日期并保留番茄钟行，连续日期合并为范围，保留任务列表标记
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `跨天任务 @2026-03-09~03-10
+      `[ ] 跨天任务 @2026-03-09~03-10
   🍅2026-03-08 09:00:00~09:25:00 第一天番茄
   {: id="yyy"}`,
       'block-1'
@@ -539,10 +539,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该更新日期、保留状态标签和番茄钟行
+    // 应该更新日期、保留任务列表标记和番茄钟行（任务列表格式不保留 #已完成 标签）
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `已完成任务 @2026-03-09 14:00:00~15:00:00 #已完成
+      `[x] 已完成任务 @2026-03-09 14:00:00~15:00:00
   🍅2026-03-08 09:00:00~09:25:00
   {: id="yyy"}`,
       'block-1'
@@ -584,11 +584,11 @@ describe('updateBlockContent', () => {
     const result = await updateBlockContent('block-1', '#已完成');
 
     expect(result).toBe(true);
-    // 应该只修改事项行，去除列表标记、任务标记、块属性，添加标签
+    // 应该只修改事项行，保留任务列表标记，添加标签
     // 番茄钟行应该保留不变
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `事项列表未完成事项内容 @2026-03-08 #已完成
+      `[ ] 事项列表未完成事项内容 @2026-03-08 #已完成
   🍅2026-03-08 15:45:32~15:45:36 哈哈哈
   {: id="20260308203822-j3j7gl8"}`,
       'block-1'
@@ -605,10 +605,10 @@ describe('updateBlockContent', () => {
     const result = await updateBlockContent('block-1', '#已完成');
 
     expect(result).toBe(true);
-    // 应该去除 - [ ] 和块属性
+    // 应该保留任务列表标记，去除列表标记和块属性
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `待办事项 @2026-03-08 #已完成
+      `[ ] 待办事项 @2026-03-08 #已完成
   {: id="yyy"}`,
       'block-1'
     );
@@ -624,10 +624,10 @@ describe('updateBlockContent', () => {
     const result = await updateBlockContent('block-1', '#已放弃');
 
     expect(result).toBe(true);
-    // 应该去除 - [X] 和块属性
+    // 应该保留任务列表标记（保持 [X]），去除列表标记和块属性
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `已完成事项 @2026-03-08 #已放弃
+      `[X] 已完成事项 @2026-03-08 #已放弃
   {: id="yyy"}`,
       'block-1'
     );
@@ -645,10 +645,10 @@ describe('updateBlockContent', () => {
     const result = await updateBlockContent('block-1', '#已完成');
 
     expect(result).toBe(true);
-    // 两个番茄钟行都应该保留
+    // 两个番茄钟行都应该保留，保留任务列表标记
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `工作事项 @2026-03-08 #已完成
+      `[ ] 工作事项 @2026-03-08 #已完成
   🍅2026-03-08 09:00:00~09:25:00 第一个番茄
   🍅2026-03-08 10:00:00~10:25:00 第二个番茄
   {: id="yyy"}`,

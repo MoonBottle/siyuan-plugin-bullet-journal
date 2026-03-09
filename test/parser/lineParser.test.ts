@@ -484,3 +484,78 @@ describe('parsePomodoroLine 实际时长解析', () => {
     expect(pomodoro!.durationMinutes).toBe(30); // 按时间计算是30分钟
   });
 });
+
+describe('parseItemLine - 任务列表状态解析', () => {
+  it('任务列表 [ ] 未选中状态', () => {
+    const items = LineParser.parseItemLine('[ ] 整理资料 @2024-01-01', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [x] 已完成状态', () => {
+    const items = LineParser.parseItemLine('[x] 整理资料 @2024-01-01', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [X] 已完成状态', () => {
+    const items = LineParser.parseItemLine('[X] 整理资料 @2024-01-01', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [x] 与 #abandoned 共存时状态标签优先', () => {
+    const items = LineParser.parseItemLine('[x] 整理资料 @2024-01-01 #abandoned', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('abandoned');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('任务列表 [ ] 与 #done 共存时状态标签优先', () => {
+    const items = LineParser.parseItemLine('[ ] 整理资料 @2024-01-01 #done', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+
+  it('思源笔记格式：块属性 + [ ] 未选中', () => {
+    // parseItemLine 接收的是已去除列表标记和块属性的内容
+    const items = LineParser.parseItemLine('[ ] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('事项内容');
+    expect(items[0].date).toBe('2026-03-08');
+  });
+
+  it('思源笔记格式：块属性 + [x] 已完成', () => {
+    const items = LineParser.parseItemLine('[x] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('事项内容');
+  });
+
+  it('思源笔记格式：块属性 + [X] 已完成', () => {
+    const items = LineParser.parseItemLine('[X] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('completed');
+    expect(items[0].content).toBe('事项内容');
+  });
+
+  it('思源笔记格式：带缩进的任务列表', () => {
+    const items = LineParser.parseItemLine('[ ] 事项内容 @2026-03-08', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('事项内容');
+  });
+
+  it('任务列表 [x] 与多日期组合', () => {
+    const items = LineParser.parseItemLine('[x] 整理资料 @2024-01-01, 2024-01-03', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].status).toBe('completed');
+    expect(items[1].status).toBe('completed');
+    expect(items[0].content).toBe('整理资料');
+  });
+});

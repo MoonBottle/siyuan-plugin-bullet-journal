@@ -79,12 +79,27 @@ export class LineParser {
       return [];
     }
 
-    // 解析状态标签（中英文兼容）
+    // 解析任务列表标记 [ ] [x] [X]（在去除块属性后解析）
+    let taskListStatus: ItemStatus | null = null;
+    const taskListMatch = line.match(/\[([ xX])\]/);
+    if (taskListMatch) {
+      const taskListMarker = taskListMatch[1];
+      if (taskListMarker === 'x' || taskListMarker === 'X') {
+        taskListStatus = 'completed';
+      } else {
+        taskListStatus = 'pending';
+      }
+    }
+
+    // 解析状态标签（中英文兼容）- 优先级高于任务列表标记
     let status: ItemStatus = 'pending';
     if (line.includes('#done') || line.includes('#已完成')) {
       status = 'completed';
     } else if (line.includes('#abandoned') || line.includes('#已放弃')) {
       status = 'abandoned';
+    } else if (taskListStatus) {
+      // 没有状态标签时，使用任务列表状态
+      status = taskListStatus;
     }
 
     // 将中文逗号替换为英文逗号，便于统一处理
@@ -94,13 +109,14 @@ export class LineParser {
     const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLine);
     if (dateTimeExpressions.length === 0) return [];
 
-    // 提取内容（在 normalizedLine 上移除所有日期时间表达式和状态标签）
+    // 提取内容（在 normalizedLine 上移除所有日期时间表达式、状态标签和任务列表标记）
     let content = normalizedLine;
     for (const expr of dateTimeExpressions) {
       content = content.replace(expr.fullMatch, '');
     }
     content = content
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
+      .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
       .replace(/,/g, '')  // 移除英文逗号（normalizedLine 中只有英文逗号）
       .trim();
 

@@ -100,6 +100,5 @@ For more view details, see [Views](./views.md).
 
 ## Next Steps
 
-- Understand [Design Philosophy](./design-philosophy.md) to grasp the plugin's concepts
 - Learn [Data Format](./data-format.md) in depth to master all marker syntax
 - Check [Complete Example](./examples.md) to see how real projects are organized

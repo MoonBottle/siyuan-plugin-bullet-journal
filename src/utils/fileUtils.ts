@@ -84,11 +84,39 @@ function buildDateRangeMark(
 }
 
 /**
- * 构建状态标签（使用 i18n）
+ * 检测是否使用任务列表格式
+ * @param line 行内容
+ * @returns 是否使用任务列表格式
  */
-function buildStatusTag(status?: ItemStatus): string {
+function isTaskListFormat(line: string): boolean {
+  return /\[\s*[xX]?\s*\]/.test(line);
+}
+
+/**
+ * 构建任务列表标记
+ * @param status 状态
+ * @returns 任务列表标记
+ */
+function buildTaskListMarker(status?: ItemStatus): string {
+  if (status === 'completed') return '[x] ';
+  return '[ ] ';
+}
+
+/**
+ * 构建状态标签（使用 i18n）
+ * @param status 状态
+ * @param isTaskList 是否使用任务列表格式
+ */
+function buildStatusTag(status?: ItemStatus, isTaskList?: boolean): string {
   if (!status || status === 'pending') return '';
-  return t('statusTag')[status] || '';
+
+  if (isTaskList) {
+    // 任务列表格式：返回空字符串（[x] 会单独处理）
+    return '';
+  } else {
+    // 标签格式：返回 #已完成
+    return t('statusTag')[status] || '';
+  }
 }
 
 /**
@@ -304,11 +332,17 @@ function handleSingleLineUpdate(
   // 智能合并为最优表达式
   const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
 
-  // 构建状态标签（使用 i18n）
-  const statusTag = buildStatusTag(status);
+  // 检测原始内容是否使用任务列表格式
+  const isTaskList = isTaskListFormat(content);
 
-  // 拼接新内容：事项内容 + 优化后的日期时间标记 + 状态标签
-  return `${itemContent} ${optimizedExpr} ${statusTag}`.trim();
+  // 构建状态标签（使用 i18n）
+  const statusTag = buildStatusTag(status, isTaskList);
+
+  // 构建任务列表标记
+  const taskListMarker = isTaskList ? buildTaskListMarker(status) : '';
+
+  // 拼接新内容：任务列表标记 + 事项内容 + 日期时间 + 状态标签（非任务列表时）
+  return `${taskListMarker}${itemContent} ${optimizedExpr} ${statusTag}`.trim();
 }
 
 export async function updateBlockDateTime(
@@ -452,11 +486,17 @@ export async function updateBlockDateTime(
     // 智能合并为最优表达式
     const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
 
-    // 构建状态标签（使用 i18n）
-    const statusTag = buildStatusTag(status);
+    // 检测原始内容是否使用任务列表格式
+    const isTaskList = isTaskListFormat(itemLine);
 
-    // 拼接新事项行内容：事项内容 + 优化后的日期时间标记 + 状态标签
-    const newItemLine = `${itemContent} ${optimizedExpr} ${statusTag}`.trim();
+    // 构建状态标签（使用 i18n）
+    const statusTag = buildStatusTag(status, isTaskList);
+
+    // 构建任务列表标记
+    const taskListMarker = isTaskList ? buildTaskListMarker(status) : '';
+
+    // 拼接新事项行内容：任务列表标记 + 事项内容 + 日期时间 + 状态标签（非任务列表时）
+    const newItemLine = `${taskListMarker}${itemContent} ${optimizedExpr} ${statusTag}`.trim();
 
     // 更新事项行
     lines[itemLineIndex] = newItemLine;
@@ -582,10 +622,34 @@ export async function updateBlockContent(
     if (itemLineIndex >= 0) {
       // 只修改事项行，添加后缀
       let itemLine = lines[itemLineIndex];
-      // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
-      const cleanedContent = stripListAndBlockAttr(itemLine);
-      // 添加后缀
-      lines[itemLineIndex] = `${cleanedContent} ${suffix}`;
+
+      // 检测是否使用任务列表格式
+      const isTaskList = isTaskListFormat(itemLine);
+
+      if (isTaskList) {
+        // 任务列表格式：需要保留 [x] 或 [ ] 标记在行首
+        // 提取任务列表标记
+        const taskListMatch = itemLine.match(/(\[\s*[xX]?\s*\]\s*)/);
+        if (taskListMatch) {
+          const taskListMarker = taskListMatch[1];
+          // 去除任务列表标记后的内容
+          const contentWithoutMarker = itemLine.replace(taskListMarker, '');
+          // 使用 stripListAndBlockAttr 去除列表标记、块属性
+          const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          // 重新拼接：任务列表标记 + 清理后的内容 + 后缀
+          lines[itemLineIndex] = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
+        } else {
+          // 如果匹配失败，使用原来的方式
+          const cleanedContent = stripListAndBlockAttr(itemLine);
+          lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
+        }
+      } else {
+        // 非任务列表格式：使用原来的方式
+        // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
+        const cleanedContent = stripListAndBlockAttr(itemLine);
+        // 添加后缀
+        lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
+      }
 
       // 回写整个块
       const newContent = lines.join('\n');

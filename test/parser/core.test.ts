@@ -44,12 +44,14 @@ describe('stripListAndBlockAttr', () => {
 
   it('处理已选中任务列表 [X]', () => {
     const input = '- {: id="xxx"}[X] 事项内容 @2026-03-08';
-    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+    // [X] 标记会转换为 #done 标签
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08 #done');
   });
 
   it('处理已选中任务列表 [x]', () => {
     const input = '- {: id="xxx"}[x] 事项内容 @2026-03-08';
-    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08');
+    // [x] 标记会转换为 #done 标签
+    expect(stripListAndBlockAttr(input)).toBe('事项内容 @2026-03-08 #done');
   });
 
   it('处理带缩进的任务列表', () => {
@@ -66,7 +68,8 @@ describe('stripListAndBlockAttr', () => {
 
   it('处理实际 Kramdown 已选中任务项', () => {
     const input = '- {: id="20260308203822-n577cpp" updated="20260308203634"}[X] 事项列表已完成状态事项 @2026-03-08';
-    expect(stripListAndBlockAttr(input)).toBe('事项列表已完成状态事项 @2026-03-08');
+    // [X] 标记会转换为 #done 标签
+    expect(stripListAndBlockAttr(input)).toBe('事项列表已完成状态事项 @2026-03-08 #done');
   });
 
   it('处理实际 Kramdown 任务行', () => {

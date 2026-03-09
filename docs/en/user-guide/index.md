@@ -10,7 +10,6 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 
 ### Core Concepts
 
-- [Design Philosophy](./design-philosophy.md) - Understand the plugin's design philosophy and how it differs from traditional todo apps
 - [Data Format](./data-format.md) - Detailed explanation of task and item marker syntax
 
 ### Features
@@ -31,4 +30,4 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 | Want to understand each view | [Views](./views.md) |
 | Want to configure scan directories and groups | [Configuration](./configuration.md) |
 | Want to see a complete project example | [Complete Example](./examples.md) |
-| Want to understand the design philosophy | [Design Philosophy](./design-philosophy.md) |
+
