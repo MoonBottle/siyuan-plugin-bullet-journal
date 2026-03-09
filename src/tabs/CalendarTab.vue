@@ -11,6 +11,15 @@
       <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').today" @click="handleToday">
         <svg><use xlink:href="#iconCalendar"></use></svg>
       </span>
+      <!-- 返回按钮（仅在点击日期进入日视图时显示） -->
+      <span
+        v-if="isDayViewFromClick && previousView"
+        class="block__icon b3-tooltips b3-tooltips__se"
+        :aria-label="t('calendarNav').back"
+        @click="handleBack"
+      >
+        <svg><use xlink:href="#iconUndo"></use></svg>
+      </span>
       <!-- 日期显示 -->
       <span class="date-title">{{ currentTitle }}</span>
       <span class="fn__flex-1 fn__space"></span>
@@ -36,6 +45,7 @@
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
         @navigated="updateTitle"
+        @day-view-from-click="handleDayViewFromClick"
       />
     </div>
   </div>
@@ -61,6 +71,8 @@ const calendarRef = ref<any>(null);
 const currentView = ref('timeGridDay');
 const currentTitle = ref('');
 const selectedGroup = ref('');
+const previousView = ref('');
+const isDayViewFromClick = ref(false);
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
@@ -192,6 +204,24 @@ const handleToday = () => {
   updateTitle();
 };
 
+// 点击日期进入日视图时的回调
+const handleDayViewFromClick = (view: string) => {
+  previousView.value = view;
+  isDayViewFromClick.value = true;
+};
+
+// 返回上一级视图（月/周）
+const handleBack = () => {
+  if (previousView.value) {
+    const viewToRestore = previousView.value;
+    isDayViewFromClick.value = false;
+    previousView.value = '';
+    currentView.value = viewToRestore;
+    calendarRef.value?.changeView(viewToRestore);  // 显式切换，不依赖 watch
+    updateTitle();
+  }
+};
+
 // 更新标题
 const updateTitle = () => {
   if (calendarRef.value) {
@@ -298,6 +328,9 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
 // 监听视图切换
 watch(currentView, (newView) => {
   calendarRef.value?.changeView(newView);
+  if (newView !== 'timeGridDay') {
+    isDayViewFromClick.value = false;
+  }
   updateTitle();
 });
 </script>

@@ -95,6 +95,7 @@ const emit = defineEmits<{
   (e: 'event-drop', event: any): void;
   (e: 'event-resize', event: any): void;
   (e: 'navigated'): void;
+  (e: 'dayViewFromClick', previousView: string): void;
 }>();
 
 const calendarEl = ref<HTMLElement | null>(null);
@@ -322,8 +323,13 @@ onMounted(async () => {
       // 点击日期
       dateClick: (info) => {
         if (calendarInstance) {
+          const previousView = calendarInstance.view.type;
           calendarInstance.changeView('timeGridDay');
           calendarInstance.gotoDate(info.dateStr);
+          emit('navigated');
+          if (previousView !== 'timeGridDay') {
+            emit('dayViewFromClick', previousView);
+          }
         }
       }
     });

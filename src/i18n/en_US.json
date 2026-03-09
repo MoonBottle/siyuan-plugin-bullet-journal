@@ -199,7 +199,8 @@
   "calendarNav": {
     "prev": "Previous",
     "next": "Next",
-    "today": "Today"
+    "today": "Today",
+    "back": "Back"
   },
   "statusTag": {
     "completed": "#done",
