@@ -33,8 +33,11 @@
 import { computed } from 'vue';
 import { useProjectStore } from '@/stores';
 import type { PomodoroRecord } from '@/types/models';
-import { openTab } from 'siyuan';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { usePlugin } from '@/main';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
+
+const plugin = usePlugin();
 
 const projectStore = useProjectStore();
 
@@ -112,16 +115,13 @@ function getRecordSource(record: PomodoroRecord): string {
 /**
  * 点击记录跳转到思源笔记对应位置
  */
-function handleRecordClick(record: PomodoroRecord) {
-  if (record.blockId) {
-    openTab({
-      app: (window as any).siyuan?.app,
-      doc: {
-        id: record.blockId,
-        action: ['cb-get-focus']
-      }
-    });
-  }
+async function handleRecordClick(record: PomodoroRecord) {
+  if (!record.blockId || !plugin) return;
+
+  // 从 blockId 提取 docId（思源 blockId 格式为 docId-blockHash）
+  const docId = record.blockId.substring(0, 22);
+
+  await openDocumentAtLine(docId, undefined, record.blockId);
 }
 </script>
 
