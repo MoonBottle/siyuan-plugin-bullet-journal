@@ -101,7 +101,7 @@ export function createItemMenu(
     if (!isFocusing) {
       items.push({
         label: '开始专注',
-        icon: 'iconFocus',
+        icon: 'iconClock',
         click: handlers.onStartPomodoro
       });
     }

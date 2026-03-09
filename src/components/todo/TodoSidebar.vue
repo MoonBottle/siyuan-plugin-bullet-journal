@@ -44,7 +44,7 @@
                     aria-label="开始专注"
                     @click.stop="openPomodoroDialog(item)"
                   >
-                    <svg><use xlink:href="#iconFocus"></use></svg>
+                    <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -110,7 +110,7 @@
                     aria-label="开始专注"
                     @click.stop="openPomodoroDialog(item)"
                   >
-                    <svg><use xlink:href="#iconTomato"></use></svg>
+                    <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -176,7 +176,7 @@
                     aria-label="开始专注"
                     @click.stop="openPomodoroDialog(item)"
                   >
-                    <svg><use xlink:href="#iconTomato"></use></svg>
+                    <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -249,7 +249,7 @@
                         aria-label="开始专注"
                         @click.stop="openPomodoroDialog(item)"
                       >
-                        <svg><use xlink:href="#iconTomato"></use></svg>
+                        <svg><use xlink:href="#iconClock"></use></svg>
                       </span>
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
