@@ -690,8 +690,7 @@ const restorePomodoroState = async () => {
   if (pomodoroStore.isFocusing) return; // 已经有专注状态，不需要恢复
 
   console.log('[TodoSidebar] 尝试恢复番茄钟状态');
-  // 静默恢复，不显示提示（由 PomodoroDock 显示）
-  const restored = await pomodoroStore.restorePomodoro(plugin, { silent: true });
+  const restored = await pomodoroStore.restorePomodoro(plugin);
   if (restored) {
     console.log('[TodoSidebar] 番茄钟状态已恢复');
   }

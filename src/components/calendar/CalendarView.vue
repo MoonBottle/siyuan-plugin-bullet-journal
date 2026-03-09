@@ -355,8 +355,7 @@ const restorePomodoroState = async () => {
   if (!plugin) return;
   if (pomodoroStore.isFocusing) return;
 
-  // 静默恢复，不显示提示（由 PomodoroDock 显示）
-  const restored = await pomodoroStore.restorePomodoro(plugin, { silent: true });
+  const restored = await pomodoroStore.restorePomodoro(plugin);
   if (restored) {
     console.log('[CalendarView] 番茄钟状态已恢复');
     // 刷新日历以更新 emoji
