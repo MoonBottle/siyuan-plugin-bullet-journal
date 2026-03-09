@@ -231,8 +231,18 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 计算实际专注分钟数
         const actualMinutes = Math.floor(accumulatedSeconds / 60);
 
-        // 在文档中创建番茄钟记录（正常完成的只显示时间范围）
-        const pomodoroContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
+        // 判断是否有暂停
+        const hasPause = this.activePomodoro.pauseCount > 0 || this.activePomodoro.totalPausedSeconds > 0;
+
+        // 在文档中创建番茄钟记录
+        let pomodoroContent: string;
+        if (hasPause) {
+          // 有暂停时，包含实际专注时长
+          pomodoroContent = `🍅${actualMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
+        } else {
+          // 正常完成的只显示时间范围
+          pomodoroContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
+        }
         await appendBlock('markdown', pomodoroContent, blockId);
 
         // 删除文件中的进行中的番茄钟记录
