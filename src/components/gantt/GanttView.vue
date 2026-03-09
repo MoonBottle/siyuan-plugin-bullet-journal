@@ -357,7 +357,16 @@ onMounted(() => {
   gantt.config.date_format = '%Y-%m-%d %H:%i';
   gantt.config.xml_date = '%Y-%m-%d %H:%i';
   gantt.config.columns = [
-    { name: 'text', label: t('gantt').taskName, width: '*', tree: true },
+    {
+      name: 'text',
+      label: t('gantt').taskName,
+      width: '*',
+      tree: true,
+      template: (task) => {
+        const escapedText = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${task.text}</span>`;
+      }
+    },
     { name: 'start_date', label: t('gantt').startTime, align: 'center', width: 100 },
     { name: 'end_date', label: t('gantt').endTime, align: 'center', width: 100 }
   ];
