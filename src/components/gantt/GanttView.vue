@@ -72,7 +72,81 @@ let ganttInitialized = false;
 let resizeObserver: ResizeObserver | null = null;
 let onTaskClickId: string | number | null = null;
 let onContextMenuId: string | number | null = null;
+let ganttTooltipHideTimer: ReturnType<typeof setTimeout> | null = null;
 const ganttReady = ref(false);
+
+const GANTT_TOOLTIP_ID = 'gantt-tooltip';
+const TOOLTIP_HIDE_DELAY = 100;
+
+const getOrCreateGanttTooltip = (): HTMLElement => {
+  let el = document.getElementById(GANTT_TOOLTIP_ID);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = GANTT_TOOLTIP_ID;
+    el.className = 'gantt-tooltip-custom fn__none';
+    el.addEventListener('mouseover', () => {
+      if (ganttTooltipHideTimer) {
+        clearTimeout(ganttTooltipHideTimer);
+        ganttTooltipHideTimer = null;
+      }
+    });
+    el.addEventListener('mouseout', (e: Event) => {
+      const related = (e as MouseEvent).relatedTarget as HTMLElement;
+      if (!related?.closest('.gantt-task-text')) hideGanttTooltip();
+    });
+    document.body.appendChild(el);
+  }
+  return el;
+};
+
+const showGanttTooltip = (text: string, anchorEl: HTMLElement) => {
+  if (ganttTooltipHideTimer) {
+    clearTimeout(ganttTooltipHideTimer);
+    ganttTooltipHideTimer = null;
+  }
+  const tip = getOrCreateGanttTooltip();
+  tip.textContent = text;
+  tip.classList.remove('fn__none');
+
+  const anchor = anchorEl.getBoundingClientRect();
+  const tipRect = tip.getBoundingClientRect();
+  const gap = 6;
+  let left = anchor.left + (anchor.width - tipRect.width) / 2;
+  let top = anchor.top - tipRect.height - gap;
+
+  const maxLeft = window.innerWidth - tipRect.width - 8;
+  const minLeft = 8;
+  left = Math.max(minLeft, Math.min(maxLeft, left));
+  top = Math.max(8, top);
+
+  tip.style.left = `${left}px`;
+  tip.style.top = `${top}px`;
+};
+
+const hideGanttTooltip = () => {
+  if (ganttTooltipHideTimer) return;
+  ganttTooltipHideTimer = setTimeout(() => {
+    ganttTooltipHideTimer = null;
+    const tip = document.getElementById(GANTT_TOOLTIP_ID);
+    if (tip) tip.classList.add('fn__none');
+  }, TOOLTIP_HIDE_DELAY);
+};
+
+const handleGanttTooltipMouseOver = (e: MouseEvent) => {
+  const target = (e.target as HTMLElement).closest('.gantt-task-text');
+  if (target) {
+    const text = (target as HTMLElement).getAttribute('data-gantt-tooltip');
+    if (text) showGanttTooltip(text, target as HTMLElement);
+  } else {
+    hideGanttTooltip();
+  }
+};
+
+const handleGanttTooltipMouseOut = (e: MouseEvent) => {
+  const related = e.relatedTarget as HTMLElement;
+  if (related?.closest(`#${GANTT_TOOLTIP_ID}`) || related?.closest('.gantt-task-text')) return;
+  hideGanttTooltip();
+};
 
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
   return t('statusTag')[status] || '';
@@ -306,10 +380,10 @@ onMounted(() => {
     return 'gantt-task';
   };
 
-  // 自定义任务文本 - 类似 Obsidian 的日历样式，title 用于 hover 显示完整文字
+  // 自定义任务文本 - gantt-task-text + data-gantt-tooltip 用于事件委托显示思源样式 tooltip
   gantt.templates.task_text = function(_start, _end, task) {
     const escapedText = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `<span title="${escapedText}" style="
+    return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="
       color: var(--b3-theme-on-background);
       font-weight: 500;
       font-size: 12px;
@@ -337,6 +411,9 @@ onMounted(() => {
   onContextMenuId = gantt.attachEvent('onContextMenu', (taskId, linkId, event) => {
     return handleGanttContextMenu(taskId, linkId, event as MouseEvent);
   });
+
+  ganttEl.value.addEventListener('mouseover', handleGanttTooltipMouseOver);
+  ganttEl.value.addEventListener('mouseout', handleGanttTooltipMouseOut);
 
   // 设置容器高度
   setGanttHeight();
@@ -421,6 +498,32 @@ const loadGanttStyles = () => {
       background-color: var(--b3-theme-secondary) !important;
       border-color: var(--b3-theme-secondary) !important;
     }
+    /* 甘特图自定义 tooltip - 与思源刷新按钮一致（深色背景、白色文字、圆角、箭头） */
+    #gantt-tooltip.gantt-tooltip-custom {
+      position: fixed;
+      z-index: 2147483647;
+      padding: 6px 10px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #fff;
+      background-color: #2d2d2d;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      white-space: nowrap;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: auto;
+    }
+    #gantt-tooltip.gantt-tooltip-custom::before {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #2d2d2d;
+    }
   `;
   document.head.appendChild(style);
 };
@@ -465,6 +568,16 @@ onUnmounted(() => {
     gantt.detachEvent(String(onContextMenuId));
     onContextMenuId = null;
   }
+  if (ganttEl.value) {
+    ganttEl.value.removeEventListener('mouseover', handleGanttTooltipMouseOver);
+    ganttEl.value.removeEventListener('mouseout', handleGanttTooltipMouseOut);
+  }
+  if (ganttTooltipHideTimer) {
+    clearTimeout(ganttTooltipHideTimer);
+    ganttTooltipHideTimer = null;
+  }
+  const tip = document.getElementById(GANTT_TOOLTIP_ID);
+  if (tip) tip.remove();
   if (ganttInitialized) {
     gantt.clearAll();
   }
