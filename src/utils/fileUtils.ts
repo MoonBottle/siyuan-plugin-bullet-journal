@@ -665,22 +665,29 @@ export async function updateBlockContent(
       console.log('[Task Assistant] updateBlockContent - suffix:', suffix, 'isStatusTag:', isStatusTag);
 
       if (isTaskList && isStatusTag) {
-        // 任务列表格式 + 状态标签：将 [ ] 改为 [x] 或保持 [ ]，不添加标签
-        // 提取任务列表标记
+        // 任务列表格式 + 状态标签
+        // #已完成/#done：将 [ ] 改为 [x]，不添加标签
+        // #已放弃/#abandoned：将 [x] 改为 [ ]，并添加 #已放弃 标签
         const taskListMatch = itemLine.match(/(\[\s*)([xX]?)(\s*\]\s*)/);
         console.log('[Task Assistant] updateBlockContent - taskListMatch:', taskListMatch);
         if (taskListMatch) {
-          // 根据状态决定标记
+          const isAbandon = suffix === '#abandoned' || suffix === '#已放弃';
           const newMarker = (suffix === '#done' || suffix === '#已完成') ? '[x] ' : '[ ] ';
           console.log('[Task Assistant] updateBlockContent - newMarker:', newMarker);
+          let newLine = itemLine.replace(taskListMatch[0], newMarker);
+          if (isAbandon && !itemLine.includes('#已放弃') && !itemLine.includes('#abandoned')) {
+            newLine = newLine.trimEnd() + ' ' + suffix;
+          }
           if (usedParentKramdown) {
             // 更新父块时保留完整列表项格式（- 和块属性），仅替换任务标记
-            lines[itemLineIndex] = itemLine.replace(taskListMatch[0], newMarker);
+            lines[itemLineIndex] = newLine;
           } else {
             // 更新内容子块时 strip 后拼接
             const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
             const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
-            lines[itemLineIndex] = `${newMarker}${cleanedContent}`.trim();
+            lines[itemLineIndex] = isAbandon && !cleanedContent.includes('#已放弃') && !cleanedContent.includes('#abandoned')
+              ? `${newMarker}${cleanedContent} ${suffix}`.trim()
+              : `${newMarker}${cleanedContent}`.trim();
           }
           console.log('[Task Assistant] updateBlockContent - new line:', lines[itemLineIndex]);
         } else {

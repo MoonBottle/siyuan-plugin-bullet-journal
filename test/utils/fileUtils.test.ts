@@ -657,10 +657,10 @@ describe('updateBlockContent', () => {
     const result = await updateBlockContent('block-1', '#已放弃');
 
     expect(result).toBe(true);
-    // 应该将 [X] 改为 [ ]（已放弃），去除列表标记和块属性，不添加 #已放弃 标签
+    // 应该将 [X] 改为 [ ]（已放弃），并添加 #已放弃 标签
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      `[ ] 已完成事项 @2026-03-08
+      `[ ] 已完成事项 @2026-03-08 #已放弃
   {: id="yyy"}`,
       'block-1'
     );
