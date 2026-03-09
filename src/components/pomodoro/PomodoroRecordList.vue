@@ -40,10 +40,14 @@ const projectStore = useProjectStore();
 
 const groupedPomodoros = computed(() => projectStore.getPomodorosByDate(''));
 
-// 按日期降序排序
+// 按日期降序排序，每天内的记录也按时间倒序排列
 const sortedGroupedPomodoros = computed(() => {
   const entries = Array.from(groupedPomodoros.value.entries());
   entries.sort((a, b) => b[0].localeCompare(a[0]));
+  // 每天内的记录按开始时间倒序排列
+  entries.forEach(([_, records]) => {
+    records.sort((a, b) => b.startTime.localeCompare(a.startTime));
+  });
   return entries;
 });
 
