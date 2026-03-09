@@ -550,6 +550,43 @@ describe('updateBlockDateTime', () => {
       'block-1'
     );
   });
+
+  it('内容子块：从父块解析 kramdown，拖动日期不应添加 #已完成 标签', async () => {
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'parent-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="parent-block-1"}[x] ddd @2026-03-12
+  {: id="content-block-1"}`
+        });
+      }
+      return Promise.resolve({
+        kramdown: 'ddd @2026-03-12\n{: id="content-block-1" }'
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'content-block-1',
+      '2026-03-15',
+      undefined,
+      undefined,
+      true,
+      '2026-03-12',
+      undefined,
+      'completed'
+    );
+
+    expect(result).toBe(true);
+    // 应使用父块 kramdown，更新父块，不添加 #已完成（任务列表格式已由 [x] 表示）
+    expect(mockGetBlockKramdown).toHaveBeenCalledWith('parent-block-1');
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[x] ddd @2026-03-15
+  {: id="content-block-1"}`,
+      'parent-block-1'
+    );
+  });
 });
 
 describe('updateBlockContent', () => {
