@@ -22,14 +22,14 @@
         </button>
       </div>
     </div>
-    <div class="gantt-wrapper">
+    <div class="gantt-wrapper" :class="{ 'gantt-ready': ganttReady }">
       <div ref="ganttEl" class="gantt-inner"></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
 import type { Project } from '@/types/models';
@@ -55,6 +55,8 @@ const viewModes = [
 ];
 
 let ganttInitialized = false;
+let resizeObserver: ResizeObserver | null = null;
+const ganttReady = ref(false);
 
 const ganttData = computed(() => {
   const dateFilter = startDate.value || endDate.value
@@ -125,7 +127,14 @@ onMounted(() => {
   // 添加 resize 监听
   window.addEventListener('resize', handleResize);
 
+  // ResizeObserver 监听容器尺寸变化（与 CalendarView 一致，解决数据变动后空白）
+  resizeObserver = new ResizeObserver(() => {
+    setGanttHeight();
+  });
+  resizeObserver.observe(ganttEl.value);
+
   updateGantt();
+  ganttReady.value = true;
 });
 
 // 设置甘特图容器高度
@@ -226,6 +235,11 @@ const setScaleConfig = (mode: 'day' | 'week' | 'month') => {
 };
 
 onUnmounted(() => {
+  ganttReady.value = false;
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
   if (ganttInitialized) {
     gantt.clearAll();
   }
@@ -239,8 +253,8 @@ onUnmounted(() => {
 });
 
 watch([ganttData, showItems, startDate, endDate], () => {
-  updateGantt();
-});
+  nextTick(() => updateGantt());
+}, { flush: 'post' });
 
 watch(viewMode, (newMode) => {
   if (ganttInitialized) {
@@ -253,6 +267,8 @@ const updateGantt = () => {
   if (!ganttInitialized) return;
   gantt.clearAll();
   gantt.parse({ data: ganttData.value });
+  gantt.render();
+  gantt.setSizes();
 };
 </script>
 
@@ -331,6 +347,12 @@ const updateGantt = () => {
   width: 100%;
   overflow: hidden;
   position: relative;
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+
+  &.gantt-ready {
+    opacity: 1;
+  }
 }
 
 /* 内层容器 - gantt 初始化目标 */
