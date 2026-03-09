@@ -46,7 +46,15 @@
 
       <!-- 右侧：专注时长设置 -->
       <div class="right-panel" :class="{ 'full-width': hideItemList }">
+        <!-- 预选事项信息（仅在预选模式下显示） -->
+        <div v-if="hideItemList && selectedItem" class="preselected-item-info">
+          <div class="info-label">专注事项</div>
+          <div class="info-content">{{ selectedItem.content }}</div>
+          <div v-if="selectedItem.task" class="info-task">{{ selectedItem.task.name }}</div>
+        </div>
+
         <div class="panel-title">设置专注时长</div>
+
         <div class="duration-section">
           <div class="quick-buttons">
             <button
@@ -71,13 +79,6 @@
             />
             <span>分钟</span>
           </div>
-        </div>
-
-        <!-- 预选事项信息（仅在预选模式下显示） -->
-        <div v-if="hideItemList && selectedItem" class="preselected-item-info">
-          <div class="info-label">专注事项</div>
-          <div class="info-content">{{ selectedItem.content }}</div>
-          <div v-if="selectedItem.task" class="info-task">{{ selectedItem.task.name }}</div>
         </div>
 
         <div class="action-section">
@@ -248,13 +249,10 @@ onMounted(() => {
 
     .duration-section,
     .preselected-item-info,
-    .action-section {
+    .action-section,
+    .panel-title {
       width: 100%;
       max-width: 280px;
-    }
-
-    .panel-title {
-      text-align: center;
     }
   }
 }
