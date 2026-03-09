@@ -68,6 +68,8 @@ export default class HKWorkPlugin extends Plugin {
   private floatingTomatoEl: HTMLElement | null = null;
   /** 悬浮按钮更新定时器 */
   private floatingTomatoTimer: number | null = null;
+  /** 番茄钟 Dock model */
+  private pomodoroDockModel: any = null;
 
   async onload() {
     const frontEnd = getFrontend();
@@ -522,7 +524,7 @@ export default class HKWorkPlugin extends Plugin {
     });
 
     // 番茄钟统计 Dock
-    this.addDock({
+    const pomodoroDock = this.addDock({
       config: {
         position: 'RightBottom',
         size: { width: 320, height: 500 },
@@ -543,6 +545,7 @@ export default class HKWorkPlugin extends Plugin {
         this.element.innerHTML = '';
       }
     });
+    this.pomodoroDockModel = pomodoroDock.model;
   }
 
   /**
@@ -751,15 +754,10 @@ export default class HKWorkPlugin extends Plugin {
    */
   private openPomodoroDock() {
     try {
-      openTab({
-        app: this.app,
-        custom: {
-          id: `${this.name}${DOCK_TYPES.POMODORO}`,
-          icon: 'iconClock',
-          title: '番茄统计',
-          data: { type: DOCK_TYPES.POMODORO }
-        }
-      });
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.POMODORO}`, true);
+      }
     } catch (error) {
       console.error('[Task Assistant] Failed to open pomodoro dock:', error);
     }
