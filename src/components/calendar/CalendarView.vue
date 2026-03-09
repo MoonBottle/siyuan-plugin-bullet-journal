@@ -12,9 +12,12 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { CalendarEvent } from '@/types/models';
-import { showEventDetailModal, showDatePickerDialog } from '@/utils/dialog';
+import { showEventDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import { createApp } from 'vue';
+import type { Item } from '@/types/models';
 import { t, getCurrentLocale } from '@/i18n';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
@@ -103,6 +106,28 @@ const getStatusTag = (status: 'completed' | 'abandoned'): string => {
   return t('statusTag')[status] || '';
 };
 
+// 打开番茄钟弹框
+const openPomodoroDialog = (item: Item) => {
+  const dialog = createDialog({
+    title: '开始专注',
+    content: '<div id="pomodoro-timer-dialog-mount"></div>',
+    width: '400px',
+    height: 'auto'
+  });
+
+  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
+  if (mountEl) {
+    const app = createApp(PomodoroTimerDialog, {
+      closeDialog: () => {
+        dialog.destroy();
+      },
+      preselectedItem: item,
+      hideItemList: true
+    });
+    app.mount(mountEl);
+  }
+};
+
 // 日历事件右键菜单
 const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
   const props = info.event.extendedProps;
@@ -144,6 +169,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
       },
+      onStartPomodoro: () => openPomodoroDialog(item as Item),
       onMigrateToday: async () => {
         if (!item.blockId) return;
         const todayStr = dayjs().format('YYYY-MM-DD');
