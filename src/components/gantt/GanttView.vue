@@ -32,9 +32,18 @@
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
-import type { Project } from '@/types/models';
+import type { Project, CalendarEvent } from '@/types/models';
 import { DataConverter } from '@/utils/dataConverter';
 import { getCurrentLocale, t } from '@/i18n';
+import { showEventDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
+import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import { createApp } from 'vue';
+import type { Item } from '@/types/models';
+import dayjs from '@/utils/dayjs';
+import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
+import { usePlugin } from '@/main';
 
 interface Props {
   projects: Project[];
@@ -42,13 +51,18 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const settingsStore = useSettingsStore();
+const projectStore = useProjectStore();
+const pomodoroStore = usePomodoroStore();
+const plugin = usePlugin();
+
 const ganttEl = ref<HTMLElement | null>(null);
 const showItems = ref(false);
 const startDate = ref('');
 const endDate = ref('');
 const viewMode = ref<'day' | 'week' | 'month'>('day');
 
-const viewModes = [
+const viewModes: Array<{ value: 'day' | 'week' | 'month'; label: string }> = [
   { value: 'day', label: t('gantt').day },
   { value: 'week', label: t('gantt').week },
   { value: 'month', label: t('gantt').month }
@@ -56,7 +70,201 @@ const viewModes = [
 
 let ganttInitialized = false;
 let resizeObserver: ResizeObserver | null = null;
+let onTaskClickId: string | number | null = null;
+let onContextMenuId: string | number | null = null;
 const ganttReady = ref(false);
+
+const getStatusTag = (status: 'completed' | 'abandoned'): string => {
+  return t('statusTag')[status] || '';
+};
+
+const openPomodoroDialog = (item: Item) => {
+  const dialog = createDialog({
+    title: '开始专注',
+    content: '<div id="pomodoro-timer-dialog-mount"></div>',
+    width: '400px',
+    height: 'auto'
+  });
+
+  const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
+  if (mountEl) {
+    const app = createApp(PomodoroTimerDialog, {
+      closeDialog: () => {
+        dialog.destroy();
+      },
+      preselectedItem: item,
+      hideItemList: true
+    });
+    app.mount(mountEl);
+  }
+};
+
+const handleGanttTaskClick = (id: string | number) => {
+  const task = gantt.getTask(id);
+  if (!task?.extendedProps?.item) return;
+
+  const props = task.extendedProps;
+  const start = props.originalStartDateTime || props.date || '';
+  const end = props.originalEndDateTime || props.originalStartDateTime || props.date || '';
+  const allDay = !props.originalStartDateTime;
+
+  const eventData: CalendarEvent = {
+    id: String(task.id),
+    title: task.text,
+    start,
+    end: end !== start ? end : undefined,
+    allDay,
+    extendedProps: {
+      project: props.project,
+      projectLinks: props.projectLinks,
+      task: props.task,
+      taskLinks: props.taskLinks,
+      level: props.level,
+      item: props.item,
+      itemStatus: props.itemStatus,
+      itemLinks: props.itemLinks,
+      hasItems: props.hasItems ?? true,
+      docId: props.docId ?? '',
+      lineNumber: props.lineNumber ?? 0,
+      blockId: props.blockId,
+      date: props.date,
+      originalStartDateTime: props.originalStartDateTime,
+      originalEndDateTime: props.originalEndDateTime,
+      siblingItems: props.siblingItems
+    }
+  };
+  showEventDetailModal(eventData);
+};
+
+const handleGanttContextMenu = (taskId: string | number, _linkId: string | number, event: MouseEvent) => {
+  const task = gantt.getTask(taskId);
+  if (!task?.extendedProps?.item) return true;
+
+  const props = task.extendedProps;
+  const item = {
+    id: String(task.id),
+    content: props.item ?? task.text,
+    date: props.date ?? dayjs(task.start_date).format('YYYY-MM-DD'),
+    blockId: props.blockId,
+    docId: props.docId,
+    lineNumber: props.lineNumber,
+    status: props.itemStatus ?? 'pending',
+    task: props.task ? { name: props.task } : undefined,
+    startDateTime: props.originalStartDateTime,
+    endDateTime: props.originalEndDateTime,
+    siblingItems: props.siblingItems
+  };
+
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }] : [])
+  ];
+
+  const menuOptions = createItemMenu(
+    item,
+    {
+      onComplete: async () => {
+        if (!item.blockId) return;
+        const tag = getStatusTag('completed');
+        const success = await updateBlockContent(item.blockId, tag);
+        if (success && plugin) {
+          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+        }
+      },
+      onStartPomodoro: () => openPomodoroDialog(item as Item),
+      onMigrateToday: async () => {
+        if (!item.blockId) return;
+        const todayStr = dayjs().format('YYYY-MM-DD');
+        await updateBlockDateTime(
+          item.blockId,
+          todayStr,
+          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+          !item.startDateTime,
+          item.date,
+          completeSiblingItems,
+          item.status
+        );
+        if (plugin) {
+          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+        }
+      },
+      onMigrateTomorrow: async () => {
+        if (!item.blockId) return;
+        const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+        await updateBlockDateTime(
+          item.blockId,
+          tomorrowStr,
+          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+          !item.startDateTime,
+          item.date,
+          completeSiblingItems,
+          item.status
+        );
+        if (plugin) {
+          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+        }
+      },
+      onMigrateCustom: async () => {
+        if (!item.blockId) return;
+        showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
+          await updateBlockDateTime(
+            item.blockId,
+            newDate,
+            item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+            item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+            !item.startDateTime,
+            item.date,
+            completeSiblingItems,
+            item.status
+          );
+          if (plugin) {
+            await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+          }
+        });
+      },
+      onAbandon: async () => {
+        if (!item.blockId) return;
+        const tag = getStatusTag('abandoned');
+        const success = await updateBlockContent(item.blockId, tag);
+        if (success && plugin) {
+          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+        }
+      },
+      onOpenDoc: () => {
+        if (item.docId && item.lineNumber) {
+          openDocumentAtLine(item.docId, item.lineNumber);
+        }
+      },
+      onShowDetail: () => {
+        const eventData: CalendarEvent = {
+          id: item.id,
+          title: item.content,
+          start: item.date,
+          allDay: true,
+          extendedProps: {
+            ...props,
+            hasItems: props.hasItems ?? true,
+            docId: props.docId ?? '',
+            lineNumber: props.lineNumber ?? 0
+          }
+        };
+        showEventDetailModal(eventData);
+      }
+    },
+    { showCalendarMenu: false, isFocusing: pomodoroStore.isFocusing }
+  );
+
+  menuOptions.x = event.clientX;
+  menuOptions.y = event.clientY;
+  showContextMenu(menuOptions);
+  return false;
+};
 
 const ganttData = computed(() => {
   const dateFilter = startDate.value || endDate.value
@@ -91,16 +299,17 @@ onMounted(() => {
   gantt.config.details_on_dblclick = false;
 
   // 自定义任务条样式
-  gantt.templates.task_class = function(start, end, task) {
+  gantt.templates.task_class = function(_start, _end, task) {
     if (task.type === 'project') {
       return 'gantt-project';
     }
     return 'gantt-task';
   };
 
-  // 自定义任务文本 - 类似 Obsidian 的日历样式
-  gantt.templates.task_text = function(start, end, task) {
-    return `<span style="
+  // 自定义任务文本 - 类似 Obsidian 的日历样式，title 用于 hover 显示完整文字
+  gantt.templates.task_text = function(_start, _end, task) {
+    const escapedText = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<span title="${escapedText}" style="
       color: var(--b3-theme-on-background);
       font-weight: 500;
       font-size: 12px;
@@ -120,6 +329,14 @@ onMounted(() => {
 
   gantt.init(ganttEl.value);
   ganttInitialized = true;
+
+  onTaskClickId = gantt.attachEvent('onTaskClick', (id) => {
+    handleGanttTaskClick(id);
+    return true;
+  });
+  onContextMenuId = gantt.attachEvent('onContextMenu', (taskId, linkId, event) => {
+    return handleGanttContextMenu(taskId, linkId, event as MouseEvent);
+  });
 
   // 设置容器高度
   setGanttHeight();
@@ -239,6 +456,14 @@ onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
+  }
+  if (onTaskClickId !== null) {
+    gantt.detachEvent(String(onTaskClickId));
+    onTaskClickId = null;
+  }
+  if (onContextMenuId !== null) {
+    gantt.detachEvent(String(onContextMenuId));
+    onContextMenuId = null;
   }
   if (ganttInitialized) {
     gantt.clearAll();

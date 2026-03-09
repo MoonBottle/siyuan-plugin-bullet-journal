@@ -133,7 +133,39 @@ export interface CalendarEvent {
     docId: string;
     lineNumber: number;
     blockId?: string;
+    date?: string;
+    originalStartDateTime?: string;
+    originalEndDateTime?: string;
+    siblingItems?: Array<{
+      date: string;
+      startDateTime?: string;
+      endDateTime?: string;
+    }>;
   };
+}
+
+// 甘特图任务扩展属性（仅事项节点有，用于弹框和右键菜单）
+export interface GanttTaskExtendedProps {
+  project?: string;
+  projectLinks?: Link[];
+  task?: string;
+  taskLinks?: Link[];
+  level?: string;
+  item?: string;
+  itemStatus?: ItemStatus;
+  itemLinks?: Link[];
+  hasItems?: boolean;
+  docId?: string;
+  lineNumber?: number;
+  blockId?: string;
+  date?: string;
+  originalStartDateTime?: string;
+  originalEndDateTime?: string;
+  siblingItems?: Array<{
+    date: string;
+    startDateTime?: string;
+    endDateTime?: string;
+  }>;
 }
 
 // 甘特图数据
@@ -146,6 +178,8 @@ export interface GanttTask {
   type?: string;
   open?: boolean;
   progress?: number;
+  /** 仅事项节点有，用于点击弹框和右键菜单 */
+  extendedProps?: GanttTaskExtendedProps;
 }
 
 // 目录配置（替代 NotebookConfig）

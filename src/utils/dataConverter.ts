@@ -181,7 +181,25 @@ export class DataConverter {
                 end_date: endDate,
                 parent: taskId,
                 type: 'task',
-                progress: 0
+                progress: 0,
+                extendedProps: {
+                  project: project.name,
+                  projectLinks: project.links,
+                  task: task.name,
+                  taskLinks: task.links,
+                  level: task.level,
+                  item: item.content,
+                  itemStatus: item.status,
+                  itemLinks: item.links,
+                  hasItems: true,
+                  docId: item.docId,
+                  lineNumber: item.lineNumber,
+                  blockId: item.blockId,
+                  date: item.date,
+                  originalStartDateTime: item.startDateTime,
+                  originalEndDateTime: item.endDateTime,
+                  siblingItems: item.siblingItems
+                }
               });
             }
           }
