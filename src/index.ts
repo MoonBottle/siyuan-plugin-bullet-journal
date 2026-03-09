@@ -723,7 +723,7 @@ export default class HKWorkPlugin extends Plugin {
     btn.addEventListener('click', (e) => {
       // 如果不是拖拽操作，则打开 Dock
       if (!btn.classList.contains('dragging')) {
-        this.openCustomTab(TAB_TYPES.POMODORO);
+        this.openPomodoroDock();
       }
     });
 
@@ -731,6 +731,25 @@ export default class HKWorkPlugin extends Plugin {
     this.makeDraggable(btn);
 
     return btn;
+  }
+
+  /**
+   * 打开番茄钟 Dock
+   */
+  private openPomodoroDock() {
+    try {
+      openTab({
+        app: this.app,
+        custom: {
+          id: `${this.name}${DOCK_TYPES.POMODORO}`,
+          icon: 'iconClock',
+          title: '番茄统计',
+          data: { type: DOCK_TYPES.POMODORO }
+        }
+      });
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open pomodoro dock:', error);
+    }
   }
 
   /**
@@ -829,15 +848,30 @@ export default class HKWorkPlugin extends Plugin {
 
   /**
    * 更新悬浮按钮显示（剩余时间）
+   * 直接从存储文件读取数据，不依赖 Pinia Store
    */
-  private updateFloatingTomatoDisplay() {
+  private async updateFloatingTomatoDisplay() {
     if (!this.floatingTomatoEl) return;
 
     try {
-      // 动态导入 store 避免初始化问题
-      const { usePomodoroStore } = require('@/stores');
-      const pomodoroStore = usePomodoroStore();
-      const remainingSeconds = pomodoroStore.remainingTime;
+      // 从存储文件读取进行中的番茄钟数据，而不是依赖 Pinia Store
+      const { loadActivePomodoro } = await import('@/utils/pomodoroStorage');
+      const data = await loadActivePomodoro(this);
+
+      if (!data) {
+        this.hideFloatingTomatoButton();
+        return;
+      }
+
+      // 计算剩余时间
+      let effectiveAccumulatedSeconds = data.accumulatedSeconds;
+      if (!data.isPaused) {
+        const elapsedSinceLastSave = Math.floor((Date.now() - data.startTime) / 1000);
+        effectiveAccumulatedSeconds = data.accumulatedSeconds + elapsedSinceLastSave;
+      }
+
+      const targetSeconds = data.targetDurationMinutes * 60;
+      const remainingSeconds = targetSeconds - effectiveAccumulatedSeconds;
 
       if (remainingSeconds <= 0) {
         this.hideFloatingTomatoButton();
@@ -853,7 +887,6 @@ export default class HKWorkPlugin extends Plugin {
         timeEl.textContent = timeStr;
       }
     } catch (error) {
-      // Pinia 可能还未初始化，忽略错误
       console.log('[Task Assistant] Failed to update floating tomato display:', error);
     }
   }

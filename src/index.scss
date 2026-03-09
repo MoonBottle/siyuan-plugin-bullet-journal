@@ -455,9 +455,9 @@
    ============================================ */
 
 .floating-tomato-btn {
-  position: fixed !important;
-  right: 20px !important;
-  bottom: 20px !important;
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -472,7 +472,7 @@
   z-index: 2147483647;
   transition: transform 0.2s, box-shadow 0.2s;
   user-select: none;
-  pointer-events: auto;
+  touch-action: none;
 
   &:hover {
     transform: scale(1.05);
