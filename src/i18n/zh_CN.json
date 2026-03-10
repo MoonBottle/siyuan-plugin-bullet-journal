@@ -84,6 +84,7 @@
     "allDay": "全天",
     "noTodos": "暂无待办事项",
     "expired": "已过期",
+    "inProgress": "进行中",
     "completed": "已完成",
     "abandoned": "已放弃",
     "future": "未来",

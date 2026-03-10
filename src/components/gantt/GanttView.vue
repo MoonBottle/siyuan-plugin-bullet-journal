@@ -104,6 +104,8 @@ const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
         originalStartDateTime: props.originalStartDateTime,
         originalEndDateTime: props.originalEndDateTime,
         siblingItems: props.siblingItems,
+        dateRangeStart: props.dateRangeStart,
+        dateRangeEnd: props.dateRangeEnd,
         pomodoros: props.pomodoros
       }
     };
@@ -204,6 +206,8 @@ const handleGanttTaskClick = (id: string | number) => {
       originalStartDateTime: props.originalStartDateTime,
       originalEndDateTime: props.originalEndDateTime,
       siblingItems: props.siblingItems,
+      dateRangeStart: props.dateRangeStart,
+      dateRangeEnd: props.dateRangeEnd,
       pomodoros: props.pomodoros
     }
   };

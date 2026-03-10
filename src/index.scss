@@ -152,6 +152,11 @@
       color: var(--b3-theme-on-surface);
     }
 
+    &.in-progress {
+      background: rgba(33, 150, 243, 0.15);
+      color: #2196f3;
+    }
+
     &.completed {
       background: rgba(76, 175, 80, 0.15);
       color: #4caf50;

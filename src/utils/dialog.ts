@@ -6,6 +6,7 @@ import { Dialog } from 'siyuan';
 import type { Item, CalendarEvent, PomodoroRecord } from '@/types/models';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
+import { getDateRangeStatus, getEffectiveDate } from './dateRangeUtils';
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
@@ -183,17 +184,25 @@ export function showItemDetailModal(item: Item): Dialog {
   const dateLabel = formatDateLabel(item.date, t('todo').today, t('todo').tomorrow);
   const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
 
-  // 判断是否过期（待办状态且日期早于今天）
-  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date < dayjs().format('YYYY-MM-DD');
-
-  // 事项状态标签
+  // 事项状态标签（多日期用 getDateRangeStatus，单日用原逻辑）
+  const todayStr = dayjs().format('YYYY-MM-DD');
   const statusMap: Record<string, { text: string; class: string }> = {
     'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
     'completed': { text: t('todo').completed, class: 'completed' },
     'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
     'expired': { text: t('todo').expired, class: 'expired' }
   };
-  const statusKey = isExpired ? 'expired' : item.status;
+  let statusKey: string;
+  if (item.status === 'completed' || item.status === 'abandoned') {
+    statusKey = item.status;
+  } else if (item.dateRangeStart && item.dateRangeEnd) {
+    const rangeStatus = getDateRangeStatus(item, todayStr);
+    statusKey = rangeStatus ?? (getEffectiveDate(item) < todayStr ? 'expired' : 'pending');
+  } else {
+    const effectiveDate = getEffectiveDate(item);
+    statusKey = effectiveDate < todayStr ? 'expired' : item.status;
+  }
   const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 
@@ -433,14 +442,28 @@ export function buildEventDetailContent(
 
   const itemStatus = props.itemStatus || 'pending';
   const itemDate = props.date;
-  const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
+  const todayStr = dayjs().format('YYYY-MM-DD');
   const statusMap: Record<string, { text: string; class: string }> = {
     'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
     'completed': { text: t('todo').completed, class: 'completed' },
     'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
     'expired': { text: t('todo').expired, class: 'expired' }
   };
-  const statusKey = isExpired ? 'expired' : itemStatus;
+  let statusKey: string;
+  if (itemStatus === 'completed' || itemStatus === 'abandoned') {
+    statusKey = itemStatus;
+  } else if (props.dateRangeStart && props.dateRangeEnd) {
+    const rangeStatus = getDateRangeStatus(
+      { dateRangeStart: props.dateRangeStart, dateRangeEnd: props.dateRangeEnd, date: itemDate } as Item,
+      todayStr
+    );
+    const effectiveDate = props.dateRangeEnd ?? itemDate;
+    statusKey = rangeStatus ?? (effectiveDate && effectiveDate < todayStr ? 'expired' : 'pending');
+  } else {
+    const isExpired = itemDate && itemDate < todayStr;
+    statusKey = isExpired ? 'expired' : itemStatus;
+  }
   const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 

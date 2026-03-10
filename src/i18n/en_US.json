@@ -84,6 +84,7 @@
     "allDay": "All Day",
     "noTodos": "No pending items",
     "expired": "Expired",
+    "inProgress": "In Progress",
     "completed": "Completed",
     "abandoned": "Abandoned",
     "future": "Future",
