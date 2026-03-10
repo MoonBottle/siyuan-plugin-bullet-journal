@@ -6,7 +6,7 @@ import { Dialog } from 'siyuan';
 import type { Item, CalendarEvent, PomodoroRecord } from '@/types/models';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
-import { getDateRangeStatus, getEffectiveDate } from './dateRangeUtils';
+import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
@@ -200,8 +200,13 @@ export function showItemDetailModal(item: Item): Dialog {
     const rangeStatus = getDateRangeStatus(item, todayStr);
     statusKey = rangeStatus ?? (getEffectiveDate(item) < todayStr ? 'expired' : 'pending');
   } else {
-    const effectiveDate = getEffectiveDate(item);
-    statusKey = effectiveDate < todayStr ? 'expired' : item.status;
+    const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
+    if (timeStatus) {
+      statusKey = timeStatus;
+    } else {
+      const effectiveDate = getEffectiveDate(item);
+      statusKey = effectiveDate < todayStr ? 'expired' : item.status;
+    }
   }
   const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
@@ -460,9 +465,19 @@ export function buildEventDetailContent(
     );
     const effectiveDate = props.dateRangeEnd ?? itemDate;
     statusKey = rangeStatus ?? (effectiveDate && effectiveDate < todayStr ? 'expired' : 'pending');
+  } else if (itemDate) {
+    const timeStatus = getTimeRangeStatus(
+      { date: itemDate, startDateTime: props.originalStartDateTime, endDateTime: props.originalEndDateTime },
+      dayjs().format('YYYY-MM-DD HH:mm:ss')
+    );
+    if (timeStatus) {
+      statusKey = timeStatus;
+    } else {
+      const isExpired = itemDate < todayStr;
+      statusKey = isExpired ? 'expired' : itemStatus;
+    }
   } else {
-    const isExpired = itemDate && itemDate < todayStr;
-    statusKey = isExpired ? 'expired' : itemStatus;
+    statusKey = itemStatus;
   }
   const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;

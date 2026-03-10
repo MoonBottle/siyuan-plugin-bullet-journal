@@ -65,6 +65,43 @@ export function getDateRangeStatus(
 }
 
 /**
+ * 单日事项的状态判断（含全天、带时间范围、仅开始时间）
+ * @param item 含 date、startDateTime、endDateTime
+ * @param currentDateTime 当前时间 "YYYY-MM-DD HH:mm:ss"
+ * @returns 单日事项返回状态，无 date 返回 undefined
+ */
+export function getTimeRangeStatus(
+  item: { date?: string; startDateTime?: string; endDateTime?: string },
+  currentDateTime: string
+): DateRangeStatus | undefined {
+  const todayStr = currentDateTime.slice(0, 10);
+  if (!item.date) return undefined;
+
+  const date = item.date;
+  const start = item.startDateTime;
+  const end = item.endDateTime;
+
+  if (date < todayStr) return 'expired';
+  if (date > todayStr) return 'pending';
+
+  // date === today
+  if (!start && !end) {
+    return 'in_progress';
+  }
+  if (start && end) {
+    if (currentDateTime < start) return 'pending';
+    if (currentDateTime > end) return 'expired';
+    return 'in_progress';
+  }
+  if (start && !end) {
+    if (currentDateTime < start) return 'pending';
+    if (currentDateTime > start) return 'expired';
+    return 'in_progress';
+  }
+  return 'in_progress';
+}
+
+/**
  * 根据 DateRangeStatus 返回状态 emoji
  */
 export function dateRangeStatusToEmoji(status: DateRangeStatus): string {

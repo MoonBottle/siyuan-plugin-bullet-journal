@@ -9,6 +9,7 @@ import {
   filterDateRangeRepresentative,
   getEffectiveDate,
   getDateRangeStatus,
+  getTimeRangeStatus,
   dateRangeStatusToEmoji
 } from '@/utils/dateRangeUtils';
 import type { Item } from '@/types/models';
@@ -168,6 +169,80 @@ describe('getDateRangeStatus', () => {
   it('单日事项返回 undefined', () => {
     const item = mkItem('2026-03-09', 'b1');
     expect(getDateRangeStatus(item, '2026-03-09')).toBeUndefined();
+  });
+});
+
+describe('getTimeRangeStatus', () => {
+  const itemWithTimeRange = {
+    date: '2026-03-10',
+    startDateTime: '2026-03-10 19:00:00',
+    endDateTime: '2026-03-10 22:15:00'
+  };
+
+  it('进行中：当天时间在范围内', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-10 20:44:34')).toBe('in_progress');
+  });
+
+  it('进行中：当前=开始时间', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-10 19:00:00')).toBe('in_progress');
+  });
+
+  it('进行中：当前=结束时间', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-10 22:15:00')).toBe('in_progress');
+  });
+
+  it('待办：当天时间早于开始', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-10 18:00:00')).toBe('pending');
+  });
+
+  it('待办：未来日期', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-09 20:00:00')).toBe('pending');
+  });
+
+  it('已过期：当天时间晚于结束', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-10 23:00:00')).toBe('expired');
+  });
+
+  it('已过期：次日', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-11 10:00:00')).toBe('expired');
+  });
+
+  it('已过期：昨日（今日 03-11）', () => {
+    expect(getTimeRangeStatus(itemWithTimeRange, '2026-03-11 08:00:00')).toBe('expired');
+  });
+
+  it('无 date 返回 undefined', () => {
+    expect(getTimeRangeStatus({}, '2026-03-10 20:00:00')).toBeUndefined();
+  });
+
+  it('仅 start 无 end：当前 < start', () => {
+    const item = { date: '2026-03-10', startDateTime: '2026-03-10 19:00:00' };
+    expect(getTimeRangeStatus(item, '2026-03-10 18:00:00')).toBe('pending');
+  });
+
+  it('仅 start 无 end：当前 = start', () => {
+    const item = { date: '2026-03-10', startDateTime: '2026-03-10 19:00:00' };
+    expect(getTimeRangeStatus(item, '2026-03-10 19:00:00')).toBe('in_progress');
+  });
+
+  it('仅 start 无 end：当前 > start', () => {
+    const item = { date: '2026-03-10', startDateTime: '2026-03-10 19:00:00' };
+    expect(getTimeRangeStatus(item, '2026-03-10 20:00:00')).toBe('expired');
+  });
+
+  it('全天：当天进行中', () => {
+    const item = { date: '2026-03-10' };
+    expect(getTimeRangeStatus(item, '2026-03-10 14:00:00')).toBe('in_progress');
+  });
+
+  it('全天：未来待办', () => {
+    const item = { date: '2026-03-10' };
+    expect(getTimeRangeStatus(item, '2026-03-09 20:00:00')).toBe('pending');
+  });
+
+  it('全天：已过期', () => {
+    const item = { date: '2026-03-10' };
+    expect(getTimeRangeStatus(item, '2026-03-11 10:00:00')).toBe('expired');
   });
 });
 

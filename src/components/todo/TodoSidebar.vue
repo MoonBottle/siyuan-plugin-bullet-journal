@@ -395,7 +395,7 @@ import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
-import { getDateRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
+import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
@@ -408,6 +408,10 @@ const getStatusEmoji = (item: Item): string => {
   if (item.dateRangeStart && item.dateRangeEnd) {
     const rangeStatus = getDateRangeStatus(item, todayStr);
     if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
+  }
+  if (!item.dateRangeStart && !item.dateRangeEnd && item.date) {
+    const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
+    if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
   }
   const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
   if (isExpired) return '⚠️ ';

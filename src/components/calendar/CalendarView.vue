@@ -30,7 +30,7 @@ import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
-import { getDateRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
+import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 
 // 格式化时间显示
 const formatEventTime = (startStr: string, allDay: boolean): string => {
@@ -56,7 +56,9 @@ const renderEventContent = (arg: any) => {
     itemDate: string | undefined,
     itemBlockId: string | undefined,
     dateRangeStart: string | undefined,
-    dateRangeEnd: string | undefined
+    dateRangeEnd: string | undefined,
+    originalStartDateTime: string | undefined,
+    originalEndDateTime: string | undefined
   ): string => {
     if (pomodoroStore.activePomodoro?.blockId && itemBlockId === pomodoroStore.activePomodoro.blockId) {
       return '🍅 ';
@@ -71,6 +73,13 @@ const renderEventContent = (arg: any) => {
       );
       if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
     }
+    if (!dateRangeStart && !dateRangeEnd && itemDate) {
+      const timeStatus = getTimeRangeStatus(
+        { date: itemDate, startDateTime: originalStartDateTime, endDateTime: originalEndDateTime },
+        dayjs().format('YYYY-MM-DD HH:mm:ss')
+      );
+      if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
+    }
     const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < today;
     if (isExpired) return '⚠️ ';
     return '⏳ ';
@@ -81,7 +90,9 @@ const renderEventContent = (arg: any) => {
     date,
     blockId,
     arg.event.extendedProps?.dateRangeStart,
-    arg.event.extendedProps?.dateRangeEnd
+    arg.event.extendedProps?.dateRangeEnd,
+    arg.event.extendedProps?.originalStartDateTime,
+    arg.event.extendedProps?.originalEndDateTime
   );
 
   const isItem = arg.event.extendedProps?.item !== undefined;
