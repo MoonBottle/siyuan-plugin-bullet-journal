@@ -679,14 +679,14 @@ const updateGantt = () => {
   height: 100% !important;
 }
 
-/* 悬浮事项详情弹框（与日历一致，边框/阴影更轻） */
+/* 悬浮事项详情弹框（容器 padding 较日历更紧凑） */
 .gantt-event-tooltip {
   position: fixed;
   z-index: 10000;
   max-width: 440px;
   max-height: 400px;
   overflow: auto;
-  padding: 8px;
+  padding: 6px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: 4px;
@@ -706,12 +706,12 @@ const updateGantt = () => {
   :deep(.sy-dialog-cards) {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
 
   :deep(.sy-dialog-card) {
     font-size: 12px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 4px;
     border: 1px solid var(--b3-border-color);
   }

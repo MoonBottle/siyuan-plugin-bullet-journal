@@ -583,7 +583,7 @@ defineExpose({
   max-width: 440px;
   max-height: 400px;
   overflow: auto;
-  padding: 8px;
+  padding: 12px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: 4px;
@@ -603,12 +603,12 @@ defineExpose({
   :deep(.sy-dialog-cards) {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   :deep(.sy-dialog-card) {
     font-size: 12px;
-    padding: 8px 12px;
+    padding: 10px 14px;
     border-radius: 4px;
     border: 1px solid var(--b3-border-color);
   }
