@@ -117,7 +117,7 @@
 
 ![calendarview.png](https://b3logfile.com/file/2026/03/calendar-view-p1U6g2E.png)
 
-![tododock.png](https://b3logfile.com/file/2026/03/todo-dock-kBvFpBt.png)
+![tododock.png](https://b3logfile.com/file/2026/03/todo-dock-xloCpia.png)
 
 ![ganttview.png](https://b3logfile.com/file/2026/03/gantt-view-EMdc45N.png)
 
