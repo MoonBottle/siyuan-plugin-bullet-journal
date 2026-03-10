@@ -428,7 +428,10 @@ onMounted(() => {
     gantt.detachEvent(String(onTaskClickId));
     onTaskClickId = null;
   }
-  onTaskClickId = gantt.attachEvent('onTaskClick', (id) => {
+  onTaskClickId = gantt.attachEvent('onTaskClick', (id, e) => {
+    // 仅点击右侧任务条时展示详情，左侧任务列表区域不触发
+    const target = e?.target as HTMLElement | undefined;
+    if (!target?.closest('.gantt_task_line')) return true;
     handleGanttTaskClick(id);
     return true;
   });
