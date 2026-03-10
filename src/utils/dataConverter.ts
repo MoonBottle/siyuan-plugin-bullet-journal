@@ -92,6 +92,8 @@ export class DataConverter {
         originalStartDateTime: item.startDateTime,
         originalEndDateTime: item.endDateTime,
         siblingItems: item.siblingItems,
+        dateRangeStart: item.dateRangeStart,
+        dateRangeEnd: item.dateRangeEnd,
         pomodoros: item.pomodoros
       }
     };
@@ -200,6 +202,8 @@ export class DataConverter {
                   originalStartDateTime: item.startDateTime,
                   originalEndDateTime: item.endDateTime,
                   siblingItems: item.siblingItems,
+                  dateRangeStart: item.dateRangeStart,
+                  dateRangeEnd: item.dateRangeEnd,
                   pomodoros: item.pomodoros
                 }
               });

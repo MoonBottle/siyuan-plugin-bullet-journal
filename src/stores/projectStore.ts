@@ -6,6 +6,17 @@ import { defineStore } from 'pinia';
 import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord } from '@/types/models';
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
+import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRangeUtils';
+
+/** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
+function computeDisplayItems(
+  items: Item[],
+  currentDate: string,
+  groupId: string
+): Item[] {
+  const filtered = !groupId ? items : items.filter(i => i.project?.groupId === groupId);
+  return filterDateRangeRepresentative(filtered, currentDate);
+}
 import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
 
@@ -64,6 +75,10 @@ export const useProjectStore = defineStore('project', {
       return state.items.filter(i => i.project?.groupId === groupId);
     },
 
+    // 多日期事项仅保留代表项，供待办/过期/完成/放弃分组使用
+    getDisplayItems: (state) => (groupId: string) =>
+      computeDisplayItems(state.items, state.currentDate, groupId),
+
     // 按分组过滤的日历事件
     getFilteredCalendarEvents: (state) => (groupId: string) => {
       if (!groupId) return state.calendarEvents;
@@ -75,40 +90,45 @@ export const useProjectStore = defineStore('project', {
 
     // 今日及以后的待办事项（排除已完成和已放弃）
     getFutureItems: (state) => (groupId: string) => {
-      const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
-      return items.filter(item =>
-        item.date >= state.currentDate &&
-        item.status !== 'completed' &&
-        item.status !== 'abandoned'
-      );
+      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      return items.filter(item => {
+        const effectiveDate = getEffectiveDate(item);
+        return (
+          effectiveDate >= state.currentDate &&
+          item.status !== 'completed' &&
+          item.status !== 'abandoned'
+        );
+      });
     },
 
     // 已完成的事项
     getCompletedItems: (state) => (groupId: string) => {
-      const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
+      const items = computeDisplayItems(state.items, state.currentDate, groupId);
       return items.filter(item => item.status === 'completed');
     },
 
     // 已放弃的事项
     getAbandonedItems: (state) => (groupId: string) => {
-      const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
+      const items = computeDisplayItems(state.items, state.currentDate, groupId);
       return items.filter(item => item.status === 'abandoned');
     },
 
     // 过期的事项（时间过了但未完成未放弃）
     getExpiredItems: (state) => (groupId: string) => {
-      const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
-      return items.filter(item =>
-        item.date < state.currentDate &&
-        item.status !== 'completed' &&
-        item.status !== 'abandoned'
-      );
+      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      return items.filter(item => {
+        const effectiveDate = getEffectiveDate(item);
+        return (
+          effectiveDate < state.currentDate &&
+          item.status !== 'completed' &&
+          item.status !== 'abandoned'
+        );
+      });
     },
 
     // 按日期分组的待办
-    getGroupedFutureItems: (state) => (groupId: string) => {
-      const items = !groupId ? state.items : state.items.filter(i => i.project?.groupId === groupId);
-      const futureItems = items.filter(item => item.date >= state.currentDate);
+    getGroupedFutureItems: (state, getters) => (groupId: string) => {
+      const futureItems = (getters.getFutureItems as (g: string) => Item[])(groupId);
 
       const grouped = new Map<string, Item[]>();
       futureItems.forEach(item => {

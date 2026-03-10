@@ -149,6 +149,13 @@ export class LineParser {
       }
     }
 
+    // 多日期事项：计算 dateRangeStart、dateRangeEnd
+    const allDates = allDateTimeInfo.map(info => info.date);
+    const dateRangeStart =
+      allDates.length >= 2 ? allDates.slice().sort()[0] : undefined;
+    const dateRangeEnd =
+      allDates.length >= 2 ? allDates.slice().sort().pop() : undefined;
+
     // 为每个日期创建 Item，并填充 siblingItems
     for (let i = 0; i < allDateTimeInfo.length; i++) {
       const { date, startDateTime, endDateTime } = allDateTimeInfo[i];
@@ -172,7 +179,9 @@ export class LineParser {
         docId: '',
         status,
         links: links?.length ? links : undefined,  // 添加链接
-        siblingItems: siblingItems.length > 0 ? siblingItems : undefined
+        siblingItems: siblingItems.length > 0 ? siblingItems : undefined,
+        dateRangeStart,
+        dateRangeEnd
       });
     }
 

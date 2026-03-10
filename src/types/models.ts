@@ -104,6 +104,10 @@ export interface Item {
     startDateTime?: string;
     endDateTime?: string;
   }>;
+  /** 日期跨度开始日（多日期事项有值：连续 @07~09 或离散 @07,09） */
+  dateRangeStart?: string;
+  /** 日期跨度结束日（同上，用于分组、过期与进行中判断） */
+  dateRangeEnd?: string;
   pomodoros?: PomodoroRecord[]; // 事项级别番茄钟记录
 }
 
@@ -141,6 +145,8 @@ export interface CalendarEvent {
       startDateTime?: string;
       endDateTime?: string;
     }>;
+    dateRangeStart?: string;
+    dateRangeEnd?: string;
     pomodoros?: PomodoroRecord[];
   };
 }

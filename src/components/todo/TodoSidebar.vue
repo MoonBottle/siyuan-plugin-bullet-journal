@@ -395,20 +395,22 @@ import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
+import { getDateRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
-  // 如果是专注中的事项，显示番茄图标（用 blockId 匹配）
-  console.log('[getStatusEmoji] item.blockId:', item.blockId, 'activePomodoro:', JSON.stringify(pomodoroStore.activePomodoro));
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    console.log('[getStatusEmoji] 匹配成功，返回🍅');
     return '🍅 ';
   }
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
-  if (isExpired) return '⚠️ ';
   if (item.status === 'completed') return '✅ ';
   if (item.status === 'abandoned') return '❌ ';
+  const todayStr = dayjs().format('YYYY-MM-DD');
+  if (item.dateRangeStart && item.dateRangeEnd) {
+    const rangeStatus = getDateRangeStatus(item, todayStr);
+    if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
+  }
+  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
+  if (isExpired) return '⚠️ ';
   return '⏳ ';
 };
 
@@ -472,10 +474,15 @@ const expiredItems = computed(() => projectStore.getExpiredItems(props.groupId))
 // 当前分组下的未来待办（今日及以后，未完成未放弃）
 const futureItemsForGroup = computed(() => projectStore.getFutureItems(props.groupId));
 
-// 今日待办事项
+// 今日待办事项（含多日期事项进行中：今天在 [dateRangeStart, dateRangeEnd] 内）
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
-  return futureItemsForGroup.value.filter(item => item.date === todayStr);
+  return futureItemsForGroup.value.filter(item => {
+    if (item.date === todayStr) return true;
+    const start = item.dateRangeStart;
+    const end = item.dateRangeEnd;
+    return start && end && todayStr >= start && todayStr <= end;
+  });
 });
 
 // 明日待办事项
@@ -484,11 +491,17 @@ const tomorrowItems = computed(() => {
   return futureItemsForGroup.value.filter(item => item.date === tomorrowStr);
 });
 
-// 未来待办事项（不包括今天和明天）
+// 未来待办事项（不包括今天和明天，且非今日进行中的多日期事项）
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return futureItemsForGroup.value.filter(item => item.date !== todayStr && item.date !== tomorrowStr);
+  return futureItemsForGroup.value.filter(item => {
+    if (item.date === todayStr || item.date === tomorrowStr) return false;
+    const start = item.dateRangeStart;
+    const end = item.dateRangeEnd;
+    if (start && end && todayStr >= start && todayStr <= end) return false; // 进行中归入今天
+    return true;
+  });
 });
 
 // 按日期分组的未来待办事项

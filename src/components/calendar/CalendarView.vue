@@ -23,6 +23,7 @@ import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
+import { getDateRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 
 // 格式化时间显示
 const formatEventTime = (startStr: string, allDay: boolean): string => {
@@ -43,20 +44,38 @@ const renderEventContent = (arg: any) => {
   const date = arg.event.extendedProps?.date;
   const blockId = arg.event.extendedProps?.blockId;
 
-  const getStatusEmoji = (itemStatus: string | undefined, itemDate: string | undefined, itemBlockId: string | undefined): string => {
-    // 如果是专注中的事项，显示番茄图标
+  const getStatusEmoji = (
+    itemStatus: string | undefined,
+    itemDate: string | undefined,
+    itemBlockId: string | undefined,
+    dateRangeStart: string | undefined,
+    dateRangeEnd: string | undefined
+  ): string => {
     if (pomodoroStore.activePomodoro?.blockId && itemBlockId === pomodoroStore.activePomodoro.blockId) {
       return '🍅 ';
     }
-    // 判断是否过期（待办状态且日期早于今天）
-    const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
-    if (isExpired) return '⚠️ ';
     if (itemStatus === 'completed') return '✅ ';
     if (itemStatus === 'abandoned') return '❌ ';
+    const today = dayjs().format('YYYY-MM-DD');
+    if (dateRangeStart && dateRangeEnd) {
+      const rangeStatus = getDateRangeStatus(
+        { date: itemDate ?? '', dateRangeStart, dateRangeEnd } as any,
+        today
+      );
+      if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
+    }
+    const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < today;
+    if (isExpired) return '⚠️ ';
     return '⏳ ';
   };
 
-  const statusEmoji = getStatusEmoji(status, date, blockId);
+  const statusEmoji = getStatusEmoji(
+    status,
+    date,
+    blockId,
+    arg.event.extendedProps?.dateRangeStart,
+    arg.event.extendedProps?.dateRangeEnd
+  );
 
   const isItem = arg.event.extendedProps?.item !== undefined;
 

@@ -14,6 +14,8 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].startDateTime).toBeUndefined();
     expect(items[0].endDateTime).toBeUndefined();
     expect(items[0].siblingItems).toBeUndefined();
+    expect(items[0].dateRangeStart).toBeUndefined();
+    expect(items[0].dateRangeEnd).toBeUndefined();
   });
 
   it('单个日期+时间', () => {
@@ -47,6 +49,13 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].siblingItems).toHaveLength(2);
     expect(items[0].siblingItems?.[0].date).toBe('2024-01-03');
     expect(items[0].siblingItems?.[1].date).toBe('2024-01-05');
+    // 检查 dateRangeStart/End（离散日期）
+    expect(items[0].dateRangeStart).toBe('2024-01-01');
+    expect(items[0].dateRangeEnd).toBe('2024-01-05');
+    expect(items[1].dateRangeStart).toBe('2024-01-01');
+    expect(items[1].dateRangeEnd).toBe('2024-01-05');
+    expect(items[2].dateRangeStart).toBe('2024-01-01');
+    expect(items[2].dateRangeEnd).toBe('2024-01-05');
   });
 
   it('多个日期（中文逗号）', () => {
@@ -55,6 +64,8 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].date).toBe('2024-01-01');
     expect(items[1].date).toBe('2024-01-03');
     expect(items[2].date).toBe('2024-01-05');
+    expect(items[0].dateRangeStart).toBe('2024-01-01');
+    expect(items[0].dateRangeEnd).toBe('2024-01-05');
   });
 
   it('多个日期（中英文逗号混合）', () => {
@@ -63,6 +74,8 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].date).toBe('2024-01-01');
     expect(items[1].date).toBe('2024-01-03');
     expect(items[2].date).toBe('2024-01-05');
+    expect(items[0].dateRangeStart).toBe('2024-01-01');
+    expect(items[0].dateRangeEnd).toBe('2024-01-05');
   });
 
   it('日期范围（完整格式）', () => {
@@ -75,6 +88,13 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].siblingItems).toHaveLength(2);
     expect(items[0].siblingItems?.[0].date).toBe('2024-01-02');
     expect(items[0].siblingItems?.[1].date).toBe('2024-01-03');
+    // 检查 dateRangeStart/End
+    expect(items[0].dateRangeStart).toBe('2024-01-01');
+    expect(items[0].dateRangeEnd).toBe('2024-01-03');
+    expect(items[1].dateRangeStart).toBe('2024-01-01');
+    expect(items[1].dateRangeEnd).toBe('2024-01-03');
+    expect(items[2].dateRangeStart).toBe('2024-01-01');
+    expect(items[2].dateRangeEnd).toBe('2024-01-03');
   });
 
   it('日期范围（简写格式）', () => {
@@ -83,8 +103,9 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].date).toBe('2024-01-01');
     expect(items[1].date).toBe('2024-01-02');
     expect(items[2].date).toBe('2024-01-03');
-    // 简写格式保留原始表达式
     expect(items[0].siblingItems).toHaveLength(2);
+    expect(items[0].dateRangeStart).toBe('2024-01-01');
+    expect(items[0].dateRangeEnd).toBe('2024-01-03');
   });
 
   it('多日期+时间（每个日期不同时间）', () => {
@@ -120,6 +141,18 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[2].date).toBe('2024-01-03');
     expect(items[2].startDateTime).toBe('2024-01-03 09:00:00');
     expect(items[2].endDateTime).toBe('2024-01-03 10:00:00');
+  });
+
+  it('混合表达式 dateRangeStart/End', () => {
+    const items = LineParser.parseItemLine('事项 @2026-03-07, 2026-03-09, 2026-03-13~03-20', 1);
+    expect(items.length).toBeGreaterThanOrEqual(2);
+    const first = items[0];
+    expect(first.dateRangeStart).toBe('2026-03-07');
+    expect(first.dateRangeEnd).toBe('2026-03-20');
+    items.forEach(item => {
+      expect(item.dateRangeStart).toBe('2026-03-07');
+      expect(item.dateRangeEnd).toBe('2026-03-20');
+    });
   });
 
   it('混合模式（用户示例）', () => {
