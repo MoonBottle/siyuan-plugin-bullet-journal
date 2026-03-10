@@ -2,9 +2,9 @@
 
 ![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![更新日志](https://img.shields.io/badge/更新日志-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
 
-[English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md) | [简体中文](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README_zh_CN.md)
+[English](README.md)
 
-任务管理插件，提供日历、甘特图与项目列表，让工作安排一目了然。
+任务管理插件：日历与甘特图规划任务，待办与番茄钟跟进执行，支持 AI 对话；文档即任务，双向链接、实时同步。
 
 ### v0.9.0 更新要点
 
@@ -45,13 +45,11 @@
 |------|------|----------|
 | **日历视图** | 以日历形式展示工作任务，支持月/周/日/列表视图 | 日/周计划和时间安排 |
 | **甘特图** | 项目进度可视化，支持层级任务展示 | 了解项目时间线和任务依赖关系 |
-| **项目列表** | 按项目分组展示任务，支持展开查看详情 | 组织和回顾所有项目任务 |
 | **待办事项** | 在侧边栏显示即将到来的待办事项 | 快速查看今日及未来的待办 |
 | **番茄钟** | 在侧边栏显示番茄钟专注状态 | 跟踪番茄钟专注时间 |
 | **AI 对话** | 在侧边栏显示 AI 对话记录 | 与 AI 助手交互查询项目、任务和事项 |
 
 **核心特性：**
-- 📅 **记录驱动** - 专注于记录已完成和待完成的事项，而非提醒
 - 🔗 **双向链接** - 点击任意任务可直接跳转到笔记中的对应位置
 - 🎯 **无侵入式** - 文档即任务，只需要在笔记中添加标记，即可在视图中查看和管理任务
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
