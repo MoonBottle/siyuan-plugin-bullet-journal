@@ -19,7 +19,7 @@
 
 ![番茄钟专注中](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png)
 
-![番茄钟记录](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-dock.png)
+![pomodorodock.png](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
 
 - **甘特图增强**：
   - 任务文字显示：任务条上直接显示任务名称，悬停显示完整信息
@@ -88,11 +88,17 @@
 
 确定设计风格（事项） @2026-03-09
 
+🍅2026-03-09 10:00:00~10:25:00 收集素材
+
+🍅15,2026-03-09 14:00:00~14:30:00 确定设计风格（实际专注15分钟，有暂停）
+
 和事项相关联的链接，支持多个，每个一行
 
 [参考案例](https://example.com/ref)
 
 完成首页原型设计（已完成事项） @2026-03-09 10:00:00~12:00:00 #已完成
+
+🍅2026-03-09 14:00:00~14:25:00 完成首页原型设计
 
 评审会议（已放弃事项） @2026-03-08 14:00:00~15:00:00 #已放弃
 ```
@@ -103,18 +109,21 @@
 - `@L1/@L2/@L3` - 任务层级，可选标记，默认层级为 L1
 - `@YYYY-MM-DD` / `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 事项日期（必选），带日期的行会被识别为事项；可附加时间范围表示具体时间段
 - `#已完成` / `#done` / `#已放弃` / `#abandoned` - 事项状态（可选），标记事项为已完成或已放弃状态
+- `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 番茄钟记录（可选），写在事项下方；N 为实际专注分钟数（不含暂停时间），可选
 
 ### 2. 在视图中查看
 
-插件自动解析笔记中的标记，在日历、甘特图、项目列表、待办事项 中展示：
+插件自动解析笔记中的标记，在日历、甘特图、待办事项 中展示：
 
-![日历视图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/calendar-view.png)
+![calendarview.png](https://b3logfile.com/file/2026/03/calendar-view-p1U6g2E.png)
 
-![待办事项](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
+![tododock.png](https://b3logfile.com/file/2026/03/todo-dock-kBvFpBt.png)
 
-![甘特图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
+![ganttview.png](https://b3logfile.com/file/2026/03/gantt-view-EMdc45N.png)
 
-![事项详情](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/item-modal.png)
+![pomodorodock.png](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
+
+![itemmodal.png](https://b3logfile.com/file/2026/03/item-modal-EC8678D.png)
 
 点击视图中的任务，可直接跳转到笔记中对应位置。
 

@@ -91,7 +91,8 @@ export class DataConverter {
         date: item.date,
         originalStartDateTime: item.startDateTime,
         originalEndDateTime: item.endDateTime,
-        siblingItems: item.siblingItems
+        siblingItems: item.siblingItems,
+        pomodoros: item.pomodoros
       }
     };
   }
@@ -198,7 +199,8 @@ export class DataConverter {
                   date: item.date,
                   originalStartDateTime: item.startDateTime,
                   originalEndDateTime: item.endDateTime,
-                  siblingItems: item.siblingItems
+                  siblingItems: item.siblingItems,
+                  pomodoros: item.pomodoros
                 }
               });
             }
