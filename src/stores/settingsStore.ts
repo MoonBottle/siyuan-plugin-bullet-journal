@@ -11,6 +11,7 @@ export const useSettingsStore = defineStore('settings', {
     directories: [] as ProjectDirectory[],
     groups: [] as ProjectGroup[],
     defaultGroup: '',
+    calendarDefaultView: 'timeGridDay',
     lunchBreakStart: '12:00',
     lunchBreakEnd: '13:00',
     todoDock: {
@@ -60,9 +61,10 @@ export const useSettingsStore = defineStore('settings', {
         this.directories = settings.directories || [];
         this.groups = settings.groups || [];
         this.defaultGroup = settings.defaultGroup || '';
+        this.calendarDefaultView = settings.calendarDefaultView || 'timeGridDay';
         this.lunchBreakStart = settings.lunchBreakStart || '12:00';
         this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
-        this.todoDock = settings.todoDock || { hideCompleted: false };
+        this.todoDock = settings.todoDock || { hideCompleted: false, hideAbandoned: false };
         this.loaded = true;
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
       }
@@ -78,6 +80,7 @@ export const useSettingsStore = defineStore('settings', {
           directories: this.directories,
           groups: this.groups,
           defaultGroup: this.defaultGroup,
+          calendarDefaultView: this.calendarDefaultView,
           lunchBreakStart: this.lunchBreakStart,
           lunchBreakEnd: this.lunchBreakEnd,
           todoDock: this.todoDock

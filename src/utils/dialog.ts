@@ -349,29 +349,31 @@ function createLinkGroup(title: string, links: Array<{ name: string; url: string
 let lastEventDetailDialog: Dialog | null = null;
 
 /**
- * 显示日历事件详情弹框
+ * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
+ * @param event 日历事件
+ * @param options.preview 为 true 时去掉复制按钮与底部操作按钮，仅保留纯展示内容
  */
-export function showEventDetailModal(event: CalendarEvent): Dialog {
+export function buildEventDetailContent(
+  event: CalendarEvent,
+  options?: { preview?: boolean }
+): string {
+  const preview = options?.preview ?? false;
   const settingsStore = useSettingsStore();
-  const plugin = usePlugin();
   const props = event.extendedProps;
 
-  // 格式化时间（与 showItemDetailModal 一致：日期标签 + 时间范围，显示「今天」「明天」）
   const start = event.start;
   const end = event.end;
   const allDay = event.allDay;
   const rawDate = props.date
     || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
     || (start ? dayjs(start).format('YYYY-MM-DD') : '');
-  const dateStr = rawDate || dayjs().format('YYYY-MM-DD');
-  const dateLabel = formatDateLabel(dateStr, t('todo').today, t('todo').tomorrow);
+  const dateLabel = formatDateLabel(rawDate || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow);
   const timeRange = formatTimeRange(
     typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''),
     typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : '')
   );
   const timeDisplay = `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;
 
-  // 时长计算
   let duration = '';
   if (!allDay && start && end) {
     duration = calculateDuration(
@@ -382,11 +384,8 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     );
   }
 
-  // 项目链接和任务链接
   const projectLinks = props.projectLinks || [];
   const taskLinks = props.taskLinks || [];
-
-  // 构建链接 HTML
   const projectLinksHtml = projectLinks.map(link =>
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
@@ -394,25 +393,25 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
 
-  // 构建内容 - 垂直卡片布局
+  const copyBtn = (text: string) =>
+    preview ? '' : `<span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${text.replace(/"/g, '&quot;')}" aria-label="${t('common').copy}">${copyIconSvg}</span>`;
+
   let content = '<div class="sy-dialog-content">';
   content += '<div class="sy-dialog-cards">';
 
-  // 项目卡片
   if (props.project) {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">${t('todo').project}</div>
         <div class="sy-dialog-card-content">
           <span>${props.project}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.project}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+          ${copyBtn(props.project)}
         </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
     `;
   }
 
-  // 任务卡片
   if (props.task) {
     const levelHtml = props.level
       ? `<span class="task-level level-${props.level.toLowerCase()}">${props.level}</span>`
@@ -425,20 +424,16 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
         </div>
         <div class="sy-dialog-card-content">
           <span>${props.task}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+          ${copyBtn(props.task)}
         </div>
         ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
       </div>
     `;
   }
 
-  // 事项卡片
-  // 判断是否过期（待办状态且日期早于今天）
   const itemStatus = props.itemStatus || 'pending';
   const itemDate = props.date;
   const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
-
-  // 事项状态标签
   const statusMap: Record<string, { text: string; class: string }> = {
     'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
     'completed': { text: t('todo').completed, class: 'completed' },
@@ -449,13 +444,11 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 
-  // 事项链接
   const itemLinks = props.itemLinks || [];
   const itemLinksHtml = itemLinks.map(link =>
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
 
-  // 专注总时间
   const totalFocusMinutes = calculateTotalFocusMinutes(props.pomodoros);
   const focusTotalTimeDisplay = totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
 
@@ -475,14 +468,14 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
             <span class="sy-dialog-duration-text">
               <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
               ${duration}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+              ${copyBtn(duration)}
             </span>
           ` : ''}
           ${focusTotalTimeDisplay ? `
             <span class="sy-dialog-duration-text">
               <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').focusTotalTime}">🍅</span>
               ${focusTotalTimeDisplay}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${focusTotalTimeDisplay}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+              ${copyBtn(focusTotalTimeDisplay)}
             </span>
           ` : ''}
         </div>
@@ -490,17 +483,17 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       ${props.item ? `
         <div class="sy-dialog-item-content">
           <span>${props.item}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.item}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+          ${copyBtn(props.item)}
         </div>
       ` : ''}
       ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
     </div>
   `;
 
-  content += '</div>'; // 结束 cards
+  content += '</div>';
 
-  // 按钮（与 showItemDetailModal 一致）
-  content += `
+  if (!preview) {
+    content += `
     <div class="sy-dialog-footer">
       ${createButtons([
         { text: t('common').cancel, class: 'b3-button--outline', action: 'close' },
@@ -509,8 +502,24 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       ])}
     </div>
   `;
+  }
 
   content += '</div>';
+  return content;
+}
+
+/**
+ * 显示日历事件详情弹框
+ */
+export function showEventDetailModal(event: CalendarEvent): Dialog {
+  const plugin = usePlugin();
+  const props = event.extendedProps;
+  const rawDate = props.date
+    || (typeof event.start === 'string' ? (event.start.includes('T') ? event.start.split('T')[0] : event.start.split(' ')[0]) : '')
+    || (event.start ? dayjs(event.start).format('YYYY-MM-DD') : '');
+  const dateStr = rawDate || dayjs().format('YYYY-MM-DD');
+
+  const content = buildEventDetailContent(event, { preview: false });
 
   // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
   if (lastEventDetailDialog) {

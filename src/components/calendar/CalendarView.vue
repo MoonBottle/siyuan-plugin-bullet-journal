@@ -1,6 +1,12 @@
 <template>
   <div class="calendar-view">
     <div ref="calendarEl" class="calendar-container"></div>
+    <div
+      ref="eventTooltipEl"
+      class="calendar-event-tooltip"
+      :class="{ 'calendar-event-tooltip--visible': eventTooltipVisible }"
+      :style="eventTooltipStyle"
+    />
   </div>
 </template>
 
@@ -12,7 +18,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { CalendarEvent } from '@/types/models';
-import { showEventDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
@@ -82,24 +88,31 @@ const renderEventContent = (arg: any) => {
   const container = document.createElement('div');
   container.className = 'fc-event-custom';
 
+  // 第一行：时间 + 任务名（若有）
+  const line1 = document.createElement('div');
+  line1.className = 'fc-event-line1';
   if (startTime) {
     const timeEl = document.createElement('span');
     timeEl.className = 'fc-event-time';
     timeEl.textContent = startTime + ' ';
-    container.appendChild(timeEl);
+    line1.appendChild(timeEl);
   }
-
-  const titleEl = document.createElement('span');
-  titleEl.className = 'fc-event-title-text';
-  titleEl.textContent = statusEmoji + title;
-  container.appendChild(titleEl);
-
   if (isItem && taskName && taskName !== title) {
     const taskEl = document.createElement('span');
     taskEl.className = 'fc-event-task';
-    taskEl.textContent = ' ' + taskName;
-    container.appendChild(taskEl);
+    taskEl.textContent = taskName;
+    line1.appendChild(taskEl);
   }
+  container.appendChild(line1);
+
+  // 第二行：状态emoji + 事项内容/标题
+  const line2 = document.createElement('div');
+  line2.className = 'fc-event-line2';
+  const titleEl = document.createElement('span');
+  titleEl.className = 'fc-event-title-text';
+  titleEl.textContent = statusEmoji + title;
+  line2.appendChild(titleEl);
+  container.appendChild(line2);
 
   return { domNodes: [container] };
 };
@@ -115,9 +128,14 @@ const emit = defineEmits<{
   (e: 'event-resize', event: any): void;
   (e: 'navigated'): void;
   (e: 'dayViewFromClick', previousView: string): void;
+  (e: 'weekViewFromClick', previousView: string): void;
 }>();
 
 const calendarEl = ref<HTMLElement | null>(null);
+const eventTooltipEl = ref<HTMLElement | null>(null);
+const eventTooltipVisible = ref(false);
+const eventTooltipStyle = ref<{ left?: string; top?: string }>({});
+let eventTooltipTimer: ReturnType<typeof setTimeout> | null = null;
 let calendarInstance: Calendar | null = null;
 let resizeObserver: ResizeObserver | null = null;
 /** 实例创建前收到的待跳转日期，onMounted 完成后消费 */
@@ -131,6 +149,44 @@ const plugin = usePlugin();
 // 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
   return t('statusTag')[status] || '';
+};
+
+// 悬浮预览：显示
+const showEventTooltip = (info: any) => {
+  if (eventTooltipTimer) {
+    clearTimeout(eventTooltipTimer);
+    eventTooltipTimer = null;
+  }
+  eventTooltipTimer = setTimeout(() => {
+    eventTooltipTimer = null;
+    const eventData: CalendarEvent = {
+      id: info.event.id,
+      title: info.event.title,
+      start: info.event.startStr,
+      end: info.event.endStr,
+      allDay: info.event.allDay,
+      extendedProps: info.event.extendedProps
+    };
+    const html = buildEventDetailContent(eventData, { preview: true });
+    if (eventTooltipEl.value) {
+      eventTooltipEl.value.innerHTML = html;
+      const rect = info.el.getBoundingClientRect();
+      eventTooltipStyle.value = {
+        left: `${rect.left}px`,
+        top: `${rect.bottom + 4}px`
+      };
+      eventTooltipVisible.value = true;
+    }
+  }, 300);
+};
+
+// 悬浮预览：隐藏
+const hideEventTooltip = () => {
+  if (eventTooltipTimer) {
+    clearTimeout(eventTooltipTimer);
+    eventTooltipTimer = null;
+  }
+  eventTooltipVisible.value = false;
 };
 
 // 打开番茄钟弹框
@@ -298,6 +354,17 @@ onMounted(async () => {
       eventContent: renderEventContent, // 自定义事件渲染
       locale: getCurrentLocale().startsWith('zh') ? 'zh-cn' : 'en',
       firstDay: 1,
+      weekNumbers: true,
+      weekNumberCalculation: 'ISO',
+      navLinks: true,
+      navLinkWeekClick: (weekStart: Date) => {
+        if (calendarInstance) {
+          calendarInstance.changeView('timeGridWeek');
+          calendarInstance.gotoDate(weekStart);
+          emit('navigated');
+          emit('weekViewFromClick', 'dayGridMonth');
+        }
+      },
       height: '100%',
       eventDisplay: 'block',
       editable: true,
@@ -320,13 +387,15 @@ onMounted(async () => {
         showEventDetailModal(eventData);
       },
 
-      // 右键菜单 - 通过 eventDidMount 绑定
+      // 右键菜单、悬浮预览 - 通过 eventDidMount 绑定
       eventDidMount: (info) => {
         info.el.addEventListener('contextmenu', (e: MouseEvent) => {
           e.preventDefault();
           e.stopPropagation();
           handleCalendarEventContextMenu(info, e);
         }, true);
+        info.el.addEventListener('mouseenter', () => showEventTooltip(info));
+        info.el.addEventListener('mouseleave', () => hideEventTooltip());
       },
 
       // 拖拽事件
@@ -492,6 +561,40 @@ defineExpose({
   height: 100%;
   width: 100%;
 }
+
+.calendar-event-tooltip {
+  position: fixed;
+  z-index: 10000;
+  max-width: 360px;
+  max-height: 400px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+
+  &.calendar-event-tooltip--visible {
+    opacity: 1;
+  }
+
+  :deep(.sy-dialog-content) {
+    padding: 0;
+  }
+
+  :deep(.sy-dialog-cards) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  :deep(.sy-dialog-card) {
+    font-size: 12px;
+  }
+}
 </style>
 
 <style lang="scss">
@@ -542,11 +645,29 @@ defineExpose({
     }
   }
 
-  /* 自定义事件内容样式 */
+  /* 自定义事件内容样式 - 两行布局 */
   .fc-event-custom {
     padding: 1px 2px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-height: 2.6em;
     line-height: 1.3;
+
+    .fc-event-line1 {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      opacity: 0.9;
+    }
+
+    .fc-event-line2 {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
 
     .fc-event-time {
       font-size: 11px;
@@ -594,6 +715,12 @@ defineExpose({
   .fc-popover-header {
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-surface);
+  }
+
+  .fc-week-number {
+    color: var(--b3-theme-on-background);
+    background: var(--b3-theme-surface);
+    border-color: var(--b3-border-color);
   }
 }
 </style>

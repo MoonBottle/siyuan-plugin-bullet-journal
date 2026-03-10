@@ -115,6 +115,10 @@
   },
   "settings": {
     "title": "Settings",
+    "calendar": {
+      "defaultViewTitle": "Calendar Default View",
+      "defaultViewDesc": "Default view when opening the calendar"
+    },
     "lunchBreak": {
       "title": "Lunch Break",
       "description": "Set lunch break time for work hour calculation",

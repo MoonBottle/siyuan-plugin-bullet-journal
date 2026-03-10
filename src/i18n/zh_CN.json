@@ -115,6 +115,10 @@
   },
   "settings": {
     "title": "设置",
+    "calendar": {
+      "defaultViewTitle": "日历默认视图",
+      "defaultViewDesc": "打开日历时默认显示的视图"
+    },
     "lunchBreak": {
       "title": "午休时间",
       "description": "用于计算工时时扣除午休时间",

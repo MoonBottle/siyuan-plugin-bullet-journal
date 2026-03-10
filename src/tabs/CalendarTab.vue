@@ -11,9 +11,9 @@
       <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').today" @click="handleToday">
         <svg><use xlink:href="#iconCalendar"></use></svg>
       </span>
-      <!-- 返回按钮（仅在点击日期进入日视图时显示） -->
+      <!-- 返回按钮（点击日期进入日视图或点击周数列进入周视图时显示） -->
       <span
-        v-if="isDayViewFromClick && previousView"
+        v-if="(isDayViewFromClick || isWeekViewFromClick) && previousView"
         class="block__icon b3-tooltips b3-tooltips__se"
         :aria-label="t('calendarNav').back"
         @click="handleBack"
@@ -46,6 +46,7 @@
         @event-resize="handleEventResize"
         @navigated="updateTitle"
         @day-view-from-click="handleDayViewFromClick"
+        @week-view-from-click="handleWeekViewFromClick"
       />
     </div>
   </div>
@@ -68,11 +69,12 @@ const projectStore = useProjectStore();
 
 const tabRootRef = ref<HTMLElement | null>(null);
 const calendarRef = ref<any>(null);
-const currentView = ref('timeGridDay');
+const currentView = ref(settingsStore.calendarDefaultView || 'timeGridDay');
 const currentTitle = ref('');
 const selectedGroup = ref('');
 const previousView = ref('');
 const isDayViewFromClick = ref(false);
+const isWeekViewFromClick = ref(false);
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
@@ -101,7 +103,7 @@ const groupOptions = computed(() => {
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'todoDock'];
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'todoDock'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {};
@@ -138,6 +140,9 @@ onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
+  // 应用日历默认视图配置
+  currentView.value = settingsStore.calendarDefaultView || 'timeGridDay';
+
   if (selectedGroup.value === '' && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup;
   }
@@ -163,8 +168,9 @@ onMounted(async () => {
     // 忽略
   }
 
-  // 等待日历初始化后更新标题
+  // 等待日历初始化后应用默认视图并更新标题
   await nextTick();
+  calendarRef.value?.changeView(currentView.value);
   setTimeout(() => updateTitle(), 100);
 });
 
@@ -208,6 +214,15 @@ const handleToday = () => {
 const handleDayViewFromClick = (view: string) => {
   previousView.value = view;
   isDayViewFromClick.value = true;
+  isWeekViewFromClick.value = false;
+};
+
+// 点击周数列进入周视图时的回调
+const handleWeekViewFromClick = (view: string) => {
+  previousView.value = view;
+  isWeekViewFromClick.value = true;
+  isDayViewFromClick.value = false;
+  currentView.value = 'timeGridWeek'; // 同步下拉框显示
 };
 
 // 返回上一级视图（月/周）
@@ -215,6 +230,7 @@ const handleBack = () => {
   if (previousView.value) {
     const viewToRestore = previousView.value;
     isDayViewFromClick.value = false;
+    isWeekViewFromClick.value = false;
     previousView.value = '';
     currentView.value = viewToRestore;
     calendarRef.value?.changeView(viewToRestore);  // 显式切换，不依赖 watch
@@ -330,6 +346,9 @@ watch(currentView, (newView) => {
   calendarRef.value?.changeView(newView);
   if (newView !== 'timeGridDay') {
     isDayViewFromClick.value = false;
+  }
+  if (newView !== 'timeGridWeek') {
+    isWeekViewFromClick.value = false;
   }
   updateTitle();
 });

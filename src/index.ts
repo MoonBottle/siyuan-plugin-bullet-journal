@@ -199,6 +199,7 @@ export default class HKWorkPlugin extends Plugin {
           directories: data.directories || [],
           groups: data.groups || [],
           defaultGroup: data.defaultGroup || '',
+          calendarDefaultView: data.calendarDefaultView || 'timeGridDay',
           lunchBreakStart: data.lunchBreakStart || '12:00',
           lunchBreakEnd: data.lunchBreakEnd || '13:00',
           todoDock: {
