@@ -273,6 +273,56 @@ describe('parseKramdown 事项链接解析', () => {
     expect(project!.tasks[0].items[0].links![0].url).toBe('https://example.com');
   });
 
+  it('事项与链接之间有非链接行（跨块）：跳过说明文字继续收集链接', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务G #任务#
+{: id="after-t" }
+  - {: id="i1" }确定设计风格(事项) @2026-03-09
+{: id="after-i1" }
+  - {: id="desc1" }和事项相关联的链接,支持多个,每个一
+{: id="after-desc1" }
+  - {: id="link1" }[参考案例](https://example.com/ref)
+{: id="after-link1" }
+  - {: id="i2" }完成首页原型设计(已完成事项) @2026-03-10
+{: id="after-i2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(2);
+    expect(project!.tasks[0].items[0].content).toBe('确定设计风格(事项)');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('参考案例');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://example.com/ref');
+    expect(project!.tasks[0].items[1].content).toBe('完成首页原型设计(已完成事项)');
+    expect(project!.tasks[0].items[1].links).toBeUndefined();
+  });
+
+  it('事项与链接之间有非链接行（同块内多行）：跳过说明文字继续收集链接', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务H #任务#
+{: id="after-t" }
+  - {: id="i1" }确定设计风格(事项) @2026-03-09
+和事项相关联的链接,支持多个,每个一
+[参考案例](https://example.com/ref)
+{: id="after-i1" }
+  - {: id="i2" }完成首页原型设计(已完成事项) @2026-03-10
+{: id="after-i2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(2);
+    expect(project!.tasks[0].items[0].content).toBe('确定设计风格(事项)');
+    expect(project!.tasks[0].items[0].links).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links![0].name).toBe('参考案例');
+    expect(project!.tasks[0].items[0].links![0].url).toBe('https://example.com/ref');
+    expect(project!.tasks[0].items[1].content).toBe('完成首页原型设计(已完成事项)');
+    expect(project!.tasks[0].items[1].links).toBeUndefined();
+  });
+
   it('无序列表格式链接：也能正确关联', () => {
     const kramdown = `## 项目
 {: id="doc-block" type="doc" }

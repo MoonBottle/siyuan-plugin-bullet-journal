@@ -105,6 +105,19 @@ function isTagInBackticks(content: string, tag: string): boolean {
 }
 
 /**
+ * 检查一行是否是下一事项行或任务行（用于停止收集事项链接）
+ * 事项行：包含 @YYYY-MM-DD 且非任务标记
+ * 任务行：包含 #任务 或 #task
+ */
+function isNextItemOrTaskLine(content: string): boolean {
+  const hasTaskTag = content.includes('#任务') || content.includes('#task');
+  const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
+  if (hasTaskTag && notInBackticks) return true;
+  if (content.match(/@\d{4}-\d{2}-\d{2}/) && !hasTaskTag) return true;
+  return false;
+}
+
+/**
  * 检查一行是否是番茄钟行
  */
 function isPomodoroLine(line: string): boolean {
@@ -254,17 +267,17 @@ export function parseKramdown(
     // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
     if (currentTask && content.includes('@') && !hasTaskTag) {
       hasSeenItemForCurrentTask = true;
-      // 收集事项下方的链接行：先收集当前块内首行之后的链接行，再收集后续块中的链接行
+      // 收集事项下方的链接行：当前事项行之后到下一个事项/任务行之间的所有链接行
+      // 非链接行（如说明文字）跳过不中断，仅在遇到下一事项/任务行时停止
       const itemLinks: Array<{ name: string; url: string }> = [];
       const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
       for (let idx = 1; idx < blockLines.length; idx++) {
         const lineContent = blockLines[idx];
+        if (isNextItemOrTaskLine(lineContent)) break;
         const strippedLineContent = stripListAndBlockAttr(lineContent);
         const linkMatch = strippedLineContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !lineContent.includes('@')) {
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
-        } else {
-          break;
         }
       }
       let nextBlockIndex = blocks.indexOf(block) + 1;
@@ -273,17 +286,14 @@ export function parseKramdown(
         const nextBlock = blocks[nextBlockIndex];
         const nextContent = nextBlock.content.split('\n')[0].trim();
 
-        // 检查是否为链接行（Markdown 链接格式 [名称](URL)）
-        // 支持纯链接行或带列表标记的链接行
+        if (isNextItemOrTaskLine(nextContent)) break;
+
         const strippedNextContent = stripListAndBlockAttr(nextContent);
         const linkMatch = strippedNextContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !nextContent.includes('@')) {
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
-          nextBlockIndex++;
-        } else {
-          // 不是链接行，停止收集
-          break;
         }
+        nextBlockIndex++;
       }
 
       const items = LineParser.parseItemLine(
