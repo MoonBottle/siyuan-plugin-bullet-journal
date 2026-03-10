@@ -39,7 +39,7 @@
 
 ![image.png](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
 
-## 功能特性
+## 📋 功能特性
 
 | 功能 | 描述 | 适用场景 |
 |------|------|----------|
@@ -56,7 +56,7 @@
 - 🎯 **无侵入式** - 文档即任务，只需要在笔记中添加标记，即可在视图中查看和管理任务
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
 
-## 快速开始
+## 🚀 快速开始
 
 **用标记书写笔记，然后在视图中查看。**
 
@@ -65,9 +65,9 @@
 3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
 4. **查看视图** - 通过日历、甘特图、项目列表或待办事项 查看任务
 
-详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
+详细步骤请参阅 [快速开始](docs/user-guide/quick-start.md)。
 
-### 1. 在笔记中书写标记
+### 📝 1. 在笔记中书写标记
 
 新建文档，输入以下内容：
 
@@ -111,7 +111,7 @@
 - `#已完成` / `#done` / `#已放弃` / `#abandoned` - 事项状态（可选），标记事项为已完成或已放弃状态
 - `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 番茄钟记录（可选），写在事项下方；N 为实际专注分钟数（不含暂停时间），可选
 
-### 2. 在视图中查看
+### 👀 2. 在视图中查看
 
 插件自动解析笔记中的标记，在日历、甘特图、待办事项 中展示：
 
@@ -129,94 +129,35 @@
 
 ![功能演示](https://b3logfile.com/file/2026/02/op-xYGmIM8.gif)
 
-## 安装
+## 📦 安装
 
-### 从集市安装（推荐）
+### 📥 从集市安装（推荐）
 
 1. 打开思源笔记 → 设置 → 集市 → 插件
 2. 搜索「任务助手」
 3. 点击安装
 
-### 手动安装
+### 📂 手动安装
 
 1. 从 [GitHub Release](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/releases) 下载 `package.zip`
 2. 解压到思源数据目录 `data/plugins/siyuan-plugin-bullet-journal`
 3. 在设置中启用插件
 
-## MCP（Model Context Protocol）
+## 📚 文档
 
-插件内置 MCP 服务器（`sy-task-assistant`），可将任务数据暴露给 Cursor、Claude 等 AI 助手。
+- [用户指南](docs/user-guide/index.md)
+  - [快速开始](docs/user-guide/quick-start.md)
+  - [数据格式](docs/user-guide/data-format.md)
+  - [视图功能](docs/user-guide/views.md)
+  - [番茄钟](docs/user-guide/pomodoro.md)
+  - [MCP AI 助手](docs/user-guide/mcp.md)
+  - [配置说明](docs/user-guide/configuration.md)
+  - [完整示例](docs/user-guide/examples.md)
+- [参与贡献](CONTRIBUTING.md)
 
-**工具：**
-- `list_groups` - 查询所有分组
-- `list_projects` - 查询所有项目（可按分组过滤）
-- `filter_items` - 按项目、时间范围、分组、状态筛选事项
+## 💝 支持作者
 
-**配置：**
-1. 确保思源已启动且插件已配置
-2. 在思源 设置→关于 中获取 API Token
-3. 在插件设置中点击「复制 MCP 配置」获取 JSON
-4. 将配置添加到 Cursor 设置 → MCP（将 `SIYUAN_TOKEN` 替换为你的 Token；如需自定义思源 API 地址，可设置 `SIYUAN_API_URL`，默认 `http://127.0.0.1:6806`）
+如果任务助手对你有帮助，欢迎：
 
-**环境变量：** 必配 `SIYUAN_TOKEN`；可选 `SIYUAN_API_URL`，默认 `http://127.0.0.1:6806`。
-
-### AI 智能体提示词
-
-在 AI 助手中使用此 MCP 服务器时，可以使用以下提示词帮助 AI 理解如何处理您的任务数据：
-
-```
-你可以访问一个任务助手 MCP 服务器，该服务器提供以下工具：
-
-1. **list_groups**：列出所有项目分组。首先使用此工具了解项目组织结构。
-2. **list_projects**：列出所有项目，支持 groupId 过滤。每个项目包含 id、name、description、path、groupId 和 taskCount。
-3. **filter_items**：筛选任务事项，参数包括：
-   - projectId/projectIds：按特定项目筛选
-   - groupId：按项目分组筛选
-   - startDate/endDate：按日期范围筛选（YYYY-MM-DD 格式）
-   - status：按状态筛选（'pending' 待办、'completed' 已完成、'abandoned' 已放弃）
-
-**何时使用这些工具：**
-- 用户询问任务、项目或日程安排时
-- 用户想要追踪进度或回顾已完成的工作时
-- 用户需要规划或组织工作时
-- 用户要求汇总或报告任务数据时
-
-**最佳实践：**
-1. 始终先调用 `list_groups` 了解项目结构
-2. 使用 `list_projects` 获取所有项目的概览
-3. 使用 `filter_items` 配合适当的筛选条件获取具体任务事项
-4. 组合使用筛选条件进行精确查询（例如：查询本周某项目的待办事项）
-
-**示例工作流：**
-- "我这周有哪些待办任务？" → 使用 startDate、endDate 和 status='pending' 调用 filter_items
-- "显示工作分组下的所有项目" → 先调用 list_groups → 再用 groupId 调用 list_projects
-- "我上个月完成了什么？" → 使用日期范围和 status='completed' 调用 filter_items
-- "帮我规划本周工作" → 先查询本周待办事项，再根据优先级和项目分组提供建议
-```
-
-## 文档
-
-- [用户指南](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
-  - [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)
-  - [数据格式](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/data-format.md)
-  - [视图功能](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/views.md)
-  - [设计思想](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/design-philosophy.md)
-  - [配置说明](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/configuration.md)
-  - [完整示例](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/examples.md)
-- [API 文档](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/API/)
-
-## 开发
-
-```bash
-npm install      # 安装依赖
-npm run dev      # 开发模式
-npm run build    # 构建生产版本
-```
-
-## 技术栈
-
-Vue 3 + TypeScript + Pinia + FullCalendar + dhtmlx-gantt
-
-## 许可证
-
-AGPL-3.0
+- [⭐ 在 GitHub 上 Star 本项目](https://github.com/MoonBottle/siyuan-plugin-bullet-journal)
+- [🐛 问题反馈与建议](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues)
