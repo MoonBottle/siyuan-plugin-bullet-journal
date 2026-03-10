@@ -3,6 +3,12 @@
     <div class="gantt-wrapper" :class="{ 'gantt-ready': ganttReady }">
       <div ref="ganttEl" class="gantt-inner"></div>
     </div>
+    <div
+      ref="eventTooltipEl"
+      class="gantt-event-tooltip"
+      :class="{ 'gantt-event-tooltip--visible': eventTooltipVisible }"
+      :style="eventTooltipStyle"
+    />
   </div>
 </template>
 
@@ -13,7 +19,7 @@ import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
 import type { Project, CalendarEvent } from '@/types/models';
 import { DataConverter } from '@/utils/dataConverter';
 import { getCurrentLocale, t } from '@/i18n';
-import { showEventDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
@@ -49,91 +55,96 @@ let ganttInitialized = false;
 let resizeObserver: ResizeObserver | null = null;
 let onTaskClickId: string | number | null = null;
 let onContextMenuId: string | number | null = null;
-let ganttTooltipHideTimer: ReturnType<typeof setTimeout> | null = null;
 const ganttReady = ref(false);
 
-const GANTT_TOOLTIP_ID = 'gantt-tooltip';
-const TOOLTIP_HIDE_DELAY = 100;
+const GANTT_TOOLTIP_HOVER_DELAY = 300;
 
-const getOrCreateGanttTooltip = (): HTMLElement => {
-  let el = document.getElementById(GANTT_TOOLTIP_ID);
-  if (!el) {
-    el = document.createElement('div');
-    el.id = GANTT_TOOLTIP_ID;
-    el.className = 'gantt-tooltip-custom fn__none';
-    el.addEventListener('mouseover', () => {
-      if (ganttTooltipHideTimer) {
-        clearTimeout(ganttTooltipHideTimer);
-        ganttTooltipHideTimer = null;
+const eventTooltipEl = ref<HTMLElement | null>(null);
+const eventTooltipVisible = ref(false);
+const eventTooltipStyle = ref<{ left?: string; top?: string }>({});
+let eventTooltipTimer: ReturnType<typeof setTimeout> | null = null;
+
+const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
+  if (eventTooltipTimer) {
+    clearTimeout(eventTooltipTimer);
+    eventTooltipTimer = null;
+  }
+  eventTooltipTimer = setTimeout(() => {
+    eventTooltipTimer = null;
+    const taskId = gantt.locate(e);
+    if (taskId == null || !gantt.isTaskExists(taskId)) return;
+    const task = gantt.getTask(taskId);
+    if (!task?.extendedProps?.item) return;
+
+    const props = task.extendedProps;
+    const start = props.originalStartDateTime || props.date || '';
+    const end = props.originalEndDateTime || props.originalStartDateTime || props.date || '';
+    const allDay = !props.originalStartDateTime;
+
+    const eventData: CalendarEvent = {
+      id: String(task.id),
+      title: task.text,
+      start,
+      end: end !== start ? end : undefined,
+      allDay,
+      extendedProps: {
+        project: props.project,
+        projectLinks: props.projectLinks,
+        task: props.task,
+        taskLinks: props.taskLinks,
+        level: props.level,
+        item: props.item,
+        itemStatus: props.itemStatus,
+        itemLinks: props.itemLinks,
+        hasItems: props.hasItems ?? true,
+        docId: props.docId ?? '',
+        lineNumber: props.lineNumber ?? 0,
+        blockId: props.blockId,
+        date: props.date,
+        originalStartDateTime: props.originalStartDateTime,
+        originalEndDateTime: props.originalEndDateTime,
+        siblingItems: props.siblingItems,
+        pomodoros: props.pomodoros
       }
-    });
-    el.addEventListener('mouseout', (e: Event) => {
-      const related = (e as MouseEvent).relatedTarget as HTMLElement;
-      if (!related?.closest('.gantt_task_line') && !related?.closest('.gantt-task-text')) hideGanttTooltip();
-    });
-    document.body.appendChild(el);
-  }
-  return el;
+    };
+
+    const html = buildEventDetailContent(eventData, { preview: true });
+    if (eventTooltipEl.value) {
+      eventTooltipEl.value.innerHTML = html;
+      const rect = anchorEl.getBoundingClientRect();
+      eventTooltipStyle.value = {
+        left: `${rect.left}px`,
+        top: `${rect.bottom + 4}px`
+      };
+      eventTooltipVisible.value = true;
+    }
+  }, GANTT_TOOLTIP_HOVER_DELAY);
 };
 
-const showGanttTooltip = (text: string, anchorEl: HTMLElement) => {
-  if (ganttTooltipHideTimer) {
-    clearTimeout(ganttTooltipHideTimer);
-    ganttTooltipHideTimer = null;
+const hideGanttEventTooltip = () => {
+  if (eventTooltipTimer) {
+    clearTimeout(eventTooltipTimer);
+    eventTooltipTimer = null;
   }
-  const tip = getOrCreateGanttTooltip();
-  tip.textContent = text;
-  tip.classList.remove('fn__none');
-
-  const anchor = anchorEl.getBoundingClientRect();
-  const tipRect = tip.getBoundingClientRect();
-  const gap = 6;
-  let left = anchor.left + (anchor.width - tipRect.width) / 2;
-  let top = anchor.top - tipRect.height - gap;
-
-  const maxLeft = window.innerWidth - tipRect.width - 8;
-  const minLeft = 8;
-  left = Math.max(minLeft, Math.min(maxLeft, left));
-  top = Math.max(8, top);
-
-  tip.style.left = `${left}px`;
-  tip.style.top = `${top}px`;
-};
-
-const hideGanttTooltip = () => {
-  if (ganttTooltipHideTimer) return;
-  ganttTooltipHideTimer = setTimeout(() => {
-    ganttTooltipHideTimer = null;
-    const tip = document.getElementById(GANTT_TOOLTIP_ID);
-    if (tip) tip.classList.add('fn__none');
-  }, TOOLTIP_HIDE_DELAY);
+  eventTooltipVisible.value = false;
 };
 
 const handleGanttTooltipMouseOver = (e: MouseEvent) => {
   const target = e.target as HTMLElement;
   const bar = target.closest('.gantt_task_line');
-  const textEl = target.closest('.gantt-task-text');
-  let text: string | null = null;
-  let anchor: HTMLElement | null = null;
-  if (bar) {
-    const el = bar.querySelector('.gantt-task-text');
-    text = el?.getAttribute('data-gantt-tooltip') ?? null;
-    anchor = bar as HTMLElement;
-  } else if (textEl) {
-    text = textEl.getAttribute('data-gantt-tooltip');
-    anchor = textEl as HTMLElement;
-  }
-  if (text && anchor) {
-    showGanttTooltip(text, anchor);
+  const rightsideText = target.closest('.gantt-rightside-text');
+  const anchor = bar || rightsideText;
+  if (anchor) {
+    showGanttEventTooltip(e, anchor as HTMLElement);
   } else {
-    hideGanttTooltip();
+    hideGanttEventTooltip();
   }
 };
 
 const handleGanttTooltipMouseOut = (e: MouseEvent) => {
   const related = e.relatedTarget as HTMLElement;
-  if (related?.closest(`#${GANTT_TOOLTIP_ID}`) || related?.closest('.gantt_task_line') || related?.closest('.gantt-task-text')) return;
-  hideGanttTooltip();
+  if (related?.closest('.gantt-event-tooltip') || related?.closest('.gantt_task_line') || related?.closest('.gantt-rightside-text')) return;
+  hideGanttEventTooltip();
 };
 
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
@@ -550,32 +561,6 @@ const loadGanttStyles = () => {
     .gantt_grid_data {
       background-color: var(--b3-theme-background) !important;
     }
-    /* 甘特图自定义 tooltip - 深色背景、白色文字（与思源刷新按钮一致） */
-    #gantt-tooltip.gantt-tooltip-custom {
-      position: fixed;
-      z-index: 2147483647;
-      padding: 6px 10px;
-      font-size: 12px;
-      line-height: 1.4;
-      color: #fff;
-      background-color: #2d2d2d;
-      border-radius: 4px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      white-space: nowrap;
-      max-width: 320px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: auto;
-    }
-    #gantt-tooltip.gantt-tooltip-custom::before {
-      content: '';
-      position: absolute;
-      bottom: -5px;
-      left: 50%;
-      transform: translateX(-50%);
-      border: 5px solid transparent;
-      border-top-color: #2d2d2d;
-    }
   `;
   document.head.appendChild(style);
 };
@@ -624,12 +609,10 @@ onUnmounted(() => {
     ganttEl.value.removeEventListener('mouseover', handleGanttTooltipMouseOver);
     ganttEl.value.removeEventListener('mouseout', handleGanttTooltipMouseOut);
   }
-  if (ganttTooltipHideTimer) {
-    clearTimeout(ganttTooltipHideTimer);
-    ganttTooltipHideTimer = null;
+  if (eventTooltipTimer) {
+    clearTimeout(eventTooltipTimer);
+    eventTooltipTimer = null;
   }
-  const tip = document.getElementById(GANTT_TOOLTIP_ID);
-  if (tip) tip.remove();
   if (ganttInitialized) {
     gantt.clearAll();
   }
@@ -694,5 +677,43 @@ const updateGantt = () => {
 /* DHTMLX Gantt 容器样式 */
 .gantt_container {
   height: 100% !important;
+}
+
+/* 悬浮事项详情弹框（与日历一致，边框/阴影更轻） */
+.gantt-event-tooltip {
+  position: fixed;
+  z-index: 10000;
+  max-width: 440px;
+  max-height: 400px;
+  overflow: auto;
+  padding: 8px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+
+  &.gantt-event-tooltip--visible {
+    opacity: 1;
+  }
+
+  :deep(.sy-dialog-content) {
+    padding: 0;
+  }
+
+  :deep(.sy-dialog-cards) {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  :deep(.sy-dialog-card) {
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--b3-border-color);
+  }
 }
 </style>

@@ -368,10 +368,10 @@ export function buildEventDetailContent(
     || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
     || (start ? dayjs(start).format('YYYY-MM-DD') : '');
   const dateLabel = formatDateLabel(rawDate || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow);
-  const timeRange = formatTimeRange(
-    typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''),
-    typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : '')
-  );
+  // 优先使用 originalStartDateTime/originalEndDateTime（日历事件可能被转为 ISO，原格式更可靠）
+  const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''));
+  const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''));
+  const timeRange = formatTimeRange(startForTime, endForTime);
   const timeDisplay = `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;
 
   let duration = '';

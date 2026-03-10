@@ -580,14 +580,14 @@ defineExpose({
 .calendar-event-tooltip {
   position: fixed;
   z-index: 10000;
-  max-width: 360px;
+  max-width: 440px;
   max-height: 400px;
   overflow: auto;
-  padding: 12px;
+  padding: 8px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -603,11 +603,14 @@ defineExpose({
   :deep(.sy-dialog-cards) {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   :deep(.sy-dialog-card) {
     font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--b3-border-color);
   }
 }
 </style>
