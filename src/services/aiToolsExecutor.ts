@@ -5,6 +5,15 @@
 import type { ToolCall } from '@/types/ai';
 import type { Item, Project, ProjectGroup } from '@/types/models';
 import dayjs from '@/utils/dayjs';
+import {
+  aggregatePomodorosFromProjects,
+  filterPomodoros,
+  computePomodoroStats,
+  toPomodoroRecordOutput,
+  toPomodoroRecordCompact,
+  type PomodoroRecordCompact,
+  type PomodoroStatsOutput
+} from '@/utils/pomodoroUtils';
 import type { ToolName } from './aiTools';
 
 const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -46,6 +55,7 @@ export interface FilterItemOutput {
   projectName?: string;
   taskName?: string;
   links?: Array<{ name: string; url: string }>;
+  pomodoros?: PomodoroRecordCompact[];
 }
 
 /**
@@ -134,8 +144,82 @@ function executeFilterItems(
     status: i.status,
     projectName: i.project?.name,
     taskName: i.task?.name,
-    links: i.links
+    links: i.links,
+    pomodoros: i.pomodoros?.map(toPomodoroRecordCompact) ?? []
   }));
+}
+
+/**
+ * 执行 get_pomodoro_stats 工具
+ */
+function executeGetPomodoroStats(
+  context: ToolExecutionContext,
+  args: { date?: string; startDate?: string; endDate?: string; projectId?: string }
+): PomodoroStatsOutput {
+  const todayDate = dayjs().format('YYYY-MM-DD');
+  let startDate = args.startDate;
+  let endDate = args.endDate;
+
+  if (args.date === 'today') {
+    startDate = todayDate;
+    endDate = todayDate;
+  }
+
+  const enriched = aggregatePomodorosFromProjects(context.projects);
+  const filtered = filterPomodoros(enriched, {
+    startDate,
+    endDate,
+    projectId: args.projectId
+  });
+  const stats = computePomodoroStats(filtered, todayDate);
+
+  const result: PomodoroStatsOutput = {
+    todayCount: stats.todayCount,
+    todayMinutes: stats.todayMinutes,
+    totalCount: stats.count,
+    totalMinutes: stats.totalMinutes
+  };
+
+  if (startDate && endDate) {
+    result.dateRange = { startDate, endDate };
+  }
+  if (args.projectId) {
+    result.projectId = args.projectId;
+  }
+
+  return result;
+}
+
+/**
+ * 执行 get_pomodoro_records 工具
+ */
+function executeGetPomodoroRecords(
+  context: ToolExecutionContext,
+  args: { date?: string; startDate?: string; endDate?: string; projectId?: string }
+): { records: ReturnType<typeof toPomodoroRecordOutput>[] } {
+  const todayDate = dayjs().format('YYYY-MM-DD');
+  let startDate = args.startDate;
+  let endDate = args.endDate;
+
+  if (args.date === 'today') {
+    startDate = todayDate;
+    endDate = todayDate;
+  }
+
+  const enriched = aggregatePomodorosFromProjects(context.projects);
+  const filtered = filterPomodoros(enriched, {
+    startDate,
+    endDate,
+    projectId: args.projectId
+  });
+
+  const records = filtered.map(toPomodoroRecordOutput);
+  records.sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    return dateCompare !== 0 ? dateCompare : a.startTime.localeCompare(b.startTime);
+  });
+
+  return { records };
 }
 
 /**
@@ -160,6 +244,12 @@ export function executeTool(
 
     case 'filter_items':
       return JSON.stringify(executeFilterItems(context, args));
+
+    case 'get_pomodoro_stats':
+      return JSON.stringify(executeGetPomodoroStats(context, args));
+
+    case 'get_pomodoro_records':
+      return JSON.stringify(executeGetPomodoroRecords(context, args));
 
     default:
       throw new Error(`Unknown tool: ${toolName}`);

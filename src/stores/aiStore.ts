@@ -171,12 +171,22 @@ export const useAIStore = defineStore('ai', () => {
    - 参数：groupId（可选，来自 list_groups）
 
 4. **filter_items** - 筛选事项
-   - 用途：按条件查询具体的工作事项
+   - 用途：按条件查询具体的工作事项，每个 item 含 pomodoros 字段（该事项的番茄钟记录，精简格式）
    - 参数：
      - projectId / projectIds: 项目ID（来自 list_projects）
      - groupId: 分组ID（来自 list_groups）
      - startDate / endDate: 日期范围，格式 YYYY-MM-DD
      - status: 状态筛选（pending=待办, completed=已完成, abandoned=已放弃）
+
+5. **get_pomodoro_stats** - 获取番茄钟统计数据
+   - 用途：查询今日或指定日期范围的番茄数、专注分钟数
+   - 参数：date（"today" 今日）、startDate/endDate（YYYY-MM-DD）、projectId（可选）
+   - 返回：todayCount、todayMinutes、totalCount、totalMinutes
+
+6. **get_pomodoro_records** - 获取番茄钟记录列表
+   - 用途：查询番茄钟记录明细（时间、事项、时长等）
+   - 参数：同上
+   - 返回：records 数组
 
 ## 工作流程
 
@@ -193,6 +203,9 @@ export const useAIStore = defineStore('ai', () => {
 
 用户问：「项目A的进度如何？」
 → 先调用 list_projects 找到项目A的ID，然后调用 filter_items 查询该项目的事项
+
+用户问：「今天专注了多少？」
+→ 先调用 get_user_time 获取今日日期，再调用 get_pomodoro_stats 并传入 date="today"
 
 ## 注意事项
 

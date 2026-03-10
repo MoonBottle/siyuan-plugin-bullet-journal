@@ -64,7 +64,7 @@ export const filterItemsTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'filter_items',
-    description: '按项目、时间范围、分组、状态筛选任务事项。参数均为可选，可组合使用。projectId 与 projectIds 二选一；groupId 来自 list_groups；startDate/endDate 格式 YYYY-MM-DD；status 枚举：pending=待办、completed=已完成、abandoned=已放弃。',
+    description: '按项目、时间范围、分组、状态筛选任务事项。参数均为可选，可组合使用。projectId 与 projectIds 二选一；groupId 来自 list_groups；startDate/endDate 格式 YYYY-MM-DD；status 枚举：pending=待办、completed=已完成、abandoned=已放弃。返回的每个 item 含 pomodoros 字段（该事项的番茄钟记录，精简格式）。',
     parameters: {
       type: 'object',
       properties: {
@@ -101,16 +101,92 @@ export const filterItemsTool: ToolDefinition = {
 };
 
 /**
+ * 获取番茄钟统计工具
+ */
+export const getPomodoroStatsTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_pomodoro_stats',
+    description: '获取番茄钟统计数据。参数：date（"today" 表示今日）、startDate/endDate（YYYY-MM-DD 日期范围）、projectId（可选，来自 list_projects）。返回今日/指定范围的番茄数、专注分钟数。',
+    parameters: {
+      type: 'object',
+      properties: {
+        date: {
+          type: 'string',
+          enum: ['today'],
+          description: '设为 "today" 时查询今日统计'
+        },
+        startDate: {
+          type: 'string',
+          description: '起始日期，格式 YYYY-MM-DD'
+        },
+        endDate: {
+          type: 'string',
+          description: '结束日期，格式 YYYY-MM-DD'
+        },
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+/**
+ * 获取番茄钟记录列表工具
+ */
+export const getPomodoroRecordsTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_pomodoro_records',
+    description: '获取番茄钟记录列表。参数同 get_pomodoro_stats。返回番茄钟记录列表（时间、事项、时长等）。',
+    parameters: {
+      type: 'object',
+      properties: {
+        date: {
+          type: 'string',
+          enum: ['today'],
+          description: '设为 "today" 时查询今日记录'
+        },
+        startDate: {
+          type: 'string',
+          description: '起始日期，格式 YYYY-MM-DD'
+        },
+        endDate: {
+          type: 'string',
+          description: '结束日期，格式 YYYY-MM-DD'
+        },
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+/**
  * 所有可用的工具列表
  */
 export const bulletJournalTools: ToolDefinition[] = [
   getUserTimeTool,
   listGroupsTool,
   listProjectsTool,
-  filterItemsTool
+  filterItemsTool,
+  getPomodoroStatsTool,
+  getPomodoroRecordsTool
 ];
 
 /**
  * 工具名称类型
  */
-export type ToolName = 'get_user_time' | 'list_groups' | 'list_projects' | 'filter_items';
+export type ToolName =
+  | 'get_user_time'
+  | 'list_groups'
+  | 'list_projects'
+  | 'filter_items'
+  | 'get_pomodoro_stats'
+  | 'get_pomodoro_records';

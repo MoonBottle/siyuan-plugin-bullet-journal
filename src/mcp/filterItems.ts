@@ -4,6 +4,7 @@
 import { SiYuanClient } from './siyuan-client';
 import { loadProjectsAndItems } from './dataLoader';
 import type { Item, ProjectDirectory } from '@/types/models';
+import { toPomodoroRecordCompact, type PomodoroRecordCompact } from '@/utils/pomodoroUtils';
 
 export interface FilterItemsArgs {
   projectId?: string;
@@ -52,6 +53,7 @@ export interface FilterItemOutput {
   projectName?: string;
   taskName?: string;
   links?: Array<{ name: string; url: string }>;
+  pomodoros?: PomodoroRecordCompact[];
 }
 
 /**
@@ -74,7 +76,8 @@ export async function executeFilterItems(
     status: i.status,
     projectName: i.project?.name,
     taskName: i.task?.name,
-    links: i.links
+    links: i.links,
+    pomodoros: i.pomodoros?.map(toPomodoroRecordCompact) ?? []
   }));
   return { items: output };
 }
