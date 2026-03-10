@@ -5,7 +5,7 @@
 import { Dialog } from 'siyuan';
 import type { Item, CalendarEvent, PomodoroRecord } from '@/types/models';
 import { t } from '@/i18n';
-import { formatDateTime, formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
+import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
@@ -353,18 +353,23 @@ let lastEventDetailDialog: Dialog | null = null;
  */
 export function showEventDetailModal(event: CalendarEvent): Dialog {
   const settingsStore = useSettingsStore();
+  const plugin = usePlugin();
   const props = event.extendedProps;
 
-  // 格式化时间
+  // 格式化时间（与 showItemDetailModal 一致：日期标签 + 时间范围，显示「今天」「明天」）
   const start = event.start;
   const end = event.end;
   const allDay = event.allDay;
-  let timeDisplay = '';
-  if (end && start !== end) {
-    timeDisplay = `${formatDateTime(start, allDay)} - ${formatDateTime(end, allDay)}`;
-  } else {
-    timeDisplay = formatDateTime(start, allDay);
-  }
+  const rawDate = props.date
+    || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
+    || (start ? dayjs(start).format('YYYY-MM-DD') : '');
+  const dateStr = rawDate || dayjs().format('YYYY-MM-DD');
+  const dateLabel = formatDateLabel(dateStr, t('todo').today, t('todo').tomorrow);
+  const timeRange = formatTimeRange(
+    typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''),
+    typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : '')
+  );
+  const timeDisplay = `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;
 
   // 时长计算
   let duration = '';
@@ -494,11 +499,12 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
 
   content += '</div>'; // 结束 cards
 
-  // 按钮
+  // 按钮（与 showItemDetailModal 一致）
   content += `
     <div class="sy-dialog-footer">
       ${createButtons([
         { text: t('common').cancel, class: 'b3-button--outline', action: 'close' },
+        { text: t('todo').viewInCalendar, class: 'b3-button--outline', action: 'open-calendar' },
         { text: t('todo').openDoc, class: 'b3-button--text', action: 'open-doc' },
       ])}
     </div>
@@ -532,6 +538,11 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
 
       if (action === 'open-doc') {
         await openDocumentAtLine(props.docId, props.lineNumber, props.blockId);
+        dialog.destroy();
+      } else if (action === 'open-calendar') {
+        if (plugin && (plugin as any).openCustomTab) {
+          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
+        }
         dialog.destroy();
       } else if (action === 'close') {
         dialog.destroy();
