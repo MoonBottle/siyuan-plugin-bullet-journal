@@ -68,9 +68,6 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          style={{
-            transition: "stroke-dashoffset 0.1s linear",
-          }}
         />
       </svg>
       <div style={{ position: "relative", zIndex: 1 }}>{children}</div>

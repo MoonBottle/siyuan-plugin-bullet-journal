@@ -1,10 +1,8 @@
 import {
   Composition,
   AbsoluteFill,
-  staticFile,
   CalculateMetadataFunction,
 } from "remotion";
-import { Audio } from "remotion";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import {
@@ -17,7 +15,6 @@ import {
   EndingScene,
 } from "./scenes";
 import {
-  SCENE_AUDIO_FILES,
   getAudioDurations,
   calculateSceneDurations,
   calculateTotalDuration,
@@ -88,9 +85,6 @@ const PomodoroPromoVideo: React.FC<VideoProps> = ({ sceneDurations = [] }) => {
         background: "#1a1a2e",
       }}
     >
-      {/* 场景配音 */}
-      <SceneVoiceovers />
-
       <TransitionSeries>
         {/* 开场场景 */}
         <TransitionSeries.Sequence durationInFrames={durations[0]}>
@@ -164,22 +158,5 @@ const PomodoroPromoVideo: React.FC<VideoProps> = ({ sceneDurations = [] }) => {
         </TransitionSeries.Sequence>
       </TransitionSeries>
     </AbsoluteFill>
-  );
-};
-
-// 场景配音组件
-const SceneVoiceovers: React.FC = () => {
-  return (
-    <>
-      {SCENE_AUDIO_FILES.map((file, index) => (
-        <Audio
-          key={file}
-          src={staticFile(file)}
-          volume={1}
-          // 每个音频在对应场景开始时播放
-          // 由于 TransitionSeries 的复杂性，我们在每个场景内单独控制音频
-        />
-      ))}
-    </>
   );
 };

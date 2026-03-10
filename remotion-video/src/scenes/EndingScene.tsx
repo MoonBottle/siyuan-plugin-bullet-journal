@@ -148,27 +148,27 @@ export const EndingScene: React.FC = () => {
       >
         <div
           style={{
-            width: 140,
-            height: 140,
+            width: 220,
+            height: 220,
             background: "#fff",
             borderRadius: 12,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             margin: "0 auto",
-            padding: 8,
+            padding: 10,
           }}
         >
           <Img
             src={staticFile("qrcode_for_gh_8cb0a9f23ea0_258.jpg")}
             style={{
-              width: 124,
-              height: 124,
+              width: 200,
+              height: 200,
               borderRadius: 4,
             }}
           />
         </div>
-        <p style={{ fontSize: 14, color: "#a0a0a0", marginTop: 8 }}>
+        <p style={{ fontSize: 16, color: "#a0a0a0", marginTop: 10 }}>
           扫码关注公众号
         </p>
       </div>

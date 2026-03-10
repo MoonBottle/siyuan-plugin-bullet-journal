@@ -1,8 +1,9 @@
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, Easing } from "remotion";
 
 interface AnimatedNumberProps {
   value: number;
   duration?: number;
+  delay?: number;
   format?: "number" | "duration";
   suffix?: string;
   style?: React.CSSProperties;
@@ -11,6 +12,7 @@ interface AnimatedNumberProps {
 export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   value,
   duration = 60,
+  delay = 0,
   format = "number",
   suffix = "",
   style = {},
@@ -19,10 +21,14 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   const { fps } = useVideoConfig();
 
   const animatedValue = interpolate(
-    frame,
+    frame - delay,
     [0, duration],
     [0, value],
-    { extrapolateRight: "clamp" }
+    {
+      easing: Easing.out(Easing.cubic),
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }
   );
 
   const displayValue = Math.floor(animatedValue);

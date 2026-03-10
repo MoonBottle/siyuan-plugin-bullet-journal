@@ -51,7 +51,7 @@ export const StatsScene: React.FC = () => {
         {stats.map((stat, index) => (
           <Card
             key={stat.label}
-            delay={30 + index * 15}
+            delay={40 + index * 25}
             animation="slideUp"
             style={{
               minWidth: 200,
@@ -78,6 +78,7 @@ export const StatsScene: React.FC = () => {
               <AnimatedNumber
                 value={stat.value}
                 duration={60}
+                delay={40 + index * 25 + 35}
                 format={stat.format}
                 suffix={stat.suffix}
               />

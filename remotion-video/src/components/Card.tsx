@@ -22,6 +22,7 @@ export const Card: React.FC<CardProps> = ({
     frame: frame - delay,
     fps,
     config: { damping: 200 },
+    durationInFrames: 35,
   });
 
   let transform = "none";
