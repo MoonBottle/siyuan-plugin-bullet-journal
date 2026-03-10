@@ -13,6 +13,10 @@
   - 日历番茄钟状态：日历视图中显示当日番茄钟完成状态
   - 通知支持：专注完成时发送系统通知提醒
 
+![番茄钟专注中](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png)
+
+![番茄钟 Dock](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
+
 - **甘特图增强**：
   - 任务文字显示：任务条上直接显示任务名称，悬停显示完整信息
   - 任务上下文菜单：右键任务支持查看详情、在日历中打开
@@ -47,6 +51,10 @@
   - 通过对话方式查询项目、任务和事项
   - 支持生成日报并一键插入笔记
   - 多对话管理：支持创建多个独立对话场景，对话历史自动保存
+
+![AI 对话演示](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif)
+
+![AI 对话面板](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
 
 ## [0.7.2] - 2026-03-07
 
