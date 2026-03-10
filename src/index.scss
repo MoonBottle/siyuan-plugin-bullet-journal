@@ -509,3 +509,8 @@
     line-height: 1;
   }
 }
+
+/* 甘特图 hover 弹框：覆盖 sy-dialog-content 的 padding，避免与容器 padding 叠加 */
+.gantt-event-tooltip .sy-dialog-content {
+  padding: 0 !important;
+}
