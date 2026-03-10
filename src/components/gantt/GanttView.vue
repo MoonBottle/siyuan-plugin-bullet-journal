@@ -20,6 +20,7 @@ import type { Project, CalendarEvent } from '@/types/models';
 import { DataConverter } from '@/utils/dataConverter';
 import { getCurrentLocale, t } from '@/i18n';
 import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { computeTooltipPosition } from '@/utils/tooltipPosition';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
@@ -113,12 +114,13 @@ const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
     const html = buildEventDetailContent(eventData, { preview: true });
     if (eventTooltipEl.value) {
       eventTooltipEl.value.innerHTML = html;
-      const rect = anchorEl.getBoundingClientRect();
-      eventTooltipStyle.value = {
-        left: `${rect.left}px`,
-        top: `${rect.bottom + 4}px`
-      };
-      eventTooltipVisible.value = true;
+      nextTick(() => {
+        if (eventTooltipEl.value) {
+          const rect = anchorEl.getBoundingClientRect();
+          eventTooltipStyle.value = computeTooltipPosition(rect, eventTooltipEl.value, 4);
+          eventTooltipVisible.value = true;
+        }
+      });
     }
   }, GANTT_TOOLTIP_HOVER_DELAY);
 };

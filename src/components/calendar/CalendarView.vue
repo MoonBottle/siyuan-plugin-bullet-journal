@@ -19,6 +19,7 @@ import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { CalendarEvent } from '@/types/models';
 import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { computeTooltipPosition } from '@/utils/tooltipPosition';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
@@ -170,12 +171,13 @@ const showEventTooltip = (info: any) => {
     const html = buildEventDetailContent(eventData, { preview: true });
     if (eventTooltipEl.value) {
       eventTooltipEl.value.innerHTML = html;
-      const rect = info.el.getBoundingClientRect();
-      eventTooltipStyle.value = {
-        left: `${rect.left}px`,
-        top: `${rect.bottom + 4}px`
-      };
-      eventTooltipVisible.value = true;
+      nextTick(() => {
+        if (eventTooltipEl.value) {
+          const rect = info.el.getBoundingClientRect();
+          eventTooltipStyle.value = computeTooltipPosition(rect, eventTooltipEl.value, 4);
+          eventTooltipVisible.value = true;
+        }
+      });
     }
   }, 300);
 };
