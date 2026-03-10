@@ -192,7 +192,8 @@ const handleGanttTaskClick = (id: string | number) => {
       date: props.date,
       originalStartDateTime: props.originalStartDateTime,
       originalEndDateTime: props.originalEndDateTime,
-      siblingItems: props.siblingItems
+      siblingItems: props.siblingItems,
+      pomodoros: props.pomodoros
     }
   };
   showEventDetailModal(eventData);

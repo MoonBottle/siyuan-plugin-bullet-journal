@@ -7,16 +7,36 @@
 A task management plugin for SiYuan Note. Calendar, Gantt chart and project list — all in one place.
 
 
+### v0.9.0 Highlights
+
+- **Pomodoro Timer**: Brand new Pomodoro focus timer
+  - Customizable focus duration (default 25/45/60 minutes) with quick preset options
+  - Floating Pomodoro button: Quick start/pause/continue from a floating button in the bottom-right corner
+  - Auto-recovery: Automatically restore previous focus state after page refresh or restart
+  - Focus records: Automatically record each focus session and track today's focus data
+  - Todo item focus: Add "Focus" button to todo items for one-click Pomodoro start
+  - Calendar Pomodoro status: Display daily Pomodoro completion status in calendar view
+  - Notification support: Send system notifications when focus session completes
+
+![Pomodoro Active](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png)
+
+![Pomodoro Records](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-dock.png)
+
+- **Gantt Chart Enhancements**:
+  - Task text display: Show task names directly on task bars, hover for full details
+  - Task context menu: Right-click tasks to view details or open in calendar
+  - Day/week view optimization: Improved task display at different time granularities
+
+- **Calendar Enhancements**:
+  - Day view navigation: Support day view switching and back button
+  - Pomodoro status display: Show 🍅 icon for items in focus
+
 ### v0.8.0 Highlights
 
 - **AI Chat**: Built-in Task Assistant panel with support for OpenAI, Kimi, DeepSeek, Step, Zhipu AI, and all OpenAI-compatible providers. Query projects, tasks, and items through conversation, generate daily reports and insert them into notes with one click
 - **Multi-conversation Management**: Support creating multiple independent conversation contexts with automatic chat history saving
 
 ![PixPin20260308011120.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif)
-
-![PixPin20260308005211.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_00-52-11-Ej0YLYU.gif)
-
-![PixPin20260308010147.gif](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-01-47-jhWDwex.gif)
 
 ![image.png](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
 
@@ -39,63 +59,87 @@ A task management plugin for SiYuan Note. Calendar, Gantt chart and project list
 | **Gantt Chart** | Visualize project progress with hierarchical task display | Understanding project timelines and dependencies |
 | **Project List** | Group and display tasks by project with expandable details | Organizing and reviewing all project tasks |
 | **Todo Dock** | Show upcoming todo items in sidebar for quick access | Quick glance at today's and future tasks |
+| **Pomodoro** | Display Pomodoro focus status in sidebar | Track Pomodoro focus time |
+| **AI Chat** | Display AI conversation history in sidebar | Interact with AI assistant to query projects, tasks, and items |
 
 **Key Differentiators:**
-- 📅 **Record-driven** - Focus on recording what you do, not reminders
+- 📅 **Record-driven** - Focus on recording completed and pending items, not reminders
 - 🔗 **Bidirectional links** - Click any task to jump directly to its location in your notes
-- 🎯 **Non-invasive** - Uses standard Markdown, no proprietary formats
+- 🎯 **Non-invasive** - Documents are tasks; just add markers in notes to view and manage tasks in visual interfaces
 - ⚡ **Real-time sync** - Changes in notes automatically reflect in all views
 
-## Core Workflow
+## Quick Start
 
 **Write notes with markers, then view them in visual interfaces.**
 
+1. **Create Project Document** - Create a document in SiYuan to record project tasks
+2. **Write Task Format** - Use `#task` to mark tasks, `@date` to mark items
+3. **Configure Plugin** (optional, recommended) - Add directory paths to scan in settings, or right-click a node in the document tree and choose "Set as Task Assistant directory" to add quickly
+4. **View Tasks** - Access tasks through Calendar, Gantt, Project List, or Todo Dock
+
+For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
+
 ### 1. Write Markers in Notes
 
-Enter the following in any document:
+Create a new document and enter the following content:
 
 ```markdown
-## Project Name
+## Website Redesign Project (Project Name)
 
-> Project description
+> Company website overhaul to improve user experience (Project Description)
 
-[Requirements](http://doc.example.com)
+Project-related links, multiple supported, one per line
 
-Task Name #task @L1
+[Design Mockups](https://figma.com/design/xxx)
 
-[Task Details](http://doc.example.com)
+Homepage Redesign (Project Name) #task @L1 
 
-Item A @2026-02-28
+Task-related links, multiple supported, one per line
 
-[Item Details](http://doc.example.com)
+[Requirements Doc](https://doc.example.com/homepage)
 
-Item B @2026-03-01 10:00:00~12:00:00 #done
+Define Design Style (Item) @2026-03-09
 
-Item C @2026-03-01 10:00:00~12:00:00 #abandoned
+🍅2026-03-09 10:00:00~10:25:00 Collect reference materials
+
+🍅15,2026-03-09 14:00:00~14:30:00 Define design style (15min actual focus, with pause)
+
+Item-related links, multiple supported, one per line
+
+[Reference Cases](https://example.com/ref)
+
+Complete Homepage Prototype (Completed Item) @2026-03-09 10:00:00~12:00:00 #done
+
+🍅2026-03-09 14:00:00~14:25:00 Complete homepage prototype
+
+Review Meeting (Abandoned Item) @2026-03-08 14:00:00~15:00:00 #abandoned
 ```
 
 **Marker Reference:**
 - `Project Name` - The first H1 or H2 heading in the document is recognized as the project name; if no heading, defaults to the document filename
 - `#task` - Marks a line as a task
-- `@L1/@L2/@L3` - Task hierarchy levels
-- `@YYYY-MM-DD` - Item date
-- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
-
-![Note with Markers](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/note.png)
+- `@L1/@L2/@L3` - Task hierarchy levels, optional, default is L1
+- `@YYYY-MM-DD` / `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period
+- `#done` / `#abandoned` - Item status (optional), marks item as completed or abandoned
+- `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Pomodoro record (optional), written below the item; N is actual focus minutes (excluding pause time), optional
 
 ### 2. View in Visual Interfaces
 
-The plugin automatically parses markers in notes and displays them in Calendar, Gantt, and Todo Dock:
+The plugin automatically parses markers in notes and displays them in Calendar, Gantt, Project List, and Todo Dock:
 
-![View Display](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/todo-dock.png)
+![Calendar View](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/calendar-view.png)
 
-![Gantt Chart](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/gantt-view.png)
+![Todo Dock](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
 
-![Item Details](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/item-modal.png)
+![Gantt Chart](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
+
+![Pomodoro](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-dock.png)
+
+![Item Details](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/item-modal.png)
 
 Click any task in the view to jump directly to its location in your notes.
 
-![Feature Demo](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/op.gif)
+![Feature Demo](https://b3logfile.com/file/2026/02/op-xYGmIM8.gif)
 
 ## Installation
 
@@ -111,14 +155,7 @@ Click any task in the view to jump directly to its location in your notes.
 2. Extract to SiYuan data directory `data/plugins/siyuan-plugin-bullet-journal`
 3. Enable the plugin in settings
 
-## Quick Start
 
-1. **Create Project Document** - Create a document in SiYuan to record project tasks
-2. **Write Task Format** - Use `#task` to mark tasks, `@date` to mark items
-3. **Configure Plugin** (optional, recommended) - Add directory paths to scan in settings, or right-click a node in the document tree and choose "Set as Task Assistant directory" to add quickly
-4. **View Tasks** - Access tasks through Calendar, Gantt, Project List, or Todo Dock
-
-For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
 
 ## MCP (Model Context Protocol)
 

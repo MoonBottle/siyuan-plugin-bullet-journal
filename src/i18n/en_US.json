@@ -103,6 +103,7 @@
     "copy": "Copy",
     "time": "Time",
     "duration": "Duration",
+    "focusTotalTime": "Total Focus Duration",
     "viewInCalendar": "View in Calendar",
     "calendar": "Calendar",
     "migrateToTomorrow": "Migrate to tomorrow",

@@ -3,7 +3,7 @@
  * 提供统一的弹框创建和管理
  */
 import { Dialog } from 'siyuan';
-import type { Item, CalendarEvent } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord } from '@/types/models';
 import { t } from '@/i18n';
 import { formatDateTime, formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
 import { openDocumentAtLine } from './fileUtils';
@@ -79,6 +79,24 @@ function createLinksRow(label: string, links: Array<{ name: string; url: string 
       <div class="sy-dialog-links">${linksHtml}</div>
     </div>
   `;
+}
+
+/**
+ * 计算专注总时长（分钟）
+ */
+function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
+  if (!pomodoros?.length) return 0;
+  return pomodoros.reduce((sum, p) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
+}
+
+/**
+ * 格式化专注时长为可读字符串
+ */
+function formatFocusDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}分钟`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}小时${m}分钟` : `${h}小时`;
 }
 
 /**
@@ -185,6 +203,10 @@ export function showItemDetailModal(item: Item): Dialog {
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
 
+  // 专注总时间
+  const totalFocusMinutes = calculateTotalFocusMinutes(item.pomodoros);
+  const focusTotalTimeDisplay = totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
+
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">
@@ -202,6 +224,13 @@ export function showItemDetailModal(item: Item): Dialog {
               <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
               ${duration}
               <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+            </span>
+          ` : ''}
+          ${focusTotalTimeDisplay ? `
+            <span class="sy-dialog-duration-text">
+              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').focusTotalTime}">🍅</span>
+              ${focusTotalTimeDisplay}
+              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${focusTotalTimeDisplay}" aria-label="${t('common').copy}">${copyIconSvg}</span>
             </span>
           ` : ''}
         </div>
@@ -418,6 +447,10 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
 
+  // 专注总时间
+  const totalFocusMinutes = calculateTotalFocusMinutes(props.pomodoros);
+  const focusTotalTimeDisplay = totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
+
   content += `
     <div class="sy-dialog-card sy-dialog-item-card">
       <div class="sy-dialog-card-title">
@@ -435,6 +468,13 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
               <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
               ${duration}
               <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+            </span>
+          ` : ''}
+          ${focusTotalTimeDisplay ? `
+            <span class="sy-dialog-duration-text">
+              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').focusTotalTime}">🍅</span>
+              ${focusTotalTimeDisplay}
+              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${focusTotalTimeDisplay}" aria-label="${t('common').copy}">${copyIconSvg}</span>
             </span>
           ` : ''}
         </div>

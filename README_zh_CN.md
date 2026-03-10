@@ -19,7 +19,7 @@
 
 ![番茄钟专注中](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png)
 
-![番茄钟记录](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-dock.png)
+![pomodorodock.png](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
 
 - **甘特图增强**：
   - 任务文字显示：任务条上直接显示任务名称，悬停显示完整信息
@@ -46,7 +46,9 @@
 | **日历视图** | 以日历形式展示工作任务，支持月/周/日/列表视图 | 日/周计划和时间安排 |
 | **甘特图** | 项目进度可视化，支持层级任务展示 | 了解项目时间线和任务依赖关系 |
 | **项目列表** | 按项目分组展示任务，支持展开查看详情 | 组织和回顾所有项目任务 |
-| **待办 Dock** | 在侧边栏显示即将到来的待办事项 | 快速查看今日及未来的待办 |
+| **待办事项** | 在侧边栏显示即将到来的待办事项 | 快速查看今日及未来的待办 |
+| **番茄钟** | 在侧边栏显示番茄钟专注状态 | 跟踪番茄钟专注时间 |
+| **AI 对话** | 在侧边栏显示 AI 对话记录 | 与 AI 助手交互查询项目、任务和事项 |
 
 **核心特性：**
 - 📅 **记录驱动** - 专注于记录已完成和待完成的事项，而非提醒
@@ -61,7 +63,7 @@
 1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
 2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
 3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
-4. **查看视图** - 通过日历、甘特图、项目列表或待办 Dock 查看任务
+4. **查看视图** - 通过日历、甘特图、项目列表或待办事项 查看任务
 
 详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
@@ -70,41 +72,58 @@
 新建文档，输入以下内容：
 
 ```markdown
-## 项目名称
+## 网站重构项目（项目名称）
 
-> 项目描述
+> 公司官网全面改版，提升用户体验（项目描述）
 
-[需求文档](http://doc.example.com)
+和项目相关联的链接，支持多个，每个一行
 
-任务名称 #任务 @L1
+[设计稿](https://figma.com/design/xxx)
 
-[任务详情](http://doc.example.com)
+首页改版（项目名称） #任务 @L1 
 
-事项A @2026-03-09
+和任务相关联的链接，支持多个，每个一行
 
-[事项详情](http://doc.example.com)
+[需求文档](https://doc.example.com/homepage)
 
-事项B @2026-03-09 10:00:00~12:00:00 #已完成
+确定设计风格（事项） @2026-03-09
 
-事项C @2026-03-08 10:00:00~12:00:00 #已放弃
+🍅2026-03-09 10:00:00~10:25:00 收集素材
+
+🍅15,2026-03-09 14:00:00~14:30:00 确定设计风格（实际专注15分钟，有暂停）
+
+和事项相关联的链接，支持多个，每个一行
+
+[参考案例](https://example.com/ref)
+
+完成首页原型设计（已完成事项） @2026-03-09 10:00:00~12:00:00 #已完成
+
+🍅2026-03-09 14:00:00~14:25:00 完成首页原型设计
+
+评审会议（已放弃事项） @2026-03-08 14:00:00~15:00:00 #已放弃
 ```
 
 **标记说明：**
 - `项目名称` - 文档中的第一个一级或二级标题会被识别为项目名称，若无标题，则默认项目名称为文档文件名
 - `#任务` - 标记该行为任务
 - `@L1/@L2/@L3` - 任务层级，可选标记，默认层级为 L1
-- `@YYYY-MM-DD` - 事项日期，必选，带日期的行会被识别为事项
-- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 带时间范围，与事项日期二选一，用于表示任务的具体时间范围
+- `@YYYY-MM-DD` / `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 事项日期（必选），带日期的行会被识别为事项；可附加时间范围表示具体时间段
+- `#已完成` / `#done` / `#已放弃` / `#abandoned` - 事项状态（可选），标记事项为已完成或已放弃状态
+- `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 番茄钟记录（可选），写在事项下方；N 为实际专注分钟数（不含暂停时间），可选
 
 ### 2. 在视图中查看
 
-插件自动解析笔记中的标记，在日历、甘特图、待办 Dock 中展示：
+插件自动解析笔记中的标记，在日历、甘特图、待办事项 中展示：
 
-![视图展示](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
+![calendarview.png](https://b3logfile.com/file/2026/03/calendar-view-p1U6g2E.png)
 
-![甘特图](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
+![tododock.png](https://b3logfile.com/file/2026/03/todo-dock-kBvFpBt.png)
 
-![事项详情](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/item-modal.png)
+![ganttview.png](https://b3logfile.com/file/2026/03/gantt-view-EMdc45N.png)
+
+![pomodorodock.png](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
+
+![itemmodal.png](https://b3logfile.com/file/2026/03/item-modal-EC8678D.png)
 
 点击视图中的任务，可直接跳转到笔记中对应位置。
 
