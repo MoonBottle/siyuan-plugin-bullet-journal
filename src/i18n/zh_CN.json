@@ -46,7 +46,9 @@
     "month": "月",
     "week": "周",
     "day": "日",
-    "list": "列表"
+    "list": "列表",
+    "weekNumber": "第{num}周",
+    "navLinkHint": "跳转到 $0"
   },
   "gantt": {
     "title": "甘特图",

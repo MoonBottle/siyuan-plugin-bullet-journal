@@ -356,7 +356,20 @@ onMounted(async () => {
       firstDay: 1,
       weekNumbers: true,
       weekNumberCalculation: 'ISO',
+      weekNumberContent: (arg: { num: number }) => {
+        const template = t('calendar').weekNumber ?? 'W{num}';
+        return template.replace('{num}', String(arg.num));
+      },
       navLinks: true,
+      navLinkHint: (dateText: string, date: Date) => {
+        const template = (t('calendar') as any).navLinkHint ?? 'Go to $0';
+        // FullCalendar 的 dateText 对周数固定为英文 "Week N"，需用 locale 的周数格式替换
+        const weekMatch = /week\s+(\d+)/i.exec(dateText);
+        const displayText = weekMatch
+          ? ((t('calendar') as any).weekNumber ?? 'W{num}').replace('{num}', weekMatch[1])
+          : dateText;
+        return template.replace('$0', displayText);
+      },
       navLinkWeekClick: (weekStart: Date) => {
         if (calendarInstance) {
           calendarInstance.changeView('timeGridWeek');

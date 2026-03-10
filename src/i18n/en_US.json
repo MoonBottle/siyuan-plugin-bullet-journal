@@ -46,7 +46,9 @@
     "month": "Month",
     "week": "Week",
     "day": "Day",
-    "list": "List"
+    "list": "List",
+    "weekNumber": "W{num}",
+    "navLinkHint": "Go to $0"
   },
   "gantt": {
     "title": "Gantt Chart",
