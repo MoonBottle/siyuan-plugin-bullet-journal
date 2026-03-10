@@ -67,6 +67,20 @@ describe('projectStore 多日期事项', () => {
     expect(result[0].date).toBe('2026-03-08');
   });
 
+  it('getFutureItems 代表项：离散 @07,11，今天 10 号，返回 1 条（11 号，归入明天）', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-03-07', 'b1', { dateRangeStart: '2026-03-07', dateRangeEnd: '2026-03-11' }),
+      mkItem('2026-03-11', 'b1', { dateRangeStart: '2026-03-07', dateRangeEnd: '2026-03-11' })
+    ].map(i => ({ ...i, project: mockProject }));
+    store.$patch({ items, currentDate: '2026-03-10' });
+
+    const result = store.getFutureItems('');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe('2026-03-11');
+  });
+
   it('getCompletedItems 去重：7~9 事项已完成，返回 1 条', () => {
     const store = useProjectStore();
     const items = [

@@ -65,6 +65,16 @@ describe('filterDateRangeRepresentative', () => {
     expect(result[0].date).toBe('2026-03-09');
   });
 
+  it('代表项：离散 @07,11，今天 10 号，无今日项，代表项为 11 号', () => {
+    const items = [
+      mkItem('2026-03-07', 'b1', '2026-03-07', '2026-03-11'),
+      mkItem('2026-03-11', 'b1', '2026-03-07', '2026-03-11')
+    ];
+    const result = filterDateRangeRepresentative(items, '2026-03-10');
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe('2026-03-11');
+  });
+
   it('代表项：混合，今天 10 号', () => {
     const items = [
       mkItem('2026-03-07', 'b1', '2026-03-07', '2026-03-20'),

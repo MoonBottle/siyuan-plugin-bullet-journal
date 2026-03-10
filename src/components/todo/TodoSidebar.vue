@@ -474,15 +474,10 @@ const expiredItems = computed(() => projectStore.getExpiredItems(props.groupId))
 // 当前分组下的未来待办（今日及以后，未完成未放弃）
 const futureItemsForGroup = computed(() => projectStore.getFutureItems(props.groupId));
 
-// 今日待办事项（含多日期事项进行中：今天在 [dateRangeStart, dateRangeEnd] 内）
+// 今日待办事项（仅代表项日期为今天的事项；多日期事项若代表项为 11 号则归入明天）
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
-  return futureItemsForGroup.value.filter(item => {
-    if (item.date === todayStr) return true;
-    const start = item.dateRangeStart;
-    const end = item.dateRangeEnd;
-    return start && end && todayStr >= start && todayStr <= end;
-  });
+  return futureItemsForGroup.value.filter(item => item.date === todayStr);
 });
 
 // 明日待办事项
@@ -491,17 +486,11 @@ const tomorrowItems = computed(() => {
   return futureItemsForGroup.value.filter(item => item.date === tomorrowStr);
 });
 
-// 未来待办事项（不包括今天和明天，且非今日进行中的多日期事项）
+// 未来待办事项（不包括今天和明天；分组仅按代表项 date）
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return futureItemsForGroup.value.filter(item => {
-    if (item.date === todayStr || item.date === tomorrowStr) return false;
-    const start = item.dateRangeStart;
-    const end = item.dateRangeEnd;
-    if (start && end && todayStr >= start && todayStr <= end) return false; // 进行中归入今天
-    return true;
-  });
+  return futureItemsForGroup.value.filter(item => item.date !== todayStr && item.date !== tomorrowStr);
 });
 
 // 按日期分组的未来待办事项
