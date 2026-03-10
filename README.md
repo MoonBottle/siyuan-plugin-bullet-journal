@@ -60,6 +60,7 @@ A task management plugin for SiYuan Note. Calendar, Gantt chart and project list
 | **Project List** | Group and display tasks by project with expandable details | Organizing and reviewing all project tasks |
 | **Todo Dock** | Show upcoming todo items in sidebar for quick access | Quick glance at today's and future tasks |
 | **Pomodoro** | Display Pomodoro focus status in sidebar | Track Pomodoro focus time |
+| **AI Chat** | Display AI conversation history in sidebar | Interact with AI assistant to query projects, tasks, and items |
 
 **Key Differentiators:**
 - 📅 **Record-driven** - Focus on recording completed and pending items, not reminders
@@ -83,41 +84,58 @@ For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugi
 Create a new document and enter the following content:
 
 ```markdown
-## Project Name
+## Website Redesign Project (Project Name)
 
-> Project description
+> Company website overhaul to improve user experience (Project Description)
 
-[Requirements](http://doc.example.com)
+Project-related links, multiple supported, one per line
 
-Task Name #task @L1
+[Design Mockups](https://figma.com/design/xxx)
 
-[Task Details](http://doc.example.com)
+Homepage Redesign (Project Name) #task @L1 
 
-Item A @2026-02-28
+Task-related links, multiple supported, one per line
 
-[Item Details](http://doc.example.com)
+[Requirements Doc](https://doc.example.com/homepage)
 
-Item B @2026-03-01 10:00:00~12:00:00 #done
+Define Design Style (Item) @2026-03-09
 
-Item C @2026-03-01 10:00:00~12:00:00 #abandoned
+🍅2026-03-09 10:00:00~10:25:00 Collect reference materials
+
+🍅15,2026-03-09 14:00:00~14:30:00 Define design style (15min actual focus, with pause)
+
+Item-related links, multiple supported, one per line
+
+[Reference Cases](https://example.com/ref)
+
+Complete Homepage Prototype (Completed Item) @2026-03-09 10:00:00~12:00:00 #done
+
+🍅2026-03-09 14:00:00~14:25:00 Complete homepage prototype
+
+Review Meeting (Abandoned Item) @2026-03-08 14:00:00~15:00:00 #abandoned
 ```
 
 **Marker Reference:**
 - `Project Name` - The first H1 or H2 heading in the document is recognized as the project name; if no heading, defaults to the document filename
 - `#task` - Marks a line as a task
 - `@L1/@L2/@L3` - Task hierarchy levels, optional, default is L1
-- `@YYYY-MM-DD` - Item date, required; lines with dates are recognized as items
-- `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range, alternative to item date for specifying task time range
+- `@YYYY-MM-DD` / `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period
+- `#done` / `#abandoned` - Item status (optional), marks item as completed or abandoned
+- `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Pomodoro record (optional), written below the item; N is actual focus minutes (excluding pause time), optional
 
 ### 2. View in Visual Interfaces
 
 The plugin automatically parses markers in notes and displays them in Calendar, Gantt, Project List, and Todo Dock:
 
-![View Display](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/todo-dock.png)
+![Calendar View](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/calendar-view.png)
 
-![Gantt Chart](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/gantt-view.png)
+![Todo Dock](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/todo-dock.png)
 
-![Item Details](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/en/user-guide/images/item-modal.png)
+![Gantt Chart](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/gantt-view.png)
+
+![Pomodoro](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-dock.png)
+
+![Item Details](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/item-modal.png)
 
 Click any task in the view to jump directly to its location in your notes.
 
