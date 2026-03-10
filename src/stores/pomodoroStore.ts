@@ -13,6 +13,7 @@ import {
   loadActivePomodoro,
   removeActivePomodoro
 } from '@/utils/pomodoroStorage';
+import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 
 interface PomodoroState {
@@ -315,9 +316,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
         }
         await appendBlock('markdown', pomodoroContent, blockId);
 
-        // 删除文件中的进行中的番茄钟记录
-        if (plugin) {
-          await removeActivePomodoro(plugin);
+        // 删除文件中的进行中的番茄钟记录（倒计时自然结束时可能未传入 plugin，从 usePlugin 获取）
+        const pluginToUse = plugin ?? usePlugin();
+        if (pluginToUse) {
+          await removeActivePomodoro(pluginToUse);
         }
 
         // 播放提示音
