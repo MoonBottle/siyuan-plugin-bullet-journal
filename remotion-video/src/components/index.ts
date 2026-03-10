@@ -3,3 +3,4 @@ export { ProgressRing } from "./ProgressRing";
 export { AnimatedNumber } from "./AnimatedNumber";
 export { Card } from "./Card";
 export { Background } from "./Background";
+export { Subtitle } from "./Subtitle";

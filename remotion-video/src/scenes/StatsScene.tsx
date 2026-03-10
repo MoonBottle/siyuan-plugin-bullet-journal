@@ -1,4 +1,5 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, spring, interpolate, staticFile } from "remotion";
+import { Audio } from "remotion";
 import { Background, Card, AnimatedNumber } from "../components";
 
 export const StatsScene: React.FC = () => {
@@ -17,6 +18,9 @@ export const StatsScene: React.FC = () => {
 
   return (
     <Background>
+      {/* 场景配音 */}
+      <Audio src={staticFile("voiceover/stats.mp3")} volume={1} />
+
       {/* 标题 */}
       <div
         style={{

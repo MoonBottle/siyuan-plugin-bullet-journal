@@ -4,13 +4,15 @@
   "description": "番茄钟功能公众号宣传视频",
   "scripts": {
     "dev": "remotion studio",
-    "build": "remotion render Root out/video.mp4",
+    "build": "cross-env REMOTION_CHROMIUM_EXECUTABLE=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" remotion render PomodoroPromo out/video.mp4",
+    "build:local": "remotion render PomodoroPromo out/video.mp4 --browser-executable=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\"",
     "upgrade": "remotion upgrade"
   },
   "dependencies": {
     "remotion": "^4.0.0",
     "@remotion/transitions": "^4.0.0",
     "@remotion/media-utils": "^4.0.0",
+    "@remotion/media": "^4.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
@@ -18,6 +20,7 @@
     "@remotion/cli": "^4.0.0",
     "@types/react": "^18.0.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "cross-env": "^7.0.3"
   }
 }

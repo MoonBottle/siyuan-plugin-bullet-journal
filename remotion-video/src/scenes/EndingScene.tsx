@@ -1,4 +1,5 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, spring, interpolate, staticFile } from "remotion";
+import { Audio, Img } from "remotion";
 import { Background, TomatoIcon } from "../components";
 
 export const EndingScene: React.FC = () => {
@@ -20,6 +21,9 @@ export const EndingScene: React.FC = () => {
 
   return (
     <Background>
+      {/* 场景配音 */}
+      <Audio src={staticFile("voiceover/ending.mp3")} volume={1} />
+
       {/* 番茄图标 */}
       <div
         style={{
@@ -135,7 +139,7 @@ export const EndingScene: React.FC = () => {
         </div>
       </div>
 
-      {/* 二维码占位 */}
+      {/* 公众号二维码 */}
       <div
         style={{
           opacity: qrOpacity,
@@ -144,29 +148,25 @@ export const EndingScene: React.FC = () => {
       >
         <div
           style={{
-            width: 120,
-            height: 120,
+            width: 140,
+            height: 140,
             background: "#fff",
             borderRadius: 12,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             margin: "0 auto",
+            padding: 8,
           }}
         >
-          <div
+          <Img
+            src={staticFile("qrcode_for_gh_8cb0a9f23ea0_258.jpg")}
             style={{
-              width: 100,
-              height: 100,
-              background: "#16213e",
+              width: 124,
+              height: 124,
               borderRadius: 4,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
             }}
-          >
-            <span style={{ fontSize: 40 }}>📱</span>
-          </div>
+          />
         </div>
         <p style={{ fontSize: 14, color: "#a0a0a0", marginTop: 8 }}>
           扫码关注公众号

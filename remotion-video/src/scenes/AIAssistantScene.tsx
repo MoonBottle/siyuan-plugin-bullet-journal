@@ -1,4 +1,5 @@
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, staticFile } from "remotion";
+import { Audio } from "remotion";
 import { Background } from "../components";
 
 export const AIAssistantScene: React.FC = () => {
@@ -32,6 +33,9 @@ export const AIAssistantScene: React.FC = () => {
 
   return (
     <Background>
+      {/* 场景配音 */}
+      <Audio src={staticFile("voiceover/ai-assistant.mp3")} volume={1} />
+
       {/* 标题 */}
       <div
         style={{

@@ -1,4 +1,5 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, spring, interpolate, staticFile } from "remotion";
+import { Audio } from "remotion";
 import { Background } from "../components";
 
 export const PomodoroIntroScene: React.FC = () => {
@@ -22,6 +23,9 @@ export const PomodoroIntroScene: React.FC = () => {
 
   return (
     <Background>
+      {/* 场景配音 */}
+      <Audio src={staticFile("voiceover/pomodoro-intro.mp3")} volume={1} />
+
       {/* 标题 */}
       <div
         style={{

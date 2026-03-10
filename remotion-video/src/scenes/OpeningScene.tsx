@@ -1,4 +1,5 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, spring, interpolate, staticFile } from "remotion";
+import { Audio } from "remotion";
 import { Background, TomatoIcon } from "../components";
 
 export const OpeningScene: React.FC = () => {
@@ -44,6 +45,9 @@ export const OpeningScene: React.FC = () => {
 
   return (
     <Background>
+      {/* 场景配音 */}
+      <Audio src={staticFile("voiceover/opening.mp3")} volume={1} />
+
       <div
         style={{
           display: "flex",

@@ -7,8 +7,8 @@ export const config: Config = {
     height: 1920,
     fps: 30,
   },
-  // 使用国内镜像下载 Chromium
-  setChromiumHeadlessMode: true,
+  // 使用系统已安装的 Chrome，跳过下载
+  setChromiumExecutable: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
 };
 
 export default config;

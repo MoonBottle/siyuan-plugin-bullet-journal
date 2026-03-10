@@ -1,4 +1,5 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, spring, interpolate, staticFile } from "remotion";
+import { Audio } from "remotion";
 import { Background, Card } from "../components";
 
 interface RecordItem {
@@ -24,6 +25,9 @@ export const RecordsScene: React.FC = () => {
 
   return (
     <Background>
+      {/* 场景配音 */}
+      <Audio src={staticFile("voiceover/records.mp3")} volume={1} />
+
       {/* 标题 */}
       <div
         style={{

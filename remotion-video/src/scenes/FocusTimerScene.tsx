@@ -1,4 +1,5 @@
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, staticFile } from "remotion";
+import { Audio } from "remotion";
 import { Background, ProgressRing } from "../components";
 
 export const FocusTimerScene: React.FC = () => {
@@ -26,6 +27,9 @@ export const FocusTimerScene: React.FC = () => {
 
   return (
     <Background>
+      {/* 场景配音 */}
+      <Audio src={staticFile("voiceover/focus-timer.mp3")} volume={1} />
+
       {/* 标题 */}
       <div
         style={{
