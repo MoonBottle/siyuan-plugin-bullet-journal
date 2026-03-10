@@ -353,6 +353,7 @@ onMounted(async () => {
       headerToolbar: false, // 禁用默认工具栏，使用自定义工具栏
       eventContent: renderEventContent, // 自定义事件渲染
       locale: getCurrentLocale().startsWith('zh') ? 'zh-cn' : 'en',
+      allDayText: t('todo').allDay,
       firstDay: 1,
       weekNumbers: true,
       weekNumberCalculation: 'ISO',
