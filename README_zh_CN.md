@@ -2,7 +2,7 @@
 
 ![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![更新日志](https://img.shields.io/badge/更新日志-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
 
-[English](README.md)
+[English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md)
 
 任务管理插件：日历与甘特图规划任务，待办与番茄钟跟进执行，支持 AI 对话；文档即任务，双向链接、实时同步。
 
@@ -18,7 +18,7 @@
 
 **核心特性：**
 - 🔗 **双向链接** - 点击任意任务可直接跳转到笔记中的对应位置
-- 🎯 **无侵入式** - 文档即任务，只需要在笔记中添加标记，即可在视图中查看和管理任务
+- 🎯 **无侵入式** - 文档即任务，在笔记中加标记即可在视图中查看与管理
 - ⚡ **实时同步** - 笔记中的修改会自动同步到所有视图
 
 ## 🚀 快速开始
@@ -27,10 +27,10 @@
 
 1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
 2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
-3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径，也可在文档树中右键节点选择「设置为任务助手目录」快速添加
-4. **查看视图** - 通过日历、甘特图、项目列表或待办事项 查看任务
+3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径；也可在文档树中右键文档/文件夹，选择「设置为任务助手目录」快速添加
+4. **查看视图** - 通过日历、甘特图、项目列表、待办或番茄钟面板查看任务
 
-详细步骤请参阅 [快速开始](docs/user-guide/quick-start.md)。
+详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
 ### 📝 1. 在笔记中书写标记
 
@@ -74,11 +74,11 @@
 - `@L1/@L2/@L3` - 任务层级，可选标记，默认层级为 L1
 - `@YYYY-MM-DD` / `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 事项日期（必选），带日期的行会被识别为事项；可附加时间范围表示具体时间段
 - `#已完成` / `#done` / `#已放弃` / `#abandoned` - 事项状态（可选），标记事项为已完成或已放弃状态
-- `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 番茄钟记录（可选），写在事项下方；N 为实际专注分钟数（不含暂停时间），可选
+- `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - 番茄钟记录（可选），写在事项下方；N 为实际专注分钟数（有暂停时可填），可省略
 
 ### 👀 2. 在视图中查看
 
-插件自动解析笔记中的标记，在日历、甘特图、待办事项 中展示：
+插件自动解析笔记中的标记，在日历、甘特图、待办、番茄钟等视图中展示：
 
 ![calendarview.png](https://b3logfile.com/file/2026/03/calendar-view-p1U6g2E.png)
 
@@ -90,7 +90,7 @@
 
 ![itemmodal.png](https://b3logfile.com/file/2026/03/item-modal-EC8678D.png)
 
-点击视图中的任务，可直接跳转到笔记中对应位置。
+点击视图中的任务或事项，可跳转到笔记中对应位置。
 
 ![功能演示](https://b3logfile.com/file/2026/02/op-xYGmIM8.gif)
 
@@ -110,15 +110,15 @@
 
 ## 📚 文档
 
-- [用户指南](docs/user-guide/index.md)
-  - [快速开始](docs/user-guide/quick-start.md)
-  - [数据格式](docs/user-guide/data-format.md)
-  - [视图功能](docs/user-guide/views.md)
-  - [番茄钟](docs/user-guide/pomodoro.md)
-  - [MCP AI 助手](docs/user-guide/mcp.md)
-  - [配置说明](docs/user-guide/configuration.md)
-  - [完整示例](docs/user-guide/examples.md)
-- [参与贡献](CONTRIBUTING.md)
+- [用户指南](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
+  - [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)
+  - [数据格式](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/data-format.md)
+  - [视图功能](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/views.md)
+  - [番茄钟](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/pomodoro.md)
+  - [MCP AI 助手](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/mcp.md)
+  - [配置说明](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/configuration.md)
+  - [完整示例](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/examples.md)
+- [参与贡献](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CONTRIBUTING.md)
 
 ## 💝 支持作者
 
@@ -129,4 +129,4 @@
 
 ## 📌 最近更新
 
-近期版本更新（番茄钟、AI 对话、甘特图与日历增强等）详见 [更新日志](CHANGELOG.md)。
+近期版本更新（番茄钟、AI 对话、甘特图与日历增强等）详见 [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md)。
