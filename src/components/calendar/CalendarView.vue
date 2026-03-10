@@ -661,28 +661,41 @@ defineExpose({
       gap: 4px;
       font-size: 10px;
       opacity: 0.9;
+      min-width: 0;
     }
 
     .fc-event-line2 {
       display: flex;
       align-items: center;
       gap: 2px;
+      min-width: 0;
     }
 
+    /* 时间始终完整展示，不截断 */
     .fc-event-time {
       font-size: 11px;
       opacity: 0.9;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .fc-event-title-text {
       font-size: 12px;
       font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
+    /* 任务名空间不足时可省略号截断 */
     .fc-event-task {
       font-size: 10px;
       color: var(--b3-theme-on-background);
       opacity: 0.75;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
