@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { showItemDetailModal } from '@/utils/dialog';
 import { getBlockIdFromElement, getBlockIdFromRange, findItemByBlockId } from '@/utils/itemBlockUtils';
-import { useProjectStore } from '@/stores';
+import { useProjectStore, usePomodoroStore } from '@/stores';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
@@ -135,17 +135,21 @@ export default class HKWorkPlugin extends Plugin {
 
   /**
    * 检查并恢复进行中的番茄钟
-   * 通过 eventBus 触发，让已加载的组件处理恢复逻辑
+   * 在插件主逻辑中统一执行恢复，避免多组件并发导致重复记录；完成后触发事件供 UI 刷新
    */
   private async checkAndRestorePomodoro() {
     try {
-      // 直接读取存储文件，不通过 store
       const { loadActivePomodoro } = await import('@/utils/pomodoroStorage');
       const data = await loadActivePomodoro(this);
 
       if (data) {
-        console.log('[HKWorkPlugin] 发现进行中的番茄钟，触发恢复事件');
-        // 触发恢复事件，让 PomodoroDock 组件处理
+        console.log('[HKWorkPlugin] 发现进行中的番茄钟，执行恢复');
+        const pinia = getSharedPinia();
+        if (pinia) {
+          const store = usePomodoroStore(pinia);
+          await store.restorePomodoro(this);
+        }
+        // 触发事件供 UI 刷新（如悬浮按钮、Dock 状态）
         eventBus.emit(Events.POMODORO_RESTORE, data);
       } else {
         console.log('[HKWorkPlugin] 没有进行中的番茄钟需要恢复');
