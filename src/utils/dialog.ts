@@ -345,6 +345,9 @@ function createLinkGroup(title: string, links: Array<{ name: string; url: string
   `;
 }
 
+/** 当前打开的事项详情弹框，用于单例守卫（防止重复点击创建多个） */
+let lastEventDetailDialog: Dialog | null = null;
+
 /**
  * 显示日历事件详情弹框
  */
@@ -503,11 +506,23 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
 
   content += '</div>';
 
+  // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
+  if (lastEventDetailDialog) {
+    lastEventDetailDialog.destroy();
+    lastEventDetailDialog = null;
+  }
+
   const dialog = createDialog({
     title: t('todo').itemDetail,
     content,
     width: '520px',
+    destroyCallback: () => {
+      if (lastEventDetailDialog === dialog) {
+        lastEventDetailDialog = null;
+      }
+    },
   });
+  lastEventDetailDialog = dialog;
 
   // 绑定按钮事件
   const element = dialog.element;
