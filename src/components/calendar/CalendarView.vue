@@ -373,10 +373,11 @@ onMounted(async () => {
       },
       navLinkWeekClick: (weekStart: Date) => {
         if (calendarInstance) {
+          const previousView = calendarInstance.view.type;
           calendarInstance.changeView('timeGridWeek');
           calendarInstance.gotoDate(weekStart);
           emit('navigated');
-          emit('weekViewFromClick', 'dayGridMonth');
+          emit('weekViewFromClick', previousView);
         }
       },
       height: '100%',
