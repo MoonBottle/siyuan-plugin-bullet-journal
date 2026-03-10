@@ -141,6 +141,7 @@ export interface CalendarEvent {
       startDateTime?: string;
       endDateTime?: string;
     }>;
+    pomodoros?: PomodoroRecord[];
   };
 }
 
@@ -166,6 +167,7 @@ export interface GanttTaskExtendedProps {
     startDateTime?: string;
     endDateTime?: string;
   }>;
+  pomodoros?: PomodoroRecord[];
 }
 
 // 甘特图数据

@@ -103,6 +103,7 @@
     "copy": "复制",
     "time": "时间",
     "duration": "时长",
+    "focusTotalTime": "总专注时长",
     "viewInCalendar": "在日历中查看",
     "calendar": "日历",
     "migrateToTomorrow": "迁移到明天",
