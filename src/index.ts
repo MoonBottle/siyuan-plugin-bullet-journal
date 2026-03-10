@@ -6,6 +6,9 @@ import { init, destroy } from '@/main';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import { showItemDetailModal } from '@/utils/dialog';
+import { getBlockIdFromElement, getBlockIdFromRange, findItemByBlockId } from '@/utils/itemBlockUtils';
+import { useProjectStore } from '@/stores';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
@@ -116,6 +119,10 @@ export default class HKWorkPlugin extends Plugin {
     console.log('[Task Assistant] Registering open-menu-doctree event listener');
     this.eventBus.on('open-menu-doctree', this.handleDocTreeMenu.bind(this));
 
+    // 监听编辑器内容右键菜单、Ctrl+点击，用于打开事项详情弹框
+    this.eventBus.on('open-menu-content', this.handleOpenMenuContent.bind(this));
+    this.eventBus.on('click-editorcontent', this.handleClickEditorContent.bind(this));
+
     // 初始化悬浮番茄按钮
     this.initFloatingTomatoButton();
 
@@ -157,6 +164,8 @@ export default class HKWorkPlugin extends Plugin {
 
   onunload() {
     this.eventBus.off('open-menu-doctree', this.handleDocTreeMenu.bind(this));
+    this.eventBus.off('open-menu-content', this.handleOpenMenuContent.bind(this));
+    this.eventBus.off('click-editorcontent', this.handleClickEditorContent.bind(this));
     eventBus.clear();
     destroy();
     // 清理悬浮番茄按钮
@@ -398,6 +407,47 @@ export default class HKWorkPlugin extends Plugin {
         }
       }
     });
+  }
+
+  /**
+   * 处理编辑器内容右键菜单 - 在事项块上添加「查看事项详情」「在日历中查看」等选项
+   */
+  private handleOpenMenuContent({ detail }: { detail: { menu: { addItem: (opts: any) => void }; range?: Range } }) {
+    if (!detail?.range) return;
+    const blockId = getBlockIdFromRange(detail.range);
+    if (!blockId) return;
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+    const projectStore = useProjectStore(pinia);
+    const item = findItemByBlockId(blockId, projectStore.items);
+    if (!item) return;
+    detail.menu.addItem({
+      icon: 'iconInfo',
+      label: t('todo').viewDetail,
+      click: () => showItemDetailModal(item)
+    });
+    detail.menu.addItem({
+      icon: 'iconCalendar',
+      label: t('todo').viewInCalendar,
+      click: () => this.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date })
+    });
+  }
+
+  /**
+   * 处理编辑器内容 Ctrl+点击 - 打开事项详情弹框
+   */
+  private handleClickEditorContent({ detail }: { detail: { protyle?: unknown; event?: MouseEvent } }) {
+    if (!detail?.event?.ctrlKey && !detail?.event?.metaKey) return; // Ctrl 或 Cmd
+    const blockId = getBlockIdFromElement(detail.event.target as HTMLElement);
+    if (!blockId) return;
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+    const projectStore = useProjectStore(pinia);
+    const item = findItemByBlockId(blockId, projectStore.items);
+    if (!item) return;
+    detail.event.preventDefault();
+    detail.event.stopPropagation();
+    showItemDetailModal(item);
   }
 
   /**

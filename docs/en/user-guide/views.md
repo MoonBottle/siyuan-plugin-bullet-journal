@@ -115,3 +115,34 @@ All views support bidirectional link functionality:
 - Each task has a unique persistent link
 
 This is implemented through SiYuan's Kramdown format, where each paragraph has a unique `blockId`.
+
+## View Item Details in Document
+
+When editing project documents, you can open the item detail modal directly in the note without switching to the calendar or todo view.
+
+### How to Use
+
+| Method | Action | Description |
+|--------|--------|--------------|
+| **Context Menu** | Right-click on item block → Select menu item | Easy to discover, does not interfere with editing |
+| **Shortcut** | Hold Ctrl (Windows) or Cmd (Mac) and click item content | One-step open item detail, ideal for power users |
+
+**Context menu options**:
+
+- **View Detail**: Open item detail modal
+- **View in Calendar**: Open calendar view and navigate to item date
+
+### Modal Content
+
+The item detail modal displays:
+
+- Project and task
+- Time, duration, total focus time
+- Item status (pending/completed/abandoned/expired)
+- Related links
+- Action buttons: Open document, View in calendar
+
+### Prerequisites
+
+- Document must be within the configured task assistant directory
+- Calendar, Todo, or Project view must have been opened at least once to load plugin data

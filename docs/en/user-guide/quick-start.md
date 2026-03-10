@@ -94,7 +94,7 @@ Once configured, access your tasks through multiple views:
 | **Project List** | Click 📁 folder icon in top bar | Review all tasks by project |
 | **Todo Dock** | Right-click top bar → Closed Panels → Todo Items | Quick access to upcoming tasks |
 
-> 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes.
+> 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes. When editing in notes, right-click an item block and select "View Detail", or Ctrl+click (Cmd+click on Mac) on item content to open the item detail modal.
 
 For more view details, see [Views](./views.md).
 
