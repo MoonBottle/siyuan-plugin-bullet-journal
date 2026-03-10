@@ -8,7 +8,7 @@ Choose one of the following methods:
 
 ### Option A: Install from Marketplace (Recommended)
 
-1. Open SiYuan → Settings → Marketplace → Plugins
+1. Open SiYuan Settings → Marketplace → Plugins
 2. Search for "Task Assistant"
 3. Click Install
 
@@ -41,22 +41,24 @@ Work/
 
 ## Step 3: Write Task Format
 
-The plugin parses Markdown content to identify tasks. A project document consists of three areas:
+The plugin parses Markdown content to identify tasks. A project document consists of project info area, task area, and item area. For example:
 
 ```markdown
-## Project Name
-> Project description
-[Project Link](https://project.url)
+## Website Refactoring Project (Project Name)
 
-### Work Tasks
+> Full revamp of company website to improve UX (Project description)
 
-Task Name #task @L1
-[Task Link](https://task-link)
-Work Item @2024-01-01 10:00:00~11:00:00
-Another Item @2024-01-02
+[Design Mockup](https://figma.com/design/xxx)
 
-Sub-task Name #task @L2
-Sub-task Item @2024-01-03
+Homepage revamp (Task name) #task @L1
+
+[Requirements Doc](https://doc.example.com/homepage)
+
+Define design style (Item content) @2026-03-09
+
+Complete homepage prototype (Completed item) @2026-03-09 10:00:00~12:00:00 #done
+
+Review meeting (Abandoned item) @2026-03-08 14:00:00~15:00:00 #abandoned
 ```
 
 **Key markers explained:**
@@ -64,6 +66,7 @@ Sub-task Item @2024-01-03
 - `@L1`, `@L2`, `@L3` - Task hierarchy levels (L1 = parent, L2/L3 = subtasks)
 - `@YYYY-MM-DD` - Date marker for work items
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
+- `#done` / `#completed`, `#abandoned` - Item status (optional)
 
 > 💡 **Tip**: Tasks themselves don't have dates - dates are assigned to work items under tasks. This allows a task to span multiple days with different items each day.
 
@@ -93,6 +96,7 @@ Once configured, access your tasks through multiple views:
 | **Gantt** | Click 📊 Gantt icon in top bar | Project timeline visualization |
 | **Project List** | Click 📁 folder icon in top bar | Review all tasks by project |
 | **Todo Dock** | Right-click top bar → Closed Panels → Todo Items | Quick access to upcoming tasks |
+| **Pomodoro Focus** | Right-click top bar → Closed Panels → Pomodoro Focus | Pomodoro timer and focus records |
 
 > 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes. When editing in notes, right-click an item block and select "View Detail", or Ctrl+click (Cmd+click on Mac) on item content to open the item detail modal.
 
@@ -101,4 +105,6 @@ For more view details, see [Views](./views.md).
 ## Next Steps
 
 - Learn [Data Format](./data-format.md) in depth to master all marker syntax
+- Use [Pomodoro](./pomodoro.md) for focus timing
+- Configure [MCP AI Assistant](./mcp.md) so AI can query tasks and pomodoro data
 - Check [Complete Example](./examples.md) to see how real projects are organized

@@ -1,6 +1,6 @@
 # Views
 
-The Task Assistant plugin provides four main views to help you view and manage tasks from different perspectives.
+The Task Assistant plugin provides multiple views and panels to help you view and manage tasks from different angles.
 
 ## Calendar View
 
@@ -97,6 +97,25 @@ The dock shows four types of items:
 - View upcoming items
 - Handle expired uncompleted items
 
+## Pomodoro Focus Dock
+
+Run pomodoro timers in the sidebar and view today/total focus stats and focus records.
+
+### Access
+
+Right-click top bar → Closed Panels → Pomodoro Focus
+
+### Display Content
+
+- **When not focusing**: Four stats (today's pomodoros, today's focus duration, total pomodoros, total focus duration) and focus record list grouped by date; click a record to jump to the corresponding block in notes.
+- **When focusing**: Countdown ring, timeline, current item info card, and Pause/Resume/End Focus buttons.
+
+### Relation to Todo
+
+You can click "Start Focus" on an item from the Todo sidebar, calendar, or Gantt, or click the play button in the Pomodoro Focus Dock and select a todo. When focus ends, the record is written under that item block.
+
+See [Pomodoro](./pomodoro.md) for details.
+
 ## View Comparison
 
 | View | Dimension | Use Case |
@@ -105,6 +124,7 @@ The dock shows four types of items:
 | Gantt | Project Progress | Timeline, task dependencies |
 | Project List | Project Organization | Task categorization, project review |
 | Todo Dock | Quick Access | Today's items, expired reminders |
+| Pomodoro Dock | Focus & Records | Pomodoro timer, today/total stats, record list |
 
 ## Bidirectional Links
 

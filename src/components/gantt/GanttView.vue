@@ -423,10 +423,19 @@ onMounted(() => {
   gantt.init(ganttEl.value);
   ganttInitialized = true;
 
+  // 先解绑再绑定，防止 Tab 切换时 destroy 未触发 onUnmounted 导致 handler 累积（点击一次弹多个框）
+  if (onTaskClickId !== null) {
+    gantt.detachEvent(String(onTaskClickId));
+    onTaskClickId = null;
+  }
   onTaskClickId = gantt.attachEvent('onTaskClick', (id) => {
     handleGanttTaskClick(id);
     return true;
   });
+  if (onContextMenuId !== null) {
+    gantt.detachEvent(String(onContextMenuId));
+    onContextMenuId = null;
+  }
   onContextMenuId = gantt.attachEvent('onContextMenu', (taskId, linkId, event) => {
     return handleGanttContextMenu(taskId, linkId, event as MouseEvent);
   });
