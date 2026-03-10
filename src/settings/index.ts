@@ -3,6 +3,7 @@ import type HKWorkPlugin from '@/index';
 import { addDirectoryConfigItem } from './directoryConfig';
 import { addGroupConfigItem } from './groupConfig';
 import { addLunchBreakConfigItems } from './lunchBreakConfig';
+import { addCalendarConfigItem } from './calendarConfig';
 import { addMcpConfigItem } from './mcpConfig';
 import { addAiConfigItem } from './aiConfig';
 import {
@@ -60,7 +61,10 @@ export function createSettingsPanel(plugin: HKWorkPlugin): Setting {
   // 4. MCP 配置
   addMcpConfigItem(setting);
 
-  // 5. 午休时间（用于工时计算，放最后）
+  // 5. 日历默认视图
+  addCalendarConfigItem(setting, settings as SettingsData);
+
+  // 6. 午休时间（用于工时计算，放最后）
   addLunchBreakConfigItems(setting, settings as SettingsData);
 
   return setting;

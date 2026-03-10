@@ -1,6 +1,12 @@
 <template>
   <div class="calendar-view">
     <div ref="calendarEl" class="calendar-container"></div>
+    <div
+      ref="eventTooltipEl"
+      class="calendar-event-tooltip"
+      :class="{ 'calendar-event-tooltip--visible': eventTooltipVisible }"
+      :style="eventTooltipStyle"
+    />
   </div>
 </template>
 
@@ -12,7 +18,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { CalendarEvent } from '@/types/models';
-import { showEventDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { computeTooltipPosition } from '@/utils/tooltipPosition';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
@@ -23,6 +30,7 @@ import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
+import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 
 // 格式化时间显示
 const formatEventTime = (startStr: string, allDay: boolean): string => {
@@ -43,44 +51,80 @@ const renderEventContent = (arg: any) => {
   const date = arg.event.extendedProps?.date;
   const blockId = arg.event.extendedProps?.blockId;
 
-  const getStatusEmoji = (itemStatus: string | undefined, itemDate: string | undefined, itemBlockId: string | undefined): string => {
-    // 如果是专注中的事项，显示番茄图标
+  const getStatusEmoji = (
+    itemStatus: string | undefined,
+    itemDate: string | undefined,
+    itemBlockId: string | undefined,
+    dateRangeStart: string | undefined,
+    dateRangeEnd: string | undefined,
+    originalStartDateTime: string | undefined,
+    originalEndDateTime: string | undefined
+  ): string => {
     if (pomodoroStore.activePomodoro?.blockId && itemBlockId === pomodoroStore.activePomodoro.blockId) {
       return '🍅 ';
     }
-    // 判断是否过期（待办状态且日期早于今天）
-    const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
-    if (isExpired) return '⚠️ ';
     if (itemStatus === 'completed') return '✅ ';
     if (itemStatus === 'abandoned') return '❌ ';
+    const today = dayjs().format('YYYY-MM-DD');
+    if (dateRangeStart && dateRangeEnd) {
+      const rangeStatus = getDateRangeStatus(
+        { date: itemDate ?? '', dateRangeStart, dateRangeEnd } as any,
+        today
+      );
+      if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
+    }
+    if (!dateRangeStart && !dateRangeEnd && itemDate) {
+      const timeStatus = getTimeRangeStatus(
+        { date: itemDate, startDateTime: originalStartDateTime, endDateTime: originalEndDateTime },
+        dayjs().format('YYYY-MM-DD HH:mm:ss')
+      );
+      if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
+    }
+    const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < today;
+    if (isExpired) return '⚠️ ';
     return '⏳ ';
   };
 
-  const statusEmoji = getStatusEmoji(status, date, blockId);
+  const statusEmoji = getStatusEmoji(
+    status,
+    date,
+    blockId,
+    arg.event.extendedProps?.dateRangeStart,
+    arg.event.extendedProps?.dateRangeEnd,
+    arg.event.extendedProps?.originalStartDateTime,
+    arg.event.extendedProps?.originalEndDateTime
+  );
 
   const isItem = arg.event.extendedProps?.item !== undefined;
 
   const container = document.createElement('div');
   container.className = 'fc-event-custom';
 
+  // 第一行：时间 + 任务名（若有）
+  const line1 = document.createElement('div');
+  line1.className = 'fc-event-line1';
   if (startTime) {
     const timeEl = document.createElement('span');
     timeEl.className = 'fc-event-time';
     timeEl.textContent = startTime + ' ';
-    container.appendChild(timeEl);
+    line1.appendChild(timeEl);
   }
-
-  const titleEl = document.createElement('span');
-  titleEl.className = 'fc-event-title-text';
-  titleEl.textContent = statusEmoji + title;
-  container.appendChild(titleEl);
-
   if (isItem && taskName && taskName !== title) {
     const taskEl = document.createElement('span');
     taskEl.className = 'fc-event-task';
-    taskEl.textContent = ' ' + taskName;
-    container.appendChild(taskEl);
+    taskEl.textContent = taskName;
+    line1.appendChild(taskEl);
   }
+  container.appendChild(line1);
+
+  // 第二行：状态emoji + 事项内容/标题
+  const line2 = document.createElement('div');
+  line2.className = 'fc-event-line2';
+  const titleEl = document.createElement('span');
+  titleEl.className = 'fc-event-title-text';
+  titleEl.textContent = statusEmoji + title;
+  line2.appendChild(titleEl);
+  container.appendChild(line2);
 
   return { domNodes: [container] };
 };
@@ -96,9 +140,14 @@ const emit = defineEmits<{
   (e: 'event-resize', event: any): void;
   (e: 'navigated'): void;
   (e: 'dayViewFromClick', previousView: string): void;
+  (e: 'weekViewFromClick', previousView: string): void;
 }>();
 
 const calendarEl = ref<HTMLElement | null>(null);
+const eventTooltipEl = ref<HTMLElement | null>(null);
+const eventTooltipVisible = ref(false);
+const eventTooltipStyle = ref<{ left?: string; top?: string }>({});
+let eventTooltipTimer: ReturnType<typeof setTimeout> | null = null;
 let calendarInstance: Calendar | null = null;
 let resizeObserver: ResizeObserver | null = null;
 /** 实例创建前收到的待跳转日期，onMounted 完成后消费 */
@@ -112,6 +161,45 @@ const plugin = usePlugin();
 // 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
   return t('statusTag')[status] || '';
+};
+
+// 悬浮预览：显示
+const showEventTooltip = (info: any) => {
+  if (eventTooltipTimer) {
+    clearTimeout(eventTooltipTimer);
+    eventTooltipTimer = null;
+  }
+  eventTooltipTimer = setTimeout(() => {
+    eventTooltipTimer = null;
+    const eventData: CalendarEvent = {
+      id: info.event.id,
+      title: info.event.title,
+      start: info.event.startStr,
+      end: info.event.endStr,
+      allDay: info.event.allDay,
+      extendedProps: info.event.extendedProps
+    };
+    const html = buildEventDetailContent(eventData, { preview: true });
+    if (eventTooltipEl.value) {
+      eventTooltipEl.value.innerHTML = html;
+      nextTick(() => {
+        if (eventTooltipEl.value) {
+          const rect = info.el.getBoundingClientRect();
+          eventTooltipStyle.value = computeTooltipPosition(rect, eventTooltipEl.value, 4);
+          eventTooltipVisible.value = true;
+        }
+      });
+    }
+  }, 300);
+};
+
+// 悬浮预览：隐藏
+const hideEventTooltip = () => {
+  if (eventTooltipTimer) {
+    clearTimeout(eventTooltipTimer);
+    eventTooltipTimer = null;
+  }
+  eventTooltipVisible.value = false;
 };
 
 // 打开番茄钟弹框
@@ -278,7 +366,33 @@ onMounted(async () => {
       headerToolbar: false, // 禁用默认工具栏，使用自定义工具栏
       eventContent: renderEventContent, // 自定义事件渲染
       locale: getCurrentLocale().startsWith('zh') ? 'zh-cn' : 'en',
+      allDayText: t('todo').allDay,
       firstDay: 1,
+      weekNumbers: true,
+      weekNumberCalculation: 'ISO',
+      weekNumberContent: (arg: { num: number }) => {
+        const template = t('calendar').weekNumber ?? 'W{num}';
+        return template.replace('{num}', String(arg.num));
+      },
+      navLinks: true,
+      navLinkHint: (dateText: string, date: Date) => {
+        const template = (t('calendar') as any).navLinkHint ?? 'Go to $0';
+        // FullCalendar 的 dateText 对周数固定为英文 "Week N"，需用 locale 的周数格式替换
+        const weekMatch = /week\s+(\d+)/i.exec(dateText);
+        const displayText = weekMatch
+          ? ((t('calendar') as any).weekNumber ?? 'W{num}').replace('{num}', weekMatch[1])
+          : dateText;
+        return template.replace('$0', displayText);
+      },
+      navLinkWeekClick: (weekStart: Date) => {
+        if (calendarInstance) {
+          const previousView = calendarInstance.view.type;
+          calendarInstance.changeView('timeGridWeek');
+          calendarInstance.gotoDate(weekStart);
+          emit('navigated');
+          emit('weekViewFromClick', previousView);
+        }
+      },
       height: '100%',
       eventDisplay: 'block',
       editable: true,
@@ -301,13 +415,15 @@ onMounted(async () => {
         showEventDetailModal(eventData);
       },
 
-      // 右键菜单 - 通过 eventDidMount 绑定
+      // 右键菜单、悬浮预览 - 通过 eventDidMount 绑定
       eventDidMount: (info) => {
         info.el.addEventListener('contextmenu', (e: MouseEvent) => {
           e.preventDefault();
           e.stopPropagation();
           handleCalendarEventContextMenu(info, e);
         }, true);
+        info.el.addEventListener('mouseenter', () => showEventTooltip(info));
+        info.el.addEventListener('mouseleave', () => hideEventTooltip());
       },
 
       // 拖拽事件
@@ -473,6 +589,43 @@ defineExpose({
   height: 100%;
   width: 100%;
 }
+
+.calendar-event-tooltip {
+  position: fixed;
+  z-index: 10000;
+  max-width: 440px;
+  max-height: 400px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+
+  &.calendar-event-tooltip--visible {
+    opacity: 1;
+  }
+
+  :deep(.sy-dialog-content) {
+    padding: 0;
+  }
+
+  :deep(.sy-dialog-cards) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  :deep(.sy-dialog-card) {
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--b3-border-color);
+  }
+}
 </style>
 
 <style lang="scss">
@@ -523,26 +676,57 @@ defineExpose({
     }
   }
 
-  /* 自定义事件内容样式 */
+  /* 自定义事件内容样式 - 两行布局 */
   .fc-event-custom {
     padding: 1px 2px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-height: 2.6em;
     line-height: 1.3;
 
+    .fc-event-line1 {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      opacity: 0.9;
+      min-width: 0;
+    }
+
+    .fc-event-line2 {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    /* 时间始终完整展示，不截断 */
     .fc-event-time {
       font-size: 11px;
       opacity: 0.9;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .fc-event-title-text {
       font-size: 12px;
       font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
+    /* 任务名空间不足时可省略号截断 */
     .fc-event-task {
       font-size: 10px;
       color: var(--b3-theme-on-background);
       opacity: 0.75;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -575,6 +759,12 @@ defineExpose({
   .fc-popover-header {
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-surface);
+  }
+
+  .fc-week-number {
+    color: var(--b3-theme-on-background);
+    background: var(--b3-theme-surface);
+    border-color: var(--b3-border-color);
   }
 }
 </style>

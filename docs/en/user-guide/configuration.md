@@ -66,6 +66,18 @@ Lunch: 12:00 ~ 13:00
 Actual work hours: 4 hours (not 5 hours)
 ```
 
+## MCP Configuration
+
+Used to let MCP-compatible AI assistants (e.g. Trae, Cursor) access task and pomodoro data.
+
+### Configuration steps
+
+1. Open SiYuan Settings → Plugins → Task Assistant, click "Copy MCP Config" in the "MCP Configuration" section
+2. Add this server in your AI client's MCP settings and replace `SIYUAN_TOKEN` in the config with your SiYuan API Token (SiYuan → Settings → About → API Token)
+3. For multiple workspaces, you can change `SIYUAN_API_URL` if needed (default `http://127.0.0.1:6806`)
+
+For detailed steps and tool descriptions, see [MCP AI Assistant](./mcp.md).
+
 ## FAQ
 
 ### Q: Why can't I see task data?

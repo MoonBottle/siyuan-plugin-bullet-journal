@@ -170,6 +170,9 @@ DataConverter.projectsToGanttTasks(
 
 - 日历/甘特图/项目列表点击任务 → 打开思源笔记对应位置
 - 待办 Dock 点击「在日历中打开」→ 日历视图跳转到对应日期
+- 文档内右键事项块 → 选择「查看详情」→ 打开事项详情弹框
+- 文档内右键事项块 → 选择「在日历中查看」→ 打开日历视图并定位到事项日期
+- 文档内 Ctrl+点击（Mac: Cmd+点击）事项内容 → 直接打开事项详情弹框
 
 ### 5.3 刷新机制
 
@@ -253,3 +256,18 @@ src/
 - **查看事项**: 点击任务名称展开事项列表
 - **状态识别**: 通过 emoji 识别事项状态
 - **跳转笔记**: 点击任意项目/任务/事项跳转
+
+### 7.4 文档内查看事项详情
+
+在编辑项目文档时，可直接在笔记中打开事项详情弹框：
+
+- **右键菜单**: 在事项块上右键 → 可选「查看详情」「在日历中查看」
+- **快捷键**: 按住 Ctrl（Windows）或 Cmd（Mac）点击事项内容 → 打开事项详情弹框
+
+**实现方案**：
+
+- 监听思源事件总线 `open-menu-content`（右键菜单）、`click-editorcontent`（内容点击）
+- 从 `range.startContainer` 或 `event.target` 向上查找 `data-node-id` 获取 blockId
+- 通过 blockId 在 projectStore.items 中匹配 Item
+- 复用 `showItemDetailModal(item)` 展示弹框
+- 工具模块：`src/utils/itemBlockUtils.ts`（getBlockIdFromElement、getBlockIdFromRange、findItemByBlockId）

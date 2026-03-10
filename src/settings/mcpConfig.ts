@@ -24,11 +24,14 @@ export function addMcpConfigItem(setting: Setting): void {
           return;
         }
 
+        const base = workspacePath.replace(/\\/g, '/').replace(/\/+$/, '');
+        const mcpPath = `${base}/data/plugins/siyuan-plugin-bullet-journal/mcp-server.js`;
+
         const mcpConfig = {
           mcpServers: {
-            'sy-bullet-journal-assistant': {
+            'sy-task-assistant': {
               command: 'node',
-              args: [`${workspacePath}/data/plugins/siyuan-plugin-bullet-journal/mcp-server.js`],
+              args: [mcpPath],
               env: {
                 SIYUAN_TOKEN: '{请从思源 设置→关于 获取 API Token}',
                 SIYUAN_API_URL: 'http://127.0.0.1:6806'

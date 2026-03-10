@@ -80,23 +80,30 @@ export const formatDateTime = (dateStr: string, isAllDay?: boolean): string => {
 };
 
 /**
+ * 从日期时间字符串提取 HH:mm 部分
+ * 支持 "YYYY-MM-DD HH:mm:ss" 与 ISO "YYYY-MM-DDTHH:mm:ss" 格式
+ */
+function extractTimePart(dateTimeStr: string): string {
+  if (!dateTimeStr) return '';
+  if (dateTimeStr.includes(' ')) return dateTimeStr.split(' ')[1].substring(0, 5);
+  if (dateTimeStr.includes('T')) return dateTimeStr.split('T')[1].substring(0, 5);
+  return '';
+}
+
+/**
  * 格式化时间范围
  */
 export const formatTimeRange = (startDateTime?: string, endDateTime?: string): string => {
   if (startDateTime && endDateTime) {
-    const startTime = startDateTime.includes(' ')
-      ? startDateTime.split(' ')[1].substring(0, 5)
-      : '';
-    const endTime = endDateTime.includes(' ')
-      ? endDateTime.split(' ')[1].substring(0, 5)
-      : '';
+    const startTime = extractTimePart(startDateTime);
+    const endTime = extractTimePart(endDateTime);
     if (startTime && endTime) {
       return `${startTime}~${endTime}`;
     }
     return startTime || endTime;
   }
-  if (startDateTime && startDateTime.includes(' ')) {
-    return startDateTime.split(' ')[1].substring(0, 5);
+  if (startDateTime) {
+    return extractTimePart(startDateTime);
   }
   return '';
 };

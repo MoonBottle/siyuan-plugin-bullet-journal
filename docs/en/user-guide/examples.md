@@ -134,7 +134,7 @@ Project list groups by project:
 
 ### Complete Item
 
-When an item is complete, add the `#done` tag:
+When an item is complete, add the `#done` or `#completed` tag:
 
 ```markdown
 Phone login development @2026-02-20 #done

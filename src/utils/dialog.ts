@@ -5,7 +5,8 @@
 import { Dialog } from 'siyuan';
 import type { Item, CalendarEvent, PomodoroRecord } from '@/types/models';
 import { t } from '@/i18n';
-import { formatDateTime, formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
+import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
+import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
@@ -183,17 +184,30 @@ export function showItemDetailModal(item: Item): Dialog {
   const dateLabel = formatDateLabel(item.date, t('todo').today, t('todo').tomorrow);
   const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
 
-  // 判断是否过期（待办状态且日期早于今天）
-  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date < dayjs().format('YYYY-MM-DD');
-
-  // 事项状态标签
+  // 事项状态标签（多日期用 getDateRangeStatus，单日用原逻辑）
+  const todayStr = dayjs().format('YYYY-MM-DD');
   const statusMap: Record<string, { text: string; class: string }> = {
     'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
     'completed': { text: t('todo').completed, class: 'completed' },
     'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
     'expired': { text: t('todo').expired, class: 'expired' }
   };
-  const statusKey = isExpired ? 'expired' : item.status;
+  let statusKey: string;
+  if (item.status === 'completed' || item.status === 'abandoned') {
+    statusKey = item.status;
+  } else if (item.dateRangeStart && item.dateRangeEnd) {
+    const rangeStatus = getDateRangeStatus(item, todayStr);
+    statusKey = rangeStatus ?? (getEffectiveDate(item) < todayStr ? 'expired' : 'pending');
+  } else {
+    const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
+    if (timeStatus) {
+      statusKey = timeStatus;
+    } else {
+      const effectiveDate = getEffectiveDate(item);
+      statusKey = effectiveDate < todayStr ? 'expired' : item.status;
+    }
+  }
   const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 
@@ -345,25 +359,35 @@ function createLinkGroup(title: string, links: Array<{ name: string; url: string
   `;
 }
 
+/** 当前打开的事项详情弹框，用于单例守卫（防止重复点击创建多个） */
+let lastEventDetailDialog: Dialog | null = null;
+
 /**
- * 显示日历事件详情弹框
+ * 构建日历事件详情内容 HTML（供弹框与悬浮预览复用）
+ * @param event 日历事件
+ * @param options.preview 为 true 时去掉复制按钮与底部操作按钮，仅保留纯展示内容
  */
-export function showEventDetailModal(event: CalendarEvent): Dialog {
+export function buildEventDetailContent(
+  event: CalendarEvent,
+  options?: { preview?: boolean }
+): string {
+  const preview = options?.preview ?? false;
   const settingsStore = useSettingsStore();
   const props = event.extendedProps;
 
-  // 格式化时间
   const start = event.start;
   const end = event.end;
   const allDay = event.allDay;
-  let timeDisplay = '';
-  if (end && start !== end) {
-    timeDisplay = `${formatDateTime(start, allDay)} - ${formatDateTime(end, allDay)}`;
-  } else {
-    timeDisplay = formatDateTime(start, allDay);
-  }
+  const rawDate = props.date
+    || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
+    || (start ? dayjs(start).format('YYYY-MM-DD') : '');
+  const dateLabel = formatDateLabel(rawDate || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow);
+  // 优先使用 originalStartDateTime/originalEndDateTime（日历事件可能被转为 ISO，原格式更可靠）
+  const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''));
+  const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''));
+  const timeRange = formatTimeRange(startForTime, endForTime);
+  const timeDisplay = `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;
 
-  // 时长计算
   let duration = '';
   if (!allDay && start && end) {
     duration = calculateDuration(
@@ -374,11 +398,8 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     );
   }
 
-  // 项目链接和任务链接
   const projectLinks = props.projectLinks || [];
   const taskLinks = props.taskLinks || [];
-
-  // 构建链接 HTML
   const projectLinksHtml = projectLinks.map(link =>
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
@@ -386,25 +407,25 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
 
-  // 构建内容 - 垂直卡片布局
+  const copyBtn = (text: string) =>
+    preview ? '' : `<span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${text.replace(/"/g, '&quot;')}" aria-label="${t('common').copy}">${copyIconSvg}</span>`;
+
   let content = '<div class="sy-dialog-content">';
   content += '<div class="sy-dialog-cards">';
 
-  // 项目卡片
   if (props.project) {
     content += `
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">${t('todo').project}</div>
         <div class="sy-dialog-card-content">
           <span>${props.project}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.project}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+          ${copyBtn(props.project)}
         </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
     `;
   }
 
-  // 任务卡片
   if (props.task) {
     const levelHtml = props.level
       ? `<span class="task-level level-${props.level.toLowerCase()}">${props.level}</span>`
@@ -417,37 +438,55 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
         </div>
         <div class="sy-dialog-card-content">
           <span>${props.task}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.task}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+          ${copyBtn(props.task)}
         </div>
         ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
       </div>
     `;
   }
 
-  // 事项卡片
-  // 判断是否过期（待办状态且日期早于今天）
   const itemStatus = props.itemStatus || 'pending';
   const itemDate = props.date;
-  const isExpired = itemStatus !== 'completed' && itemStatus !== 'abandoned' && itemDate && itemDate < dayjs().format('YYYY-MM-DD');
-
-  // 事项状态标签
+  const todayStr = dayjs().format('YYYY-MM-DD');
   const statusMap: Record<string, { text: string; class: string }> = {
     'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
     'completed': { text: t('todo').completed, class: 'completed' },
     'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
     'expired': { text: t('todo').expired, class: 'expired' }
   };
-  const statusKey = isExpired ? 'expired' : itemStatus;
+  let statusKey: string;
+  if (itemStatus === 'completed' || itemStatus === 'abandoned') {
+    statusKey = itemStatus;
+  } else if (props.dateRangeStart && props.dateRangeEnd) {
+    const rangeStatus = getDateRangeStatus(
+      { dateRangeStart: props.dateRangeStart, dateRangeEnd: props.dateRangeEnd, date: itemDate } as Item,
+      todayStr
+    );
+    const effectiveDate = props.dateRangeEnd ?? itemDate;
+    statusKey = rangeStatus ?? (effectiveDate && effectiveDate < todayStr ? 'expired' : 'pending');
+  } else if (itemDate) {
+    const timeStatus = getTimeRangeStatus(
+      { date: itemDate, startDateTime: props.originalStartDateTime, endDateTime: props.originalEndDateTime },
+      dayjs().format('YYYY-MM-DD HH:mm:ss')
+    );
+    if (timeStatus) {
+      statusKey = timeStatus;
+    } else {
+      const isExpired = itemDate < todayStr;
+      statusKey = isExpired ? 'expired' : itemStatus;
+    }
+  } else {
+    statusKey = itemStatus;
+  }
   const statusInfo = statusMap[statusKey] || statusMap['pending'];
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 
-  // 事项链接
   const itemLinks = props.itemLinks || [];
   const itemLinksHtml = itemLinks.map(link =>
     `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
   ).join('');
 
-  // 专注总时间
   const totalFocusMinutes = calculateTotalFocusMinutes(props.pomodoros);
   const focusTotalTimeDisplay = totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
 
@@ -467,14 +506,14 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
             <span class="sy-dialog-duration-text">
               <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
               ${duration}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+              ${copyBtn(duration)}
             </span>
           ` : ''}
           ${focusTotalTimeDisplay ? `
             <span class="sy-dialog-duration-text">
               <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').focusTotalTime}">🍅</span>
               ${focusTotalTimeDisplay}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${focusTotalTimeDisplay}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+              ${copyBtn(focusTotalTimeDisplay)}
             </span>
           ` : ''}
         </div>
@@ -482,32 +521,61 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       ${props.item ? `
         <div class="sy-dialog-item-content">
           <span>${props.item}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${props.item}" aria-label="${t('common').copy}">${copyIconSvg}</span>
+          ${copyBtn(props.item)}
         </div>
       ` : ''}
       ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
     </div>
   `;
 
-  content += '</div>'; // 结束 cards
+  content += '</div>';
 
-  // 按钮
-  content += `
+  if (!preview) {
+    content += `
     <div class="sy-dialog-footer">
       ${createButtons([
         { text: t('common').cancel, class: 'b3-button--outline', action: 'close' },
+        { text: t('todo').viewInCalendar, class: 'b3-button--outline', action: 'open-calendar' },
         { text: t('todo').openDoc, class: 'b3-button--text', action: 'open-doc' },
       ])}
     </div>
   `;
+  }
 
   content += '</div>';
+  return content;
+}
+
+/**
+ * 显示日历事件详情弹框
+ */
+export function showEventDetailModal(event: CalendarEvent): Dialog {
+  const plugin = usePlugin();
+  const props = event.extendedProps;
+  const rawDate = props.date
+    || (typeof event.start === 'string' ? (event.start.includes('T') ? event.start.split('T')[0] : event.start.split(' ')[0]) : '')
+    || (event.start ? dayjs(event.start).format('YYYY-MM-DD') : '');
+  const dateStr = rawDate || dayjs().format('YYYY-MM-DD');
+
+  const content = buildEventDetailContent(event, { preview: false });
+
+  // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
+  if (lastEventDetailDialog) {
+    lastEventDetailDialog.destroy();
+    lastEventDetailDialog = null;
+  }
 
   const dialog = createDialog({
     title: t('todo').itemDetail,
     content,
     width: '520px',
+    destroyCallback: () => {
+      if (lastEventDetailDialog === dialog) {
+        lastEventDetailDialog = null;
+      }
+    },
   });
+  lastEventDetailDialog = dialog;
 
   // 绑定按钮事件
   const element = dialog.element;
@@ -517,6 +585,11 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
 
       if (action === 'open-doc') {
         await openDocumentAtLine(props.docId, props.lineNumber, props.blockId);
+        dialog.destroy();
+      } else if (action === 'open-calendar') {
+        if (plugin && (plugin as any).openCustomTab) {
+          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
+        }
         dialog.destroy();
       } else if (action === 'close') {
         dialog.destroy();

@@ -46,7 +46,9 @@
     "month": "Month",
     "week": "Week",
     "day": "Day",
-    "list": "List"
+    "list": "List",
+    "weekNumber": "W{num}",
+    "navLinkHint": "Go to $0"
   },
   "gantt": {
     "title": "Gantt Chart",
@@ -82,6 +84,7 @@
     "allDay": "All Day",
     "noTodos": "No pending items",
     "expired": "Expired",
+    "inProgress": "In Progress",
     "completed": "Completed",
     "abandoned": "Abandoned",
     "future": "Future",
@@ -93,7 +96,7 @@
     "chooseMigrateDate": "Choose migrate date",
     "abandon": "Abandon",
     "openDoc": "Open Document",
-    "viewDetail": "View Detail",
+    "viewDetail": "View Item Detail",
     "viewCalendar": "View Calendar",
     "detail": "Detail",
     "itemDetail": "Item Detail",
@@ -115,6 +118,10 @@
   },
   "settings": {
     "title": "Settings",
+    "calendar": {
+      "defaultViewTitle": "Calendar Default View",
+      "defaultViewDesc": "Default view when opening the calendar"
+    },
     "lunchBreak": {
       "title": "Lunch Break",
       "description": "Set lunch break time for work hour calculation",

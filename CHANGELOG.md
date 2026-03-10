@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.9.1] - 2026-03-10
+
+### Features
+
+- **事项状态**：新增「进行中」状态，支持任务状态追踪，甘特图、详情弹框、样式已适配
+- **番茄钟 AI 工具**：MCP/AI 助手新增 `get_pomodoro_stats`、`get_pomodoro_records` 工具，`filter_items` 输出增加 `pomodoros` 字段
+- **日历增强**：
+  - 默认视图配置：支持配置日历默认显示视图
+  - 钻取导航：支持日视图与周视图切换及返回
+  - 周数显示与导航链接提示
+  - 全天事项文本本地化
+- **甘特图增强**：优化任务点击处理、事件工具提示与日历样式
+- **事项详情**：弹框改为单例模式，优化日期时间格式化
+- **多日期与状态**：多日期事项处理增强，状态 emoji 显示优化
+- **待办侧栏**：优化布局与事项显示
+- **MCP 服务器**：更新助手名称与配置
+
+### Styles
+
+- 甘特图工具提示 padding 与样式一致性
+- 日历视图与甘特图组件的 padding、gap 调整
+- 日历事件显示 CSS 优化
+
+### Refactors
+
+- 优化待办侧栏布局与事项显示
+
+### Docs
+
+- 用户指南、README 等文档更新，补充新功能与配置说明
+- 中文 README 链接更新与内容修正
+
 ## [0.9.0] - 2026-03-09
 
 ### Features
@@ -12,6 +44,10 @@
   - 待办事项专注：为待办事项添加「专注」按钮，一键开始番茄钟
   - 日历番茄钟状态：日历视图中显示当日番茄钟完成状态
   - 通知支持：专注完成时发送系统通知提醒
+
+![番茄钟专注中](https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png)
+
+![番茄钟 Dock](https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png)
 
 - **甘特图增强**：
   - 任务文字显示：任务条上直接显示任务名称，悬停显示完整信息
@@ -47,6 +83,10 @@
   - 通过对话方式查询项目、任务和事项
   - 支持生成日报并一键插入笔记
   - 多对话管理：支持创建多个独立对话场景，对话历史自动保存
+
+![AI 对话演示](https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif)
+
+![AI 对话面板](https://b3logfile.com/file/2026/03/image-TzlXbcv.png)
 
 ## [0.7.2] - 2026-03-07
 
@@ -92,7 +132,7 @@
 
 ### Features
 
-- **MCP 服务器**：内置 `sy-bullet-journal-assistant`，提供 `list_groups`、`list_projects`、`filter_items` 三个工具，供 Cursor、Claude 等 AI 助手调用思源子弹笔记数据
+- **MCP 服务器**：内置 `sy-task-assistant`，提供 `list_groups`、`list_projects`、`filter_items` 三个工具，供 Cursor、Claude 等 AI 助手调用思源任务助手数据
 - 插件设置中「复制 MCP 配置」生成的 JSON 包含 `SIYUAN_TOKEN` 与 `SIYUAN_API_URL`（默认 `http://127.0.0.1:6806`）
 
 ### Docs

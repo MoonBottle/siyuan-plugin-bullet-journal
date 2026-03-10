@@ -152,6 +152,11 @@
       color: var(--b3-theme-on-surface);
     }
 
+    &.in-progress {
+      background: rgba(33, 150, 243, 0.15);
+      color: #2196f3;
+    }
+
     &.completed {
       background: rgba(76, 175, 80, 0.15);
       color: #4caf50;
@@ -508,4 +513,9 @@
     font-family: monospace;
     line-height: 1;
   }
+}
+
+/* 甘特图 hover 弹框：覆盖 sy-dialog-content 的 padding，避免与容器 padding 叠加 */
+.gantt-event-tooltip .sy-dialog-content {
+  padding: 0 !important;
 }

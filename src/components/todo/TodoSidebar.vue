@@ -28,9 +28,13 @@
               <div class="item-header">
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
-                  <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
-                <div class="item-actions">
+                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+              </div>
+              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-footer">
+                <div class="item-actions-hover">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     :aria-label="t('todo').complete"
@@ -60,6 +64,8 @@
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
+                </div>
+                <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -68,8 +74,6 @@
                   </span>
                 </div>
               </div>
-              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -87,16 +91,20 @@
             <div
               v-for="item in todayItems"
               :key="item.id"
-              class="todo-item"
+              class="todo-item status-today"
               @click="openItem(item)"
               @contextmenu.prevent="handleContextMenu($event, item)"
             >
               <div class="item-header">
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
-                  <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
-                <div class="item-actions">
+                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+              </div>
+              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-footer">
+                <div class="item-actions-hover">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     :aria-label="t('todo').complete"
@@ -126,6 +134,8 @@
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
+                </div>
+                <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -134,8 +144,6 @@
                   </span>
                 </div>
               </div>
-              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -153,16 +161,20 @@
             <div
               v-for="item in tomorrowItems"
               :key="item.id"
-              class="todo-item"
+              class="todo-item status-tomorrow"
               @click="openItem(item)"
               @contextmenu.prevent="handleContextMenu($event, item)"
             >
               <div class="item-header">
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
-                  <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
-                <div class="item-actions">
+                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+              </div>
+              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-footer">
+                <div class="item-actions-hover">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
                     :aria-label="t('todo').complete"
@@ -192,6 +204,8 @@
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
+                </div>
+                <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -200,8 +214,6 @@
                   </span>
                 </div>
               </div>
-              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -226,16 +238,20 @@
                 <div
                   v-for="item in groupedFutureItems.get(date)"
                   :key="item.id"
-                  class="todo-item"
+                  class="todo-item status-future"
                   @click="openItem(item)"
                   @contextmenu.prevent="handleContextMenu($event, item)"
                 >
                   <div class="item-header">
                     <div class="item-header-left">
                       <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
-                      <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                     </div>
-                    <div class="item-actions">
+                    <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                  </div>
+                  <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
+                  <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+                  <div class="item-footer">
+                    <div class="item-actions-hover">
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
                         :aria-label="t('todo').complete"
@@ -265,6 +281,8 @@
                       >
                         <svg><use xlink:href="#iconCloseRound"></use></svg>
                       </span>
+                    </div>
+                    <div class="item-actions-fixed">
                       <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                         <svg><use xlink:href="#iconInfo"></use></svg>
                       </span>
@@ -273,8 +291,6 @@
                       </span>
                     </div>
                   </div>
-                  <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-                  <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
                 </div>
               </div>
             </div>
@@ -301,9 +317,13 @@
               <div class="item-header">
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
-                  <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
-                <div class="item-actions">
+                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+              </div>
+              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-footer">
+                <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -312,8 +332,6 @@
                   </span>
                 </div>
               </div>
-              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -338,9 +356,13 @@
               <div class="item-header">
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
-                  <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
                 </div>
-                <div class="item-actions">
+                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+              </div>
+              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-footer">
+                <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -349,8 +371,6 @@
                   </span>
                 </div>
               </div>
-              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
             </div>
           </div>
         </div>
@@ -375,20 +395,26 @@ import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
+import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
-  // 如果是专注中的事项，显示番茄图标（用 blockId 匹配）
-  console.log('[getStatusEmoji] item.blockId:', item.blockId, 'activePomodoro:', JSON.stringify(pomodoroStore.activePomodoro));
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    console.log('[getStatusEmoji] 匹配成功，返回🍅');
     return '🍅 ';
   }
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
-  if (isExpired) return '⚠️ ';
   if (item.status === 'completed') return '✅ ';
   if (item.status === 'abandoned') return '❌ ';
+  const todayStr = dayjs().format('YYYY-MM-DD');
+  if (item.dateRangeStart && item.dateRangeEnd) {
+    const rangeStatus = getDateRangeStatus(item, todayStr);
+    if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
+  }
+  if (!item.dateRangeStart && !item.dateRangeEnd && item.date) {
+    const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
+    if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
+  }
+  const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
+  if (isExpired) return '⚠️ ';
   return '⏳ ';
 };
 
@@ -452,7 +478,7 @@ const expiredItems = computed(() => projectStore.getExpiredItems(props.groupId))
 // 当前分组下的未来待办（今日及以后，未完成未放弃）
 const futureItemsForGroup = computed(() => projectStore.getFutureItems(props.groupId));
 
-// 今日待办事项
+// 今日待办事项（仅代表项日期为今天的事项；多日期事项若代表项为 11 号则归入明天）
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
   return futureItemsForGroup.value.filter(item => item.date === todayStr);
@@ -464,7 +490,7 @@ const tomorrowItems = computed(() => {
   return futureItemsForGroup.value.filter(item => item.date === tomorrowStr);
 });
 
-// 未来待办事项（不包括今天和明天）
+// 未来待办事项（不包括今天和明天；分组仅按代表项 date）
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
@@ -806,7 +832,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 8px 12px 3px 12px;
   background: var(--b3-theme-background);
   border-radius: var(--b3-border-radius);
   cursor: pointer;
@@ -821,6 +847,7 @@ onUnmounted(() => {
 
   &.status-completed {
     opacity: 0.6;
+    border-left: 3px solid var(--b3-theme-success);
 
     .item-content {
       text-decoration: line-through;
@@ -829,6 +856,7 @@ onUnmounted(() => {
 
   &.status-abandoned {
     opacity: 0.5;
+    border-left: 3px solid var(--b3-theme-on-surface);
 
     .item-content {
       text-decoration: line-through;
@@ -843,6 +871,12 @@ onUnmounted(() => {
       color: #f44336;
     }
   }
+
+  &.status-today,
+  &.status-tomorrow,
+  &.status-future {
+    border-left: 3px solid var(--b3-theme-primary);
+  }
 }
 
 .item-header {
@@ -851,42 +885,47 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  position: relative;
+  margin: -8px -12px 0 -12px;
+  padding: 6px 12px;
+  font-size: 12px;
+  background: var(--b3-theme-surface-lighter);
+  border-bottom: 1px solid var(--b3-border-color);
+  border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;
 }
 
 .item-header-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
   min-width: 0;
 }
 
 .item-time {
   color: var(--b3-theme-on-surface);
   opacity: 0.7;
-  font-size: 12px;
   flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .item-project {
-  font-size: 12px;
   color: var(--b3-theme-on-surface);
   opacity: 0.6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
+  max-width: 50%;
 }
 
 .item-task {
   width: 100%;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--b3-theme-on-surface);
   opacity: 0.5;
   word-break: break-all;
   line-height: 1.3;
+  margin: 2px 0;
 }
 
 .item-content {
@@ -898,16 +937,21 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-.item-actions {
+.item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+  margin-top: 2px;
+  border-top: 1px solid var(--b3-border-color);
+}
+
+.item-actions-hover {
   display: flex;
   gap: 4px;
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
   opacity: 0;
   transition: opacity 0.2s;
-  flex-shrink: 0;
 
   .todo-item:hover & {
     opacity: 1;
@@ -916,7 +960,23 @@ onUnmounted(() => {
   .block__icon {
     opacity: 1;
     cursor: pointer;
-    
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+.item-actions-fixed {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+
+  .block__icon {
+    opacity: 1;
+    cursor: pointer;
+
     svg {
       width: 14px;
       height: 14px;

@@ -18,6 +18,7 @@ export interface SettingsData {
   directories: ProjectDirectory[];
   groups: ProjectGroup[];
   defaultGroup: string;
+  calendarDefaultView: string;
   lunchBreakStart: string;
   lunchBreakEnd: string;
   todoDock: TodoDockSettings;
@@ -31,6 +32,7 @@ export const defaultSettings: SettingsData = {
   directories: [],
   groups: [],
   defaultGroup: '',
+  calendarDefaultView: 'timeGridDay',
   lunchBreakStart: '12:00',
   lunchBreakEnd: '13:00',
   todoDock: {

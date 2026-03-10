@@ -93,6 +93,7 @@ src/
 │   ├── dateUtils.ts
 │   ├── dataConverter.ts
 │   ├── eventBus.ts
+│   ├── itemBlockUtils.ts # 事项块工具（blockId 解析、Item 匹配）
 │   ├── notification.ts
 │   ├── pomodoroStorage.ts
 │   └── ...
