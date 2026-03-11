@@ -237,7 +237,17 @@ function updateChart() {
           titleFont: { size: 13 },
           bodyFont: { size: 13 },
           callbacks: {
-            title: (items) => items[0]?.label || '',
+            title: (items) => {
+              const item = items[0];
+              if (!item) return '';
+              if (dimension.value === 'week') {
+                const { startDate } = rangeDates.value;
+                const date = dayjs(startDate).add(item.dataIndex, 'day');
+                const dows = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+                return `${dows[item.dataIndex]} ${date.format('YYYY-MM-DD')}`;
+              }
+              return item.label || '';
+            },
             label: (item) => `${item.dataset.label}: ${item.parsed.y}m`
           }
         }
