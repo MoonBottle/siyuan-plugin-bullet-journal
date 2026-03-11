@@ -238,7 +238,7 @@ function nextWeek() {
 .timeline-container {
   display: flex;
   flex-direction: column;
-  height: 180px;
+  height: 200px;
   position: relative;
 }
 
@@ -246,7 +246,7 @@ function nextWeek() {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 156px;
+  height: 176px;
   position: absolute;
   left: 0;
   top: 1px;
