@@ -27,6 +27,7 @@
     </div>
     <div class="fn__flex-1 fn__flex-column pomodoro-dock-body">
       <PomodoroActiveTimer v-if="pomodoroStore.isFocusing" />
+      <PomodoroBreakTimer v-else-if="pomodoroStore.isBreakActive" />
       <template v-else>
         <PomodoroStats />
         <PomodoroRecordList />
@@ -45,6 +46,7 @@ import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import PomodoroStats from '@/components/pomodoro/PomodoroStats.vue';
 import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
 import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
+import PomodoroBreakTimer from '@/components/pomodoro/PomodoroBreakTimer.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';

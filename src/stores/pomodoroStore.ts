@@ -13,7 +13,9 @@ import {
   loadActivePomodoro,
   removeActivePomodoro,
   savePendingCompletion,
-  removePendingCompletion
+  removePendingCompletion,
+  saveActiveBreak,
+  removeActiveBreak
 } from '@/utils/pomodoroStorage';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
@@ -28,6 +30,7 @@ interface PomodoroState {
   // 休息状态（不持久化）
   isBreakActive: boolean;
   breakRemainingSeconds: number;
+  breakTotalSeconds: number; // 休息总时长（秒），用于进度环
   breakInterval: number | null;
 }
 
@@ -39,6 +42,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
     lastAccumulatedSeconds: 0,
     isBreakActive: false,
     breakRemainingSeconds: 0,
+    breakTotalSeconds: 0,
     breakInterval: null
   }),
 
@@ -603,18 +607,26 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
-     * 开始休息（不持久化，仅内存）
+     * 开始休息（持久化到 active-break.json）
      * @param minutes 休息时长（分钟）
+     * @param plugin 思源插件实例，用于持久化
      */
-    startBreak(minutes: number): void {
-      this.stopBreak();
+    async startBreak(minutes: number, plugin?: any): Promise<void> {
+      this.stopBreak(plugin);
+      const startTime = Date.now();
+      const totalSeconds = minutes * 60;
       this.isBreakActive = true;
-      this.breakRemainingSeconds = minutes * 60;
+      this.breakRemainingSeconds = totalSeconds;
+      this.breakTotalSeconds = totalSeconds;
+
+      if (plugin) {
+        await saveActiveBreak(plugin, { startTime, durationMinutes: minutes });
+      }
 
       this.breakInterval = window.setInterval(() => {
         this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
         if (this.breakRemainingSeconds <= 0) {
-          this.stopBreak(); // 会 emit BREAK_ENDED
+          this.stopBreak(plugin ?? usePlugin()); // 会 emit BREAK_ENDED
           showMessage(t('settings').pomodoro.breakEndMessage);
           this.playNotificationSound();
         }
@@ -625,8 +637,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
     /**
      * 停止休息
+     * @param plugin 思源插件实例，用于删除持久化文件
      */
-    stopBreak(): void {
+    async stopBreak(plugin?: any): Promise<void> {
       const wasActive = this.isBreakActive;
       if (this.breakInterval) {
         window.clearInterval(this.breakInterval);
@@ -634,9 +647,36 @@ export const usePomodoroStore = defineStore('pomodoro', {
       }
       this.isBreakActive = false;
       this.breakRemainingSeconds = 0;
+      this.breakTotalSeconds = 0;
+      if (wasActive && plugin) {
+        await removeActiveBreak(plugin);
+      }
       if (wasActive) {
         eventBus.emit(Events.BREAK_ENDED);
       }
+    },
+
+    /**
+     * 从文件恢复休息状态（重启后调用）
+     * @param plugin 思源插件实例
+     * @param remainingSeconds 剩余秒数（由调用方根据 startTime/durationMinutes 计算）
+     */
+    restoreBreak(plugin: any, remainingSeconds: number, totalSeconds?: number): void {
+      if (this.isBreakActive) return;
+      this.isBreakActive = true;
+      this.breakRemainingSeconds = remainingSeconds;
+      this.breakTotalSeconds = totalSeconds ?? remainingSeconds;
+
+      this.breakInterval = window.setInterval(() => {
+        this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
+        if (this.breakRemainingSeconds <= 0) {
+          this.stopBreak(plugin);
+          showMessage(t('settings').pomodoro.breakEndMessage);
+          this.playNotificationSound();
+        }
+      }, 1000);
+
+      eventBus.emit(Events.BREAK_STARTED);
     }
   }
 });

@@ -223,7 +223,8 @@
       "break15min": "15 min",
       "close": "Close",
       "breakEndMessage": "Break over, time to focus again",
-      "breakLabel": "Break"
+      "breakLabel": "Break",
+      "skipBreak": "Skip Break"
     }
   },
   "pomodoroStats": {

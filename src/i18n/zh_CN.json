@@ -223,7 +223,8 @@
       "break15min": "15 分钟",
       "close": "关闭",
       "breakEndMessage": "休息结束，请继续专注",
-      "breakLabel": "休息"
+      "breakLabel": "休息",
+      "skipBreak": "跳过休息"
     }
   },
   "pomodoroStats": {

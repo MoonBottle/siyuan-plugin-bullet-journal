@@ -70,7 +70,7 @@ async function handleSave() {
 }
 
 function handleStartBreak(minutes: number) {
-  pomodoroStore.startBreak(minutes);
+  pomodoroStore.startBreak(minutes, plugin);
   props.closeDialog();
 }
 

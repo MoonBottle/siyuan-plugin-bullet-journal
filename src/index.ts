@@ -21,7 +21,7 @@ import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
 import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
-import { loadActivePomodoro, loadPendingCompletion } from '@/utils/pomodoroStorage';
+import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog } from '@/utils/dialog';
 
 let PluginInfo = {
@@ -162,7 +162,32 @@ export default class TaskAssistantPlugin extends Plugin {
           const pinia = getSharedPinia();
           showPomodoroCompleteDialog(pending, pinia ?? undefined);
         } else {
-          console.log('[Task Assistant] 没有进行中的番茄钟需要恢复');
+          // 检查是否有进行中的休息需要恢复
+          const breakData = await loadActiveBreak(this);
+          if (breakData) {
+            const remainingSeconds = Math.floor(
+              breakData.durationMinutes * 60 - (Date.now() - breakData.startTime) / 1000
+            );
+            if (remainingSeconds <= 0) {
+              await removeActiveBreak(this);
+              showMessage(t('settings').pomodoro.breakEndMessage);
+              const pinia = getSharedPinia();
+              if (pinia) {
+                const store = usePomodoroStore(pinia);
+                store.playNotificationSound();
+              }
+            } else {
+              const pinia = getSharedPinia();
+              if (pinia) {
+                const store = usePomodoroStore(pinia);
+                const totalSeconds = breakData.durationMinutes * 60;
+                store.restoreBreak(this, remainingSeconds, totalSeconds);
+                eventBus.emit(Events.BREAK_STARTED);
+              }
+            }
+          } else {
+            console.log('[Task Assistant] 没有进行中的番茄钟需要恢复');
+          }
         }
       }
     } catch (error) {
@@ -203,6 +228,9 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     this.removeData('pending-pomodoro-completion.json').catch((e) => {
       showMessage(`uninstall [${this.name}] remove data [pending-pomodoro-completion.json] fail: ${e.msg}`);
+    });
+    this.removeData('active-break.json').catch((e) => {
+      showMessage(`uninstall [${this.name}] remove data [active-break.json] fail: ${e.msg}`);
     });
   }
 
@@ -1003,8 +1031,12 @@ export default class TaskAssistantPlugin extends Plugin {
           const secs = pomodoroStore.breakRemainingSeconds % 60;
           const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
           if (this.floatingTomatoEl) {
+            const iconEl = this.floatingTomatoEl.querySelector('.tomato-icon');
+            if (iconEl) {
+              iconEl.innerHTML = `<svg class="tomato-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 8h1a4 4 0 1 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>`;
+            }
             const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
-            if (timeEl) timeEl.textContent = `${t('settings').pomodoro.breakLabel} ${timeStr}`;
+            if (timeEl) timeEl.textContent = timeStr;
           }
           return;
         }

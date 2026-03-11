@@ -184,3 +184,68 @@ export async function hasPendingCompletion(plugin: any): Promise<boolean> {
     return false;
   }
 }
+
+/** 进行中的休息数据（文件持久化，不写入块/属性） */
+export interface ActiveBreakData {
+  startTime: number;
+  durationMinutes: number;
+}
+
+const ACTIVE_BREAK_KEY = 'active-break.json';
+
+/**
+ * 保存进行中的休息到文件
+ */
+export async function saveActiveBreak(
+  plugin: any,
+  data: ActiveBreakData
+): Promise<boolean> {
+  try {
+    if (!plugin) {
+      console.error('[PomodoroStorage] 插件实例不存在');
+      return false;
+    }
+    const content = JSON.stringify(data, null, 2);
+    await plugin.saveData(ACTIVE_BREAK_KEY, content);
+    console.log('[PomodoroStorage] 已保存进行中的休息:', data.durationMinutes, '分钟');
+    return true;
+  } catch (error) {
+    console.error('[PomodoroStorage] 保存休息失败:', error);
+    return false;
+  }
+}
+
+/**
+ * 读取进行中的休息
+ */
+export async function loadActiveBreak(
+  plugin: any
+): Promise<ActiveBreakData | null> {
+  try {
+    if (!plugin) return null;
+    const content = await plugin.loadData(ACTIVE_BREAK_KEY);
+    if (!content) return null;
+    if (typeof content === 'object' && content !== null) {
+      return content as ActiveBreakData;
+    }
+    return JSON.parse(content) as ActiveBreakData;
+  } catch (error) {
+    console.error('[PomodoroStorage] 读取休息失败:', error);
+    return null;
+  }
+}
+
+/**
+ * 删除进行中的休息文件
+ */
+export async function removeActiveBreak(plugin: any): Promise<boolean> {
+  try {
+    if (!plugin) return false;
+    await plugin.removeData(ACTIVE_BREAK_KEY);
+    console.log('[PomodoroStorage] 已删除进行中的休息文件');
+    return true;
+  } catch (error) {
+    console.error('[PomodoroStorage] 删除休息文件失败:', error);
+    return false;
+  }
+}
