@@ -307,24 +307,28 @@ const vClickOutside = {
   &__trigger {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    padding: 4px 10px;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 13px;
+    padding: 0 8px;
     height: 28px;
+    min-width: 60px;
     border-radius: 6px;
     border: 1px solid var(--b3-theme-surface-lighter);
-    background: var(--b3-theme-surface);
+    background: var(--b3-theme-background);
     color: var(--b3-theme-on-surface);
     cursor: pointer;
     outline: none;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:hover:not(:disabled) {
-      border-color: var(--b3-theme-primary-light);
+      background: var(--b3-theme-surface);
+      border-color: var(--b3-theme-surface-lighter);
     }
 
     &.is-open {
       border-color: var(--b3-theme-primary);
+      box-shadow: 0 0 0 2px var(--b3-theme-primary-lightest);
     }
 
     &:disabled,
@@ -335,38 +339,47 @@ const vClickOutside = {
   }
 
   &__label {
-    max-width: 120px;
+    flex: 1;
+    text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--b3-theme-on-background);
   }
 
   &__arrow {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     fill: var(--b3-theme-on-surface);
-    transition: transform 0.2s;
+    opacity: 0.6;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
 
     &.is-open {
       transform: rotate(180deg);
+      opacity: 1;
+      fill: var(--b3-theme-primary);
     }
   }
 
   &__menu {
     overflow-y: auto;
-    background: var(--b3-theme-background);
+    background: var(--b3-theme-surface);
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 4px;
+    min-width: 100px;
   }
 
   &__option {
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 6px 12px;
+    margin: 2px 0;
+    font-size: 13px;
+    border-radius: 6px;
     color: var(--b3-theme-on-surface);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -383,12 +396,11 @@ const vClickOutside = {
     }
 
     &:first-child {
-      border-radius: 8px 8px 0 0;
+      margin-top: 0;
     }
 
     &:last-child {
-      border-radius: 0 0 8px 8px;
-      margin-bottom: 8px;
+      margin-bottom: 0;
     }
   }
 }
