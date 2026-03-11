@@ -2,27 +2,29 @@
   <div class="annual-heatmap chart-card">
     <div class="chart-header">
       <span class="chart-title">{{ t('pomodoroStats').annualHeatmap }}</span>
+      <div class="chart-controls">
+        <button class="nav-btn" @click="prevYear">‹</button>
+        <span class="nav-label">{{ yearLabel }}</span>
+        <button class="nav-btn" @click="nextYear">›</button>
+      </div>
     </div>
-    <div class="chart-controls">
-      <button class="nav-btn" @click="prevYear">‹</button>
-      <span class="nav-label">{{ yearLabel }}</span>
-      <button class="nav-btn" @click="nextYear">›</button>
-    </div>
-    <div class="heatmap-grid">
-      <div
-        v-for="item in heatmapData"
-        :key="item.date"
-        class="heatmap-cell"
-        :class="item.level"
-        :title="`${item.date}: ${formatDuration(item.minutes)}`"
-      />
-    </div>
-    <div class="heatmap-legend">
-      <span class="legend-item level-0">0m</span>
-      <span class="legend-item level-1">0-1h</span>
-      <span class="legend-item level-2">1-3h</span>
-      <span class="legend-item level-3">3-5h</span>
-      <span class="legend-item level-4">>5h</span>
+    <div class="heatmap-content">
+      <div class="heatmap-grid">
+        <div
+          v-for="item in heatmapData"
+          :key="item.date"
+          class="heatmap-cell"
+          :class="item.level"
+          :title="`${item.date}: ${formatDuration(item.minutes)}`"
+        />
+      </div>
+      <div class="heatmap-legend">
+        <span class="legend-item level-0">0m</span>
+        <span class="legend-item level-1">0-1h</span>
+        <span class="legend-item level-2">1-3h</span>
+        <span class="legend-item level-3">3-5h</span>
+        <span class="legend-item level-4">>5h</span>
+      </div>
     </div>
   </div>
 </template>
@@ -71,25 +73,27 @@ const heatmapData = computed(() => {
     current = current.add(1, 'day');
   }
 
+  // 14行布局：每行约26天 (365/14 ≈ 26)
+  const daysPerRow = 26;
+  const rows: { date: string; minutes: number; level: string }[][] = [];
+  let row: { date: string; minutes: number; level: string }[] = [];
+  
   const start = dayjs(startDate);
-  const firstSunday = start.day() === 0 ? start : start.subtract(start.day(), 'day');
-  const weeks: { date: string; minutes: number; level: string }[][] = [];
-  let week: { date: string; minutes: number; level: string }[] = [];
-  let cur = firstSunday;
   const endD = dayjs(endDate);
+  let cur = start;
 
   while (cur.isBefore(endD) || cur.isSame(endD, 'day')) {
     const d = cur.format('YYYY-MM-DD');
     const data = byDate.get(d) ?? { minutes: 0, level: 'level-0' };
-    week.push({ date: d, ...data });
-    if (week.length === 7) {
-      weeks.push(week);
-      week = [];
+    row.push({ date: d, ...data });
+    if (row.length === daysPerRow) {
+      rows.push(row);
+      row = [];
     }
     cur = cur.add(1, 'day');
   }
-  if (week.length > 0) weeks.push(week);
-  return weeks.flat();
+  if (row.length > 0) rows.push(row);
+  return rows.flat();
 });
 
 function prevYear() {
@@ -117,6 +121,9 @@ function formatDuration(minutes: number): string {
 }
 
 .chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
 
   .chart-title {
@@ -130,7 +137,6 @@ function formatDuration(minutes: number): string {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .nav-btn {
@@ -148,17 +154,27 @@ function formatDuration(minutes: number): string {
   text-align: center;
 }
 
-.heatmap-grid {
+.heatmap-content {
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  height: 280px;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(26, 1fr);
+  grid-template-rows: repeat(14, 1fr);
   gap: 2px;
-  margin-bottom: 12px;
+  flex: 1;
+  height: 100%;
+  max-height: 100%;
 }
 
 .heatmap-cell {
-  aspect-ratio: 1;
-  min-width: 8px;
-  border-radius: var(--b3-border-radius);
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
   transition: background 0.2s;
 
   &.level-0 {
@@ -184,7 +200,8 @@ function formatDuration(minutes: number): string {
 
 .heatmap-legend {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
   font-size: 10px;
   color: var(--b3-theme-on-surface);
 }
