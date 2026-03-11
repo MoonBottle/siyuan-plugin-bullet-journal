@@ -59,6 +59,13 @@ function nextMonth() {
   monthOffset.value++;
 }
 
+function getThemeColor(): string {
+  const root = document.documentElement;
+  const style = window.getComputedStyle(root);
+  const color = style.getPropertyValue('--b3-theme-primary').trim();
+  return color || '#4285f4';
+}
+
 function updateChart() {
   if (!chartCanvas.value) return;
   const ctx = chartCanvas.value.getContext('2d');
@@ -68,6 +75,8 @@ function updateChart() {
     chartInstance.destroy();
   }
 
+  const primaryColor = getThemeColor();
+
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -75,7 +84,7 @@ function updateChart() {
       datasets: [{
         label: t('pomodoroStats').focusDuration,
         data: chartData.value.map(d => d.minutes),
-        backgroundColor: 'var(--b3-theme-primary)',
+        backgroundColor: primaryColor,
         borderRadius: 4
       }]
     },
@@ -83,7 +92,10 @@ function updateChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+          displayColors: false
+        }
       },
       scales: {
         y: {
