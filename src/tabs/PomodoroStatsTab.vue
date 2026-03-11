@@ -1,6 +1,12 @@
 <template>
   <div class="pomodoro-stats-tab">
-    <h2 class="stats-title">{{ t('pomodoroStats').statsTitle }}</h2>
+    <div class="stats-header">
+      <h2 class="stats-title">{{ t('pomodoroStats').statsTitle }}</h2>
+      <span class="fn__flex-1 fn__space"></span>
+      <span class="block__icon refresh-btn b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
+        <svg><use xlink:href="#iconRefresh"></use></svg>
+      </span>
+    </div>
 
     <StatsOverview />
 
@@ -18,6 +24,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { t } from '@/i18n';
+import { showMessage } from '@/utils/dialog';
+import { usePlugin } from '@/main';
+import { useSettingsStore, useProjectStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import StatsOverview from '@/components/pomodoro/stats/StatsOverview.vue';
 import FocusDetailSection from '@/components/pomodoro/stats/FocusDetailSection.vue';
@@ -30,6 +39,17 @@ import AnnualHeatmap from '@/components/pomodoro/stats/AnnualHeatmap.vue';
 type RangeType = 'today' | 'week' | 'month';
 const range = ref<RangeType>('week');
 const rangeOffset = ref(0);
+
+const plugin = usePlugin();
+const settingsStore = useSettingsStore();
+const projectStore = useProjectStore();
+
+const handleRefresh = async () => {
+  if (plugin) {
+    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    showMessage(t('common').dataRefreshed);
+  }
+};
 
 const rangeDates = computed(() => {
   const base = dayjs();
@@ -68,11 +88,35 @@ const rangeDates = computed(() => {
   box-sizing: border-box;
 }
 
+.stats-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .stats-title {
   font-size: 18px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
-  margin: 0 0 20px 0;
+  margin: 0;
+  padding-left: 6px;
+}
+
+.refresh-btn {
+  margin-left: 6px;
+  cursor: pointer;
+  opacity: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 
 .stats-cards-grid {
