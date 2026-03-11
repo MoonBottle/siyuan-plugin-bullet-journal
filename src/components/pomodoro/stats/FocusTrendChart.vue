@@ -4,10 +4,10 @@
       <span class="chart-title">{{ t('pomodoroStats').focusTrend }}</span>
       <div class="chart-controls">
         <select v-model="dimension" class="dimension-select">
-          <option value="year">{{ t('pomodoroStats').year }}</option>
-          <option value="month">{{ t('pomodoroStats').month }}</option>
-          <option value="week">{{ t('pomodoroStats').week }}</option>
-          <option value="day">{{ t('pomodoroStats').day }}</option>
+          <option value="year">年</option>
+          <option value="month">月</option>
+          <option value="week">周</option>
+          <option value="day">日</option>
         </select>
         <div class="nav-btns">
           <button class="nav-btn" @click="prev">‹</button>
