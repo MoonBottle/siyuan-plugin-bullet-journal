@@ -100,6 +100,11 @@ function updateChart() {
       }]
     },
     options: {
+      layout: {
+        padding: {
+          top: 20 // 增加顶部内边距，使图表整体下移
+        }
+      },
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
@@ -160,6 +165,7 @@ function updateChart() {
           },
           ticks: {
             color: textColor,
+            padding: 10, // 增加刻度标签与轴线之间的间距
             callback: function(value: number, index: number) {
               return index % 3 === 0 ? chartData.value[index]?.label : '';
             },
@@ -256,6 +262,6 @@ onUnmounted(() => {
 }
 
 .chart-container {
-  height: 180px;
+  height: 220px;
 }
 </style>

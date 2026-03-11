@@ -241,6 +241,11 @@ function updateChart() {
       }]
     },
     options: {
+      layout: {
+        padding: {
+          top: 20
+        }
+      },
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
@@ -308,6 +313,7 @@ function updateChart() {
           },
           ticks: {
             color: textColor,
+            padding: 10,
             font: {
               size: 11,
               weight: 300
@@ -423,6 +429,6 @@ onUnmounted(() => {
 }
 
 .chart-container {
-  height: 180px;
+  height: 220px;
 }
 </style>
