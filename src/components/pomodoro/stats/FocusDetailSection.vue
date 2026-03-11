@@ -3,17 +3,15 @@
     <div class="section-header">
       <h4 class="section-title">{{ t('pomodoroStats').focusDetail }}</h4>
       <div class="chart-controls">
-        <div class="range-tabs">
-          <button
-            v-for="r in ['today', 'week', 'month']"
-            :key="r"
-            class="range-tab"
-            :class="{ active: range === r }"
-            @click="emit('update:range', r); emit('update:rangeOffset', 0)"
-          >
-            {{ r === 'today' ? t('pomodoroStats').today : r === 'week' ? t('pomodoroStats').week : t('pomodoroStats').month }}
-          </button>
-        </div>
+        <select
+          class="range-select"
+          :value="range"
+          @change="(e) => { emit('update:range', (e.target as HTMLSelectElement).value as 'today' | 'week' | 'month'); emit('update:rangeOffset', 0); }"
+        >
+          <option value="today">{{ t('pomodoroStats').today }}</option>
+          <option value="week">{{ t('pomodoroStats').week }}</option>
+          <option value="month">{{ t('pomodoroStats').month }}</option>
+        </select>
         <button class="nav-btn" @click="prevRange">‹</button>
         <span class="nav-label">{{ rangeLabel }}</span>
         <button class="nav-btn" @click="nextRange">›</button>
@@ -158,25 +156,18 @@ function nextRange() {
   margin: 0;
 }
 
-.range-tabs {
-  display: flex;
-  gap: 4px;
-}
-
-.range-tab {
-  padding: 4px 10px;
+.range-select {
+  padding: 4px 24px 4px 10px;
   font-size: 12px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   background: var(--b3-theme-background);
   color: var(--b3-theme-on-background);
   cursor: pointer;
-}
-
-.range-tab.active {
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
-  border-color: var(--b3-theme-primary);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
 }
 
 .chart-controls {

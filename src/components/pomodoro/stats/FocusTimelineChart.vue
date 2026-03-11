@@ -271,7 +271,7 @@ function nextWeek() {
 .heatmap-grid {
   flex: 1;
   display: flex;
-  margin-left: 40px;
+  margin-left: 50px;
   position: relative;
 }
 
@@ -317,7 +317,7 @@ function nextWeek() {
 
 .x-axis {
   display: flex;
-  margin-left: 40px;
+  margin-left: 50px;
   margin-top: 4px;
 }
 
