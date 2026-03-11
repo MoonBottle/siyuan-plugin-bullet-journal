@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useProjectStore } from '@/stores';
-import { aggregatePomodorosFromProjects, groupPomodorosByProject, groupPomodorosByTask, type GroupedPomodoroStats } from '@/utils/pomodoroUtils';
+import { aggregatePomodorosFromProjects, groupPomodorosByProject, groupPomodorosByTask, groupPomodorosByItem, type GroupedPomodoroStats } from '@/utils/pomodoroUtils';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 
@@ -133,7 +133,7 @@ const groupedData = computed<GroupedPomodoroStats[]>(() => {
   if (aggregateBy.value === 'task') {
     return groupPomodorosByTask(enrichedPomodoros.value, startDate, endDate);
   }
-  return groupPomodorosByProject(enrichedPomodoros.value, startDate, endDate);
+  return groupPomodorosByItem(enrichedPomodoros.value, startDate, endDate);
 });
 
 const totalMinutes = computed(() => {

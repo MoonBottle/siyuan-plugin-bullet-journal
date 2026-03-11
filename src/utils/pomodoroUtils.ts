@@ -165,6 +165,37 @@ export function groupPomodorosByTask(
 }
 
 /**
+ * 按事项分组统计（按 itemContent 分组，日期范围内）
+ */
+export function groupPomodorosByItem(
+  enriched: EnrichedPomodoro[],
+  startDate: string,
+  endDate: string
+): GroupedPomodoroStats[] {
+  const filtered = filterPomodoros(enriched, { startDate, endDate });
+  const byItem = new Map<string, { minutes: number; count: number }>();
+
+  for (const { record, projectName, taskName, itemContent } of filtered) {
+    const key = itemContent ?? '未分类';
+    const current = byItem.get(key) ?? { minutes: 0, count: 0 };
+    const mins = record.actualDurationMinutes ?? record.durationMinutes;
+    byItem.set(key, {
+      minutes: current.minutes + mins,
+      count: current.count + 1
+    });
+  }
+
+  const totalMinutes = [...byItem.values()].reduce((s, v) => s + v.minutes, 0);
+  return [...byItem.entries()].map(([key, v]) => ({
+    groupKey: key,
+    groupLabel: key,
+    minutes: v.minutes,
+    count: v.count,
+    proportion: totalMinutes > 0 ? (v.minutes / totalMinutes) * 100 : 0
+  }));
+}
+
+/**
  * 按 startDate、endDate、projectId 过滤番茄钟
  */
 export function filterPomodoros(
