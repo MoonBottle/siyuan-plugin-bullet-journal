@@ -3,12 +3,11 @@
     <div class="chart-header">
       <span class="chart-title">{{ t('pomodoroStats').focusTrend }}</span>
       <div class="chart-controls">
-        <select v-model="dimension" class="dimension-select">
-          <option value="year">年</option>
-          <option value="month">月</option>
-          <option value="week">周</option>
-          <option value="day">日</option>
-        </select>
+        <DropdownSelect
+          v-model="dimension"
+          :options="dimensionOptions"
+          class="dimension-dropdown"
+        />
         <div class="nav-btns">
           <button class="nav-btn" @click="prev">‹</button>
           <span class="nav-label">{{ navLabel }}</span>
@@ -32,6 +31,7 @@ import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 import { getThemePrimary, getChartTextColor, toRgba } from '@/utils/chartThemeUtils';
 import { Chart, registerables } from 'chart.js';
+import DropdownSelect from '@/components/common/DropdownSelect.vue';
 
 Chart.register(...registerables);
 
@@ -41,6 +41,13 @@ let chartInstance: Chart | null = null;
 
 const dimension = ref<'year' | 'month' | 'week' | 'day'>('week');
 const offset = ref(0);
+
+const dimensionOptions = [
+  { label: '年', value: 'year' },
+  { label: '月', value: 'month' },
+  { label: '周', value: 'week' },
+  { label: '日', value: 'day' }
+];
 
 const rangeDates = computed(() => {
   const base = dayjs();
@@ -379,14 +386,8 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-.dimension-select {
-  padding: 4px 8px;
-  font-size: 12px;
-  border: 1px solid var(--b3-theme-surface-lighter);
-  border-radius: var(--b3-border-radius);
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-background);
-  cursor: pointer;
+.dimension-dropdown {
+  width: 60px;
 }
 
 .nav-btns {

@@ -3,22 +3,17 @@
     <div class="section-header">
       <h4 class="section-title">{{ t('pomodoroStats').focusDetail }}</h4>
       <div class="chart-controls">
-        <select
-          class="range-select"
+        <DropdownSelect
           v-model="aggregateBy"
-        >
-          <option value="task">{{ t('pomodoroStats').byTask }}</option>
-          <option value="item">{{ t('pomodoroStats').byItem }}</option>
-        </select>
-        <select
-          class="range-select"
-          :value="range"
-          @change="(e) => { emit('update:range', (e.target as HTMLSelectElement).value as 'today' | 'week' | 'month'); emit('update:rangeOffset', 0); }"
-        >
-          <option value="today">{{ t('pomodoroStats').today }}</option>
-          <option value="week">{{ t('pomodoroStats').week }}</option>
-          <option value="month">{{ t('pomodoroStats').month }}</option>
-        </select>
+          :options="aggregateOptions"
+          class="range-dropdown"
+        />
+        <DropdownSelect
+          :model-value="range"
+          :options="rangeOptions"
+          class="range-dropdown"
+          @update:model-value="(val) => { emit('update:range', val as 'today' | 'week' | 'month'); emit('update:rangeOffset', 0); }"
+        />
         <button class="nav-btn" @click="prevRange">‹</button>
         <span class="nav-label">{{ rangeLabel }}</span>
         <button class="nav-btn" @click="nextRange">›</button>
@@ -62,6 +57,7 @@ import { useProjectStore } from '@/stores';
 import { aggregatePomodorosFromProjects, groupPomodorosByProject, groupPomodorosByTask, groupPomodorosByItem, type GroupedPomodoroStats } from '@/utils/pomodoroUtils';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
+import DropdownSelect from '@/components/common/DropdownSelect.vue';
 
 const props = defineProps<{
   range: 'today' | 'week' | 'month';
@@ -74,6 +70,17 @@ const emit = defineEmits<{
 }>();
 
 const aggregateBy = ref<'task' | 'item'>('task');
+
+const aggregateOptions = computed(() => [
+  { label: t('pomodoroStats').byTask, value: 'task' },
+  { label: t('pomodoroStats').byItem, value: 'item' }
+]);
+
+const rangeOptions = computed(() => [
+  { label: t('pomodoroStats').today, value: 'today' },
+  { label: t('pomodoroStats').week, value: 'week' },
+  { label: t('pomodoroStats').month, value: 'month' }
+]);
 
 const projectStore = useProjectStore();
 
@@ -207,18 +214,8 @@ function nextRange() {
   margin: 0;
 }
 
-.range-select {
-  padding: 4px 24px 4px 10px;
-  font-size: 12px;
-  border: 1px solid var(--b3-theme-surface-lighter);
-  border-radius: var(--b3-border-radius);
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-background);
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
+.range-dropdown {
+  width: 80px;
 }
 
 .chart-controls {
