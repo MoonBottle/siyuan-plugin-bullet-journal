@@ -63,9 +63,9 @@ const rangeDates = computed(() => {
 
 <style lang="scss" scoped>
 .pomodoro-stats-tab {
-  padding: 16px;
-  height: 100%;
-  overflow-y: auto;
+  padding: 16px 16px 50px;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .stats-title {
