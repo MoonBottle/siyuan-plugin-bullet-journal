@@ -314,15 +314,15 @@ function hideTooltip() {
   }
 
   &.level-1 {
-    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.2);
+    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.38);
   }
 
   &.level-2 {
-    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.5);
+    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.58);
   }
 
   &.level-3 {
-    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.75);
+    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.82);
   }
 
   &.level-4 {
@@ -355,15 +355,15 @@ function hideTooltip() {
   }
 
   &.level-1::before {
-    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.2);
+    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.38);
   }
 
   &.level-2::before {
-    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.5);
+    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.58);
   }
 
   &.level-3::before {
-    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.75);
+    background: rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.82);
   }
 
   &.level-4::before {

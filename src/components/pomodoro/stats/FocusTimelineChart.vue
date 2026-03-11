@@ -107,7 +107,7 @@ function getCellFocus(date: string, hour: number): number {
 
 function getCellOpacity(date: string, hour: number): number {
   const mins = getCellFocus(date, hour);
-  return mins > 0 ? Math.min(1, 0.3 + (mins / 60) * 0.7) : 0;
+  return mins > 0 ? Math.min(1, 0.5 + (mins / 60) * 0.5) : 0;
 }
 
 function formatDuration(minutes: number): string {

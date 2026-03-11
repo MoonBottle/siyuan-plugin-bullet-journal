@@ -30,6 +30,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
+import { getThemePrimary, getChartTextColor, toRgba } from '@/utils/chartThemeUtils';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -184,19 +185,6 @@ function formatDuration(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h${m}m`;
 }
 
-function getThemeColor(): string {
-  const root = document.documentElement;
-  const style = window.getComputedStyle(root);
-  const color = style.getPropertyValue('--b3-theme-primary').trim();
-  return color || '#4285f4';
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
 
 function updateChart() {
   if (!chartCanvas.value) return;
@@ -207,7 +195,10 @@ function updateChart() {
     chartInstance.destroy();
   }
 
-  const primaryColor = getThemeColor();
+  const containerEl = chartCanvas.value?.parentElement ?? null;
+  const primaryColor = getThemePrimary(containerEl);
+  const textColor = getChartTextColor(containerEl);
+  const gridColor = toRgba(textColor, 0.28);
 
   chartInstance = new Chart(ctx, {
     type: 'line',
@@ -217,7 +208,10 @@ function updateChart() {
         label: t('pomodoroStats').focusDuration,
         data: chartData.value.map(d => d.minutes),
         borderColor: primaryColor,
-        backgroundColor: hexToRgba(primaryColor, 0.1),
+        borderWidth: 2,
+        pointBackgroundColor: primaryColor,
+        pointBorderColor: primaryColor,
+        backgroundColor: toRgba(primaryColor, 0.28),
         fill: true,
         tension: 0.3
       }]
@@ -254,7 +248,9 @@ function updateChart() {
       },
       scales: {
         x: {
+          grid: { color: gridColor },
           ticks: {
+            color: textColor,
             font: {
               size: 11,
               weight: 300
@@ -263,7 +259,9 @@ function updateChart() {
         },
         y: {
           beginAtZero: true,
+          grid: { color: gridColor },
           ticks: {
+            color: textColor,
             callback: (v: number) => v + 'm'
           }
         }
@@ -272,9 +270,16 @@ function updateChart() {
   });
 }
 
+let themeObserver: MutationObserver | null = null;
 watch([chartData, dimension], updateChart);
-onMounted(updateChart);
+onMounted(() => {
+  updateChart();
+  themeObserver = new MutationObserver(updateChart);
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-color-scheme', 'style'] });
+});
 onUnmounted(() => {
+  themeObserver?.disconnect();
+  themeObserver = null;
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;

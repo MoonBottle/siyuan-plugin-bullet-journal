@@ -20,6 +20,7 @@ import { useProjectStore } from '@/stores';
 import { groupByTimeSlot } from '@/utils/pomodoroUtils';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
+import { getThemePrimary, getChartTextColor, toRgba, darkenColor } from '@/utils/chartThemeUtils';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -59,12 +60,6 @@ function nextMonth() {
   monthOffset.value++;
 }
 
-function getThemeColor(): string {
-  const root = document.documentElement;
-  const style = window.getComputedStyle(root);
-  const color = style.getPropertyValue('--b3-theme-primary').trim();
-  return color || '#4285f4';
-}
 
 function updateChart() {
   if (!chartCanvas.value) return;
@@ -75,7 +70,11 @@ function updateChart() {
     chartInstance.destroy();
   }
 
-  const primaryColor = getThemeColor();
+  const containerEl = chartCanvas.value?.parentElement ?? null;
+  const primaryColor = getThemePrimary(containerEl);
+  const textColor = getChartTextColor(containerEl);
+  const gridColor = toRgba(textColor, 0.28);
+  const borderColor = darkenColor(primaryColor, 18);
 
   chartInstance = new Chart(ctx, {
     type: 'bar',
@@ -85,6 +84,8 @@ function updateChart() {
         label: t('pomodoroStats').focusDuration,
         data: chartData.value.map(d => d.minutes),
         backgroundColor: primaryColor,
+        borderColor,
+        borderWidth: 1,
         borderRadius: 4
       }]
     },
@@ -112,17 +113,17 @@ function updateChart() {
         x: {
           grid: {
             display: true,
-            color: 'rgba(0, 0, 0, 0.03)',
+            color: gridColor,
             drawBorder: false
           },
           ticks: {
+            color: textColor,
             callback: function(value: number, index: number) {
               // 每3小时显示一个标签
               return index % 3 === 0 ? chartData.value[index]?.label : '';
             },
             maxRotation: 0,
-            autoSkip: false,
-            color: 'rgba(0, 0, 0, 0.4)'
+            autoSkip: false
           },
           border: { display: false }
         },
@@ -130,8 +131,8 @@ function updateChart() {
           beginAtZero: true,
           grid: { display: false, drawBorder: false },
           ticks: {
-            callback: (v: number) => v + 'm',
-            color: 'rgba(0, 0, 0, 0.4)'
+            color: textColor,
+            callback: (v: number) => v + 'm'
           },
           border: { display: false }
         }
@@ -140,9 +141,16 @@ function updateChart() {
   });
 }
 
+let themeObserver: MutationObserver | null = null;
 watch(chartData, updateChart);
-onMounted(updateChart);
+onMounted(() => {
+  updateChart();
+  themeObserver = new MutationObserver(updateChart);
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-color-scheme', 'style'] });
+});
 onUnmounted(() => {
+  themeObserver?.disconnect();
+  themeObserver = null;
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;
