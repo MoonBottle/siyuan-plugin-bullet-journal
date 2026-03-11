@@ -3,7 +3,9 @@
  * 提供统一的弹框创建和管理
  */
 import { Dialog } from 'siyuan';
-import type { Item, CalendarEvent, PomodoroRecord } from '@/types/models';
+import { createApp } from 'vue';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion } from '@/types/models';
+import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
 import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
@@ -804,6 +806,50 @@ export function showConfirmDialog(
 export function showMessage(text: string, type: 'info' | 'error' = 'info'): void {
   const { showMessage: siyuanShowMessage } = require('siyuan');
   siyuanShowMessage(text, 3000, type);
+}
+
+/**
+ * 显示专注完成弹窗（补填说明）
+ * 用于启动恢复或从非 Dock 上下文触发时
+ * @param pending 待完成记录
+ * @param pinia 可选的 Pinia 实例，用于 store；若不传则组件内 useStore 可能不可用
+ */
+export function showPomodoroCompleteDialog(
+  pending: PendingPomodoroCompletion,
+  pinia?: ReturnType<typeof import('pinia').createPinia>
+): Dialog {
+  let dialogApp: any = null;
+  const dialog = new Dialog({
+    title: '专注完成',
+    content: '<div id="pomodoro-complete-dialog-mount"></div>',
+    width: '400px',
+    destroyCallback: () => {
+      if (dialogApp) {
+        dialogApp.unmount();
+        dialogApp = null;
+      }
+    }
+  });
+
+  const closeDialog = () => {
+    dialog.destroy();
+  };
+
+  setTimeout(() => {
+    const mountEl = dialog.element?.querySelector('#pomodoro-complete-dialog-mount');
+    if (mountEl) {
+      dialogApp = createApp(PomodoroCompleteDialog, {
+        pending,
+        closeDialog
+      });
+      if (pinia) {
+        dialogApp.use(pinia);
+      }
+      dialogApp.mount(mountEl);
+    }
+  }, 0);
+
+  return dialog;
 }
 
 /**

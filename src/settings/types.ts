@@ -13,6 +13,15 @@ export interface AIChatHistory {
   currentConversationId: string | null;
 }
 
+// 番茄钟设置
+export interface PomodoroSettings {
+  enableStatusBar?: boolean;
+  enableFloatingButton?: boolean;
+  recordMode: 'block' | 'attr';
+  attrPrefix?: string;
+  dailyFocusTargetMinutes?: number;
+}
+
 // 设置数据结构
 export interface SettingsData {
   directories: ProjectDirectory[];
@@ -26,7 +35,16 @@ export interface SettingsData {
     providers: AIProviderConfig[];
     activeProviderId: string | null;
   };
+  pomodoro?: PomodoroSettings;
 }
+
+export const defaultPomodoroSettings: PomodoroSettings = {
+  enableStatusBar: false,
+  enableFloatingButton: true,
+  recordMode: 'block',
+  attrPrefix: 'custom-pomodoro',
+  dailyFocusTargetMinutes: 180
+};
 
 export const defaultSettings: SettingsData = {
   directories: [],
@@ -42,7 +60,8 @@ export const defaultSettings: SettingsData = {
   ai: {
     providers: [],
     activeProviderId: null
-  }
+  },
+  pomodoro: defaultPomodoroSettings
 };
 
 export const defaultChatHistory: AIChatHistory = {

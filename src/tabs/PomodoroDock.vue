@@ -14,6 +14,13 @@
       >
         <svg><use xlink:href="#iconPlay"></use></svg>
       </span>
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        aria-label="番茄统计"
+        @click="openStatsTab"
+      >
+        <svg><use xlink:href="#iconBarChart"></use></svg>
+      </span>
       <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="刷新" @click="handleRefresh">
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
@@ -30,6 +37,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, h, createApp } from 'vue';
+import { getSharedPinia } from '@/index';
 import { Dialog } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
@@ -38,9 +46,12 @@ import PomodoroStats from '@/components/pomodoro/PomodoroStats.vue';
 import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
 import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
+import type { PendingPomodoroCompletion } from '@/types/models';
 import { showMessage } from '@/utils/dialog';
 import { requestNotificationPermission } from '@/utils/notification';
+import { TAB_TYPES } from '@/constants';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -59,6 +70,13 @@ const handleRefresh = async () => {
   if (plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
     showMessage('数据已刷新');
+  }
+};
+
+// 打开番茄统计 Tab
+const openStatsTab = () => {
+  if (plugin?.openCustomTab) {
+    plugin.openCustomTab(TAB_TYPES.POMODORO_STATS);
   }
 };
 
@@ -111,9 +129,67 @@ const openTimerDialog = () => {
   }, 0);
 };
 
+// 打开专注完成弹窗（补填说明）
+let completeDialog: Dialog | null = null;
+let completeDialogApp: any = null;
+
+const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
+  if (completeDialog) {
+    completeDialog.destroy();
+    completeDialog = null;
+  }
+  if (completeDialogApp) {
+    completeDialogApp.unmount();
+    completeDialogApp = null;
+  }
+
+  const closeCompleteDialog = () => {
+    if (completeDialog) {
+      completeDialog.destroy();
+      completeDialog = null;
+    }
+    if (completeDialogApp) {
+      completeDialogApp.unmount();
+      completeDialogApp = null;
+    }
+  };
+
+  completeDialog = new Dialog({
+    title: '专注完成',
+    content: '<div id="pomodoro-complete-dialog-mount"></div>',
+    width: '400px',
+    destroyCallback: () => {
+      if (completeDialogApp) {
+        completeDialogApp.unmount();
+        completeDialogApp = null;
+      }
+      completeDialog = null;
+    }
+  });
+
+  setTimeout(() => {
+    const mountEl = completeDialog?.element?.querySelector('#pomodoro-complete-dialog-mount');
+    if (mountEl) {
+      const pinia = getSharedPinia();
+      completeDialogApp = createApp(PomodoroCompleteDialog, {
+        pending,
+        closeDialog: closeCompleteDialog
+      });
+      if (pinia) completeDialogApp.use(pinia);
+      completeDialogApp.mount(mountEl);
+    }
+  }, 0);
+};
+
+// 处理待完成记录（专注结束后需补填说明）
+const handlePendingCompletion = (pending: PendingPomodoroCompletion) => {
+  openCompleteDialog(pending);
+};
+
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let unsubscribePomodoroRestore: (() => void) | null = null;
+let unsubscribePendingCompletion: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 // 恢复专注状态
@@ -163,6 +239,9 @@ onMounted(async () => {
   // 监听番茄钟恢复事件（从插件主逻辑触发）
   unsubscribePomodoroRestore = eventBus.on(Events.POMODORO_RESTORE, handlePomodoroRestore);
 
+  // 监听待完成记录（专注结束后弹窗补填说明）
+  unsubscribePendingCompletion = eventBus.on(Events.POMODORO_PENDING_COMPLETION, handlePendingCompletion);
+
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -183,6 +262,9 @@ onUnmounted(() => {
   }
   if (unsubscribePomodoroRestore) {
     unsubscribePomodoroRestore();
+  }
+  if (unsubscribePendingCompletion) {
+    unsubscribePendingCompletion();
   }
   if (refreshChannel) {
     refreshChannel.close();

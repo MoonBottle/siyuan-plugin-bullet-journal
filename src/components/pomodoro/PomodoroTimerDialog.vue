@@ -53,9 +53,27 @@
           <div v-if="selectedItem.task" class="info-task">{{ selectedItem.task.name }}</div>
         </div>
 
-        <div class="panel-title">设置专注时长</div>
+        <div class="panel-title">计时模式</div>
+        <div class="timer-mode-section">
+          <button
+            class="mode-btn"
+            :class="{ active: timerMode === 'countdown' }"
+            @click="timerMode = 'countdown'"
+          >
+            倒计时
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ active: timerMode === 'stopwatch' }"
+            @click="timerMode = 'stopwatch'"
+          >
+            正计时
+          </button>
+        </div>
 
-        <div class="duration-section">
+        <div v-if="timerMode === 'countdown'" class="panel-title">设置专注时长</div>
+
+        <div v-if="timerMode === 'countdown'" class="duration-section">
           <div class="quick-buttons">
             <button
               v-for="duration in quickDurations"
@@ -117,7 +135,10 @@ const pomodoroStore = usePomodoroStore();
 // 选中的事项
 const selectedItem = ref<Item | null>(null);
 
-// 专注时长
+// 计时模式：倒计时 / 正计时
+const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
+
+// 专注时长（仅倒计时使用）
 const quickDurations = [15, 25, 45, 60];
 const selectedDuration = ref(25);
 const customDuration = ref(25);
@@ -176,11 +197,15 @@ const startPomodoro = async () => {
     return;
   }
 
+  // 正计时：duration 为 0，由用户手动结束
+  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value;
+
   const success = await pomodoroStore.startPomodoro(
     selectedItem.value,
-    selectedDuration.value,
+    duration,
     parentBlockId,
-    plugin
+    plugin,
+    timerMode.value
   );
 
   if (success) {
@@ -336,6 +361,34 @@ onMounted(() => {
   padding: 40px 20px;
   color: var(--b3-theme-on-surface);
   font-size: 13px;
+}
+
+.timer-mode-section {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--b3-theme-primary);
+  }
+
+  &.active {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    border-color: var(--b3-theme-primary);
+  }
 }
 
 .duration-section {

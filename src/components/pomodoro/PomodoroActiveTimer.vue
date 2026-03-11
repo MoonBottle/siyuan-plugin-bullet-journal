@@ -25,7 +25,8 @@
         </svg>
         <div class="timer-content">
           <div class="time-remaining">{{ formattedTime }}</div>
-          <div class="focused-time-badge">已专注 {{ accumulatedMinutes }}分钟</div>
+          <div v-if="!isStopwatch" class="focused-time-badge">已专注 {{ accumulatedMinutes }}分钟</div>
+          <div v-else class="focused-time-badge">正计时 · 已专注 {{ accumulatedMinutes }}分钟</div>
           <div v-if="isPaused" class="pause-badge">⏸️ 已暂停</div>
         </div>
       </div>
@@ -35,7 +36,8 @@
     <div class="pomodoro-timeline">
       <div class="timeline-header">
         <span class="timeline-label">番茄计时</span>
-        <span class="timeline-duration">目标：{{ targetMinutes }}分钟</span>
+        <span v-if="!isStopwatch" class="timeline-duration">目标：{{ targetMinutes }}分钟</span>
+        <span v-else class="timeline-duration">正计时</span>
       </div>
       <div class="timeline-track">
         <div class="timeline-point start">
@@ -52,7 +54,7 @@
         <div class="timeline-point end">
           <div class="timeline-time">{{ formattedEndTime }}</div>
           <StopIcon :width="14" :height="14" class="timeline-icon" />
-          <div class="timeline-desc">预计结束</div>
+          <div class="timeline-desc">{{ isStopwatch ? '手动结束' : '预计结束' }}</div>
         </div>
       </div>
     </div>
@@ -203,6 +205,9 @@ const isPaused = computed(() => {
   return pomodoroStore.activePomodoro?.isPaused || false;
 });
 
+// 是否正计时模式
+const isStopwatch = computed(() => pomodoroStore.isStopwatch);
+
 // 已专注分钟数
 const accumulatedMinutes = computed(() => {
   if (!pomodoroStore.activePomodoro) return 0;
@@ -219,9 +224,9 @@ const pauseCount = computed(() => {
   return pomodoroStore.activePomodoro?.pauseCount || 0;
 });
 
-// 格式化的剩余时间（MM:SS）
+// 格式化的时间（MM:SS）：倒计时显示剩余，正计时显示已专注
 const formattedTime = computed(() => {
-  const seconds = pomodoroStore.remainingTime;
+  const seconds = isStopwatch.value ? pomodoroStore.elapsedSeconds : pomodoroStore.remainingTime;
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -238,33 +243,40 @@ const formattedStartTime = computed(() => {
   return dayjs(startTime.value).format('HH:mm');
 });
 
-// 预计结束时间戳
+// 预计结束时间戳（正计时无预计结束）
 const endTime = computed(() => {
-  if (!startTime.value) return 0;
+  if (!startTime.value || isStopwatch.value) return 0;
   return startTime.value + targetMinutes.value * 60 * 1000;
 });
 
-// 格式化的预计结束时间（HH:mm）
+// 格式化的预计结束时间（HH:mm），正计时显示 "--"
 const formattedEndTime = computed(() => {
   if (!endTime.value) return '--:--';
   return dayjs(endTime.value).format('HH:mm');
 });
 
-// 时间线进度（0-100）
+// 正计时参考时长（25分钟），用于进度显示
+const stopwatchReferenceSeconds = 25 * 60;
+
+// 时间线进度（0-100）：倒计时用已用/目标，正计时用已用/参考25分钟
 const timelineProgress = computed(() => {
   if (!pomodoroStore.activePomodoro) return 0;
-  const totalSeconds = pomodoroStore.activePomodoro.targetDurationMinutes * 60;
   const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  const totalSeconds = isStopwatch.value
+    ? stopwatchReferenceSeconds
+    : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
   return Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
 });
 
-// 进度环偏移量
+// 进度环偏移量：倒计时显示剩余，正计时显示已用（环随已用时间增长）
 const strokeDashoffset = computed(() => {
   if (!pomodoroStore.activePomodoro) return circumference;
 
-  const totalSeconds = pomodoroStore.activePomodoro.targetDurationMinutes * 60;
-  const remainingSeconds = pomodoroStore.remainingTime;
-  const progress = remainingSeconds / totalSeconds;
+  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  const totalSeconds = isStopwatch.value
+    ? stopwatchReferenceSeconds
+    : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
+  const progress = Math.min(1, elapsedSeconds / totalSeconds);
 
   return circumference * (1 - progress);
 });

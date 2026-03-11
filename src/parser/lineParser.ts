@@ -477,4 +477,68 @@ export class LineParser {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   }
+
+  /**
+   * 解析块属性中的番茄钟值（attr 模式）
+   * 格式: {durationMinutes},{date} {startTime}~{endTime} {description}
+   * 时间与描述之间为空格，无逗号
+   * @param value 属性值
+   * @param blockId 块 ID
+   * @param attrPrefix 属性名前缀，用于生成 id
+   * @returns PomodoroRecord 或 null
+   */
+  public static parsePomodoroAttrValue(
+    value: string,
+    blockId?: string,
+    attrPrefix: string = 'custom-pomodoro'
+  ): PomodoroRecord | null {
+    if (!value || typeof value !== 'string') return null;
+
+    // 格式: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述（空格分隔，无逗号）
+    const regex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*(.*)$/;
+    const match = value.trim().match(regex);
+
+    if (!match) return null;
+
+    const durationMinutes = parseInt(match[1], 10);
+    const date = match[2];
+    const startTime = match[3];
+    const endTime = match[4];
+    const description = match[5]?.trim() || undefined;
+
+    return {
+      id: `${attrPrefix}-${blockId || 'unknown'}-${date}-${startTime}`,
+      date,
+      startTime,
+      endTime,
+      description: description || undefined,
+      durationMinutes,
+      actualDurationMinutes: durationMinutes,
+      blockId
+    };
+  }
+
+  /**
+   * 从块属性对象中提取所有番茄钟记录
+   * @param attrs 块属性对象（来自 getBlockAttrs）
+   * @param blockId 块 ID
+   * @param attrPrefix 属性名前缀，默认 'custom-pomodoro'
+   */
+  public static parsePomodoroAttrs(
+    attrs: { [key: string]: string },
+    blockId?: string,
+    attrPrefix: string = 'custom-pomodoro'
+  ): PomodoroRecord[] {
+    const records: PomodoroRecord[] = [];
+    const prefix = attrPrefix.endsWith('-') ? attrPrefix : attrPrefix + '-';
+
+    for (const [key, value] of Object.entries(attrs)) {
+      if (key.startsWith(prefix) && value) {
+        const record = this.parsePomodoroAttrValue(value, blockId, attrPrefix);
+        if (record) records.push(record);
+      }
+    }
+
+    return records;
+  }
 }

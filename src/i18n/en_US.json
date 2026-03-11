@@ -202,6 +202,19 @@
       "emptyMessage": "No directories configured",
       "noPath": "No path set",
       "pathPlaceholder": "e.g. work/2026/project"
+    },
+    "pomodoro": {
+      "title": "Pomodoro",
+      "enableStatusBar": "Status Bar Progress",
+      "enableStatusBarDesc": "Show progress bar at bottom when focusing",
+      "enableFloatingButton": "Floating Tomato Button",
+      "enableFloatingButtonDesc": "Show floating button at bottom-right when focusing",
+      "recordMode": "Record Storage",
+      "recordModeDesc": "Where to store pomodoro records",
+      "recordModeBlock": "Under item block (child block)",
+      "recordModeAttr": "Item block custom attributes",
+      "dailyFocusTarget": "Daily Focus Target (minutes)",
+      "dailyFocusTargetDesc": "For target line in stats chart, 0 to hide"
     }
   },
   "calendarNav": {

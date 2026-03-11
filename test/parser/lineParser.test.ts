@@ -687,3 +687,81 @@ describe('parseItemLine - 任务列表状态解析', () => {
     expect(items[0].content).toBe('整理资料');
   });
 });
+
+describe('parsePomodoroAttrValue 块属性番茄钟解析（attr 模式）', () => {
+  it('完整格式：duration,date start~end description', () => {
+    const value = '25,2026-03-11 10:30:00~10:55:00 完成复习';
+    const record = LineParser.parsePomodoroAttrValue(value, 'block-1');
+    expect(record).not.toBeNull();
+    expect(record!.durationMinutes).toBe(25);
+    expect(record!.actualDurationMinutes).toBe(25);
+    expect(record!.date).toBe('2026-03-11');
+    expect(record!.startTime).toBe('10:30:00');
+    expect(record!.endTime).toBe('10:55:00');
+    expect(record!.description).toBe('完成复习');
+    expect(record!.blockId).toBe('block-1');
+  });
+
+  it('无 description', () => {
+    const value = '25,2026-03-11 10:30:00~10:55:00';
+    const record = LineParser.parsePomodoroAttrValue(value, 'block-2');
+    expect(record).not.toBeNull();
+    expect(record!.durationMinutes).toBe(25);
+    expect(record!.date).toBe('2026-03-11');
+    expect(record!.description).toBeUndefined();
+  });
+
+  it('空 description（空格后无内容）', () => {
+    const value = '25,2026-03-11 10:30:00~10:55:00 ';
+    const record = LineParser.parsePomodoroAttrValue(value, 'block-3');
+    expect(record).not.toBeNull();
+    expect(record!.durationMinutes).toBe(25);
+    expect(record!.description).toBeUndefined();
+  });
+
+  it('中文逗号 duration', () => {
+    const value = '25，2026-03-11 10:30:00~10:55:00 完成';
+    const record = LineParser.parsePomodoroAttrValue(value, 'block-4');
+    expect(record).not.toBeNull();
+    expect(record!.durationMinutes).toBe(25);
+    expect(record!.description).toBe('完成');
+  });
+
+  it('无效格式返回 null', () => {
+    expect(LineParser.parsePomodoroAttrValue('invalid', 'block-5')).toBeNull();
+    expect(LineParser.parsePomodoroAttrValue('', 'block-6')).toBeNull();
+    expect(LineParser.parsePomodoroAttrValue('25,2026-03-11', 'block-7')).toBeNull();
+  });
+});
+
+describe('parsePomodoroAttrs 从块属性对象提取番茄钟', () => {
+  it('提取 custom-pomodoro- 前缀属性', () => {
+    const attrs = {
+      'custom-pomodoro-1731234567890': '25,2026-03-11 10:30:00~10:55:00 完成',
+      'custom-pomodoro-1731234567891': '15,2026-03-11 11:00:00~11:15:00',
+      bookmark: '🍅',
+      other: 'ignored'
+    };
+    const records = LineParser.parsePomodoroAttrs(attrs, 'block-1');
+    expect(records).toHaveLength(2);
+    expect(records[0].durationMinutes).toBe(25);
+    expect(records[0].description).toBe('完成');
+    expect(records[1].durationMinutes).toBe(15);
+    expect(records[1].description).toBeUndefined();
+  });
+
+  it('自定义前缀', () => {
+    const attrs = {
+      'my-pomodoro-1731234567890': '25,2026-03-11 10:30:00~10:55:00 完成'
+    };
+    const records = LineParser.parsePomodoroAttrs(attrs, 'block-1', 'my-pomodoro');
+    expect(records).toHaveLength(1);
+    expect(records[0].durationMinutes).toBe(25);
+  });
+
+  it('无番茄钟属性返回空数组', () => {
+    const attrs = { bookmark: '🍅', other: 'value' };
+    const records = LineParser.parsePomodoroAttrs(attrs, 'block-1');
+    expect(records).toHaveLength(0);
+  });
+});

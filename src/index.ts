@@ -15,12 +15,14 @@ import ProjectTab from '@/tabs/ProjectTab.vue';
 import TodoDock from '@/tabs/TodoDock.vue';
 import AiChatDock from '@/tabs/AiChatDock.vue';
 import PomodoroDock from '@/tabs/PomodoroDock.vue';
+import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
 import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
-import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, type AIChatHistory } from '@/settings';
-import { loadActivePomodoro } from '@/utils/pomodoroStorage';
+import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
+import { loadActivePomodoro, loadPendingCompletion } from '@/utils/pomodoroStorage';
+import { showPomodoroCompleteDialog } from '@/utils/dialog';
 
 let PluginInfo = {
   version: '',
@@ -42,7 +44,7 @@ const { version } = PluginInfo;
  */
 let sharedPinia: ReturnType<typeof createPinia> | null = null;
 
-function getSharedPinia() {
+export function getSharedPinia() {
   return sharedPinia;
 }
 
@@ -70,6 +72,8 @@ export default class TaskAssistantPlugin extends Plugin {
   private floatingTomatoEl: HTMLElement | null = null;
   /** 悬浮按钮更新定时器 */
   private floatingTomatoTimer: number | null = null;
+  /** 底栏进度条元素 */
+  private statusBarEl: HTMLElement | null = null;
   /** 番茄钟 Dock model */
   private pomodoroDockModel: any = null;
 
@@ -135,6 +139,7 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 检查并恢复进行中的番茄钟
    * 在插件主逻辑中统一执行恢复，避免多组件并发导致重复记录；完成后触发事件供 UI 刷新
+   * 若有待完成记录（弹窗未提交即重启），则弹出完成弹窗补填说明
    */
   private async checkAndRestorePomodoro() {
     try {
@@ -150,7 +155,15 @@ export default class TaskAssistantPlugin extends Plugin {
         // 触发事件供 UI 刷新（如悬浮按钮、Dock 状态）
         eventBus.emit(Events.POMODORO_RESTORE, data);
       } else {
-        console.log('[Task Assistant] 没有进行中的番茄钟需要恢复');
+        // 检查是否有待完成记录（专注结束后未补填说明即重启）
+        const pending = await loadPendingCompletion(this);
+        if (pending) {
+          console.log('[Task Assistant] 发现待完成番茄钟记录，弹出补填弹窗');
+          const pinia = getSharedPinia();
+          showPomodoroCompleteDialog(pending, pinia ?? undefined);
+        } else {
+          console.log('[Task Assistant] 没有进行中的番茄钟需要恢复');
+        }
       }
     } catch (error) {
       console.error('[Task Assistant] 检查番茄钟状态失败:', error);
@@ -188,6 +201,9 @@ export default class TaskAssistantPlugin extends Plugin {
     this.removeData('active-pomodoro.json').catch((e) => {
       showMessage(`uninstall [${this.name}] remove data [active-pomodoro.json] fail: ${e.msg}`);
     });
+    this.removeData('pending-pomodoro-completion.json').catch((e) => {
+      showMessage(`uninstall [${this.name}] remove data [pending-pomodoro-completion.json] fail: ${e.msg}`);
+    });
   }
 
   /**
@@ -211,7 +227,10 @@ export default class TaskAssistantPlugin extends Plugin {
           ai: {
             providers: data.ai?.providers || [],
             activeProviderId: data.ai?.activeProviderId || null
-          }
+          },
+          pomodoro: data.pomodoro
+            ? { ...defaultPomodoroSettings, ...data.pomodoro }
+            : defaultPomodoroSettings
         };
       }
       // 加载聊天记录（从单独的文件）
@@ -527,6 +546,24 @@ export default class TaskAssistantPlugin extends Plugin {
         this.element.innerHTML = '';
       }
     });
+
+    // 番茄钟统计 Tab
+    this.addTab({
+      type: TAB_TYPES.POMODORO_STATS,
+      init() {
+        try {
+          const pinia = sharedPinia ?? createPinia();
+          const app = createApp(PomodoroStatsTab);
+          app.use(pinia);
+          app.mount(this.element);
+        } catch (error) {
+          console.error('[Task Assistant] Failed to mount PomodoroStatsTab:', error);
+        }
+      },
+      destroy() {
+        this.element.innerHTML = '';
+      }
+    });
   }
 
   /**
@@ -682,7 +719,8 @@ export default class TaskAssistantPlugin extends Plugin {
     const icons: Record<string, string> = {
       [TAB_TYPES.CALENDAR]: 'iconCalendar',
       [TAB_TYPES.GANTT]: 'iconGraph',
-      [TAB_TYPES.PROJECT]: 'iconFolder'
+      [TAB_TYPES.PROJECT]: 'iconFolder',
+      [TAB_TYPES.POMODORO_STATS]: 'iconBarChart'
     };
     return icons[type] || 'iconFile';
   }
@@ -694,7 +732,8 @@ export default class TaskAssistantPlugin extends Plugin {
     const titles: Record<string, string> = {
       [TAB_TYPES.CALENDAR]: t('calendar').title,
       [TAB_TYPES.GANTT]: t('gantt').title,
-      [TAB_TYPES.PROJECT]: t('project').title
+      [TAB_TYPES.PROJECT]: t('project').title,
+      [TAB_TYPES.POMODORO_STATS]: '番茄统计'
     };
     return titles[type] || t('title');
   }
@@ -878,28 +917,54 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
-   * 显示悬浮番茄按钮
+   * 显示悬浮番茄按钮（受 enableFloatingButton 控制）
    */
   private showFloatingTomatoButton() {
-    if (this.floatingTomatoEl) {
-      console.log('[Task Assistant] Floating tomato button already exists');
-      return; // 已经显示
-    }
+    const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+    if (pomodoro.enableFloatingButton === false) return;
 
-    console.log('[Task Assistant] Creating floating tomato button');
+    if (this.floatingTomatoEl) return;
+
     this.floatingTomatoEl = this.createFloatingTomatoButton();
     document.body.appendChild(this.floatingTomatoEl);
-    console.log('[Task Assistant] Floating tomato button added to body', this.floatingTomatoEl);
 
-    // 启动定时器更新剩余时间
-    this.updateFloatingTomatoDisplay(); // 立即更新一次
+    this.updateFloatingTomatoDisplay();
     this.floatingTomatoTimer = window.setInterval(() => {
       this.updateFloatingTomatoDisplay();
     }, 1000);
   }
 
   /**
-   * 隐藏悬浮番茄按钮
+   * 显示底栏进度条（受 enableStatusBar 控制）
+   */
+  private showStatusBar() {
+    const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+    if (pomodoro.enableStatusBar !== true) return;
+
+    if (this.statusBarEl) return;
+
+    this.statusBarEl = document.createElement('div');
+    this.statusBarEl.className = 'bullet-journal-status-bar';
+    this.statusBarEl.style.cssText = 'position:fixed;bottom:0;left:0;height:4px;background:var(--b3-theme-surface-lighter);z-index:9999;width:100%;';
+    const fill = document.createElement('div');
+    fill.className = 'status-bar-fill';
+    fill.style.cssText = 'height:100%;background:var(--b3-theme-primary);transition:width 0.3s;';
+    this.statusBarEl.appendChild(fill);
+    document.body.appendChild(this.statusBarEl);
+  }
+
+  /**
+   * 隐藏底栏进度条
+   */
+  private hideStatusBar() {
+    if (this.statusBarEl) {
+      this.statusBarEl.remove();
+      this.statusBarEl = null;
+    }
+  }
+
+  /**
+   * 隐藏悬浮番茄按钮和底栏进度条
    */
   private hideFloatingTomatoButton() {
     if (this.floatingTomatoTimer) {
@@ -911,17 +976,16 @@ export default class TaskAssistantPlugin extends Plugin {
       this.floatingTomatoEl.remove();
       this.floatingTomatoEl = null;
     }
+
+    this.hideStatusBar();
   }
 
   /**
-   * 更新悬浮按钮显示（剩余时间）
+   * 更新悬浮按钮和底栏进度条显示
    * 直接从存储文件读取数据，不依赖 Pinia Store
    */
   private async updateFloatingTomatoDisplay() {
-    if (!this.floatingTomatoEl) return;
-
     try {
-      // 从存储文件读取进行中的番茄钟数据，而不是依赖 Pinia Store
       const data = await loadActivePomodoro(this);
 
       if (!data) {
@@ -929,28 +993,43 @@ export default class TaskAssistantPlugin extends Plugin {
         return;
       }
 
-      // 计算剩余时间
       let effectiveAccumulatedSeconds = data.accumulatedSeconds;
       if (!data.isPaused) {
         const elapsedSinceLastSave = Math.floor((Date.now() - data.startTime) / 1000);
         effectiveAccumulatedSeconds = data.accumulatedSeconds + elapsedSinceLastSave;
       }
 
+      const isStopwatch = data.timerMode === 'stopwatch';
       const targetSeconds = data.targetDurationMinutes * 60;
       const remainingSeconds = targetSeconds - effectiveAccumulatedSeconds;
 
-      if (remainingSeconds <= 0) {
+      // 倒计时模式且已过期时隐藏
+      if (!isStopwatch && remainingSeconds <= 0) {
         this.hideFloatingTomatoButton();
         return;
       }
 
-      const minutes = Math.floor(remainingSeconds / 60);
-      const seconds = remainingSeconds % 60;
+      // 显示时间：倒计时显示剩余，正计时显示已专注
+      const displaySeconds = isStopwatch ? effectiveAccumulatedSeconds : remainingSeconds;
+      const minutes = Math.floor(displaySeconds / 60);
+      const seconds = displaySeconds % 60;
       const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-      const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
-      if (timeEl) {
-        timeEl.textContent = timeStr;
+      if (this.floatingTomatoEl) {
+        const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
+        if (timeEl) timeEl.textContent = timeStr;
+      }
+
+      // 底栏进度条
+      const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+      if (pomodoro.enableStatusBar === true) {
+        this.showStatusBar();
+        const fill = this.statusBarEl?.querySelector('.status-bar-fill') as HTMLElement;
+        if (fill) {
+          const refSeconds = isStopwatch ? 25 * 60 : targetSeconds;
+          const progress = Math.min(1, effectiveAccumulatedSeconds / refSeconds);
+          fill.style.width = `${progress * 100}%`;
+        }
       }
     } catch (error) {
       console.log('[Task Assistant] Failed to update floating tomato display:', error);

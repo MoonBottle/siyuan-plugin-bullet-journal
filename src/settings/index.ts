@@ -5,6 +5,7 @@ import { addDirectoryConfigItem } from './directoryConfig';
 import { addGroupConfigItem } from './groupConfig';
 import { addLunchBreakConfigItems } from './lunchBreakConfig';
 import { addCalendarConfigItem } from './calendarConfig';
+import { addPomodoroConfigItem } from './pomodoroConfig';
 import { addMcpConfigItem } from './mcpConfig';
 import { addAiConfigItem } from './aiConfig';
 import {
@@ -63,8 +64,11 @@ export function createSettingsPanel(plugin: InstanceType<typeof TaskAssistantPlu
   // 5. 日历默认视图
   addCalendarConfigItem(setting, settings as SettingsData);
 
-  // 6. 午休时间（用于工时计算，放最后）
+  // 6. 午休时间（用于工时计算）
   addLunchBreakConfigItems(setting, settings as SettingsData);
+
+  // 7. 番茄钟配置
+  addPomodoroConfigItem(setting, settings as SettingsData);
 
   return setting;
 }

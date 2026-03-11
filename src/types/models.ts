@@ -46,6 +46,24 @@ export interface ActivePomodoroData {
   taskId?: string;              // 任务ID（可选）
   taskName?: string;            // 任务名称（可选）
   taskLevel?: string;           // 任务层级（可选）
+  timerMode?: 'countdown' | 'stopwatch'; // 计时模式
+}
+
+// 待完成番茄钟记录（弹窗补填说明前持久化）
+export interface PendingPomodoroCompletion {
+  blockId: string;
+  itemId: string;
+  itemContent: string;
+  startTime: number;
+  endTime: number;
+  accumulatedSeconds: number;
+  durationMinutes: number;
+  projectId?: string;
+  projectName?: string;
+  taskId?: string;
+  taskName?: string;
+  taskLevel?: string;
+  timerMode?: 'countdown' | 'stopwatch';
 }
 
 // 当前专注状态（运行时，继承自 ActivePomodoroData）

@@ -6,6 +6,9 @@ import { defineStore } from 'pinia';
 import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord } from '@/types/models';
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
+import { getBlockAttrs } from '@/api';
+import { LineParser } from '@/parser/lineParser';
+import { defaultPomodoroSettings } from '@/settings';
 import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRangeUtils';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
@@ -227,6 +230,34 @@ export const useProjectStore = defineStore('project', {
       });
 
       return grouped;
+    },
+
+    // 获取日期范围内的专注分钟数（按日聚合，用于统计图表）
+    getFocusMinutesByDateRange: (state) => (
+      startDate: string,
+      endDate: string,
+      groupId: string = ''
+    ): Map<string, number> => {
+      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      const byDay = new Map<string, number>();
+
+      allPomodoros.forEach((p: PomodoroRecord) => {
+        if (p.date >= startDate && p.date <= endDate) {
+          const mins = p.actualDurationMinutes ?? p.durationMinutes;
+          const current = byDay.get(p.date) ?? 0;
+          byDay.set(p.date, current + mins);
+        }
+      });
+
+      return byDay;
+    },
+
+    // 获取某日的专注分钟数
+    getFocusMinutesByDay: (state) => (date: string, groupId: string = ''): number => {
+      const allPomodoros = (state as any).getAllPomodoros(groupId);
+      return allPomodoros
+        .filter((p: PomodoroRecord) => p.date === date)
+        .reduce((sum: number, p: PomodoroRecord) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
     }
   },
 
@@ -241,6 +272,53 @@ export const useProjectStore = defineStore('project', {
     },
 
     /**
+     * 合并块属性中的番茄钟记录（attr 模式）
+     * 从 getBlockAttrs 获取 custom-pomodoro-* 属性，解析后合并到 item/task.pomodoros
+     */
+    async mergePomodoroAttrs(projects: Project[], plugin: any) {
+      const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
+      const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
+
+      for (const project of projects) {
+        for (const task of project.tasks) {
+          if (task.blockId) {
+            try {
+              const attrs = await getBlockAttrs(task.blockId);
+              const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
+              if (attrRecords.length > 0) {
+                for (const r of attrRecords) {
+                  r.taskId = task.id;
+                  r.projectId = project.id;
+                }
+                task.pomodoros = [...(task.pomodoros || []), ...attrRecords];
+              }
+            } catch {
+              // 忽略获取属性失败
+            }
+          }
+          for (const item of task.items) {
+            if (item.blockId) {
+              try {
+                const attrs = await getBlockAttrs(item.blockId);
+                const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
+                if (attrRecords.length > 0) {
+                  for (const r of attrRecords) {
+                    r.itemId = item.id;
+                    r.taskId = task.id;
+                    r.projectId = project.id;
+                  }
+                  item.pomodoros = [...(item.pomodoros || []), ...attrRecords];
+                }
+              } catch {
+                // 忽略获取属性失败
+              }
+            }
+          }
+        }
+      }
+    },
+
+    /**
      * 加载项目数据（首次加载，显示加载状态）
      */
     async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
@@ -250,6 +328,7 @@ export const useProjectStore = defineStore('project', {
       try {
         const parser = new MarkdownParser(directories);
         const projects = await parser.parseAllProjects();
+        await this.mergePomodoroAttrs(projects, _plugin);
         console.log('[Task Assistant] Parsed projects:', projects?.length || 0);
         const items = await parser.getAllItems();
         console.log('[Task Assistant] Parsed items:', items?.length || 0);
@@ -283,6 +362,7 @@ export const useProjectStore = defineStore('project', {
       try {
         const parser = new MarkdownParser(directories);
         const projects = await parser.parseAllProjects();
+        await this.mergePomodoroAttrs(projects, _plugin);
         const items = await parser.getAllItems();
         const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
 

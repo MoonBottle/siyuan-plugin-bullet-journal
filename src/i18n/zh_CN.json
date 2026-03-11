@@ -202,6 +202,19 @@
       "emptyMessage": "暂无配置目录",
       "noPath": "未设置路径",
       "pathPlaceholder": "如：工作安排/2026/项目"
+    },
+    "pomodoro": {
+      "title": "番茄钟",
+      "enableStatusBar": "底栏进度条",
+      "enableStatusBarDesc": "专注时在页面底部显示进度条",
+      "enableFloatingButton": "悬浮番茄按钮",
+      "enableFloatingButtonDesc": "专注时在右下角显示悬浮按钮",
+      "recordMode": "记录存储方式",
+      "recordModeDesc": "番茄钟记录存储位置",
+      "recordModeBlock": "事项块下（子块）",
+      "recordModeAttr": "事项块自定义属性",
+      "dailyFocusTarget": "每日专注目标（分钟）",
+      "dailyFocusTargetDesc": "用于统计图表中的目标线，0 表示不显示"
     }
   },
   "calendarNav": {
