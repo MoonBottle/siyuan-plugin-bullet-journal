@@ -1,19 +1,21 @@
 <template>
   <div class="focus-trend-chart chart-card">
     <div class="chart-header">
-      <span class="chart-title">{{ t('pomodoroStats').focusTrend }}</span>
-      <span class="chart-subtitle">{{ t('pomodoroStats').dailyAverage }}: {{ formatDuration(dailyAvg) }}</span>
-    </div>
-    <div class="chart-controls">
-      <select v-model="dimension" class="dimension-select">
-        <option value="year">{{ t('pomodoroStats').year }}</option>
-        <option value="month">{{ t('pomodoroStats').month }}</option>
-        <option value="day">{{ t('pomodoroStats').day }}</option>
-      </select>
-      <div class="nav-btns">
-        <button class="nav-btn" @click="prev">‹</button>
-        <span class="nav-label">{{ navLabel }}</span>
-        <button class="nav-btn" @click="next">›</button>
+      <div class="chart-title-group">
+        <span class="chart-title">{{ t('pomodoroStats').focusTrend }}</span>
+        <span class="chart-subtitle">{{ t('pomodoroStats').dailyAverage }}: {{ formatDuration(dailyAvg) }}</span>
+      </div>
+      <div class="chart-controls">
+        <select v-model="dimension" class="dimension-select">
+          <option value="year">{{ t('pomodoroStats').year }}</option>
+          <option value="month">{{ t('pomodoroStats').month }}</option>
+          <option value="day">{{ t('pomodoroStats').day }}</option>
+        </select>
+        <div class="nav-btns">
+          <button class="nav-btn" @click="prev">‹</button>
+          <span class="nav-label">{{ navLabel }}</span>
+          <button class="nav-btn" @click="next">›</button>
+        </div>
       </div>
     </div>
     <div class="chart-container">
@@ -241,7 +243,15 @@ onUnmounted(() => {
 }
 
 .chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
+
+  .chart-title-group {
+    display: flex;
+    align-items: center;
+  }
 
   .chart-title {
     font-size: 14px;
@@ -261,7 +271,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
 }
 
 .dimension-select {
