@@ -82,6 +82,6 @@ function formatDuration(minutes: number): string {
 .stat-value {
   font-size: 24px;
   font-weight: 600;
-  color: var(--b3-theme-on-background);
+  color: var(--b3-theme-primary);
 }
 </style>
