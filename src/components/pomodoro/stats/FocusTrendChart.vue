@@ -43,10 +43,10 @@ const dimension = ref<'year' | 'month' | 'week' | 'day'>('week');
 const offset = ref(0);
 
 const dimensionOptions = [
-  { label: '年', value: 'year' },
-  { label: '月', value: 'month' },
+  { label: '日', value: 'day' },
   { label: '周', value: 'week' },
-  { label: '日', value: 'day' }
+  { label: '月', value: 'month' },
+  { label: '年', value: 'year' }
 ];
 
 const rangeDates = computed(() => {

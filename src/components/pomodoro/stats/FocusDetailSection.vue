@@ -60,12 +60,12 @@ import dayjs from '@/utils/dayjs';
 import DropdownSelect from '@/components/common/DropdownSelect.vue';
 
 const props = defineProps<{
-  range: 'today' | 'week' | 'month';
+  range: 'today' | 'week' | 'month' | 'year';
   rangeOffset: number;
 }>();
 
 const emit = defineEmits<{
-  'update:range': [value: 'today' | 'week' | 'month'];
+  'update:range': [value: 'today' | 'week' | 'month' | 'year'];
   'update:rangeOffset': [value: number];
 }>();
 
@@ -77,9 +77,10 @@ const aggregateOptions = computed(() => [
 ]);
 
 const rangeOptions = computed(() => [
-  { label: t('pomodoroStats').today, value: 'today' },
+  { label: t('pomodoroStats').day, value: 'today' },
   { label: t('pomodoroStats').week, value: 'week' },
-  { label: t('pomodoroStats').month, value: 'month' }
+  { label: t('pomodoroStats').month, value: 'month' },
+  { label: '年', value: 'year' }
 ]);
 
 const projectStore = useProjectStore();
@@ -107,6 +108,12 @@ const rangeDates = computed(() => {
       end = d.endOf('month');
       break;
     }
+    case 'year': {
+      const y = base.add(props.rangeOffset, 'year');
+      start = y.startOf('year');
+      end = y.endOf('year');
+      break;
+    }
     default:
       return { startDate: base.format('YYYY-MM-DD'), endDate: base.format('YYYY-MM-DD') };
   }
@@ -121,6 +128,7 @@ const rangeLabel = computed(() => {
   }
   if (props.range === 'week') {
     if (props.rangeOffset === 0) return t('pomodoroStats').week;
+    if (props.rangeOffset === -1) return t('pomodoroStats').lastWeek;
     const w = dayjs().add(props.rangeOffset, 'week');
     const start = w.startOf('week').add(1, 'day');
     const end = w.endOf('week').add(1, 'day');
@@ -129,6 +137,10 @@ const rangeLabel = computed(() => {
   if (props.range === 'month') {
     const d = dayjs().add(props.rangeOffset, 'month');
     return d.format('YYYY-M月');
+  }
+  if (props.range === 'year') {
+    const y = dayjs().add(props.rangeOffset, 'year');
+    return y.format('YYYY');
   }
   return '';
 });
