@@ -1,20 +1,19 @@
 <template>
   <div class="focus-detail-section">
-    <h4 class="section-title">{{ t('pomodoroStats').focusDetail }}</h4>
-
-    <div class="detail-header">
-      <div class="range-tabs">
-        <button
-          v-for="r in ['today', 'week', 'month']"
-          :key="r"
-          class="range-tab"
-          :class="{ active: range === r }"
-          @click="emit('update:range', r); emit('update:rangeOffset', 0)"
-        >
-          {{ r === 'today' ? t('pomodoroStats').today : r === 'week' ? t('pomodoroStats').week : t('pomodoroStats').month }}
-        </button>
-      </div>
-      <div class="date-nav">
+    <div class="section-header">
+      <h4 class="section-title">{{ t('pomodoroStats').focusDetail }}</h4>
+      <div class="chart-controls">
+        <div class="range-tabs">
+          <button
+            v-for="r in ['today', 'week', 'month']"
+            :key="r"
+            class="range-tab"
+            :class="{ active: range === r }"
+            @click="emit('update:range', r); emit('update:rangeOffset', 0)"
+          >
+            {{ r === 'today' ? t('pomodoroStats').today : r === 'week' ? t('pomodoroStats').week : t('pomodoroStats').month }}
+          </button>
+        </div>
         <button class="nav-btn" @click="prevRange">‹</button>
         <span class="nav-label">{{ rangeLabel }}</span>
         <button class="nav-btn" @click="nextRange">›</button>
@@ -145,19 +144,18 @@ function nextRange() {
   border: 1px solid var(--b3-theme-surface-lighter);
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
 .section-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
-  margin: 0 0 12px 0;
-}
-
-.detail-header {
-  margin-bottom: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+  margin: 0;
 }
 
 .range-tabs {
@@ -181,7 +179,7 @@ function nextRange() {
   border-color: var(--b3-theme-primary);
 }
 
-.date-nav {
+.chart-controls {
   display: flex;
   align-items: center;
   gap: 8px;

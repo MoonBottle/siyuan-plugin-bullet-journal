@@ -8,25 +8,36 @@
         <button class="nav-btn" @click="nextWeek">›</button>
       </div>
     </div>
-    <div class="timeline-grid">
-      <div class="timeline-y-labels">
-        <div v-for="h in yLabels" :key="h" class="y-label">{{ h }}</div>
-      </div>
-      <div class="timeline-content">
-        <div v-for="day in weekDays" :key="day.date" class="timeline-column">
-          <div class="timeline-cells">
-            <div
-              v-for="slot in hourlySlots"
-              :key="slot"
-              class="cell"
-              :class="{ filled: getCellFocus(day.date, slot) > 0 }"
-              :style="{ opacity: getCellOpacity(day.date, slot) }"
-              @mouseenter="(e) => showCellTooltip(e, day.date, slot)"
-              @mouseleave="hideTooltip"
-            />
-          </div>
-          <div class="x-label">{{ day.label }}</div>
+    <div class="timeline-container">
+      <!-- Y轴标签 -->
+      <div class="y-axis">
+        <div v-for="(label, index) in yLabels" :key="index" class="y-label" :class="{ hidden: index === 6 }">
+          {{ label }}
         </div>
+      </div>
+      <!-- 热力图网格 -->
+      <div class="heatmap-grid">
+        <!-- 横向虚线 -->
+        <div class="grid-lines">
+          <div v-for="i in 7" :key="i" class="grid-line"></div>
+        </div>
+        <!-- 每天的数据列 -->
+        <div v-for="day in weekDays" :key="day.date" class="day-column">
+          <div
+            v-for="hour in 24"
+            :key="hour - 1"
+            class="hour-cell"
+            :class="{ filled: getCellFocus(day.date, hour - 1) > 0 }"
+            :style="{ opacity: getCellOpacity(day.date, hour - 1) }"
+            @mouseenter="(e) => showCellTooltip(e, day.date, hour - 1)"
+            @mouseleave="hideTooltip"
+          />
+        </div>
+      </div>
+      <!-- X轴标签 -->
+      <div class="x-axis">
+        <div class="x-label-spacer"></div>
+        <div v-for="day in weekDays" :key="day.date" class="x-label">{{ day.label }}</div>
       </div>
     </div>
   </div>
@@ -55,24 +66,18 @@ const weekLabel = computed(() => {
 
 const weekDays = computed(() => {
   const days: { date: string; label: string }[] = [];
-  const dows = ['日', '一', '二', '三', '四', '五', '六'];
+  const dows = ['一', '二', '三', '四', '五', '六', '日'];
   for (let i = 0; i < 7; i++) {
     const d = weekStart.value.add(i, 'day');
     days.push({
       date: d.format('YYYY-MM-DD'),
-      label: dows[d.day()]
+      label: dows[i]
     });
   }
   return days;
 });
 
-const yLabels = computed(() => ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']);
-
-const hourlySlots = computed(() => {
-  const slots: number[] = [];
-  for (let h = 0; h < 24; h++) slots.push(h);
-  return slots;
-});
+const yLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', ''];
 
 const focusByDateHour = computed(() => {
   const map = new Map<string, number>();
@@ -230,102 +235,100 @@ function nextWeek() {
   text-align: center;
 }
 
-.timeline-grid {
+.timeline-container {
   display: flex;
-  gap: 8px;
-  height: 200px;
-  min-height: 0;
+  flex-direction: column;
+  height: 180px;
+  position: relative;
 }
 
-.timeline-y-labels {
+.y-axis {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: 10px;
-  color: var(--b3-theme-on-surface);
-  padding-top: 12px;
-  padding-bottom: 12px;
-  width: 32px;
-  flex-shrink: 0;
+  height: 156px;
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 40px;
 }
 
 .y-label {
+  font-size: 10px;
+  color: var(--b3-theme-on-surface);
+  text-align: right;
+  line-height: 1;
+  height: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 4px;
-  line-height: 1;
-}
 
-.timeline-content {
-  flex: 1;
-  display: flex;
-  gap: 4px;
-  min-height: 0;
-  position: relative;
-  padding-top: 12px;
-  padding-bottom: 12px;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 12px;
-    left: 0;
-    right: 0;
-    bottom: 12px;
-    pointer-events: none;
-    background-image:
-      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
-      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
-      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
-      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
-      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
-      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
-      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px);
-    background-size: 100% 1px;
-    background-position:
-      0 0,
-      0 calc(100% / 6),
-      0 calc(100% / 6 * 2),
-      0 calc(100% / 6 * 3),
-      0 calc(100% / 6 * 4),
-      0 calc(100% / 6 * 5),
-      0 100%;
-    background-repeat: repeat-x;
+  &.hidden {
+    visibility: hidden;
   }
 }
 
-.timeline-column {
+.heatmap-grid {
+  flex: 1;
+  display: flex;
+  margin-left: 40px;
+  position: relative;
+}
+
+.grid-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.grid-line {
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--b3-theme-surface-lighter) 0,
+    var(--b3-theme-surface-lighter) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.day-column {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  min-height: 0;
 }
 
-.x-label {
-  font-size: 11px;
-  color: var(--b3-theme-on-surface);
-  margin-bottom: 4px;
-}
-
-.timeline-cells {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-}
-
-.cell {
+.hour-cell {
   flex: 1;
   min-height: 2px;
   background: transparent;
-  border-radius: var(--b3-border-radius);
   transition: opacity 0.2s;
 
   &.filled {
     background: var(--b3-theme-primary);
   }
+}
+
+.x-axis {
+  display: flex;
+  margin-left: 40px;
+  margin-top: 4px;
+}
+
+.x-label-spacer {
+  width: 0;
+}
+
+.x-label {
+  flex: 1;
+  font-size: 11px;
+  color: var(--b3-theme-on-surface);
+  text-align: center;
 }
 </style>
