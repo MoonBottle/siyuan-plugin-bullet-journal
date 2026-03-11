@@ -102,6 +102,10 @@ function updateChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -134,7 +138,7 @@ function updateChart() {
               return;
             }
 
-            if (tooltip.body) {
+            if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
               const dataIndex = tooltip.dataPoints[0].dataIndex;
               const item = chartData.value[dataIndex];
               const duration = formatDuration(item.minutes);
