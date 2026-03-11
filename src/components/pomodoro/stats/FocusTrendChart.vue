@@ -240,11 +240,11 @@ function updateChart() {
             title: (items) => {
               const item = items[0];
               if (!item) return '';
-              if (dimension.value === 'week') {
+              if (dimension.value === 'week' || dimension.value === 'month') {
                 const { startDate } = rangeDates.value;
                 const date = dayjs(startDate).add(item.dataIndex, 'day');
                 const dows = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-                return `${dows[item.dataIndex]} ${date.format('YYYY-MM-DD')}`;
+                return `${dows[date.day() === 0 ? 6 : date.day() - 1]} ${date.format('YYYY-MM-DD')}`;
               }
               return item.label || '';
             },
