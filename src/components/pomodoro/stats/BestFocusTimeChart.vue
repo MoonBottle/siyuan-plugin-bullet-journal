@@ -61,6 +61,13 @@ function nextMonth() {
 }
 
 
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h${m}m`;
+}
+
 function updateChart() {
   if (!chartCanvas.value) return;
   const ctx = chartCanvas.value.getContext('2d');
@@ -68,12 +75,15 @@ function updateChart() {
 
   if (chartInstance) {
     chartInstance.destroy();
+    chartInstance = null;
   }
+
+  // 清除画布
+  ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height);
 
   const containerEl = chartCanvas.value?.parentElement ?? null;
   const primaryColor = getThemePrimary(containerEl);
   const textColor = getChartTextColor(containerEl);
-  const gridColor = toRgba(textColor, 0.28);
   const borderColor = darkenColor(primaryColor, 18);
 
   chartInstance = new Chart(ctx, {
@@ -95,31 +105,58 @@ function updateChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          displayColors: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          padding: 8,
-          cornerRadius: 4,
-          titleFont: { size: 13 },
-          bodyFont: { size: 13 },
-          callbacks: {
-            title: (items) => items[0]?.label || '',
-            label: (item) => `${item.dataset.label}: ${item.parsed.y}m`
+          enabled: false,
+          external: (context) => {
+            const { chart, tooltip } = context;
+            let tooltipEl = document.getElementById('chartjs-bar-tooltip');
+
+            if (!tooltipEl) {
+              tooltipEl = document.createElement('div');
+              tooltipEl.id = 'chartjs-bar-tooltip';
+              tooltipEl.style.cssText = `
+                position: fixed;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 13px;
+                pointer-events: none;
+                z-index: 10000;
+                opacity: 0;
+                transition: opacity 0.2s;
+                line-height: 1.5;
+              `;
+              document.body.appendChild(tooltipEl);
+            }
+
+            if (tooltip.opacity === 0) {
+              tooltipEl.style.opacity = '0';
+              return;
+            }
+
+            if (tooltip.body) {
+              const dataIndex = tooltip.dataPoints[0].dataIndex;
+              const item = chartData.value[dataIndex];
+              const duration = formatDuration(item.minutes);
+              tooltipEl.innerHTML = `${item.label}<br/>${t('pomodoroStats').focusDuration}: ${duration}`;
+            }
+
+            const position = chart.canvas.getBoundingClientRect();
+            tooltipEl.style.opacity = '1';
+            tooltipEl.style.left = position.left + tooltip.caretX - tooltipEl.offsetWidth / 2 + 'px';
+            tooltipEl.style.top = position.top + tooltip.caretY - tooltipEl.offsetHeight - 10 + 'px';
           }
         }
       },
       scales: {
         x: {
           grid: {
-            display: true,
-            color: gridColor,
-            drawBorder: false
+            display: false,
+            drawTicks: false
           },
           ticks: {
             color: textColor,
             callback: function(value: number, index: number) {
-              // 每3小时显示一个标签
               return index % 3 === 0 ? chartData.value[index]?.label : '';
             },
             maxRotation: 0,
@@ -129,10 +166,9 @@ function updateChart() {
         },
         y: {
           beginAtZero: true,
-          grid: { display: false, drawBorder: false },
+          grid: { display: false },
           ticks: {
-            color: textColor,
-            callback: (v: number) => v + 'm'
+            display: false
           },
           border: { display: false }
         }
@@ -154,6 +190,10 @@ onUnmounted(() => {
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;
+  }
+  const tooltipEl = document.getElementById('chartjs-bar-tooltip');
+  if (tooltipEl) {
+    tooltipEl.remove();
   }
 });
 </script>
