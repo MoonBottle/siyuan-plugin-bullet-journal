@@ -198,8 +198,8 @@ function updateChart() {
   const containerEl = chartCanvas.value?.parentElement ?? null;
   const primaryColor = getThemePrimary(containerEl);
   const textColor = getChartTextColor(containerEl);
-  const gridColor = toRgba(textColor, 0.28);
-
+  const gridColor = toRgba(textColor, 0.2); // 稍微调淡一点，虚线会更清晰
+  
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
@@ -209,46 +209,68 @@ function updateChart() {
         data: chartData.value.map(d => d.minutes),
         borderColor: primaryColor,
         borderWidth: 2,
-        pointBackgroundColor: primaryColor,
+        pointBackgroundColor: '#fff',
         pointBorderColor: primaryColor,
-        backgroundColor: toRgba(primaryColor, 0.28),
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: primaryColor,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+        backgroundColor: (context: any) => {
+          const chart = context.chart;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return null;
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          gradient.addColorStop(0, toRgba(primaryColor, 0.2));
+          gradient.addColorStop(1, 'transparent');
+          return gradient;
+        },
         fill: true,
-        tension: 0.3
+        tension: 0.4
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
           displayColors: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          padding: 8,
+          backgroundColor: '#fff',
+          titleColor: '#333',
+          bodyColor: '#333',
+          borderColor: 'rgba(0,0,0,0.1)',
+          borderWidth: 1,
+          padding: 10,
           cornerRadius: 4,
-          titleFont: { size: 13 },
-          bodyFont: { size: 13 },
+          titleFont: { size: 0 }, // 隐藏标题
+          bodyFont: { size: 14 },
           callbacks: {
-            title: (items) => {
-              const item = items[0];
-              if (!item) return '';
+            title: () => '',
+            label: (item) => {
+              let label = '';
               if (dimension.value === 'week' || dimension.value === 'month') {
                 const { startDate } = rangeDates.value;
                 const date = dayjs(startDate).add(item.dataIndex, 'day');
-                const dows = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-                return `${dows[date.day() === 0 ? 6 : date.day() - 1]} ${date.format('YYYY-MM-DD')}`;
+                label = `${date.format('M月D日')}`;
+              } else {
+                label = item.label;
               }
-              return item.label || '';
-            },
-            label: (item) => `${item.dataset.label}: ${item.parsed.y}m`
+              const duration = formatDuration(item.parsed.y as number);
+              return `${label}, ${duration}`;
+            }
           }
         }
       },
       scales: {
         x: {
-          grid: { color: gridColor },
+          grid: { 
+            display: false,
+          },
           ticks: {
             color: textColor,
             font: {
@@ -259,10 +281,18 @@ function updateChart() {
         },
         y: {
           beginAtZero: true,
-          grid: { color: gridColor },
+          grid: { 
+            display: true,
+            color: gridColor,
+            borderDash: [5, 5], // 调回 5, 5 看看效果
+            drawTicks: false,
+          },
+          border: {
+            display: false,
+          },
           ticks: {
-            color: textColor,
-            callback: (v: number) => v + 'm'
+            display: false,
+            stepSize: 60, // 增加格点密度
           }
         }
       }
