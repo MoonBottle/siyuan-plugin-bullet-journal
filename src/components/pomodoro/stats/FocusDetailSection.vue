@@ -79,8 +79,7 @@ const aggregateOptions = computed(() => [
 const rangeOptions = computed(() => [
   { label: t('pomodoroStats').day, value: 'today' },
   { label: t('pomodoroStats').week, value: 'week' },
-  { label: t('pomodoroStats').month, value: 'month' },
-  { label: '年', value: 'year' }
+  { label: t('pomodoroStats').month, value: 'month' }
 ]);
 
 const projectStore = useProjectStore();
