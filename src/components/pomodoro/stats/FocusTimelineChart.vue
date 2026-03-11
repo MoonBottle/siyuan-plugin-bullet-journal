@@ -221,18 +221,29 @@ function nextWeek() {
 }
 
 .nav-btn {
-  padding: 4px 10px;
+  padding: 0 10px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   background: var(--b3-theme-background);
   color: var(--b3-theme-on-background);
+  font-size: 14px;
   cursor: pointer;
+  box-sizing: border-box;
+}
+
+.nav-btn:hover {
+  background: var(--b3-theme-surface);
 }
 
 .nav-label {
   font-size: 13px;
   min-width: 80px;
   text-align: center;
+  color: var(--b3-theme-on-surface);
 }
 
 .timeline-container {

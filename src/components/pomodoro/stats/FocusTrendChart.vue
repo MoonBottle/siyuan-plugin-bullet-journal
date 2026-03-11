@@ -383,7 +383,7 @@ onUnmounted(() => {
 .chart-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .dimension-dropdown {
@@ -393,22 +393,33 @@ onUnmounted(() => {
 .nav-btns {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .nav-btn {
-  padding: 2px 8px;
+  padding: 0 10px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   background: var(--b3-theme-background);
   color: var(--b3-theme-on-background);
   cursor: pointer;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.nav-btn:hover {
+  background: var(--b3-theme-surface);
 }
 
 .nav-label {
   font-size: 13px;
-  min-width: 60px;
+  min-width: 80px;
   text-align: center;
+  color: var(--b3-theme-on-surface);
 }
 
 .chart-container {
