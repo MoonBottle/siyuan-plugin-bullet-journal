@@ -26,7 +26,8 @@
             :key="item.date"
             class="heatmap-cell"
             :class="item.level"
-            :title="`${item.date}: ${formatDuration(item.minutes)}`"
+            @mouseenter="(e) => showCellTooltip(e, item)"
+            @mouseleave="hideTooltip"
           />
         </div>
         <div class="heatmap-legend">
@@ -158,6 +159,57 @@ function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m === 0 ? `${h}h` : `${h}h${m}m`;
+}
+
+const TOOLTIP_ID = 'annual-heatmap-tooltip';
+
+function showCellTooltip(e: MouseEvent, item: { date: string; minutes: number; level: string }) {
+  let tooltip = document.getElementById(TOOLTIP_ID);
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = TOOLTIP_ID;
+    tooltip.style.cssText = `
+      position: fixed;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.2s;
+      line-height: 1.5;
+    `;
+    document.body.appendChild(tooltip);
+  }
+
+  tooltip.innerHTML = `${item.date}<br/>${t('pomodoroStats').focusDuration}: ${formatDuration(item.minutes)}`;
+  tooltip.style.opacity = '1';
+
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+
+  let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+  let top = rect.top - tooltipRect.height - 8;
+
+  if (left < 8) left = 8;
+  if (left + tooltipRect.width > window.innerWidth - 8) {
+    left = window.innerWidth - tooltipRect.width - 8;
+  }
+  if (top < 8) {
+    top = rect.bottom + 8;
+  }
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById(TOOLTIP_ID);
+  if (tooltip) {
+    tooltip.style.opacity = '0';
+  }
 }
 </script>
 
