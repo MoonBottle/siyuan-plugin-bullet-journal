@@ -233,7 +233,7 @@ function nextWeek() {
 .timeline-grid {
   display: flex;
   gap: 8px;
-  flex: 1;
+  height: 200px;
   min-height: 0;
 }
 
@@ -245,10 +245,16 @@ function nextWeek() {
   color: var(--b3-theme-on-surface);
   padding-top: 12px;
   padding-bottom: 12px;
+  width: 32px;
+  flex-shrink: 0;
 }
 
 .y-label {
   height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
 }
 
 .timeline-content {
