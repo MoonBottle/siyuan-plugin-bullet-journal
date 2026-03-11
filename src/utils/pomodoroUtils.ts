@@ -236,6 +236,32 @@ export function toPomodoroRecordOutput(
 }
 
 /**
+ * 按时段聚合专注分钟数（用于最佳专注时间图表）
+ * @param pomodoros 番茄钟记录
+ * @param slotHours 时段长度（小时），默认 3
+ * @returns Map<slotLabel, minutes>，如 "00:00" -> 90
+ */
+export function groupByTimeSlot(
+  pomodoros: PomodoroRecord[],
+  slotHours: number = 3
+): Map<string, number> {
+  const slots = new Map<string, number>();
+  const labels = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+
+  labels.forEach(l => slots.set(l, 0));
+
+  for (const p of pomodoros) {
+    const mins = p.actualDurationMinutes ?? p.durationMinutes;
+    const [h] = p.startTime.split(':').map(Number);
+    const slotIndex = Math.min(Math.floor(h / slotHours), 7);
+    const label = labels[slotIndex];
+    slots.set(label, (slots.get(label) ?? 0) + mins);
+  }
+
+  return slots;
+}
+
+/**
  * 转换为精简格式（用于 filter_items 的 item.pomodoros）
  */
 export function toPomodoroRecordCompact(record: PomodoroRecord): PomodoroRecordCompact {

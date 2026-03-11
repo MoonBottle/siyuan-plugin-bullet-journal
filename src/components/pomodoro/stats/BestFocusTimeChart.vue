@@ -1,0 +1,153 @@
+<template>
+  <div class="best-focus-time-chart chart-card">
+    <div class="chart-header">
+      <span class="chart-title">{{ t('pomodoroStats').bestFocusTime }}</span>
+    </div>
+    <div class="chart-controls">
+      <button class="nav-btn" @click="prevMonth">‹</button>
+      <span class="nav-label">{{ monthLabel }}</span>
+      <button class="nav-btn" @click="nextMonth">›</button>
+    </div>
+    <div class="chart-container">
+      <canvas ref="chartCanvas"></canvas>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useProjectStore } from '@/stores';
+import { groupByTimeSlot } from '@/utils/pomodoroUtils';
+import { t } from '@/i18n';
+import dayjs from '@/utils/dayjs';
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
+
+const projectStore = useProjectStore();
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
+let chartInstance: Chart | null = null;
+
+const monthOffset = ref(0);
+
+const monthRange = computed(() => {
+  const m = dayjs().add(monthOffset.value, 'month');
+  return {
+    startDate: m.startOf('month').format('YYYY-MM-DD'),
+    endDate: m.endOf('month').format('YYYY-MM-DD')
+  };
+});
+
+const monthLabel = computed(() => {
+  return dayjs().add(monthOffset.value, 'month').format('M月');
+});
+
+const chartData = computed(() => {
+  const { startDate, endDate } = monthRange.value;
+  const all = projectStore.getAllPomodoros('');
+  const filtered = all.filter(p => p.date >= startDate && p.date <= endDate);
+  const bySlot = groupByTimeSlot(filtered, 3);
+  const labels = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+  return labels.map(l => ({ label: l, minutes: bySlot.get(l) ?? 0 }));
+});
+
+function prevMonth() {
+  monthOffset.value--;
+}
+
+function nextMonth() {
+  monthOffset.value++;
+}
+
+function updateChart() {
+  if (!chartCanvas.value) return;
+  const ctx = chartCanvas.value.getContext('2d');
+  if (!ctx) return;
+
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartData.value.map(d => d.label),
+      datasets: [{
+        label: t('pomodoroStats').focusDuration,
+        data: chartData.value.map(d => d.minutes),
+        backgroundColor: 'var(--b3-theme-primary)',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (v: number) => v + 'm'
+          }
+        }
+      }
+    }
+  });
+}
+
+watch(chartData, updateChart);
+onMounted(updateChart);
+onUnmounted(() => {
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+});
+</script>
+
+<style lang="scss" scoped>
+.chart-card {
+  padding: 12px;
+  background: var(--b3-theme-background);
+  border-radius: var(--b3-border-radius);
+  border: 1px solid var(--b3-theme-surface-lighter);
+}
+
+.chart-header {
+  margin-bottom: 12px;
+
+  .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--b3-theme-on-background);
+  }
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.nav-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  cursor: pointer;
+}
+
+.nav-label {
+  font-size: 13px;
+  min-width: 50px;
+  text-align: center;
+}
+
+.chart-container {
+  height: 180px;
+}
+</style>
