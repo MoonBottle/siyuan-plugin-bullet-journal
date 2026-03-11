@@ -127,8 +127,8 @@ const rangeLabel = computed(() => {
     return d.format('YYYY-MM-DD');
   }
   if (props.range === 'week') {
-    if (props.rangeOffset === 0) return t('pomodoroStats').week;
-    if (props.rangeOffset === -1) return t('pomodoroStats').lastWeek;
+    if (props.rangeOffset === 0) return '本周';
+    if (props.rangeOffset === -1) return '上周';
     const w = dayjs().add(props.rangeOffset, 'week');
     const start = w.startOf('week').add(1, 'day');
     const end = w.endOf('week').add(1, 'day');

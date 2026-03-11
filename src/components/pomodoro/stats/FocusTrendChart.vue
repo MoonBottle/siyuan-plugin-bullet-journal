@@ -90,8 +90,8 @@ const navLabel = computed(() => {
     case 'month':
       return dayjs().add(offset.value, 'month').format('YYYY-M月');
     case 'week': {
-      if (offset.value === 0) return t('pomodoroStats').week;
-      if (offset.value === -1) return t('pomodoroStats').lastWeek;
+      if (offset.value === 0) return '本周';
+      if (offset.value === -1) return '上周';
       const w = dayjs().add(offset.value, 'week');
       const start = w.startOf('week').add(1, 'day');
       const end = w.endOf('week').add(1, 'day');
