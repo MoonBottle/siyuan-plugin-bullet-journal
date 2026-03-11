@@ -114,7 +114,7 @@ const chartData = computed(() => {
       }
       result.push({ label: `${m}月`, minutes: total });
     }
-  } else if (dimension.value === 'month' || dimension.value === 'week') {
+  } else if (dimension.value === 'month') {
     let current = dayjs(startDate);
     const end = dayjs(endDate);
     while (current.isBefore(end) || current.isSame(end, 'day')) {
@@ -124,6 +124,20 @@ const chartData = computed(() => {
         minutes: byDay.get(d) ?? 0
       });
       current = current.add(1, 'day');
+    }
+  } else if (dimension.value === 'week') {
+    const dows = ['一', '二', '三', '四', '五', '六', '日'];
+    let current = dayjs(startDate);
+    const end = dayjs(endDate);
+    let i = 0;
+    while (current.isBefore(end) || current.isSame(end, 'day')) {
+      const d = current.format('YYYY-MM-DD');
+      result.push({
+        label: dows[i],
+        minutes: byDay.get(d) ?? 0
+      });
+      current = current.add(1, 'day');
+      i++;
     }
   } else {
     const all = projectStore.getAllPomodoros('');
