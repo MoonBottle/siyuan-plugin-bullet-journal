@@ -8,22 +8,34 @@
         <button class="nav-btn" @click="nextYear">›</button>
       </div>
     </div>
-    <div class="heatmap-content">
-      <div class="heatmap-grid">
-        <div
-          v-for="item in heatmapData"
-          :key="item.date"
-          class="heatmap-cell"
-          :class="item.level"
-          :title="`${item.date}: ${formatDuration(item.minutes)}`"
-        />
+    <div class="heatmap-wrapper">
+      <div class="heatmap-months">
+        <span
+          v-for="month in monthLabels"
+          :key="month.index"
+          class="month-label"
+          :style="{ gridColumn: month.col }"
+        >
+          {{ month.label }}
+        </span>
       </div>
-      <div class="heatmap-legend">
-        <span class="legend-item level-0">0m</span>
-        <span class="legend-item level-1">0-1h</span>
-        <span class="legend-item level-2">1-3h</span>
-        <span class="legend-item level-3">3-5h</span>
-        <span class="legend-item level-4">>5h</span>
+      <div class="heatmap-content">
+        <div class="heatmap-grid">
+          <div
+            v-for="item in heatmapData"
+            :key="item.date"
+            class="heatmap-cell"
+            :class="item.level"
+            :title="`${item.date}: ${formatDuration(item.minutes)}`"
+          />
+        </div>
+        <div class="heatmap-legend">
+          <span class="legend-item level-0">0m</span>
+          <span class="legend-item level-1">0-1h</span>
+          <span class="legend-item level-2">1-3h</span>
+          <span class="legend-item level-3">3-5h</span>
+          <span class="legend-item level-4">>5h</span>
+        </div>
       </div>
     </div>
   </div>
@@ -48,6 +60,28 @@ const yearRange = computed(() => {
 
 const yearLabel = computed(() => {
   return dayjs().add(yearOffset.value, 'year').format('YYYY');
+});
+
+const monthLabels = computed(() => {
+  const year = dayjs().add(yearOffset.value, 'year').year();
+  const labels: { index: number; label: string; col: number }[] = [];
+  const numRows = 14;
+  const yearStart = dayjs(`${year}-01-01`);
+  // 只显示 1、4、7、10 月
+  const displayMonths = [0, 3, 6, 9]; // 0-based month index
+  
+  for (const m of displayMonths) {
+    const monthStart = dayjs(`${year}-${String(m + 1).padStart(2, '0')}-01`);
+    // 计算该月1日是一年中的第几天 (0-based)
+    const dayOfYear = monthStart.diff(yearStart, 'day');
+    const colIndex = Math.floor(dayOfYear / numRows) + 1; // 1-based for grid-column
+    labels.push({
+      index: m,
+      label: `${m + 1}月`,
+      col: colIndex
+    });
+  }
+  return labels;
 });
 
 const focusByDay = computed(() => {
@@ -167,6 +201,27 @@ function formatDuration(minutes: number): string {
   font-size: 13px;
   min-width: 50px;
   text-align: center;
+}
+
+.heatmap-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heatmap-months {
+  display: grid;
+  grid-template-columns: repeat(26, 1fr);
+  gap: 1px;
+  padding-right: 60px;
+  font-size: 11px;
+  color: var(--b3-theme-on-surface);
+}
+
+.month-label {
+  text-align: left;
+  padding-left: 2px;
+  white-space: nowrap;
 }
 
 .heatmap-content {
