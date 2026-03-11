@@ -20,6 +20,7 @@ import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
 import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, type AIChatHistory } from '@/settings';
+import { loadActivePomodoro } from '@/utils/pomodoroStorage';
 
 let PluginInfo = {
   version: '',
@@ -31,8 +32,6 @@ try {
 }
 const { version } = PluginInfo;
 
-export { TAB_TYPES, DOCK_TYPES };
-
 /**
  * 插件内共享的 Pinia 实例。
  * 根因：思源每个 Tab/Dock 的 init() 各自挂载一个 Vue 应用，若各自 createPinia() 会得到多份 store，
@@ -43,7 +42,7 @@ export { TAB_TYPES, DOCK_TYPES };
  */
 let sharedPinia: ReturnType<typeof createPinia> | null = null;
 
-export function getSharedPinia() {
+function getSharedPinia() {
   return sharedPinia;
 }
 
@@ -53,7 +52,7 @@ let settings: SettingsData = { ...defaultSettings };
 // 全局聊天记录（单独存储）
 let chatHistory: AIChatHistory = { ...defaultChatHistory };
 
-export default class HKWorkPlugin extends Plugin {
+export default class TaskAssistantPlugin extends Plugin {
   public isMobile: boolean;
   public isBrowser: boolean;
   public isLocal: boolean;
@@ -139,11 +138,10 @@ export default class HKWorkPlugin extends Plugin {
    */
   private async checkAndRestorePomodoro() {
     try {
-      const { loadActivePomodoro } = await import('@/utils/pomodoroStorage');
       const data = await loadActivePomodoro(this);
 
       if (data) {
-        console.log('[HKWorkPlugin] 发现进行中的番茄钟，执行恢复');
+        console.log('[Task Assistant] 发现进行中的番茄钟，执行恢复');
         const pinia = getSharedPinia();
         if (pinia) {
           const store = usePomodoroStore(pinia);
@@ -152,10 +150,10 @@ export default class HKWorkPlugin extends Plugin {
         // 触发事件供 UI 刷新（如悬浮按钮、Dock 状态）
         eventBus.emit(Events.POMODORO_RESTORE, data);
       } else {
-        console.log('[HKWorkPlugin] 没有进行中的番茄钟需要恢复');
+        console.log('[Task Assistant] 没有进行中的番茄钟需要恢复');
       }
     } catch (error) {
-      console.error('[HKWorkPlugin] 检查番茄钟状态失败:', error);
+      console.error('[Task Assistant] 检查番茄钟状态失败:', error);
     }
   }
 
@@ -924,7 +922,6 @@ export default class HKWorkPlugin extends Plugin {
 
     try {
       // 从存储文件读取进行中的番茄钟数据，而不是依赖 Pinia Store
-      const { loadActivePomodoro } = await import('@/utils/pomodoroStorage');
       const data = await loadActivePomodoro(this);
 
       if (!data) {

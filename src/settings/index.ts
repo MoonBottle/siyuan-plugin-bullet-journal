@@ -1,5 +1,6 @@
 import { Setting } from 'siyuan';
-import type HKWorkPlugin from '@/index';
+import type TaskAssistantPlugin from '@/index';
+import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { addDirectoryConfigItem } from './directoryConfig';
 import { addGroupConfigItem } from './groupConfig';
 import { addLunchBreakConfigItems } from './lunchBreakConfig';
@@ -21,7 +22,7 @@ export * from './utils';
 /**
  * 创建设置面板
  */
-export function createSettingsPanel(plugin: HKWorkPlugin): Setting {
+export function createSettingsPanel(plugin: InstanceType<typeof TaskAssistantPlugin>): Setting {
   const settings = plugin.getSettings();
 
   const setting = new Setting({
@@ -33,9 +34,7 @@ export function createSettingsPanel(plugin: HKWorkPlugin): Setting {
       await plugin.saveSettings();
       // 触发数据刷新：同上下文也传完整 settings（与 Todo 接受分组名称变更一致），保证 Dock/Tab 都能拿到最新配置（含 ai）
       const settings = plugin.getSettings();
-      const { eventBus, Events } = await import('@/utils/eventBus');
       eventBus.emit(Events.DATA_REFRESH, settings);
-      const { broadcastDataRefresh } = await import('@/utils/eventBus');
       broadcastDataRefresh(settings as object);
     }
   });
