@@ -2,11 +2,11 @@
   <div class="focus-timeline-chart chart-card">
     <div class="chart-header">
       <span class="chart-title">{{ t('pomodoroStats').focusTimeline }}</span>
-    </div>
-    <div class="chart-controls">
-      <button class="nav-btn" @click="prevWeek">‹</button>
-      <span class="nav-label">{{ weekLabel }}</span>
-      <button class="nav-btn" @click="nextWeek">›</button>
+      <div class="chart-controls">
+        <button class="nav-btn" @click="prevWeek">‹</button>
+        <span class="nav-label">{{ weekLabel }}</span>
+        <button class="nav-btn" @click="nextWeek">›</button>
+      </div>
     </div>
     <div class="timeline-grid">
       <div class="timeline-y-labels">
@@ -22,6 +22,8 @@
               class="cell"
               :class="{ filled: getCellFocus(day.date, slot) > 0 }"
               :style="{ opacity: getCellOpacity(day.date, slot) }"
+              @mouseenter="(e) => showCellTooltip(e, day.date, slot)"
+              @mouseleave="hideLinkTooltip"
             />
           </div>
         </div>
@@ -35,6 +37,7 @@ import { ref, computed } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
+import { showLinkTooltip, hideLinkTooltip } from '@/utils/dialog';
 
 const projectStore = useProjectStore();
 const weekOffset = ref(0);
@@ -100,6 +103,24 @@ function getCellOpacity(date: string, hour: number): number {
   return mins > 0 ? Math.min(1, 0.3 + (mins / 60) * 0.7) : 0;
 }
 
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h${m}m`;
+}
+
+function getCellTooltip(date: string, hour: number): string {
+  const timeStr = `${String(hour).padStart(2, '0')}:00`;
+  const mins = getCellFocus(date, hour);
+  return `${timeStr}, ${formatDuration(mins)}`;
+}
+
+function showCellTooltip(e: MouseEvent, date: string, hour: number) {
+  const text = getCellTooltip(date, hour);
+  showLinkTooltip(e.currentTarget as HTMLElement, text);
+}
+
 function prevWeek() {
   weekOffset.value--;
 }
@@ -125,6 +146,9 @@ function nextWeek() {
 }
 
 .chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
 
   .chart-title {
@@ -138,7 +162,6 @@ function nextWeek() {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .nav-btn {
