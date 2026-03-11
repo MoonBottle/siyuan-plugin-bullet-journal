@@ -115,8 +115,9 @@
     flex-wrap: wrap;
   }
 
-  // 链接标签
+  // 链接标签（hover 时提升 z-index 避免 tooltip 被下方链接遮挡）
   .sy-dialog-link-tag {
+    position: relative;
     display: inline-flex;
     align-items: center;
     padding: 3px 10px;
@@ -130,6 +131,7 @@
     transition: all 0.2s;
 
     &:hover {
+      z-index: 100;
       background: var(--b3-theme-primary);
       color: var(--b3-theme-on-primary);
       border-color: var(--b3-theme-primary);

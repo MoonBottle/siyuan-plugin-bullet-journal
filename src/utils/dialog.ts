@@ -16,6 +16,22 @@ import dayjs from './dayjs';
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
 
+/** 链接名称最大显示长度，超出则截断并 hover 显示全部（与复制按钮一致使用 b3-tooltips） */
+const LINK_NAME_MAX_LEN = 12;
+
+function formatLinkDisplay(name: string): { display: string; tooltipClass: string; ariaLabelAttr: string } {
+  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  if (!name || name.length <= LINK_NAME_MAX_LEN) {
+    return { display: escapeHtml(name), tooltipClass: '', ariaLabelAttr: '' };
+  }
+  const escaped = escapeHtml(name);
+  return {
+    display: escapeHtml(name.slice(0, LINK_NAME_MAX_LEN)) + '...',
+    tooltipClass: ' b3-tooltips b3-tooltips__n',
+    ariaLabelAttr: ` aria-label="${escaped}"`
+  };
+}
+
 // 对勾图标 SVG
 const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
 
@@ -70,9 +86,10 @@ function createInfoRow(label: string, value: string, valueClass: string = ''): s
 function createLinksRow(label: string, links: Array<{ name: string; url: string }>): string {
   if (!links || links.length === 0) return '';
 
-  const linksHtml = links.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link">${link.name}</a>`
-  ).join('');
+  const linksHtml = links.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
 
   return `
     <div class="sy-dialog-info-row">
@@ -134,13 +151,15 @@ export function showItemDetailModal(item: Item): Dialog {
   const projectLinks = item.project?.links || [];
   const taskLinks = item.task?.links || [];
 
-  // 构建链接 HTML
-  const projectLinksHtml = projectLinks.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
-  ).join('');
-  const taskLinksHtml = taskLinks.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
-  ).join('');
+  // 构建链接 HTML（链接名过长时截断，hover 显示全部，与复制按钮一致使用 b3-tooltips）
+  const projectLinksHtml = projectLinks.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
+  const taskLinksHtml = taskLinks.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
 
   // 构建内容 - 垂直卡片布局
   let content = '<div class="sy-dialog-content">';
@@ -213,9 +232,10 @@ export function showItemDetailModal(item: Item): Dialog {
 
   // 事项链接
   const itemLinks = item.links || [];
-  const itemLinksHtml = itemLinks.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
-  ).join('');
+  const itemLinksHtml = itemLinks.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
 
   // 专注总时间
   const totalFocusMinutes = calculateTotalFocusMinutes(item.pomodoros);
@@ -345,9 +365,10 @@ export function showItemDetailModal(item: Item): Dialog {
 function createLinkGroup(title: string, links: Array<{ name: string; url: string }>): string {
   if (!links || links.length === 0) return '';
 
-  const linksHtml = links.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
-  ).join('');
+  const linksHtml = links.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
 
   return `
     <div class="sy-dialog-link-group">
@@ -400,12 +421,14 @@ export function buildEventDetailContent(
 
   const projectLinks = props.projectLinks || [];
   const taskLinks = props.taskLinks || [];
-  const projectLinksHtml = projectLinks.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
-  ).join('');
-  const taskLinksHtml = taskLinks.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
-  ).join('');
+  const projectLinksHtml = projectLinks.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
+  const taskLinksHtml = taskLinks.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
 
   const copyBtn = (text: string) =>
     preview ? '' : `<span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${text.replace(/"/g, '&quot;')}" aria-label="${t('common').copy}">${copyIconSvg}</span>`;
@@ -483,9 +506,10 @@ export function buildEventDetailContent(
   const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
 
   const itemLinks = props.itemLinks || [];
-  const itemLinksHtml = itemLinks.map(link =>
-    `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag">${link.name}</a>`
-  ).join('');
+  const itemLinksHtml = itemLinks.map(link => {
+    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+  }).join('');
 
   const totalFocusMinutes = calculateTotalFocusMinutes(props.pomodoros);
   const focusTotalTimeDisplay = totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
