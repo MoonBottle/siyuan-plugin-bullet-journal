@@ -18,12 +18,17 @@ import {
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import { defaultPomodoroSettings } from '@/settings';
+import { t } from '@/i18n';
 
 interface PomodoroState {
   activePomodoro: ActivePomodoro | null;
   timerInterval: number | null;
   timerStartTimestamp: number | null; // 计时器启动时的时间戳
   lastAccumulatedSeconds: number; // 用于计算时间差的基础累计秒数
+  // 休息状态（不持久化）
+  isBreakActive: boolean;
+  breakRemainingSeconds: number;
+  breakInterval: number | null;
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
@@ -31,7 +36,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
     activePomodoro: null,
     timerInterval: null,
     timerStartTimestamp: null,
-    lastAccumulatedSeconds: 0
+    lastAccumulatedSeconds: 0,
+    isBreakActive: false,
+    breakRemainingSeconds: 0,
+    breakInterval: null
   }),
 
   getters: {
@@ -591,6 +599,43 @@ export const usePomodoroStore = defineStore('pomodoro', {
         oscillator.stop(audioContext.currentTime + 0.5);
       } catch (error) {
         console.warn('[Pomodoro] 播放提示音失败:', error);
+      }
+    },
+
+    /**
+     * 开始休息（不持久化，仅内存）
+     * @param minutes 休息时长（分钟）
+     */
+    startBreak(minutes: number): void {
+      this.stopBreak();
+      this.isBreakActive = true;
+      this.breakRemainingSeconds = minutes * 60;
+
+      this.breakInterval = window.setInterval(() => {
+        this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
+        if (this.breakRemainingSeconds <= 0) {
+          this.stopBreak(); // 会 emit BREAK_ENDED
+          showMessage(t('settings').pomodoro.breakEndMessage);
+          this.playNotificationSound();
+        }
+      }, 1000);
+
+      eventBus.emit(Events.BREAK_STARTED);
+    },
+
+    /**
+     * 停止休息
+     */
+    stopBreak(): void {
+      const wasActive = this.isBreakActive;
+      if (this.breakInterval) {
+        window.clearInterval(this.breakInterval);
+        this.breakInterval = null;
+      }
+      this.isBreakActive = false;
+      this.breakRemainingSeconds = 0;
+      if (wasActive) {
+        eventBus.emit(Events.BREAK_ENDED);
       }
     }
   }

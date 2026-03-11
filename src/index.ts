@@ -802,6 +802,14 @@ export default class TaskAssistantPlugin extends Plugin {
     eventBus.on(Events.POMODORO_CANCELLED, () => {
       this.hideFloatingTomatoButton();
     });
+
+    eventBus.on(Events.BREAK_STARTED, () => {
+      this.showFloatingTomatoButton();
+    });
+
+    eventBus.on(Events.BREAK_ENDED, () => {
+      this.hideFloatingTomatoButton();
+    });
   }
 
   /**
@@ -982,10 +990,26 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 更新悬浮按钮和底栏进度条显示
-   * 直接从存储文件读取数据，不依赖 Pinia Store
+   * 休息时从 pomodoroStore 读取；专注时从存储文件读取
    */
   private async updateFloatingTomatoDisplay() {
     try {
+      // 休息中：显示「休息中 MM:SS」
+      const pinia = getSharedPinia();
+      if (pinia) {
+        const pomodoroStore = usePomodoroStore(pinia);
+        if (pomodoroStore.isBreakActive) {
+          const mins = Math.floor(pomodoroStore.breakRemainingSeconds / 60);
+          const secs = pomodoroStore.breakRemainingSeconds % 60;
+          const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          if (this.floatingTomatoEl) {
+            const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
+            if (timeEl) timeEl.textContent = `${t('settings').pomodoro.breakLabel} ${timeStr}`;
+          }
+          return;
+        }
+      }
+
       const data = await loadActivePomodoro(this);
 
       if (!data) {

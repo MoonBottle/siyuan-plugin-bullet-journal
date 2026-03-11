@@ -94,6 +94,76 @@ export function aggregatePomodorosFromProjects(projects: Project[]): EnrichedPom
   return result;
 }
 
+export interface GroupedPomodoroStats {
+  groupKey: string;
+  groupLabel: string;
+  minutes: number;
+  count: number;
+  proportion: number;
+}
+
+/**
+ * 按项目分组统计（日期范围内）
+ */
+export function groupPomodorosByProject(
+  enriched: EnrichedPomodoro[],
+  startDate: string,
+  endDate: string
+): GroupedPomodoroStats[] {
+  const filtered = filterPomodoros(enriched, { startDate, endDate });
+  const byProject = new Map<string, { minutes: number; count: number }>();
+
+  for (const { record, projectName } of filtered) {
+    const key = projectName ?? '未分类';
+    const current = byProject.get(key) ?? { minutes: 0, count: 0 };
+    const mins = record.actualDurationMinutes ?? record.durationMinutes;
+    byProject.set(key, {
+      minutes: current.minutes + mins,
+      count: current.count + 1
+    });
+  }
+
+  const totalMinutes = [...byProject.values()].reduce((s, v) => s + v.minutes, 0);
+  return [...byProject.entries()].map(([key, v]) => ({
+    groupKey: key,
+    groupLabel: key,
+    minutes: v.minutes,
+    count: v.count,
+    proportion: totalMinutes > 0 ? (v.minutes / totalMinutes) * 100 : 0
+  }));
+}
+
+/**
+ * 按任务分组统计（projectName + taskName，日期范围内）
+ */
+export function groupPomodorosByTask(
+  enriched: EnrichedPomodoro[],
+  startDate: string,
+  endDate: string
+): GroupedPomodoroStats[] {
+  const filtered = filterPomodoros(enriched, { startDate, endDate });
+  const byTask = new Map<string, { minutes: number; count: number }>();
+
+  for (const { record, projectName, taskName } of filtered) {
+    const key = taskName ? `${projectName ?? ''} / ${taskName}` : projectName ?? '未分类';
+    const current = byTask.get(key) ?? { minutes: 0, count: 0 };
+    const mins = record.actualDurationMinutes ?? record.durationMinutes;
+    byTask.set(key, {
+      minutes: current.minutes + mins,
+      count: current.count + 1
+    });
+  }
+
+  const totalMinutes = [...byTask.values()].reduce((s, v) => s + v.minutes, 0);
+  return [...byTask.entries()].map(([key, v]) => ({
+    groupKey: key,
+    groupLabel: key,
+    minutes: v.minutes,
+    count: v.count,
+    proportion: totalMinutes > 0 ? (v.minutes / totalMinutes) * 100 : 0
+  }));
+}
+
 /**
  * 按 startDate、endDate、projectId 过滤番茄钟
  */
