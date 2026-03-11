@@ -246,14 +246,21 @@ export function groupByTimeSlot(
   slotHours: number = 3
 ): Map<string, number> {
   const slots = new Map<string, number>();
-  const labels = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+  const slotsPerDay = Math.ceil(24 / slotHours);
+
+  // 动态生成标签
+  const labels: string[] = [];
+  for (let i = 0; i < slotsPerDay; i++) {
+    const hour = i * slotHours;
+    labels.push(`${String(hour).padStart(2, '0')}:00`);
+  }
 
   labels.forEach(l => slots.set(l, 0));
 
   for (const p of pomodoros) {
     const mins = p.actualDurationMinutes ?? p.durationMinutes;
     const [h] = p.startTime.split(':').map(Number);
-    const slotIndex = Math.min(Math.floor(h / slotHours), 7);
+    const slotIndex = Math.min(Math.floor(h / slotHours), slotsPerDay - 1);
     const label = labels[slotIndex];
     slots.set(label, (slots.get(label) ?? 0) + mins);
   }

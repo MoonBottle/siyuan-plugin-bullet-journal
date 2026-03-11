@@ -46,8 +46,8 @@ const chartData = computed(() => {
   const { startDate, endDate } = monthRange.value;
   const all = projectStore.getAllPomodoros('');
   const filtered = all.filter(p => p.date >= startDate && p.date <= endDate);
-  const bySlot = groupByTimeSlot(filtered, 3);
-  const labels = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+  const bySlot = groupByTimeSlot(filtered, 1);
+  const labels = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
   return labels.map(l => ({ label: l, minutes: bySlot.get(l) ?? 0 }));
 });
 
@@ -109,6 +109,16 @@ function updateChart() {
         }
       },
       scales: {
+        x: {
+          ticks: {
+            callback: function(value: number, index: number) {
+              // 每3小时显示一个标签
+              return index % 3 === 0 ? chartData.value[index]?.label : '';
+            },
+            maxRotation: 0,
+            autoSkip: false
+          }
+        },
         y: {
           beginAtZero: true,
           ticks: {
