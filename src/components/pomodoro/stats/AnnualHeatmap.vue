@@ -236,7 +236,7 @@ function formatDuration(minutes: number): string {
   display: grid;
   grid-template-columns: repeat(26, 1fr);
   grid-template-rows: repeat(14, minmax(0, 1fr));
-  gap: 1px;
+  gap: 2px;
   flex: 1;
   height: 100%;
   max-height: 100%;
@@ -251,7 +251,7 @@ function formatDuration(minutes: number): string {
   transition: background 0.2s;
 
   &.level-0 {
-    background: var(--b3-theme-surface-lighter);
+    background: #eff2f5;
   }
 
   &.level-1 {
@@ -288,11 +288,11 @@ function formatDuration(minutes: number): string {
     content: '';
     width: 10px;
     height: 10px;
-    border-radius: var(--b3-border-radius);
+    border-radius: 2px;
   }
 
   &.level-0::before {
-    background: var(--b3-theme-surface-lighter);
+    background: #eff2f5;
   }
 
   &.level-1::before {
