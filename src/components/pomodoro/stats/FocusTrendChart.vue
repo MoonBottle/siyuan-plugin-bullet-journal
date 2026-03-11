@@ -193,12 +193,16 @@ function updateChart() {
 
   if (chartInstance) {
     chartInstance.destroy();
+    chartInstance = null;
   }
+
+  // 强制清除画布，防止残留线条叠加
+  ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height);
 
   const containerEl = chartCanvas.value?.parentElement ?? null;
   const primaryColor = getThemePrimary(containerEl);
   const textColor = getChartTextColor(containerEl);
-  const gridColor = toRgba(textColor, 0.2); // 稍微调淡一点，虚线会更清晰
+  const gridColor = toRgba(textColor, 0.3); // 适中透明度
   
   chartInstance = new Chart(ctx, {
     type: 'line',
@@ -239,30 +243,54 @@ function updateChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          displayColors: false,
-          backgroundColor: '#fff',
-          titleColor: '#333',
-          bodyColor: '#333',
-          borderColor: 'rgba(0,0,0,0.1)',
-          borderWidth: 1,
-          padding: 10,
-          cornerRadius: 4,
-          titleFont: { size: 0 }, // 隐藏标题
-          bodyFont: { size: 14 },
-          callbacks: {
-            title: () => '',
-            label: (item) => {
-              let label = '';
+          enabled: false, // 禁用默认 tooltip
+          external: (context) => {
+            const { chart, tooltip } = context;
+            let tooltipEl = document.getElementById('chartjs-tooltip');
+
+            if (!tooltipEl) {
+              tooltipEl = document.createElement('div');
+              tooltipEl.id = 'chartjs-tooltip';
+              tooltipEl.style.cssText = `
+                position: fixed;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 13px;
+                pointer-events: none;
+                z-index: 10000;
+                opacity: 0;
+                transition: opacity 0.2s;
+                line-height: 1.5;
+              `;
+              document.body.appendChild(tooltipEl);
+            }
+
+            if (tooltip.opacity === 0) {
+              tooltipEl.style.opacity = '0';
+              return;
+            }
+
+            if (tooltip.body) {
+              const dataIndex = tooltip.dataPoints[0].dataIndex;
+              const item = chartData.value[dataIndex];
+              let title = '';
               if (dimension.value === 'week' || dimension.value === 'month') {
                 const { startDate } = rangeDates.value;
-                const date = dayjs(startDate).add(item.dataIndex, 'day');
-                label = `${date.format('M月D日')}`;
+                const date = dayjs(startDate).add(dataIndex, 'day');
+                title = date.format('M月D日');
               } else {
-                label = item.label;
+                title = item.label;
               }
-              const duration = formatDuration(item.parsed.y as number);
-              return `${label}, ${duration}`;
+              const duration = formatDuration(item.minutes);
+              tooltipEl.innerHTML = `${title}<br/>${t('pomodoroStats').focusDuration}: ${duration}`;
             }
+
+            const position = chart.canvas.getBoundingClientRect();
+            tooltipEl.style.opacity = '1';
+            tooltipEl.style.left = position.left + tooltip.caretX - tooltipEl.offsetWidth / 2 + 'px';
+            tooltipEl.style.top = position.top + tooltip.caretY - tooltipEl.offsetHeight - 10 + 'px';
           }
         }
       },
@@ -282,17 +310,13 @@ function updateChart() {
         y: {
           beginAtZero: true,
           grid: { 
-            display: true,
-            color: gridColor,
-            borderDash: [5, 5], // 调回 5, 5 看看效果
-            drawTicks: false,
+            display: false, // 彻底去掉横线
           },
           border: {
             display: false,
           },
           ticks: {
             display: false,
-            stepSize: 60, // 增加格点密度
           }
         }
       }
@@ -313,6 +337,10 @@ onUnmounted(() => {
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;
+  }
+  const tooltipEl = document.getElementById('chartjs-tooltip');
+  if (tooltipEl) {
+    tooltipEl.remove();
   }
 });
 </script>
