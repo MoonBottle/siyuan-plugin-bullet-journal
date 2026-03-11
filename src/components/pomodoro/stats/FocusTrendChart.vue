@@ -1,10 +1,7 @@
 <template>
   <div class="focus-trend-chart chart-card">
     <div class="chart-header">
-      <div class="chart-title-group">
-        <span class="chart-title">{{ t('pomodoroStats').focusTrend }}</span>
-        <span class="chart-subtitle">{{ t('pomodoroStats').dailyAverage }}: {{ formatDuration(dailyAvg) }}</span>
-      </div>
+      <span class="chart-title">{{ t('pomodoroStats').focusTrend }}</span>
       <div class="chart-controls">
         <select v-model="dimension" class="dimension-select">
           <option value="year">{{ t('pomodoroStats').year }}</option>
@@ -17,6 +14,9 @@
           <button class="nav-btn" @click="next">›</button>
         </div>
       </div>
+    </div>
+    <div class="chart-subtitle-row">
+      {{ t('pomodoroStats').dailyAverage }}: {{ formatDuration(dailyAvg) }}
     </div>
     <div class="chart-container">
       <canvas ref="chartCanvas"></canvas>
@@ -246,25 +246,20 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
-
-  .chart-title-group {
-    display: flex;
-    align-items: center;
-  }
+  margin-bottom: 8px;
 
   .chart-title {
     font-size: 14px;
     font-weight: 600;
     color: var(--b3-theme-on-background);
   }
+}
 
-  .chart-subtitle {
-    font-size: 12px;
-    color: var(--b3-theme-on-surface);
-    margin-left: 8px;
-    opacity: 0.8;
-  }
+.chart-subtitle-row {
+  font-size: 13px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.8;
+  margin-bottom: 12px;
 }
 
 .chart-controls {
