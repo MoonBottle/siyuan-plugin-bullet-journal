@@ -250,11 +250,11 @@ function nextWeek() {
 }
 
 .y-label {
-  height: 20px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding-right: 4px;
+  line-height: 1;
 }
 
 .timeline-content {
