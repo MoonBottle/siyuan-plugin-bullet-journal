@@ -167,13 +167,17 @@ function formatDuration(minutes: number): string {
   background: var(--b3-theme-background);
   border-radius: var(--b3-border-radius);
   border: 1px solid var(--b3-theme-surface-lighter);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .chart-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 
   .chart-title {
     font-size: 14px;
@@ -189,7 +193,7 @@ function formatDuration(minutes: number): string {
 }
 
 .nav-btn {
-  padding: 4px 10px;
+  padding: 2px 8px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   background: var(--b3-theme-background);
@@ -199,14 +203,16 @@ function formatDuration(minutes: number): string {
 
 .nav-label {
   font-size: 13px;
-  min-width: 50px;
+  min-width: 40px;
   text-align: center;
 }
 
 .heatmap-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
 }
 
 .heatmap-months {
@@ -228,17 +234,18 @@ function formatDuration(minutes: number): string {
   display: flex;
   align-items: flex-end;
   gap: 12px;
-  height: 220px;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .heatmap-grid {
   display: grid;
   grid-template-columns: repeat(26, 1fr);
-  grid-template-rows: repeat(14, minmax(0, 1fr));
+  grid-template-rows: repeat(14, 1fr);
   gap: 2px;
   flex: 1;
-  height: 100%;
+  height: auto;
   max-height: 100%;
   aspect-ratio: 26 / 14;
 }
