@@ -23,7 +23,7 @@
               :class="{ filled: getCellFocus(day.date, slot) > 0 }"
               :style="{ opacity: getCellOpacity(day.date, slot) }"
               @mouseenter="(e) => showCellTooltip(e, day.date, slot)"
-              @mouseleave="hideLinkTooltip"
+              @mouseleave="hideTooltip"
             />
           </div>
         </div>
@@ -37,7 +37,6 @@ import { ref, computed } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
-import { showLinkTooltip, hideLinkTooltip } from '@/utils/dialog';
 
 const projectStore = useProjectStore();
 const weekOffset = ref(0);
@@ -116,12 +115,61 @@ function formatDuration(minutes: number): string {
 function getCellTooltip(date: string, hour: number): string {
   const timeStr = `${String(hour).padStart(2, '0')}:00`;
   const mins = getCellFocus(date, hour);
-  return `${timeStr}, ${formatDuration(mins)}`;
+  return `${timeStr}<br/>${t('pomodoroStats').focusDuration}: ${formatDuration(mins)}`;
 }
 
+const TOOLTIP_ID = 'focus-timeline-tooltip';
+
 function showCellTooltip(e: MouseEvent, date: string, hour: number) {
-  const text = getCellTooltip(date, hour);
-  showLinkTooltip(e.currentTarget as HTMLElement, text);
+  const mins = getCellFocus(date, hour);
+  if (mins === 0) return;
+
+  let tooltip = document.getElementById(TOOLTIP_ID);
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = TOOLTIP_ID;
+    tooltip.style.cssText = `
+      position: fixed;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.2s;
+      line-height: 1.5;
+    `;
+    document.body.appendChild(tooltip);
+  }
+
+  tooltip.innerHTML = getCellTooltip(date, hour);
+  tooltip.style.opacity = '1';
+
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+
+  let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+  let top = rect.top - tooltipRect.height - 8;
+
+  if (left < 8) left = 8;
+  if (left + tooltipRect.width > window.innerWidth - 8) {
+    left = window.innerWidth - tooltipRect.width - 8;
+  }
+  if (top < 8) {
+    top = rect.bottom + 8;
+  }
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById(TOOLTIP_ID);
+  if (tooltip) {
+    tooltip.style.opacity = '0';
+  }
 }
 
 function prevWeek() {

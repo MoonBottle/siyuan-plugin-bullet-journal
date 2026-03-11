@@ -2,11 +2,11 @@
   <div class="best-focus-time-chart chart-card">
     <div class="chart-header">
       <span class="chart-title">{{ t('pomodoroStats').bestFocusTime }}</span>
-    </div>
-    <div class="chart-controls">
-      <button class="nav-btn" @click="prevMonth">‹</button>
-      <span class="nav-label">{{ monthLabel }}</span>
-      <button class="nav-btn" @click="nextMonth">›</button>
+      <div class="chart-controls">
+        <button class="nav-btn" @click="prevMonth">‹</button>
+        <span class="nav-label">{{ monthLabel }}</span>
+        <button class="nav-btn" @click="nextMonth">›</button>
+      </div>
     </div>
     <div class="chart-container">
       <canvas ref="chartCanvas"></canvas>
@@ -116,6 +116,9 @@ onUnmounted(() => {
 }
 
 .chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
 
   .chart-title {
@@ -129,7 +132,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .nav-btn {
