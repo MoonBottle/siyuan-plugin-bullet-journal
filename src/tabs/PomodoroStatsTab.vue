@@ -78,17 +78,16 @@ const rangeDates = computed(() => {
 .stats-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(3, minmax(320px, 1fr));
+  grid-template-rows: repeat(3, 280px);
   gap: 16px;
   margin-top: 24px;
-  min-height: 960px;
 }
 
 @media (max-width: 768px) {
   .stats-cards-grid {
     grid-template-columns: 1fr;
     grid-template-rows: unset;
-    grid-auto-rows: minmax(320px, 1fr);
+    grid-auto-rows: 280px;
   }
 }
 </style>
