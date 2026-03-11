@@ -110,20 +110,30 @@ function updateChart() {
       },
       scales: {
         x: {
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.03)',
+            drawBorder: false
+          },
           ticks: {
             callback: function(value: number, index: number) {
               // 每3小时显示一个标签
               return index % 3 === 0 ? chartData.value[index]?.label : '';
             },
             maxRotation: 0,
-            autoSkip: false
-          }
+            autoSkip: false,
+            color: 'rgba(0, 0, 0, 0.4)'
+          },
+          border: { display: false }
         },
         y: {
           beginAtZero: true,
+          grid: { display: false, drawBorder: false },
           ticks: {
-            callback: (v: number) => v + 'm'
-          }
+            callback: (v: number) => v + 'm',
+            color: 'rgba(0, 0, 0, 0.4)'
+          },
+          border: { display: false }
         }
       }
     }
