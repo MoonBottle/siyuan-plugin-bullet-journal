@@ -1,9 +1,10 @@
 /**
  * lineParser 单元测试
  * - parseItemLine：多日期事项解析
+ * - parseBlockRefs：思源块引用解析
  */
 import { describe, it, expect } from 'vitest';
-import { LineParser } from '@/parser/lineParser';
+import { LineParser, parseBlockRefs } from '@/parser/lineParser';
 
 describe('parseItemLine 多日期解析', () => {
   it('单个日期', () => {
@@ -207,6 +208,45 @@ describe('parseItemLine 多日期解析', () => {
   });
 });
 
+describe('parseBlockRefs 块引用解析', () => {
+  it('单引号锚文本', () => {
+    const { stripped, links } = parseBlockRefs("首页((20260310210016-gkixdit '测试'))改版");
+    expect(stripped).toBe('首页测试改版');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+  });
+
+  it('双引号锚文本', () => {
+    const { stripped, links } = parseBlockRefs('((20200813131152-0wk5akh "在内容块中遨游"))');
+    expect(stripped).toBe('在内容块中遨游');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toEqual({ name: '在内容块中遨游', url: 'siyuan://blocks/20200813131152-0wk5akh' });
+  });
+
+  it('无锚文本替换为空', () => {
+    const { stripped, links } = parseBlockRefs('((20260310210016-gkixdit))纯文本');
+    expect(stripped).toBe('纯文本');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit' });
+  });
+
+  it('多个块引用', () => {
+    const { stripped, links } = parseBlockRefs(
+      '((20200813131152-0wk5akh "A"))、((20200822191536-rm6hwid "B"))'
+    );
+    expect(stripped).toBe('A、B');
+    expect(links).toHaveLength(2);
+    expect(links[0].name).toBe('A');
+    expect(links[1].name).toBe('B');
+  });
+
+  it('无块引用时 links 为空', () => {
+    const { stripped, links } = parseBlockRefs('普通任务名');
+    expect(stripped).toBe('普通任务名');
+    expect(links).toHaveLength(0);
+  });
+});
+
 describe('parseTaskLine 任务解析', () => {
   it('基础任务', () => {
     const task = LineParser.parseTaskLine('测试任务 #任务', 1);
@@ -233,6 +273,27 @@ describe('parseTaskLine 任务解析', () => {
     expect(task.date).toBe('2024-01-01');
     expect(task.startDateTime).toBe('2024-01-01 09:00:00');
     expect(task.endDateTime).toBe('2024-01-01 10:00:00');
+  });
+
+  it('任务名含块引用：strip 并提取到 links', () => {
+    const task = LineParser.parseTaskLine(
+      "首页((20260310210016-gkixdit '测试'))改版（任务名称） #任务 @L1",
+      1
+    );
+    expect(task.name).toBe('首页测试改版（任务名称）');
+    expect(task.links).toHaveLength(1);
+    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+  });
+
+  it('任务名含块引用与 URL 链接：links 合并', () => {
+    const task = LineParser.parseTaskLine(
+      "首页((20260310210016-gkixdit '测试'))改版 #任务 https://example.com",
+      1
+    );
+    expect(task.name).toBe('首页测试改版');
+    expect(task.links).toHaveLength(2);
+    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(task.links![1]).toEqual({ name: '链接', url: 'https://example.com' });
   });
 });
 
@@ -280,6 +341,31 @@ describe('parseItemLine - 事项链接', () => {
     const items = LineParser.parseItemLine('工作事项 @2024-01-01', 1, []);
     expect(items).toHaveLength(1);
     expect(items[0].links).toBeUndefined();
+  });
+
+  it('事项内容含块引用：strip 并提取到 links', () => {
+    const items = LineParser.parseItemLine(
+      '确定设计风格((20260310210016-gkixdit "别名")) @2026-03-09',
+      1
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('确定设计风格别名');
+    expect(items[0].links).toHaveLength(1);
+    expect(items[0].links![0]).toEqual({ name: '别名', url: 'siyuan://blocks/20260310210016-gkixdit' });
+  });
+
+  it('事项块引用与下方链接合并', () => {
+    const itemLinks = [{ name: '需求文档', url: 'https://example.com' }];
+    const items = LineParser.parseItemLine(
+      '工作事项((20260310210016-gkixdit "块引用")) @2024-01-01',
+      1,
+      itemLinks
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('工作事项块引用');
+    expect(items[0].links).toHaveLength(2);
+    expect(items[0].links![0]).toEqual({ name: '需求文档', url: 'https://example.com' });
+    expect(items[0].links![1]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit' });
   });
 });
 
@@ -388,6 +474,15 @@ describe('parsePomodoroLine 番茄钟解析', () => {
     expect(pomodoro!.startTime).toBe('15:45:32');
     expect(pomodoro!.endTime).toBe('15:45:36');
     expect(pomodoro!.description).toBe('哈哈哈');
+  });
+
+  it('描述含块引用：仅 strip 不提取 links', () => {
+    const pomodoro = LineParser.parsePomodoroLine(
+      '🍅2026-03-08 15:45:32~15:45:36 专注((20260310210016-gkixdit "别名"))',
+      'block-10'
+    );
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.description).toBe('专注别名');
   });
 });
 

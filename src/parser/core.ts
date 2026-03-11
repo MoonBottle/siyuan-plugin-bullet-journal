@@ -3,7 +3,7 @@
  * 不依赖 API，仅接受字符串输入，供插件和 MCP 共用
  */
 import type { Project, Task, Item, PomodoroRecord } from '@/types/models';
-import { LineParser } from './lineParser';
+import { LineParser, parseBlockRefs } from './lineParser';
 
 export interface KramdownBlock {
   content: string;
@@ -196,18 +196,26 @@ export function parseKramdown(
 
     if (!project.name) {
       if (content.startsWith('# ')) {
-        project.name = content.substring(2).trim();
+        const rawName = content.substring(2).trim();
+        const { stripped, links } = parseBlockRefs(rawName);
+        project.name = stripped;
+        if (links.length > 0) project.links!.push(...links);
         continue;
       }
       if (content.startsWith('## ')) {
-        project.name = content.substring(3).trim();
+        const rawName = content.substring(3).trim();
+        const { stripped, links } = parseBlockRefs(rawName);
+        project.name = stripped;
+        if (links.length > 0) project.links!.push(...links);
         continue;
       }
     }
 
     if (project.name && content.startsWith('> ')) {
-      const descContent = content.substring(2).trim();
-      project.description = descContent;
+      const rawDesc = content.substring(2).trim();
+      const { stripped, links } = parseBlockRefs(rawDesc);
+      project.description = stripped;
+      if (links.length > 0) project.links!.push(...links);
       lastBlockType = 'project';
       continue;
     }

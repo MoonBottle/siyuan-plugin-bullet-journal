@@ -4,6 +4,27 @@
  */
 import type { Task, Item, Link, ItemStatus, PomodoroRecord, PomodoroStatus } from '@/types/models';
 
+/** 思源块引用正则：((blockId)) 或 ((blockId "alias")) 或 ((blockId 'alias')) */
+const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g;
+
+/**
+ * 解析思源行内块引用，提取 links 并 strip 显示文本
+ * @param text 原始文本
+ * @returns stripped 移除/替换块引用后的文本，links 解析出的 Link 数组
+ */
+export function parseBlockRefs(text: string): { stripped: string; links: Link[] } {
+  const links: Link[] = [];
+  const stripped = text.replace(BLOCK_REF_REGEX, (_, blockId, aliasDouble, aliasSingle) => {
+    const alias = aliasDouble ?? aliasSingle ?? undefined;
+    links.push({
+      name: alias || '块引用',
+      url: `siyuan://blocks/${blockId}`
+    });
+    return alias ?? '';
+  });
+  return { stripped: stripped.trim().replace(/\s+/g, ' '), links };
+}
+
 export class LineParser {
   /**
    * 解析任务行
@@ -45,6 +66,11 @@ export class LineParser {
       .replace(/https?:\/\/[^\s]+/g, '')
       .trim();
 
+    // 解析块引用：strip 显示名，提取到 links
+    const { stripped: nameStripped, links: blockRefLinks } = parseBlockRefs(name);
+    name = nameStripped;
+    const allLinks = [...blockRefLinks, ...links];
+
     return {
       id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
@@ -58,7 +84,7 @@ export class LineParser {
       endDateTime: timeRangeMatch
         ? `${timeRangeMatch[1]} ${timeRangeMatch[3]}`
         : undefined,
-      links: links.length > 0 ? links : undefined,
+      links: allLinks.length > 0 ? allLinks : undefined,
       items: [],
       lineNumber
     };
@@ -120,7 +146,13 @@ export class LineParser {
       .replace(/,/g, '')  // 移除英文逗号（normalizedLine 中只有英文逗号）
       .trim();
 
+    // 解析块引用：strip 显示内容，提取到 links
+    const { stripped: contentStripped, links: blockRefLinks } = parseBlockRefs(content);
+    content = contentStripped;
+
     if (!content) return [];
+
+    const mergedLinks = [...(links ?? []), ...blockRefLinks];
 
     // 展开所有日期时间组合
     const items: Item[] = [];
@@ -178,7 +210,7 @@ export class LineParser {
         lineNumber,
         docId: '',
         status,
-        links: links?.length ? links : undefined,  // 添加链接
+        links: mergedLinks.length > 0 ? mergedLinks : undefined,  // 块引用 + 事项下方链接
         siblingItems: siblingItems.length > 0 ? siblingItems : undefined,
         dateRangeStart,
         dateRangeEnd
@@ -393,7 +425,8 @@ export class LineParser {
     const date = match[2];
     const startTime = match[3];
     const endTime = match[4];
-    const description = match[5]?.trim() || undefined;
+    const rawDescription = match[5]?.trim() || undefined;
+    const description = rawDescription ? parseBlockRefs(rawDescription).stripped || undefined : undefined;
 
     // 计算专注时长（分钟）
     let durationMinutes = 25; // 默认25分钟
