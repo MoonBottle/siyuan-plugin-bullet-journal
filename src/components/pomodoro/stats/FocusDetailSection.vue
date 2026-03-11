@@ -246,7 +246,7 @@ function nextRange() {
 .detail-content {
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .circle-chart-wrapper {

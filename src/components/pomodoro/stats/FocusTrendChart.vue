@@ -256,7 +256,8 @@ function updateChart() {
         x: {
           ticks: {
             font: {
-              weight: 'normal'
+              size: 11,
+              weight: 300
             }
           }
         },
