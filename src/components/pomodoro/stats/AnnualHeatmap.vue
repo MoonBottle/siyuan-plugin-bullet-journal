@@ -73,27 +73,42 @@ const heatmapData = computed(() => {
     current = current.add(1, 'day');
   }
 
-  // 14行布局：每行约26天 (365/14 ≈ 26)
-  const daysPerRow = 26;
-  const rows: { date: string; minutes: number; level: string }[][] = [];
-  let row: { date: string; minutes: number; level: string }[] = [];
+  // 纵向排列：14行，26列 (365/14 ≈ 26)
+  // 第1列：1-1, 1-2, 1-3...1-14  第2列：1-15, 1-16...
+  const numRows = 14;
+  const numCols = 26;
+  const cols: { date: string; minutes: number; level: string }[][] = [];
+  
+  for (let c = 0; c < numCols; c++) {
+    cols.push([]);
+  }
   
   const start = dayjs(startDate);
   const endD = dayjs(endDate);
   let cur = start;
+  let dayIndex = 0;
 
   while (cur.isBefore(endD) || cur.isSame(endD, 'day')) {
     const d = cur.format('YYYY-MM-DD');
     const data = byDate.get(d) ?? { minutes: 0, level: 'level-0' };
-    row.push({ date: d, ...data });
-    if (row.length === daysPerRow) {
-      rows.push(row);
-      row = [];
+    const colIndex = Math.floor(dayIndex / numRows);
+    if (colIndex < numCols) {
+      cols[colIndex].push({ date: d, ...data });
     }
+    dayIndex++;
     cur = cur.add(1, 'day');
   }
-  if (row.length > 0) rows.push(row);
-  return rows.flat();
+  
+  // 按列优先展开：第1列所有行，然后第2列所有行...
+  const result: { date: string; minutes: number; level: string }[] = [];
+  for (let r = 0; r < numRows; r++) {
+    for (let c = 0; c < numCols; c++) {
+      if (cols[c][r]) {
+        result.push(cols[c][r]);
+      }
+    }
+  }
+  return result;
 });
 
 function prevYear() {
@@ -157,23 +172,26 @@ function formatDuration(minutes: number): string {
 .heatmap-content {
   display: flex;
   align-items: flex-end;
-  gap: 16px;
-  height: 280px;
+  gap: 12px;
+  height: 220px;
+  overflow: hidden;
 }
 
 .heatmap-grid {
   display: grid;
   grid-template-columns: repeat(26, 1fr);
-  grid-template-rows: repeat(14, 1fr);
-  gap: 2px;
+  grid-template-rows: repeat(14, minmax(0, 1fr));
+  gap: 1px;
   flex: 1;
   height: 100%;
   max-height: 100%;
+  aspect-ratio: 26 / 14;
 }
 
 .heatmap-cell {
   width: 100%;
   height: 100%;
+  min-height: 0;
   border-radius: 2px;
   transition: background 0.2s;
 
