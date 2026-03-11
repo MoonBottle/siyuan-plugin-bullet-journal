@@ -310,7 +310,7 @@ function hideTooltip() {
   transition: background 0.2s;
 
   &.level-0 {
-    background: #eff2f5;
+    background: var(--b3-theme-surface-lighter);
   }
 
   &.level-1 {
@@ -351,7 +351,7 @@ function hideTooltip() {
   }
 
   &.level-0::before {
-    background: #eff2f5;
+    background: var(--b3-theme-surface-lighter);
   }
 
   &.level-1::before {
