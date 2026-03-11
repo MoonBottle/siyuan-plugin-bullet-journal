@@ -14,7 +14,6 @@
       </div>
       <div class="timeline-content">
         <div v-for="day in weekDays" :key="day.date" class="timeline-column">
-          <div class="x-label">{{ day.label }}</div>
           <div class="timeline-cells">
             <div
               v-for="slot in hourlySlots"
@@ -26,6 +25,7 @@
               @mouseleave="hideTooltip"
             />
           </div>
+          <div class="x-label">{{ day.label }}</div>
         </div>
       </div>
     </div>
