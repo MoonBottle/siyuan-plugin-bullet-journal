@@ -1038,6 +1038,18 @@ export default class TaskAssistantPlugin extends Plugin {
             const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
             if (timeEl) timeEl.textContent = timeStr;
           }
+          // 休息时底栏进度条：已休息时长 / 总休息时长
+          const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+          if (pomodoro.enableStatusBar === true) {
+            this.showStatusBar();
+            const fill = this.statusBarEl?.querySelector('.status-bar-fill') as HTMLElement;
+            if (fill) {
+              const total = pomodoroStore.breakTotalSeconds || 5 * 60;
+              const elapsed = Math.max(0, total - pomodoroStore.breakRemainingSeconds);
+              const progress = total > 0 ? Math.min(1, elapsed / total) : 0;
+              fill.style.width = `${progress * 100}%`;
+            }
+          }
           return;
         }
       }
