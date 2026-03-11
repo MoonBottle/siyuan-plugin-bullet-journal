@@ -7,7 +7,7 @@ import type { ActivePomodoro, ActivePomodoroData, Item, PendingPomodoroCompletio
 import { appendBlock, setBlockAttrs, getBlockAttrs } from '@/api';
 import { showMessage } from '@/utils/dialog';
 import { showPomodoroCompleteNotification } from '@/utils/notification';
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import {
   saveActivePomodoro,
   loadActivePomodoro,
@@ -413,6 +413,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
         showMessage(`✅ 专注完成「${pending.itemContent}」· 实际专注 ${pending.durationMinutes} 分钟`);
 
         eventBus.emit(Events.POMODORO_COMPLETED);
+        // 触发数据刷新，专注列表（含 attr 模式新记录）自动更新
+        eventBus.emit(Events.DATA_REFRESH);
+        broadcastDataRefresh();
         return true;
       } catch (error) {
         console.error('[Pomodoro] 保存记录失败:', error);

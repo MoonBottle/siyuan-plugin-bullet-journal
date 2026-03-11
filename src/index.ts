@@ -753,8 +753,8 @@ export default class TaskAssistantPlugin extends Plugin {
     // 检测数据变化相关的事件
     const data = event.detail;
     if (data && data.cmd) {
-      // 这些命令表示数据可能发生变化
-      const refreshCmds = ['txerr', 'savedoc', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
+      // 这些命令表示数据可能发生变化（tx：事务，含 setBlockAttrs 等属性修改）
+      const refreshCmds = ['txerr', 'tx', 'savedoc', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
       if (refreshCmds.includes(data.cmd)) {
         this.scheduleRefresh();
       }
