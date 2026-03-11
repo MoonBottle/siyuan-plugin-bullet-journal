@@ -110,6 +110,13 @@ function nextWeek() {
 </script>
 
 <style lang="scss" scoped>
+.focus-timeline-chart {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .chart-card {
   padding: 12px;
   background: var(--b3-theme-background);
@@ -152,6 +159,8 @@ function nextWeek() {
 .timeline-grid {
   display: flex;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
 }
 
 .timeline-y-labels {
@@ -172,6 +181,7 @@ function nextWeek() {
   flex: 1;
   display: flex;
   gap: 4px;
+  min-height: 0;
 }
 
 .timeline-column {
@@ -179,6 +189,7 @@ function nextWeek() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-height: 0;
 }
 
 .x-label {
@@ -192,10 +203,13 @@ function nextWeek() {
   flex-direction: column;
   gap: 1px;
   width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .cell {
-  height: 12px;
+  flex: 1;
+  min-height: 2px;
   background: var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   transition: opacity 0.2s;
