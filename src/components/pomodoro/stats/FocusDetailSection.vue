@@ -186,6 +186,11 @@ function nextRange() {
   background: var(--b3-theme-background);
   border-radius: var(--b3-border-radius);
   border: 1px solid var(--b3-theme-surface-lighter);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .section-header {
@@ -247,6 +252,9 @@ function nextRange() {
   display: flex;
   gap: 24px;
   align-items: center;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
 }
 
 .circle-chart-wrapper {
@@ -288,13 +296,13 @@ function nextRange() {
 }
 
 .stats-list {
-  width: 280px;
+  max-width: 280px;
+  flex: 1;
   height: 140px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  flex-shrink: 0;
 }
 
 .stats-item {
