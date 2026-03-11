@@ -594,8 +594,7 @@ defineExpose({
   position: fixed;
   z-index: 10000;
   max-width: 440px;
-  max-height: 400px;
-  overflow: auto;
+  overflow: visible;
   padding: 12px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);

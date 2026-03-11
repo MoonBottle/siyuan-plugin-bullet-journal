@@ -685,13 +685,12 @@ const updateGantt = () => {
   height: 100% !important;
 }
 
-/* 悬浮事项详情弹框（与日历样式一致） */
+/* 悬浮事项详情弹框（与日历样式一致，无滚动条） */
 .gantt-event-tooltip {
   position: fixed;
   z-index: 10000;
   max-width: 440px;
-  max-height: 400px;
-  overflow: auto;
+  overflow: visible;
   padding: 12px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
