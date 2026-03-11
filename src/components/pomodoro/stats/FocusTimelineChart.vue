@@ -273,13 +273,13 @@ function nextWeek() {
     bottom: 0;
     pointer-events: none;
     background-image:
-      linear-gradient(to bottom, var(--b3-theme-surface-lighter) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--b3-theme-surface-lighter) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--b3-theme-surface-lighter) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--b3-theme-surface-lighter) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--b3-theme-surface-lighter) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--b3-theme-surface-lighter) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--b3-theme-surface-lighter) 1px, transparent 1px);
+      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
+      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
+      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
+      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
+      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
+      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
+      repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px);
     background-size: 100% 1px;
     background-position:
       0 0,
@@ -289,7 +289,7 @@ function nextWeek() {
       0 calc(100% / 6 * 4),
       0 calc(100% / 6 * 5),
       0 100%;
-    background-repeat: no-repeat;
+    background-repeat: repeat-x;
   }
 }
 
