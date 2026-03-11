@@ -263,14 +263,16 @@ function nextWeek() {
   gap: 4px;
   min-height: 0;
   position: relative;
+  padding-top: 12px;
+  padding-bottom: 12px;
 
   &::before {
     content: '';
     position: absolute;
-    top: 0;
+    top: 12px;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: 12px;
     pointer-events: none;
     background-image:
       repeating-linear-gradient(to right, var(--b3-theme-surface-lighter) 0, var(--b3-theme-surface-lighter) 4px, transparent 4px, transparent 8px),
