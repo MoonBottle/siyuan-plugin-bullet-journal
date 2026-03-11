@@ -521,3 +521,28 @@
 .gantt-event-tooltip .sy-dialog-content {
   padding: 0 !important;
 }
+
+/* 链接自定义 tooltip：挂载 body，不受弹框 overflow 影响，无滚动条 */
+.sy-dialog-link-tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  max-width: min(400px, 90vw);
+  padding: 6px 10px;
+  background: var(--b3-tooltip-background, #2f2f2f);
+  color: var(--b3-tooltip-color, #fff);
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  word-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+}

@@ -16,20 +16,105 @@ import dayjs from './dayjs';
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
 
-/** 链接名称最大显示长度，超出则截断并 hover 显示全部（与复制按钮一致使用 b3-tooltips） */
+/** 链接名称最大显示长度，超出则截断并 hover 显示全部 */
 const LINK_NAME_MAX_LEN = 12;
 
-function formatLinkDisplay(name: string): { display: string; tooltipClass: string; ariaLabelAttr: string } {
+/** 自定义 tooltip 挂载到 body，不受弹框 overflow 影响 */
+export const SY_LINK_TOOLTIP_ID = 'sy-dialog-link-tooltip';
+
+/** 供 Vue 等组件使用：格式化链接显示，返回截断后的 display 和可选的 fullText（用于 tooltip） */
+export function formatLinkForDisplay(name: string): { display: string; fullText?: string } {
+  if (!name || name.length <= LINK_NAME_MAX_LEN) {
+    return { display: name };
+  }
+  return { display: name.slice(0, LINK_NAME_MAX_LEN) + '...', fullText: name };
+}
+
+/** 供 Vue 等组件使用：显示链接 tooltip */
+export function showLinkTooltip(el: HTMLElement, fullText: string): void {
+  let tip = document.getElementById(SY_LINK_TOOLTIP_ID);
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = SY_LINK_TOOLTIP_ID;
+    tip.className = 'sy-dialog-link-tooltip';
+    document.body.appendChild(tip);
+  }
+  tip.textContent = fullText;
+  const rect = el.getBoundingClientRect();
+  const margin = 8;
+  const left = rect.left + rect.width / 2;
+  tip.style.left = `${left}px`;
+  tip.style.top = `${rect.top - 4}px`;
+  tip.style.transform = 'translate(-50%, -100%)';
+  tip.classList.add('visible');
+  requestAnimationFrame(() => {
+    const tipRect = tip!.getBoundingClientRect();
+    if (tipRect.right > window.innerWidth - margin) {
+      tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`;
+    } else if (tipRect.left < margin) {
+      tip!.style.left = `${tipRect.width / 2 + margin}px`;
+    }
+  });
+}
+
+/** 供 Vue 等组件使用：隐藏链接 tooltip */
+export function hideLinkTooltip(): void {
+  const tip = document.getElementById(SY_LINK_TOOLTIP_ID);
+  if (tip) tip.classList.remove('visible');
+}
+
+function formatLinkDisplay(name: string): { display: string; tooltipAttr: string } {
   const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   if (!name || name.length <= LINK_NAME_MAX_LEN) {
-    return { display: escapeHtml(name), tooltipClass: '', ariaLabelAttr: '' };
+    return { display: escapeHtml(name), tooltipAttr: '' };
   }
   const escaped = escapeHtml(name);
   return {
     display: escapeHtml(name.slice(0, LINK_NAME_MAX_LEN)) + '...',
-    tooltipClass: ' b3-tooltips b3-tooltips__n',
-    ariaLabelAttr: ` aria-label="${escaped}"`
+    tooltipAttr: ` data-sy-tooltip="${escaped}"`
   };
+}
+
+function bindLinkTooltips(element: HTMLElement): void {
+  element.querySelectorAll('[data-sy-tooltip]').forEach(el => {
+    const fullText = (el as HTMLElement).dataset.syTooltip;
+    if (!fullText) return;
+
+    const showTooltip = () => {
+      let tip = document.getElementById(SY_LINK_TOOLTIP_ID);
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = SY_LINK_TOOLTIP_ID;
+        tip.className = 'sy-dialog-link-tooltip';
+        document.body.appendChild(tip);
+      }
+      tip.textContent = fullText;
+      const rect = (el as HTMLElement).getBoundingClientRect();
+      const margin = 8;
+      let left = rect.left + rect.width / 2;
+      tip.style.left = `${left}px`;
+      tip.style.top = `${rect.top - 4}px`;
+      tip.style.transform = 'translate(-50%, -100%)';
+      tip.classList.add('visible');
+      // 显示后根据实际宽度调整位置，避免超出视口（tip 使用 translate(-50%) 居中）
+      requestAnimationFrame(() => {
+        const tipRect = tip.getBoundingClientRect();
+        if (tipRect.right > window.innerWidth - margin) {
+          tip.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`;
+        } else if (tipRect.left < margin) {
+          tip.style.left = `${tipRect.width / 2 + margin}px`;
+        }
+      });
+    };
+
+    const hideTooltip = () => {
+      const tip = document.getElementById(SY_LINK_TOOLTIP_ID);
+      if (tip) tip.classList.remove('visible');
+    };
+
+    el.addEventListener('mouseenter', showTooltip);
+    el.addEventListener('mouseleave', hideTooltip);
+  });
 }
 
 // 对勾图标 SVG
@@ -87,8 +172,8 @@ function createLinksRow(label: string, links: Array<{ name: string; url: string 
   if (!links || links.length === 0) return '';
 
   const linksHtml = links.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link"${tooltipAttr}>${display}</a>`;
   }).join('');
 
   return `
@@ -153,12 +238,12 @@ export function showItemDetailModal(item: Item): Dialog {
 
   // 构建链接 HTML（链接名过长时截断，hover 显示全部，与复制按钮一致使用 b3-tooltips）
   const projectLinksHtml = projectLinks.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
   }).join('');
   const taskLinksHtml = taskLinks.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
   }).join('');
 
   // 构建内容 - 垂直卡片布局
@@ -233,8 +318,8 @@ export function showItemDetailModal(item: Item): Dialog {
   // 事项链接
   const itemLinks = item.links || [];
   const itemLinksHtml = itemLinks.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
   }).join('');
 
   // 专注总时间
@@ -298,6 +383,9 @@ export function showItemDetailModal(item: Item): Dialog {
     title: t('todo').itemDetail,
     content,
     width: '520px',
+    destroyCallback: () => {
+      hideLinkTooltip();
+    },
   });
 
   // 绑定按钮事件
@@ -331,6 +419,8 @@ export function showItemDetailModal(item: Item): Dialog {
       }
     });
   });
+
+  bindLinkTooltips(element);
 
   // 绑定复制按钮事件
   element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {
@@ -366,8 +456,8 @@ function createLinkGroup(title: string, links: Array<{ name: string; url: string
   if (!links || links.length === 0) return '';
 
   const linksHtml = links.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
   }).join('');
 
   return `
@@ -422,12 +512,12 @@ export function buildEventDetailContent(
   const projectLinks = props.projectLinks || [];
   const taskLinks = props.taskLinks || [];
   const projectLinksHtml = projectLinks.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
   }).join('');
   const taskLinksHtml = taskLinks.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
   }).join('');
 
   const copyBtn = (text: string) =>
@@ -507,8 +597,8 @@ export function buildEventDetailContent(
 
   const itemLinks = props.itemLinks || [];
   const itemLinksHtml = itemLinks.map(link => {
-    const { display, tooltipClass, ariaLabelAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag${tooltipClass}"${ariaLabelAttr}>${display}</a>`;
+    const { display, tooltipAttr } = formatLinkDisplay(link.name);
+    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
   }).join('');
 
   const totalFocusMinutes = calculateTotalFocusMinutes(props.pomodoros);
@@ -597,6 +687,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       if (lastEventDetailDialog === dialog) {
         lastEventDetailDialog = null;
       }
+      hideLinkTooltip();
     },
   });
   lastEventDetailDialog = dialog;
@@ -631,6 +722,8 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       }
     });
   });
+
+  bindLinkTooltips(element);
 
   // 绑定复制按钮事件
   element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {

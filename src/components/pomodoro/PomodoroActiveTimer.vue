@@ -76,8 +76,10 @@
             target="_blank"
             class="link-tag"
             @click.prevent="openLink(link.url)"
+            @mouseenter="onLinkMouseenter($event, link)"
+            @mouseleave="hideLinkTooltip()"
           >
-            {{ link.name }}
+            {{ linkDisplay(link).display }}
           </a>
         </div>
       </div>
@@ -102,8 +104,10 @@
             target="_blank"
             class="link-tag"
             @click.prevent="openLink(link.url)"
+            @mouseenter="onLinkMouseenter($event, link)"
+            @mouseleave="hideLinkTooltip()"
           >
-            {{ link.name }}
+            {{ linkDisplay(link).display }}
           </a>
         </div>
       </div>
@@ -125,8 +129,10 @@
             target="_blank"
             class="link-tag"
             @click.prevent.stop="openLink(link.url)"
+            @mouseenter="onLinkMouseenter($event, link)"
+            @mouseleave="hideLinkTooltip()"
           >
-            {{ link.name }}
+            {{ linkDisplay(link).display }}
           </a>
         </div>
       </div>
@@ -161,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onUnmounted } from 'vue';
 import { usePomodoroStore, useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
@@ -170,7 +176,7 @@ import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import { openDocumentAtLine } from '@/utils/fileUtils';
-import { showConfirmDialog } from '@/utils/dialog';
+import { showConfirmDialog, formatLinkForDisplay, showLinkTooltip, hideLinkTooltip } from '@/utils/dialog';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -263,6 +269,16 @@ const strokeDashoffset = computed(() => {
   return circumference * (1 - progress);
 });
 
+// 链接显示格式化（截断 + tooltip）
+const linkDisplay = (link: { name: string }) => formatLinkForDisplay(link.name);
+
+const onLinkMouseenter = (e: MouseEvent, link: { name: string }) => {
+  const { fullText } = formatLinkForDisplay(link.name);
+  if (fullText && e.currentTarget instanceof HTMLElement) {
+    showLinkTooltip(e.currentTarget, fullText);
+  }
+};
+
 // 打开外部链接
 const openLink = (url: string) => {
   if (url) {
@@ -299,6 +315,8 @@ const openItemDocument = async () => {
     await openDocumentAtLine(docId, lineNumber, blockId);
   }
 };
+
+onUnmounted(() => hideLinkTooltip());
 </script>
 
 <style lang="scss" scoped>
@@ -597,8 +615,9 @@ const openItemDocument = async () => {
   margin-top: 10px;
 }
 
-// 链接标签样式 - 参考 dialog.ts
+// 链接标签样式 - 参考 dialog.ts（hover 时提升 z-index 避免 tooltip 被遮挡）
 .link-tag {
+  position: relative;
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
@@ -612,6 +631,7 @@ const openItemDocument = async () => {
   transition: all 0.2s;
 
   &:hover {
+    z-index: 100;
     background: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);
     border-color: var(--b3-theme-primary);
