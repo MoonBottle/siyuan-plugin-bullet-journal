@@ -67,7 +67,7 @@ const rangeOptions = [
   { value: 'month' as RangeType, label: '本月' }
 ];
 
-const { startDate, endDate } = computed(() => {
+const rangeDates = computed(() => {
   const today = dayjs().format('YYYY-MM-DD');
   switch (range.value) {
     case 'today':
@@ -93,17 +93,15 @@ const dailyTarget = computed(() => {
 });
 
 const focusByDay = computed(() => {
-  return projectStore.getFocusMinutesByDateRange(
-    startDate.value,
-    endDate.value,
-    ''
-  );
+  const { startDate, endDate } = rangeDates.value;
+  return projectStore.getFocusMinutesByDateRange(startDate, endDate, '');
 });
 
 const chartData = computed(() => {
+  const { startDate, endDate } = rangeDates.value;
   const result: { date: string; minutes: number }[] = [];
-  let current = dayjs(startDate.value);
-  const end = dayjs(endDate.value);
+  let current = dayjs(startDate);
+  const end = dayjs(endDate);
 
   while (current.isBefore(end) || current.isSame(end, 'day')) {
     const dateStr = current.format('YYYY-MM-DD');
@@ -125,8 +123,9 @@ const totalMinutes = computed(() => {
 });
 
 const totalCount = computed(() => {
+  const { startDate, endDate } = rangeDates.value;
   const all = projectStore.getAllPomodoros('');
-  return all.filter(p => p.date >= startDate.value && p.date <= endDate.value).length;
+  return all.filter(p => p.date >= startDate && p.date <= endDate).length;
 });
 
 const barHeight = (minutes: number) => {
