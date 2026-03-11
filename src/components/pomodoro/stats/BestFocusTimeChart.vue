@@ -94,7 +94,18 @@ function updateChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          displayColors: false
+          displayColors: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          padding: 8,
+          cornerRadius: 4,
+          titleFont: { size: 13 },
+          bodyFont: { size: 13 },
+          callbacks: {
+            title: (items) => items[0]?.label || '',
+            label: (item) => `${item.dataset.label}: ${item.parsed.y}m`
+          }
         }
       },
       scales: {
