@@ -152,6 +152,20 @@ function formatDuration(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h${m}m`;
 }
 
+function getThemeColor(): string {
+  const root = document.documentElement;
+  const style = window.getComputedStyle(root);
+  const color = style.getPropertyValue('--b3-theme-primary').trim();
+  return color || '#4285f4';
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function updateChart() {
   if (!chartCanvas.value) return;
   const ctx = chartCanvas.value.getContext('2d');
@@ -161,6 +175,8 @@ function updateChart() {
     chartInstance.destroy();
   }
 
+  const primaryColor = getThemeColor();
+
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
@@ -168,8 +184,8 @@ function updateChart() {
       datasets: [{
         label: t('pomodoroStats').focusDuration,
         data: chartData.value.map(d => d.minutes),
-        borderColor: 'var(--b3-theme-primary)',
-        backgroundColor: 'rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.1)',
+        borderColor: primaryColor,
+        backgroundColor: hexToRgba(primaryColor, 0.1),
         fill: true,
         tension: 0.3
       }]
@@ -178,7 +194,21 @@ function updateChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          padding: 8,
+          cornerRadius: 4,
+          titleFont: { size: 13 },
+          bodyFont: { size: 13 },
+          callbacks: {
+            title: (items) => items[0]?.label || '',
+            label: (item) => `${item.dataset.label}: ${item.parsed.y}m`
+          }
+        }
       },
       scales: {
         y: {
