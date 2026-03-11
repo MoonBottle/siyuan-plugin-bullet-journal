@@ -48,7 +48,10 @@ const weekStart = computed(() => {
 
 const weekLabel = computed(() => {
   if (weekOffset.value === 0) return t('pomodoroStats').week;
-  return weekStart.value.format('YYYY-MM-DD');
+  if (weekOffset.value === -1) return t('pomodoroStats').lastWeek;
+  const start = weekStart.value;
+  const end = start.add(6, 'day');
+  return `${start.format('M月D日')} - ${end.format('M月D日')}`;
 });
 
 const weekDays = computed(() => {

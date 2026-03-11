@@ -247,6 +247,7 @@
     "today": "Today",
     "day": "Day",
     "week": "This Week",
+    "lastWeek": "Last Week",
     "month": "This Month",
     "year": "This Year",
     "showUnrecorded": "Show unrecorded time",
