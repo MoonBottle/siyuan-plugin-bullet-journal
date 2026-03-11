@@ -262,6 +262,24 @@ function nextWeek() {
   display: flex;
   gap: 4px;
   min-height: 0;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent calc(100% / 24 - 1px),
+      var(--b3-theme-surface-lighter) calc(100% / 24 - 1px),
+      var(--b3-theme-surface-lighter) calc(100% / 24)
+    );
+  }
 }
 
 .timeline-column {
@@ -281,7 +299,6 @@ function nextWeek() {
 .timeline-cells {
   display: flex;
   flex-direction: column;
-  gap: 1px;
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -290,7 +307,7 @@ function nextWeek() {
 .cell {
   flex: 1;
   min-height: 2px;
-  background: var(--b3-theme-surface-lighter);
+  background: transparent;
   border-radius: var(--b3-border-radius);
   transition: opacity 0.2s;
 
