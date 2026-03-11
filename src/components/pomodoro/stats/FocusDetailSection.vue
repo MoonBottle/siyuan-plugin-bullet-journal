@@ -5,6 +5,13 @@
       <div class="chart-controls">
         <select
           class="range-select"
+          v-model="aggregateBy"
+        >
+          <option value="task">{{ t('pomodoroStats').byTask }}</option>
+          <option value="item">{{ t('pomodoroStats').byItem }}</option>
+        </select>
+        <select
+          class="range-select"
           :value="range"
           @change="(e) => { emit('update:range', (e.target as HTMLSelectElement).value as 'today' | 'week' | 'month'); emit('update:rangeOffset', 0); }"
         >
@@ -21,7 +28,28 @@
     <div class="detail-content">
       <div class="circle-chart-wrapper">
         <div class="circle-chart" :style="pieStyle">
-          <div class="circle-center">{{ t('pomodoroStats').focusDuration }}</div>
+          <div class="circle-center">
+            <div class="center-value">{{ formatDuration(totalMinutes) }}</div>
+            <div class="center-label">{{ t('pomodoroStats').focusDuration }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-list">
+        <div
+          v-for="(item, index) in groupedData"
+          :key="item.groupKey"
+          class="stats-item"
+        >
+          <div class="stats-item-header">
+            <span class="stats-item-name">{{ item.groupLabel }}</span>
+            <span class="stats-item-value">{{ formatDuration(item.minutes) }} {{ item.proportion.toFixed(2) }}%</span>
+          </div>
+          <div class="stats-item-bar">
+            <div
+              class="stats-item-progress"
+              :style="{ width: item.proportion + '%', backgroundColor: getColor(index) }"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -29,9 +57,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useProjectStore } from '@/stores';
-import { aggregatePomodorosFromProjects, groupPomodorosByProject } from '@/utils/pomodoroUtils';
+import { aggregatePomodorosFromProjects, groupPomodorosByProject, groupPomodorosByTask, type GroupedPomodoroStats } from '@/utils/pomodoroUtils';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 
@@ -44,6 +72,8 @@ const emit = defineEmits<{
   'update:range': [value: 'today' | 'week' | 'month'];
   'update:rangeOffset': [value: number];
 }>();
+
+const aggregateBy = ref<'task' | 'item'>('task');
 
 const projectStore = useProjectStore();
 
@@ -98,21 +128,24 @@ const rangeLabel = computed(() => {
 
 const enrichedPomodoros = computed(() => aggregatePomodorosFromProjects(projectStore.projects));
 
-const groupedByProject = computed(() => {
+const groupedData = computed<GroupedPomodoroStats[]>(() => {
   const { startDate, endDate } = rangeDates.value;
+  if (aggregateBy.value === 'task') {
+    return groupPomodorosByTask(enrichedPomodoros.value, startDate, endDate);
+  }
   return groupPomodorosByProject(enrichedPomodoros.value, startDate, endDate);
 });
 
 const totalMinutes = computed(() => {
-  return groupedByProject.value.reduce((s, g) => s + g.minutes, 0);
+  return groupedData.value.reduce((s, g) => s + g.minutes, 0);
 });
 
 const pieStyle = computed(() => {
-  const groups = groupedByProject.value;
+  const groups = groupedData.value;
   if (groups.length === 0 || totalMinutes.value <= 0) {
     return { background: 'var(--b3-theme-surface-lighter)' };
   }
-  const colors = ['var(--b3-theme-primary)', '#81c784', '#64b5f6', '#ffb74d', '#ba68c8'];
+  const colors = ['var(--b3-theme-primary)', '#81c784', '#64b5f6', '#ffb74d', '#ba68c8', '#f06292', '#4db6ac', '#ff8a65'];
   let acc = 0;
   const parts = groups.map((g, i) => {
     const pct = (g.minutes / totalMinutes.value) * 100;
@@ -124,6 +157,19 @@ const pieStyle = computed(() => {
     background: `conic-gradient(${parts.join(', ')})`
   };
 });
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h${m}m`;
+}
+
+const colors = ['var(--b3-theme-primary)', '#81c784', '#64b5f6', '#ffb74d', '#ba68c8', '#f06292', '#4db6ac', '#ff8a65'];
+
+function getColor(index: number): string {
+  return colors[index % colors.length];
+}
 
 function prevRange() {
   emit('update:rangeOffset', props.rangeOffset - 1);
@@ -200,7 +246,7 @@ function nextRange() {
 .detail-content {
   display: flex;
   gap: 24px;
-  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .circle-chart-wrapper {
@@ -208,8 +254,8 @@ function nextRange() {
 }
 
 .circle-chart {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   position: relative;
   display: flex;
@@ -219,11 +265,76 @@ function nextRange() {
 
 .circle-center {
   position: absolute;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: var(--b3-theme-background);
-  padding: 4px 8px;
-  border-radius: var(--b3-border-radius);
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+
+  .center-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--b3-theme-on-background);
+  }
+
+  .center-label {
+    font-size: 12px;
+    color: var(--b3-theme-on-surface);
+    margin-top: 2px;
+  }
+}
+
+.stats-list {
+  width: 280px;
+  height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stats-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.stats-item-name {
+  color: var(--b3-theme-on-background);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.stats-item-value {
+  color: var(--b3-theme-on-surface);
+  flex-shrink: 0;
+}
+
+.stats-item-bar {
+  height: 6px;
+  background: var(--b3-theme-surface-lighter);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stats-item-progress {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
 </style>

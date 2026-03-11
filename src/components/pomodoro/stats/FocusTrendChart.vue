@@ -253,6 +253,13 @@ function updateChart() {
         }
       },
       scales: {
+        x: {
+          ticks: {
+            font: {
+              weight: 'normal'
+            }
+          }
+        },
         y: {
           beginAtZero: true,
           ticks: {
