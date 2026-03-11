@@ -19,7 +19,7 @@
         aria-label="番茄统计"
         @click="openStatsTab"
       >
-        <svg><use xlink:href="#iconBarChart"></use></svg>
+        <svg><use xlink:href="#iconGraph"></use></svg>
       </span>
       <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="刷新" @click="handleRefresh">
         <svg><use xlink:href="#iconRefresh"></use></svg>

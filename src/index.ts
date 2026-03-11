@@ -720,7 +720,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.CALENDAR]: 'iconCalendar',
       [TAB_TYPES.GANTT]: 'iconGraph',
       [TAB_TYPES.PROJECT]: 'iconFolder',
-      [TAB_TYPES.POMODORO_STATS]: 'iconBarChart'
+      [TAB_TYPES.POMODORO_STATS]: 'iconGraph'
     };
     return icons[type] || 'iconFile';
   }

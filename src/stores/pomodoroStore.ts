@@ -349,7 +349,19 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 4. 播放提示音
         this.playNotificationSound();
 
-        // 5. 触发弹窗（由监听器显示完成弹窗）
+        // 5. 系统通知（此时用户可能在其他应用，提醒回来补填说明）
+        showPomodoroCompleteNotification(ap.itemContent, actualMinutes, () => {
+          if (typeof window !== 'undefined' && (window as any).require) {
+            try {
+              const { ipcRenderer } = (window as any).require('electron');
+              ipcRenderer.send('focus-window');
+            } catch {
+              // 忽略
+            }
+          }
+        });
+
+        // 6. 触发弹窗（由监听器显示完成弹窗）
         eventBus.emit(Events.POMODORO_PENDING_COMPLETION, pending);
 
         return true;
@@ -398,16 +410,6 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         await removePendingCompletion(plugin);
 
-        showPomodoroCompleteNotification(pending.itemContent, pending.durationMinutes, () => {
-          if (typeof window !== 'undefined' && (window as any).require) {
-            try {
-              const { ipcRenderer } = (window as any).require('electron');
-              ipcRenderer.send('focus-window');
-            } catch {
-              // 忽略
-            }
-          }
-        });
         showMessage(`✅ 专注完成「${pending.itemContent}」· 实际专注 ${pending.durationMinutes} 分钟`);
 
         eventBus.emit(Events.POMODORO_COMPLETED);
