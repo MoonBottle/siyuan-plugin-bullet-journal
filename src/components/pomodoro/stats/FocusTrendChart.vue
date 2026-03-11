@@ -6,6 +6,7 @@
         <select v-model="dimension" class="dimension-select">
           <option value="year">{{ t('pomodoroStats').year }}</option>
           <option value="month">{{ t('pomodoroStats').month }}</option>
+          <option value="week">{{ t('pomodoroStats').week }}</option>
           <option value="day">{{ t('pomodoroStats').day }}</option>
         </select>
         <div class="nav-btns">
@@ -37,7 +38,7 @@ const projectStore = useProjectStore();
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let chartInstance: Chart | null = null;
 
-const dimension = ref<'year' | 'month' | 'day'>('year');
+const dimension = ref<'year' | 'month' | 'week' | 'day'>('week');
 const offset = ref(0);
 
 const rangeDates = computed(() => {
@@ -57,6 +58,13 @@ const rangeDates = computed(() => {
         endDate: m.endOf('month').format('YYYY-MM-DD')
       };
     }
+    case 'week': {
+      const w = base.add(offset.value, 'week');
+      return {
+        startDate: w.startOf('week').add(1, 'day').format('YYYY-MM-DD'),
+        endDate: w.endOf('week').add(1, 'day').format('YYYY-MM-DD')
+      };
+    }
     case 'day': {
       const d = base.add(offset.value, 'day');
       const s = d.format('YYYY-MM-DD');
@@ -73,6 +81,12 @@ const navLabel = computed(() => {
       return dayjs().add(offset.value, 'year').format('YYYY');
     case 'month':
       return dayjs().add(offset.value, 'month').format('YYYY-M月');
+    case 'week': {
+      const w = dayjs().add(offset.value, 'week');
+      const start = w.startOf('week').add(1, 'day');
+      const end = w.endOf('week').add(1, 'day');
+      return `${start.format('M月D日')} - ${end.format('M月D日')}`;
+    }
     case 'day':
       return dayjs().add(offset.value, 'day').format('YYYY-MM-DD');
     default:
@@ -98,7 +112,7 @@ const chartData = computed(() => {
       }
       result.push({ label: `${m}月`, minutes: total });
     }
-  } else if (dimension.value === 'month') {
+  } else if (dimension.value === 'month' || dimension.value === 'week') {
     let current = dayjs(startDate);
     const end = dayjs(endDate);
     while (current.isBefore(end) || current.isSame(end, 'day')) {
@@ -134,7 +148,7 @@ const dailyAvg = computed(() => {
   if (data.length === 0) return 0;
   const total = data.reduce((s, d) => s + d.minutes, 0);
   if (dimension.value === 'year') return Math.round(total / 365) || 0;
-  if (dimension.value === 'month') return data.length > 0 ? Math.round(total / data.length) : 0;
+  if (dimension.value === 'month' || dimension.value === 'week') return data.length > 0 ? Math.round(total / data.length) : 0;
   if (dimension.value === 'day') return total;
   return 0;
 });
