@@ -48,10 +48,14 @@
     "day": "日",
     "list": "列表",
     "weekNumber": "第{num}周",
-    "navLinkHint": "跳转到 $0"
+    "navLinkHint": "跳转到 $0",
+    "weekDays": ["日", "一", "二", "三", "四", "五", "六"],
+    "yearMonthFormat": "{year}年{month}月"
   },
   "gantt": {
     "title": "甘特图",
+    "weekFormat": "第%W周",
+    "monthFormat": "%Y年%M",
     "showItems": "显示事项",
     "showWorkItems": "显示事项",
     "dateFilter": "日期筛选",
@@ -144,6 +148,7 @@
     "projectGroups": {
       "title": "项目分组",
       "description": "配置项目分组以便分类管理",
+      "setAsTaskDir": "设置为任务助手目录",
       "addButton": "添加分组",
       "namePlaceholder": "分组名称",
       "deleteButton": "删除",
@@ -235,7 +240,14 @@
     "dockTitle": "番茄专注",
     "startFocus": "开始专注",
     "stats": "专注统计",
-    "startFocusTitle": "开始专注"
+    "startFocusTitle": "开始专注",
+    "startFocusStatus": "🍅 开始专注「{content}」· {mode}",
+    "startFocusStatusStopwatch": "正计时",
+    "startFocusFailed": "开始专注失败",
+    "completeMessage": "✅ 专注完成「{content}」· 实际专注 {minutes} 分钟",
+    "completeNotifyTitle": "🎉 专注完成！",
+    "completeNotifyBody": "「{content}」专注了 {minutes} 分钟",
+    "saveFailed": "保存记录失败"
   },
   "pomodoroStats": {
     "statsTitle": "专注统计",
@@ -304,7 +316,8 @@
     "dirsSet": "已设置 {count} 个任务助手目录",
     "dirsExist": "所选目录已存在于设置中",
     "minutes": "分钟",
-    "hours": "小时"
+    "hours": "小时",
+    "uncategorized": "未分类"
   },
   "pomodoroDialog": {
     "selectItem": "选择待办事项",

@@ -3,6 +3,7 @@
  * 供 AI 工具执行器和 MCP 服务器共享
  */
 import type { Project, PomodoroRecord } from '@/types/models';
+import { t } from '@/i18n';
 
 export interface PomodoroRecordOutput {
   id: string;
@@ -114,7 +115,7 @@ export function groupPomodorosByProject(
   const byProject = new Map<string, { minutes: number; count: number }>();
 
   for (const { record, projectName } of filtered) {
-    const key = projectName ?? '未分类';
+    const key = projectName ?? t('common').uncategorized;
     const current = byProject.get(key) ?? { minutes: 0, count: 0 };
     const mins = record.actualDurationMinutes ?? record.durationMinutes;
     byProject.set(key, {
@@ -145,7 +146,7 @@ export function groupPomodorosByTask(
   const byTask = new Map<string, { minutes: number; count: number }>();
 
   for (const { record, projectName, taskName } of filtered) {
-    const key = taskName ? `${projectName ?? ''} / ${taskName}` : projectName ?? '未分类';
+    const key = taskName ? `${projectName ?? ''} / ${taskName}` : projectName ?? t('common').uncategorized;
     const current = byTask.get(key) ?? { minutes: 0, count: 0 };
     const mins = record.actualDurationMinutes ?? record.durationMinutes;
     byTask.set(key, {
@@ -176,7 +177,7 @@ export function groupPomodorosByItem(
   const byItem = new Map<string, { minutes: number; count: number }>();
 
   for (const { record, projectName, taskName, itemContent } of filtered) {
-    const key = itemContent ?? '未分类';
+    const key = itemContent ?? t('common').uncategorized;
     const current = byItem.get(key) ?? { minutes: 0, count: 0 };
     const mins = record.actualDurationMinutes ?? record.durationMinutes;
     byItem.set(key, {

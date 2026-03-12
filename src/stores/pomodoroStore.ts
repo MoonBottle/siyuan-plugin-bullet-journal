@@ -121,14 +121,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 触发专注开始事件
         eventBus.emit(Events.POMODORO_STARTED);
 
-        const msg = timerMode === 'stopwatch'
-          ? `🍅 开始专注「${item.content}」· 正计时`
-          : `🍅 开始专注「${item.content}」· ${durationMinutes}分钟`;
+        const mode = timerMode === 'stopwatch' ? t('pomodoro').startFocusStatusStopwatch : `${durationMinutes}${t('common').minutes}`;
+        const msg = t('pomodoro').startFocusStatus.replace('{content}', item.content).replace('{mode}', mode);
         showMessage(msg);
         return true;
       } catch (error) {
         console.error('[Pomodoro] 开始专注失败:', error);
-        showMessage('❌ 开始专注失败', 'error');
+        showMessage(`❌ ${t('pomodoro').startFocusFailed}`, 'error');
         return false;
       }
     },
@@ -449,7 +448,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         await removePendingCompletion(plugin);
 
-        showMessage(`✅ 专注完成「${pending.itemContent}」· 实际专注 ${pending.durationMinutes} 分钟`);
+        showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
         eventBus.emit(Events.POMODORO_COMPLETED);
         // 触发数据刷新，专注列表（含 attr 模式新记录）自动更新
@@ -458,7 +457,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         return true;
       } catch (error) {
         console.error('[Pomodoro] 保存记录失败:', error);
-        showMessage('❌ 保存记录失败', 'error');
+        showMessage(`❌ ${t('pomodoro').saveFailed}`, 'error');
         return false;
       }
     },

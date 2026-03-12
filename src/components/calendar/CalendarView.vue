@@ -205,7 +205,7 @@ const hideEventTooltip = () => {
 // 打开番茄钟弹框
 const openPomodoroDialog = (item: Item) => {
   const dialog = createDialog({
-    title: '开始专注',
+    title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
     height: 'auto'

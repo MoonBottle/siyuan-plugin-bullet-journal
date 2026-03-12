@@ -157,7 +157,7 @@ const getStatusTag = (status: 'completed' | 'abandoned'): string => {
 
 const openPomodoroDialog = (item: Item) => {
   const dialog = createDialog({
-    title: '开始专注',
+    title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
     height: 'auto'
@@ -585,15 +585,15 @@ const setScaleConfig = (mode: 'day' | 'week' | 'month') => {
       break;
     case 'week':
       gantt.config.scales = [
-        { unit: 'week', step: 1, format: '第%W周' },
+        { unit: 'week', step: 1, format: t('gantt').weekFormat },
         { unit: 'day', step: 1, format: '%d' }
       ];
       gantt.config.scale_height = 50;
       break;
     case 'month':
       gantt.config.scales = [
-        { unit: 'month', step: 1, format: '%Y年%M' },
-        { unit: 'week', step: 1, format: '第%W周' }
+        { unit: 'month', step: 1, format: t('gantt').monthFormat },
+        { unit: 'week', step: 1, format: t('gantt').weekFormat }
       ];
       gantt.config.scale_height = 50;
       break;

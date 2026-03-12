@@ -295,7 +295,7 @@ export function showItemDetailModal(item: Item): Dialog {
   // 事项状态标签（多日期用 getDateRangeStatus，单日用原逻辑）
   const todayStr = dayjs().format('YYYY-MM-DD');
   const statusMap: Record<string, { text: string; class: string }> = {
-    'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'pending': { text: t('todo').pending, class: 'pending' },
     'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
     'completed': { text: t('todo').completed, class: 'completed' },
     'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
@@ -566,7 +566,7 @@ export function buildEventDetailContent(
   const itemDate = props.date;
   const todayStr = dayjs().format('YYYY-MM-DD');
   const statusMap: Record<string, { text: string; class: string }> = {
-    'pending': { text: t('todo').completed === '已完成' ? '待办' : 'Pending', class: 'pending' },
+    'pending': { text: t('todo').pending, class: 'pending' },
     'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
     'completed': { text: t('todo').completed, class: 'completed' },
     'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
@@ -822,7 +822,7 @@ export function showPomodoroCompleteDialog(
 ): Dialog {
   let dialogApp: any = null;
   const dialog = new Dialog({
-    title: '专注完成',
+    title: t('settings').pomodoro.completeTitle,
     content: '<div id="pomodoro-complete-dialog-mount"></div>',
     width: '400px',
     destroyCallback: () => {
@@ -868,7 +868,7 @@ function generateCalendarGrid(year: number, month: number, selectedDate?: string
   let html = '<div class="date-picker-calendar">';
   
   // 星期标题
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+  const weekDays = (t('calendar') as any).weekDays ?? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   html += '<div class="date-picker-header">';
   weekDays.forEach(day => {
     html += `<span class="date-picker-weekday">${day}</span>`;
@@ -922,7 +922,7 @@ export function showDatePickerDialog(
       <div class="date-picker-nav">
         <button class="b3-button b3-button--outline" data-action="prev-year">«</button>
         <button class="b3-button b3-button--outline" data-action="prev-month">‹</button>
-        <span class="date-picker-month-label">${currentYear}年${currentMonth + 1}月</span>
+        <span class="date-picker-month-label">${((t('calendar') as any).yearMonthFormat ?? '{year}/{month}').replace('{year}', String(currentYear)).replace('{month}', String(currentMonth + 1))}</span>
         <button class="b3-button b3-button--outline" data-action="next-month">›</button>
         <button class="b3-button b3-button--outline" data-action="next-year">»</button>
       </div>

@@ -158,7 +158,7 @@ const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
   };
 
   completeDialog = new Dialog({
-    title: '专注完成',
+    title: t('settings').pomodoro.completeTitle,
     content: '<div id="pomodoro-complete-dialog-mount"></div>',
     width: '400px',
     destroyCallback: () => {

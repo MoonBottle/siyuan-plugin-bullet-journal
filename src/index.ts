@@ -427,7 +427,7 @@ export default class TaskAssistantPlugin extends Plugin {
     
     detail.menu.addItem({
       icon: 'iconFolder',
-      label: '设置为任务助手目录',
+      label: t('settings').projectGroups.setAsTaskDir,
       click: async () => {
         console.log('[Task Assistant] Setting task assistant directories, documentIds:', documentIds);
         const paths: string[] = [];
@@ -465,12 +465,12 @@ export default class TaskAssistantPlugin extends Plugin {
         console.log('[Task Assistant] Settings saved, directories:', settings.directories);
         
         if (addedCount > 0) {
-          showMessage((t('common') as any).dirsSet?.replace?.('{count}', String(addedCount)) ?? `已设置 ${addedCount} 个任务助手目录`, 3000, 'info');
+          showMessage((t('common') as any).dirsSet?.replace?.('{count}', String(addedCount)) ?? t('common').dirsSet.replace('{count}', String(addedCount)), 3000, 'info');
           console.log('[Task Assistant] Emitting DATA_REFRESH event');
           eventBus.emit(Events.DATA_REFRESH);
           broadcastDataRefresh(this.getSettings() as object);
         } else {
-          showMessage((t('common') as any).dirsExist ?? '所选目录已存在于设置中', 3000, 'info');
+          showMessage((t('common') as any).dirsExist ?? t('common').dirsExist, 3000, 'info');
         }
       }
     });
@@ -621,7 +621,7 @@ export default class TaskAssistantPlugin extends Plugin {
         position: 'RightBottom',
         size: { width: 320, height: 400 },
         icon: 'iconList',
-        title: t('todo')?.title ?? '待办事项'
+        title: t('todo').title
       },
       data: {},
       type: DOCK_TYPES.TODO,
@@ -667,7 +667,7 @@ export default class TaskAssistantPlugin extends Plugin {
         position: 'RightBottom',
         size: { width: 320, height: 500 },
         icon: 'iconClock',
-        title: '番茄专注'
+        title: t('pomodoro').dockTitle
       },
       data: {},
       type: DOCK_TYPES.POMODORO,
@@ -778,7 +778,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.CALENDAR]: t('calendar').title,
       [TAB_TYPES.GANTT]: t('gantt').title,
       [TAB_TYPES.PROJECT]: t('project').title,
-      [TAB_TYPES.POMODORO_STATS]: '番茄统计'
+      [TAB_TYPES.POMODORO_STATS]: t('pomodoroStats').statsTitle
     };
     return titles[type] || t('title');
   }
@@ -1071,7 +1071,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // 创建底栏倒计时元素
     this.statusBarTimerEl = document.createElement('div');
     this.statusBarTimerEl.className = 'b3-tooltips b3-tooltips__nw bullet-journal-status-bar-timer';
-    this.statusBarTimerEl.setAttribute('aria-label', '番茄专注');
+    this.statusBarTimerEl.setAttribute('aria-label', t('pomodoro').dockTitle);
     this.statusBarTimerEl.innerHTML = `
       <div class="timer-icon"></div>
       <div class="timer-text"></div>

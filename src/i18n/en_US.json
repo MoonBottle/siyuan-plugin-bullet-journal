@@ -48,10 +48,14 @@
     "day": "Day",
     "list": "List",
     "weekNumber": "W{num}",
-    "navLinkHint": "Go to $0"
+    "navLinkHint": "Go to $0",
+    "weekDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "yearMonthFormat": "{year}/{month}"
   },
   "gantt": {
     "title": "Gantt Chart",
+    "weekFormat": "Week %W",
+    "monthFormat": "%Y-%M",
     "showItems": "Show Items",
     "showWorkItems": "Show items",
     "dateFilter": "Date filter",
@@ -116,7 +120,8 @@
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
     "hideAbandoned": "Hide abandoned",
-    "startFocusAria": "Start Focus"
+    "startFocusAria": "Start Focus",
+    "pending": "Pending"
   },
   "settings": {
     "title": "Settings",
@@ -144,6 +149,7 @@
     "projectGroups": {
       "title": "Project Groups",
       "description": "Configure project groups for categorization",
+      "setAsTaskDir": "Set as task assistant directory",
       "addButton": "Add Group",
       "namePlaceholder": "Group Name",
       "deleteButton": "Delete",
@@ -232,10 +238,17 @@
     }
   },
   "pomodoro": {
-    "dockTitle": "Pomodoro",
+    "dockTitle": "Pomodoro Focus",
     "startFocus": "Start Focus",
     "stats": "Focus Statistics",
-    "startFocusTitle": "Start Focus"
+    "startFocusTitle": "Start Focus",
+    "startFocusStatus": "🍅 Start focus「{content}」· {mode}",
+    "startFocusStatusStopwatch": "Stopwatch",
+    "startFocusFailed": "Failed to start focus",
+    "completeMessage": "✅ Focus complete「{content}」· {minutes} min",
+    "completeNotifyTitle": "🎉 Focus complete!",
+    "completeNotifyBody": "「{content}」focused for {minutes} min",
+    "saveFailed": "Failed to save record"
   },
   "pomodoroStats": {
     "statsTitle": "Focus Statistics",
