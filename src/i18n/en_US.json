@@ -229,6 +229,12 @@
       "skipBreak": "Skip Break"
     }
   },
+  "pomodoro": {
+    "dockTitle": "Pomodoro",
+    "startFocus": "Start Focus",
+    "stats": "Pomodoro Stats",
+    "startFocusTitle": "Start Focus"
+  },
   "pomodoroStats": {
     "statsTitle": "Statistics",
     "focusTab": "Focus Stats",
@@ -244,7 +250,7 @@
     "focusTrend": "Focus Duration Trend Analysis",
     "focusTimeline": "Focus Period Distribution",
     "bestFocusTime": "Personal Efficient Focus Periods",
-    "annualHeatmap": "Annual Focus Frequency Heatmap",
+    "annualHeatmap": "Annual Focus Heatmap",
     "dailyAverage": "Daily Average",
     "today": "Today",
     "day": "Day",

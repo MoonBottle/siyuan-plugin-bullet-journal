@@ -229,6 +229,12 @@
       "skipBreak": "跳过休息"
     }
   },
+  "pomodoro": {
+    "dockTitle": "番茄专注",
+    "startFocus": "开始专注",
+    "stats": "番茄统计",
+    "startFocusTitle": "开始专注"
+  },
   "pomodoroStats": {
     "statsTitle": "统计",
     "focusTab": "专注统计",
@@ -244,7 +250,7 @@
     "focusTrend": "专注时长趋势分析",
     "focusTimeline": "专注时段分布",
     "bestFocusTime": "个人高效专注时段",
-    "annualHeatmap": "年度专注频次热力图",
+    "annualHeatmap": "年度专注热力图",
     "dailyAverage": "每日平均",
     "today": "今日",
     "day": "日",

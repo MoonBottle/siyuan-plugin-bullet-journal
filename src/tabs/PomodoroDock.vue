@@ -3,20 +3,20 @@
     <div class="block__icons">
       <div class="block__logo">
         <TomatoIcon :width="16" :height="16" class="block__logoicon" />
-        番茄专注
+        {{ t('pomodoro').dockTitle }}
       </div>
       <span class="fn__flex-1 fn__space"></span>
       <span
         v-if="!pomodoroStore.isFocusing"
         class="block__icon b3-tooltips b3-tooltips__sw"
-        aria-label="开始专注"
+        :aria-label="t('pomodoro').startFocus"
         @click="openTimerDialog"
       >
         <svg><use xlink:href="#iconPlay"></use></svg>
       </span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
-        aria-label="番茄统计"
+        :aria-label="t('pomodoro').stats"
         @click="openStatsTab"
       >
         <svg><use xlink:href="#iconGraph"></use></svg>
@@ -54,6 +54,7 @@ import type { PendingPomodoroCompletion } from '@/types/models';
 import { showMessage } from '@/utils/dialog';
 import { requestNotificationPermission } from '@/utils/notification';
 import { TAB_TYPES } from '@/constants';
+import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -71,7 +72,7 @@ const handleDataRefresh = async () => {
 const handleRefresh = async () => {
   if (plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    showMessage('数据已刷新');
+    showMessage(t('common').dataRefreshed);
   }
 };
 
@@ -109,7 +110,7 @@ const openTimerDialog = () => {
 
   // 先创建 Dialog，使用占位内容
   timerDialog = new Dialog({
-    title: '开始专注',
+    title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '600px',
     destroyCallback: () => {
