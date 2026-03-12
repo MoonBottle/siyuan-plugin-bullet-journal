@@ -195,13 +195,15 @@ function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
 }
 
 /**
- * 格式化专注时长为可读字符串
+ * 格式化专注时长为可读字符串（国际化）
  */
 function formatFocusDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}分钟`;
+  const mins = t('common').minutes ?? 'min';
+  const hrs = t('common').hours ?? 'h';
+  if (minutes < 60) return `${minutes}${mins}`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m > 0 ? `${h}小时${m}分钟` : `${h}小时`;
+  return m > 0 ? `${h}${hrs} ${m}${mins}` : `${h}${hrs}`;
 }
 
 /**
@@ -533,8 +535,8 @@ export function buildEventDetailContent(
       <div class="sy-dialog-card">
         <div class="sy-dialog-card-title">${t('todo').project}</div>
         <div class="sy-dialog-card-content">
-          <span>${props.project}</span>
-          ${copyBtn(props.project)}
+          <span>${props.project ?? ''}</span>
+          ${copyBtn(props.project ?? '')}
         </div>
         ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
       </div>
@@ -552,8 +554,8 @@ export function buildEventDetailContent(
           ${levelHtml}
         </div>
         <div class="sy-dialog-card-content">
-          <span>${props.task}</span>
-          ${copyBtn(props.task)}
+          <span>${props.task ?? ''}</span>
+          ${copyBtn(props.task ?? '')}
         </div>
         ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
       </div>

@@ -62,6 +62,7 @@
     "month": "月",
     "timeFilter": "时间筛选",
     "to": "至",
+    "projectName": "项目名称",
     "taskName": "任务名称",
     "startTime": "开始日期",
     "endTime": "结束日期"
@@ -114,7 +115,8 @@
     "showCompleted": "显示已完成",
     "hideCompleted": "隐藏已完成",
     "showAbandoned": "显示已放弃",
-    "hideAbandoned": "隐藏已放弃"
+    "hideAbandoned": "隐藏已放弃",
+    "startFocusAria": "开始专注"
   },
   "settings": {
     "title": "设置",
@@ -300,7 +302,9 @@
     "resizeSuccess": "已调整事项时间",
     "actionFailed": "失败，请重试",
     "dirsSet": "已设置 {count} 个任务助手目录",
-    "dirsExist": "所选目录已存在于设置中"
+    "dirsExist": "所选目录已存在于设置中",
+    "minutes": "分钟",
+    "hours": "小时"
   },
   "pomodoroDialog": {
     "selectItem": "选择待办事项",
@@ -348,12 +352,5 @@
   "pomodoroRecord": {
     "title": "专注记录",
     "unknown": "未知"
-  },
-  "gantt": {
-    "dateFilter": "日期筛选:",
-    "to": "至"
-  },
-  "todo": {
-    "startFocusAria": "开始专注"
   }
 }

@@ -62,6 +62,7 @@
     "month": "Month",
     "timeFilter": "Time Filter",
     "to": "to",
+    "projectName": "Project Name",
     "taskName": "Task Name",
     "startTime": "Start Date",
     "endTime": "End Date"
@@ -114,7 +115,8 @@
     "showCompleted": "Show completed",
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
-    "hideAbandoned": "Hide abandoned"
+    "hideAbandoned": "Hide abandoned",
+    "startFocusAria": "Start Focus"
   },
   "settings": {
     "title": "Settings",
@@ -298,7 +300,9 @@
     "resizeSuccess": "Item time resized",
     "actionFailed": "Failed, please retry",
     "dirsSet": "{count} task assistant directories set",
-    "dirsExist": "Selected directories already exist in settings"
+    "dirsExist": "Selected directories already exist in settings",
+    "minutes": "min",
+    "hours": "h"
   },
   "pomodoroDialog": {
     "selectItem": "Select Todo Item",
@@ -346,12 +350,5 @@
   "pomodoroRecord": {
     "title": "Focus Records",
     "unknown": "Unknown"
-  },
-  "gantt": {
-    "dateFilter": "Date Filter:",
-    "to": "to"
-  },
-  "todo": {
-    "startFocusAria": "Start Focus"
   }
 }
