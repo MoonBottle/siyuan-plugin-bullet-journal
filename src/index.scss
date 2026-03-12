@@ -530,6 +530,27 @@
     text-align: center;
   }
 
+  .timer-skip-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-primary-light);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+  }
+
   .timer-control {
     display: flex;
     align-items: center;

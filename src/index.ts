@@ -1075,6 +1075,9 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarTimerEl.innerHTML = `
       <div class="timer-icon"></div>
       <div class="timer-text"></div>
+      <div class="timer-skip-btn b3-tooltips b3-tooltips__nw" style="display:none" data-tooltip="${t('settings').pomodoro.skipBreak}">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </div>
       <div class="timer-control">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
           <path fill="currentColor" d="M8 5v14l11-7z"/>
@@ -1092,6 +1095,17 @@ export default class TaskAssistantPlugin extends Plugin {
       if (target.closest('.timer-icon')) {
         e.stopPropagation();
         this.openPomodoroDock();
+        return;
+      }
+      // 如果点击的是跳过休息按钮
+      if (target.closest('.timer-skip-btn')) {
+        e.stopPropagation();
+        const pinia = getSharedPinia();
+        if (!pinia) return;
+        const pomodoroStore = usePomodoroStore(pinia);
+        if (pomodoroStore.isBreakActive) {
+          pomodoroStore.stopBreak(this);
+        }
         return;
       }
       // 如果点击的是控制按钮
@@ -1297,6 +1311,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
     const iconEl = this.statusBarTimerEl.querySelector('.timer-icon');
     const textEl = this.statusBarTimerEl.querySelector('.timer-text');
+    const skipBtnEl = this.statusBarTimerEl.querySelector('.timer-skip-btn') as HTMLElement;
     const playIcon = this.statusBarTimerEl.querySelector('.timer-play-icon') as HTMLElement;
     const pauseIcon = this.statusBarTimerEl.querySelector('.timer-pause-icon') as HTMLElement;
     const controlEl = this.statusBarTimerEl.querySelector('.timer-control') as HTMLElement;
@@ -1323,6 +1338,12 @@ export default class TaskAssistantPlugin extends Plugin {
       } else {
         textEl.style.display = 'none';
       }
+    }
+
+    // 跳过按钮：仅休息时显示
+    if (skipBtnEl) {
+      skipBtnEl.style.display = isBreak ? 'flex' : 'none';
+      skipBtnEl.setAttribute('aria-label', t('settings').pomodoro.skipBreak);
     }
 
     // 控制按钮显示逻辑：
