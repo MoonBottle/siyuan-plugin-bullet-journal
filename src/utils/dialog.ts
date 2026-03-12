@@ -6,6 +6,7 @@ import { Dialog } from 'siyuan';
 import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
+import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
 import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
@@ -848,6 +849,39 @@ export function showPomodoroCompleteDialog(
         dialogApp.use(pinia);
       }
       dialogApp.mount(mountEl);
+    }
+  }, 0);
+
+  return dialog;
+}
+
+/**
+ * 显示开始专注弹框
+ * 供底栏、Dock 等任意上下文调用，不依赖 PomodoroDock 是否已挂载
+ */
+export function showPomodoroTimerDialog(): Dialog {
+  const dialog = new Dialog({
+    title: t('pomodoro').startFocusTitle,
+    content: '<div id="pomodoro-timer-dialog-mount"></div>',
+    width: '600px',
+    destroyCallback: () => {
+      if (timerDialogApp) {
+        timerDialogApp.unmount();
+        timerDialogApp = null;
+      }
+    }
+  });
+
+  let timerDialogApp: any = null;
+  const closeDialog = () => {
+    dialog.destroy();
+  };
+
+  setTimeout(() => {
+    const mountEl = dialog.element?.querySelector('#pomodoro-timer-dialog-mount');
+    if (mountEl) {
+      timerDialogApp = createApp(PomodoroTimerDialog, { closeDialog });
+      timerDialogApp.mount(mountEl);
     }
   }, 0);
 

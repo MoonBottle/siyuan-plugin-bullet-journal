@@ -47,11 +47,10 @@ import PomodoroStats from '@/components/pomodoro/PomodoroStats.vue';
 import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
 import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
 import PomodoroBreakTimer from '@/components/pomodoro/PomodoroBreakTimer.vue';
-import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import type { PendingPomodoroCompletion } from '@/types/models';
-import { showMessage } from '@/utils/dialog';
+import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
 import { requestNotificationPermission } from '@/utils/notification';
 import { TAB_TYPES } from '@/constants';
 import { t } from '@/i18n';
@@ -83,53 +82,9 @@ const openStatsTab = () => {
   }
 };
 
-// 打开开始专注弹框
-let timerDialog: Dialog | null = null;
-let dialogApp: any = null;
-
+// 打开开始专注弹框（使用共享函数，与底栏等调用方一致）
 const openTimerDialog = () => {
-  if (timerDialog) {
-    timerDialog.destroy();
-    timerDialog = null;
-  }
-  if (dialogApp) {
-    dialogApp.unmount();
-    dialogApp = null;
-  }
-
-  const closeDialog = () => {
-    if (timerDialog) {
-      timerDialog.destroy();
-      timerDialog = null;
-    }
-    if (dialogApp) {
-      dialogApp.unmount();
-      dialogApp = null;
-    }
-  };
-
-  // 先创建 Dialog，使用占位内容
-  timerDialog = new Dialog({
-    title: t('pomodoro').startFocusTitle,
-    content: '<div id="pomodoro-timer-dialog-mount"></div>',
-    width: '600px',
-    destroyCallback: () => {
-      if (dialogApp) {
-        dialogApp.unmount();
-        dialogApp = null;
-      }
-      timerDialog = null;
-    }
-  });
-
-  // Dialog 创建后，找到挂载点并渲染 Vue 组件
-  setTimeout(() => {
-    const mountEl = timerDialog?.element?.querySelector('#pomodoro-timer-dialog-mount');
-    if (mountEl) {
-      dialogApp = createApp(PomodoroTimerDialog, { closeDialog });
-      dialogApp.mount(mountEl);
-    }
-  }, 0);
+  showPomodoroTimerDialog();
 };
 
 // 打开专注完成弹窗（补填说明）

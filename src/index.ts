@@ -23,7 +23,7 @@ import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
 import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
-import { showPomodoroCompleteDialog } from '@/utils/dialog';
+import { showPomodoroCompleteDialog, showPomodoroTimerDialog } from '@/utils/dialog';
 
 let PluginInfo = {
   version: '',
@@ -1135,24 +1135,19 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 从底栏开始专注（快捷开始）
-   * 打开番茄 Dock 并弹出开始专注弹框
+   * 直接弹出开始专注弹框（不依赖 Dock 是否已挂载），同时打开番茄 Dock 便于用户查看计时
    */
-  private async startFocusFromStatusBar() {
-    // 打开番茄 Dock
+  private startFocusFromStatusBar() {
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+
+    const pomodoroStore = usePomodoroStore(pinia);
+    if (pomodoroStore.isFocusing || pomodoroStore.isBreakActive) return;
+
+    // 直接打开弹框，无需等待 Dock 挂载
+    showPomodoroTimerDialog();
+    // 同时打开番茄 Dock，便于用户查看计时
     this.openPomodoroDock();
-
-    // 延迟一下，确保 Dock 已经打开
-    setTimeout(async () => {
-      const pinia = getSharedPinia();
-      if (!pinia) return;
-
-      const pomodoroStore = usePomodoroStore(pinia);
-
-      // 如果当前没有进行中的专注，则触发打开弹框事件
-      if (!pomodoroStore.isFocusing && !pomodoroStore.isBreakActive) {
-        eventBus.emit(Events.POMODORO_OPEN_TIMER_DIALOG);
-      }
-    }, 100);
   }
 
   /**
