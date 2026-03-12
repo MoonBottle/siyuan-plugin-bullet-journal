@@ -432,6 +432,6 @@ onUnmounted(() => {
 }
 
 .chart-container {
-  height: 220px;
+  height: 185px;
 }
 </style>
