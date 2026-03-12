@@ -121,10 +121,14 @@ const rangeDates = computed(() => {
 
 .stats-cards-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: repeat(3, 280px);
   gap: 16px;
   margin-top: 24px;
+
+  > * {
+    min-width: 0;
+  }
 }
 
 @media (max-width: 768px) {
