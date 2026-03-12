@@ -192,7 +192,10 @@ watch(chartData, updateChart);
 onMounted(() => {
   updateChart();
   themeObserver = new MutationObserver(updateChart);
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-color-scheme', 'style'] });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-color-scheme', 'data-asri-palette', 'data-theme-mode', 'style']
+  });
 });
 onUnmounted(() => {
   themeObserver?.disconnect();
