@@ -500,7 +500,7 @@
   .timer-text {
     font-size: 13px;
     font-weight: 500;
-    font-family: monospace;
+    font-family: var(--b3-font-family);
     min-width: 40px;
     text-align: center;
   }
@@ -582,7 +582,7 @@
   .remaining-time {
     font-size: 14px;
     font-weight: 600;
-    font-family: monospace;
+    font-family: var(--b3-font-family);
     line-height: 1;
   }
 }

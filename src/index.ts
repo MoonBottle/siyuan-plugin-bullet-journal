@@ -1093,7 +1093,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarTimerEl.innerHTML = `
       <div class="timer-icon"></div>
       <div class="timer-text"></div>
-      <div class="timer-control timer-start">
+      <div class="timer-control">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
           <path fill="currentColor" d="M8 5v14l11-7z"/>
         </svg>
@@ -1112,17 +1112,24 @@ export default class TaskAssistantPlugin extends Plugin {
         this.openPomodoroDock();
         return;
       }
-      // 如果点击的是开始按钮，则开始专注
-      if (target.closest('.timer-start')) {
+      // 如果点击的是控制按钮
+      if (target.closest('.timer-control')) {
         e.stopPropagation();
-        this.startFocusFromStatusBar();
-        return;
-      }
-      // 如果点击的是控制按钮（暂停/继续），则切换暂停状态
-      if (target.closest('.timer-control') && !target.closest('.timer-start')) {
-        e.stopPropagation();
-        this.togglePomodoroPause();
-        return;
+        const pinia = getSharedPinia();
+        if (!pinia) return;
+        const pomodoroStore = usePomodoroStore(pinia);
+
+        // 如果没有进行中的专注，则开始专注
+        if (!pomodoroStore.isFocusing && !pomodoroStore.isBreakActive) {
+          this.startFocusFromStatusBar();
+          return;
+        }
+
+        // 如果有进行中的专注，则切换暂停状态
+        if (pomodoroStore.isFocusing) {
+          this.togglePomodoroPause();
+          return;
+        }
       }
     });
 
@@ -1336,7 +1343,7 @@ export default class TaskAssistantPlugin extends Plugin {
         // 休息时隐藏控制按钮
         controlEl.style.display = 'none';
       } else if (!hasActiveTimer) {
-        // 无专注时显示开始按钮（播放图标）
+        // 无专注时显示播放图标
         controlEl.style.display = 'flex';
         if (playIcon && pauseIcon) {
           playIcon.style.display = 'block';
