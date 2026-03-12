@@ -129,8 +129,9 @@ const heatmapCells = computed(() => {
   const end = dayjs(endDate);
   const cells: { key: string; date: string; minutes: number; level: string }[] = [];
 
-  for (let r = 0; r < 7; r++) {
-    for (let c = 0; c < numCols.value; c++) {
+  // 按列优先生成数据，与 grid-auto-flow: column 对应
+  for (let c = 0; c < numCols.value; c++) {
+    for (let r = 0; r < 7; r++) {
       const d = weekStart.add(c * 7 + r, 'day');
       if (d.isAfter(end)) {
         cells.push({ key: `e-${c}-${r}`, date: '', minutes: 0, level: 'level-0' });
