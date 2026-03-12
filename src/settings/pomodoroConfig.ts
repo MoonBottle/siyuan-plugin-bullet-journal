@@ -13,6 +13,7 @@ export function addPomodoroConfigItem(setting: Setting, settings: SettingsData):
     createActionElement: () => {
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.className = 'b3-switch fn__flex-center';
       checkbox.checked = pomodoro.enableStatusBar ?? false;
       checkbox.addEventListener('change', (e) => {
         pomodoro.enableStatusBar = (e.target as HTMLInputElement).checked;
@@ -28,6 +29,7 @@ export function addPomodoroConfigItem(setting: Setting, settings: SettingsData):
     createActionElement: () => {
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.className = 'b3-switch fn__flex-center';
       checkbox.checked = pomodoro.enableStatusBarTimer ?? false;
       checkbox.addEventListener('change', (e) => {
         pomodoro.enableStatusBarTimer = (e.target as HTMLInputElement).checked;
@@ -43,6 +45,7 @@ export function addPomodoroConfigItem(setting: Setting, settings: SettingsData):
     createActionElement: () => {
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.className = 'b3-switch fn__flex-center';
       checkbox.checked = pomodoro.enableFloatingButton ?? true;
       checkbox.addEventListener('change', (e) => {
         pomodoro.enableFloatingButton = (e.target as HTMLInputElement).checked;

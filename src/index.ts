@@ -23,7 +23,7 @@ import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
 import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
-import { showPomodoroCompleteDialog, showPomodoroTimerDialog } from '@/utils/dialog';
+import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog } from '@/utils/dialog';
 
 let PluginInfo = {
   version: '',
@@ -1078,6 +1078,9 @@ export default class TaskAssistantPlugin extends Plugin {
       <div class="timer-skip-btn b3-tooltips b3-tooltips__nw" style="display:none" data-tooltip="${t('settings').pomodoro.skipBreak}">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
       </div>
+      <div class="timer-end-btn b3-tooltips b3-tooltips__nw" style="display:none" data-tooltip="${t('pomodoroActive').endFocus}">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      </div>
       <div class="timer-control">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
           <path fill="currentColor" d="M8 5v14l11-7z"/>
@@ -1105,6 +1108,23 @@ export default class TaskAssistantPlugin extends Plugin {
         const pomodoroStore = usePomodoroStore(pinia);
         if (pomodoroStore.isBreakActive) {
           pomodoroStore.stopBreak(this);
+        }
+        return;
+      }
+      // 如果点击的是结束专注按钮
+      if (target.closest('.timer-end-btn')) {
+        e.stopPropagation();
+        const pinia = getSharedPinia();
+        if (!pinia) return;
+        const pomodoroStore = usePomodoroStore(pinia);
+        if (pomodoroStore.isFocusing) {
+          showConfirmDialog(
+            t('pomodoroActive').confirmEndTitle,
+            t('pomodoroActive').confirmEndMessage,
+            async () => {
+              await pomodoroStore.completePomodoro(this);
+            }
+          );
         }
         return;
       }
@@ -1312,6 +1332,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const iconEl = this.statusBarTimerEl.querySelector('.timer-icon');
     const textEl = this.statusBarTimerEl.querySelector('.timer-text');
     const skipBtnEl = this.statusBarTimerEl.querySelector('.timer-skip-btn') as HTMLElement;
+    const endBtnEl = this.statusBarTimerEl.querySelector('.timer-end-btn') as HTMLElement;
     const playIcon = this.statusBarTimerEl.querySelector('.timer-play-icon') as HTMLElement;
     const pauseIcon = this.statusBarTimerEl.querySelector('.timer-pause-icon') as HTMLElement;
     const controlEl = this.statusBarTimerEl.querySelector('.timer-control') as HTMLElement;
@@ -1344,6 +1365,12 @@ export default class TaskAssistantPlugin extends Plugin {
     if (skipBtnEl) {
       skipBtnEl.style.display = isBreak ? 'flex' : 'none';
       skipBtnEl.setAttribute('aria-label', t('settings').pomodoro.skipBreak);
+    }
+
+    // 结束按钮：专注且暂停时显示
+    if (endBtnEl) {
+      endBtnEl.style.display = !isBreak && hasActiveTimer && isPaused ? 'flex' : 'none';
+      endBtnEl.setAttribute('aria-label', t('pomodoroActive').endFocus);
     }
 
     // 控制按钮显示逻辑：
