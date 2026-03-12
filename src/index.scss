@@ -470,7 +470,7 @@
   border-radius: var(--b3-border-radius);
   color: var(--b3-theme-on-surface);
   font-family: var(--b3-font-family);
-  cursor: pointer;
+  cursor: default !important;
   transition: background 0.2s;
 
   &:hover {
