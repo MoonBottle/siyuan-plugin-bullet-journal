@@ -807,6 +807,16 @@ export default class TaskAssistantPlugin extends Plugin {
       const refreshCmds = ['txerr', 'savedoc', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
       if (refreshCmds.includes(data.cmd)) {
         this.scheduleRefresh();
+        return;
+      }
+      // 属性变更（含属性面板手动删除）会广播 transactions，需刷新专注记录
+      if (data.cmd === 'transactions' && Array.isArray(data.data)) {
+        const hasAttrChange = data.data.some(
+          (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
+        );
+        if (hasAttrChange) {
+          this.scheduleRefresh();
+        }
       }
     }
   }
