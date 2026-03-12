@@ -2,19 +2,19 @@
   <div class="pomodoro-stats">
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-label">今日番茄</div>
+        <div class="stat-label">{{ t('pomodoroStats').todayPomodoros }}</div>
         <div class="stat-value">{{ todayCount }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">今日专注时长</div>
+        <div class="stat-label">{{ t('pomodoroStats').todayFocusDuration }}</div>
         <div class="stat-value">{{ formatDuration(todayMinutes) }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">总番茄</div>
+        <div class="stat-label">{{ t('pomodoroStats').totalPomodoros }}</div>
         <div class="stat-value">{{ totalCount }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">总专注时长</div>
+        <div class="stat-label">{{ t('pomodoroStats').totalFocusDuration }}</div>
         <div class="stat-value">{{ formatDuration(totalMinutes) }}</div>
       </div>
     </div>
@@ -24,6 +24,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '@/stores';
+import { t } from '@/i18n';
 
 const projectStore = useProjectStore();
 
