@@ -88,7 +88,7 @@ function formatDuration(minutes: number): string {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 @media (max-width: 768px) {

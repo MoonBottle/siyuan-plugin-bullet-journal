@@ -141,7 +141,7 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: repeat(2, 280px);
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 0;
   flex-shrink: 0;
 
   > * {
@@ -152,7 +152,8 @@ onUnmounted(() => {
 .heatmap-section {
   flex: 1;
   min-height: 200px;
-  margin-top: 0;
+  margin-top: 16px;
+  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
   min-width: 0;
