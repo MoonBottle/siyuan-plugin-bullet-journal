@@ -22,11 +22,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 import StatsOverview from '@/components/pomodoro/stats/StatsOverview.vue';
 import FocusDetailSection from '@/components/pomodoro/stats/FocusDetailSection.vue';
@@ -50,6 +51,48 @@ const handleRefresh = async () => {
     showMessage(t('common').dataRefreshed);
   }
 };
+
+// 数据刷新处理函数
+const handleDataRefresh = async () => {
+  if (!plugin) return;
+  settingsStore.loadFromPlugin();
+  await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+};
+
+let unsubscribeRefresh: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
+
+onMounted(async () => {
+  settingsStore.loadFromPlugin();
+
+  if (plugin) {
+    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
+  }
+
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel.onmessage = (e: MessageEvent) => {
+      const data = e?.data;
+      if (data?.type === 'DATA_REFRESH') {
+        handleDataRefresh();
+      }
+    };
+  } catch {
+    // 忽略
+  }
+});
+
+onUnmounted(() => {
+  if (unsubscribeRefresh) {
+    unsubscribeRefresh();
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
+  }
+});
 
 const rangeDates = computed(() => {
   const base = dayjs();

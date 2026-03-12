@@ -322,6 +322,7 @@ export const useProjectStore = defineStore('project', {
      * 加载项目数据（首次加载，显示加载状态）
      */
     async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
+      if (this.loading) return;
       console.log('[Task Assistant] Loading projects, directories:', directories?.length || 0);
       this.loading = true;
 
