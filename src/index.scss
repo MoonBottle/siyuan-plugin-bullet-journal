@@ -481,8 +481,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    padding: 2px;
     border-radius: 3px;
     color: var(--b3-theme-primary);
     cursor: pointer;
@@ -493,8 +492,8 @@
     }
 
     svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
     }
   }
 
