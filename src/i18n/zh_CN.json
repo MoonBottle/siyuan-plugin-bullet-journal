@@ -212,6 +212,7 @@
     },
     "pomodoro": {
       "title": "番茄钟",
+      "sectionDescription": "专注计时、休息提醒与记录存储相关设置",
       "enableStatusBar": "底栏进度条",
       "enableStatusBarDesc": "专注时在页面底部显示进度条",
       "enableStatusBarTimer": "底栏倒计时",

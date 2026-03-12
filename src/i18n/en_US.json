@@ -213,6 +213,7 @@
     },
     "pomodoro": {
       "title": "Pomodoro",
+      "sectionDescription": "Focus timer, break reminders and record storage settings",
       "enableStatusBar": "Status Bar Progress",
       "enableStatusBarDesc": "Show progress bar at bottom when focusing",
       "enableStatusBarTimer": "Status Bar Timer",
