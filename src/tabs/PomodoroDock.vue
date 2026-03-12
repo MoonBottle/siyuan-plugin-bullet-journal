@@ -21,7 +21,7 @@
       >
         <svg><use xlink:href="#iconGraph"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" aria-label="刷新" @click="handleRefresh">
+      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </span>
     </div>

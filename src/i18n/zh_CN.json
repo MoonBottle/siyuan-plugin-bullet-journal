@@ -232,11 +232,11 @@
   "pomodoro": {
     "dockTitle": "番茄专注",
     "startFocus": "开始专注",
-    "stats": "番茄统计",
+    "stats": "专注统计",
     "startFocusTitle": "开始专注"
   },
   "pomodoroStats": {
-    "statsTitle": "统计",
+    "statsTitle": "专注统计",
     "focusTab": "专注统计",
     "dailyTab": "按日统计",
     "todayPomodoros": "当日专注次数",

@@ -232,11 +232,11 @@
   "pomodoro": {
     "dockTitle": "Pomodoro",
     "startFocus": "Start Focus",
-    "stats": "Pomodoro Stats",
+    "stats": "Focus Statistics",
     "startFocusTitle": "Start Focus"
   },
   "pomodoroStats": {
-    "statsTitle": "Statistics",
+    "statsTitle": "Focus Statistics",
     "focusTab": "Focus Stats",
     "dailyTab": "Daily Stats",
     "todayPomodoros": "Today's Focus Count",
