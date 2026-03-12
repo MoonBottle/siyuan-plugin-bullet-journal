@@ -3,11 +3,11 @@
     <div class="dialog-body" :class="{ 'no-left-panel': hideItemList }">
       <!-- 左侧：待办事项列表（仅在非预选模式下显示） -->
       <div v-if="!hideItemList" class="left-panel">
-        <div class="panel-title">选择待办事项</div>
+        <div class="panel-title">{{ t('pomodoroDialog').selectItem }}</div>
         <div class="item-list">
           <!-- 过期事项 -->
           <div v-if="expiredItems.length > 0" class="item-group">
-            <div class="group-label">⚠️ 过期事项</div>
+            <div class="group-label">{{ t('pomodoroDialog').expiredItems }}</div>
             <div
               v-for="item in expiredItems"
               :key="item.id"
@@ -23,7 +23,7 @@
 
           <!-- 今天事项 -->
           <div v-if="todayItems.length > 0" class="item-group">
-            <div class="group-label">📅 今天事项</div>
+            <div class="group-label">{{ t('pomodoroDialog').todayItems }}</div>
             <div
               v-for="item in todayItems"
               :key="item.id"
@@ -39,7 +39,7 @@
 
           <!-- 无事项提示 -->
           <div v-if="expiredItems.length === 0 && todayItems.length === 0" class="empty-tip">
-            暂无待办事项
+            {{ t('pomodoroDialog').noItems }}
           </div>
         </div>
       </div>
@@ -48,30 +48,30 @@
       <div class="right-panel" :class="{ 'full-width': hideItemList }">
         <!-- 预选事项信息（仅在预选模式下显示） -->
         <div v-if="hideItemList && selectedItem" class="preselected-item-info">
-          <div class="info-label">专注事项</div>
+          <div class="info-label">{{ t('pomodoroDialog').focusItem }}</div>
           <div class="info-content">{{ selectedItem.content }}</div>
           <div v-if="selectedItem.task" class="info-task">{{ selectedItem.task.name }}</div>
         </div>
 
-        <div class="panel-title">计时模式</div>
+        <div class="panel-title">{{ t('pomodoroDialog').timerMode }}</div>
         <div class="timer-mode-section">
           <button
             class="mode-btn"
             :class="{ active: timerMode === 'countdown' }"
             @click="timerMode = 'countdown'"
           >
-            倒计时
+            {{ t('pomodoroDialog').countdown }}
           </button>
           <button
             class="mode-btn"
             :class="{ active: timerMode === 'stopwatch' }"
             @click="timerMode = 'stopwatch'"
           >
-            正计时
+            {{ t('pomodoroDialog').stopwatch }}
           </button>
         </div>
 
-        <div v-if="timerMode === 'countdown'" class="panel-title">设置专注时长</div>
+        <div v-if="timerMode === 'countdown'" class="panel-title">{{ t('pomodoroDialog').setDuration }}</div>
 
         <div v-if="timerMode === 'countdown'" class="duration-section">
           <div class="quick-buttons">
@@ -82,11 +82,11 @@
               :class="{ active: selectedDuration === duration }"
               @click="selectDuration(duration)"
             >
-              {{ duration }}分钟
+              {{ duration }}{{ t('pomodoroDialog').minutes }}
             </button>
           </div>
           <div class="custom-duration">
-            <span>自定义：</span>
+            <span>{{ t('pomodoroDialog').custom }}</span>
             <input
               v-model.number="customDuration"
               type="number"
@@ -95,7 +95,7 @@
               class="duration-input"
               @change="onCustomDurationChange"
             />
-            <span>分钟</span>
+            <span>{{ t('pomodoroDialog').minutes }}</span>
           </div>
         </div>
 
@@ -105,9 +105,9 @@
             :disabled="!selectedItem"
             @click="startPomodoro"
           >
-            开始专注
+            {{ t('pomodoroDialog').startFocus }}
           </button>
-          <button class="cancel-btn" @click="closeDialog">取消</button>
+          <button class="cancel-btn" @click="closeDialog">{{ t('pomodoroDialog').cancel }}</button>
         </div>
       </div>
     </div>
@@ -121,6 +121,7 @@ import { usePlugin } from '@/main';
 import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { DOCK_TYPES } from '@/constants';
+import { t } from '@/i18n';
 
 const props = defineProps<{
   closeDialog: () => void;
@@ -181,9 +182,9 @@ const formatDate = (dateStr: string): string => {
   const date = dayjs(dateStr);
   const today = dayjs();
   const diff = today.diff(date, 'day');
-  
-  if (diff === 1) return '昨天';
-  if (diff === 2) return '前天';
+
+  if (diff === 1) return t('pomodoroDialog').yesterday;
+  if (diff === 2) return t('pomodoroDialog').dayBeforeYesterday;
   return date.format('MM-DD');
 };
 

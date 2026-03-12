@@ -7,9 +7,9 @@
         {{ t('gantt').showItems }}
       </label>
       <div class="date-filter">
-        <span>日期筛选:</span>
+        <span>{{ t('gantt').dateFilter }}</span>
         <input type="date" v-model="startDate" />
-        <span>至</span>
+        <span>{{ t('gantt').to }}</span>
         <input type="date" v-model="endDate" />
       </div>
       <div class="view-modes">
@@ -32,7 +32,7 @@
       />
       <span
         class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
-        :aria-label="projectStore.loading ? '加载中...' : '刷新'"
+        :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>

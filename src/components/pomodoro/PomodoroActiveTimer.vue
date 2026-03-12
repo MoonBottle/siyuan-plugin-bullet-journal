@@ -2,7 +2,7 @@
   <div class="pomodoro-active-timer">
     <div class="timer-header">
       <TomatoIcon :width="20" :height="20" class="timer-icon" />
-      <span class="timer-title">{{ isPaused ? '已暂停' : '专注中' }}</span>
+      <span class="timer-title">{{ isPaused ? t('pomodoroActive').paused : t('pomodoroActive').focusing }}</span>
     </div>
 
     <div class="timer-display" :class="{ 'is-paused': isPaused }">
@@ -25,9 +25,9 @@
         </svg>
         <div class="timer-content">
           <div class="time-remaining">{{ formattedTime }}</div>
-          <div v-if="!isStopwatch" class="focused-time-badge">已专注 {{ accumulatedMinutes }}分钟</div>
-          <div v-else class="focused-time-badge">正计时 · 已专注 {{ accumulatedMinutes }}分钟</div>
-          <div v-if="isPaused" class="pause-badge">⏸️ 已暂停</div>
+          <div v-if="!isStopwatch" class="focused-time-badge">{{ t('pomodoroActive').focusedFor.replace('{minutes}', String(accumulatedMinutes)) }}</div>
+          <div v-else class="focused-time-badge">{{ t('pomodoroActive').stopwatchFocused.replace('{minutes}', String(accumulatedMinutes)) }}</div>
+          <div v-if="isPaused" class="pause-badge">{{ t('pomodoroActive').pauseBadge }}</div>
         </div>
       </div>
     </div>
@@ -35,15 +35,15 @@
     <!-- 专注时间线 -->
     <div class="pomodoro-timeline">
       <div class="timeline-header">
-        <span class="timeline-label">番茄计时</span>
-        <span v-if="!isStopwatch" class="timeline-duration">目标：{{ targetMinutes }}分钟</span>
-        <span v-else class="timeline-duration">正计时</span>
+        <span class="timeline-label">{{ t('pomodoroActive').pomodoroTimer }}</span>
+        <span v-if="!isStopwatch" class="timeline-duration">{{ t('pomodoroActive').target.replace('{minutes}', String(targetMinutes)) }}</span>
+        <span v-else class="timeline-duration">{{ t('pomodoroActive').stopwatch }}</span>
       </div>
       <div class="timeline-track">
         <div class="timeline-point start">
           <div class="timeline-time">{{ formattedStartTime }}</div>
           <PlayIcon :width="14" :height="14" class="timeline-icon" />
-          <div class="timeline-desc">开始</div>
+          <div class="timeline-desc">{{ t('pomodoroActive').start }}</div>
         </div>
         <div class="timeline-progress-container">
           <div class="timeline-progress-bar">
@@ -54,7 +54,7 @@
         <div class="timeline-point end">
           <div class="timeline-time">{{ formattedEndTime }}</div>
           <StopIcon :width="14" :height="14" class="timeline-icon" />
-          <div class="timeline-desc">{{ isStopwatch ? '手动结束' : '预计结束' }}</div>
+          <div class="timeline-desc">{{ isStopwatch ? t('pomodoroActive').manualEnd : t('pomodoroActive').estimatedEnd }}</div>
         </div>
       </div>
     </div>
@@ -64,7 +64,7 @@
       <!-- 项目卡片 -->
       <div class="info-card" v-if="currentItem?.project">
         <div class="info-card-header">
-          <span class="info-card-label">项目</span>
+          <span class="info-card-label">{{ t('todo').project }}</span>
         </div>
         <div class="info-card-content">
           <span>{{ currentItem.project.name }}</span>
@@ -89,7 +89,7 @@
       <!-- 任务卡片 -->
       <div class="info-card" v-if="currentItem?.task">
         <div class="info-card-header">
-          <span class="info-card-label">任务</span>
+          <span class="info-card-label">{{ t('todo').task }}</span>
           <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
             {{ currentItem.task.level }}
           </span>
@@ -117,7 +117,7 @@
       <!-- 事项卡片 -->
       <div class="info-card item-card clickable" @click="openItemDocument">
         <div class="info-card-header">
-          <span class="info-card-label">事项</span>
+          <span class="info-card-label">{{ t('todo').item }}</span>
         </div>
         <div class="info-card-content">
           <span>{{ itemContent }}</span>
@@ -147,7 +147,7 @@
             <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
             <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
           </svg>
-          暂停
+          {{ t('pomodoroActive').pause }}
         </button>
       </template>
       <template v-else>
@@ -155,14 +155,14 @@
           <svg class="btn-icon" viewBox="0 0 24 24">
             <polygon points="5,3 19,12 5,21" fill="currentColor"/>
           </svg>
-          继续
+          {{ t('pomodoroActive').resume }}
         </button>
       </template>
       <button class="end-btn" @click="endPomodoro">
         <svg class="btn-icon" viewBox="0 0 24 24">
           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
         </svg>
-        结束专注
+        {{ t('pomodoroActive').endFocus }}
       </button>
     </div>
   </div>
@@ -179,6 +179,7 @@ import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { showConfirmDialog, formatLinkForDisplay, showLinkTooltip, hideLinkTooltip } from '@/utils/dialog';
+import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -311,8 +312,8 @@ const resumePomodoro = async () => {
 // 结束专注
 const endPomodoro = () => {
   showConfirmDialog(
-    '结束专注',
-    '确定要结束专注吗？这将保存当前的番茄钟记录。',
+    t('pomodoroActive').confirmEndTitle,
+    t('pomodoroActive').confirmEndMessage,
     async () => {
       await pomodoroStore.completePomodoro(plugin);
     }

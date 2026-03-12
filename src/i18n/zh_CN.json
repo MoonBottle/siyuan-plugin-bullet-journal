@@ -301,5 +301,59 @@
     "actionFailed": "失败，请重试",
     "dirsSet": "已设置 {count} 个任务助手目录",
     "dirsExist": "所选目录已存在于设置中"
+  },
+  "pomodoroDialog": {
+    "selectItem": "选择待办事项",
+    "expiredItems": "⚠️ 过期事项",
+    "todayItems": "📅 今天事项",
+    "noItems": "暂无待办事项",
+    "focusItem": "专注事项",
+    "timerMode": "计时模式",
+    "countdown": "倒计时",
+    "stopwatch": "正计时",
+    "setDuration": "设置专注时长",
+    "custom": "自定义：",
+    "minutes": "分钟",
+    "startFocus": "开始专注",
+    "cancel": "取消",
+    "yesterday": "昨天",
+    "dayBeforeYesterday": "前天"
+  },
+  "pomodoroActive": {
+    "paused": "已暂停",
+    "focusing": "专注中",
+    "focusedFor": "已专注 {minutes}分钟",
+    "stopwatchFocused": "正计时 · 已专注 {minutes}分钟",
+    "pauseBadge": "⏸️ 已暂停",
+    "pomodoroTimer": "番茄计时",
+    "target": "目标：{minutes}分钟",
+    "stopwatch": "正计时",
+    "start": "开始",
+    "manualEnd": "手动结束",
+    "estimatedEnd": "预计结束",
+    "pause": "暂停",
+    "resume": "继续",
+    "endFocus": "结束专注",
+    "confirmEndTitle": "结束专注",
+    "confirmEndMessage": "确定要结束专注吗？这将保存当前的番茄钟记录。"
+  },
+  "pomodoroComplete": {
+    "item": "事项",
+    "focusDuration": "专注时长",
+    "durationMinutes": "{minutes} 分钟",
+    "descriptionLabel": "输入事项说明（可选）",
+    "descriptionPlaceholder": "例如：完成每日复习",
+    "save": "保存"
+  },
+  "pomodoroRecord": {
+    "title": "专注记录",
+    "unknown": "未知"
+  },
+  "gantt": {
+    "dateFilter": "日期筛选:",
+    "to": "至"
+  },
+  "todo": {
+    "startFocusAria": "开始专注"
   }
 }

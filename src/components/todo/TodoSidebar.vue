@@ -45,7 +45,7 @@
                   <span
                     v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="开始专注"
+                    :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
@@ -115,7 +115,7 @@
                   <span
                     v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="开始专注"
+                    :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
@@ -185,7 +185,7 @@
                   <span
                     v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="开始专注"
+                    :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
@@ -262,7 +262,7 @@
                       <span
                         v-if="!pomodoroStore.isFocusing"
                         class="block__icon b3-tooltips b3-tooltips__sw"
-                        aria-label="开始专注"
+                        :aria-label="t('todo').startFocusAria"
                         @click.stop="openPomodoroDialog(item)"
                       >
                         <svg><use xlink:href="#iconClock"></use></svg>

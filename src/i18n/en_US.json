@@ -299,5 +299,59 @@
     "actionFailed": "Failed, please retry",
     "dirsSet": "{count} task assistant directories set",
     "dirsExist": "Selected directories already exist in settings"
+  },
+  "pomodoroDialog": {
+    "selectItem": "Select Todo Item",
+    "expiredItems": "⚠️ Expired Items",
+    "todayItems": "📅 Today's Items",
+    "noItems": "No todo items",
+    "focusItem": "Focus Item",
+    "timerMode": "Timer Mode",
+    "countdown": "Countdown",
+    "stopwatch": "Stopwatch",
+    "setDuration": "Set Focus Duration",
+    "custom": "Custom:",
+    "minutes": "minutes",
+    "startFocus": "Start Focus",
+    "cancel": "Cancel",
+    "yesterday": "Yesterday",
+    "dayBeforeYesterday": "Day before yesterday"
+  },
+  "pomodoroActive": {
+    "paused": "Paused",
+    "focusing": "Focusing",
+    "focusedFor": "Focused for {minutes}min",
+    "stopwatchFocused": "Stopwatch · Focused for {minutes}min",
+    "pauseBadge": "⏸️ Paused",
+    "pomodoroTimer": "Pomodoro Timer",
+    "target": "Target: {minutes}min",
+    "stopwatch": "Stopwatch",
+    "start": "Start",
+    "manualEnd": "Manual End",
+    "estimatedEnd": "Estimated End",
+    "pause": "Pause",
+    "resume": "Resume",
+    "endFocus": "End Focus",
+    "confirmEndTitle": "End Focus",
+    "confirmEndMessage": "Are you sure you want to end the focus? This will save the current pomodoro record."
+  },
+  "pomodoroComplete": {
+    "item": "Item",
+    "focusDuration": "Focus Duration",
+    "durationMinutes": "{minutes} min",
+    "descriptionLabel": "Enter item description (optional)",
+    "descriptionPlaceholder": "e.g. Complete daily review",
+    "save": "Save"
+  },
+  "pomodoroRecord": {
+    "title": "Focus Records",
+    "unknown": "Unknown"
+  },
+  "gantt": {
+    "dateFilter": "Date Filter:",
+    "to": "to"
+  },
+  "todo": {
+    "startFocusAria": "Start Focus"
   }
 }

@@ -6,20 +6,20 @@
     <div class="dialog-body">
       <template v-if="!saved">
         <div class="info-row">
-          <span class="info-label">事项</span>
+          <span class="info-label">{{ t('pomodoroComplete').item }}</span>
           <span class="info-value">{{ pending?.itemContent }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">专注时长</span>
-          <span class="info-value">{{ pending?.durationMinutes }} 分钟</span>
+          <span class="info-label">{{ t('pomodoroComplete').focusDuration }}</span>
+          <span class="info-value">{{ t('pomodoroComplete').durationMinutes.replace('{minutes}', String(pending?.durationMinutes || 0)) }}</span>
         </div>
         <div class="description-section">
-          <label class="desc-label">输入事项说明（可选）</label>
+          <label class="desc-label">{{ t('pomodoroComplete').descriptionLabel }}</label>
           <input
             v-model="description"
             type="text"
             class="desc-input"
-            placeholder="例如：完成每日复习"
+            :placeholder="t('pomodoroComplete').descriptionPlaceholder"
           />
         </div>
       </template>
@@ -33,7 +33,7 @@
       </template>
     </div>
     <div class="dialog-actions">
-      <button v-if="!saved" class="save-btn" @click="handleSave">保存</button>
+      <button v-if="!saved" class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
       <button v-else class="close-btn" @click="handleClose">{{ t('settings').pomodoro.close }}</button>
     </div>
   </div>
