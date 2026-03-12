@@ -131,14 +131,18 @@ export default class TaskAssistantPlugin extends Plugin {
     // 初始化悬浮番茄按钮
     this.initFloatingTomatoButton();
 
-    // 初始化底栏倒计时（常驻显示）
-    this.initStatusBarTimer();
-
     // 自动恢复进行中的番茄钟（不依赖 dock 是否打开）
     // 延迟执行，确保所有模块已加载
     setTimeout(() => {
       this.checkAndRestorePomodoro();
     }, 1000);
+  }
+
+  /**
+   * 布局就绪后初始化底栏倒计时（遵循思源官方建议，addStatusBar 应在 onLayoutReady 中调用）
+   */
+  onLayoutReady() {
+    this.initStatusBarTimer();
   }
 
   /**
