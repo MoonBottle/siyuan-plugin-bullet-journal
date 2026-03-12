@@ -129,8 +129,8 @@ const heatmapCells = computed(() => {
   const end = dayjs(endDate);
   const cells: { key: string; date: string; minutes: number; level: string }[] = [];
 
-  for (let c = 0; c < numCols.value; c++) {
-    for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < 7; r++) {
+    for (let c = 0; c < numCols.value; c++) {
       const d = weekStart.add(c * 7 + r, 'day');
       if (d.isAfter(end)) {
         cells.push({ key: `e-${c}-${r}`, date: '', minutes: 0, level: 'level-0' });
@@ -287,27 +287,29 @@ onUnmounted(() => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  justify-content: center;
+  align-items: center;
 }
 
 .heatmap-week-labels {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  justify-content: flex-start;
   padding-right: 4px;
   font-size: 10px;
   color: var(--b3-theme-on-surface);
   flex-shrink: 0;
   width: 14px;
+  margin-top: 1px;
 }
 
 .week-label {
-  height: 10px;
-  line-height: 10px;
+  height: 12px;
+  line-height: 12px;
 }
 
 .heatmap-main {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -323,14 +325,12 @@ onUnmounted(() => {
 }
 
 .month-label {
-  text-align: left;
-  padding-left: 2px;
+  text-align: center;
   white-space: nowrap;
 }
 
 .heatmap-grid-wrap {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -346,6 +346,7 @@ onUnmounted(() => {
 .heatmap-grid {
   display: grid;
   gap: 1px;
+  grid-auto-flow: column;
   flex-shrink: 0;
   width: fit-content;
 }
