@@ -74,6 +74,8 @@ export default class TaskAssistantPlugin extends Plugin {
   private floatingTomatoTimer: number | null = null;
   /** 底栏进度条元素 */
   private statusBarEl: HTMLElement | null = null;
+  /** 底栏倒计时元素 */
+  private statusBarTimerEl: HTMLElement | null = null;
   /** 番茄钟 Dock model */
   private pomodoroDockModel: any = null;
 
@@ -129,11 +131,27 @@ export default class TaskAssistantPlugin extends Plugin {
     // 初始化悬浮番茄按钮
     this.initFloatingTomatoButton();
 
+    // 初始化底栏倒计时（常驻显示）
+    this.initStatusBarTimer();
+
     // 自动恢复进行中的番茄钟（不依赖 dock 是否打开）
     // 延迟执行，确保所有模块已加载
     setTimeout(() => {
       this.checkAndRestorePomodoro();
     }, 1000);
+  }
+
+  /**
+   * 初始化底栏倒计时
+   * 启用配置后常驻显示，没倒计时时只显示番茄图标
+   */
+  private initStatusBarTimer() {
+    const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+    if (pomodoro.enableStatusBarTimer === true) {
+      this.showStatusBarTimer();
+      // 显示默认的番茄图标，不显示时间（没有倒计时状态）
+      this.updateStatusBarTimerDisplay(false, '', false);
+    }
   }
 
   /**
@@ -816,28 +834,65 @@ export default class TaskAssistantPlugin extends Plugin {
     // 监听专注状态变化（无论是否有进行中的专注都要监听）
     eventBus.on(Events.POMODORO_STARTED, () => {
       this.showFloatingTomatoButton();
+      this.startTimerUpdate();
     });
 
     // 监听番茄钟恢复事件（Dock 未打开时也需要显示悬浮按钮）
     eventBus.on(Events.POMODORO_RESTORE, () => {
       this.showFloatingTomatoButton();
+      this.startTimerUpdate();
     });
 
     eventBus.on(Events.POMODORO_COMPLETED, () => {
       this.hideFloatingTomatoButton();
+      this.stopTimerUpdate();
     });
 
     eventBus.on(Events.POMODORO_CANCELLED, () => {
       this.hideFloatingTomatoButton();
+      this.stopTimerUpdate();
     });
 
     eventBus.on(Events.BREAK_STARTED, () => {
       this.showFloatingTomatoButton();
+      this.startTimerUpdate();
     });
 
     eventBus.on(Events.BREAK_ENDED, () => {
       this.hideFloatingTomatoButton();
+      this.stopTimerUpdate();
     });
+  }
+
+  /** 底栏倒计时更新定时器 */
+  private statusBarTimerInterval: number | null = null;
+
+  /**
+   * 启动定时器更新（用于底栏倒计时）
+   */
+  private startTimerUpdate() {
+    // 立即更新一次
+    this.updateFloatingTomatoDisplay();
+
+    // 如果定时器已存在，先清除
+    if (this.statusBarTimerInterval) {
+      window.clearInterval(this.statusBarTimerInterval);
+    }
+
+    // 每秒更新
+    this.statusBarTimerInterval = window.setInterval(() => {
+      this.updateFloatingTomatoDisplay();
+    }, 1000);
+  }
+
+  /**
+   * 停止定时器更新
+   */
+  private stopTimerUpdate() {
+    if (this.statusBarTimerInterval) {
+      window.clearInterval(this.statusBarTimerInterval);
+      this.statusBarTimerInterval = null;
+    }
   }
 
   /**
@@ -1014,6 +1069,81 @@ export default class TaskAssistantPlugin extends Plugin {
     }
 
     this.hideStatusBar();
+    this.hideStatusBarTimer();
+    this.stopTimerUpdate();
+  }
+
+  /**
+   * 显示底栏倒计时（受 enableStatusBarTimer 控制）
+   */
+  private showStatusBarTimer() {
+    const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+    if (pomodoro.enableStatusBarTimer !== true) return;
+
+    if (this.statusBarTimerEl) return;
+
+    // 创建底栏倒计时元素
+    this.statusBarTimerEl = document.createElement('div');
+    this.statusBarTimerEl.className = 'toolbar__item b3-tooltips b3-tooltips__nw bullet-journal-status-bar-timer';
+    this.statusBarTimerEl.setAttribute('aria-label', '番茄专注');
+    this.statusBarTimerEl.innerHTML = `
+      <div class="timer-icon"></div>
+      <div class="timer-text">--:--</div>
+      <div class="timer-control">
+        <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
+          <path fill="currentColor" d="M8 5v14l11-7z"/>
+        </svg>
+        <svg class="timer-pause-icon" viewBox="0 0 24 24" width="14" height="14" style="display:none">
+          <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+      </div>
+    `;
+
+    // 点击打开番茄 Dock
+    this.statusBarTimerEl.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      // 如果点击的是控制按钮，则切换暂停状态
+      if (target.closest('.timer-control')) {
+        e.stopPropagation();
+        this.togglePomodoroPause();
+        return;
+      }
+      this.openPomodoroDock();
+    });
+
+    // 使用思源 API 插入到底栏
+    this.addStatusBar({
+      element: this.statusBarTimerEl,
+      position: 'right'
+    });
+    console.log('[Task Assistant] 底栏倒计时已添加到状态栏');
+  }
+
+  /**
+   * 隐藏底栏倒计时
+   */
+  private hideStatusBarTimer() {
+    if (this.statusBarTimerEl) {
+      this.statusBarTimerEl.remove();
+      this.statusBarTimerEl = null;
+    }
+  }
+
+  /**
+   * 切换专注暂停/继续状态
+   */
+  private async togglePomodoroPause() {
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+
+    const pomodoroStore = usePomodoroStore(pinia);
+    if (!pomodoroStore.isFocusing) return;
+
+    if (pomodoroStore.activePomodoro?.isPaused) {
+      await pomodoroStore.resumePomodoro(this);
+    } else {
+      await pomodoroStore.pausePomodoro(this);
+    }
   }
 
   /**
@@ -1049,6 +1179,14 @@ export default class TaskAssistantPlugin extends Plugin {
               const progress = total > 0 ? Math.min(1, elapsed / total) : 0;
               fill.style.width = `${progress * 100}%`;
             }
+          }
+          // 休息时底栏倒计时
+          const pomodoroTimerBreak = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+          console.log('[Task Assistant] 休息时 enableStatusBarTimer:', pomodoroTimerBreak.enableStatusBarTimer);
+          if (pomodoroTimerBreak.enableStatusBarTimer === true) {
+            console.log('[Task Assistant] 显示休息底栏倒计时');
+            this.showStatusBarTimer();
+            this.updateStatusBarTimerDisplay(true, timeStr, false);
           }
           return;
         }
@@ -1099,8 +1237,80 @@ export default class TaskAssistantPlugin extends Plugin {
           fill.style.width = `${progress * 100}%`;
         }
       }
+
+      // 底栏倒计时
+      const pomodoroTimer = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+      console.log('[Task Assistant] enableStatusBarTimer:', pomodoroTimer.enableStatusBarTimer);
+      if (pomodoroTimer.enableStatusBarTimer === true) {
+        console.log('[Task Assistant] 显示底栏倒计时');
+        this.showStatusBarTimer();
+        this.updateStatusBarTimerDisplay(false, timeStr, data.isPaused);
+      }
     } catch (error) {
       console.log('[Task Assistant] Failed to update floating tomato display:', error);
+    }
+  }
+
+  /**
+   * 更新底栏倒计时显示
+   * @param isBreak 是否休息中
+   * @param timeStr 时间字符串 MM:SS
+   * @param isPaused 是否暂停
+   */
+  private updateStatusBarTimerDisplay(isBreak: boolean, timeStr: string, isPaused: boolean) {
+    if (!this.statusBarTimerEl) return;
+
+    const iconEl = this.statusBarTimerEl.querySelector('.timer-icon');
+    const textEl = this.statusBarTimerEl.querySelector('.timer-text');
+    const playIcon = this.statusBarTimerEl.querySelector('.timer-play-icon') as HTMLElement;
+    const pauseIcon = this.statusBarTimerEl.querySelector('.timer-pause-icon') as HTMLElement;
+    const controlEl = this.statusBarTimerEl.querySelector('.timer-control') as HTMLElement;
+
+    // 判断是否有进行中的专注（timeStr 为空字符串或 '--:--' 表示没有倒计时）
+    const hasActiveTimer = timeStr && timeStr !== '--:--';
+
+    // 更新图标：休息时咖啡，专注时番茄，无倒计时时也显示番茄
+    if (iconEl) {
+      if (isBreak) {
+        // 咖啡图标
+        iconEl.innerHTML = `<svg viewBox="0 0 1024 1024" width="16" height="16" fill="currentColor"><path d="M828.36 955.46h-738C75.8 955.46 64 943.66 64 929.1s11.8-26.36 26.36-26.36h738c14.56 0 26.36 11.8 26.36 26.36s-11.81 26.36-26.36 26.36zM512.17 876.39H406.53c-159.87 0-289.93-130.06-289.93-289.93V481.04c0-43.6 35.47-79.07 79.07-79.07h527.36c43.6 0 79.07 35.47 79.07 79.07v105.43c0 159.86-130.06 289.92-289.93 289.92z m-316.5-421.71c-14.53 0-26.36 11.82-26.36 26.36v105.43c0 130.8 106.42 237.21 237.21 237.21h105.65c130.79 0 237.21-106.41 237.21-237.21V481.04c0-14.54-11.83-26.36-26.36-26.36H195.67z"/><path d="M828.19 705.07h-65.65c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h65.65c43.62 0 79.1-35.47 79.1-79.07s-35.48-79.07-79.1-79.07h-52.47c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h52.47c72.68 0 131.81 59.12 131.81 131.79s-59.14 131.79-131.81 131.79z"/></svg>`;
+      } else {
+        // 番茄图标
+        iconEl.innerHTML = `<svg viewBox="0 0 1024 1024" width="16" height="16" fill="currentColor"><path d="M963.05566 345.393457c-34.433245-59.444739-83.5084-112.04244-142.458001-152.926613 3.805482-11.402299 2.23519-23.908046-4.272326-34.008842a39.5855 39.5855 0 0 0-29.198939-17.938108L617.888552 123.076923l-73.365164-105.421751c-7.398762-10.638373-19.55084-16.976127-32.509284-16.976127s-25.110522 6.337754-32.509283 16.976127L406.111363 123.076923 236.887668 140.505747A39.625111 39.625111 0 0 0 207.688729 158.443855a39.676039 39.676039 0 0 0-4.286473 34.008842C77.170603 279.724138 2.716138 415.179487 2.716138 560.311229c-0.04244 62.72679 13.849691 124.689655 40.671972 181.38992 25.916888 55.129973 62.924845 104.587091 110.005305 146.956676 46.769231 42.100796 101.177719 75.119363 161.683466 98.164456a559.214854 559.214854 0 0 0 393.846153 0c60.519894-23.030946 114.928382-56.06366 161.71176-98.164456 47.08046-42.369584 84.088417-91.826702 110.005305-146.956676A423.347834 423.347834 0 0 0 1021.283777 560.311229a429.629001 429.629001 0 0 0-58.228117-214.917772z m-530.786914-145.372237c11.473033-1.188329 21.856764-7.299735 28.44916-16.778072L511.999958 109.609195l51.239611 73.633953c6.592396 9.464191 16.976127 15.589744 28.44916 16.778072l80.580017 8.304156-47.278514 32.679045a39.601061 39.601061 0 0 0-15.971707 41.874447l14.458002 59.784262-97.655172-36.413793a39.633599 39.633599 0 0 0-27.671088 0l-97.655172 36.399646 14.458001-59.784262a39.601061 39.601061 0 0 0-15.971706-41.874447l-47.278515-32.679045 80.565871-8.290009zM817.570249 829.778957a434.642617 434.642617 0 0 1-136.94076 83.013262 480.025464 480.025464 0 0 1-337.457118 0 434.642617 434.642617 0 0 1-136.94076-83.013262C126.132584 757.545535 81.938065 661.842617 81.938065 560.311229c0-125.496021 68.923077-242.758621 184.615385-314.553492l65.018568 44.944297-25.563219 105.81786a39.619452 39.619452 0 0 0 52.34306 46.401415L511.999958 385.669319l153.676392 57.280283c13.72237 5.106985 29.142352 2.23519 40.106101-7.483643a39.58267 39.58267 0 0 0 12.222812-38.917772l-25.605659-105.81786 65.018568-44.93015c115.692308 71.794871 184.615385 189.057471 184.615385 314.553492z"/></svg>`;
+      }
+    }
+
+    // 更新时间：没有专注或休息时隐藏时间文本
+    if (textEl) {
+      if (hasActiveTimer) {
+        textEl.textContent = timeStr;
+        textEl.style.display = 'block';
+      } else {
+        textEl.style.display = 'none';
+      }
+    }
+
+    // 更新播放/暂停图标
+    if (playIcon && pauseIcon) {
+      if (isPaused) {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+      } else {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+      }
+    }
+
+    // 控制按钮显示逻辑：
+    // - 没有进行中的专注时隐藏
+    // - 休息时隐藏
+    // - 专注时显示
+    if (controlEl) {
+      if (!hasActiveTimer || isBreak) {
+        controlEl.style.display = 'none';
+      } else {
+        controlEl.style.display = 'flex';
+      }
     }
   }
 }

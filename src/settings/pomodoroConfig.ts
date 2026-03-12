@@ -21,6 +21,21 @@ export function addPomodoroConfigItem(setting: Setting, settings: SettingsData):
     }
   });
 
+  // 底栏倒计时
+  setting.addItem({
+    title: t('settings').pomodoro.enableStatusBarTimer,
+    description: t('settings').pomodoro.enableStatusBarTimerDesc,
+    createActionElement: () => {
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = pomodoro.enableStatusBarTimer ?? false;
+      checkbox.addEventListener('change', (e) => {
+        pomodoro.enableStatusBarTimer = (e.target as HTMLInputElement).checked;
+      });
+      return checkbox;
+    }
+  });
+
   // 悬浮番茄按钮
   setting.addItem({
     title: t('settings').pomodoro.enableFloatingButton,

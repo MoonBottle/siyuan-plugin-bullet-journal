@@ -16,6 +16,7 @@ export interface AIChatHistory {
 // 番茄钟设置
 export interface PomodoroSettings {
   enableStatusBar?: boolean;
+  enableStatusBarTimer?: boolean;
   enableFloatingButton?: boolean;
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
@@ -40,6 +41,7 @@ export interface SettingsData {
 
 export const defaultPomodoroSettings: PomodoroSettings = {
   enableStatusBar: false,
+  enableStatusBarTimer: false,
   enableFloatingButton: true,
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',

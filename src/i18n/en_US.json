@@ -207,6 +207,8 @@
       "title": "Pomodoro",
       "enableStatusBar": "Status Bar Progress",
       "enableStatusBarDesc": "Show progress bar at bottom when focusing",
+      "enableStatusBarTimer": "Status Bar Timer",
+      "enableStatusBarTimerDesc": "Show countdown panel in status bar with play/pause controls",
       "enableFloatingButton": "Floating Tomato Button",
       "enableFloatingButtonDesc": "Show floating button at bottom-right when focusing",
       "recordMode": "Record Storage",

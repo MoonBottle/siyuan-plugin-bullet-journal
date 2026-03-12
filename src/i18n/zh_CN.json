@@ -207,6 +207,8 @@
       "title": "番茄钟",
       "enableStatusBar": "底栏进度条",
       "enableStatusBarDesc": "专注时在页面底部显示进度条",
+      "enableStatusBarTimer": "底栏倒计时",
+      "enableStatusBarTimerDesc": "专注时在底栏显示倒计时面板（含播放/暂停控制）",
       "enableFloatingButton": "悬浮番茄按钮",
       "enableFloatingButtonDesc": "专注时在右下角显示悬浮按钮",
       "recordMode": "记录存储方式",

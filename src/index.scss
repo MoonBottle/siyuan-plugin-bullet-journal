@@ -458,6 +458,68 @@
 }
 
 /* ============================================
+   底栏倒计时样式
+   ============================================ */
+
+.bullet-journal-status-bar-timer {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px !important;
+  background: var(--b3-theme-surface);
+  border-radius: var(--b3-border-radius);
+  color: var(--b3-theme-on-surface);
+  font-family: var(--b3-font-family);
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--b3-theme-surface-light);
+  }
+
+  .timer-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--b3-theme-primary);
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .timer-text {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: monospace;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .timer-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-primary-light);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+  }
+}
+
+/* ============================================
    悬浮番茄钟按钮样式
    ============================================ */
 
