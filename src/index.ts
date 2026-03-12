@@ -1070,10 +1070,9 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 创建底栏倒计时元素
     this.statusBarTimerEl = document.createElement('div');
-    this.statusBarTimerEl.className = 'b3-tooltips b3-tooltips__nw bullet-journal-status-bar-timer';
-    this.statusBarTimerEl.setAttribute('aria-label', t('pomodoro').dockTitle);
+    this.statusBarTimerEl.className = 'bullet-journal-status-bar-timer';
     this.statusBarTimerEl.innerHTML = `
-      <div class="timer-icon"></div>
+      <div class="timer-icon b3-tooltips b3-tooltips__nw" aria-label="${t('pomodoro').dockTitle}"></div>
       <div class="timer-text"></div>
       <div class="timer-skip-btn b3-tooltips b3-tooltips__nw" style="display:none" data-tooltip="${t('settings').pomodoro.skipBreak}">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
@@ -1340,8 +1339,9 @@ export default class TaskAssistantPlugin extends Plugin {
     // 判断是否有进行中的专注（timeStr 为空字符串或 '--:--' 表示没有倒计时）
     const hasActiveTimer = timeStr && timeStr !== '--:--';
 
-    // 更新图标：休息时咖啡，专注时番茄，无倒计时时也显示番茄
+    // 更新图标：休息时咖啡，专注时番茄，无倒计时时也显示番茄；tooltip 随状态更新
     if (iconEl) {
+      iconEl.setAttribute('aria-label', isBreak ? t('settings').pomodoro.breakLabel : t('pomodoro').dockTitle);
       if (isBreak) {
         // 咖啡图标
         iconEl.innerHTML = `<svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor"><path d="M828.36 955.46h-738C75.8 955.46 64 943.66 64 929.1s11.8-26.36 26.36-26.36h738c14.56 0 26.36 11.8 26.36 26.36s-11.81 26.36-26.36 26.36zM512.17 876.39H406.53c-159.87 0-289.93-130.06-289.93-289.93V481.04c0-43.6 35.47-79.07 79.07-79.07h527.36c43.6 0 79.07 35.47 79.07 79.07v105.43c0 159.86-130.06 289.92-289.93 289.92z m-316.5-421.71c-14.53 0-26.36 11.82-26.36 26.36v105.43c0 130.8 106.42 237.21 237.21 237.21h105.65c130.79 0 237.21-106.41 237.21-237.21V481.04c0-14.54-11.83-26.36-26.36-26.36H195.67z"/><path d="M828.19 705.07h-65.65c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h65.65c43.62 0 79.1-35.47 79.1-79.07s-35.48-79.07-79.1-79.07h-52.47c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h52.47c72.68 0 131.81 59.12 131.81 131.79s-59.14 131.79-131.81 131.79z"/></svg>`;
