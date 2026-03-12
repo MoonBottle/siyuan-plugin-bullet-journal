@@ -133,11 +133,11 @@ const heatmapCells = computed(() => {
   for (let c = 0; c < numCols.value; c++) {
     for (let r = 0; r < 7; r++) {
       const d = weekStart.add(c * 7 + r, 'day');
+      const dateStr = d.format('YYYY-MM-DD');
       if (d.isAfter(end)) {
-        cells.push({ key: `e-${c}-${r}`, date: '', minutes: 0, level: 'level-0' });
+        cells.push({ key: `e-${c}-${r}`, date: dateStr, minutes: 0, level: 'level-0' });
         continue;
       }
-      const dateStr = d.format('YYYY-MM-DD');
       const mins = focusByDay.value.get(dateStr) ?? 0;
       cells.push({
         key: `${dateStr}`,
