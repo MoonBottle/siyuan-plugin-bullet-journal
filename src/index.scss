@@ -481,7 +481,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
     border-radius: 3px;
     color: var(--b3-theme-primary);
     cursor: pointer;
