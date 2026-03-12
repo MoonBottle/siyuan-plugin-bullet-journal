@@ -236,7 +236,7 @@
     }
   },
   "pomodoro": {
-    "dockTitle": "番茄专注",
+    "dockTitle": "番茄钟",
     "startFocus": "开始专注",
     "stats": "专注统计",
     "startFocusTitle": "开始专注",
