@@ -1080,7 +1080,7 @@ export default class TaskAssistantPlugin extends Plugin {
       <div class="timer-end-btn b3-tooltips b3-tooltips__nw" style="display:none" data-tooltip="${t('pomodoroActive').endFocus}">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
       </div>
-      <div class="timer-control">
+      <div class="timer-control b3-tooltips b3-tooltips__nw" aria-label="${t('pomodoro').startFocus}">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
           <path fill="currentColor" d="M8 5v14l11-7z"/>
         </svg>
@@ -1384,6 +1384,7 @@ export default class TaskAssistantPlugin extends Plugin {
       } else if (!hasActiveTimer) {
         // 无专注时显示播放图标
         controlEl.style.display = 'flex';
+        controlEl.setAttribute('aria-label', t('pomodoro').startFocus);
         if (playIcon && pauseIcon) {
           playIcon.style.display = 'block';
           pauseIcon.style.display = 'none';
@@ -1391,6 +1392,7 @@ export default class TaskAssistantPlugin extends Plugin {
       } else {
         // 专注时显示暂停/继续按钮
         controlEl.style.display = 'flex';
+        controlEl.setAttribute('aria-label', isPaused ? t('pomodoroActive').resume : t('pomodoroActive').pause);
         if (playIcon && pauseIcon) {
           if (isPaused) {
             playIcon.style.display = 'block';
