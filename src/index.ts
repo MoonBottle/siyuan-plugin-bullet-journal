@@ -1092,7 +1092,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 创建底栏倒计时元素
     this.statusBarTimerEl = document.createElement('div');
-    this.statusBarTimerEl.className = 'toolbar__item b3-tooltips b3-tooltips__nw bullet-journal-status-bar-timer';
+    this.statusBarTimerEl.className = 'b3-tooltips b3-tooltips__nw bullet-journal-status-bar-timer';
     this.statusBarTimerEl.setAttribute('aria-label', '番茄专注');
     this.statusBarTimerEl.innerHTML = `
       <div class="timer-icon"></div>

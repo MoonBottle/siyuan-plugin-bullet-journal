@@ -461,21 +461,48 @@
    底栏倒计时样式
    ============================================ */
 
+/* Asri 主题：当底栏包含番茄钟时，强制底栏保持展开（覆盖折叠态） */
+.status:has(.bullet-journal-status-bar-timer).asri--non-protyle-status,
+#statusBar:has(.bullet-journal-status-bar-timer).asri--non-protyle-status {
+  height: 26px !important;
+  width: auto !important;
+  min-width: 120px !important;
+  overflow: visible !important;
+  animation: none !important; /* 禁用 statusShrink/statusExpand，避免尺寸闪烁 */
+  transform: none !important;
+
+  & > div {
+    display: flex !important;
+    animation: none !important;
+  }
+
+  &::before {
+    display: none !important; /* 隐藏折叠态的三个点 */
+  }
+}
+
+/* 提高选择器优先级，覆盖 Asri 等主题的折叠/压缩样式 */
+.statusbar .bullet-journal-status-bar-timer,
+#statusBar .bullet-journal-status-bar-timer,
+.status .bullet-journal-status-bar-timer,
 .bullet-journal-status-bar-timer {
   display: flex !important;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px !important;
-  background: var(--b3-theme-surface);
+  gap: 4px;
+  padding: 4px 6px !important;
+  background: transparent;
   border-radius: var(--b3-border-radius);
   color: var(--b3-theme-on-surface);
   font-family: var(--b3-font-family);
   cursor: default !important;
-  transition: background 0.2s;
 
-  &:hover {
-    background: var(--b3-theme-surface-light);
-  }
+  /* 防止主题折叠/压缩，保持紧凑宽度 */
+  width: fit-content !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+
+  /* 主容器不设 hover 背景变化，与底栏风格一致；子元素（图标、按钮）有独立 hover */
 
   .timer-icon {
     display: flex;
@@ -503,8 +530,11 @@
     font-size: 13px;
     font-weight: 500;
     font-family: var(--b3-font-family);
-    min-width: 40px;
+    min-width: 36px;
     text-align: center;
+    /* 覆盖主题可能施加的隐藏，JS 通过 display 控制显隐 */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   .timer-control {
@@ -516,6 +546,9 @@
     border-radius: 3px;
     cursor: pointer;
     transition: background 0.2s;
+    /* 覆盖主题可能施加的隐藏，JS 通过 display 控制显隐 */
+    visibility: visible !important;
+    opacity: 1 !important;
 
     &:hover {
       background: var(--b3-theme-primary-light);
