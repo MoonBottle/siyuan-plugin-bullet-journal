@@ -157,9 +157,21 @@ const totalMinutes = computed(() => {
 });
 
 const summaryText = computed(() => {
-  const weeks = numCols.value;
   const m = totalMinutes.value;
-  const label = weeks >= 52 ? `过去 ${Math.round(weeks / 52)} 年` : `过去 ${weeks} 周`;
+  const { startDate, endDate } = dateRange.value;
+  const start = dayjs(startDate);
+  const end = dayjs(endDate);
+  const daysDiff = end.diff(start, 'day');
+  const weeks = Math.round(daysDiff / 7);
+
+  let label: string;
+  if (weeks >= 52) {
+    const years = Math.round(weeks / 52);
+    label = `过去 ${years} 年`;
+  } else {
+    label = `过去 ${weeks} 周`;
+  }
+
   if (m < 60) return `${label}专注 ${m}m`;
   const h = Math.floor(m / 60);
   const mins = m % 60;
