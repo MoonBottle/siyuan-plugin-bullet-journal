@@ -1106,6 +1106,12 @@ export default class TaskAssistantPlugin extends Plugin {
     // 点击事件
     this.statusBarTimerEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
+      // 如果点击的是番茄图标，则打开 Dock
+      if (target.closest('.timer-icon')) {
+        e.stopPropagation();
+        this.openPomodoroDock();
+        return;
+      }
       // 如果点击的是开始按钮，则开始专注
       if (target.closest('.timer-start')) {
         e.stopPropagation();
@@ -1118,8 +1124,6 @@ export default class TaskAssistantPlugin extends Plugin {
         this.togglePomodoroPause();
         return;
       }
-      // 其他情况打开番茄 Dock
-      this.openPomodoroDock();
     });
 
     // 使用思源 API 插入到底栏
