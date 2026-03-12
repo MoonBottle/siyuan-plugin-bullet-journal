@@ -55,20 +55,20 @@ export function createSettingsPanel(plugin: InstanceType<typeof TaskAssistantPlu
     () => updateAllGroupSelects(settings as SettingsData)
   );
 
-  // 3. AI 服务配置（多供应商，仅改内存；点弹框底部「保存」才写入文件）
-  addAiConfigItem(setting, settings as SettingsData);
+  // 3. 番茄钟配置
+  addPomodoroConfigItem(setting, settings as SettingsData);
 
-  // 4. MCP 配置
-  addMcpConfigItem(setting);
-
-  // 5. 日历默认视图
+  // 4. 日历默认视图
   addCalendarConfigItem(setting, settings as SettingsData);
 
-  // 6. 午休时间（用于工时计算）
-  addLunchBreakConfigItems(setting, settings as SettingsData);
+  // 5. AI 服务配置（多供应商，仅改内存；点弹框底部「保存」才写入文件）
+  addAiConfigItem(setting, settings as SettingsData);
 
-  // 7. 番茄钟配置
-  addPomodoroConfigItem(setting, settings as SettingsData);
+  // 6. MCP 配置
+  addMcpConfigItem(setting);
+
+  // 7. 午休时间（用于工时计算）
+  addLunchBreakConfigItems(setting, settings as SettingsData);
 
   return setting;
 }

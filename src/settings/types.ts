@@ -20,7 +20,6 @@ export interface PomodoroSettings {
   enableFloatingButton?: boolean;
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
-  dailyFocusTargetMinutes?: number;
 }
 
 // 设置数据结构
@@ -45,7 +44,6 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   enableFloatingButton: true,
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',
-  dailyFocusTargetMinutes: 180
 };
 
 export const defaultSettings: SettingsData = {

@@ -122,25 +122,6 @@ export function addPomodoroConfigItem(setting: Setting, settings: SettingsData):
         )
       );
 
-      // 每日专注目标
-      const targetInput = document.createElement('input');
-      targetInput.type = 'number';
-      targetInput.min = '0';
-      targetInput.max = '720';
-      targetInput.className = 'b3-text-field fn__flex-center';
-      targetInput.value = String(pomodoro.dailyFocusTargetMinutes ?? 180);
-      targetInput.addEventListener('change', (e) => {
-        const v = parseInt((e.target as HTMLInputElement).value, 10);
-        pomodoro.dailyFocusTargetMinutes = isNaN(v) || v < 0 ? 0 : v;
-      });
-      container.appendChild(
-        createPomodoroRow(
-          t('settings').pomodoro.dailyFocusTarget,
-          t('settings').pomodoro.dailyFocusTargetDesc,
-          targetInput
-        )
-      );
-
       return container;
     }
   });
