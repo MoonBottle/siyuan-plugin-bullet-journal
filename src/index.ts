@@ -1092,8 +1092,8 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarTimerEl.setAttribute('aria-label', '番茄专注');
     this.statusBarTimerEl.innerHTML = `
       <div class="timer-icon"></div>
-      <div class="timer-text">--:--</div>
-      <div class="timer-control">
+      <div class="timer-text"></div>
+      <div class="timer-control timer-start">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
           <path fill="currentColor" d="M8 5v14l11-7z"/>
         </svg>
@@ -1103,15 +1103,22 @@ export default class TaskAssistantPlugin extends Plugin {
       </div>
     `;
 
-    // 点击打开番茄 Dock
+    // 点击事件
     this.statusBarTimerEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      // 如果点击的是控制按钮，则切换暂停状态
-      if (target.closest('.timer-control')) {
+      // 如果点击的是开始按钮，则开始专注
+      if (target.closest('.timer-start')) {
+        e.stopPropagation();
+        this.startFocusFromStatusBar();
+        return;
+      }
+      // 如果点击的是控制按钮（暂停/继续），则切换暂停状态
+      if (target.closest('.timer-control') && !target.closest('.timer-start')) {
         e.stopPropagation();
         this.togglePomodoroPause();
         return;
       }
+      // 其他情况打开番茄 Dock
       this.openPomodoroDock();
     });
 
@@ -1131,6 +1138,28 @@ export default class TaskAssistantPlugin extends Plugin {
       this.statusBarTimerEl.remove();
       this.statusBarTimerEl = null;
     }
+  }
+
+  /**
+   * 从底栏开始专注（快捷开始）
+   * 打开番茄 Dock 并弹出开始专注弹框
+   */
+  private async startFocusFromStatusBar() {
+    // 打开番茄 Dock
+    this.openPomodoroDock();
+
+    // 延迟一下，确保 Dock 已经打开
+    setTimeout(async () => {
+      const pinia = getSharedPinia();
+      if (!pinia) return;
+
+      const pomodoroStore = usePomodoroStore(pinia);
+
+      // 如果当前没有进行中的专注，则触发打开弹框事件
+      if (!pomodoroStore.isFocusing && !pomodoroStore.isBreakActive) {
+        eventBus.emit(Events.POMODORO_OPEN_TIMER_DIALOG);
+      }
+    }, 100);
   }
 
   /**
@@ -1294,26 +1323,33 @@ export default class TaskAssistantPlugin extends Plugin {
       }
     }
 
-    // 更新播放/暂停图标
-    if (playIcon && pauseIcon) {
-      if (isPaused) {
-        playIcon.style.display = 'block';
-        pauseIcon.style.display = 'none';
-      } else {
-        playIcon.style.display = 'none';
-        pauseIcon.style.display = 'block';
-      }
-    }
-
     // 控制按钮显示逻辑：
-    // - 没有进行中的专注时隐藏
+    // - 没有进行中的专注时显示开始按钮（播放图标）
     // - 休息时隐藏
-    // - 专注时显示
+    // - 专注时显示暂停/继续按钮
     if (controlEl) {
-      if (!hasActiveTimer || isBreak) {
+      if (isBreak) {
+        // 休息时隐藏控制按钮
         controlEl.style.display = 'none';
-      } else {
+      } else if (!hasActiveTimer) {
+        // 无专注时显示开始按钮（播放图标）
         controlEl.style.display = 'flex';
+        if (playIcon && pauseIcon) {
+          playIcon.style.display = 'block';
+          pauseIcon.style.display = 'none';
+        }
+      } else {
+        // 专注时显示暂停/继续按钮
+        controlEl.style.display = 'flex';
+        if (playIcon && pauseIcon) {
+          if (isPaused) {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+          } else {
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+          }
+        }
       }
     }
   }

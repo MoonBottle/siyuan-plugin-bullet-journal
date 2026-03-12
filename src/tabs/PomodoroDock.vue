@@ -192,6 +192,7 @@ const handlePendingCompletion = (pending: PendingPomodoroCompletion) => {
 let unsubscribeRefresh: (() => void) | null = null;
 let unsubscribePomodoroRestore: (() => void) | null = null;
 let unsubscribePendingCompletion: (() => void) | null = null;
+let unsubscribeOpenTimerDialog: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 // 恢复专注状态
@@ -244,6 +245,9 @@ onMounted(async () => {
   // 监听待完成记录（专注结束后弹窗补填说明）
   unsubscribePendingCompletion = eventBus.on(Events.POMODORO_PENDING_COMPLETION, handlePendingCompletion);
 
+  // 监听打开开始专注弹框事件（从底栏触发）
+  unsubscribeOpenTimerDialog = eventBus.on(Events.POMODORO_OPEN_TIMER_DIALOG, openTimerDialog);
+
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -267,6 +271,9 @@ onUnmounted(() => {
   }
   if (unsubscribePendingCompletion) {
     unsubscribePendingCompletion();
+  }
+  if (unsubscribeOpenTimerDialog) {
+    unsubscribeOpenTimerDialog();
   }
   if (refreshChannel) {
     refreshChannel.close();

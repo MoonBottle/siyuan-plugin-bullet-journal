@@ -81,6 +81,7 @@ export const Events = {
   POMODORO_CANCELLED: 'pomodoro:cancelled',
   POMODORO_RESTORE: 'pomodoro:restore', // 恢复进行中的番茄钟
   POMODORO_PENDING_COMPLETION: 'pomodoro:pending-completion', // 待完成记录已持久化，需弹窗补填说明
+  POMODORO_OPEN_TIMER_DIALOG: 'pomodoro:open-timer-dialog', // 打开开始专注弹框
   BREAK_STARTED: 'break:started',
   BREAK_ENDED: 'break:ended'
 };
