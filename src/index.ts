@@ -1056,6 +1056,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 隐藏悬浮番茄按钮和底栏进度条
+   * 注意：底栏倒计时不会被隐藏，它会常驻显示
    */
   private hideFloatingTomatoButton() {
     if (this.floatingTomatoTimer) {
@@ -1069,8 +1070,11 @@ export default class TaskAssistantPlugin extends Plugin {
     }
 
     this.hideStatusBar();
-    this.hideStatusBarTimer();
+    // 不隐藏底栏倒计时，只更新为无倒计时状态
     this.stopTimerUpdate();
+    if (this.statusBarTimerEl) {
+      this.updateStatusBarTimerDisplay(false, '', false);
+    }
   }
 
   /**
