@@ -6,6 +6,7 @@ import { init, destroy } from '@/main';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
 import { showItemDetailModal } from '@/utils/dialog';
 import { getBlockIdFromElement, getBlockIdFromRange, findItemByBlockId } from '@/utils/itemBlockUtils';
 import { useProjectStore, usePomodoroStore } from '@/stores';
@@ -42,11 +43,7 @@ const { version } = PluginInfo;
  * 同上下文下所有视图共享同一份 settings/project store。若某视图跑在另一上下文（如 iframe），
  * 该处 sharedPinia 为 null，会 fallback 到 createPinia()，此时仍依赖 BroadcastChannel 同步数据。
  */
-let sharedPinia: ReturnType<typeof createPinia> | null = null;
-
-export function getSharedPinia() {
-  return sharedPinia;
-}
+export { getSharedPinia } from '@/utils/sharedPinia';
 
 // 全局设置
 let settings: SettingsData = { ...defaultSettings };
@@ -70,8 +67,6 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /** 悬浮番茄按钮元素 */
   private floatingTomatoEl: HTMLElement | null = null;
-  /** 悬浮按钮更新定时器 */
-  private floatingTomatoTimer: number | null = null;
   /** 底栏进度条元素 */
   private statusBarEl: HTMLElement | null = null;
   /** 底栏倒计时元素 */
@@ -103,7 +98,7 @@ export default class TaskAssistantPlugin extends Plugin {
     await this.loadSettings();
 
     // 创建唯一 Pinia 实例，供所有 Tab/Dock 复用，避免多实例导致 store 不同步
-    sharedPinia = createPinia();
+    setSharedPinia(createPinia());
 
     // 注册自定义 Tab
     this.registerTabs();
@@ -548,7 +543,7 @@ export default class TaskAssistantPlugin extends Plugin {
       type: TAB_TYPES.CALENDAR,
       init() {
         try {
-          const pinia = sharedPinia ?? createPinia();
+          const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(CalendarTab);
           app.use(pinia);
           app.mount(this.element);
@@ -566,7 +561,7 @@ export default class TaskAssistantPlugin extends Plugin {
       type: TAB_TYPES.GANTT,
       init() {
         try {
-          const pinia = sharedPinia ?? createPinia();
+          const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(GanttTab);
           app.use(pinia);
           app.mount(this.element);
@@ -584,7 +579,7 @@ export default class TaskAssistantPlugin extends Plugin {
       type: TAB_TYPES.PROJECT,
       init() {
         try {
-          const pinia = sharedPinia ?? createPinia();
+          const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(ProjectTab);
           app.use(pinia);
           app.mount(this.element);
@@ -602,7 +597,7 @@ export default class TaskAssistantPlugin extends Plugin {
       type: TAB_TYPES.POMODORO_STATS,
       init() {
         try {
-          const pinia = sharedPinia ?? createPinia();
+          const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(PomodoroStatsTab);
           app.use(pinia);
           app.mount(this.element);
@@ -626,14 +621,14 @@ export default class TaskAssistantPlugin extends Plugin {
         position: 'RightBottom',
         size: { width: 320, height: 400 },
         icon: 'iconList',
-        title: t('todo').title
+        title: t('todo')?.title ?? '待办事项'
       },
       data: {},
       type: DOCK_TYPES.TODO,
       init() {
         this.element.style.height = '100%';
         this.element.style.overflow = 'hidden';
-        const pinia = sharedPinia ?? createPinia();
+        const pinia = getSharedPinia() ?? createPinia();
         const app = createApp(TodoDock);
         app.use(pinia);
         app.mount(this.element);
@@ -656,7 +651,7 @@ export default class TaskAssistantPlugin extends Plugin {
       init() {
         this.element.style.height = '100%';
         // 不设置 overflow: hidden，让 Vue 组件内部控制滚动
-        const pinia = sharedPinia ?? createPinia();
+        const pinia = getSharedPinia() ?? createPinia();
         const app = createApp(AiChatDock);
         app.use(pinia);
         app.mount(this.element);
@@ -679,7 +674,7 @@ export default class TaskAssistantPlugin extends Plugin {
       init() {
         this.element.style.height = '100%';
         this.element.style.overflow = 'hidden';
-        const pinia = sharedPinia ?? createPinia();
+        const pinia = getSharedPinia() ?? createPinia();
         const app = createApp(PomodoroDock);
         app.use(pinia);
         app.mount(this.element);
@@ -848,65 +843,46 @@ export default class TaskAssistantPlugin extends Plugin {
     // 监听专注状态变化（无论是否有进行中的专注都要监听）
     eventBus.on(Events.POMODORO_STARTED, () => {
       this.showFloatingTomatoButton();
-      this.startTimerUpdate();
     });
 
     // 监听番茄钟恢复事件（Dock 未打开时也需要显示悬浮按钮）
     eventBus.on(Events.POMODORO_RESTORE, () => {
       this.showFloatingTomatoButton();
-      this.startTimerUpdate();
     });
 
     eventBus.on(Events.POMODORO_COMPLETED, () => {
       this.hideFloatingTomatoButton();
-      this.stopTimerUpdate();
     });
 
     eventBus.on(Events.POMODORO_CANCELLED, () => {
       this.hideFloatingTomatoButton();
-      this.stopTimerUpdate();
     });
 
     eventBus.on(Events.BREAK_STARTED, () => {
       this.showFloatingTomatoButton();
-      this.startTimerUpdate();
     });
 
     eventBus.on(Events.BREAK_ENDED, () => {
       this.hideFloatingTomatoButton();
-      this.stopTimerUpdate();
     });
-  }
 
-  /** 底栏倒计时更新定时器 */
-  private statusBarTimerInterval: number | null = null;
+    // 订阅 Store 的 TICK 事件，统一更新四处显示（由 pomodoroStore 集中驱动）
+    eventBus.on(Events.POMODORO_TICK, (data: {
+      remainingSeconds: number;
+      accumulatedSeconds: number;
+      isPaused?: boolean;
+      isStopwatch?: boolean;
+      targetDurationMinutes?: number;
+    }) => {
+      this.updateTimerDisplaysFromStore(data, false);
+    });
 
-  /**
-   * 启动定时器更新（用于底栏倒计时）
-   */
-  private startTimerUpdate() {
-    // 立即更新一次
-    this.updateFloatingTomatoDisplay();
-
-    // 如果定时器已存在，先清除
-    if (this.statusBarTimerInterval) {
-      window.clearInterval(this.statusBarTimerInterval);
-    }
-
-    // 每秒更新
-    this.statusBarTimerInterval = window.setInterval(() => {
-      this.updateFloatingTomatoDisplay();
-    }, 1000);
-  }
-
-  /**
-   * 停止定时器更新
-   */
-  private stopTimerUpdate() {
-    if (this.statusBarTimerInterval) {
-      window.clearInterval(this.statusBarTimerInterval);
-      this.statusBarTimerInterval = null;
-    }
+    eventBus.on(Events.BREAK_TICK, (data: {
+      remainingSeconds: number;
+      totalSeconds: number;
+    }) => {
+      this.updateTimerDisplaysFromStore(data, true);
+    });
   }
 
   /**
@@ -1033,10 +1009,8 @@ export default class TaskAssistantPlugin extends Plugin {
     this.floatingTomatoEl = this.createFloatingTomatoButton();
     document.body.appendChild(this.floatingTomatoEl);
 
-    this.updateFloatingTomatoDisplay();
-    this.floatingTomatoTimer = window.setInterval(() => {
-      this.updateFloatingTomatoDisplay();
-    }, 1000);
+    // 立即从 store 读取并更新，确保恢复后 0 秒内显示正确（后续由 TICK 驱动）
+    this.updateTimerDisplaysFromStore();
   }
 
   /**
@@ -1073,11 +1047,6 @@ export default class TaskAssistantPlugin extends Plugin {
    * 注意：底栏倒计时不会被隐藏，它会常驻显示
    */
   private hideFloatingTomatoButton() {
-    if (this.floatingTomatoTimer) {
-      window.clearInterval(this.floatingTomatoTimer);
-      this.floatingTomatoTimer = null;
-    }
-
     if (this.floatingTomatoEl) {
       this.floatingTomatoEl.remove();
       this.floatingTomatoEl = null;
@@ -1085,7 +1054,6 @@ export default class TaskAssistantPlugin extends Plugin {
 
     this.hideStatusBar();
     // 不隐藏底栏倒计时，只更新为无倒计时状态
-    this.stopTimerUpdate();
     if (this.statusBarTimerEl) {
       this.updateStatusBarTimerDisplay(false, '', false);
     }
@@ -1205,67 +1173,90 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
-   * 更新悬浮按钮和底栏进度条显示
-   * 休息时从 pomodoroStore 读取；专注时从存储文件读取
+   * 统一更新四处显示（悬浮按钮、底栏倒计时、底栏进度条）
+   * 有 data 时用 TICK 数据；无 data 时从 store 读取（用于恢复后首次渲染）
+   * 逻辑对齐 PomodoroActiveTimer.vue
    */
-  private async updateFloatingTomatoDisplay() {
+  private updateTimerDisplaysFromStore(
+    data?: {
+      remainingSeconds: number;
+      accumulatedSeconds?: number;
+      isPaused?: boolean;
+      isStopwatch?: boolean;
+      targetDurationMinutes?: number;
+      totalSeconds?: number;
+    },
+    isBreak?: boolean
+  ) {
     try {
-      // 休息中：显示「休息中 MM:SS」
-      const pinia = getSharedPinia();
-      if (pinia) {
+      let effectiveData = data;
+      let effectiveIsBreak = isBreak;
+
+      // 无 data 时从 store 读取（恢复后首次显示）
+      if (effectiveData === undefined || effectiveIsBreak === undefined) {
+        const pinia = getSharedPinia();
+        if (!pinia) return;
+
         const pomodoroStore = usePomodoroStore(pinia);
         if (pomodoroStore.isBreakActive) {
-          const mins = Math.floor(pomodoroStore.breakRemainingSeconds / 60);
-          const secs = pomodoroStore.breakRemainingSeconds % 60;
-          const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-          if (this.floatingTomatoEl) {
-            const iconEl = this.floatingTomatoEl.querySelector('.tomato-icon');
-            if (iconEl) {
-              iconEl.innerHTML = `<svg class="tomato-icon" viewBox="0 0 1024 1024" width="20" height="20" fill="currentColor"><path d="M828.36 955.46h-738C75.8 955.46 64 943.66 64 929.1s11.8-26.36 26.36-26.36h738c14.56 0 26.36 11.8 26.36 26.36s-11.81 26.36-26.36 26.36zM512.17 876.39H406.53c-159.87 0-289.93-130.06-289.93-289.93V481.04c0-43.6 35.47-79.07 79.07-79.07h527.36c43.6 0 79.07 35.47 79.07 79.07v105.43c0 159.86-130.06 289.92-289.93 289.92z m-316.5-421.71c-14.53 0-26.36 11.82-26.36 26.36v105.43c0 130.8 106.42 237.21 237.21 237.21h105.65c130.79 0 237.21-106.41 237.21-237.21V481.04c0-14.54-11.83-26.36-26.36-26.36H195.67z"/><path d="M828.19 705.07h-65.65c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h65.65c43.62 0 79.1-35.47 79.1-79.07s-35.48-79.07-79.1-79.07h-52.47c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h52.47c72.68 0 131.81 59.12 131.81 131.79s-59.14 131.79-131.81 131.79zM458.82 384.85c-11.24 0-21.65-7.24-25.16-18.53-7.08-22.77-10.67-46.5-10.67-70.56 0-35.32 7.58-69.32 22.55-101.05 6.2-13.17 21.92-18.81 35.07-12.6 13.17 6.21 18.82 21.91 12.6 35.08-11.61 24.64-17.5 51.07-17.5 78.56 0 18.74 2.79 37.21 8.3 54.9 4.32 13.9-3.45 28.67-17.35 33-2.61 0.81-5.24 1.2-7.84 1.2zM326.71 384.85c-11.26 0-21.69-7.27-25.17-18.6-1.25-4.04-2.55-7.62-3.8-11.11-5.28-14.63-10.73-29.76-10.73-61.45 0-32.51 6.14-48.33 12.07-63.63 1.43-3.67 2.91-7.48 4.38-11.8 1.58-5.19 3.46-9.94 5.28-14.5 4.09-10.29 6.81-17.08 6.81-40.95 0-24.25-3.28-32.4-8.24-44.74-1.81-4.52-3.71-9.25-5.56-14.75-4.65-13.8 2.77-28.74 16.56-33.39 13.8-4.68 28.74 2.76 33.4 16.56 1.49 4.45 3.04 8.26 4.52 11.92 5.91 14.73 12.03 29.96 12.03 64.4 0 31.55-4.38 44.97-10.55 60.47-1.35 3.36-2.75 6.85-4.09 11.17-1.94 5.78-3.69 10.32-5.38 14.66-5.12 13.2-8.51 21.92-8.51 44.57 0 22.47 3.19 31.32 7.61 43.57 1.52 4.22 3.08 8.56 4.58 13.45 4.29 13.91-3.51 28.66-17.41 32.95-2.6 0.82-5.23 1.2-7.8 1.2zM595.87 384.85c-11.24 0-21.65-7.24-25.16-18.53-7.08-22.77-10.67-46.5-10.67-70.56 0-22.92 3.27-45.61 9.73-67.42 4.13-13.97 18.83-21.89 32.75-17.8 13.96 4.13 21.93 18.8 17.8 32.75-5.02 16.96-7.57 34.61-7.57 52.47 0 18.74 2.79 37.21 8.3 54.9 4.32 13.9-3.45 28.67-17.35 33-2.6 0.8-5.24 1.19-7.83 1.19z"/></svg>`;
-            }
-            const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
-            if (timeEl) timeEl.textContent = timeStr;
-          }
-          // 休息时底栏进度条：已休息时长 / 总休息时长
-          const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
-          if (pomodoro.enableStatusBar === true) {
-            this.showStatusBar();
-            const fill = this.statusBarEl?.querySelector('.status-bar-fill') as HTMLElement;
-            if (fill) {
-              const total = pomodoroStore.breakTotalSeconds || 5 * 60;
-              const elapsed = Math.max(0, total - pomodoroStore.breakRemainingSeconds);
-              const progress = total > 0 ? Math.min(1, elapsed / total) : 0;
-              fill.style.width = `${progress * 100}%`;
-            }
-          }
-          // 休息时底栏倒计时
-          const pomodoroTimerBreak = this.getSettings().pomodoro ?? defaultPomodoroSettings;
-          console.log('[Task Assistant] 休息时 enableStatusBarTimer:', pomodoroTimerBreak.enableStatusBarTimer);
-          if (pomodoroTimerBreak.enableStatusBarTimer === true) {
-            console.log('[Task Assistant] 显示休息底栏倒计时');
-            this.showStatusBarTimer();
-            this.updateStatusBarTimerDisplay(true, timeStr, false);
-          }
+          effectiveData = {
+            remainingSeconds: pomodoroStore.breakRemainingSeconds,
+            totalSeconds: pomodoroStore.breakTotalSeconds
+          };
+          effectiveIsBreak = true;
+        } else if (pomodoroStore.isFocusing && pomodoroStore.activePomodoro) {
+          const ap = pomodoroStore.activePomodoro;
+          effectiveData = {
+            remainingSeconds: ap.remainingSeconds,
+            accumulatedSeconds: ap.accumulatedSeconds,
+            isPaused: ap.isPaused,
+            isStopwatch: ap.timerMode === 'stopwatch',
+            targetDurationMinutes: ap.targetDurationMinutes
+          };
+          effectiveIsBreak = false;
+        } else {
           return;
         }
       }
 
-      const data = await loadActivePomodoro(this);
+      if (effectiveIsBreak) {
+        // 休息中
+        const d = effectiveData!;
+        const totalSeconds = d.totalSeconds ?? 5 * 60;
+        const timeStr = `${Math.floor(d.remainingSeconds / 60).toString().padStart(2, '0')}:${(d.remainingSeconds % 60).toString().padStart(2, '0')}`;
 
-      if (!data) {
-        this.hideFloatingTomatoButton();
+        if (this.floatingTomatoEl) {
+          const iconEl = this.floatingTomatoEl.querySelector('.tomato-icon');
+          if (iconEl) {
+            iconEl.innerHTML = `<svg class="tomato-icon" viewBox="0 0 1024 1024" width="20" height="20" fill="currentColor"><path d="M828.36 955.46h-738C75.8 955.46 64 943.66 64 929.1s11.8-26.36 26.36-26.36h738c14.56 0 26.36 11.8 26.36 26.36s-11.81 26.36-26.36 26.36zM512.17 876.39H406.53c-159.87 0-289.93-130.06-289.93-289.93V481.04c0-43.6 35.47-79.07 79.07-79.07h527.36c43.6 0 79.07 35.47 79.07 79.07v105.43c0 159.86-130.06 289.92-289.93 289.92z m-316.5-421.71c-14.53 0-26.36 11.82-26.36 26.36v105.43c0 130.8 106.42 237.21 237.21 237.21h105.65c130.79 0 237.21-106.41 237.21-237.21V481.04c0-14.54-11.83-26.36-26.36-26.36H195.67z"/><path d="M828.19 705.07h-65.65c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h65.65c43.62 0 79.1-35.47 79.1-79.07s-35.48-79.07-79.1-79.07h-52.47c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h52.47c72.68 0 131.81 59.12 131.81 131.79s-59.14 131.79-131.81 131.79z"/></svg>`;
+          }
+          const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
+          if (timeEl) timeEl.textContent = timeStr;
+        }
+
+        const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+        if (pomodoro.enableStatusBar === true) {
+          this.showStatusBar();
+          const fill = this.statusBarEl?.querySelector('.status-bar-fill') as HTMLElement;
+          if (fill) {
+            const elapsed = Math.max(0, totalSeconds - d.remainingSeconds);
+            const progress = totalSeconds > 0 ? Math.min(1, elapsed / totalSeconds) : 0;
+            fill.style.width = `${progress * 100}%`;
+          }
+        }
+        if (pomodoro.enableStatusBarTimer === true) {
+          this.showStatusBarTimer();
+          this.updateStatusBarTimerDisplay(true, timeStr, false);
+        }
         return;
       }
 
-      let effectiveAccumulatedSeconds = data.accumulatedSeconds;
-      if (!data.isPaused) {
-        const elapsedSinceLastSave = Math.floor((Date.now() - data.startTime) / 1000);
-        effectiveAccumulatedSeconds = data.accumulatedSeconds + elapsedSinceLastSave;
-      }
-
-      const isStopwatch = data.timerMode === 'stopwatch';
-      const targetSeconds = data.targetDurationMinutes * 60;
-      const remainingSeconds = targetSeconds - effectiveAccumulatedSeconds;
+      // 专注中
+      const d = effectiveData!;
+      const isStopwatch = d.isStopwatch ?? false;
+      const targetSeconds = (d.targetDurationMinutes ?? 25) * 60;
+      const remainingSeconds = d.remainingSeconds;
+      const accumulatedSeconds = d.accumulatedSeconds ?? 0;
 
       // 倒计时模式且已过期时隐藏
       if (!isStopwatch && remainingSeconds <= 0) {
@@ -1273,39 +1264,30 @@ export default class TaskAssistantPlugin extends Plugin {
         return;
       }
 
-      // 显示时间：倒计时显示剩余，正计时显示已专注
-      const displaySeconds = isStopwatch ? effectiveAccumulatedSeconds : remainingSeconds;
-      const minutes = Math.floor(displaySeconds / 60);
-      const seconds = displaySeconds % 60;
-      const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      const displaySeconds = isStopwatch ? accumulatedSeconds : remainingSeconds;
+      const timeStr = `${Math.floor(displaySeconds / 60).toString().padStart(2, '0')}:${(displaySeconds % 60).toString().padStart(2, '0')}`;
 
       if (this.floatingTomatoEl) {
         const timeEl = this.floatingTomatoEl.querySelector('.remaining-time');
         if (timeEl) timeEl.textContent = timeStr;
       }
 
-      // 底栏进度条
       const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
       if (pomodoro.enableStatusBar === true) {
         this.showStatusBar();
         const fill = this.statusBarEl?.querySelector('.status-bar-fill') as HTMLElement;
         if (fill) {
           const refSeconds = isStopwatch ? 25 * 60 : targetSeconds;
-          const progress = Math.min(1, effectiveAccumulatedSeconds / refSeconds);
+          const progress = Math.min(1, accumulatedSeconds / refSeconds);
           fill.style.width = `${progress * 100}%`;
         }
       }
-
-      // 底栏倒计时
-      const pomodoroTimer = this.getSettings().pomodoro ?? defaultPomodoroSettings;
-      console.log('[Task Assistant] enableStatusBarTimer:', pomodoroTimer.enableStatusBarTimer);
-      if (pomodoroTimer.enableStatusBarTimer === true) {
-        console.log('[Task Assistant] 显示底栏倒计时');
+      if (pomodoro.enableStatusBarTimer === true) {
         this.showStatusBarTimer();
-        this.updateStatusBarTimerDisplay(false, timeStr, data.isPaused);
+        this.updateStatusBarTimerDisplay(false, timeStr, d.isPaused ?? false);
       }
     } catch (error) {
-      console.log('[Task Assistant] Failed to update floating tomato display:', error);
+      console.log('[Task Assistant] Failed to update timer displays:', error);
     }
   }
 

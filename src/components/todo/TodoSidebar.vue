@@ -420,6 +420,7 @@ const getStatusEmoji = (item: Item): string => {
 
 const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
 
+// 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const pomodoroStore = usePomodoroStore();

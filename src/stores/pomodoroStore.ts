@@ -160,6 +160,15 @@ export const usePomodoroStore = defineStore('pomodoro', {
           await saveActivePomodoro(plugin, this.activePomodoro);
         }
 
+        // 触发 TICK 更新悬浮按钮和底栏（暂停时显示播放图标）
+        eventBus.emit(Events.POMODORO_TICK, {
+          remainingSeconds: this.activePomodoro.remainingSeconds,
+          accumulatedSeconds: this.activePomodoro.accumulatedSeconds,
+          isPaused: true,
+          isStopwatch: this.activePomodoro.timerMode === 'stopwatch',
+          targetDurationMinutes: this.activePomodoro.targetDurationMinutes
+        });
+
         showMessage(`⏸️ 已暂停 · 第 ${this.activePomodoro.pauseCount} 次`);
         return true;
       } catch (error) {
@@ -200,6 +209,15 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (plugin) {
           await saveActivePomodoro(plugin, this.activePomodoro);
         }
+
+        // 触发 TICK 更新悬浮按钮和底栏（恢复时显示暂停图标）
+        eventBus.emit(Events.POMODORO_TICK, {
+          remainingSeconds: this.activePomodoro.remainingSeconds,
+          accumulatedSeconds: this.activePomodoro.accumulatedSeconds,
+          isPaused: false,
+          isStopwatch: this.activePomodoro.timerMode === 'stopwatch',
+          targetDurationMinutes: this.activePomodoro.targetDurationMinutes
+        });
 
         showMessage('▶️ 继续专注');
         return true;
@@ -262,6 +280,15 @@ export const usePomodoroStore = defineStore('pomodoro', {
       if (!isStopwatch && this.activePomodoro.accumulatedSeconds >= targetSeconds) {
         this.completePomodoro();
       }
+
+      // 触发每秒更新事件，供外部（悬浮按钮、底栏）订阅
+      eventBus.emit(Events.POMODORO_TICK, {
+        remainingSeconds: this.activePomodoro.remainingSeconds,
+        accumulatedSeconds: this.activePomodoro.accumulatedSeconds,
+        isPaused: this.activePomodoro.isPaused,
+        isStopwatch: this.activePomodoro.timerMode === 'stopwatch',
+        targetDurationMinutes: this.activePomodoro.targetDurationMinutes
+      });
     },
 
     /**
@@ -625,6 +652,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
       this.breakInterval = window.setInterval(() => {
         this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
+        eventBus.emit(Events.BREAK_TICK, {
+          remainingSeconds: this.breakRemainingSeconds,
+          totalSeconds: this.breakTotalSeconds
+        });
         if (this.breakRemainingSeconds <= 0) {
           this.stopBreak(plugin ?? usePlugin()); // 会 emit BREAK_ENDED
           showMessage(t('settings').pomodoro.breakEndMessage);
@@ -669,6 +700,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
       this.breakInterval = window.setInterval(() => {
         this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
+        eventBus.emit(Events.BREAK_TICK, {
+          remainingSeconds: this.breakRemainingSeconds,
+          totalSeconds: this.breakTotalSeconds
+        });
         if (this.breakRemainingSeconds <= 0) {
           this.stopBreak(plugin);
           showMessage(t('settings').pomodoro.breakEndMessage);

@@ -129,9 +129,17 @@ export const useProjectStore = defineStore('project', {
       });
     },
 
-    // 按日期分组的待办
-    getGroupedFutureItems: (state, getters) => (groupId: string) => {
-      const futureItems = (getters.getFutureItems as (g: string) => Item[])(groupId);
+    // 按日期分组的待办（避免 getters 未就绪时出错，直接使用 state 计算）
+    getGroupedFutureItems: (state) => (groupId: string) => {
+      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      const futureItems = items.filter(item => {
+        const effectiveDate = getEffectiveDate(item);
+        return (
+          effectiveDate >= state.currentDate &&
+          item.status !== 'completed' &&
+          item.status !== 'abandoned'
+        );
+      });
 
       const grouped = new Map<string, Item[]>();
       futureItems.forEach(item => {

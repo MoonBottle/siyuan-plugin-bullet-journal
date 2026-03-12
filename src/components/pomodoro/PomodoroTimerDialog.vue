@@ -118,6 +118,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
+import { getSharedPinia } from '@/utils/sharedPinia';
 import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { DOCK_TYPES } from '@/constants';
@@ -130,8 +131,9 @@ const props = defineProps<{
 }>()
 
 const plugin = usePlugin() as any;
-const projectStore = useProjectStore();
-const pomodoroStore = usePomodoroStore();
+const pinia = getSharedPinia();
+const projectStore = pinia ? useProjectStore(pinia) : null;
+const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
 
 // 选中的事项
 const selectedItem = ref<Item | null>(null);
@@ -148,11 +150,13 @@ const customDuration = ref(25);
 const currentDate = dayjs().format('YYYY-MM-DD');
 
 const expiredItems = computed(() => {
+  if (!projectStore) return [];
   const items = projectStore.getExpiredItems('');
   return items.filter(item => item.status === 'pending');
 });
 
 const todayItems = computed(() => {
+  if (!projectStore) return [];
   const items = projectStore.getFutureItems('');
   return items.filter(item => item.date === currentDate && item.status === 'pending');
 });
@@ -191,6 +195,10 @@ const formatDate = (dateStr: string): string => {
 // 开始专注
 const startPomodoro = async () => {
   if (!selectedItem.value) return;
+  if (!pomodoroStore) {
+    console.warn('[PomodoroTimerDialog] Pinia 未初始化，无法开始专注');
+    return;
+  }
 
   const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId;
   if (!parentBlockId) {
