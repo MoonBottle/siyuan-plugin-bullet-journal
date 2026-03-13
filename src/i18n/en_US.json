@@ -120,8 +120,7 @@
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
     "hideAbandoned": "Hide abandoned",
-    "startFocusAria": "Start Focus",
-    "pending": "Pending"
+    "startFocusAria": "Start Focus"
   },
   "settings": {
     "title": "Settings",
@@ -268,6 +267,8 @@
     "week": "This Week",
     "lastWeek": "Last Week",
     "month": "This Month",
+    "byTask": "By Task",
+    "byItem": "By Item",
     "year": "This Year",
     "showUnrecorded": "Show unrecorded time",
     "totalFocus": "Total Focus",
@@ -312,7 +313,8 @@
     "dirsSet": "{count} task assistant directories set",
     "dirsExist": "Selected directories already exist in settings",
     "minutes": "min",
-    "hours": "h"
+    "hours": "h",
+    "uncategorized": "Uncategorized"
   },
   "pomodoroDialog": {
     "selectItem": "Select Todo Item",
