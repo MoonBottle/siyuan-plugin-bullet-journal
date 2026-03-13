@@ -304,6 +304,7 @@
     "cancel": "取消",
     "copy": "复制",
     "save": "保存",
+    "saveSuccess": "保存成功",
     "dataRefreshed": "数据已刷新",
     "blockIdError": "无法获取块 ID，请刷新后重试",
     "moveSuccess": "已移动事项时间",

@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch, computed } from 'vue';
+import { showMessage } from 'siyuan';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { t } from '@/i18n';
 import type { SettingsData } from '@/settings/types';
@@ -100,12 +101,17 @@ watch(() => props.plugin.getSettings(), (newSettings) => {
 }, { deep: true });
 
 async function handleSave() {
-  props.plugin.updateSettings(local);
-  await props.plugin.saveSettings();
-  const settings = props.plugin.getSettings();
-  eventBus.emit(Events.DATA_REFRESH, settings);
-  broadcastDataRefresh(settings as object);
-  props.closeDialog();
+  try {
+    props.plugin.updateSettings(local);
+    await props.plugin.saveSettings();
+    const settings = props.plugin.getSettings();
+    eventBus.emit(Events.DATA_REFRESH, settings);
+    broadcastDataRefresh(settings as object);
+    showMessage(t('common').saveSuccess, 3000, 'info');
+    props.closeDialog();
+  } catch (e) {
+    showMessage((e as Error)?.message ?? t('common').actionFailed, 3000, 'error');
+  }
 }
 
 function handleCancel() {

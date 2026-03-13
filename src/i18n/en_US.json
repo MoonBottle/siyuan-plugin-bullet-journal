@@ -303,6 +303,7 @@
     "cancel": "Cancel",
     "copy": "Copy",
     "save": "Save",
+    "saveSuccess": "Saved successfully",
     "dataRefreshed": "Data refreshed",
     "blockIdError": "Cannot get block ID, please refresh and retry",
     "moveSuccess": "Item time moved",
