@@ -100,7 +100,34 @@ watch(() => props.plugin.getSettings(), (newSettings) => {
   Object.assign(local, cloneSettings(newSettings));
 }, { deep: true });
 
+function validateSettings(): string | null {
+  // 校验 AI Provider 配置
+  if (local.ai?.providers) {
+    for (const provider of local.ai.providers) {
+      if (!provider.name?.trim()) {
+        return (t('settings') as any).ai?.messageEnterConfigName ?? '请输入配置名称';
+      }
+      if (!provider.apiUrl?.trim()) {
+        return (t('settings') as any).ai?.messageEnterApiUrl ?? '请输入 API 地址';
+      }
+      if (!provider.apiKey?.trim()) {
+        return (t('settings') as any).ai?.messageEnterApiKey ?? '请输入 API Key';
+      }
+      if (!provider.models || provider.models.length === 0) {
+        return (t('settings') as any).ai?.messageAddOneModel ?? '请至少添加一个模型';
+      }
+    }
+  }
+  return null;
+}
+
 async function handleSave() {
+  const errorMsg = validateSettings();
+  if (errorMsg) {
+    showMessage(errorMsg, 3000, 'error');
+    return;
+  }
+
   try {
     props.plugin.updateSettings(local);
     await props.plugin.saveSettings();

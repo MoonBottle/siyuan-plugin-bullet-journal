@@ -146,6 +146,16 @@ function handleSave() {
     showMessage((t('settings') as any).ai?.messageEnterConfigName ?? '请输入配置名称', 3000, 'error');
     return;
   }
+  const apiUrl = formData.apiUrl.trim();
+  if (!apiUrl) {
+    showMessage((t('settings') as any).ai?.messageEnterApiUrl ?? '请输入 API 地址', 3000, 'error');
+    return;
+  }
+  const apiKey = formData.apiKey.trim();
+  if (!apiKey) {
+    showMessage((t('settings') as any).ai?.messageEnterApiKey ?? '请输入 API Key', 3000, 'error');
+    return;
+  }
   const validModels = formData.modelItems.map(i => i.name.trim()).filter(Boolean);
   if (validModels.length === 0) {
     showMessage((t('settings') as any).ai?.messageAddOneModel ?? '请至少添加一个模型', 3000, 'error');
