@@ -1,19 +1,19 @@
 <template>
   <SySettingsSection icon="iconGroups" :title="t('settings').groupManage.title" :description="t('settings').groupManage.description">
-    <div class="sy-group-default-row fn__flex">
-      <div class="sy-group-default-row__left">
-        <span class="sy-group-default-row__label">{{ t('settings').projectGroups.defaultGroupTitle }}</span>
-        <span class="sy-group-default-row__desc">{{ t('settings').projectGroups.defaultGroupDesc }}</span>
-      </div>
-      <SySelect
-        :model-value="defaultGroup"
-        :options="groupSelectOptions"
-        :placeholder="t('settings').projectGroups.noGroup"
-        class="sy-group-default-select"
-        @update:model-value="$emit('update:defaultGroup', $event)"
-      />
-    </div>
-    <div class="sy-group-list">
+    <SySettingItemList>
+      <SySettingItem
+        :label="t('settings').projectGroups.defaultGroupTitle"
+        :description="t('settings').projectGroups.defaultGroupDesc"
+      >
+        <SySelect
+          :model-value="defaultGroup"
+          :options="groupSelectOptions"
+          :placeholder="t('settings').projectGroups.noGroup"
+          class="sy-group-default-select"
+          @update:model-value="$emit('update:defaultGroup', $event)"
+        />
+      </SySettingItem>
+      <div class="sy-group-list">
       <div
         v-for="(group, index) in groups"
         :key="group.id"
@@ -32,6 +32,7 @@
         />
       </div>
     </div>
+    </SySettingItemList>
     <SySettingsActionButton icon="iconAdd" :text="t('settings').projectGroups.addButton" @click="addGroup" />
   </SySettingsSection>
 </template>
@@ -42,6 +43,8 @@ import type { ProjectGroup, ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import SySettingsSection from './SySettingsSection.vue';
 import SySettingsActionButton from './SySettingsActionButton.vue';
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 
@@ -89,33 +92,8 @@ function removeGroup(index: number) {
 </script>
 
 <style scoped>
-.sy-group-default-row {
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.sy-group-default-row__left {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sy-group-default-row__label {
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
-}
-
-.sy-group-default-row__desc {
-  font-size: 12px;
-  color: var(--b3-theme-on-surface-light);
-}
-
 .sy-group-default-select {
-  flex-shrink: 0;
-  margin-left: auto;
+  min-width: 200px;
 }
 
 .sy-group-list {
