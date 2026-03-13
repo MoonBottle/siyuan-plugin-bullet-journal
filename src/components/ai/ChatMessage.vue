@@ -43,8 +43,11 @@
         >
           <div class="chat-message__reasoning-header" @click="toggleReasoning">
             <span class="chat-message__reasoning-icon">
-              <svg :class="{ 'rotated': isReasoningCollapsed }">
-                <use xlink:href="#iconRight"></use>
+              <svg v-if="isReasoningCollapsed">
+                <use xlink:href="#iconDown"></use>
+              </svg>
+              <svg v-else>
+                <use xlink:href="#iconUp"></use>
               </svg>
             </span>
             <span class="chat-message__reasoning-title">{{ t('aiChat').reasoningTitle }}</span>

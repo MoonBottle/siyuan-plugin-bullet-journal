@@ -3,8 +3,11 @@
     <!-- 头部：折叠/展开图标 + 工具图标 + 工具名称 -->
     <div class="tool-call-display__header" @click="toggleCollapse">
       <span class="tool-call-display__arrow">
-        <svg :class="{ 'rotated': isCollapsed }">
-          <use xlink:href="#iconRight"></use>
+        <svg v-if="isCollapsed">
+          <use xlink:href="#iconDown"></use>
+        </svg>
+        <svg v-else>
+          <use xlink:href="#iconUp"></use>
         </svg>
       </span>
       <span class="tool-call-display__icon">
@@ -115,11 +118,6 @@ async function copyResult() {
       width: 12px;
       height: 12px;
       fill: var(--b3-theme-secondary);
-      transition: transform 0.2s;
-
-      &.rotated {
-        transform: rotate(90deg);
-      }
     }
   }
 
