@@ -3,7 +3,7 @@
     <!-- 头部：折叠/展开图标 + 工具图标 + 工具名称 -->
     <div class="tool-call-display__header" @click="toggleCollapse">
       <span class="tool-call-display__arrow">
-        <svg :class="{ 'rotated': !isCollapsed }">
+        <svg :class="{ 'rotated': isCollapsed }">
           <use xlink:href="#iconRight"></use>
         </svg>
       </span>
@@ -94,12 +94,12 @@ async function copyResult() {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 12px;
+    padding: 6px 12px;
     cursor: pointer;
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: var(--b3-theme-surface-lighter);
+      background-color: var(--b3-theme-surface-lightest);
     }
   }
 
@@ -140,10 +140,9 @@ async function copyResult() {
 
   &__name {
     flex: 1;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--b3-theme-secondary);
-    font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -180,9 +179,8 @@ async function copyResult() {
     background: var(--b3-theme-surface-lightest);
     border-radius: 4px;
     padding: 8px 12px;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 1.6;
     color: var(--b3-theme-on-surface);
     overflow-x: auto;
 
@@ -196,7 +194,7 @@ async function copyResult() {
     }
 
     code {
-      font-family: inherit;
+      font-family: var(--b3-font-family-code);
       font-size: inherit;
       background: transparent;
       padding: 0;
