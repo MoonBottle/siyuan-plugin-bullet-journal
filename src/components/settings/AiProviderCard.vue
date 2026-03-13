@@ -1,9 +1,6 @@
 <template>
   <div class="ai-provider-card" :class="{ 'is-editing': isEditing }">
-    <div
-      class="ai-provider-card__header fn__flex"
-      @click="!isEditing && toggleEdit()"
-    >
+    <div class="ai-provider-card__header fn__flex">
       <div class="ai-provider-card__info">
         <span class="ai-provider-card__name">{{ provider.name }}</span>
         <span class="ai-provider-card__model">{{ providerLabel }} · {{ provider.defaultModel }}</span>
@@ -12,7 +9,7 @@
         <SyButton
           :icon="isEditing ? 'iconContract' : 'iconEdit'"
           :aria-label="isEditing ? ((t('settings') as any).ai?.collapse ?? '收起') : ((t('settings') as any).ai?.edit ?? '编辑')"
-          @click.stop="toggleEdit()"
+          @click="toggleEdit()"
         />
         <SyButton
           icon="iconTrashcan"
@@ -89,12 +86,6 @@ function handleDelete() {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.ai-provider-card__header:hover {
-  background: var(--b3-theme-surface);
 }
 
 .ai-provider-card__info {
