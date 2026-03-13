@@ -43,9 +43,9 @@ const projectStore = useProjectStore();
 const selectedGroup = ref('');
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', text: t('settings').projectGroups.allGroups }];
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, text: g.name || t('settings').projectGroups.unnamed });
+    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
 });

@@ -3,12 +3,12 @@
     <div class="section-header">
       <h4 class="section-title">{{ t('pomodoroStats').focusDetail }}</h4>
       <div class="chart-controls">
-        <DropdownSelect
+        <SySelect
           v-model="aggregateBy"
           :options="aggregateOptions"
           class="range-dropdown"
         />
-        <DropdownSelect
+        <SySelect
           :model-value="range"
           :options="rangeOptions"
           class="range-dropdown"
@@ -57,7 +57,7 @@ import { useProjectStore } from '@/stores';
 import { aggregatePomodorosFromProjects, groupPomodorosByProject, groupPomodorosByTask, groupPomodorosByItem, type GroupedPomodoroStats } from '@/utils/pomodoroUtils';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
-import DropdownSelect from '@/components/common/DropdownSelect.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 
 const props = defineProps<{
   range: 'today' | 'week' | 'month' | 'year';

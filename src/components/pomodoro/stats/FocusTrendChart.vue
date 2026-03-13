@@ -3,7 +3,7 @@
     <div class="chart-header">
       <span class="chart-title">{{ t('pomodoroStats').focusTrend }}</span>
       <div class="chart-controls">
-        <DropdownSelect
+        <SySelect
           v-model="dimension"
           :options="dimensionOptions"
           class="dimension-dropdown"
@@ -31,7 +31,7 @@ import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 import { getThemePrimary, getChartTextColor, toRgba } from '@/utils/chartThemeUtils';
 import { Chart, registerables } from 'chart.js';
-import DropdownSelect from '@/components/common/DropdownSelect.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 
 Chart.register(...registerables);
 

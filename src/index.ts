@@ -21,9 +21,9 @@ import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
-import { createSettingsPanel, type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
+import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
-import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog } from '@/utils/dialog';
+import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 
 let PluginInfo = {
   version: '',
@@ -108,9 +108,6 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 注册顶栏按钮
     this.registerTopBar();
-
-    // 注册设置面板
-    this.registerSetting();
 
     // 注册事件监听
     this.registerEventListeners();
@@ -518,19 +515,11 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
-   * 注册设置面板
-   */
-  private registerSetting() {
-    this.setting = createSettingsPanel(this);
-  }
-
-  /**
-   * 打开设置前先从文件加载一次，并重建设置面板，保证取消后再次打开看到的是文件中的配置
+   * 打开设置（Vue 重构版）
    */
   openSetting(): void {
     void this.loadSettings().then(() => {
-      this.setting = createSettingsPanel(this);
-      super.openSetting();
+      showSettingsDialog(this);
     });
   }
 

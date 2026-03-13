@@ -7,6 +7,8 @@ import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import SettingsDialog from '@/components/settings/SettingsDialog.vue';
+import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
 import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
@@ -882,6 +884,43 @@ export function showPomodoroTimerDialog(): Dialog {
     if (mountEl) {
       timerDialogApp = createApp(PomodoroTimerDialog, { closeDialog });
       timerDialogApp.mount(mountEl);
+    }
+  }, 0);
+
+  return dialog;
+}
+
+/**
+ * 显示设置弹框（Vue 重构版）
+ */
+export function showSettingsDialog(plugin: any): Dialog {
+  let settingsDialogApp: any = null;
+  const dialog = new Dialog({
+    title: t('settings').title,
+    content: '<div id="settings-dialog-mount"></div>',
+    width: '640px',
+    destroyCallback: () => {
+      if (settingsDialogApp) {
+        settingsDialogApp.unmount();
+        settingsDialogApp = null;
+      }
+      void plugin.loadSettings();
+    }
+  });
+
+  const closeDialog = () => {
+    dialog.destroy();
+  };
+
+  setTimeout(() => {
+    const mountEl = dialog.element?.querySelector('#settings-dialog-mount');
+    if (mountEl) {
+      settingsDialogApp = createApp(SettingsDialog, { plugin, closeDialog });
+      const pinia = getSharedPinia();
+      if (pinia) {
+        settingsDialogApp.use(pinia);
+      }
+      settingsDialogApp.mount(mountEl);
     }
   }, 0);
 
