@@ -42,8 +42,7 @@ defineProps<{
 }
 
 .sy-setting-item__control {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   justify-content: flex-end;
   align-items: center;

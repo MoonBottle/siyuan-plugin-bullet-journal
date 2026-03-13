@@ -256,6 +256,7 @@ const vClickOutside = {
     align-items: center;
     justify-content: space-between;
     gap: 4px;
+    width: 100%;
     font-size: 13px;
     padding: 0 8px;
     height: 28px;

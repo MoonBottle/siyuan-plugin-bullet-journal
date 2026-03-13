@@ -93,7 +93,7 @@ function removeGroup(index: number) {
 
 <style scoped>
 .sy-group-default-select {
-  min-width: 200px;
+  min-width: 78px;
 }
 
 .sy-group-list {
