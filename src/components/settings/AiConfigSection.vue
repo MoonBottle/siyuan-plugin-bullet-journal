@@ -4,6 +4,19 @@
     :title="(t('settings') as any).ai?.title ?? 'AI 服务配置'"
     :description="(t('settings') as any).ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置'"
   >
+    <!-- 工具调用展示配置 -->
+    <SySettingItemList>
+      <SySettingItem
+        :label="(t('settings') as any).ai?.showToolCalls ?? '显示工具调用详情'"
+        :description="(t('settings') as any).ai?.showToolCallsDesc ?? '在对话中展示 AI 工具调用的详细信息和执行结果'"
+      >
+        <SySwitch
+          :model-value="props.ai.showToolCalls !== false"
+          @update:model-value="handleShowToolCallsChange"
+        />
+      </SySettingItem>
+    </SySettingItemList>
+
     <div class="ai-provider-list">
       <template v-if="aiData.providers.length === 0 && !showNewForm">
         <div class="ai-provider-empty">
@@ -42,16 +55,20 @@ import { t } from '@/i18n';
 import SySettingsSection from './SySettingsSection.vue';
 import SySettingsActionButton from './SySettingsActionButton.vue';
 import AiProviderCard from './AiProviderCard.vue';
+import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
+import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
+import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 
 const props = defineProps<{
   ai: {
     providers: AIProviderConfig[];
     activeProviderId: string | null;
+    showToolCalls?: boolean;
   };
 }>();
 
 const emit = defineEmits<{
-  'update:ai': [value: { providers: AIProviderConfig[]; activeProviderId: string | null }];
+  'update:ai': [value: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }];
 }>();
 
 const showNewForm = ref(false);
@@ -106,10 +123,15 @@ function removeProvider(index: number) {
   }
   emit('update:ai', { providers, activeProviderId });
 }
+
+function handleShowToolCallsChange(checked: boolean) {
+  emit('update:ai', { ...props.ai, showToolCalls: checked });
+}
 </script>
 
 <style scoped>
 .ai-provider-list {
+ margin-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;

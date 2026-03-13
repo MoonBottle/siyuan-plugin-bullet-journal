@@ -34,6 +34,7 @@ export interface SettingsData {
   ai?: {
     providers: AIProviderConfig[];
     activeProviderId: string | null;
+    showToolCalls?: boolean;
   };
   pomodoro?: PomodoroSettings;
 }

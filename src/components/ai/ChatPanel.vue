@@ -48,6 +48,7 @@
                     v-if="shouldRenderMessage(message)"
                     :message="message"
                     :tool-call-info="getMessageToolCallInfo(message)"
+                    :show-tool-calls="props.showToolCalls !== false"
                     :is-grouped="true"
                     :is-first="!group.messages.slice(0, msgIndex).some(m => shouldRenderMessage(m))"
                     :is-last="!group.messages.slice(msgIndex + 1).some(m => shouldRenderMessage(m))"
@@ -63,6 +64,7 @@
                 :key="message.id"
                 :message="message"
                 :tool-call-info="getMessageToolCallInfo(message)"
+                :show-tool-calls="props.showToolCalls !== false"
                 :is-grouped="false"
                 :is-first="msgIndex === 0"
                 :is-last="msgIndex === group.messages.length - 1"
@@ -197,6 +199,7 @@ const props = defineProps<{
   projects: Project[];
   groups: ProjectGroup[];
   items: Item[];
+  showToolCalls?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -437,6 +440,8 @@ function focusInput() {
 // 无可见内容的消息不渲染，避免空 DOM 占高度（逻辑需与 ChatMessage 显示规则一致）
 function shouldRenderMessage(message: ChatMessageType): boolean {
   const m = message;
+  // 工具调用消息：根据 showToolCalls 配置决定是否展示
+  if (m.role === 'tool' && props.showToolCalls === false) return false;
   if (m.role !== 'assistant') return true;
   if (m.loading || m.error) return true;
   if (m.content?.trim()) return true;

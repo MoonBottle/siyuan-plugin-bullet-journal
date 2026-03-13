@@ -47,6 +47,7 @@
       :projects="projectStore.projects"
       :groups="settingsStore.groups"
       :items="allItems"
+      :show-tool-calls="aiStore.showToolCallsEnabled"
       @open-settings="handleOpenSettings"
     />
   </div>
@@ -104,7 +105,8 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     if (payload.ai && typeof payload.ai === 'object') {
       aiStore.loadSettings({
         providers: (payload.ai as any).providers || [],
-        activeProviderId: (payload.ai as any).activeProviderId || null
+        activeProviderId: (payload.ai as any).activeProviderId || null,
+        showToolCalls: (payload.ai as any).showToolCalls
       });
     }
   } else {
@@ -113,7 +115,8 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     if (pluginSettings?.ai) {
       aiStore.loadSettings({
         providers: pluginSettings.ai.providers || [],
-        activeProviderId: pluginSettings.ai.activeProviderId || null
+        activeProviderId: pluginSettings.ai.activeProviderId || null,
+        showToolCalls: pluginSettings.ai.showToolCalls
       });
     }
   }
@@ -218,7 +221,8 @@ const autoSaveConfig = () => {
       try {
         await plugin.saveAISettings({
           providers: aiStore.providers,
-          activeProviderId: aiStore.activeProviderId
+          activeProviderId: aiStore.activeProviderId,
+          showToolCalls: aiStore.showToolCalls
         });
       } catch (error) {
         console.error('[AI Chat] Auto save config failed:', error);
@@ -250,13 +254,14 @@ onMounted(async () => {
   settingsStore.loadFromPlugin();
 
   // 从插件设置加载 AI 配置
-  const pluginSettings = plugin?.getSettings?.();
-  if (pluginSettings?.ai) {
-    aiStore.loadSettings({
-      providers: pluginSettings.ai.providers || [],
-      activeProviderId: pluginSettings.ai.activeProviderId || null
-    });
-  }
+    const pluginSettings = plugin?.getSettings?.();
+    if (pluginSettings?.ai) {
+      aiStore.loadSettings({
+        providers: pluginSettings.ai.providers || [],
+        activeProviderId: pluginSettings.ai.activeProviderId || null,
+        showToolCalls: pluginSettings.ai.showToolCalls
+      });
+    }
 
   // 从单独的聊天记录文件加载
   const chatHistory = plugin?.getAIChatHistory?.();

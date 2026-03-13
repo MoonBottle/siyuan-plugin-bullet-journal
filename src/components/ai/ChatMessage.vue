@@ -74,7 +74,8 @@
         >
           {{ message.error }}
         </div>
-        <div v-else-if="message.role === 'tool'" class="chat-message__tool-content">
+        <!-- 工具调用消息：根据 showToolCalls 配置决定是否展示 -->
+        <div v-else-if="message.role === 'tool' && props.showToolCalls !== false" class="chat-message__tool-content">
           <div class="chat-message__tool-header" @click="toggleCollapse">
             <span class="chat-message__tool-icon">
               <svg :class="{ 'rotated': isCollapsed }">
@@ -174,6 +175,7 @@ const props = defineProps<{
   isGrouped?: boolean;  // 是否为分组内的消息
   isFirst?: boolean;    // 是否为组内第一条
   isLast?: boolean;     // 是否为组内最后一条
+  showToolCalls?: boolean; // 是否展示工具调用详情
 }>();
 
 const emit = defineEmits<{

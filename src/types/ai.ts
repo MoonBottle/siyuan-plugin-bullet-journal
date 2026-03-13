@@ -176,6 +176,7 @@ export interface AISettings {
   config: AIConfig;
   conversations: ChatConversation[];
   currentConversationId: string | null;
+  showToolCalls?: boolean; // 是否展示工具调用详情
 }
 
 // 默认 AI 设置

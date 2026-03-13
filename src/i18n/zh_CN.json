@@ -195,7 +195,9 @@
       "messageSelectOneModel": "请至少选择一个模型",
       "messageApplied": "已应用，点击下方「保存」写入配置",
       "messageAdded": "已添加，点击下方「保存」写入配置",
-      "confirmDeleteProvider": "确定要删除 \"{{name}}\" 吗？"
+      "confirmDeleteProvider": "确定要删除 \"{{name}}\" 吗？",
+      "showToolCalls": "显示工具调用详情",
+      "showToolCallsDesc": "在对话中展示 AI 工具调用的详细信息和执行结果"
     },
     "projectDirectories": {
       "title": "项目目录",

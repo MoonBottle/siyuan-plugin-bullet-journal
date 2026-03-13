@@ -268,7 +268,8 @@ export default class TaskAssistantPlugin extends Plugin {
           },
           ai: {
             providers: data.ai?.providers || [],
-            activeProviderId: data.ai?.activeProviderId || null
+            activeProviderId: data.ai?.activeProviderId || null,
+            showToolCalls: data.ai?.showToolCalls !== undefined ? data.ai.showToolCalls : true
           },
           pomodoro: data.pomodoro
             ? { ...defaultPomodoroSettings, ...data.pomodoro }
@@ -350,12 +351,13 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 保存 AI 设置（供 AI Store 调用，只保存供应商配置）
    */
-  public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null }) {
+  public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
     if (!settings.ai) {
-      settings.ai = { providers: [], activeProviderId: null };
+      settings.ai = { providers: [], activeProviderId: null, showToolCalls: true };
     }
     settings.ai.providers = aiData.providers;
     settings.ai.activeProviderId = aiData.activeProviderId;
+    settings.ai.showToolCalls = aiData.showToolCalls;
     try {
       await this.saveData('settings', settings);
     } catch (error) {
@@ -366,12 +368,17 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 仅将 AI 配置写入文件（从磁盘读出完整配置，只替换 ai 后写回，不修改内存中其它区块，避免覆盖用户未保存的修改）
    */
-  public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null }) {
+  public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
     try {
       const data = await this.loadData('settings');
+      const aiConfig = {
+        providers: aiData.providers,
+        activeProviderId: aiData.activeProviderId,
+        ...(aiData.showToolCalls !== undefined && { showToolCalls: aiData.showToolCalls })
+      };
       const merged: SettingsData = data
-        ? { ...data, ai: { providers: aiData.providers, activeProviderId: aiData.activeProviderId } }
-        : { ...defaultSettings, ai: { providers: aiData.providers, activeProviderId: aiData.activeProviderId } };
+        ? { ...data, ai: aiConfig }
+        : { ...defaultSettings, ai: aiConfig };
       console.log('[Task Assistant] Merged settings:', merged);
       await this.saveData('settings', merged);
       this.lastAISettingsSaveTime = Date.now();

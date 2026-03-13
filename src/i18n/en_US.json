@@ -195,7 +195,9 @@
       "messageSelectOneModel": "Please select at least one model",
       "messageApplied": "Applied. Click \"Save\" below to write config",
       "messageAdded": "Added. Click \"Save\" below to write config",
-      "confirmDeleteProvider": "Are you sure you want to delete \"{{name}}\"?"
+      "confirmDeleteProvider": "Are you sure you want to delete \"{{name}}\"?",
+      "showToolCalls": "Show Tool Call Details",
+      "showToolCallsDesc": "Display detailed information and execution results of AI tool calls in conversations"
     },
     "projectDirectories": {
       "title": "Project Directories",
