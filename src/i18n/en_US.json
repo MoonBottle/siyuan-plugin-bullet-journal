@@ -134,7 +134,9 @@
     "lunchBreak": {
       "title": "Lunch Break",
       "start": "Start",
-      "end": "End"
+      "startDesc": "Lunch break start time; the period until end time is excluded from work hours",
+      "end": "End",
+      "endDesc": "Lunch break end time; the period from start time is excluded from work hours"
     },
     "groupManage": {
       "title": "Group Management",
