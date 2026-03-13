@@ -91,7 +91,9 @@
             <!-- 显示工具参数 -->
             <div v-if="getToolParams()" class="chat-message__tool-params">
               <div class="chat-message__tool-params-title">{{ t('aiChat').toolParamsTitle }}</div>
-              <pre class="chat-message__tool-params-content"><code>{{ getToolParams() }}</code></pre>
+              <div class="chat-message__tool-params-content">
+                <div v-html="renderedToolParams"></div>
+              </div>
             </div>
             <!-- 显示工具结果 -->
             <div class="chat-message__tool-result">
@@ -268,11 +270,9 @@ const renderedContent = computed(() => {
     try {
       const parsed = JSON.parse(content);
       const formatted = JSON.stringify(parsed, null, 2);
-      const escaped = formatted
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      return `<pre class="code-block json-code"><code class="language-json">${escaped}</code></pre>`;
+      // 使用 Lute 渲染 Markdown 代码块
+      const jsonMarkdown = '```json\n' + formatted + '\n```';
+      return renderMarkdown(jsonMarkdown);
     } catch {
       // 解析失败，按普通文本处理
     }
@@ -285,6 +285,23 @@ const renderedContent = computed(() => {
     console.error('Markdown rendering error:', error);
     // 渲染失败，返回原始内容
     return content;
+  }
+});
+
+// 渲染工具参数（使用 Lute 代码块渲染）
+const renderedToolParams = computed(() => {
+  const params = getToolParams();
+  if (!params) return '';
+
+  try {
+    const parsed = JSON.parse(params);
+    const formatted = JSON.stringify(parsed, null, 2);
+    // 使用 Lute 渲染 Markdown 代码块
+    const jsonMarkdown = '```json\n' + formatted + '\n```';
+    return renderMarkdown(jsonMarkdown);
+  } catch {
+    // 解析失败，返回原始内容
+    return params;
   }
 });
 
@@ -718,12 +735,25 @@ function formatTime(timestamp: number): string {
 
   &__tool-params-content {
     background: var(--b3-theme-background);
-    padding: 8px;
+    padding: 0;
     border-radius: 4px;
     font-family: monospace;
     font-size: 12px;
     white-space: pre;
     overflow-x: auto;
+
+    :deep(pre.code-block) {
+      background: transparent !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+
+      code {
+        background: transparent !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+      }
+    }
   }
 
   &__tool-result {
@@ -739,12 +769,14 @@ function formatTime(timestamp: number): string {
 
   &__tool-result-content {
     background: var(--b3-theme-background);
-    padding: 6px;
+    padding: 0px;
     border-radius: 4px;
     font-family: monospace;
     font-size: 12px;
     white-space: pre;
     overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
 
     :deep(pre.code-block) {
       background: transparent !important;
