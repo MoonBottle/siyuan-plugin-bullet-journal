@@ -932,7 +932,7 @@ export function showSettingsDialog(plugin: any): Dialog {
   let settingsDialogApp: any = null;
   const dialog = new Dialog({
     title: t('settings').title,
-    content: '<div id="settings-dialog-mount"></div>',
+    content: '<div id="bullet-journal-settings-mount"></div>',
     width: '640px',
     height: '70vh',
     destroyCallback: () => {
@@ -949,7 +949,7 @@ export function showSettingsDialog(plugin: any): Dialog {
   };
 
   setTimeout(() => {
-    const mountEl = dialog.element?.querySelector('#settings-dialog-mount');
+    const mountEl = dialog.element?.querySelector('#bullet-journal-settings-mount');
     if (mountEl) {
       settingsDialogApp = createApp(SettingsDialog, { plugin, closeDialog });
       const pinia = getSharedPinia();

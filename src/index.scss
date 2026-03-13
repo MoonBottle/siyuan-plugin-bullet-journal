@@ -664,12 +664,12 @@
 }
 
 /* 设置弹框：body 不滚动，仅 content 可滚动，footer 固定底部 */
-.b3-dialog__body:has(#settings-dialog-mount) {
+.b3-dialog__body:has(#bullet-journal-settings-mount) {
   overflow: hidden;
   min-height: 0;
 }
 
-#settings-dialog-mount {
+#bullet-journal-settings-mount {
   height: 100%;
   min-height: 0;
   display: flex;
