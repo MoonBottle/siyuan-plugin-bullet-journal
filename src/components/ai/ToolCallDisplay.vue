@@ -147,11 +147,11 @@ async function copyResult() {
   }
 
   &__body {
-    padding: 0 12px 8px;
+    padding: 0 10px 6px;
   }
 
   &__section {
-    margin-top: 8px;
+    margin-top: 6px;
 
     &:first-child {
       margin-top: 0;
@@ -162,7 +162,7 @@ async function copyResult() {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   &__section-title {
@@ -176,9 +176,9 @@ async function copyResult() {
   &__section-content {
     background: var(--b3-theme-surface-lightest);
     border-radius: 4px;
-    padding: 6px 10px;
+    padding: 4px 8px;
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 1.4;
     color: var(--b3-theme-on-surface);
     overflow-x: auto;
 
