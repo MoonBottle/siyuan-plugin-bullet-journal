@@ -127,20 +127,14 @@
     "title": "Settings",
     "searchPlaceholder": "Search settings...",
     "calendar": {
-      "defaultViewTitle": "Calendar Default View",
+      "title": "Calendar",
+      "defaultView": "Default View",
       "defaultViewDesc": "Default view when opening the calendar"
     },
     "lunchBreak": {
       "title": "Lunch Break",
-      "description": "Set lunch break time for work hour calculation",
-      "start": {
-        "title": "Start Time",
-        "description": "Lunch break start time"
-      },
-      "end": {
-        "title": "End Time",
-        "description": "Lunch break end time"
-      }
+      "start": "Start",
+      "end": "End"
     },
     "groupManage": {
       "title": "Group Management",

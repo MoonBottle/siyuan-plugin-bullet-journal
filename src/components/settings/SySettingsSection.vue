@@ -3,16 +3,21 @@
     <div v-if="$slots.header" class="sy-settings-section__header">
       <slot name="header" />
     </div>
-    <div v-else class="sy-settings-section__header">
-      <div class="sy-settings-section__title-row fn__flex">
-        <svg v-if="icon" class="sy-settings-section__icon">
-          <use :xlink:href="`#${icon}`"></use>
-        </svg>
-        <span class="sy-settings-section__title">{{ title }}</span>
+    <div v-else class="sy-settings-section__header" :class="{ 'sy-settings-section__header--inline': $slots.headerRight }">
+      <div class="sy-settings-section__header-left">
+        <div class="sy-settings-section__title-row fn__flex">
+          <svg v-if="icon" class="sy-settings-section__icon">
+            <use :xlink:href="`#${icon}`"></use>
+          </svg>
+          <span class="sy-settings-section__title">{{ title }}</span>
+        </div>
+        <div v-if="description" class="sy-settings-section__description">{{ description }}</div>
       </div>
-      <div v-if="description" class="sy-settings-section__description">{{ description }}</div>
+      <div v-if="$slots.headerRight" class="sy-settings-section__header-right">
+        <slot name="headerRight" />
+      </div>
     </div>
-    <div class="sy-settings-section__content">
+    <div v-if="!$slots.headerRight" class="sy-settings-section__content">
       <slot />
     </div>
   </div>
@@ -38,6 +43,22 @@ defineProps<{
 
 .sy-settings-section__header {
   margin-bottom: 12px;
+}
+
+.sy-settings-section__header--inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.sy-settings-section__header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.sy-settings-section__header-right {
+  flex-shrink: 0;
 }
 
 .sy-settings-section__title-row {

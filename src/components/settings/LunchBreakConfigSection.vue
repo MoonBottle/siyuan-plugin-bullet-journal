@@ -1,12 +1,10 @@
 <template>
-  <SySettingsSection
-    icon="iconClock"
-    :title="t('settings').lunchBreak.title"
-    :description="t('settings').lunchBreak.description"
-  >
-    <div class="sy-lunch-break-fields fn__flex">
-      <div class="sy-lunch-break-field">
-        <label class="sy-lunch-break-field__label">{{ t('settings').lunchBreak.start.title }}</label>
+  <SySettingsSection icon="iconClock" :title="t('settings').lunchBreak.title">
+    <div class="sy-lunch-break-rows">
+      <div class="sy-settings-row fn__flex">
+        <div class="sy-settings-row__left">
+          <span class="sy-settings-row__label">{{ t('settings').lunchBreak.start }}</span>
+        </div>
         <input
           :value="lunchBreakStart"
           type="time"
@@ -14,8 +12,10 @@
           @input="$emit('update:lunchBreakStart', ($event.target as HTMLInputElement).value)"
         />
       </div>
-      <div class="sy-lunch-break-field">
-        <label class="sy-lunch-break-field__label">{{ t('settings').lunchBreak.end.title }}</label>
+      <div class="sy-settings-row fn__flex">
+        <div class="sy-settings-row__left">
+          <span class="sy-settings-row__label">{{ t('settings').lunchBreak.end }}</span>
+        </div>
         <input
           :value="lunchBreakEnd"
           type="time"
@@ -43,20 +43,25 @@ defineEmits<{
 </script>
 
 <style scoped>
-.sy-lunch-break-fields {
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.sy-lunch-break-field {
+.sy-lunch-break-rows {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
-.sy-lunch-break-field__label {
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
+.sy-settings-row {
+  align-items: center;
+  gap: 12px;
+}
+
+.sy-settings-row__left {
+  flex: 1;
+  min-width: 0;
+}
+
+.sy-settings-row__label {
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
 }
 
 .sy-time-input {

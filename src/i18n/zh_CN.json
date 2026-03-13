@@ -126,20 +126,14 @@
     "title": "设置",
     "searchPlaceholder": "搜索配置项...",
     "calendar": {
-      "defaultViewTitle": "日历默认视图",
+      "title": "日历",
+      "defaultView": "默认视图",
       "defaultViewDesc": "打开日历时默认显示的视图"
     },
     "lunchBreak": {
       "title": "午休时间",
-      "description": "用于计算工时时扣除午休时间",
-      "start": {
-        "title": "开始时间",
-        "description": "午休开始时间"
-      },
-      "end": {
-        "title": "结束时间",
-        "description": "午休结束时间"
-      }
+      "start": "开始",
+      "end": "结束"
     },
     "groupManage": {
       "title": "分组管理",
