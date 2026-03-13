@@ -86,8 +86,7 @@ const dateRange = computed(() => {
   };
 });
 
-// 参考 GitHub：只显示周一、周三、周五，不展示全部七个
-const weekDayLabels = ['一', '', '三', '', '五', '', ''];
+const weekDayLabels = (t('pomodoroStats') as any).weekDayLabelsHeatmap ?? ['Mon', '', 'Wed', '', 'Fri', '', ''];
 
 const monthLabels = computed(() => {
   const { startDate } = dateRange.value;
@@ -100,9 +99,10 @@ const monthLabels = computed(() => {
     const month = d.month();
     if (month !== lastMonth) {
       lastMonth = month;
+      const monthNames = (t('pomodoroStats') as any).monthNamesShort ?? [];
       labels.push({
         key: `m-${c}-${month}`,
-        label: `${month + 1}月`,
+        label: monthNames[month] ?? `${month + 1}`,
         col: c + 1
       });
     }
@@ -165,17 +165,19 @@ const summaryText = computed(() => {
   const weeks = Math.round(daysDiff / 7);
 
   let label: string;
+  const ps = t('pomodoroStats') as any;
+  const focusLabel = ps.focusLabel ?? 'Focus';
   if (weeks >= 52) {
     const years = Math.round(weeks / 52);
-    label = `过去 ${years} 年`;
+    label = (ps.pastYearsYears ?? 'Past {years} years').replace('{years}', String(years));
   } else {
-    label = `过去 ${weeks} 周`;
+    label = (ps.pastWeeksWeeks ?? 'Past {weeks} weeks').replace('{weeks}', String(weeks));
   }
 
-  if (m < 60) return `${label}专注 ${m}m`;
+  if (m < 60) return `${label} ${focusLabel} ${m}m`;
   const h = Math.floor(m / 60);
   const mins = m % 60;
-  return mins === 0 ? `${label}专注 ${h}h` : `${label}专注 ${h}h ${mins}m`;
+  return mins === 0 ? `${label} ${focusLabel} ${h}h` : `${label} ${focusLabel} ${h}h ${mins}m`;
 });
 
 function formatDuration(minutes: number): string {

@@ -43,10 +43,10 @@ const dimension = ref<'year' | 'month' | 'week' | 'day'>('week');
 const offset = ref(0);
 
 const dimensionOptions = [
-  { label: '日', value: 'day' },
-  { label: '周', value: 'week' },
-  { label: '月', value: 'month' },
-  { label: '年', value: 'year' }
+  { label: t('pomodoroStats').day, value: 'day' },
+  { label: t('pomodoroStats').week, value: 'week' },
+  { label: t('pomodoroStats').month, value: 'month' },
+  { label: t('pomodoroStats').year, value: 'year' }
 ];
 
 const rangeDates = computed(() => {
@@ -87,15 +87,18 @@ const navLabel = computed(() => {
   switch (dimension.value) {
     case 'year':
       return dayjs().add(offset.value, 'year').format('YYYY');
-    case 'month':
-      return dayjs().add(offset.value, 'month').format('YYYY-M月');
+    case 'month': {
+      const fmtYM = (t('pomodoroStats') as any).formatYearMonth ?? 'YYYY-MMM';
+      return dayjs().add(offset.value, 'month').format(fmtYM);
+    }
     case 'week': {
-      if (offset.value === 0) return '本周';
-      if (offset.value === -1) return '上周';
+      if (offset.value === 0) return t('pomodoroStats').thisWeek;
+      if (offset.value === -1) return t('pomodoroStats').lastWeek;
       const w = dayjs().add(offset.value, 'week');
       const start = w.startOf('week').add(1, 'day');
       const end = w.endOf('week').add(1, 'day');
-      return `${start.format('M月D日')} - ${end.format('M月D日')}`;
+      const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
+      return `${start.format(fmt)} - ${end.format(fmt)}`;
     }
     case 'day':
       return dayjs().add(offset.value, 'day').format('YYYY-MM-DD');
@@ -120,7 +123,8 @@ const chartData = computed(() => {
         total += byDay.get(d) ?? 0;
         current = current.add(1, 'day');
       }
-      result.push({ label: `${m}月`, minutes: total });
+      const monthLabels = (t('pomodoroStats') as any).monthNamesShort ?? [];
+      result.push({ label: monthLabels[m - 1] ?? `${m}`, minutes: total });
     }
   } else if (dimension.value === 'month') {
     let current = dayjs(startDate);
@@ -134,7 +138,7 @@ const chartData = computed(() => {
       current = current.add(1, 'day');
     }
   } else if (dimension.value === 'week') {
-    const dows = ['一', '二', '三', '四', '五', '六', '日'];
+    const dows = (t('pomodoroStats') as any).weekDaysShort ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     let current = dayjs(startDate);
     const end = dayjs(endDate);
     let i = 0;
@@ -291,7 +295,8 @@ function updateChart() {
               if (dimension.value === 'week' || dimension.value === 'month') {
                 const { startDate } = rangeDates.value;
                 const date = dayjs(startDate).add(dataIndex, 'day');
-                title = date.format('M月D日');
+                const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
+                title = date.format(fmt);
               } else {
                 title = item.label;
               }

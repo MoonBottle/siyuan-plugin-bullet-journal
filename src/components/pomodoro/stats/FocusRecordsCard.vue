@@ -74,7 +74,8 @@ function formatDate(dateStr: string): string {
   const d = dayjs(dateStr);
   const today = dayjs();
   if (d.isSame(today, 'day')) return t('pomodoroStats').today;
-  return d.format('M月D日');
+  const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
+  return d.format(fmt);
 }
 
 function formatTimeRange(record: PomodoroRecord): string {
@@ -105,7 +106,7 @@ function getRecordSource(record: PomodoroRecord): string {
     const project = projectStore.projects.find(p => p.id === record.projectId);
     if (project) return project.name;
   }
-  return '未知';
+  return t('pomodoroRecord').unknown;
 }
 
 function getMinutes(r: { actualDurationMinutes?: number; durationMinutes: number }) {

@@ -57,16 +57,17 @@ const weekStart = computed(() => {
 });
 
 const weekLabel = computed(() => {
-  if (weekOffset.value === 0) return '本周';
-  if (weekOffset.value === -1) return '上周';
+  if (weekOffset.value === 0) return t('pomodoroStats').thisWeek;
+  if (weekOffset.value === -1) return t('pomodoroStats').lastWeek;
   const start = weekStart.value;
   const end = start.add(6, 'day');
-  return `${start.format('M月D日')} - ${end.format('M月D日')}`;
+  const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
+  return `${start.format(fmt)} - ${end.format(fmt)}`;
 });
 
 const weekDays = computed(() => {
   const days: { date: string; label: string }[] = [];
-  const dows = ['一', '二', '三', '四', '五', '六', '日'];
+  const dows = (t('pomodoroStats') as any).weekDaysShort ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   for (let i = 0; i < 7; i++) {
     const d = weekStart.value.add(i, 'day');
     days.push({

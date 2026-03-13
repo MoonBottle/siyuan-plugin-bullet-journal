@@ -4,7 +4,7 @@
       <span class="card-label">{{ t('pomodoroStats').todayPomodoros }}</span>
       <span class="card-value">{{ todayCount }}</span>
       <span v-if="todayCountDiff !== null" class="card-diff positive">
-        ↑ {{ t('pomodoroStats').moreThanYesterday }}{{ todayCountDiff > 0 ? todayCountDiff + '个' : '' }}
+        ↑ {{ t('pomodoroStats').moreThanYesterday }}{{ todayCountDiff > 0 ? todayCountDiff + (t('pomodoroStats') as any).countUnit : '' }}
       </span>
     </div>
     <div class="overview-card">

@@ -126,16 +126,18 @@ const rangeLabel = computed(() => {
     return d.format('YYYY-MM-DD');
   }
   if (props.range === 'week') {
-    if (props.rangeOffset === 0) return '本周';
-    if (props.rangeOffset === -1) return '上周';
+    if (props.rangeOffset === 0) return t('pomodoroStats').thisWeek;
+    if (props.rangeOffset === -1) return t('pomodoroStats').lastWeek;
     const w = dayjs().add(props.rangeOffset, 'week');
     const start = w.startOf('week').add(1, 'day');
     const end = w.endOf('week').add(1, 'day');
-    return `${start.format('MM-DD')} ~ ${end.format('MM-DD')}`;
+    const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
+    return `${start.format(fmt)} - ${end.format(fmt)}`;
   }
   if (props.range === 'month') {
     const d = dayjs().add(props.rangeOffset, 'month');
-    return d.format('YYYY-M月');
+    const fmt = (t('pomodoroStats') as any).formatYearMonth ?? 'YYYY-MMM';
+    return d.format(fmt);
   }
   if (props.range === 'year') {
     const y = dayjs().add(props.rangeOffset, 'year');

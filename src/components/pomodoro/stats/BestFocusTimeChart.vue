@@ -40,7 +40,8 @@ const monthRange = computed(() => {
 });
 
 const monthLabel = computed(() => {
-  return dayjs().add(monthOffset.value, 'month').format('M月');
+  const fmt = (t('pomodoroStats') as any).formatMonth ?? 'MMM';
+  return dayjs().add(monthOffset.value, 'month').format(fmt);
 });
 
 const chartData = computed(() => {
