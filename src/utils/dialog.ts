@@ -934,6 +934,7 @@ export function showSettingsDialog(plugin: any): Dialog {
     title: t('settings').title,
     content: '<div id="settings-dialog-mount"></div>',
     width: '640px',
+    height: '70vh',
     destroyCallback: () => {
       if (settingsDialogApp) {
         settingsDialogApp.unmount();

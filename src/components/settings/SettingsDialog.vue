@@ -117,8 +117,8 @@ function handleCancel() {
 .sy-settings-dialog {
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-height: 400px;
-  max-height: 70vh;
 }
 
 .sy-settings-dialog__search {
@@ -159,6 +159,7 @@ function handleCancel() {
 
 .sy-settings-dialog__content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px 24px;
 }
