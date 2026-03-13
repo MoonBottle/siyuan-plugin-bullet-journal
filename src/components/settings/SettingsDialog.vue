@@ -8,7 +8,7 @@
         <input
           v-model="searchQuery"
           type="text"
-          class="b3-text-field fn__block sy-settings-search"
+          class="b3-text-field sy-settings-search"
           :placeholder="t('settings').searchPlaceholder"
         />
       </div>
@@ -124,19 +124,20 @@ function handleCancel() {
 .sy-settings-dialog__search {
   flex-shrink: 0;
   padding: 12px 24px 16px;
-  border-bottom: 1px solid var(--b3-theme-surface-lighter);
-  background: var(--b3-theme-background);
 }
 
 .sy-settings-search-wrap {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
 }
 
 .sy-settings-search__icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   width: 14px;
   height: 14px;
   fill: var(--b3-theme-on-surface-light);
@@ -144,13 +145,18 @@ function handleCancel() {
 }
 
 .sy-settings-search {
-  width: 100%;
-  padding: 8px 12px 8px 32px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0 6px 8px;
   font-size: 13px;
-  background: var(--b3-theme-surface);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
   color: var(--b3-theme-on-surface);
+}
+
+.sy-settings-search:focus {
+  outline: none;
 }
 
 .sy-settings-search::placeholder {
