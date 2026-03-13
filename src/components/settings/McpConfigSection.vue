@@ -5,6 +5,7 @@
     :description="(t('settings') as any).mcp?.description ?? '将任务数据暴露给 Cursor、Claude 等 AI 助手'"
   >
     <SySettingsActionButton
+      icon="iconCopy"
       :text="(t('settings') as any).mcp?.copyButton ?? '复制 MCP 配置'"
       @click="copyMcpConfig"
     />
