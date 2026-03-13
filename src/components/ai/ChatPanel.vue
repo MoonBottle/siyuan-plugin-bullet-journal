@@ -173,7 +173,7 @@ import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import type { Project, ProjectGroup, Item } from '@/types/models';
 import type { AIProviderConfig, ChatMessage as ChatMessageType } from '@/types/ai';
 import { appendBlock, pushMsg } from '@/api';
-import { ensureHeadingNewlines, normalizeExcessiveNewlines } from '@/utils/markdownUtils';
+import { smartFormatMarkdown } from '@/utils/markdownRenderer';
 import { getActiveEditor } from 'siyuan';
 
 // 消息分组类型
@@ -438,10 +438,10 @@ async function handleInsertToNote(message: ChatMessageType) {
   }
 
   try {
-    // 格式化消息内容（预处理 ATX 标题换行 + 压缩多余空行）
+    // 使用 Lute 格式化消息内容（规范化 Markdown 格式 + 压缩多余空行）
     const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
-    const normalizedContent = normalizeExcessiveNewlines(ensureHeadingNewlines(message.content));
-    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${normalizedContent.replace(/\n/g, '\n> ')}`;
+    const formattedContent = smartFormatMarkdown(message.content);
+    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${formattedContent.replace(/\n/g, '\n> ')}`;
 
     await appendBlock('markdown', contentToInsert, docId);
     await pushMsg(t('aiChat').insertSuccess, 3000);

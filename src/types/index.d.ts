@@ -114,6 +114,8 @@ type doOperation = {
 // Lute 渲染引擎接口
 declare interface LuteInstance {
   MarkdownStr: (name: string, content: string) => string;
+  FormatMd?: (content: string) => string;
+  HTML2Md?: (html: string) => string;
 }
 
 declare interface LuteConstructor {
