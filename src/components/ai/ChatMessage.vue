@@ -74,8 +74,8 @@
         >
           {{ message.error }}
         </div>
-        <!-- 工具调用消息：根据 showToolCalls 配置决定是否展示 -->
-        <div v-else-if="message.role === 'tool' && props.showToolCalls !== false" class="chat-message__tool-content">
+        <!-- 工具调用消息（此时已确定需要展示） -->
+        <div v-else-if="message.role === 'tool'" class="chat-message__tool-content">
           <div class="chat-message__tool-header" @click="toggleCollapse">
             <span class="chat-message__tool-icon">
               <svg :class="{ 'rotated': isCollapsed }">
@@ -174,7 +174,9 @@ const props = defineProps<{
   isGrouped?: boolean;  // 是否为分组内的消息
   isFirst?: boolean;    // 是否为组内第一条
   isLast?: boolean;     // 是否为组内最后一条
-  showToolCalls?: boolean; // 是否展示工具调用详情
+  showHeader?: boolean; // 是否显示头部（由父组件控制）
+  showFooter?: boolean; // 是否显示底部（token统计，由父组件控制）
+  showInsertBtn?: boolean; // 是否显示插入按钮（由父组件控制）
 }>();
 
 const emit = defineEmits<{
@@ -183,28 +185,6 @@ const emit = defineEmits<{
 
 const isCollapsed = ref(true);
 const isReasoningCollapsed = ref(true);
-
-// 是否可以插入到笔记（只有 assistant 消息且非加载状态可以插入）
-const canInsertToNote = computed(() => {
-  return props.message.role === 'assistant' && !props.message.loading && props.message.content;
-});
-
-// 是否在本条消息上显示头部（头像、名称、时间）。分组时由 Panel 在卡片外统一显示一条，此处不显示
-const showHeader = computed(() => {
-  return !props.isGrouped || props.message.role === 'user';
-});
-
-// 是否显示 footer（token 统计和插入按钮）
-// 只有 assistant 消息且不含 toolCalls 时才显示 footer
-// 含 toolCalls 的消息是中间步骤，不显示 footer，只在最终回答展示
-const showFooter = computed(() => {
-  return props.message.role === 'assistant' && !props.message.toolCalls?.length;
-});
-
-// 是否显示插入按钮
-const showInsertBtn = computed(() => {
-  return props.isLast && canInsertToNote.value;
-});
 
 const roleText = computed(() => {
   const ai = t('aiChat') as Record<string, string>;

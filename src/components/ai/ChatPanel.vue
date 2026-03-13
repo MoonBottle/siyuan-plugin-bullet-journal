@@ -25,7 +25,7 @@
       </div>
       <template v-else>
         <div
-          v-for="(group, groupIndex) in messageGroups"
+          v-for="(group, groupIndex) in enhancedMessageGroups"
           :key="groupIndex"
           class="chat-message-group"
           :class="`chat-message-group--${group.type}`"
@@ -43,18 +43,19 @@
                 </span>
               </div>
               <div class="chat-message-group__card">
-                <template v-for="(message, msgIndex) in group.messages" :key="message.id">
-                  <ChatMessage
-                    v-if="shouldRenderMessage(message)"
-                    :message="message"
-                    :tool-call-info="getMessageToolCallInfo(message)"
-                    :show-tool-calls="props.showToolCalls !== false"
-                    :is-grouped="true"
-                    :is-first="!group.messages.slice(0, msgIndex).some(m => shouldRenderMessage(m))"
-                    :is-last="!group.messages.slice(msgIndex + 1).some(m => shouldRenderMessage(m))"
-                    @insert-to-note="handleInsertToNote"
-                  />
-                </template>
+                <ChatMessage
+                  v-for="(message, msgIndex) in group.messages"
+                  :key="message.id"
+                  :message="message"
+                  :tool-call-info="message.toolCallInfo"
+                  :is-grouped="true"
+                  :is-first="msgIndex === group.firstRenderIndex"
+                  :is-last="msgIndex === group.lastRenderIndex"
+                  :show-header="message.showHeader"
+                  :show-footer="message.showFooter"
+                  :show-insert-btn="message.showInsertBtn"
+                  @insert-to-note="handleInsertToNote"
+                />
               </div>
             </template>
             <!-- 用户组 -->
@@ -63,11 +64,13 @@
                 v-for="(message, msgIndex) in group.messages"
                 :key="message.id"
                 :message="message"
-                :tool-call-info="getMessageToolCallInfo(message)"
-                :show-tool-calls="props.showToolCalls !== false"
+                :tool-call-info="message.toolCallInfo"
                 :is-grouped="false"
-                :is-first="msgIndex === 0"
-                :is-last="msgIndex === group.messages.length - 1"
+                :is-first="msgIndex === group.firstRenderIndex"
+                :is-last="msgIndex === group.lastRenderIndex"
+                :show-header="message.showHeader"
+                :show-footer="message.showFooter"
+                :show-insert-btn="message.showInsertBtn"
                 @insert-to-note="handleInsertToNote"
               />
             </template>
@@ -176,11 +179,25 @@ import { appendBlock, pushMsg } from '@/api';
 import { smartFormatMarkdown } from '@/utils/markdownRenderer';
 import { getActiveEditor } from 'siyuan';
 
-// 消息分组类型
-interface MessageGroup {
+// 带渲染元数据的消息
+interface RenderMessage extends ChatMessageType {
+  // 工具调用信息（如果是 tool 消息，用于显示工具名称和参数）
+  toolCallInfo: { name: string; arguments: string } | null;
+  // 是否显示头部（头像、名称、时间）
+  showHeader: boolean;
+  // 是否显示底部（token 统计）
+  showFooter: boolean;
+  // 是否显示插入按钮
+  showInsertBtn: boolean;
+}
+
+// 增强的消息组
+interface EnhancedMessageGroup {
   type: 'user' | 'assistant';
-  messages: ChatMessageType[];
+  messages: RenderMessage[];
   firstMessage: ChatMessageType;
+  firstRenderIndex: number;
+  lastRenderIndex: number;
 }
 
 const props = defineProps<{
@@ -263,45 +280,120 @@ watch(() => enabledProviders.value, (providers) => {
   }
 }, { immediate: true });
 
-// 过滤掉系统消息
-const visibleMessages = computed(() => {
-  return messages.value.filter(m => m.role !== 'system');
-});
+// 计算工具调用信息
+function computeToolCallInfo(message: ChatMessageType) {
+  if (message.role !== 'tool' || !message.toolCallId) {
+    return null;
+  }
 
-// 消息分组：连续的 AI 消息合并为一组
-const messageGroups = computed(() => {
-  const groups: MessageGroup[] = [];
-  let currentGroup: MessageGroup | null = null;
+  // 从当前消息位置向前查找，找到最近的一条包含该 toolCallId 的 assistant 消息
+  const messageIndex = messages.value.findIndex(m => m.id === message.id);
+  const searchStartIndex = messageIndex >= 0 ? messageIndex : messages.value.length;
 
-  for (const message of visibleMessages.value) {
-    if (message.role === 'user') {
-      // 用户消息单独成组
-      if (currentGroup) groups.push(currentGroup);
-      currentGroup = {
-        type: 'user',
-        messages: [message],
-        firstMessage: message
-      };
-    } else {
-      // AI 消息（assistant/tool）
-      if (currentGroup?.type === 'assistant') {
-        // 继续当前 AI 组
-        currentGroup.messages.push(message);
-      } else {
-        // 开始新的 AI 组
-        if (currentGroup) groups.push(currentGroup);
-        currentGroup = {
-          type: 'assistant',
-          messages: [message],
-          firstMessage: message
+  for (let i = searchStartIndex - 1; i >= 0; i--) {
+    const msg = messages.value[i];
+    if (msg.role === 'assistant' && msg.toolCalls) {
+      const toolCall = msg.toolCalls.find((tc: any) => tc.id === message.toolCallId);
+      if (toolCall) {
+        return {
+          name: toolCall.function.name,
+          arguments: toolCall.function.arguments
         };
       }
     }
   }
 
-  if (currentGroup) groups.push(currentGroup);
+  return null;
+}
+
+// 增强的消息分组：预计算所有渲染相关的元数据
+const enhancedMessageGroups = computed<EnhancedMessageGroup[]>(() => {
+  const groups: EnhancedMessageGroup[] = [];
+  let currentGroup: EnhancedMessageGroup | null = null;
+
+  for (const message of messages.value) {
+    // 跳过系统消息
+    if (message.role === 'system') continue;
+
+    // 如果 showToolCalls 为 false，直接过滤 tool 消息
+    if (message.role === 'tool' && props.showToolCalls === false) continue;
+
+    // 预计算工具调用信息
+    const toolCallInfo = message.role === 'tool'
+      ? computeToolCallInfo(message)
+      : null;
+
+    // showHeader: 用户消息显示头部，AI 消息在分组模式下不显示（由 Panel 统一显示）
+    const showHeader = message.role === 'user';
+
+    // showFooter: 只有 assistant 消息且不含 toolCalls 时才显示
+    const showFooter = message.role === 'assistant' && !message.toolCalls?.length;
+
+    const renderMessage: RenderMessage = {
+      ...message,
+      toolCallInfo,
+      showHeader,
+      showFooter,
+      showInsertBtn: false // 临时值，后面根据 isLast 设置
+    };
+
+    // 分组逻辑
+    if (message.role === 'user') {
+      // 用户消息单独成组
+      if (currentGroup) {
+        // 设置上一组的插入按钮
+        setInsertBtnForGroup(currentGroup);
+        groups.push(currentGroup);
+      }
+      currentGroup = {
+        type: 'user',
+        messages: [renderMessage],
+        firstMessage: message,
+        firstRenderIndex: 0,
+        lastRenderIndex: 0
+      };
+    } else {
+      // AI 消息（assistant/tool）
+      if (currentGroup?.type === 'assistant') {
+        const idx = currentGroup.messages.length;
+        currentGroup.messages.push(renderMessage);
+        currentGroup.lastRenderIndex = idx;
+      } else {
+        if (currentGroup) {
+          setInsertBtnForGroup(currentGroup);
+          groups.push(currentGroup);
+        }
+        currentGroup = {
+          type: 'assistant',
+          messages: [renderMessage],
+          firstMessage: message,
+          firstRenderIndex: 0,
+          lastRenderIndex: 0
+        };
+      }
+    }
+  }
+
+  if (currentGroup) {
+    setInsertBtnForGroup(currentGroup);
+    groups.push(currentGroup);
+  }
+
   return groups;
 });
+
+// 设置组的插入按钮（只有最后一条可插入的 assistant 消息显示）
+function setInsertBtnForGroup(group: EnhancedMessageGroup) {
+  if (group.type === 'assistant' && group.lastRenderIndex >= 0) {
+    const lastMsg = group.messages[group.lastRenderIndex];
+    const canInsert = lastMsg.role === 'assistant' &&
+                     !lastMsg.loading &&
+                     lastMsg.content?.trim();
+    if (canInsert) {
+      lastMsg.showInsertBtn = true;
+    }
+  }
+}
 
 const inputPlaceholder = computed(() => {
   if (!isAIEnabled.value) {
@@ -375,48 +467,6 @@ function handleOpenSettings() {
 
 function focusInput() {
   chatInputRef.value?.focus();
-}
-
-// 无可见内容的消息不渲染，避免空 DOM 占高度（逻辑需与 ChatMessage 显示规则一致）
-function shouldRenderMessage(message: ChatMessageType): boolean {
-  const m = message;
-  // 工具调用消息：根据 showToolCalls 配置决定是否展示
-  if (m.role === 'tool' && props.showToolCalls === false) return false;
-  if (m.role !== 'assistant') return true;
-  if (m.loading || m.error) return true;
-  if (m.content?.trim()) return true;
-  // reasoning 仅在没有 toolCalls 时显示
-  if (m.reasoning?.trim() && !(m.toolCalls && m.toolCalls.length)) return true;
-  // usage 仅在无 toolCalls 时显示
-  if (m.usage && !(m.toolCalls && m.toolCalls.length)) return true;
-  return false;
-}
-
-// 获取消息对应的工具调用信息
-function getMessageToolCallInfo(message: any) {
-  if (message.role !== 'tool' || !message.toolCallId) {
-    return null;
-  }
-
-  // 查找对应的 assistant 消息，获取 toolCalls
-  // 从当前消息位置向前查找，找到最近的一条包含该 toolCallId 的 assistant 消息
-  const messageIndex = messages.value.findIndex(m => m.id === message.id);
-  const searchStartIndex = messageIndex >= 0 ? messageIndex : messages.value.length;
-
-  for (let i = searchStartIndex - 1; i >= 0; i--) {
-    const msg = messages.value[i];
-    if (msg.role === 'assistant' && msg.toolCalls) {
-      const toolCall = msg.toolCalls.find((tc: any) => tc.id === message.toolCallId);
-      if (toolCall) {
-        return {
-          name: toolCall.function.name,
-          arguments: toolCall.function.arguments
-        };
-      }
-    }
-  }
-
-  return null;
 }
 
 // 获取当前激活的文档 ID
