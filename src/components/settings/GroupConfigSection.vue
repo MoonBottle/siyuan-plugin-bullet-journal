@@ -114,7 +114,8 @@ function removeGroup(index: number) {
 }
 
 .sy-group-default-select {
-  min-width: 100px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .sy-group-list {
