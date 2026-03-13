@@ -1,7 +1,10 @@
 <template>
   <SySettingsSection icon="iconGroups" :title="t('settings').groupManage.title" :description="t('settings').groupManage.description">
-    <div class="sy-group-top fn__flex" style="align-items: center; gap: 8px; margin-bottom: 8px;">
-      <span class="sy-group-default-label">{{ t('settings').groupManage.defaultLabel }}</span>
+    <div class="sy-group-default-row fn__flex">
+      <div class="sy-group-default-row__left">
+        <span class="sy-group-default-row__label">{{ t('settings').projectGroups.defaultGroupTitle }}</span>
+        <span class="sy-group-default-row__desc">{{ t('settings').projectGroups.defaultGroupDesc }}</span>
+      </div>
       <SySelect
         :model-value="defaultGroup"
         :options="groupSelectOptions"
@@ -24,7 +27,7 @@
         />
         <SyButton
           icon="iconTrashcan"
-          :aria-label="t('settings').projectGroups.deleteButton"
+          :ariaLabel="t('settings').projectGroups.deleteButton"
           @click="removeGroup(index)"
         />
       </div>
@@ -86,9 +89,28 @@ function removeGroup(index: number) {
 </script>
 
 <style scoped>
-.sy-group-default-label {
+.sy-group-default-row {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sy-group-default-row__left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sy-group-default-row__label {
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
+}
+
+.sy-group-default-row__desc {
   font-size: 12px;
-  color: var(--b3-theme-on-surface);
+  color: var(--b3-theme-on-surface-light);
 }
 
 .sy-group-default-select {
