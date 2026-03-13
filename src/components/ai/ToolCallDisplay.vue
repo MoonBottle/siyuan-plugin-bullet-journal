@@ -200,7 +200,7 @@ async function copyResult() {
     }
 
     &--scrollable {
-      max-height: 400px;
+      max-height: 200px;
       overflow-y: auto;
     }
   }
