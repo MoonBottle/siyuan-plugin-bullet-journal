@@ -170,7 +170,7 @@
     },
     "ai": {
       "title": "AI Service Config",
-      "description": "Configure AI service provider to enable sidebar AI chat",
+      "description": "Configure LLM service for intelligent conversations with the task assistant",
       "enableLabel": "Enable AI Chat",
       "providerLabel": "Provider",
       "modelLabel": "Model",

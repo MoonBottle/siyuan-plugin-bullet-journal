@@ -170,7 +170,7 @@
     },
     "ai": {
       "title": "AI 服务配置",
-      "description": "配置 AI 服务商，启用侧边栏 AI 对话功能",
+      "description": "配置大语言模型服务，与任务助手进行智能对话",
       "enableLabel": "启用 AI 对话",
       "providerLabel": "服务商",
       "modelLabel": "模型",
