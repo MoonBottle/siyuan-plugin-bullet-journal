@@ -36,32 +36,12 @@
     <div class="chat-message__content">
       <div class="chat-message__body">
         <!-- 思考过程（reasoning）：仅在没有 toolCalls 的 assistant 消息上显示，避免与下一句重复 -->
-        <div
+        <ReasoningDisplay
           v-if="message.reasoning && !(message.toolCalls && message.toolCalls.length)"
-          class="chat-message__reasoning"
-          :class="{ 'chat-message__reasoning--collapsed': isReasoningCollapsed }"
-        >
-          <div class="chat-message__reasoning-header" @click="toggleReasoning">
-            <span class="chat-message__reasoning-icon">
-              <svg v-if="isReasoningCollapsed">
-                <use xlink:href="#iconDown"></use>
-              </svg>
-              <svg v-else>
-                <use xlink:href="#iconUp"></use>
-              </svg>
-            </span>
-            <span class="chat-message__reasoning-title">{{ t('aiChat').reasoningTitle }}</span>
-            <!-- 仅在没有 reasoning 内容时显示加载点，避免与思考内容同时闪 -->
-            <span v-if="message.loading && !message.content && !message.reasoning" class="chat-message__reasoning-loading">
-              <span class="loading-dot"></span>
-              <span class="loading-dot"></span>
-              <span class="loading-dot"></span>
-            </span>
-          </div>
-          <div v-if="!isReasoningCollapsed" class="chat-message__reasoning-content">
-            {{ message.reasoning }}
-          </div>
-        </div>
+          :content="message.reasoning"
+          :loading="message.loading && !message.content"
+          :default-collapsed="true"
+        />
 
         <div
           v-if="message.loading && !message.reasoning && !message.content"
@@ -147,6 +127,7 @@ import { t } from '@/i18n';
 import { renderMarkdown } from '@/utils/markdownRenderer';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
 import ToolCallDisplay from './ToolCallDisplay.vue';
+import ReasoningDisplay from './ReasoningDisplay.vue';
 import type { ChatMessage } from '@/types/ai';
 
 const props = defineProps<{
@@ -167,8 +148,6 @@ const emit = defineEmits<{
   insertToNote: [message: ChatMessage];
 }>();
 
-const isReasoningCollapsed = ref(true);
-
 const roleText = computed(() => {
   const ai = t('aiChat') as Record<string, string>;
   switch (props.message.role) {
@@ -184,10 +163,6 @@ const roleText = computed(() => {
       return ai.roleUnknown ?? '未知';
   }
 });
-
-function toggleReasoning() {
-  isReasoningCollapsed.value = !isReasoningCollapsed.value;
-}
 
 function handleInsertToNote() {
   emit('insertToNote', props.message);
@@ -641,83 +616,6 @@ function formatTime(timestamp: number): string {
   /* 仅助手回答内容增加上下留白，用户消息不受影响 */
   &--assistant &__text {
     margin: 6px 0;
-  }
-
-  // 思考过程样式（与下方 token 统计横线保持紧凑）
-  &__reasoning {
-    margin-bottom: 2px;
-    background: var(--b3-theme-surface-lighter);
-    border-radius: var(--b3-border-radius);
-    overflow: hidden;
-  }
-
-  &__reasoning-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: var(--b3-theme-surface-lightest);
-    }
-  }
-
-  &__reasoning-icon {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 12px;
-      height: 12px;
-      fill: var(--b3-theme-on-surface);
-      transition: transform 0.2s;
-
-      &.rotated {
-        transform: rotate(90deg);
-      }
-    }
-  }
-
-  &__reasoning-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--b3-theme-on-surface);
-  }
-
-  &__reasoning-loading {
-    display: flex;
-    gap: 3px;
-    margin-left: auto;
-
-    .loading-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--b3-theme-primary);
-      animation: loading-bounce 1.4s infinite ease-in-out both;
-
-      &:nth-child(1) {
-        animation-delay: -0.32s;
-      }
-
-      &:nth-child(2) {
-        animation-delay: -0.16s;
-      }
-    }
-  }
-
-  &__reasoning-content {
-    padding: 6px 12px 8px;
-    font-size: 12px;
-    line-height: 1.6;
-    color: var(--b3-theme-on-surface);
-    white-space: pre-wrap;
-    border-top: 1px solid var(--b3-theme-surface-lightest);
   }
 
   // Token 统计样式
