@@ -160,9 +160,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { marked } from 'marked';
 import { t } from '@/i18n';
-import { ensureHeadingNewlines } from '@/utils/markdownUtils';
+import { renderMarkdown } from '@/utils/markdownRenderer';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
 import type { ChatMessage } from '@/types/ai';
 
@@ -249,7 +248,7 @@ function getToolParams(): string | null {
 }
 
 const renderedContent = computed(() => {
-  let content = props.message.content;
+  const content = props.message.content;
 
   // 检查是否为 JSON 格式
   let isJSON = false;
@@ -287,12 +286,9 @@ const renderedContent = computed(() => {
     }
   }
 
-  // 预处理：确保行中的 ATX 标题前有换行（marked 要求标题在行首）
-  content = ensureHeadingNewlines(content);
-
-  // 使用 marked.js 渲染 Markdown
+  // 使用思源 Lute 渲染 Markdown
   try {
-    return marked(content);
+    return renderMarkdown(content);
   } catch (error) {
     console.error('Markdown rendering error:', error);
     // 渲染失败，返回原始内容
@@ -507,7 +503,8 @@ function formatTime(timestamp: number): string {
       font-size: 14px;
     }
 
-    :deep(pre.code-block) {
+    // Lute 渲染的代码块样式
+    :deep(pre) {
       background: var(--b3-theme-surface-lighter);
       padding: 8px;
       border-radius: var(--b3-border-radius);
@@ -521,8 +518,14 @@ function formatTime(timestamp: number): string {
         font-size: 13px;
         white-space: pre;
       }
+
+      // Lute 使用 hljs 进行代码高亮
+      code.hljs {
+        background: none;
+      }
     }
 
+    // 保留 json-code 类用于 JSON 内容
     :deep(pre.json-code) {
       background: var(--b3-theme-surface-lighter);
       padding: 8px;
@@ -540,7 +543,8 @@ function formatTime(timestamp: number): string {
       }
     }
 
-    :deep(code.inline-code) {
+    // 行内代码样式
+    :deep(code:not(pre code)) {
       background: var(--b3-theme-surface-lighter);
       padding: 2px 6px;
       border-radius: 4px;
