@@ -74,36 +74,13 @@
         >
           {{ message.error }}
         </div>
-        <!-- 工具调用消息（此时已确定需要展示） -->
-        <div v-else-if="message.role === 'tool'" class="chat-message__tool-content">
-          <div class="chat-message__tool-header" @click="toggleCollapse">
-            <span class="chat-message__tool-icon">
-              <svg :class="{ 'rotated': isCollapsed }">
-                <use xlink:href="#iconRight"></use>
-              </svg>
-            </span>
-            <span class="chat-message__tool-icon-tool">
-              <svg><use xlink:href="#iconPlugin"></use></svg>
-            </span>
-            <span class="chat-message__tool-name">{{ getToolName() }}</span>
-          </div>
-          <div v-if="!isCollapsed" class="chat-message__tool-body">
-            <!-- 显示工具参数 -->
-            <div v-if="getToolParams()" class="chat-message__tool-params">
-              <div class="chat-message__tool-params-title">{{ t('aiChat').toolParamsTitle }}</div>
-              <div class="chat-message__tool-params-content">
-                <div v-html="renderedToolParams"></div>
-              </div>
-            </div>
-            <!-- 显示工具结果 -->
-            <div class="chat-message__tool-result">
-              <div class="chat-message__tool-result-title">{{ t('aiChat').toolResultTitle }}</div>
-              <div class="chat-message__tool-result-content">
-                <div v-html="renderedContent"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- 工具调用消息 -->
+        <ToolCallDisplay
+          v-else-if="message.role === 'tool'"
+          :tool-name="getToolName()"
+          :params="toolCallInfo?.arguments"
+          :result="message.content"
+        />
         <div
           v-else-if="message.content"
           class="chat-message__text"
@@ -165,6 +142,7 @@ import { ref, computed } from 'vue';
 import { t } from '@/i18n';
 import { renderMarkdown } from '@/utils/markdownRenderer';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
+import ToolCallDisplay from './ToolCallDisplay.vue';
 import type { ChatMessage } from '@/types/ai';
 
 const props = defineProps<{
@@ -185,7 +163,6 @@ const emit = defineEmits<{
   insertToNote: [message: ChatMessage];
 }>();
 
-const isCollapsed = ref(true);
 const isReasoningCollapsed = ref(true);
 
 const roleText = computed(() => {
@@ -203,10 +180,6 @@ const roleText = computed(() => {
       return ai.roleUnknown ?? '未知';
   }
 });
-
-function toggleCollapse() {
-  isCollapsed.value = !isCollapsed.value;
-}
 
 function toggleReasoning() {
   isReasoningCollapsed.value = !isReasoningCollapsed.value;
@@ -227,19 +200,7 @@ function getToolName(): string {
   return ai.tool ?? '工具';
 }
 
-// 获取工具调用的参数
-function getToolParams(): string | null {
-  if (!props.toolCallInfo?.arguments) return null;
-  
-  try {
-    // 尝试解析参数 JSON，格式化显示
-    const parsed = JSON.parse(props.toolCallInfo.arguments);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    // 解析失败，返回原始参数
-    return props.toolCallInfo.arguments;
-  }
-}
+
 
 const renderedContent = computed(() => {
   const content = props.message.content;
@@ -285,23 +246,6 @@ const renderedContent = computed(() => {
     console.error('Markdown rendering error:', error);
     // 渲染失败，返回原始内容
     return content;
-  }
-});
-
-// 渲染工具参数（使用 Lute 代码块渲染）
-const renderedToolParams = computed(() => {
-  const params = getToolParams();
-  if (!params) return '';
-
-  try {
-    const parsed = JSON.parse(params);
-    const formatted = JSON.stringify(parsed, null, 2);
-    // 使用 Lute 渲染 Markdown 代码块
-    const jsonMarkdown = '```json\n' + formatted + '\n```';
-    return renderMarkdown(jsonMarkdown);
-  } catch {
-    // 解析失败，返回原始内容
-    return params;
   }
 });
 
@@ -654,141 +598,6 @@ function formatTime(timestamp: number): string {
       display: block;
       content: '';
       margin: 4px 0;
-    }
-  }
-
-  &__tool-content {
-    width: 100%;
-  }
-
-  &__tool-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    padding: 2px 0 2px 12px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: var(--b3-theme-surface-lighter);
-    }
-  }
-
-  &__tool-icon {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 12px;
-      height: 12px;
-      fill: var(--b3-theme-on-surface);
-      transition: transform 0.2s;
-
-      &.rotated {
-        transform: rotate(90deg);
-      }
-    }
-  }
-
-  &__tool-icon-tool {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 14px;
-      height: 14px;
-      fill: var(--b3-theme-secondary);
-    }
-  }
-
-  &__tool-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--b3-theme-secondary);
-  }
-
-  &__tool-body {
-    margin-top: 4px;
-    padding: 6px;
-    background: var(--b3-theme-surface-lighter);
-    border-radius: var(--b3-border-radius);
-    overflow-x: auto;
-  }
-
-  &__tool-params {
-    margin-bottom: 8px;
-  }
-
-  &__tool-params-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--b3-theme-secondary);
-    margin-bottom: 2px;
-  }
-
-  &__tool-params-content {
-    background: var(--b3-theme-background);
-    padding: 0;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    white-space: pre;
-    overflow-x: auto;
-
-    :deep(pre.code-block) {
-      background: transparent !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      border-radius: 0 !important;
-
-      code {
-        background: transparent !important;
-        padding: 0 !important;
-        font-size: 12px !important;
-      }
-    }
-  }
-
-  &__tool-result {
-    margin-top: 6px;
-  }
-
-  &__tool-result-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--b3-theme-secondary);
-    margin-bottom: 2px;
-  }
-
-  &__tool-result-content {
-    background: var(--b3-theme-background);
-    padding: 0px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    white-space: pre;
-    overflow-x: auto;
-    max-height: 400px;
-    overflow-y: auto;
-
-    :deep(pre.code-block) {
-      background: transparent !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      border-radius: 0 !important;
-
-      code {
-        background: transparent !important;
-        padding: 0 !important;
-        font-size: 12px !important;
-      }
     }
   }
 
