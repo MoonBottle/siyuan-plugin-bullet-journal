@@ -1,13 +1,26 @@
 <template>
   <div class="sy-settings-dialog">
+    <div class="sy-settings-dialog__search">
+      <div class="sy-settings-search-wrap">
+        <svg class="sy-settings-search__icon">
+          <use xlink:href="#iconSearch"></use>
+        </svg>
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="b3-text-field fn__block sy-settings-search"
+          :placeholder="t('settings').searchPlaceholder"
+        />
+      </div>
+    </div>
     <div class="sy-settings-dialog__content">
-      <DirectoryConfigSection v-model:directories="local.directories" v-model:default-group="local.defaultGroup" :groups="local.groups" />
-      <GroupConfigSection v-model:groups="local.groups" v-model:default-group="local.defaultGroup" v-model:directories="local.directories" />
-      <PomodoroConfigSection v-model:pomodoro="local.pomodoro" />
-      <CalendarConfigSection v-model:calendar-default-view="local.calendarDefaultView" />
-      <AiConfigSection v-model:ai="local.ai" />
-      <McpConfigSection />
-      <LunchBreakConfigSection v-model:lunch-break-start="local.lunchBreakStart" v-model:lunch-break-end="local.lunchBreakEnd" />
+      <DirectoryConfigSection v-show="sectionVisible('dir')" v-model:directories="local.directories" v-model:default-group="local.defaultGroup" :groups="local.groups" />
+      <GroupConfigSection v-show="sectionVisible('group')" v-model:groups="local.groups" v-model:default-group="local.defaultGroup" v-model:directories="local.directories" />
+      <PomodoroConfigSection v-show="sectionVisible('pomodoro')" v-model:pomodoro="local.pomodoro" />
+      <CalendarConfigSection v-show="sectionVisible('calendar')" v-model:calendar-default-view="local.calendarDefaultView" />
+      <AiConfigSection v-show="sectionVisible('ai')" v-model:ai="local.ai" />
+      <McpConfigSection v-show="sectionVisible('mcp')" />
+      <LunchBreakConfigSection v-show="sectionVisible('lunch')" v-model:lunch-break-start="local.lunchBreakStart" v-model:lunch-break-end="local.lunchBreakEnd" />
     </div>
     <div class="sy-settings-dialog__footer">
       <button type="button" class="b3-button b3-button--cancel" @click="handleCancel">
@@ -21,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
+import { reactive, ref, watch, computed } from 'vue';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { t } from '@/i18n';
 import type { SettingsData } from '@/settings/types';
@@ -38,6 +51,39 @@ const props = defineProps<{
   plugin: any;
   closeDialog: () => void;
 }>();
+
+const searchQuery = ref('');
+
+/** 递归收集对象中所有字符串值，用于搜索匹配 */
+function collectStrings(obj: unknown): string[] {
+  if (obj == null) return [];
+  if (typeof obj === 'string') return [obj];
+  if (Array.isArray(obj)) return obj.flatMap(collectStrings);
+  if (typeof obj === 'object') {
+    return Object.values(obj).flatMap(collectStrings);
+  }
+  return [];
+}
+
+const sectionKeywords: Record<string, string> = computed(() => {
+  const s = t('settings') as Record<string, unknown>;
+  return {
+    dir: collectStrings({ dirConfig: s.dirConfig, projectDirectories: s.projectDirectories }).join(' '),
+    group: collectStrings({ groupManage: s.groupManage, projectGroups: s.projectGroups }).join(' '),
+    pomodoro: collectStrings(s.pomodoro).join(' '),
+    calendar: collectStrings(s.calendar).join(' '),
+    ai: collectStrings(s.ai).join(' '),
+    mcp: collectStrings(s.mcp).join(' '),
+    lunch: collectStrings(s.lunchBreak).join(' ')
+  };
+});
+
+function sectionVisible(key: string): boolean {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return true;
+  const kw = sectionKeywords.value[key]?.toLowerCase() ?? '';
+  return kw.includes(q);
+}
 
 function cloneSettings(data: SettingsData): SettingsData {
   const merged = { ...defaultSettings, ...data };
@@ -73,6 +119,42 @@ function handleCancel() {
   flex-direction: column;
   min-height: 400px;
   max-height: 70vh;
+}
+
+.sy-settings-dialog__search {
+  flex-shrink: 0;
+  padding: 12px 24px 16px;
+  border-bottom: 1px solid var(--b3-theme-surface-lighter);
+  background: var(--b3-theme-background);
+}
+
+.sy-settings-search-wrap {
+  position: relative;
+}
+
+.sy-settings-search__icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  fill: var(--b3-theme-on-surface-light);
+  pointer-events: none;
+}
+
+.sy-settings-search {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  font-size: 13px;
+  background: var(--b3-theme-surface);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 6px;
+  color: var(--b3-theme-on-surface);
+}
+
+.sy-settings-search::placeholder {
+  color: var(--b3-theme-on-surface-light);
 }
 
 .sy-settings-dialog__content {

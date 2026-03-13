@@ -124,6 +124,7 @@
   },
   "settings": {
     "title": "设置",
+    "searchPlaceholder": "搜索配置项...",
     "calendar": {
       "defaultViewTitle": "日历默认视图",
       "defaultViewDesc": "打开日历时默认显示的视图"

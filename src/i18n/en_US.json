@@ -125,6 +125,7 @@
   },
   "settings": {
     "title": "Settings",
+    "searchPlaceholder": "Search settings...",
     "calendar": {
       "defaultViewTitle": "Calendar Default View",
       "defaultViewDesc": "Default view when opening the calendar"
