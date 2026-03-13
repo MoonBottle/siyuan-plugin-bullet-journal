@@ -27,7 +27,7 @@
         <SySwitch v-model="dir.enabled" />
       </div>
     </div>
-    <SySettingsActionButton icon="iconAdd" :text="'+ ' + t('settings').projectDirectories.addButton" @click="addDir" />
+    <SySettingsActionButton icon="iconAdd" :text="t('settings').projectDirectories.addButton" @click="addDir" />
   </SySettingsSection>
 </template>
 

@@ -38,18 +38,20 @@ defineProps<{
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
-  padding: 16px;
+  overflow: hidden;
 }
 
 .sy-settings-section__header {
-  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: var(--b3-theme-surface);
+  border-bottom: 1px solid var(--b3-border-color);
 }
 
 .sy-settings-section__header--inline {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 0;
+  border-bottom: none;
 }
 
 .sy-settings-section__header-left {
@@ -75,7 +77,7 @@ defineProps<{
 }
 
 .sy-settings-section__title {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
   color: var(--b3-theme-on-background);
 }
@@ -88,6 +90,6 @@ defineProps<{
 }
 
 .sy-settings-section__content {
-  margin-top: 12px;
+  padding: 16px;
 }
 </style>

@@ -29,7 +29,7 @@
         />
       </div>
     </div>
-    <SySettingsActionButton icon="iconAdd" :text="'+ ' + t('settings').projectGroups.addButton" @click="addGroup" />
+    <SySettingsActionButton icon="iconAdd" :text="t('settings').projectGroups.addButton" @click="addGroup" />
   </SySettingsSection>
 </template>
 
