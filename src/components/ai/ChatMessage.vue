@@ -83,6 +83,7 @@
           :tool-name="getToolName()"
           :params="toolCallInfo?.arguments"
           :result="message.content"
+          :default-collapsed="true"
         />
         <div
           v-else-if="message.content"
