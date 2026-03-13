@@ -22,11 +22,15 @@ defineProps<{
 
 <style scoped>
 .sy-settings-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  padding: 16px;
 }
 
 .sy-settings-section__header {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .sy-settings-section__title {
@@ -43,6 +47,6 @@ defineProps<{
 }
 
 .sy-settings-section__content {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 </style>
