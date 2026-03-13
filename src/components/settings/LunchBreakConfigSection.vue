@@ -1,5 +1,6 @@
 <template>
   <SySettingsSection
+    icon="iconClock"
     :title="t('settings').lunchBreak.title"
     :description="t('settings').lunchBreak.description"
   >

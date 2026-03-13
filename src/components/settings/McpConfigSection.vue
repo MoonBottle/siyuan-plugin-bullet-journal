@@ -1,5 +1,6 @@
 <template>
   <SySettingsSection
+    icon="iconLink"
     :title="(t('settings') as any).mcp?.title ?? 'MCP 配置'"
     :description="(t('settings') as any).mcp?.description ?? '将任务数据暴露给 Cursor、Claude 等 AI 助手'"
   >

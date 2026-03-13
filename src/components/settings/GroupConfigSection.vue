@@ -1,5 +1,5 @@
 <template>
-  <SySettingsSection :title="t('settings').groupManage.title" :description="t('settings').groupManage.description">
+  <SySettingsSection icon="iconGroups" :title="t('settings').groupManage.title" :description="t('settings').groupManage.description">
     <div class="sy-group-top fn__flex" style="align-items: center; gap: 8px; margin-bottom: 8px;">
       <span class="sy-group-default-label">{{ t('settings').groupManage.defaultLabel }}</span>
       <SySelect

@@ -1,5 +1,5 @@
 <template>
-  <SySettingsSection :title="t('settings').dirConfig.title" :description="t('settings').dirConfig.description">
+  <SySettingsSection icon="iconFolder" :title="t('settings').dirConfig.title" :description="t('settings').dirConfig.description">
     <div class="sy-directory-list">
       <div
         v-for="(dir, index) in directories"

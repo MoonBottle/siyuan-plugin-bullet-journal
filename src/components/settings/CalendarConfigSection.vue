@@ -1,5 +1,5 @@
 <template>
-  <SySettingsSection :title="t('settings').calendar.defaultViewTitle" :description="t('settings').calendar.defaultViewDesc">
+  <SySettingsSection icon="iconCalendar" :title="t('settings').calendar.defaultViewTitle" :description="t('settings').calendar.defaultViewDesc">
     <SySelect
       :model-value="calendarDefaultView"
       :options="viewOptions"

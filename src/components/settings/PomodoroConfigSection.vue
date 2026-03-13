@@ -1,5 +1,5 @@
 <template>
-  <SySettingsSection :title="t('settings').pomodoro.title" :description="(t('settings').pomodoro as any).sectionDescription ?? ''">
+  <SySettingsSection icon="iconClock" :title="t('settings').pomodoro.title" :description="(t('settings').pomodoro as any).sectionDescription ?? ''">
     <div class="sy-pomodoro-rows">
       <div class="sy-pomodoro-row fn__flex">
         <div class="sy-pomodoro-row__left">

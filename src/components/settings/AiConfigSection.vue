@@ -1,5 +1,6 @@
 <template>
   <SySettingsSection
+    icon="iconSparkles"
     :title="(t('settings') as any).ai?.title ?? 'AI 服务配置'"
     :description="(t('settings') as any).ai?.description ?? '配置 AI 服务商，支持添加多个供应商配置'"
   >

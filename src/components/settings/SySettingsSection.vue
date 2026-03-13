@@ -4,7 +4,12 @@
       <slot name="header" />
     </div>
     <div v-else class="sy-settings-section__header">
-      <div class="sy-settings-section__title">{{ title }}</div>
+      <div class="sy-settings-section__title-row fn__flex">
+        <svg v-if="icon" class="sy-settings-section__icon">
+          <use :xlink:href="`#${icon}`"></use>
+        </svg>
+        <span class="sy-settings-section__title">{{ title }}</span>
+      </div>
       <div v-if="description" class="sy-settings-section__description">{{ description }}</div>
     </div>
     <div class="sy-settings-section__content">
@@ -17,6 +22,8 @@
 defineProps<{
   title: string;
   description?: string;
+  /** 思源图标名，如 iconFolder、iconCalendar，与 dock/tab 一致 */
+  icon?: string;
 }>()
 </script>
 
@@ -31,6 +38,19 @@ defineProps<{
 
 .sy-settings-section__header {
   margin-bottom: 12px;
+}
+
+.sy-settings-section__title-row {
+  align-items: center;
+  gap: 8px;
+}
+
+.sy-settings-section__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.85;
 }
 
 .sy-settings-section__title {

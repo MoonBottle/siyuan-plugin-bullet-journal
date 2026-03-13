@@ -1,12 +1,15 @@
 <template>
   <span
-    class="b3-tooltips b3-tooltips__nw sy-icon-btn"
+    ref="btnRef"
+    class="sy-icon-btn"
     :aria-label="ariaLabel"
     role="button"
     tabindex="0"
     @click="$emit('click', $event)"
     @keydown.enter="$emit('click', $event)"
     @keydown.space.prevent="$emit('click', $event)"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
   >
     <svg class="sy-icon-btn__svg">
       <use :xlink:href="`#${icon}`"></use>
@@ -15,13 +18,27 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { ref } from 'vue';
+import { showIconTooltip, hideIconTooltip } from '@/utils/dialog';
+
+const props = defineProps<{
   icon: string;
   ariaLabel: string;
 }>()
 defineEmits<{
   click: [event: MouseEvent | KeyboardEvent];
 }>()
+
+const btnRef = ref<HTMLElement | null>(null);
+
+function handleMouseEnter() {
+  const el = btnRef.value;
+  if (el && props.ariaLabel) showIconTooltip(el, props.ariaLabel);
+}
+
+function handleMouseLeave() {
+  hideIconTooltip();
+}
 </script>
 
 <style scoped>
