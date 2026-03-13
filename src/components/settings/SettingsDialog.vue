@@ -1,19 +1,19 @@
 <template>
   <div class="sy-settings-dialog">
-    <div class="sy-settings-dialog__search">
-      <div class="sy-settings-search-wrap">
-        <svg class="sy-settings-search__icon">
-          <use xlink:href="#iconSearch"></use>
-        </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="b3-text-field sy-settings-search"
-          :placeholder="t('settings').searchPlaceholder"
-        />
-      </div>
-    </div>
     <div class="sy-settings-dialog__content">
+      <div class="sy-settings-dialog__search">
+        <div class="sy-settings-search-wrap">
+          <svg class="sy-settings-search__icon">
+            <use xlink:href="#iconSearch"></use>
+          </svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="b3-text-field sy-settings-search"
+            :placeholder="t('settings').searchPlaceholder"
+          />
+        </div>
+      </div>
       <DirectoryConfigSection v-show="sectionVisible('dir')" v-model:directories="local.directories" v-model:default-group="local.defaultGroup" :groups="local.groups" />
       <GroupConfigSection v-show="sectionVisible('group')" v-model:groups="local.groups" v-model:default-group="local.defaultGroup" v-model:directories="local.directories" />
       <PomodoroConfigSection v-show="sectionVisible('pomodoro')" v-model:pomodoro="local.pomodoro" />
@@ -117,13 +117,13 @@ function handleCancel() {
 .sy-settings-dialog {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 400px;
+  flex: 1;
+  min-height: 0;
 }
 
 .sy-settings-dialog__search {
   flex-shrink: 0;
-  padding: 12px 24px 16px;
+  padding-bottom: 16px;
 }
 
 .sy-settings-search-wrap {
@@ -165,7 +165,7 @@ function handleCancel() {
 
 .sy-settings-dialog__content {
   flex: 1;
-  min-height: 0;
+  min-height: 200px;
   overflow-y: auto;
   padding: 16px 24px;
 }
