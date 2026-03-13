@@ -108,9 +108,9 @@
           v-html="renderedContent"
         ></div>
 
-        <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示，仅在底部最终回答展示一次） -->
-        <div v-if="message.usage && !(message.role === 'assistant' && message.toolCalls?.length)" class="chat-message__footer">
-          <div class="chat-message__usage">
+        <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示 footer，仅在最终回答展示） -->
+        <div v-if="showFooter" class="chat-message__footer">
+          <div v-if="message.usage" class="chat-message__usage">
             <span class="chat-message__usage-item">
               <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').inputTokens">
                 <svg><use xlink:href="#iconEdit"></use></svg>
@@ -139,8 +139,8 @@
               {{ message.usage.cached_tokens }}
             </span>
           </div>
-          <!-- 分组模式下最后一条 AI 消息显示插入按钮 -->
-          <div v-if="isGrouped && isLast && canInsertToNote" class="chat-message__insert-btn">
+          <!-- 最后一条 AI 消息显示插入按钮 -->
+          <div v-if="showInsertBtn" class="chat-message__insert-btn">
             <span
               class="block__icon b3-tooltips b3-tooltips__nw"
               :aria-label="t('aiChat').insertToNote"
@@ -192,6 +192,18 @@ const canInsertToNote = computed(() => {
 // 是否在本条消息上显示头部（头像、名称、时间）。分组时由 Panel 在卡片外统一显示一条，此处不显示
 const showHeader = computed(() => {
   return !props.isGrouped || props.message.role === 'user';
+});
+
+// 是否显示 footer（token 统计和插入按钮）
+// 只有 assistant 消息且不含 toolCalls 时才显示 footer
+// 含 toolCalls 的消息是中间步骤，不显示 footer，只在最终回答展示
+const showFooter = computed(() => {
+  return props.message.role === 'assistant' && !props.message.toolCalls?.length;
+});
+
+// 是否显示插入按钮
+const showInsertBtn = computed(() => {
+  return props.isLast && canInsertToNote.value;
 });
 
 const roleText = computed(() => {
