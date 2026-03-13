@@ -87,18 +87,13 @@
             <div class="chat-panel__provider-avatar">
               <AiAssistantIcon />
             </div>
-            <button
-              ref="providerSelectRef"
-              class="chat-panel__select-btn"
-              :class="{ 'is-disabled': isLoading, 'is-single-provider': !isLoading && enabledProviders.length <= 1 }"
+            <SySelect
+              v-model="selectedProviderId"
+              :options="providerOptions"
+              :placeholder="t('aiChat').selectProvider"
               :disabled="isLoading || enabledProviders.length <= 1"
-              @click="handleProviderSelectClick"
-            >
-              <span class="chat-panel__select-label">{{ currentProvider?.name || t('aiChat').selectProvider }}</span>
-              <svg v-if="enabledProviders.length > 1" class="chat-panel__select-arrow">
-                <use xlink:href="#iconDown"></use>
-              </svg>
-            </button>
+              placement="bottom"
+            />
           </div>
           <button class="chat-panel__settings-btn" @click="handleOpenSettings">
             <svg><use xlink:href="#iconSettings"></use></svg>
@@ -120,21 +115,13 @@
         <div class="chat-panel__card-footer">
           <span class="chat-panel__card-footer-spacer"></span>
           <div class="chat-panel__card-footer-actions">
-            <button
-              ref="modelSelectRef"
-              class="chat-panel__select-btn chat-panel__select-btn--small"
-              :class="{
-                'is-disabled': isLoading || !currentProvider || availableModels.length === 0,
-                'is-single-model': !isLoading && !!currentProvider && availableModels.length === 1
-              }"
-              :disabled="isLoading || !currentProvider || availableModels.length === 0 || availableModels.length <= 1"
-              @click="handleModelSelectClick"
-            >
-              <span class="chat-panel__select-label">{{ selectedModel || t('aiChat').selectModel }}</span>
-              <svg v-if="availableModels.length > 1" class="chat-panel__select-arrow">
-                <use xlink:href="#iconDown"></use>
-              </svg>
-            </button>
+            <SySelect
+              v-model="selectedModel"
+              :options="modelOptions"
+              :placeholder="t('aiChat').selectModel"
+              :disabled="isLoading || !currentProvider || availableModels.length === 0"
+              placement="top"
+            />
             <button
               class="chat-panel__send-btn"
               :disabled="!canSend"
@@ -182,11 +169,12 @@ import { t } from '@/i18n';
 import ChatMessage from './ChatMessage.vue';
 import ChatInput from './ChatInput.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import type { Project, ProjectGroup, Item } from '@/types/models';
 import type { AIProviderConfig, ChatMessage as ChatMessageType } from '@/types/ai';
 import { appendBlock, pushMsg } from '@/api';
 import { ensureHeadingNewlines, normalizeExcessiveNewlines } from '@/utils/markdownUtils';
-import { getActiveEditor, Menu } from 'siyuan';
+import { getActiveEditor } from 'siyuan';
 
 // 消息分组类型
 interface MessageGroup {
@@ -210,8 +198,6 @@ const aiStore = useAIStore();
 
 const messagesContainerRef = ref<HTMLDivElement>();
 const chatInputRef = ref<InstanceType<typeof ChatInput>>();
-const providerSelectRef = ref<HTMLButtonElement>();
-const modelSelectRef = ref<HTMLButtonElement>();
 
 const messages = computed(() => aiStore.currentMessages);
 const isLoading = computed(() => aiStore.isLoading);
@@ -242,6 +228,22 @@ const currentProvider = computed<AIProviderConfig | null>(() => {
 // 当前供应商可用的模型列表
 const availableModels = computed(() => {
   return currentProvider.value?.models || [];
+});
+
+// 供应商选项列表
+const providerOptions = computed(() => {
+  return enabledProviders.value.map(provider => ({
+    value: provider.id,
+    label: provider.name
+  }));
+});
+
+// 模型选项列表
+const modelOptions = computed(() => {
+  return availableModels.value.map(model => ({
+    value: model,
+    label: model
+  }));
 });
 
 // 当前选中的模型
@@ -369,68 +371,6 @@ function handleExampleClick(example: string) {
 
 function handleOpenSettings() {
   emit('openSettings');
-}
-
-// 处理供应商选择点击
-function handleProviderSelectClick(event: MouseEvent) {
-  if (isLoading.value || enabledProviders.value.length <= 1) return;
-
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
-
-  event.stopPropagation();
-  event.preventDefault();
-
-  const rect = target.getBoundingClientRect();
-  const menu = new Menu('chat-panel-provider-select');
-
-  enabledProviders.value.forEach(provider => {
-    menu.addItem({
-      icon: provider.id === selectedProviderId.value ? 'iconCheck' : undefined,
-      label: provider.name,
-      click: () => {
-        aiStore.setActiveProvider(provider.id);
-      }
-    });
-  });
-
-  menu.open({
-    x: rect.left,
-    y: rect.bottom + 4
-  });
-}
-
-// 处理模型选择点击
-function handleModelSelectClick(event: MouseEvent) {
-  if (isLoading.value || !currentProvider.value || availableModels.value.length === 0) return;
-
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
-
-  event.stopPropagation();
-  event.preventDefault();
-
-  const rect = target.getBoundingClientRect();
-  const menu = new Menu('chat-panel-model-select');
-
-  availableModels.value.forEach(model => {
-    menu.addItem({
-      icon: model === selectedModel.value ? 'iconCheck' : undefined,
-      label: model,
-      click: () => {
-        if (currentProvider.value) {
-          currentProvider.value.defaultModel = model;
-        }
-      }
-    });
-  });
-
-  // 估算菜单高度（每项约32px），向上弹出
-  const estimatedMenuHeight = availableModels.value.length * 32 + 16;
-  menu.open({
-    x: rect.left,
-    y: rect.top - estimatedMenuHeight
-  });
 }
 
 function focusInput() {
@@ -743,57 +683,38 @@ function formatTime(timestamp: number): string {
     }
   }
 
-  &__select-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    padding: 4px 10px;
-    height: 28px;
-    border-radius: 6px;
-    border: none;
-    background: var(--b3-theme-surface);
-    color: var(--b3-theme-on-surface);
-    cursor: pointer;
-    outline: none;
-    transition: all 0.2s;
+  // SySelect 样式覆盖 - 保持和改造前按钮样式一致
+  &__provider-select,
+  &__card-footer-actions {
+    :deep(.sy-select__trigger) {
+      background: var(--b3-theme-surface);
+      border-color: var(--b3-theme-surface-lighter);
+      color: var(--b3-theme-on-surface);
 
-    &:hover:not(:disabled) {
-      background: var(--b3-theme-surface-lighter);
+      &:hover:not(:disabled) {
+        background: var(--b3-theme-surface-lighter);
+        border-color: var(--b3-theme-surface-lighter);
+      }
+
+      &.is-open {
+        border-color: var(--b3-theme-primary);
+        box-shadow: 0 0 0 2px var(--b3-theme-primary-lightest);
+      }
+
+      &:disabled,
+      &.is-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     }
 
-    &:disabled,
-    &.is-disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    :deep(.sy-select__label) {
+      color: var(--b3-theme-on-background);
     }
 
-    /* 仅有一个供应商时：不可切换但保持正常样式，不灰显 */
-    &.is-single-provider[disabled],
-    &.is-single-model[disabled] {
-      opacity: 1;
-      cursor: default;
+    :deep(.sy-select__arrow) {
+      fill: var(--b3-theme-on-surface);
     }
-
-    &--small {
-      font-size: 12px;
-      padding: 2px 8px;
-      height: 24px;
-    }
-  }
-
-  &__select-label {
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__select-arrow {
-    width: 12px;
-    height: 12px;
-    fill: var(--b3-theme-on-surface);
-    flex-shrink: 0;
   }
 }
 
