@@ -1,6 +1,6 @@
 # 任务助手
 
-![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![更新日志](https://img.shields.io/badge/更新日志-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
+![release](https://img.shields.io/github/v/release/MoonBottle/siyuan-plugin-bullet-journal) | [![更新日志](https://img.shields.io/badge/更新日志-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/changelog.md) | [![用户指南](https://img.shields.io/badge/docs-用户指南-blue)](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/index.md)
 
 [English](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/README.md)
 
@@ -118,7 +118,7 @@
   - [MCP AI 助手](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/mcp.md)
   - [配置说明](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/configuration.md)
   - [完整示例](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/examples.md)
-- [参与贡献](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CONTRIBUTING.md)
+- [参与贡献](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/contributing.md)
 
 ## 💝 支持作者
 
@@ -129,4 +129,4 @@
 
 ## 📌 最近更新
 
-近期版本更新（番茄钟、AI 对话、甘特图与日历增强等）详见 [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/CHANGELOG.md)。
+近期版本更新（番茄钟、AI 对话、甘特图与日历增强等）详见 [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/changelog.md)。

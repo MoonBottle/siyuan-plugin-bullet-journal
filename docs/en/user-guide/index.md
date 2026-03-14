@@ -23,6 +23,11 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 
 - [Complete Example](./examples.md) - A complete example of an e-commerce order system project
 
+### Other
+
+- [Changelog](./changelog.md) - Version update history
+- [Contributing](./contributing.md) - How to contribute to the project
+
 ## Quick Links
 
 | Need | Recommended Document |
@@ -35,4 +40,5 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 | Want to use Pomodoro focus | [Pomodoro](./pomodoro.md) |
 | Want AI to query tasks and pomodoro data | [MCP AI Assistant](./mcp.md) |
 | Want to see a complete project example | [Complete Example](./examples.md) |
-
+| Want to know what's new | [Changelog](./changelog.md) |
+| Want to contribute to the project | [Contributing](./contributing.md) |
