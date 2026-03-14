@@ -86,7 +86,9 @@ function handleClick(event: MouseEvent | KeyboardEvent) {
 }
 
 // 链接按钮点击
-function handleLinkClick() {
+function handleLinkClick(event: MouseEvent) {
+  console.log('[SyButton] link clicked, href:', props.href);
+  emit('click', event);
   if (props.href) {
     window.open(props.href, '_blank');
   }

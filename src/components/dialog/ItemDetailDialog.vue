@@ -29,6 +29,7 @@
             type="link"
             :text="link.name"
             :href="link.url"
+            @click="handleLinkClick(link.url)"
           />
         </template>
       </Card>
@@ -64,6 +65,7 @@
             type="link"
             :text="link.name"
             :href="link.url"
+            @click="handleLinkClick(link.url)"
           />
         </template>
       </Card>
@@ -146,6 +148,7 @@
             type="link"
             :text="link.name"
             :href="link.url"
+            @click="handleLinkClick(link.url)"
           />
         </template>
       </Card>
@@ -302,6 +305,15 @@ function handleOpenDoc() {
 // 打开日历
 function handleOpenCalendar() {
   emit('openCalendar', props.item.date);
+}
+
+// 处理链接点击
+function handleLinkClick(url: string) {
+  console.log('[ItemDetailDialog] link clicked, url:', url);
+  if (url.startsWith('siyuan://')) {
+    console.log('[ItemDetailDialog] siyuan link detected, closing dialog');
+    handleClose();
+  }
 }
 </script>
 
