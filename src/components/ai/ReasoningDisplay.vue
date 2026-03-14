@@ -17,15 +17,18 @@
     </div>
 
     <!-- 展开后的内容 -->
-    <div v-if="!isCollapsed" class="reasoning-display__content">
-      {{ content }}
-    </div>
+    <div
+      v-if="!isCollapsed"
+      class="reasoning-display__content"
+      v-html="renderedContent"
+    ></div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { t } from '@/i18n';
+import { renderMarkdown } from '@/utils/markdownRenderer';
 
 const props = defineProps<{
   /** 思考过程内容 */
@@ -40,6 +43,15 @@ const isCollapsed = ref(props.defaultCollapsed ?? true);
 
 const title = computed(() => {
   return props.title ?? (t('aiChat') as Record<string, string>).reasoningTitle ?? '思考过程';
+});
+
+const renderedContent = computed(() => {
+  try {
+    return renderMarkdown(props.content);
+  } catch (error) {
+    console.error('Reasoning markdown rendering error:', error);
+    return props.content;
+  }
 });
 
 function toggleCollapse() {
@@ -111,8 +123,51 @@ function toggleCollapse() {
     font-size: 12px;
     line-height: 1.6;
     color: var(--b3-theme-on-surface);
-    white-space: pre-wrap;
     border-top: 1px solid var(--b3-theme-surface-lightest);
+
+    // Markdown 渲染样式
+    :deep(p) {
+      margin: 4px 0;
+      &:first-child { margin-top: 0; }
+      &:last-child { margin-bottom: 0; }
+    }
+
+    :deep(ul), :deep(ol) {
+      margin: 4px 0;
+      padding-left: 16px;
+    }
+
+    :deep(li) {
+      margin: 2px 0;
+    }
+
+    :deep(code) {
+      background: var(--b3-theme-surface-lightest);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: var(--b3-font-family-code);
+      font-size: 11px;
+    }
+
+    :deep(pre) {
+      background: var(--b3-theme-surface-lightest);
+      padding: 6px 8px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 6px 0;
+
+      code {
+        background: none;
+        padding: 0;
+      }
+    }
+
+    :deep(blockquote) {
+      margin: 4px 0;
+      padding-left: 8px;
+      border-left: 2px solid var(--b3-theme-primary);
+      color: var(--b3-theme-on-surface-light);
+    }
   }
 }
 
