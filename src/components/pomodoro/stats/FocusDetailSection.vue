@@ -299,9 +299,10 @@ function nextRange() {
   height: 100px;
 
   .center-value {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 600;
     color: var(--b3-theme-on-background);
+    white-space: nowrap;
   }
 
   .center-label {
