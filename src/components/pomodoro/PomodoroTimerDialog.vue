@@ -3,11 +3,11 @@
     <div class="dialog-body" :class="{ 'no-left-panel': hideItemList }">
       <!-- 左侧：待办事项列表（仅在非预选模式下显示） -->
       <div v-if="!hideItemList" class="left-panel">
-        <div class="panel-title">选择待办事项</div>
+        <div class="panel-title">{{ t('pomodoroDialog').selectItem }}</div>
         <div class="item-list">
           <!-- 过期事项 -->
           <div v-if="expiredItems.length > 0" class="item-group">
-            <div class="group-label">⚠️ 过期事项</div>
+            <div class="group-label">{{ t('pomodoroDialog').expiredItems }}</div>
             <div
               v-for="item in expiredItems"
               :key="item.id"
@@ -23,7 +23,7 @@
 
           <!-- 今天事项 -->
           <div v-if="todayItems.length > 0" class="item-group">
-            <div class="group-label">📅 今天事项</div>
+            <div class="group-label">{{ t('pomodoroDialog').todayItems }}</div>
             <div
               v-for="item in todayItems"
               :key="item.id"
@@ -39,23 +39,39 @@
 
           <!-- 无事项提示 -->
           <div v-if="expiredItems.length === 0 && todayItems.length === 0" class="empty-tip">
-            暂无待办事项
+            {{ t('pomodoroDialog').noItems }}
           </div>
         </div>
       </div>
 
       <!-- 右侧：专注时长设置 -->
       <div class="right-panel" :class="{ 'full-width': hideItemList }">
-        <!-- 预选事项信息（仅在预选模式下显示） -->
-        <div v-if="hideItemList && selectedItem" class="preselected-item-info">
-          <div class="info-label">专注事项</div>
-          <div class="info-content">{{ selectedItem.content }}</div>
-          <div v-if="selectedItem.task" class="info-task">{{ selectedItem.task.name }}</div>
+        <!-- 选中事项展示（预选模式或左侧选择联动） -->
+        <div v-if="selectedItem" class="selected-item-section">
+          <SelectedItemCard :item="selectedItem" :show-header="true" />
         </div>
 
-        <div class="panel-title">设置专注时长</div>
+        <div class="panel-title">{{ t('pomodoroDialog').timerMode }}</div>
+        <div class="timer-mode-section">
+          <button
+            class="mode-btn"
+            :class="{ active: timerMode === 'countdown' }"
+            @click="timerMode = 'countdown'"
+          >
+            {{ t('pomodoroDialog').countdown }}
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ active: timerMode === 'stopwatch' }"
+            @click="timerMode = 'stopwatch'"
+          >
+            {{ t('pomodoroDialog').stopwatch }}
+          </button>
+        </div>
 
-        <div class="duration-section">
+        <div v-if="timerMode === 'countdown'" class="panel-title">{{ t('pomodoroDialog').setDuration }}</div>
+
+        <div v-if="timerMode === 'countdown'" class="duration-section">
           <div class="quick-buttons">
             <button
               v-for="duration in quickDurations"
@@ -64,11 +80,11 @@
               :class="{ active: selectedDuration === duration }"
               @click="selectDuration(duration)"
             >
-              {{ duration }}分钟
+              {{ duration }}{{ t('pomodoroDialog').minutes }}
             </button>
           </div>
           <div class="custom-duration">
-            <span>自定义：</span>
+            <span>{{ t('pomodoroDialog').custom }}</span>
             <input
               v-model.number="customDuration"
               type="number"
@@ -77,7 +93,7 @@
               class="duration-input"
               @change="onCustomDurationChange"
             />
-            <span>分钟</span>
+            <span>{{ t('pomodoroDialog').minutes }}</span>
           </div>
         </div>
 
@@ -87,9 +103,9 @@
             :disabled="!selectedItem"
             @click="startPomodoro"
           >
-            开始专注
+            {{ t('pomodoroDialog').startFocus }}
           </button>
-          <button class="cancel-btn" @click="closeDialog">取消</button>
+          <button class="cancel-btn" @click="closeDialog">{{ t('pomodoroDialog').cancel }}</button>
         </div>
       </div>
     </div>
@@ -100,9 +116,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
+import { getSharedPinia } from '@/utils/sharedPinia';
 import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { DOCK_TYPES } from '@/constants';
+import { t } from '@/i18n';
+import SelectedItemCard from './SelectedItemCard.vue';
 
 const props = defineProps<{
   closeDialog: () => void;
@@ -111,13 +130,17 @@ const props = defineProps<{
 }>()
 
 const plugin = usePlugin() as any;
-const projectStore = useProjectStore();
-const pomodoroStore = usePomodoroStore();
+const pinia = getSharedPinia();
+const projectStore = pinia ? useProjectStore(pinia) : null;
+const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
 
 // 选中的事项
 const selectedItem = ref<Item | null>(null);
 
-// 专注时长
+// 计时模式：倒计时 / 正计时
+const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
+
+// 专注时长（仅倒计时使用）
 const quickDurations = [15, 25, 45, 60];
 const selectedDuration = ref(25);
 const customDuration = ref(25);
@@ -126,11 +149,13 @@ const customDuration = ref(25);
 const currentDate = dayjs().format('YYYY-MM-DD');
 
 const expiredItems = computed(() => {
+  if (!projectStore) return [];
   const items = projectStore.getExpiredItems('');
   return items.filter(item => item.status === 'pending');
 });
 
 const todayItems = computed(() => {
+  if (!projectStore) return [];
   const items = projectStore.getFutureItems('');
   return items.filter(item => item.date === currentDate && item.status === 'pending');
 });
@@ -160,15 +185,19 @@ const formatDate = (dateStr: string): string => {
   const date = dayjs(dateStr);
   const today = dayjs();
   const diff = today.diff(date, 'day');
-  
-  if (diff === 1) return '昨天';
-  if (diff === 2) return '前天';
+
+  if (diff === 1) return t('pomodoroDialog').yesterday;
+  if (diff === 2) return t('pomodoroDialog').dayBeforeYesterday;
   return date.format('MM-DD');
 };
 
 // 开始专注
 const startPomodoro = async () => {
   if (!selectedItem.value) return;
+  if (!pomodoroStore) {
+    console.warn('[PomodoroTimerDialog] Pinia 未初始化，无法开始专注');
+    return;
+  }
 
   const parentBlockId = selectedItem.value.blockId || selectedItem.value.docId;
   if (!parentBlockId) {
@@ -176,11 +205,15 @@ const startPomodoro = async () => {
     return;
   }
 
+  // 正计时：duration 为 0，由用户手动结束
+  const duration = timerMode.value === 'stopwatch' ? 0 : selectedDuration.value;
+
   const success = await pomodoroStore.startPomodoro(
     selectedItem.value,
-    selectedDuration.value,
+    duration,
     parentBlockId,
-    plugin
+    plugin,
+    timerMode.value
   );
 
   if (success) {
@@ -250,12 +283,13 @@ onMounted(() => {
 
     .duration-section,
     .action-section,
-    .panel-title {
+    .panel-title,
+    .timer-mode-section {
       width: 100%;
       max-width: 280px;
     }
 
-    .preselected-item-info {
+    .selected-item-section {
       width: 100%;
       max-width: 280px;
     }
@@ -338,8 +372,38 @@ onMounted(() => {
   font-size: 13px;
 }
 
+.timer-mode-section {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--b3-theme-primary);
+  }
+
+  &.active {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary, #fff);
+    border-color: var(--b3-theme-primary);
+  }
+}
+
 .duration-section {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .quick-buttons {
@@ -365,7 +429,7 @@ onMounted(() => {
 
   &.active {
     background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
+    color: var(--b3-theme-on-primary, #fff);
     border-color: var(--b3-theme-primary);
   }
 }
@@ -376,6 +440,7 @@ onMounted(() => {
   gap: 8px;
   font-size: 13px;
   color: var(--b3-theme-on-surface);
+  margin-bottom: 16px;
 }
 
 .duration-input {
@@ -401,39 +466,15 @@ onMounted(() => {
   gap: 8px;
 }
 
-.preselected-item-info {
+.selected-item-section {
   margin-bottom: 16px;
-  padding: 12px;
-  background: var(--b3-theme-surface-lighter);
-  border-radius: var(--b3-border-radius);
-  border-left: 3px solid var(--b3-theme-primary);
-  box-sizing: border-box;
   width: 100%;
-
-  .info-label {
-    font-size: 11px;
-    color: var(--b3-theme-on-surface);
-    margin-bottom: 4px;
-  }
-
-  .info-content {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--b3-theme-on-background);
-    margin-bottom: 4px;
-    word-break: break-word;
-  }
-
-  .info-task {
-    font-size: 11px;
-    color: var(--b3-theme-on-surface);
-  }
 }
 
 .start-btn {
   padding: 10px 16px;
   background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
+  color: var(--b3-theme-on-primary, #fff);
   border: none;
   border-radius: var(--b3-border-radius);
   font-size: 14px;

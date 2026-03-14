@@ -1,11 +1,11 @@
 /**
  * projectStore 集成测试
- * 验证多日期事项去重与代表项逻辑
+ * 验证多日期事项去重与代表项逻辑、专注时长统计
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useProjectStore } from '@/stores/projectStore';
-import type { Item, Project } from '@/types/models';
+import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
 
 const mkItem = (
   date: string,
@@ -94,5 +94,124 @@ describe('projectStore 多日期事项', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('completed');
+  });
+});
+
+const mkPomodoro = (date: string, minutes: number, overrides?: Partial<PomodoroRecord>): PomodoroRecord =>
+  ({
+    id: `p-${date}-${minutes}`,
+    date,
+    startTime: '10:00:00',
+    endTime: '10:30:00',
+    durationMinutes: minutes,
+    actualDurationMinutes: minutes,
+    ...overrides
+  }) as PomodoroRecord;
+
+describe('projectStore 专注时长统计', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('getFocusMinutesByDay 返回某日专注分钟', () => {
+    const store = useProjectStore();
+    const task: Task = {
+      id: 't1',
+      name: '任务',
+      level: 'L1',
+      items: [],
+      lineNumber: 1,
+      pomodoros: [
+        mkPomodoro('2026-03-10', 25),
+        mkPomodoro('2026-03-10', 15)
+      ]
+    };
+    const project: Project = {
+      ...mockProject,
+      tasks: [task]
+    };
+    store.$patch({ projects: [project] });
+
+    const mins = store.getFocusMinutesByDay('2026-03-10', '');
+    expect(mins).toBe(40);
+  });
+
+  it('getFocusMinutesByDay 无数据返回 0', () => {
+    const store = useProjectStore();
+    store.$patch({ projects: [] });
+    expect(store.getFocusMinutesByDay('2026-03-10', '')).toBe(0);
+  });
+
+  it('getFocusMinutesByDateRange 返回日期范围内按日聚合', () => {
+    const store = useProjectStore();
+    const task: Task = {
+      id: 't1',
+      name: '任务',
+      level: 'L1',
+      items: [],
+      lineNumber: 1,
+      pomodoros: [
+        mkPomodoro('2026-03-10', 25),
+        mkPomodoro('2026-03-10', 15),
+        mkPomodoro('2026-03-11', 30),
+        mkPomodoro('2026-03-12', 20)
+      ]
+    };
+    const project: Project = {
+      ...mockProject,
+      tasks: [task]
+    };
+    store.$patch({ projects: [project] });
+
+    const byDay = store.getFocusMinutesByDateRange('2026-03-10', '2026-03-12', '');
+    expect(byDay.get('2026-03-10')).toBe(40);
+    expect(byDay.get('2026-03-11')).toBe(30);
+    expect(byDay.get('2026-03-12')).toBe(20);
+  });
+
+  it('getFocusMinutesByDateRange 范围外日期不包含', () => {
+    const store = useProjectStore();
+    const task: Task = {
+      id: 't1',
+      name: '任务',
+      level: 'L1',
+      items: [],
+      lineNumber: 1,
+      pomodoros: [
+        mkPomodoro('2026-03-09', 25),
+        mkPomodoro('2026-03-11', 30)
+      ]
+    };
+    const project: Project = {
+      ...mockProject,
+      tasks: [task]
+    };
+    store.$patch({ projects: [project] });
+
+    const byDay = store.getFocusMinutesByDateRange('2026-03-10', '2026-03-12', '');
+    expect(byDay.has('2026-03-09')).toBe(false);
+    expect(byDay.get('2026-03-11')).toBe(30);
+  });
+
+  it('getFocusMinutesByDateRange 优先使用 actualDurationMinutes', () => {
+    const store = useProjectStore();
+    const task: Task = {
+      id: 't1',
+      name: '任务',
+      level: 'L1',
+      items: [],
+      lineNumber: 1,
+      pomodoros: [
+        mkPomodoro('2026-03-10', 25, { actualDurationMinutes: 20 })
+      ]
+    };
+    const project: Project = {
+      ...mockProject,
+      tasks: [task]
+    };
+    store.$patch({ projects: [project] });
+
+    const byDay = store.getFocusMinutesByDateRange('2026-03-10', '2026-03-10', '');
+    expect(byDay.get('2026-03-10')).toBe(20);
   });
 });

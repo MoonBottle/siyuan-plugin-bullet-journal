@@ -115,8 +115,9 @@
     flex-wrap: wrap;
   }
 
-  // 链接标签
+  // 链接标签（hover 时提升 z-index 避免 tooltip 被下方链接遮挡）
   .sy-dialog-link-tag {
+    position: relative;
     display: inline-flex;
     align-items: center;
     padding: 3px 10px;
@@ -130,6 +131,7 @@
     transition: all 0.2s;
 
     &:hover {
+      z-index: 100;
       background: var(--b3-theme-primary);
       color: var(--b3-theme-on-primary);
       border-color: var(--b3-theme-primary);
@@ -456,6 +458,123 @@
 }
 
 /* ============================================
+   底栏倒计时样式
+   ============================================ */
+
+/* Asri 主题：含番茄钟时强制底栏保持展开 */
+.status:has(.bullet-journal-status-bar-timer).asri--non-protyle-status,
+#statusBar:has(.bullet-journal-status-bar-timer).asri--non-protyle-status {
+  height: 26px !important;
+  width: auto !important;
+  min-width: 120px !important;
+  overflow: visible !important;
+  animation: none !important;
+  transform: none !important;
+
+  & > div {
+    display: flex !important;
+    animation: none !important;
+  }
+
+  &::before {
+    display: none !important;
+  }
+}
+
+/* 底栏番茄钟样式 */
+.status .bullet-journal-status-bar-timer,
+#statusBar .bullet-journal-status-bar-timer,
+.bullet-journal-status-bar-timer {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px !important;
+  background: transparent;
+  border-radius: var(--b3-border-radius);
+  color: var(--b3-theme-on-surface);
+  font-family: var(--b3-font-family);
+  cursor: default !important;
+
+  width: fit-content !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+
+  .timer-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 3px;
+    color: var(--b3-theme-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-primary-light);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  .timer-text {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--b3-font-family);
+    min-width: 36px;
+    text-align: center;
+  }
+
+  .timer-skip-btn,
+  .timer-end-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-primary-light);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+  }
+
+  .timer-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--b3-theme-primary-light);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+  }
+}
+
+/* ============================================
    悬浮番茄钟按钮样式
    ============================================ */
 
@@ -510,7 +629,7 @@
   .remaining-time {
     font-size: 14px;
     font-weight: 600;
-    font-family: monospace;
+    font-family: var(--b3-font-family);
     line-height: 1;
   }
 }
@@ -518,4 +637,67 @@
 /* 甘特图 hover 弹框：覆盖 sy-dialog-content 的 padding，避免与容器 padding 叠加 */
 .gantt-event-tooltip .sy-dialog-content {
   padding: 0 !important;
+}
+
+/* 图标按钮 tooltip：挂载 body，不被 overflow 裁剪（SyButton 等使用） */
+.sy-icon-tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  max-width: min(300px, 90vw);
+  padding: 6px 10px;
+  background: var(--b3-tooltip-background, #2f2f2f);
+  color: var(--b3-tooltip-color, #fff);
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* 设置弹框：body 不滚动，仅 content 可滚动，footer 固定底部 */
+.b3-dialog__body:has(#bullet-journal-settings-mount) {
+  overflow: hidden;
+  min-height: 0;
+}
+
+#bullet-journal-settings-mount {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 链接自定义 tooltip：挂载 body，不受弹框 overflow 影响，无滚动条 */
+.sy-dialog-link-tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  max-width: min(400px, 90vw);
+  padding: 6px 10px;
+  background: var(--b3-tooltip-background, #2f2f2f);
+  color: var(--b3-tooltip-color, #fff);
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  word-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
 }

@@ -165,12 +165,15 @@ export async function callAI(
 
   const apiUrl = config.apiUrl;
 
-  const requestBody = {
+  const requestBody: Record<string, unknown> = {
     model: config.defaultModel,
     messages: messages.map(m => buildMessageForApi(m, config)),
     temperature: getTemperature(config),
     max_tokens: 4000,
-    stream: true
+    stream: true,
+    stream_options: {
+      include_usage: true
+    }
   };
 
   try {
@@ -437,14 +440,17 @@ export async function callAIWithToolsStream(
 
   const apiUrl = config.apiUrl;
 
-  const requestBody = {
+  const requestBody: Record<string, unknown> = {
     model: config.defaultModel,
     messages: messages.map(m => buildMessageForApi(m, config)),
     tools,
     tool_choice: 'auto',
     temperature: getTemperature(config),
     max_tokens: 4000,
-    stream: true
+    stream: true,
+    stream_options: {
+      include_usage: true
+    }
   };
 
   try {

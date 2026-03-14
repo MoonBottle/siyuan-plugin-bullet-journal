@@ -174,6 +174,58 @@ describe('parseKramdown 列表项解析', () => {
   });
 });
 
+describe('parseKramdown 块引用解析', () => {
+  it('项目名含块引用：strip 并提取到 project.links', () => {
+    const kramdown = `## 网站((20260310210016-gkixdit '测试'))重构项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }事项 @2026-03-10
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.name).toBe('网站测试重构项目');
+    expect(project!.links).toHaveLength(1);
+    expect(project!.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+  });
+
+  it('任务名含块引用：strip 并提取到 task.links', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }首页((20260310210016-gkixdit '测试'))改版 #任务#
+{: id="after-t" }
+  - {: id="i1" }事项 @2026-03-10
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].name).toBe('首页测试改版');
+    expect(project!.tasks[0].links).toHaveLength(1);
+    expect(project!.tasks[0].links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+  });
+
+  it('任务块引用与下方链接合并', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }首页((20260310210016-gkixdit '测试'))改版 #任务#
+{: id="after-t" }
+  - {: id="link1" }[需求文档](https://example.com/homepage)
+{: id="after-link1" }
+  - {: id="i1" }事项 @2026-03-10
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].name).toBe('首页测试改版');
+    expect(project!.tasks[0].links).toHaveLength(2);
+    expect(project!.tasks[0].links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(project!.tasks[0].links![1]).toEqual({ name: '需求文档', url: 'https://example.com/homepage' });
+  });
+});
+
 describe('parseKramdown 事项链接解析', () => {
   it('事项下方单个链接：正确关联到事项', () => {
     const kramdown = `## 项目

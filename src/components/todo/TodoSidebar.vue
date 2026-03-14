@@ -18,22 +18,25 @@
             <span>{{ t('todo').expired }} ({{ expiredItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.expired" class="todo-items">
-            <div
+            <Card
               v-for="item in expiredItems"
               :key="item.id"
-              class="todo-item status-expired"
+              status="expired"
+              :show-header="true"
+              :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
-              @contextmenu.prevent="handleContextMenu($event, item)"
+              @contextmenu="handleContextMenu($event, item)"
             >
-              <div class="item-header">
+              <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
                 <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
-              </div>
+              </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
-              <div class="item-footer">
+              <template #footer>
                 <div class="item-actions-hover">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -45,7 +48,7 @@
                   <span
                     v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="开始专注"
+                    :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
@@ -73,8 +76,8 @@
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
-              </div>
-            </div>
+              </template>
+            </Card>
           </div>
         </div>
 
@@ -88,22 +91,25 @@
             <span>{{ t('todo').today }} ({{ todayItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.today" class="todo-items">
-            <div
+            <Card
               v-for="item in todayItems"
               :key="item.id"
-              class="todo-item status-today"
+              status="today"
+              :show-header="true"
+              :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
-              @contextmenu.prevent="handleContextMenu($event, item)"
+              @contextmenu="handleContextMenu($event, item)"
             >
-              <div class="item-header">
+              <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
                 <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
-              </div>
+              </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
-              <div class="item-footer">
+              <template #footer>
                 <div class="item-actions-hover">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -115,7 +121,7 @@
                   <span
                     v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="开始专注"
+                    :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
@@ -143,8 +149,8 @@
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
-              </div>
-            </div>
+              </template>
+            </Card>
           </div>
         </div>
 
@@ -158,22 +164,25 @@
             <span>{{ t('todo').tomorrow }} ({{ tomorrowItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.tomorrow" class="todo-items">
-            <div
+            <Card
               v-for="item in tomorrowItems"
               :key="item.id"
-              class="todo-item status-tomorrow"
+              status="tomorrow"
+              :show-header="true"
+              :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
-              @contextmenu.prevent="handleContextMenu($event, item)"
+              @contextmenu="handleContextMenu($event, item)"
             >
-              <div class="item-header">
+              <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
                 <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
-              </div>
+              </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
-              <div class="item-footer">
+              <template #footer>
                 <div class="item-actions-hover">
                   <span
                     class="block__icon b3-tooltips b3-tooltips__sw"
@@ -185,7 +194,7 @@
                   <span
                     v-if="!pomodoroStore.isFocusing"
                     class="block__icon b3-tooltips b3-tooltips__sw"
-                    aria-label="开始专注"
+                    :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
@@ -213,8 +222,8 @@
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
-              </div>
-            </div>
+              </template>
+            </Card>
           </div>
         </div>
 
@@ -235,22 +244,25 @@
             >
               <div class="date-label">{{ formatDateLabel(date) }}</div>
               <div class="todo-items">
-                <div
+                <Card
                   v-for="item in groupedFutureItems.get(date)"
                   :key="item.id"
-                  class="todo-item status-future"
+                  status="future"
+                  :show-header="true"
+                  :show-footer="true"
+                  :clickable="true"
                   @click="openItem(item)"
-                  @contextmenu.prevent="handleContextMenu($event, item)"
+                  @contextmenu="handleContextMenu($event, item)"
                 >
-                  <div class="item-header">
+                  <template #header>
                     <div class="item-header-left">
                       <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                     </div>
                     <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
-                  </div>
+                  </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
                   <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
-                  <div class="item-footer">
+                  <template #footer>
                     <div class="item-actions-hover">
                       <span
                         class="block__icon b3-tooltips b3-tooltips__sw"
@@ -262,7 +274,7 @@
                       <span
                         v-if="!pomodoroStore.isFocusing"
                         class="block__icon b3-tooltips b3-tooltips__sw"
-                        aria-label="开始专注"
+                        :aria-label="t('todo').startFocusAria"
                         @click.stop="openPomodoroDialog(item)"
                       >
                         <svg><use xlink:href="#iconClock"></use></svg>
@@ -290,8 +302,8 @@
                         <svg><use xlink:href="#iconCalendar"></use></svg>
                       </span>
                     </div>
-                  </div>
-                </div>
+                  </template>
+                </Card>
               </div>
             </div>
           </div>
@@ -307,22 +319,25 @@
             <span>{{ t('todo').completed }} ({{ completedItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.completed" class="todo-items">
-            <div
+            <Card
               v-for="item in completedItems.slice(0, 10)"
               :key="item.id"
-              class="todo-item status-completed"
+              status="completed"
+              :show-header="true"
+              :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
-              @contextmenu.prevent="handleContextMenu($event, item)"
+              @contextmenu="handleContextMenu($event, item)"
             >
-              <div class="item-header">
+              <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
                 <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
-              </div>
+              </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
-              <div class="item-footer">
+              <template #footer>
                 <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
@@ -331,8 +346,8 @@
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
-              </div>
-            </div>
+              </template>
+            </Card>
           </div>
         </div>
 
@@ -346,22 +361,25 @@
             <span>{{ t('todo').abandoned }} ({{ abandonedItems.length }})</span>
           </div>
           <div v-show="!collapsedSections.abandoned" class="todo-items">
-            <div
+            <Card
               v-for="item in abandonedItems.slice(0, 10)"
               :key="item.id"
-              class="todo-item status-abandoned"
+              status="abandoned"
+              :show-header="true"
+              :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
-              @contextmenu.prevent="handleContextMenu($event, item)"
+              @contextmenu="handleContextMenu($event, item)"
             >
-              <div class="item-header">
+              <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
                 <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
-              </div>
+              </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
-              <div class="item-footer">
+              <template #footer>
                 <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
@@ -370,8 +388,8 @@
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
-              </div>
-            </div>
+              </template>
+            </Card>
           </div>
         </div>
       </div>
@@ -383,6 +401,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
+import Card from '@/components/common/Card.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
@@ -420,6 +439,7 @@ const getStatusEmoji = (item: Item): string => {
 
 const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
 
+// 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const pomodoroStore = usePomodoroStore();
@@ -659,7 +679,7 @@ const handleAbandon = async (item: Item) => {
 // 打开番茄钟弹框
 const openPomodoroDialog = (item: Item) => {
   const dialog = createDialog({
-    title: '开始专注',
+    title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
     height: 'auto'
@@ -828,71 +848,6 @@ onUnmounted(() => {
   gap: 4px;
 }
 
-.todo-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 12px 3px 12px;
-  background: var(--b3-theme-background);
-  border-radius: var(--b3-border-radius);
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid var(--b3-border-color);
-
-  &:hover {
-    background: var(--b3-theme-surface);
-    border-color: var(--b3-theme-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  &.status-completed {
-    opacity: 0.6;
-    border-left: 3px solid var(--b3-theme-success);
-
-    .item-content {
-      text-decoration: line-through;
-    }
-  }
-
-  &.status-abandoned {
-    opacity: 0.5;
-    border-left: 3px solid var(--b3-theme-on-surface);
-
-    .item-content {
-      text-decoration: line-through;
-      color: var(--b3-theme-on-surface);
-    }
-  }
-
-  &.status-expired {
-    border-left: 3px solid #f44336;
-
-    .item-time {
-      color: #f44336;
-    }
-  }
-
-  &.status-today,
-  &.status-tomorrow,
-  &.status-future {
-    border-left: 3px solid var(--b3-theme-primary);
-  }
-}
-
-.item-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  margin: -8px -12px 0 -12px;
-  padding: 6px 12px;
-  font-size: 12px;
-  background: var(--b3-theme-surface-lighter);
-  border-bottom: 1px solid var(--b3-border-color);
-  border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;
-}
-
 .item-header-left {
   display: flex;
   align-items: center;
@@ -937,23 +892,13 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-.item-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 2px;
-  margin-top: 2px;
-  border-top: 1px solid var(--b3-border-color);
-}
-
 .item-actions-hover {
   display: flex;
   gap: 4px;
   opacity: 0;
   transition: opacity 0.2s;
 
-  .todo-item:hover & {
+  .card:hover & {
     opacity: 1;
   }
 

@@ -84,17 +84,17 @@ const filteredCalendarEvents = computed(() => {
 
 // 视图选项
 const viewOptions = [
-  { value: 'dayGridMonth', text: t('calendar').month },
-  { value: 'timeGridWeek', text: t('calendar').week },
-  { value: 'timeGridDay', text: t('calendar').day },
-  { value: 'listWeek', text: t('calendar').list }
+  { value: 'dayGridMonth', label: t('calendar').month },
+  { value: 'timeGridWeek', label: t('calendar').week },
+  { value: 'timeGridDay', label: t('calendar').day },
+  { value: 'listWeek', label: t('calendar').list }
 ];
 
 // 分组选项
 const groupOptions = computed(() => {
-  const options = [{ value: '', text: t('settings').projectGroups.allGroups }];
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, text: g.name || t('settings').projectGroups.unnamed });
+    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
 });
@@ -358,6 +358,11 @@ watch(currentView, (newView) => {
     min-width: 60px;
     margin-left: 8px;
     padding: 4px 24px 4px 8px;
+  }
+
+  /* 两个下拉框之间的间距 */
+  .sy-select + .sy-select {
+    margin-left: 12px;
   }
 
   .refresh-btn {

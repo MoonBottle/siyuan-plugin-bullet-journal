@@ -25,7 +25,7 @@
       </div>
       <template v-else>
         <div
-          v-for="(group, groupIndex) in messageGroups"
+          v-for="(group, groupIndex) in enhancedMessageGroups"
           :key="groupIndex"
           class="chat-message-group"
           :class="`chat-message-group--${group.type}`"
@@ -43,17 +43,19 @@
                 </span>
               </div>
               <div class="chat-message-group__card">
-                <template v-for="(message, msgIndex) in group.messages" :key="message.id">
-                  <ChatMessage
-                    v-if="shouldRenderMessage(message)"
-                    :message="message"
-                    :tool-call-info="getMessageToolCallInfo(message)"
-                    :is-grouped="true"
-                    :is-first="!group.messages.slice(0, msgIndex).some(m => shouldRenderMessage(m))"
-                    :is-last="!group.messages.slice(msgIndex + 1).some(m => shouldRenderMessage(m))"
-                    @insert-to-note="handleInsertToNote"
-                  />
-                </template>
+                <ChatMessage
+                  v-for="(message, msgIndex) in group.messages"
+                  :key="message.id"
+                  :message="message"
+                  :tool-call-info="message.toolCallInfo"
+                  :is-grouped="true"
+                  :is-first="msgIndex === group.firstRenderIndex"
+                  :is-last="msgIndex === group.lastRenderIndex"
+                  :show-header="message.showHeader"
+                  :show-footer="message.showFooter"
+                  :show-insert-btn="message.showInsertBtn"
+                  @insert-to-note="handleInsertToNote"
+                />
               </div>
             </template>
             <!-- 用户组 -->
@@ -62,10 +64,13 @@
                 v-for="(message, msgIndex) in group.messages"
                 :key="message.id"
                 :message="message"
-                :tool-call-info="getMessageToolCallInfo(message)"
+                :tool-call-info="message.toolCallInfo"
                 :is-grouped="false"
-                :is-first="msgIndex === 0"
-                :is-last="msgIndex === group.messages.length - 1"
+                :is-first="msgIndex === group.firstRenderIndex"
+                :is-last="msgIndex === group.lastRenderIndex"
+                :show-header="message.showHeader"
+                :show-footer="message.showFooter"
+                :show-insert-btn="message.showInsertBtn"
                 @insert-to-note="handleInsertToNote"
               />
             </template>
@@ -85,18 +90,13 @@
             <div class="chat-panel__provider-avatar">
               <AiAssistantIcon />
             </div>
-            <button
-              ref="providerSelectRef"
-              class="chat-panel__select-btn"
-              :class="{ 'is-disabled': isLoading, 'is-single-provider': !isLoading && enabledProviders.length <= 1 }"
+            <SySelect
+              v-model="selectedProviderId"
+              :options="providerOptions"
+              :placeholder="t('aiChat').selectProvider"
               :disabled="isLoading || enabledProviders.length <= 1"
-              @click="handleProviderSelectClick"
-            >
-              <span class="chat-panel__select-label">{{ currentProvider?.name || t('aiChat').selectProvider }}</span>
-              <svg v-if="enabledProviders.length > 1" class="chat-panel__select-arrow">
-                <use xlink:href="#iconDown"></use>
-              </svg>
-            </button>
+              placement="bottom"
+            />
           </div>
           <button class="chat-panel__settings-btn" @click="handleOpenSettings">
             <svg><use xlink:href="#iconSettings"></use></svg>
@@ -118,21 +118,13 @@
         <div class="chat-panel__card-footer">
           <span class="chat-panel__card-footer-spacer"></span>
           <div class="chat-panel__card-footer-actions">
-            <button
-              ref="modelSelectRef"
-              class="chat-panel__select-btn chat-panel__select-btn--small"
-              :class="{
-                'is-disabled': isLoading || !currentProvider || availableModels.length === 0,
-                'is-single-model': !isLoading && !!currentProvider && availableModels.length === 1
-              }"
-              :disabled="isLoading || !currentProvider || availableModels.length === 0 || availableModels.length <= 1"
-              @click="handleModelSelectClick"
-            >
-              <span class="chat-panel__select-label">{{ selectedModel || t('aiChat').selectModel }}</span>
-              <svg v-if="availableModels.length > 1" class="chat-panel__select-arrow">
-                <use xlink:href="#iconDown"></use>
-              </svg>
-            </button>
+            <SySelect
+              v-model="selectedModel"
+              :options="modelOptions"
+              :placeholder="t('aiChat').selectModel"
+              :disabled="isLoading || !currentProvider || availableModels.length === 0"
+              placement="top"
+            />
             <button
               class="chat-panel__send-btn"
               :disabled="!canSend"
@@ -180,23 +172,39 @@ import { t } from '@/i18n';
 import ChatMessage from './ChatMessage.vue';
 import ChatInput from './ChatInput.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import type { Project, ProjectGroup, Item } from '@/types/models';
 import type { AIProviderConfig, ChatMessage as ChatMessageType } from '@/types/ai';
 import { appendBlock, pushMsg } from '@/api';
-import { ensureHeadingNewlines, normalizeExcessiveNewlines } from '@/utils/markdownUtils';
-import { getActiveEditor, Menu } from 'siyuan';
+import { smartFormatMarkdown } from '@/utils/markdownRenderer';
+import { getActiveEditor } from 'siyuan';
 
-// 消息分组类型
-interface MessageGroup {
+// 带渲染元数据的消息
+interface RenderMessage extends ChatMessageType {
+  // 工具调用信息（如果是 tool 消息，用于显示工具名称和参数）
+  toolCallInfo: { name: string; arguments: string } | null;
+  // 是否显示头部（头像、名称、时间）
+  showHeader: boolean;
+  // 是否显示底部（token 统计）
+  showFooter: boolean;
+  // 是否显示插入按钮
+  showInsertBtn: boolean;
+}
+
+// 增强的消息组
+interface EnhancedMessageGroup {
   type: 'user' | 'assistant';
-  messages: ChatMessageType[];
+  messages: RenderMessage[];
   firstMessage: ChatMessageType;
+  firstRenderIndex: number;
+  lastRenderIndex: number;
 }
 
 const props = defineProps<{
   projects: Project[];
   groups: ProjectGroup[];
   items: Item[];
+  showToolCalls?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -207,8 +215,6 @@ const aiStore = useAIStore();
 
 const messagesContainerRef = ref<HTMLDivElement>();
 const chatInputRef = ref<InstanceType<typeof ChatInput>>();
-const providerSelectRef = ref<HTMLButtonElement>();
-const modelSelectRef = ref<HTMLButtonElement>();
 
 const messages = computed(() => aiStore.currentMessages);
 const isLoading = computed(() => aiStore.isLoading);
@@ -241,6 +247,22 @@ const availableModels = computed(() => {
   return currentProvider.value?.models || [];
 });
 
+// 供应商选项列表
+const providerOptions = computed(() => {
+  return enabledProviders.value.map(provider => ({
+    value: provider.id,
+    label: provider.name
+  }));
+});
+
+// 模型选项列表
+const modelOptions = computed(() => {
+  return availableModels.value.map(model => ({
+    value: model,
+    label: model
+  }));
+});
+
 // 当前选中的模型
 const selectedModel = computed({
   get: () => currentProvider.value?.defaultModel || '',
@@ -258,45 +280,120 @@ watch(() => enabledProviders.value, (providers) => {
   }
 }, { immediate: true });
 
-// 过滤掉系统消息
-const visibleMessages = computed(() => {
-  return messages.value.filter(m => m.role !== 'system');
-});
+// 计算工具调用信息
+function computeToolCallInfo(message: ChatMessageType) {
+  if (message.role !== 'tool' || !message.toolCallId) {
+    return null;
+  }
 
-// 消息分组：连续的 AI 消息合并为一组
-const messageGroups = computed(() => {
-  const groups: MessageGroup[] = [];
-  let currentGroup: MessageGroup | null = null;
+  // 从当前消息位置向前查找，找到最近的一条包含该 toolCallId 的 assistant 消息
+  const messageIndex = messages.value.findIndex(m => m.id === message.id);
+  const searchStartIndex = messageIndex >= 0 ? messageIndex : messages.value.length;
 
-  for (const message of visibleMessages.value) {
-    if (message.role === 'user') {
-      // 用户消息单独成组
-      if (currentGroup) groups.push(currentGroup);
-      currentGroup = {
-        type: 'user',
-        messages: [message],
-        firstMessage: message
-      };
-    } else {
-      // AI 消息（assistant/tool）
-      if (currentGroup?.type === 'assistant') {
-        // 继续当前 AI 组
-        currentGroup.messages.push(message);
-      } else {
-        // 开始新的 AI 组
-        if (currentGroup) groups.push(currentGroup);
-        currentGroup = {
-          type: 'assistant',
-          messages: [message],
-          firstMessage: message
+  for (let i = searchStartIndex - 1; i >= 0; i--) {
+    const msg = messages.value[i];
+    if (msg.role === 'assistant' && msg.toolCalls) {
+      const toolCall = msg.toolCalls.find((tc: any) => tc.id === message.toolCallId);
+      if (toolCall) {
+        return {
+          name: toolCall.function.name,
+          arguments: toolCall.function.arguments
         };
       }
     }
   }
 
-  if (currentGroup) groups.push(currentGroup);
+  return null;
+}
+
+// 增强的消息分组：预计算所有渲染相关的元数据
+const enhancedMessageGroups = computed<EnhancedMessageGroup[]>(() => {
+  const groups: EnhancedMessageGroup[] = [];
+  let currentGroup: EnhancedMessageGroup | null = null;
+
+  for (const message of messages.value) {
+    // 跳过系统消息
+    if (message.role === 'system') continue;
+
+    // 如果 showToolCalls 为 false，直接过滤 tool 消息
+    if (message.role === 'tool' && props.showToolCalls === false) continue;
+
+    // 预计算工具调用信息
+    const toolCallInfo = message.role === 'tool'
+      ? computeToolCallInfo(message)
+      : null;
+
+    // showHeader: 用户消息显示头部，AI 消息在分组模式下不显示（由 Panel 统一显示）
+    const showHeader = message.role === 'user';
+
+    // showFooter: 只有 assistant 消息且不含 toolCalls 时才显示
+    const showFooter = message.role === 'assistant' && !message.toolCalls?.length;
+
+    const renderMessage: RenderMessage = {
+      ...message,
+      toolCallInfo,
+      showHeader,
+      showFooter,
+      showInsertBtn: false // 临时值，后面根据 isLast 设置
+    };
+
+    // 分组逻辑
+    if (message.role === 'user') {
+      // 用户消息单独成组
+      if (currentGroup) {
+        // 设置上一组的插入按钮
+        setInsertBtnForGroup(currentGroup);
+        groups.push(currentGroup);
+      }
+      currentGroup = {
+        type: 'user',
+        messages: [renderMessage],
+        firstMessage: message,
+        firstRenderIndex: 0,
+        lastRenderIndex: 0
+      };
+    } else {
+      // AI 消息（assistant/tool）
+      if (currentGroup?.type === 'assistant') {
+        const idx = currentGroup.messages.length;
+        currentGroup.messages.push(renderMessage);
+        currentGroup.lastRenderIndex = idx;
+      } else {
+        if (currentGroup) {
+          setInsertBtnForGroup(currentGroup);
+          groups.push(currentGroup);
+        }
+        currentGroup = {
+          type: 'assistant',
+          messages: [renderMessage],
+          firstMessage: message,
+          firstRenderIndex: 0,
+          lastRenderIndex: 0
+        };
+      }
+    }
+  }
+
+  if (currentGroup) {
+    setInsertBtnForGroup(currentGroup);
+    groups.push(currentGroup);
+  }
+
   return groups;
 });
+
+// 设置组的插入按钮（只有最后一条可插入的 assistant 消息显示）
+function setInsertBtnForGroup(group: EnhancedMessageGroup) {
+  if (group.type === 'assistant' && group.lastRenderIndex >= 0) {
+    const lastMsg = group.messages[group.lastRenderIndex];
+    const canInsert = lastMsg.role === 'assistant' &&
+                     !lastMsg.loading &&
+                     lastMsg.content?.trim();
+    if (canInsert) {
+      lastMsg.showInsertBtn = true;
+    }
+  }
+}
 
 const inputPlaceholder = computed(() => {
   if (!isAIEnabled.value) {
@@ -368,110 +465,8 @@ function handleOpenSettings() {
   emit('openSettings');
 }
 
-// 处理供应商选择点击
-function handleProviderSelectClick(event: MouseEvent) {
-  if (isLoading.value || enabledProviders.value.length <= 1) return;
-
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
-
-  event.stopPropagation();
-  event.preventDefault();
-
-  const rect = target.getBoundingClientRect();
-  const menu = new Menu('chat-panel-provider-select');
-
-  enabledProviders.value.forEach(provider => {
-    menu.addItem({
-      icon: provider.id === selectedProviderId.value ? 'iconCheck' : undefined,
-      label: provider.name,
-      click: () => {
-        aiStore.setActiveProvider(provider.id);
-      }
-    });
-  });
-
-  menu.open({
-    x: rect.left,
-    y: rect.bottom + 4
-  });
-}
-
-// 处理模型选择点击
-function handleModelSelectClick(event: MouseEvent) {
-  if (isLoading.value || !currentProvider.value || availableModels.value.length === 0) return;
-
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
-
-  event.stopPropagation();
-  event.preventDefault();
-
-  const rect = target.getBoundingClientRect();
-  const menu = new Menu('chat-panel-model-select');
-
-  availableModels.value.forEach(model => {
-    menu.addItem({
-      icon: model === selectedModel.value ? 'iconCheck' : undefined,
-      label: model,
-      click: () => {
-        if (currentProvider.value) {
-          currentProvider.value.defaultModel = model;
-        }
-      }
-    });
-  });
-
-  // 估算菜单高度（每项约32px），向上弹出
-  const estimatedMenuHeight = availableModels.value.length * 32 + 16;
-  menu.open({
-    x: rect.left,
-    y: rect.top - estimatedMenuHeight
-  });
-}
-
 function focusInput() {
   chatInputRef.value?.focus();
-}
-
-// 无可见内容的消息不渲染，避免空 DOM 占高度（逻辑需与 ChatMessage 显示规则一致）
-function shouldRenderMessage(message: ChatMessageType): boolean {
-  const m = message;
-  if (m.role !== 'assistant') return true;
-  if (m.loading || m.error) return true;
-  if (m.content?.trim()) return true;
-  // reasoning 仅在没有 toolCalls 时显示
-  if (m.reasoning?.trim() && !(m.toolCalls && m.toolCalls.length)) return true;
-  // usage 仅在无 toolCalls 时显示
-  if (m.usage && !(m.toolCalls && m.toolCalls.length)) return true;
-  return false;
-}
-
-// 获取消息对应的工具调用信息
-function getMessageToolCallInfo(message: any) {
-  if (message.role !== 'tool' || !message.toolCallId) {
-    return null;
-  }
-
-  // 查找对应的 assistant 消息，获取 toolCalls
-  // 从当前消息位置向前查找，找到最近的一条包含该 toolCallId 的 assistant 消息
-  const messageIndex = messages.value.findIndex(m => m.id === message.id);
-  const searchStartIndex = messageIndex >= 0 ? messageIndex : messages.value.length;
-
-  for (let i = searchStartIndex - 1; i >= 0; i--) {
-    const msg = messages.value[i];
-    if (msg.role === 'assistant' && msg.toolCalls) {
-      const toolCall = msg.toolCalls.find((tc: any) => tc.id === message.toolCallId);
-      if (toolCall) {
-        return {
-          name: toolCall.function.name,
-          arguments: toolCall.function.arguments
-        };
-      }
-    }
-  }
-
-  return null;
 }
 
 // 获取当前激活的文档 ID
@@ -493,10 +488,10 @@ async function handleInsertToNote(message: ChatMessageType) {
   }
 
   try {
-    // 格式化消息内容（预处理 ATX 标题换行 + 压缩多余空行）
+    // 使用 Lute 格式化消息内容（规范化 Markdown 格式 + 压缩多余空行）
     const timestamp = new Date(message.timestamp).toLocaleString('zh-CN');
-    const normalizedContent = normalizeExcessiveNewlines(ensureHeadingNewlines(message.content));
-    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${normalizedContent.replace(/\n/g, '\n> ')}`;
+    const formattedContent = smartFormatMarkdown(message.content);
+    const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${formattedContent.replace(/\n/g, '\n> ')}`;
 
     await appendBlock('markdown', contentToInsert, docId);
     await pushMsg(t('aiChat').insertSuccess, 3000);
@@ -738,57 +733,38 @@ function formatTime(timestamp: number): string {
     }
   }
 
-  &__select-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    padding: 4px 10px;
-    height: 28px;
-    border-radius: 6px;
-    border: none;
-    background: var(--b3-theme-surface);
-    color: var(--b3-theme-on-surface);
-    cursor: pointer;
-    outline: none;
-    transition: all 0.2s;
+  // SySelect 样式覆盖 - 保持和改造前按钮样式一致
+  &__provider-select,
+  &__card-footer-actions {
+    :deep(.sy-select__trigger) {
+      background: var(--b3-theme-surface);
+      border-color: var(--b3-theme-surface-lighter);
+      color: var(--b3-theme-on-surface);
 
-    &:hover:not(:disabled) {
-      background: var(--b3-theme-surface-lighter);
+      &:hover:not(:disabled) {
+        background: var(--b3-theme-surface-lighter);
+        border-color: var(--b3-theme-surface-lighter);
+      }
+
+      &.is-open {
+        border-color: var(--b3-theme-primary);
+        box-shadow: 0 0 0 2px var(--b3-theme-primary-lightest);
+      }
+
+      &:disabled,
+      &.is-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     }
 
-    &:disabled,
-    &.is-disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    :deep(.sy-select__label) {
+      color: var(--b3-theme-on-background);
     }
 
-    /* 仅有一个供应商时：不可切换但保持正常样式，不灰显 */
-    &.is-single-provider[disabled],
-    &.is-single-model[disabled] {
-      opacity: 1;
-      cursor: default;
+    :deep(.sy-select__arrow) {
+      fill: var(--b3-theme-on-surface);
     }
-
-    &--small {
-      font-size: 12px;
-      padding: 2px 8px;
-      height: 24px;
-    }
-  }
-
-  &__select-label {
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__select-arrow {
-    width: 12px;
-    height: 12px;
-    fill: var(--b3-theme-on-surface);
-    flex-shrink: 0;
   }
 }
 
@@ -845,14 +821,10 @@ function formatTime(timestamp: number): string {
   &__card {
     background: var(--b3-theme-surface);
     border-radius: var(--b3-border-radius);
-    padding: 6px 12px;
+    padding: 8px 12px;
     display: flex;
     flex-direction: column;
-    gap: 0;
-  }
-
-  &__card :deep(.chat-message + .chat-message) {
-    margin-top: 4px;
+    gap: 6px;
   }
 
   &__avatar {

@@ -3,24 +3,35 @@
  * 使用文件存储进行中的番茄钟信息
  */
 import { defineStore } from 'pinia';
-import type { ActivePomodoro, ActivePomodoroData, Item } from '@/types/models';
-import { appendBlock } from '@/api';
+import type { ActivePomodoro, ActivePomodoroData, Item, PendingPomodoroCompletion } from '@/types/models';
+import { appendBlock, setBlockAttrs, getBlockAttrs } from '@/api';
 import { showMessage } from '@/utils/dialog';
 import { showPomodoroCompleteNotification } from '@/utils/notification';
-import { eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import {
   saveActivePomodoro,
   loadActivePomodoro,
-  removeActivePomodoro
+  removeActivePomodoro,
+  savePendingCompletion,
+  removePendingCompletion,
+  saveActiveBreak,
+  removeActiveBreak
 } from '@/utils/pomodoroStorage';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
+import { defaultPomodoroSettings } from '@/settings';
+import { t } from '@/i18n';
 
 interface PomodoroState {
   activePomodoro: ActivePomodoro | null;
   timerInterval: number | null;
   timerStartTimestamp: number | null; // 计时器启动时的时间戳
   lastAccumulatedSeconds: number; // 用于计算时间差的基础累计秒数
+  // 休息状态（不持久化）
+  isBreakActive: boolean;
+  breakRemainingSeconds: number;
+  breakTotalSeconds: number; // 休息总时长（秒），用于进度环
+  breakInterval: number | null;
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
@@ -28,7 +39,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
     activePomodoro: null,
     timerInterval: null,
     timerStartTimestamp: null,
-    lastAccumulatedSeconds: 0
+    lastAccumulatedSeconds: 0,
+    isBreakActive: false,
+    breakRemainingSeconds: 0,
+    breakTotalSeconds: 0,
+    breakInterval: null
   }),
 
   getters: {
@@ -36,6 +51,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
     remainingTime: (state) => {
       if (!state.activePomodoro) return 0;
       return state.activePomodoro.remainingSeconds;
+    },
+    isStopwatch: (state) => state.activePomodoro?.timerMode === 'stopwatch',
+    elapsedSeconds: (state) => {
+      if (!state.activePomodoro) return 0;
+      return state.activePomodoro.accumulatedSeconds;
     }
   },
 
@@ -43,19 +63,24 @@ export const usePomodoroStore = defineStore('pomodoro', {
     /**
      * 开始专注
      * @param item 选中的事项
-     * @param durationMinutes 专注时长（分钟）
+     * @param durationMinutes 专注时长（分钟），正计时时为 0
      * @param parentBlockId 父块ID（事项块ID）
      * @param plugin 思源插件实例
+     * @param timerMode 计时模式：countdown 倒计时 / stopwatch 正计时
      */
     async startPomodoro(
       item: Item,
       durationMinutes: number,
       parentBlockId: string,
-      plugin: any
+      plugin: any,
+      timerMode: 'countdown' | 'stopwatch' = 'countdown'
     ): Promise<boolean> {
       try {
         const now = dayjs();
         const startTimestamp = now.valueOf();
+
+        // 正计时：targetDurationMinutes 设为极大值，不自动结束
+        const targetMinutes = timerMode === 'stopwatch' ? 16 * 60 : durationMinutes;
 
         // 构建番茄钟数据
         const pomodoroData: ActivePomodoroData = {
@@ -63,7 +88,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           itemId: item.id,
           itemContent: item.content,
           startTime: startTimestamp,
-          targetDurationMinutes: durationMinutes,
+          targetDurationMinutes: targetMinutes,
           accumulatedSeconds: 0,
           isPaused: false,
           pauseCount: 0,
@@ -72,7 +97,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
           projectName: item.project?.name,
           taskId: item.task?.id,
           taskName: item.task?.name,
-          taskLevel: item.task?.level
+          taskLevel: item.task?.level,
+          timerMode
         };
 
         // 保存到文件
@@ -82,10 +108,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
           return false;
         }
 
-        // 设置当前专注状态
+        // 设置当前专注状态（正计时 remainingSeconds 表示剩余，正计时不自动结束故设大值）
+        const remainingSeconds = timerMode === 'stopwatch' ? targetMinutes * 60 : durationMinutes * 60;
         this.activePomodoro = {
           ...pomodoroData,
-          remainingSeconds: durationMinutes * 60
+          remainingSeconds
         };
 
         // 启动倒计时
@@ -94,11 +121,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 触发专注开始事件
         eventBus.emit(Events.POMODORO_STARTED);
 
-        showMessage(`🍅 开始专注「${item.content}」· ${durationMinutes}分钟`);
+        const mode = timerMode === 'stopwatch' ? t('pomodoro').startFocusStatusStopwatch : `${durationMinutes}${t('common').minutes}`;
+        const msg = t('pomodoro').startFocusStatus.replace('{content}', item.content).replace('{mode}', mode);
+        showMessage(msg);
         return true;
       } catch (error) {
         console.error('[Pomodoro] 开始专注失败:', error);
-        showMessage('❌ 开始专注失败', 'error');
+        showMessage(`❌ ${t('pomodoro').startFocusFailed}`, 'error');
         return false;
       }
     },
@@ -129,6 +158,15 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (plugin) {
           await saveActivePomodoro(plugin, this.activePomodoro);
         }
+
+        // 触发 TICK 更新悬浮按钮和底栏（暂停时显示播放图标）
+        eventBus.emit(Events.POMODORO_TICK, {
+          remainingSeconds: this.activePomodoro.remainingSeconds,
+          accumulatedSeconds: this.activePomodoro.accumulatedSeconds,
+          isPaused: true,
+          isStopwatch: this.activePomodoro.timerMode === 'stopwatch',
+          targetDurationMinutes: this.activePomodoro.targetDurationMinutes
+        });
 
         showMessage(`⏸️ 已暂停 · 第 ${this.activePomodoro.pauseCount} 次`);
         return true;
@@ -170,6 +208,15 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (plugin) {
           await saveActivePomodoro(plugin, this.activePomodoro);
         }
+
+        // 触发 TICK 更新悬浮按钮和底栏（恢复时显示暂停图标）
+        eventBus.emit(Events.POMODORO_TICK, {
+          remainingSeconds: this.activePomodoro.remainingSeconds,
+          accumulatedSeconds: this.activePomodoro.accumulatedSeconds,
+          isPaused: false,
+          isStopwatch: this.activePomodoro.timerMode === 'stopwatch',
+          targetDurationMinutes: this.activePomodoro.targetDurationMinutes
+        });
 
         showMessage('▶️ 继续专注');
         return true;
@@ -227,10 +274,20 @@ export const usePomodoroStore = defineStore('pomodoro', {
       const targetSeconds = this.activePomodoro.targetDurationMinutes * 60;
       this.activePomodoro.remainingSeconds = Math.max(0, targetSeconds - this.activePomodoro.accumulatedSeconds);
 
-      // 检查是否达到目标时长
-      if (this.activePomodoro.accumulatedSeconds >= targetSeconds) {
+      // 检查是否达到目标时长（正计时不自动完成，由用户手动结束）
+      const isStopwatch = this.activePomodoro.timerMode === 'stopwatch';
+      if (!isStopwatch && this.activePomodoro.accumulatedSeconds >= targetSeconds) {
         this.completePomodoro();
       }
+
+      // 触发每秒更新事件，供外部（悬浮按钮、底栏）订阅
+      eventBus.emit(Events.POMODORO_TICK, {
+        remainingSeconds: this.activePomodoro.remainingSeconds,
+        accumulatedSeconds: this.activePomodoro.accumulatedSeconds,
+        isPaused: this.activePomodoro.isPaused,
+        isStopwatch: this.activePomodoro.timerMode === 'stopwatch',
+        targetDurationMinutes: this.activePomodoro.targetDurationMinutes
+      });
     },
 
     /**
@@ -280,78 +337,127 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
-     * 完成专注
-     * @param plugin 思源插件实例
+     * 完成专注：先持久化待完成记录，再删除进行中文件，触发弹窗补填说明
+     * 记录由 savePomodoroRecordFromPending 在用户确认后写入
      */
     async completePomodoro(plugin?: any): Promise<boolean> {
       if (!this.activePomodoro) return false;
 
+      const pluginToUse = plugin ?? usePlugin();
+      if (!pluginToUse) {
+        showMessage('❌ 无法保存专注记录', 'error');
+        return false;
+      }
+
       try {
-        const {
-          blockId,
-          itemContent,
-          startTime,
-          accumulatedSeconds
-        } = this.activePomodoro;
+        const ap = this.activePomodoro;
+        const now = Date.now();
+        const actualMinutes = Math.floor(ap.accumulatedSeconds / 60);
 
-        const now = dayjs();
-        const dateStr = now.format('YYYY-MM-DD');
-        const endTimeStr = now.format('HH:mm:ss');
-        const startTimeStr = dayjs(startTime).format('HH:mm:ss');
+        // 1. 构建并持久化待完成记录
+        const pending: PendingPomodoroCompletion = {
+          blockId: ap.blockId,
+          itemId: ap.itemId,
+          itemContent: ap.itemContent,
+          startTime: ap.startTime,
+          endTime: now,
+          accumulatedSeconds: ap.accumulatedSeconds,
+          durationMinutes: actualMinutes,
+          projectId: ap.projectId,
+          projectName: ap.projectName,
+          taskId: ap.taskId,
+          taskName: ap.taskName,
+          taskLevel: ap.taskLevel,
+          timerMode: ap.timerMode
+        };
 
-        // 计算实际专注分钟数
-        const actualMinutes = Math.floor(accumulatedSeconds / 60);
-
-        // 判断是否有暂停
-        const hasPause = this.activePomodoro.pauseCount > 0 || this.activePomodoro.totalPausedSeconds > 0;
-
-        // 在文档中创建番茄钟记录
-        let pomodoroContent: string;
-        if (hasPause) {
-          // 有暂停时，包含实际专注时长
-          pomodoroContent = `🍅${actualMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
-        } else {
-          // 正常完成的只显示时间范围
-          pomodoroContent = `🍅${dateStr} ${startTimeStr}~${endTimeStr}`;
-        }
-        await appendBlock('markdown', pomodoroContent, blockId);
-
-        // 删除文件中的进行中的番茄钟记录（倒计时自然结束时可能未传入 plugin，从 usePlugin 获取）
-        const pluginToUse = plugin ?? usePlugin();
-        if (pluginToUse) {
-          await removeActivePomodoro(pluginToUse);
+        const saved = await savePendingCompletion(pluginToUse, pending);
+        if (!saved) {
+          showMessage('❌ 保存待完成记录失败', 'error');
+          return false;
         }
 
-        // 播放提示音
+        // 2. 删除进行中文件
+        await removeActivePomodoro(pluginToUse);
+
+        // 3. 清理状态
+        this.stopTimer();
+        this.activePomodoro = null;
+
+        // 4. 播放提示音
         this.playNotificationSound();
 
-        // 显示系统级完成通知
-        showPomodoroCompleteNotification(itemContent, actualMinutes, () => {
-          // 点击通知时聚焦思源窗口
+        // 5. 系统通知（此时用户可能在其他应用，提醒回来补填说明）
+        showPomodoroCompleteNotification(ap.itemContent, actualMinutes, () => {
           if (typeof window !== 'undefined' && (window as any).require) {
             try {
               const { ipcRenderer } = (window as any).require('electron');
               ipcRenderer.send('focus-window');
             } catch {
-              // 忽略错误
+              // 忽略
             }
           }
         });
 
-        // 同时显示思源内部通知（作为备份）
-        showMessage(`✅ 专注完成「${itemContent}」· 实际专注 ${actualMinutes} 分钟`);
-
-        // 清理状态
-        this.stopTimer();
-        this.activePomodoro = null;
-
-        // 触发专注完成事件
-        eventBus.emit(Events.POMODORO_COMPLETED);
+        // 6. 触发弹窗（由监听器显示完成弹窗）
+        eventBus.emit(Events.POMODORO_PENDING_COMPLETION, pending);
 
         return true;
       } catch (error) {
         console.error('[Pomodoro] 完成专注失败:', error);
         showMessage('❌ 完成专注失败', 'error');
+        return false;
+      }
+    },
+
+    /**
+     * 从待完成记录保存番茄钟（弹窗确认后调用）
+     * @param plugin 思源插件实例
+     * @param pending 待完成记录
+     * @param description 事项说明（选填）
+     */
+    async savePomodoroRecordFromPending(
+      plugin: any,
+      pending: PendingPomodoroCompletion,
+      description: string
+    ): Promise<boolean> {
+      try {
+        const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
+        const recordMode = pomodoro.recordMode ?? 'block';
+        const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
+
+        const dateStr = dayjs(pending.startTime).format('YYYY-MM-DD');
+        const startTimeStr = dayjs(pending.startTime).format('HH:mm:ss');
+        const endTimeStr = dayjs(pending.endTime).format('HH:mm:ss');
+        const descPart = description.trim() ? ' ' + description.trim() : '';
+        const valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}${descPart}`;
+
+        if (recordMode === 'attr') {
+          const attrName = `${attrPrefix}-${pending.startTime}`;
+          const existingAttrs = await getBlockAttrs(pending.blockId).catch(() => ({}));
+          const newAttrs: Record<string, string> = {
+            ...existingAttrs,
+            [attrName]: valueContent,
+            bookmark: '🍅'
+          };
+          await setBlockAttrs(pending.blockId, newAttrs);
+        } else {
+          const pomodoroContent = `🍅${valueContent}`;
+          await appendBlock('markdown', pomodoroContent, pending.blockId);
+        }
+
+        await removePendingCompletion(plugin);
+
+        showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
+
+        eventBus.emit(Events.POMODORO_COMPLETED);
+        // 触发数据刷新，专注列表（含 attr 模式新记录）自动更新
+        eventBus.emit(Events.DATA_REFRESH);
+        broadcastDataRefresh();
+        return true;
+      } catch (error) {
+        console.error('[Pomodoro] 保存记录失败:', error);
+        showMessage(`❌ ${t('pomodoro').saveFailed}`, 'error');
         return false;
       }
     },
@@ -471,15 +577,26 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const dateStr = startTime.format('YYYY-MM-DD');
         const startTimeStr = startTime.format('HH:mm:ss');
         const endTimeStr = endTime.format('HH:mm:ss');
-
-        // 计算实际专注分钟数（使用目标时长，因为已经过期）
         const actualMinutes = data.targetDurationMinutes;
+        const valueContent = `${actualMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
 
-        // 在文档中创建带实际时长的番茄钟块
-        const pomodoroContent = `🍅${actualMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
-        await appendBlock('markdown', pomodoroContent, data.blockId);
+        const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
+        const recordMode = pomodoro.recordMode ?? 'block';
+        const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
 
-        // 删除文件
+        if (recordMode === 'attr') {
+          const attrName = `${attrPrefix}-${data.startTime}`;
+          const existingAttrs = await getBlockAttrs(data.blockId).catch(() => ({}));
+          await setBlockAttrs(data.blockId, {
+            ...existingAttrs,
+            [attrName]: valueContent,
+            bookmark: '🍅'
+          });
+        } else {
+          const pomodoroContent = `🍅${valueContent}`;
+          await appendBlock('markdown', pomodoroContent, data.blockId);
+        }
+
         if (plugin) {
           await removeActivePomodoro(plugin);
         }
@@ -513,6 +630,87 @@ export const usePomodoroStore = defineStore('pomodoro', {
       } catch (error) {
         console.warn('[Pomodoro] 播放提示音失败:', error);
       }
+    },
+
+    /**
+     * 开始休息（持久化到 active-break.json）
+     * @param minutes 休息时长（分钟）
+     * @param plugin 思源插件实例，用于持久化
+     */
+    async startBreak(minutes: number, plugin?: any): Promise<void> {
+      this.stopBreak(plugin);
+      const startTime = Date.now();
+      const totalSeconds = minutes * 60;
+      this.isBreakActive = true;
+      this.breakRemainingSeconds = totalSeconds;
+      this.breakTotalSeconds = totalSeconds;
+
+      if (plugin) {
+        await saveActiveBreak(plugin, { startTime, durationMinutes: minutes });
+      }
+
+      this.breakInterval = window.setInterval(() => {
+        this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
+        eventBus.emit(Events.BREAK_TICK, {
+          remainingSeconds: this.breakRemainingSeconds,
+          totalSeconds: this.breakTotalSeconds
+        });
+        if (this.breakRemainingSeconds <= 0) {
+          this.stopBreak(plugin ?? usePlugin()); // 会 emit BREAK_ENDED
+          showMessage(t('settings').pomodoro.breakEndMessage);
+          this.playNotificationSound();
+        }
+      }, 1000);
+
+      eventBus.emit(Events.BREAK_STARTED);
+    },
+
+    /**
+     * 停止休息
+     * @param plugin 思源插件实例，用于删除持久化文件
+     */
+    async stopBreak(plugin?: any): Promise<void> {
+      const wasActive = this.isBreakActive;
+      if (this.breakInterval) {
+        window.clearInterval(this.breakInterval);
+        this.breakInterval = null;
+      }
+      this.isBreakActive = false;
+      this.breakRemainingSeconds = 0;
+      this.breakTotalSeconds = 0;
+      if (wasActive && plugin) {
+        await removeActiveBreak(plugin);
+      }
+      if (wasActive) {
+        eventBus.emit(Events.BREAK_ENDED);
+      }
+    },
+
+    /**
+     * 从文件恢复休息状态（重启后调用）
+     * @param plugin 思源插件实例
+     * @param remainingSeconds 剩余秒数（由调用方根据 startTime/durationMinutes 计算）
+     */
+    restoreBreak(plugin: any, remainingSeconds: number, totalSeconds?: number): void {
+      if (this.isBreakActive) return;
+      this.isBreakActive = true;
+      this.breakRemainingSeconds = remainingSeconds;
+      this.breakTotalSeconds = totalSeconds ?? remainingSeconds;
+
+      this.breakInterval = window.setInterval(() => {
+        this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
+        eventBus.emit(Events.BREAK_TICK, {
+          remainingSeconds: this.breakRemainingSeconds,
+          totalSeconds: this.breakTotalSeconds
+        });
+        if (this.breakRemainingSeconds <= 0) {
+          this.stopBreak(plugin);
+          showMessage(t('settings').pomodoro.breakEndMessage);
+          this.playNotificationSound();
+        }
+      }, 1000);
+
+      eventBus.emit(Events.BREAK_STARTED);
     }
   }
 });

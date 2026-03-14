@@ -111,7 +111,7 @@ const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
       }
     };
 
-    const html = buildEventDetailContent(eventData, { preview: true });
+    const html = buildEventDetailContent(eventData);
     if (eventTooltipEl.value) {
       eventTooltipEl.value.innerHTML = html;
       nextTick(() => {
@@ -157,7 +157,7 @@ const getStatusTag = (status: 'completed' | 'abandoned'): string => {
 
 const openPomodoroDialog = (item: Item) => {
   const dialog = createDialog({
-    title: '开始专注',
+    title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
     height: 'auto'
@@ -369,8 +369,9 @@ onMounted(() => {
       width: '*',
       tree: true,
       template: (task) => {
-        const escapedText = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${task.text}</span>`;
+        const text = task.text ?? '';
+        const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<span class="gantt-task-text" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${text}</span>`;
       }
     },
     { name: 'start_date', label: t('gantt').startTime, align: 'center', width: 100 },
@@ -396,7 +397,8 @@ onMounted(() => {
 
   // 自定义任务文本 - 项目/任务/事项对应文字颜色
   gantt.templates.task_text = function(_start, _end, task) {
-    const escapedText = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const text = task.text ?? '';
+    const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const textColor = task.type === 'project'
       ? 'var(--b3-theme-on-secondary)'
       : String(task.id).startsWith('item-')
@@ -411,7 +413,7 @@ onMounted(() => {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    ">${task.text}</span>`;
+    ">${text}</span>`;
   };
 
   // 短条（≤1 天）在右侧显示文字，避免条内文字不可见
@@ -419,16 +421,17 @@ onMounted(() => {
   const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000;
   const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6;
   gantt.templates.rightside_text = function(start, end, task) {
+    const text = task.text ?? '';
     const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0);
-    if (duration > SHORT_BAR_THRESHOLD_MS || !task.text) return '';
-    if (props.viewMode !== 'month' && task.text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return '';
-    const escaped = (task.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (duration > SHORT_BAR_THRESHOLD_MS || !text) return '';
+    if (props.viewMode !== 'month' && text.length < MIN_TEXT_LENGTH_FOR_RIGHTSIDE) return '';
+    const escaped = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return `<span class="gantt-task-text gantt-rightside-text" data-gantt-tooltip="${escaped}" aria-label="${escaped}" style="
       color: var(--b3-theme-on-background);
       font-size: 12px;
       white-space: nowrap;
       margin-left: 4px;
-    ">${task.text}</span>`;
+    ">${text}</span>`;
   };
 
   // 本地化 - 根据插件语言设置
@@ -582,15 +585,15 @@ const setScaleConfig = (mode: 'day' | 'week' | 'month') => {
       break;
     case 'week':
       gantt.config.scales = [
-        { unit: 'week', step: 1, format: '第%W周' },
+        { unit: 'week', step: 1, format: t('gantt').weekFormat },
         { unit: 'day', step: 1, format: '%d' }
       ];
       gantt.config.scale_height = 50;
       break;
     case 'month':
       gantt.config.scales = [
-        { unit: 'month', step: 1, format: '%Y年%M' },
-        { unit: 'week', step: 1, format: '第%W周' }
+        { unit: 'month', step: 1, format: t('gantt').monthFormat },
+        { unit: 'week', step: 1, format: t('gantt').weekFormat }
       ];
       gantt.config.scale_height = 50;
       break;
@@ -685,13 +688,12 @@ const updateGantt = () => {
   height: 100% !important;
 }
 
-/* 悬浮事项详情弹框（与日历样式一致） */
+/* 悬浮事项详情弹框（与日历样式一致，无滚动条） */
 .gantt-event-tooltip {
   position: fixed;
   z-index: 10000;
   max-width: 440px;
-  max-height: 400px;
-  overflow: auto;
+  overflow: visible;
   padding: 12px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);

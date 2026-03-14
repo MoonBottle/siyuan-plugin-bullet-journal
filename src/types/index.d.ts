@@ -111,6 +111,17 @@ type doOperation = {
   retData: null;
 };
 
+// Lute 渲染引擎接口
+declare interface LuteInstance {
+  MarkdownStr: (name: string, content: string) => string;
+  FormatMd?: (content: string) => string;
+  HTML2Md?: (html: string) => string;
+}
+
+declare interface LuteConstructor {
+  New: () => LuteInstance;
+}
+
 interface Window {
   siyuan: {
     notebooks: any;
@@ -125,6 +136,8 @@ interface Window {
   _sy_plugin_sample: {
     [key: string]: any;
   };
+  // 思源笔记内置的 Lute Markdown 渲染引擎
+  Lute?: LuteConstructor;
 }
 
 

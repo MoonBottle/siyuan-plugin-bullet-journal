@@ -15,6 +15,7 @@ export interface AIStoreSettings {
   activeProviderId: string | null;
   conversations: ChatConversation[];
   currentConversationId: string | null;
+  showToolCalls?: boolean;
 }
 
 export const useAIStore = defineStore('ai', () => {
@@ -25,6 +26,7 @@ export const useAIStore = defineStore('ai', () => {
   const currentConversationId = ref<string | null>(null);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const showToolCalls = ref<boolean>(true); // 默认开启工具调用展示
 
   // Getters
   const activeProvider = computed(() => {
@@ -48,6 +50,8 @@ export const useAIStore = defineStore('ai', () => {
     return providers.value.filter(p => p.enabled);
   });
 
+  const showToolCallsEnabled = computed(() => showToolCalls.value);
+
   // Actions
 
   /**
@@ -65,6 +69,9 @@ export const useAIStore = defineStore('ai', () => {
     }
     if (settings.currentConversationId !== undefined) {
       currentConversationId.value = settings.currentConversationId;
+    }
+    if (settings.showToolCalls !== undefined) {
+      showToolCalls.value = settings.showToolCalls;
     }
     // 若当前选中的供应商已被禁用，则切换到第一个已启用的供应商
     const enabled = providers.value.filter(p => p.enabled);
@@ -100,6 +107,13 @@ export const useAIStore = defineStore('ai', () => {
    */
   function setActiveProvider(providerId: string | null) {
     activeProviderId.value = providerId;
+  }
+
+  /**
+   * 设置是否展示工具调用
+   */
+  function setShowToolCalls(value: boolean) {
+    showToolCalls.value = value;
   }
 
   /**
@@ -510,7 +524,8 @@ export const useAIStore = defineStore('ai', () => {
       providers: providers.value,
       activeProviderId: activeProviderId.value,
       conversations: conversations.value,
-      currentConversationId: currentConversationId.value
+      currentConversationId: currentConversationId.value,
+      showToolCalls: showToolCalls.value
     };
   }
 
@@ -532,17 +547,20 @@ export const useAIStore = defineStore('ai', () => {
     currentConversationId,
     isLoading,
     error,
+    showToolCalls,
     // Getters
     activeProvider,
     currentConversation,
     currentMessages,
     isAIEnabled,
     enabledProviders,
+    showToolCallsEnabled,
     // Actions
     loadSettings,
     loadChatHistory,
     setProviders,
     setActiveProvider,
+    setShowToolCalls,
     createConversation,
     switchConversation,
     deleteConversation,

@@ -48,10 +48,14 @@
     "day": "日",
     "list": "列表",
     "weekNumber": "第{num}周",
-    "navLinkHint": "跳转到 $0"
+    "navLinkHint": "跳转到 $0",
+    "weekDays": ["日", "一", "二", "三", "四", "五", "六"],
+    "yearMonthFormat": "{year}年{month}月"
   },
   "gantt": {
     "title": "甘特图",
+    "weekFormat": "第%W周",
+    "monthFormat": "%Y年%M",
     "showItems": "显示事项",
     "showWorkItems": "显示事项",
     "dateFilter": "日期筛选",
@@ -62,6 +66,7 @@
     "month": "月",
     "timeFilter": "时间筛选",
     "to": "至",
+    "projectName": "项目名称",
     "taskName": "任务名称",
     "startTime": "开始日期",
     "endTime": "结束日期"
@@ -114,25 +119,23 @@
     "showCompleted": "显示已完成",
     "hideCompleted": "隐藏已完成",
     "showAbandoned": "显示已放弃",
-    "hideAbandoned": "隐藏已放弃"
+    "hideAbandoned": "隐藏已放弃",
+    "startFocusAria": "开始专注"
   },
   "settings": {
     "title": "设置",
+    "searchPlaceholder": "搜索配置项...",
     "calendar": {
-      "defaultViewTitle": "日历默认视图",
+      "title": "日历",
+      "defaultView": "默认视图",
       "defaultViewDesc": "打开日历时默认显示的视图"
     },
     "lunchBreak": {
       "title": "午休时间",
-      "description": "用于计算工时时扣除午休时间",
-      "start": {
-        "title": "开始时间",
-        "description": "午休开始时间"
-      },
-      "end": {
-        "title": "结束时间",
-        "description": "午休结束时间"
-      }
+      "start": "开始",
+      "startDesc": "午休开始时间，与结束时间之间的时段在计算工时时将被扣除",
+      "end": "结束",
+      "endDesc": "午休结束时间，与开始时间之间的时段在计算工时时将被扣除"
     },
     "groupManage": {
       "title": "分组管理",
@@ -142,6 +145,7 @@
     "projectGroups": {
       "title": "项目分组",
       "description": "配置项目分组以便分类管理",
+      "setAsTaskDir": "设置为任务助手目录",
       "addButton": "添加分组",
       "namePlaceholder": "分组名称",
       "deleteButton": "删除",
@@ -166,7 +170,7 @@
     },
     "ai": {
       "title": "AI 服务配置",
-      "description": "配置 AI 服务商，启用侧边栏 AI 对话功能",
+      "description": "配置大语言模型服务，与任务助手进行智能对话",
       "enableLabel": "启用 AI 对话",
       "providerLabel": "服务商",
       "modelLabel": "模型",
@@ -191,7 +195,9 @@
       "messageSelectOneModel": "请至少选择一个模型",
       "messageApplied": "已应用，点击下方「保存」写入配置",
       "messageAdded": "已添加，点击下方「保存」写入配置",
-      "confirmDeleteProvider": "确定要删除 \"{{name}}\" 吗？"
+      "confirmDeleteProvider": "确定要删除 \"{{name}}\" 吗？",
+      "showToolCalls": "显示工具调用详情",
+      "showToolCallsDesc": "在对话中展示 AI 工具调用的详细信息和执行结果"
     },
     "projectDirectories": {
       "title": "项目目录",
@@ -202,7 +208,94 @@
       "emptyMessage": "暂无配置目录",
       "noPath": "未设置路径",
       "pathPlaceholder": "如：工作安排/2026/项目"
+    },
+    "pomodoro": {
+      "title": "番茄钟",
+      "sectionDescription": "专注计时、休息提醒与记录存储相关设置",
+      "enableStatusBar": "底栏进度条",
+      "enableStatusBarDesc": "专注时在页面底部显示进度条",
+      "enableStatusBarTimer": "底栏倒计时",
+      "enableStatusBarTimerDesc": "专注时在底栏显示倒计时面板（含播放/暂停控制）",
+      "enableFloatingButton": "悬浮番茄按钮",
+      "enableFloatingButtonDesc": "专注时在右下角显示悬浮按钮",
+      "recordMode": "记录存储方式",
+      "recordModeDesc": "番茄钟记录存储位置",
+      "recordModeBlock": "事项块下（子块）",
+      "recordModeAttr": "事项块自定义属性",
+      "completeTitle": "专注完成",
+      "breakTitle": "开始休息",
+      "breakHint": "选择休息时长，休息结束后将提醒您继续专注",
+      "break5min": "5 分钟",
+      "break10min": "10 分钟",
+      "break15min": "15 分钟",
+      "close": "关闭",
+      "breakEndMessage": "休息结束，请继续专注",
+      "breakLabel": "休息",
+      "skipBreak": "跳过休息"
     }
+  },
+  "pomodoro": {
+    "dockTitle": "番茄钟",
+    "startFocus": "开始专注",
+    "stats": "专注统计",
+    "startFocusTitle": "开始专注",
+    "startFocusStatus": "🍅 开始专注「{content}」· {mode}",
+    "startFocusStatusStopwatch": "正计时",
+    "startFocusFailed": "开始专注失败",
+    "completeMessage": "✅ 专注完成「{content}」· 实际专注 {minutes} 分钟",
+    "completeNotifyTitle": "🎉 专注完成！",
+    "completeNotifyBody": "「{content}」专注了 {minutes} 分钟",
+    "saveFailed": "保存记录失败"
+  },
+  "pomodoroStats": {
+    "statsTitle": "专注统计",
+    "focusTab": "专注统计",
+    "dailyTab": "按日统计",
+    "todayPomodoros": "当日专注次数",
+    "totalPomodoros": "历史专注总次数",
+    "todayFocusDuration": "今日专注总时长",
+    "totalFocusDuration": "累计专注总时长",
+    "moreThanYesterday": "比前一天多",
+    "focusDetail": "专注占比",
+    "focusDuration": "专注时长",
+    "focusRecords": "今日专注记录",
+    "focusTrend": "专注时长趋势",
+    "focusTimeline": "周专注时段",
+    "bestFocusTime": "高效时段分析",
+    "annualHeatmap": "年度专注热力图",
+    "dailyAverage": "每日平均",
+    "today": "今日",
+    "thisWeek": "本周",
+    "day": "日",
+    "week": "周",
+    "lastWeek": "上周",
+    "month": "月",
+    "byTask": "按任务",
+    "byItem": "按事项",
+    "year": "本年",
+    "showUnrecorded": "显示未记录时间",
+    "totalFocus": "总专注",
+    "pomodoroCount": "番茄数",
+    "unrecordedTime": "未记录时间",
+    "periodTotal": "统计周期总时长",
+    "groupedDetails": "分组明细",
+    "group": "分组",
+    "focus": "专注",
+    "proportion": "占比",
+    "timeOccupancy": "时间占比",
+    "noData": "暂无数据",
+    "target": "目标",
+    "unrecordedRow": "未记录时间",
+    "pastYearsYears": "过去 {years} 年",
+    "pastWeeksWeeks": "过去 {weeks} 周",
+    "focusLabel": "专注",
+    "countUnit": "个",
+    "formatMonthDay": "M月D日",
+    "formatMonth": "M月",
+    "formatYearMonth": "YYYY-M月",
+    "weekDaysShort": ["一", "二", "三", "四", "五", "六", "日"],
+    "weekDayLabelsHeatmap": ["一", "", "三", "", "五", "", ""],
+    "monthNamesShort": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
   },
   "calendarNav": {
     "prev": "上一页",
@@ -224,12 +317,63 @@
     "cancel": "取消",
     "copy": "复制",
     "save": "保存",
+    "saveSuccess": "保存成功",
     "dataRefreshed": "数据已刷新",
     "blockIdError": "无法获取块 ID，请刷新后重试",
     "moveSuccess": "已移动事项时间",
     "resizeSuccess": "已调整事项时间",
     "actionFailed": "失败，请重试",
     "dirsSet": "已设置 {count} 个任务助手目录",
-    "dirsExist": "所选目录已存在于设置中"
+    "dirsExist": "所选目录已存在于设置中",
+    "minutes": "分钟",
+    "hours": "小时",
+    "uncategorized": "未分类"
+  },
+  "pomodoroDialog": {
+    "selectItem": "选择待办事项",
+    "expiredItems": "⚠️ 过期事项",
+    "todayItems": "📅 今天事项",
+    "noItems": "暂无待办事项",
+    "focusItem": "专注事项",
+    "timerMode": "计时模式",
+    "countdown": "倒计时",
+    "stopwatch": "正计时",
+    "setDuration": "设置专注时长",
+    "custom": "自定义：",
+    "minutes": "分钟",
+    "startFocus": "开始专注",
+    "cancel": "取消",
+    "yesterday": "昨天",
+    "dayBeforeYesterday": "前天"
+  },
+  "pomodoroActive": {
+    "paused": "已暂停",
+    "focusing": "专注中",
+    "focusedFor": "已专注 {minutes}分钟",
+    "stopwatchFocused": "正计时 · 已专注 {minutes}分钟",
+    "pauseBadge": "⏸️ 已暂停",
+    "pomodoroTimer": "番茄计时",
+    "target": "目标：{minutes}分钟",
+    "stopwatch": "正计时",
+    "start": "开始",
+    "manualEnd": "手动结束",
+    "estimatedEnd": "预计结束",
+    "pause": "暂停",
+    "resume": "继续",
+    "endFocus": "结束专注",
+    "confirmEndTitle": "结束专注",
+    "confirmEndMessage": "确定要结束专注吗？这将保存当前的番茄钟记录。"
+  },
+  "pomodoroComplete": {
+    "item": "事项",
+    "focusDuration": "专注时长",
+    "durationMinutes": "{minutes} 分钟",
+    "descriptionLabel": "输入事项说明（可选）",
+    "descriptionPlaceholder": "例如：完成每日复习",
+    "save": "保存"
+  },
+  "pomodoroRecord": {
+    "title": "专注记录",
+    "unknown": "未知"
   }
 }

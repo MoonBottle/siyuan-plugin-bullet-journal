@@ -1,7 +1,7 @@
 <template>
   <div class="pomodoro-record-list">
     <div class="record-list-header">
-      <span class="header-title">专注记录</span>
+      <span class="header-title">{{ t('pomodoroRecord').title }}</span>
     </div>
     <div class="record-list-content">
       <div v-for="[date, records] in sortedGroupedPomodoros" :key="date" class="date-group">
@@ -36,6 +36,7 @@ import type { PomodoroRecord } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { usePlugin } from '@/main';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
+import { t } from '@/i18n';
 
 const plugin = usePlugin();
 
@@ -109,7 +110,7 @@ function getRecordSource(record: PomodoroRecord): string {
       return project.name;
     }
   }
-  return '未知';
+  return t('pomodoroRecord').unknown;
 }
 
 /**

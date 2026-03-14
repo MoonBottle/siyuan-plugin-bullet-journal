@@ -79,5 +79,11 @@ export const Events = {
   POMODORO_STARTED: 'pomodoro:started',
   POMODORO_COMPLETED: 'pomodoro:completed',
   POMODORO_CANCELLED: 'pomodoro:cancelled',
-  POMODORO_RESTORE: 'pomodoro:restore' // 恢复进行中的番茄钟
+  POMODORO_RESTORE: 'pomodoro:restore', // 恢复进行中的番茄钟
+  POMODORO_PENDING_COMPLETION: 'pomodoro:pending-completion', // 待完成记录已持久化，需弹窗补填说明
+  POMODORO_OPEN_TIMER_DIALOG: 'pomodoro:open-timer-dialog', // 打开开始专注弹框
+  POMODORO_TICK: 'pomodoro:tick', // 专注每秒更新
+  BREAK_TICK: 'break:tick', // 休息每秒更新
+  BREAK_STARTED: 'break:started',
+  BREAK_ENDED: 'break:ended'
 };

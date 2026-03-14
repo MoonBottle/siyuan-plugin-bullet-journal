@@ -100,7 +100,7 @@ export function createItemMenu(
 
     if (!isFocusing) {
       items.push({
-        label: '开始专注',
+        label: t('pomodoro').startFocus,
         icon: 'iconClock',
         click: handlers.onStartPomodoro
       });

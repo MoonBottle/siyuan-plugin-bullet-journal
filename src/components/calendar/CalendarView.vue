@@ -179,7 +179,7 @@ const showEventTooltip = (info: any) => {
       allDay: info.event.allDay,
       extendedProps: info.event.extendedProps
     };
-    const html = buildEventDetailContent(eventData, { preview: true });
+    const html = buildEventDetailContent(eventData);
     if (eventTooltipEl.value) {
       eventTooltipEl.value.innerHTML = html;
       nextTick(() => {
@@ -205,7 +205,7 @@ const hideEventTooltip = () => {
 // 打开番茄钟弹框
 const openPomodoroDialog = (item: Item) => {
   const dialog = createDialog({
-    title: '开始专注',
+    title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
     height: 'auto'
@@ -594,8 +594,7 @@ defineExpose({
   position: fixed;
   z-index: 10000;
   max-width: 440px;
-  max-height: 400px;
-  overflow: auto;
+  overflow: visible;
   padding: 12px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);

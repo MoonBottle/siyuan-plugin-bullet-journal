@@ -6,7 +6,8 @@
 export const TAB_TYPES = {
   CALENDAR: 'bullet-journal-calendar',
   GANTT: 'bullet-journal-gantt',
-  PROJECT: 'bullet-journal-project'
+  PROJECT: 'bullet-journal-project',
+  POMODORO_STATS: 'bullet-journal-pomodoro-stats'
 };
 
 // Dock 类型常量

@@ -2,7 +2,7 @@
   <div class="pomodoro-active-timer">
     <div class="timer-header">
       <TomatoIcon :width="20" :height="20" class="timer-icon" />
-      <span class="timer-title">{{ isPaused ? '已暂停' : '专注中' }}</span>
+      <span class="timer-title">{{ isPaused ? t('pomodoroActive').paused : t('pomodoroActive').focusing }}</span>
     </div>
 
     <div class="timer-display" :class="{ 'is-paused': isPaused }">
@@ -25,8 +25,9 @@
         </svg>
         <div class="timer-content">
           <div class="time-remaining">{{ formattedTime }}</div>
-          <div class="focused-time-badge">已专注 {{ accumulatedMinutes }}分钟</div>
-          <div v-if="isPaused" class="pause-badge">⏸️ 已暂停</div>
+          <div v-if="!isStopwatch" class="focused-time-badge">{{ t('pomodoroActive').focusedFor.replace('{minutes}', String(accumulatedMinutes)) }}</div>
+          <div v-else class="focused-time-badge">{{ t('pomodoroActive').stopwatchFocused.replace('{minutes}', String(accumulatedMinutes)) }}</div>
+          <div v-if="isPaused" class="pause-badge">{{ t('pomodoroActive').pauseBadge }}</div>
         </div>
       </div>
     </div>
@@ -34,14 +35,15 @@
     <!-- 专注时间线 -->
     <div class="pomodoro-timeline">
       <div class="timeline-header">
-        <span class="timeline-label">番茄计时</span>
-        <span class="timeline-duration">目标：{{ targetMinutes }}分钟</span>
+        <span class="timeline-label">{{ t('pomodoroActive').pomodoroTimer }}</span>
+        <span v-if="!isStopwatch" class="timeline-duration">{{ t('pomodoroActive').target.replace('{minutes}', String(targetMinutes)) }}</span>
+        <span v-else class="timeline-duration">{{ t('pomodoroActive').stopwatch }}</span>
       </div>
       <div class="timeline-track">
         <div class="timeline-point start">
           <div class="timeline-time">{{ formattedStartTime }}</div>
           <PlayIcon :width="14" :height="14" class="timeline-icon" />
-          <div class="timeline-desc">开始</div>
+          <div class="timeline-desc">{{ t('pomodoroActive').start }}</div>
         </div>
         <div class="timeline-progress-container">
           <div class="timeline-progress-bar">
@@ -52,84 +54,118 @@
         <div class="timeline-point end">
           <div class="timeline-time">{{ formattedEndTime }}</div>
           <StopIcon :width="14" :height="14" class="timeline-icon" />
-          <div class="timeline-desc">预计结束</div>
+          <div class="timeline-desc">{{ isStopwatch ? t('pomodoroActive').manualEnd : t('pomodoroActive').estimatedEnd }}</div>
         </div>
       </div>
     </div>
 
-    <!-- 事项信息卡片 - 参考 dialog.ts 的卡片式设计 -->
+    <!-- 事项信息卡片 - 使用 Card 组件 -->
     <div class="item-info-section">
       <!-- 项目卡片 -->
-      <div class="info-card" v-if="currentItem?.project">
-        <div class="info-card-header">
-          <span class="info-card-label">项目</span>
-        </div>
+      <Card
+        v-if="currentItem?.project"
+        :show-header="true"
+        :show-footer="currentItem.project.links?.length > 0"
+        :hover-effect="false"
+      >
+        <template #header>
+          <span class="info-card-label">{{ t('todo').project }}</span>
+        </template>
         <div class="info-card-content">
           <span>{{ currentItem.project.name }}</span>
         </div>
-        <!-- 项目链接 -->
-        <div class="info-card-footer" v-if="currentItem.project.links?.length">
-          <a
+        <template #footer>
+          <SyButton
             v-for="link in currentItem.project.links"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag"
-            @click.prevent="openLink(link.url)"
-          >
-            {{ link.name }}
-          </a>
-        </div>
-      </div>
+          />
+        </template>
+      </Card>
 
       <!-- 任务卡片 -->
-      <div class="info-card" v-if="currentItem?.task">
-        <div class="info-card-header">
-          <span class="info-card-label">任务</span>
+      <Card
+        v-if="currentItem?.task"
+        :show-header="true"
+        :show-footer="currentItem.task.links?.length > 0"
+        :hover-effect="false"
+      >
+        <template #header>
+          <span class="info-card-label">{{ t('todo').task }}</span>
           <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
             {{ currentItem.task.level }}
           </span>
-        </div>
+        </template>
         <div class="info-card-content">
           <span>{{ currentItem.task.name }}</span>
         </div>
-        <!-- 任务链接 -->
-        <div class="info-card-footer" v-if="currentItem.task.links?.length">
-          <a
+        <template #footer>
+          <SyButton
             v-for="link in currentItem.task.links"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag"
-            @click.prevent="openLink(link.url)"
-          >
-            {{ link.name }}
-          </a>
-        </div>
-      </div>
+          />
+        </template>
+      </Card>
 
       <!-- 事项卡片 -->
-      <div class="info-card item-card clickable" @click="openItemDocument">
-        <div class="info-card-header">
-          <span class="info-card-label">事项</span>
-        </div>
+      <Card
+        status="pending"
+        :show-header="true"
+        :show-footer="true"
+        :clickable="true"
+        @click="openItemDocument"
+      >
+        <template #header>
+          <span class="info-card-label">{{ t('todo').item }}</span>
+        </template>
         <div class="info-card-content">
           <span>{{ itemContent }}</span>
         </div>
-        <!-- 事项链接 -->
-        <div class="info-card-footer" v-if="currentItem?.links?.length">
-          <a
-            v-for="link in currentItem.links"
-            :key="link.url"
-            :href="link.url"
-            target="_blank"
-            class="link-tag"
-            @click.prevent.stop="openLink(link.url)"
-          >
-            {{ link.name }}
-          </a>
-        </div>
-      </div>
+        <template #footer>
+          <div class="item-footer-content">
+            <div
+              v-for="link in currentItem?.links || []"
+              :key="link.url"
+              class="item-link-wrapper"
+            >
+              <SyButton
+                type="link"
+                :text="link.name"
+                :href="link.url"
+                class="item-link"
+              />
+            </div>
+            <div class="item-actions">
+              <span
+                class="block__icon b3-tooltips b3-tooltips__sw"
+                :aria-label="t('todo').complete"
+                @click.stop="handleDone"
+              >
+                <svg><use xlink:href="#iconCheck"></use></svg>
+              </span>
+              <span
+                class="block__icon b3-tooltips b3-tooltips__sw"
+                :aria-label="t('todo').detail"
+                @click.stop="openDetail"
+              >
+                <svg><use xlink:href="#iconInfo"></use></svg>
+              </span>
+              <span
+                class="block__icon b3-tooltips b3-tooltips__sw"
+                :aria-label="t('todo').calendar"
+                @click.stop="openCalendar"
+              >
+                <svg><use xlink:href="#iconCalendar"></use></svg>
+              </span>
+            </div>
+          </div>
+        </template>
+      </Card>
     </div>
 
     <div class="timer-actions">
@@ -139,7 +175,7 @@
             <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
             <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
           </svg>
-          暂停
+          {{ t('pomodoroActive').pause }}
         </button>
       </template>
       <template v-else>
@@ -147,34 +183,39 @@
           <svg class="btn-icon" viewBox="0 0 24 24">
             <polygon points="5,3 19,12 5,21" fill="currentColor"/>
           </svg>
-          继续
+          {{ t('pomodoroActive').resume }}
         </button>
       </template>
       <button class="end-btn" @click="endPomodoro">
         <svg class="btn-icon" viewBox="0 0 24 24">
           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
         </svg>
-        结束专注
+        {{ t('pomodoroActive').endFocus }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { usePomodoroStore, useProjectStore } from '@/stores';
+import { computed, onUnmounted } from 'vue';
+import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import type { Item } from '@/types/models';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { showConfirmDialog } from '@/utils/dialog';
+import Card from '@/components/common/Card.vue';
+import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
+import { showConfirmDialog, hideLinkTooltip, showItemDetailModal } from '@/utils/dialog';
+import SyButton from '@/components/SiyuanTheme/SyButton.vue';
+import { t } from '@/i18n';
+import { TAB_TYPES } from '@/constants';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
 const projectStore = useProjectStore();
+const settingsStore = useSettingsStore();
 
 // 圆周长
 const radius = 54;
@@ -197,6 +238,9 @@ const isPaused = computed(() => {
   return pomodoroStore.activePomodoro?.isPaused || false;
 });
 
+// 是否正计时模式
+const isStopwatch = computed(() => pomodoroStore.isStopwatch);
+
 // 已专注分钟数
 const accumulatedMinutes = computed(() => {
   if (!pomodoroStore.activePomodoro) return 0;
@@ -208,14 +252,9 @@ const targetMinutes = computed(() => {
   return pomodoroStore.activePomodoro?.targetDurationMinutes || 25;
 });
 
-// 暂停次数
-const pauseCount = computed(() => {
-  return pomodoroStore.activePomodoro?.pauseCount || 0;
-});
-
-// 格式化的剩余时间（MM:SS）
+// 格式化的时间（MM:SS）：倒计时显示剩余，正计时显示已专注
 const formattedTime = computed(() => {
-  const seconds = pomodoroStore.remainingTime;
+  const seconds = isStopwatch.value ? pomodoroStore.elapsedSeconds : pomodoroStore.remainingTime;
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -232,43 +271,43 @@ const formattedStartTime = computed(() => {
   return dayjs(startTime.value).format('HH:mm');
 });
 
-// 预计结束时间戳
+// 预计结束时间戳（正计时无预计结束）
 const endTime = computed(() => {
-  if (!startTime.value) return 0;
+  if (!startTime.value || isStopwatch.value) return 0;
   return startTime.value + targetMinutes.value * 60 * 1000;
 });
 
-// 格式化的预计结束时间（HH:mm）
+// 格式化的预计结束时间（HH:mm），正计时显示 "--"
 const formattedEndTime = computed(() => {
   if (!endTime.value) return '--:--';
   return dayjs(endTime.value).format('HH:mm');
 });
 
-// 时间线进度（0-100）
+// 正计时参考时长（25分钟），用于进度显示
+const stopwatchReferenceSeconds = 25 * 60;
+
+// 时间线进度（0-100）：倒计时用已用/目标，正计时用已用/参考25分钟
 const timelineProgress = computed(() => {
   if (!pomodoroStore.activePomodoro) return 0;
-  const totalSeconds = pomodoroStore.activePomodoro.targetDurationMinutes * 60;
   const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  const totalSeconds = isStopwatch.value
+    ? stopwatchReferenceSeconds
+    : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
   return Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
 });
 
-// 进度环偏移量
+// 进度环偏移量：倒计时显示剩余，正计时显示已用（环随已用时间增长）
 const strokeDashoffset = computed(() => {
   if (!pomodoroStore.activePomodoro) return circumference;
 
-  const totalSeconds = pomodoroStore.activePomodoro.targetDurationMinutes * 60;
-  const remainingSeconds = pomodoroStore.remainingTime;
-  const progress = remainingSeconds / totalSeconds;
+  const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
+  const totalSeconds = isStopwatch.value
+    ? stopwatchReferenceSeconds
+    : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
+  const progress = Math.min(1, elapsedSeconds / totalSeconds);
 
   return circumference * (1 - progress);
 });
-
-// 打开外部链接
-const openLink = (url: string) => {
-  if (url) {
-    window.open(url, '_blank');
-  }
-};
 
 // 暂停专注
 const pausePomodoro = async () => {
@@ -283,8 +322,8 @@ const resumePomodoro = async () => {
 // 结束专注
 const endPomodoro = () => {
   showConfirmDialog(
-    '结束专注',
-    '确定要结束专注吗？这将保存当前的番茄钟记录。',
+    t('pomodoroActive').confirmEndTitle,
+    t('pomodoroActive').confirmEndMessage,
     async () => {
       await pomodoroStore.completePomodoro(plugin);
     }
@@ -299,6 +338,38 @@ const openItemDocument = async () => {
     await openDocumentAtLine(docId, lineNumber, blockId);
   }
 };
+
+// 获取状态标签
+const getStatusTag = (status: 'completed' | 'abandoned'): string => {
+  return t('statusTag')[status] || '';
+};
+
+// 标记完成
+const handleDone = async () => {
+  if (!currentItem.value?.blockId) return;
+
+  const tag = getStatusTag('completed');
+  const success = await updateBlockContent(currentItem.value.blockId, tag);
+  if (success && plugin) {
+    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  }
+};
+
+// 打开详情
+const openDetail = () => {
+  if (!currentItem.value) return;
+  showItemDetailModal(currentItem.value);
+};
+
+// 在日历中打开
+const openCalendar = () => {
+  if (!currentItem.value?.date) return;
+  if (plugin && plugin.openCustomTab) {
+    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: currentItem.value.date });
+  }
+};
+
+onUnmounted(() => hideLinkTooltip());
 </script>
 
 <style lang="scss" scoped>
@@ -528,46 +599,6 @@ const openItemDocument = async () => {
   box-sizing: border-box;
 }
 
-.info-card {
-  width: 100%;
-  background: var(--b3-theme-background);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 8px;
-  padding: 12px 16px;
-  box-sizing: border-box;
-
-  &.item-card {
-    border-left: 3px solid var(--b3-theme-success);
-  }
-
-  &.clickable {
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      background: var(--b3-theme-surface);
-      border-color: var(--b3-theme-primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &:active {
-      transform: scale(0.99);
-    }
-  }
-}
-
-.info-card-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.info-card-icon {
-  font-size: 14px;
-  line-height: 1;
-}
-
 .info-card-label {
   font-size: 12px;
   font-weight: 600;
@@ -586,35 +617,6 @@ const openItemDocument = async () => {
 
   span {
     display: inline;
-  }
-}
-
-.info-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-// 链接标签样式 - 参考 dialog.ts
-.link-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  background: var(--b3-theme-surface);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-    border-color: var(--b3-theme-primary);
   }
 }
 
@@ -667,17 +669,17 @@ const openItemDocument = async () => {
 }
 
 .pause-btn {
-  background: #f5a623;
-  color: #fff;
+  background: var(--b3-theme-secondary);
+  color: var(--b3-theme-on-secondary);
 
   &:hover {
-    background: #e09400;
+    opacity: 0.9;
   }
 }
 
 .resume-btn {
   background: var(--b3-theme-success);
-  color: var(--b3-theme-on-success, #fff);
+  color: #fff;
 
   &:hover {
     opacity: 0.9;
@@ -686,7 +688,7 @@ const openItemDocument = async () => {
 
 .end-btn {
   background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
+  color: var(--b3-theme-on-primary, #fff);
 
   &:hover {
     opacity: 0.9;
@@ -697,5 +699,41 @@ const openItemDocument = async () => {
   width: 16px;
   height: 16px;
   fill: currentColor;
+}
+
+// 事项卡片底部操作区域
+.item-footer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.item-link-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.item-link {
+  max-width: none !important;
+}
+
+.item-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+
+  .block__icon {
+    opacity: 1;
+    cursor: pointer;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
 }
 </style>

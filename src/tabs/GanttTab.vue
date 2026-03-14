@@ -7,9 +7,9 @@
         {{ t('gantt').showItems }}
       </label>
       <div class="date-filter">
-        <span>日期筛选:</span>
+        <span>{{ t('gantt').dateFilter }}</span>
         <input type="date" v-model="startDate" />
-        <span>至</span>
+        <span>{{ t('gantt').to }}</span>
         <input type="date" v-model="endDate" />
       </div>
       <div class="view-modes">
@@ -32,7 +32,7 @@
       />
       <span
         class="block__icon refresh-btn b3-tooltips b3-tooltips__sw"
-        :aria-label="projectStore.loading ? '加载中...' : '刷新'"
+        :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
         @click="handleRefresh"
       >
         <svg><use xlink:href="#iconRefresh"></use></svg>
@@ -80,9 +80,9 @@ const viewModes: Array<{ value: 'day' | 'week' | 'month'; label: string }> = [
 const filteredProjects = computed(() => projectStore.getFilteredProjects(selectedGroup.value));
 
 const groupOptions = computed(() => {
-  const options = [{ value: '', text: t('settings').projectGroups.allGroups }];
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
-    options.push({ value: g.id, text: g.name || t('settings').projectGroups.unnamed });
+    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
 });

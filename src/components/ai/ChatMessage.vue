@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="hasContent"
     class="chat-message"
     :class="{
       'chat-message--user': message.role === 'user',
@@ -35,81 +36,45 @@
     </div>
     <div class="chat-message__content">
       <div class="chat-message__body">
-        <!-- 思考过程（reasoning）：仅在没有 toolCalls 的 assistant 消息上显示，避免与下一句重复 -->
-        <div
-          v-if="message.reasoning && !(message.toolCalls && message.toolCalls.length)"
-          class="chat-message__reasoning"
-          :class="{ 'chat-message__reasoning--collapsed': isReasoningCollapsed }"
-        >
-          <div class="chat-message__reasoning-header" @click="toggleReasoning">
-            <span class="chat-message__reasoning-icon">
-              <svg :class="{ 'rotated': isReasoningCollapsed }">
-                <use xlink:href="#iconRight"></use>
-              </svg>
-            </span>
-            <span class="chat-message__reasoning-title">{{ t('aiChat').reasoningTitle }}</span>
-            <!-- 仅在没有 reasoning 内容时显示加载点，避免与思考内容同时闪 -->
-            <span v-if="message.loading && !message.content && !message.reasoning" class="chat-message__reasoning-loading">
-              <span class="loading-dot"></span>
-              <span class="loading-dot"></span>
-              <span class="loading-dot"></span>
-            </span>
-          </div>
-          <div v-if="!isReasoningCollapsed" class="chat-message__reasoning-content">
-            {{ message.reasoning }}
-          </div>
-        </div>
-
-        <div
+        <!-- 思考中：AI 正在思考但还没有 reasoning 内容 -->
+        <ThinkingIndicator
           v-if="message.loading && !message.reasoning && !message.content"
-          class="chat-message__loading"
-        >
-          <span class="loading-dot"></span>
-          <span class="loading-dot"></span>
-          <span class="loading-dot"></span>
-        </div>
+        />
+
+        <!-- 思考过程：展示已完成的 reasoning 内容 -->
+        <ReasoningDisplay
+          v-if="message.reasoning && !(message.toolCalls && message.toolCalls.length)"
+          :content="message.reasoning"
+          :default-collapsed="true"
+        />
+
+        <!-- 错误消息 -->
         <div
-          v-else-if="message.error"
+          v-if="message.error"
           class="chat-message__error-text"
         >
           {{ message.error }}
         </div>
-        <div v-else-if="message.role === 'tool'" class="chat-message__tool-content">
-          <div class="chat-message__tool-header" @click="toggleCollapse">
-            <span class="chat-message__tool-icon">
-              <svg :class="{ 'rotated': isCollapsed }">
-                <use xlink:href="#iconRight"></use>
-              </svg>
-            </span>
-            <span class="chat-message__tool-icon-tool">
-              <svg><use xlink:href="#iconPlugin"></use></svg>
-            </span>
-            <span class="chat-message__tool-name">{{ getToolName() }}</span>
-          </div>
-          <div v-if="!isCollapsed" class="chat-message__tool-body">
-            <!-- 显示工具参数 -->
-            <div v-if="getToolParams()" class="chat-message__tool-params">
-              <div class="chat-message__tool-params-title">{{ t('aiChat').toolParamsTitle }}</div>
-              <pre class="chat-message__tool-params-content"><code>{{ getToolParams() }}</code></pre>
-            </div>
-            <!-- 显示工具结果 -->
-            <div class="chat-message__tool-result">
-              <div class="chat-message__tool-result-title">{{ t('aiChat').toolResultTitle }}</div>
-              <div class="chat-message__tool-result-content">
-                <div v-html="renderedContent"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+
+        <!-- 工具调用消息 -->
+        <ToolCallDisplay
+          v-else-if="message.role === 'tool'"
+          :tool-name="getToolName()"
+          :params="toolCallInfo?.arguments"
+          :result="message.content"
+          :default-collapsed="true"
+        />
+
+        <!-- 消息内容（用户和助手的文本消息） -->
         <div
-          v-else-if="message.content"
+          v-if="message.content && message.role !== 'tool'"
           class="chat-message__text"
           v-html="renderedContent"
         ></div>
 
-        <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示，仅在底部最终回答展示一次） -->
-        <div v-if="message.usage && !(message.role === 'assistant' && message.toolCalls?.length)" class="chat-message__footer">
-          <div class="chat-message__usage">
+        <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示 footer，仅在最终回答展示） -->
+        <div v-if="showFooter && (message.usage || showInsertBtn)" class="chat-message__footer">
+          <div v-if="message.usage" class="chat-message__usage">
             <span class="chat-message__usage-item">
               <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').inputTokens">
                 <svg><use xlink:href="#iconEdit"></use></svg>
@@ -138,8 +103,8 @@
               {{ message.usage.cached_tokens }}
             </span>
           </div>
-          <!-- 分组模式下最后一条 AI 消息显示插入按钮 -->
-          <div v-if="isGrouped && isLast && canInsertToNote" class="chat-message__insert-btn">
+          <!-- 最后一条 AI 消息显示插入按钮 -->
+          <div v-if="showInsertBtn" class="chat-message__insert-btn">
             <span
               class="block__icon b3-tooltips b3-tooltips__nw"
               :aria-label="t('aiChat').insertToNote"
@@ -159,10 +124,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { marked } from 'marked';
 import { t } from '@/i18n';
-import { ensureHeadingNewlines } from '@/utils/markdownUtils';
+import { renderMarkdown } from '@/utils/markdownRenderer';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
+import ToolCallDisplay from './ToolCallDisplay.vue';
+import ReasoningDisplay from './ReasoningDisplay.vue';
+import ThinkingIndicator from './ThinkingIndicator.vue';
 import type { ChatMessage } from '@/types/ai';
 
 const props = defineProps<{
@@ -174,23 +141,32 @@ const props = defineProps<{
   isGrouped?: boolean;  // 是否为分组内的消息
   isFirst?: boolean;    // 是否为组内第一条
   isLast?: boolean;     // 是否为组内最后一条
+  showHeader?: boolean; // 是否显示头部（由父组件控制）
+  showFooter?: boolean; // 是否显示底部（token统计，由父组件控制）
+  showInsertBtn?: boolean; // 是否显示插入按钮（由父组件控制）
 }>();
 
 const emit = defineEmits<{
   insertToNote: [message: ChatMessage];
 }>();
 
-const isCollapsed = ref(true);
-const isReasoningCollapsed = ref(true);
-
-// 是否可以插入到笔记（只有 assistant 消息且非加载状态可以插入）
-const canInsertToNote = computed(() => {
-  return props.message.role === 'assistant' && !props.message.loading && props.message.content;
-});
-
-// 是否在本条消息上显示头部（头像、名称、时间）。分组时由 Panel 在卡片外统一显示一条，此处不显示
-const showHeader = computed(() => {
-  return !props.isGrouped || props.message.role === 'user';
+// 判断消息是否有实际内容需要显示
+const hasContent = computed(() => {
+  const m = props.message;
+  // 思考中状态
+  if (m.loading && !m.reasoning && !m.content) return true;
+  // 思考过程
+  if (m.reasoning && !(m.toolCalls && m.toolCalls.length)) return true;
+  // 错误消息
+  if (m.error) return true;
+  // 工具消息
+  if (m.role === 'tool') return true;
+  // 文本内容
+  if (m.content && m.role !== 'tool') return true;
+  // 头部或底部
+  if (props.showHeader) return true;
+  if (props.showFooter && (m.usage || props.showInsertBtn)) return true;
+  return false;
 });
 
 const roleText = computed(() => {
@@ -209,14 +185,6 @@ const roleText = computed(() => {
   }
 });
 
-function toggleCollapse() {
-  isCollapsed.value = !isCollapsed.value;
-}
-
-function toggleReasoning() {
-  isReasoningCollapsed.value = !isReasoningCollapsed.value;
-}
-
 function handleInsertToNote() {
   emit('insertToNote', props.message);
 }
@@ -232,22 +200,10 @@ function getToolName(): string {
   return ai.tool ?? '工具';
 }
 
-// 获取工具调用的参数
-function getToolParams(): string | null {
-  if (!props.toolCallInfo?.arguments) return null;
-  
-  try {
-    // 尝试解析参数 JSON，格式化显示
-    const parsed = JSON.parse(props.toolCallInfo.arguments);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    // 解析失败，返回原始参数
-    return props.toolCallInfo.arguments;
-  }
-}
+
 
 const renderedContent = computed(() => {
-  let content = props.message.content;
+  const content = props.message.content;
 
   // 检查是否为 JSON 格式
   let isJSON = false;
@@ -275,22 +231,17 @@ const renderedContent = computed(() => {
     try {
       const parsed = JSON.parse(content);
       const formatted = JSON.stringify(parsed, null, 2);
-      const escaped = formatted
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      return `<pre class="code-block json-code"><code class="language-json">${escaped}</code></pre>`;
+      // 使用 Lute 渲染 Markdown 代码块
+      const jsonMarkdown = '```json\n' + formatted + '\n```';
+      return renderMarkdown(jsonMarkdown);
     } catch {
       // 解析失败，按普通文本处理
     }
   }
 
-  // 预处理：确保行中的 ATX 标题前有换行（marked 要求标题在行首）
-  content = ensureHeadingNewlines(content);
-
-  // 使用 marked.js 渲染 Markdown
+  // 使用思源 Lute 渲染 Markdown
   try {
-    return marked(content);
+    return renderMarkdown(content);
   } catch (error) {
     console.error('Markdown rendering error:', error);
     // 渲染失败，返回原始内容
@@ -345,7 +296,7 @@ function formatTime(timestamp: number): string {
   }
 
   &--grouped {
-    padding: 2px 0;
+    padding: 0;
     background: transparent;
 
     &.chat-message--assistant,
@@ -505,7 +456,8 @@ function formatTime(timestamp: number): string {
       font-size: 14px;
     }
 
-    :deep(pre.code-block) {
+    // Lute 渲染的代码块样式
+    :deep(pre) {
       background: var(--b3-theme-surface-lighter);
       padding: 8px;
       border-radius: var(--b3-border-radius);
@@ -519,8 +471,14 @@ function formatTime(timestamp: number): string {
         font-size: 13px;
         white-space: pre;
       }
+
+      // Lute 使用 hljs 进行代码高亮
+      code.hljs {
+        background: none;
+      }
     }
 
+    // 保留 json-code 类用于 JSON 内容
     :deep(pre.json-code) {
       background: var(--b3-theme-surface-lighter);
       padding: 8px;
@@ -538,7 +496,8 @@ function formatTime(timestamp: number): string {
       }
     }
 
-    :deep(code.inline-code) {
+    // 行内代码样式
+    :deep(code:not(pre code)) {
       background: var(--b3-theme-surface-lighter);
       padding: 2px 6px;
       border-radius: 4px;
@@ -642,126 +601,6 @@ function formatTime(timestamp: number): string {
     }
   }
 
-  &__tool-content {
-    width: 100%;
-  }
-
-  &__tool-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    padding: 2px 0 2px 12px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: var(--b3-theme-surface-lighter);
-    }
-  }
-
-  &__tool-icon {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 12px;
-      height: 12px;
-      fill: var(--b3-theme-on-surface);
-      transition: transform 0.2s;
-
-      &.rotated {
-        transform: rotate(90deg);
-      }
-    }
-  }
-
-  &__tool-icon-tool {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 14px;
-      height: 14px;
-      fill: var(--b3-theme-secondary);
-    }
-  }
-
-  &__tool-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--b3-theme-secondary);
-  }
-
-  &__tool-body {
-    margin-top: 4px;
-    padding: 6px;
-    background: var(--b3-theme-surface-lighter);
-    border-radius: var(--b3-border-radius);
-    overflow-x: auto;
-  }
-
-  &__tool-params {
-    margin-bottom: 8px;
-  }
-
-  &__tool-params-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--b3-theme-secondary);
-    margin-bottom: 2px;
-  }
-
-  &__tool-params-content {
-    background: var(--b3-theme-background);
-    padding: 8px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    white-space: pre;
-    overflow-x: auto;
-  }
-
-  &__tool-result {
-    margin-top: 6px;
-  }
-
-  &__tool-result-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--b3-theme-secondary);
-    margin-bottom: 2px;
-  }
-
-  &__tool-result-content {
-    background: var(--b3-theme-background);
-    padding: 6px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    white-space: pre;
-    overflow-x: auto;
-
-    :deep(pre.code-block) {
-      background: transparent !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      border-radius: 0 !important;
-
-      code {
-        background: transparent !important;
-        padding: 0 !important;
-        font-size: 12px !important;
-      }
-    }
-  }
-
   &__loading {
     display: flex;
     gap: 4px;
@@ -798,83 +637,6 @@ function formatTime(timestamp: number): string {
   /* 仅助手回答内容增加上下留白，用户消息不受影响 */
   &--assistant &__text {
     margin: 6px 0;
-  }
-
-  // 思考过程样式（与下方 token 统计横线保持紧凑）
-  &__reasoning {
-    margin-bottom: 2px;
-    background: var(--b3-theme-surface-lighter);
-    border-radius: var(--b3-border-radius);
-    overflow: hidden;
-  }
-
-  &__reasoning-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: var(--b3-theme-surface-lightest);
-    }
-  }
-
-  &__reasoning-icon {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 12px;
-      height: 12px;
-      fill: var(--b3-theme-on-surface);
-      transition: transform 0.2s;
-
-      &.rotated {
-        transform: rotate(90deg);
-      }
-    }
-  }
-
-  &__reasoning-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--b3-theme-on-surface);
-  }
-
-  &__reasoning-loading {
-    display: flex;
-    gap: 3px;
-    margin-left: auto;
-
-    .loading-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--b3-theme-primary);
-      animation: loading-bounce 1.4s infinite ease-in-out both;
-
-      &:nth-child(1) {
-        animation-delay: -0.32s;
-      }
-
-      &:nth-child(2) {
-        animation-delay: -0.16s;
-      }
-    }
-  }
-
-  &__reasoning-content {
-    padding: 6px 12px 8px;
-    font-size: 12px;
-    line-height: 1.6;
-    color: var(--b3-theme-on-surface);
-    white-space: pre-wrap;
-    border-top: 1px solid var(--b3-theme-surface-lightest);
   }
 
   // Token 统计样式

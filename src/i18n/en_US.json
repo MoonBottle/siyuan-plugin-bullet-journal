@@ -48,10 +48,14 @@
     "day": "Day",
     "list": "List",
     "weekNumber": "W{num}",
-    "navLinkHint": "Go to $0"
+    "navLinkHint": "Go to $0",
+    "weekDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "yearMonthFormat": "{year}/{month}"
   },
   "gantt": {
     "title": "Gantt Chart",
+    "weekFormat": "Week %W",
+    "monthFormat": "%Y-%M",
     "showItems": "Show Items",
     "showWorkItems": "Show items",
     "dateFilter": "Date filter",
@@ -62,6 +66,7 @@
     "month": "Month",
     "timeFilter": "Time Filter",
     "to": "to",
+    "projectName": "Project Name",
     "taskName": "Task Name",
     "startTime": "Start Date",
     "endTime": "End Date"
@@ -114,25 +119,23 @@
     "showCompleted": "Show completed",
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
-    "hideAbandoned": "Hide abandoned"
+    "hideAbandoned": "Hide abandoned",
+    "startFocusAria": "Start Focus"
   },
   "settings": {
     "title": "Settings",
+    "searchPlaceholder": "Search settings...",
     "calendar": {
-      "defaultViewTitle": "Calendar Default View",
+      "title": "Calendar",
+      "defaultView": "Default View",
       "defaultViewDesc": "Default view when opening the calendar"
     },
     "lunchBreak": {
       "title": "Lunch Break",
-      "description": "Set lunch break time for work hour calculation",
-      "start": {
-        "title": "Start Time",
-        "description": "Lunch break start time"
-      },
-      "end": {
-        "title": "End Time",
-        "description": "Lunch break end time"
-      }
+      "start": "Start",
+      "startDesc": "Lunch break start time; the period until end time is excluded from work hours",
+      "end": "End",
+      "endDesc": "Lunch break end time; the period from start time is excluded from work hours"
     },
     "groupManage": {
       "title": "Group Management",
@@ -142,6 +145,7 @@
     "projectGroups": {
       "title": "Project Groups",
       "description": "Configure project groups for categorization",
+      "setAsTaskDir": "Set as task assistant directory",
       "addButton": "Add Group",
       "namePlaceholder": "Group Name",
       "deleteButton": "Delete",
@@ -166,7 +170,7 @@
     },
     "ai": {
       "title": "AI Service Config",
-      "description": "Configure AI service provider to enable sidebar AI chat",
+      "description": "Configure LLM service for intelligent conversations with the task assistant",
       "enableLabel": "Enable AI Chat",
       "providerLabel": "Provider",
       "modelLabel": "Model",
@@ -191,7 +195,9 @@
       "messageSelectOneModel": "Please select at least one model",
       "messageApplied": "Applied. Click \"Save\" below to write config",
       "messageAdded": "Added. Click \"Save\" below to write config",
-      "confirmDeleteProvider": "Are you sure you want to delete \"{{name}}\"?"
+      "confirmDeleteProvider": "Are you sure you want to delete \"{{name}}\"?",
+      "showToolCalls": "Show Tool Call Details",
+      "showToolCallsDesc": "Display detailed information and execution results of AI tool calls in conversations"
     },
     "projectDirectories": {
       "title": "Project Directories",
@@ -202,7 +208,94 @@
       "emptyMessage": "No directories configured",
       "noPath": "No path set",
       "pathPlaceholder": "e.g. work/2026/project"
+    },
+    "pomodoro": {
+      "title": "Pomodoro",
+      "sectionDescription": "Focus timer, break reminders and record storage settings",
+      "enableStatusBar": "Status Bar Progress",
+      "enableStatusBarDesc": "Show progress bar at bottom when focusing",
+      "enableStatusBarTimer": "Status Bar Timer",
+      "enableStatusBarTimerDesc": "Show countdown panel in status bar with play/pause controls",
+      "enableFloatingButton": "Floating Tomato Button",
+      "enableFloatingButtonDesc": "Show floating button at bottom-right when focusing",
+      "recordMode": "Record Storage",
+      "recordModeDesc": "Where to store pomodoro records",
+      "recordModeBlock": "Under item block (child block)",
+      "recordModeAttr": "Item block custom attributes",
+      "completeTitle": "Focus Complete",
+      "breakTitle": "Start Break",
+      "breakHint": "Choose break duration. You will be reminded when break ends.",
+      "break5min": "5 min",
+      "break10min": "10 min",
+      "break15min": "15 min",
+      "close": "Close",
+      "breakEndMessage": "Break over, time to focus again",
+      "breakLabel": "Break",
+      "skipBreak": "Skip Break"
     }
+  },
+  "pomodoro": {
+    "dockTitle": "Pomodoro",
+    "startFocus": "Start Focus",
+    "stats": "Focus Statistics",
+    "startFocusTitle": "Start Focus",
+    "startFocusStatus": "🍅 Start focus「{content}」· {mode}",
+    "startFocusStatusStopwatch": "Stopwatch",
+    "startFocusFailed": "Failed to start focus",
+    "completeMessage": "✅ Focus complete「{content}」· {minutes} min",
+    "completeNotifyTitle": "🎉 Focus complete!",
+    "completeNotifyBody": "「{content}」focused for {minutes} min",
+    "saveFailed": "Failed to save record"
+  },
+  "pomodoroStats": {
+    "statsTitle": "Focus Statistics",
+    "focusTab": "Focus Stats",
+    "dailyTab": "Daily Stats",
+    "todayPomodoros": "Today's Focus Count",
+    "totalPomodoros": "Total Historical Focus Count",
+    "todayFocusDuration": "Today's Total Focus Duration",
+    "totalFocusDuration": "Total Accumulated Focus Duration",
+    "moreThanYesterday": "More than yesterday",
+    "focusDetail": "Focus Proportion",
+    "focusDuration": "Focus Duration",
+    "focusRecords": "Today's Focus Records",
+    "focusTrend": "Focus Duration Trend",
+    "focusTimeline": "Weekly Focus Schedule",
+    "bestFocusTime": "Peak Focus Hours",
+    "annualHeatmap": "Annual Focus Heatmap",
+    "dailyAverage": "Daily Average",
+    "today": "Today",
+    "thisWeek": "This week",
+    "day": "Day",
+    "week": "Week",
+    "lastWeek": "Last week",
+    "month": "This Month",
+    "byTask": "By Task",
+    "byItem": "By Item",
+    "year": "This Year",
+    "showUnrecorded": "Show unrecorded time",
+    "totalFocus": "Total Focus",
+    "pomodoroCount": "Pomodoros",
+    "unrecordedTime": "Unrecorded",
+    "periodTotal": "Period Total",
+    "groupedDetails": "Grouped Details",
+    "group": "Group",
+    "focus": "Focus",
+    "proportion": "Proportion",
+    "timeOccupancy": "Time Occupancy",
+    "noData": "No data",
+    "target": "Target",
+    "unrecordedRow": "Unrecorded",
+    "pastYearsYears": "Past {years} years",
+    "pastWeeksWeeks": "Past {weeks} weeks",
+    "focusLabel": "Focus",
+    "countUnit": "",
+    "formatMonthDay": "M/D",
+    "formatMonth": "MMM",
+    "formatYearMonth": "YYYY-MMM",
+    "weekDaysShort": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "weekDayLabelsHeatmap": ["Mon", "", "Wed", "", "Fri", "", ""],
+    "monthNamesShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
   },
   "calendarNav": {
     "prev": "Previous",
@@ -224,12 +317,63 @@
     "cancel": "Cancel",
     "copy": "Copy",
     "save": "Save",
+    "saveSuccess": "Saved successfully",
     "dataRefreshed": "Data refreshed",
     "blockIdError": "Cannot get block ID, please refresh and retry",
     "moveSuccess": "Item time moved",
     "resizeSuccess": "Item time resized",
     "actionFailed": "Failed, please retry",
     "dirsSet": "{count} task assistant directories set",
-    "dirsExist": "Selected directories already exist in settings"
+    "dirsExist": "Selected directories already exist in settings",
+    "minutes": "min",
+    "hours": "h",
+    "uncategorized": "Uncategorized"
+  },
+  "pomodoroDialog": {
+    "selectItem": "Select Todo Item",
+    "expiredItems": "⚠️ Expired Items",
+    "todayItems": "📅 Today's Items",
+    "noItems": "No todo items",
+    "focusItem": "Focus Item",
+    "timerMode": "Timer Mode",
+    "countdown": "Countdown",
+    "stopwatch": "Stopwatch",
+    "setDuration": "Set Focus Duration",
+    "custom": "Custom:",
+    "minutes": "minutes",
+    "startFocus": "Start Focus",
+    "cancel": "Cancel",
+    "yesterday": "Yesterday",
+    "dayBeforeYesterday": "Day before yesterday"
+  },
+  "pomodoroActive": {
+    "paused": "Paused",
+    "focusing": "Focusing",
+    "focusedFor": "Focused for {minutes}min",
+    "stopwatchFocused": "Stopwatch · Focused for {minutes}min",
+    "pauseBadge": "⏸️ Paused",
+    "pomodoroTimer": "Pomodoro Timer",
+    "target": "Target: {minutes}min",
+    "stopwatch": "Stopwatch",
+    "start": "Start",
+    "manualEnd": "Manual End",
+    "estimatedEnd": "Estimated End",
+    "pause": "Pause",
+    "resume": "Resume",
+    "endFocus": "End Focus",
+    "confirmEndTitle": "End Focus",
+    "confirmEndMessage": "Are you sure you want to end the focus? This will save the current pomodoro record."
+  },
+  "pomodoroComplete": {
+    "item": "Item",
+    "focusDuration": "Focus Duration",
+    "durationMinutes": "{minutes} min",
+    "descriptionLabel": "Enter item description (optional)",
+    "descriptionPlaceholder": "e.g. Complete daily review",
+    "save": "Save"
+  },
+  "pomodoroRecord": {
+    "title": "Focus Records",
+    "unknown": "Unknown"
   }
 }
