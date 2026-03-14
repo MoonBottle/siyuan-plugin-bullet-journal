@@ -360,6 +360,11 @@ watch(currentView, (newView) => {
     padding: 4px 24px 4px 8px;
   }
 
+  /* 两个下拉框之间的间距 */
+  .sy-select + .sy-select {
+    margin-left: 12px;
+  }
+
   .refresh-btn {
     margin-left: 6px;
   }
