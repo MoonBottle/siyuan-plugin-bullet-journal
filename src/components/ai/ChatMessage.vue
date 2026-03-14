@@ -652,6 +652,11 @@ function formatTime(timestamp: number): string {
       opacity: 1;
       cursor: default;
     }
+
+    // Tooltip 图标显示帮助光标
+    .b3-tooltips {
+      cursor: help;
+    }
   }
 
   &__usage-item {
