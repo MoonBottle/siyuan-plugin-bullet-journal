@@ -39,7 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
   status: undefined,
   showHeader: false,
   showFooter: false,
-  clickable: true,
+  clickable: false,
   hoverEffect: true
 });
 

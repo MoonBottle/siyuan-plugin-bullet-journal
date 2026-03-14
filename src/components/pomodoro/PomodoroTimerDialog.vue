@@ -395,7 +395,7 @@ onMounted(() => {
 
   &.active {
     background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
+    color: var(--b3-theme-on-primary, #fff);
     border-color: var(--b3-theme-primary);
   }
 }
@@ -427,7 +427,7 @@ onMounted(() => {
 
   &.active {
     background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
+    color: var(--b3-theme-on-primary, #fff);
     border-color: var(--b3-theme-primary);
   }
 }
@@ -495,7 +495,7 @@ onMounted(() => {
 .start-btn {
   padding: 10px 16px;
   background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
+  color: var(--b3-theme-on-primary, #fff);
   border: none;
   border-radius: var(--b3-border-radius);
   font-size: 14px;

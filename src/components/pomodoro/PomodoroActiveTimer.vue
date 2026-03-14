@@ -117,6 +117,7 @@
         status="pending"
         :show-header="true"
         :show-footer="currentItem?.links?.length > 0"
+        :clickable="true"
         @click="openItemDocument"
       >
         <template #header>
@@ -606,17 +607,17 @@ onUnmounted(() => hideLinkTooltip());
 }
 
 .pause-btn {
-  background: #f5a623;
-  color: #fff;
+  background: var(--b3-theme-secondary);
+  color: var(--b3-theme-on-secondary);
 
   &:hover {
-    background: #e09400;
+    opacity: 0.9;
   }
 }
 
 .resume-btn {
   background: var(--b3-theme-success);
-  color: var(--b3-theme-on-success, #fff);
+  color: #fff;
 
   &:hover {
     opacity: 0.9;
@@ -625,7 +626,7 @@ onUnmounted(() => hideLinkTooltip());
 
 .end-btn {
   background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
+  color: var(--b3-theme-on-primary, #fff);
 
   &:hover {
     opacity: 0.9;
