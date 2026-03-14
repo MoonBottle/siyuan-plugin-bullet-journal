@@ -295,7 +295,7 @@ export function showItemDetailModal(item: Item): Dialog {
 
   const dialog = createDialog({
     title: t('todo').itemDetail,
-    content: container.innerHTML,
+    content: '',
     width: '520px',
     destroyCallback: () => {
       app.unmount();
@@ -303,11 +303,9 @@ export function showItemDetailModal(item: Item): Dialog {
     },
   });
 
-  // 重新挂载到 dialog 内容区域以激活事件
-  const contentEl = dialog.element.querySelector('.b3-dialog__content');
-  if (contentEl) {
-    contentEl.innerHTML = '';
-    contentEl.appendChild(container);
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
   }
 
   return dialog;
@@ -460,7 +458,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
 
   const dialog = createDialog({
     title: t('todo').itemDetail,
-    content: container.innerHTML,
+    content: '',
     width: '520px',
     destroyCallback: () => {
       if (lastEventDetailDialog === dialog) {
@@ -472,11 +470,9 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
   });
   lastEventDetailDialog = dialog;
 
-  // 重新挂载到 dialog 内容区域以激活事件
-  const contentEl = dialog.element.querySelector('.b3-dialog__content');
-  if (contentEl) {
-    contentEl.innerHTML = '';
-    contentEl.appendChild(container);
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
   }
 
   return dialog;
