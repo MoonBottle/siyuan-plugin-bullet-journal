@@ -283,7 +283,8 @@ onMounted(() => {
 
     .duration-section,
     .action-section,
-    .panel-title {
+    .panel-title,
+    .timer-mode-section {
       width: 100%;
       max-width: 280px;
     }
