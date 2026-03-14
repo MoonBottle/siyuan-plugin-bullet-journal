@@ -131,15 +131,53 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
-   * 布局就绪后初始化底栏倒计时（遵循思源官方建议，addStatusBar 应在 onLayoutReady 中调用）
+   * 布局就绪后初始化番茄钟 UI（遵循思源官方建议，addStatusBar 应在 onLayoutReady 中调用）
    */
   onLayoutReady() {
-    this.initStatusBarTimer();
+    this.updatePomodoroUIVisibility();
+  }
+
+  /**
+   * 根据设置更新番茄钟 UI 的显示/隐藏
+   * 在设置变更或布局就绪时调用，确保 UI 状态与设置同步
+   */
+  private updatePomodoroUIVisibility() {
+    const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
+    const pinia = getSharedPinia();
+    const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
+    const hasActivePomodoro = pomodoroStore?.isFocusing || pomodoroStore?.isBreakActive;
+
+    // 更新底栏倒计时显示
+    if (pomodoro.enableStatusBarTimer === true) {
+      this.showStatusBarTimer();
+      // 如果没有进行中的番茄钟，显示默认状态
+      if (!hasActivePomodoro) {
+        this.updateStatusBarTimerDisplay(false, '', false);
+      }
+    } else {
+      this.hideStatusBarTimer();
+    }
+
+    // 更新底栏进度条和悬浮按钮显示（仅在番茄钟进行中时）
+    if (hasActivePomodoro) {
+      if (pomodoro.enableStatusBar === true) {
+        this.showStatusBar();
+      } else {
+        this.hideStatusBar();
+      }
+
+      if (pomodoro.enableFloatingButton !== false) {
+        this.showFloatingTomatoButton();
+      } else {
+        this.hideFloatingTomatoButton();
+      }
+    }
   }
 
   /**
    * 初始化底栏倒计时
    * 启用配置后常驻显示，没倒计时时只显示番茄图标
+   * @deprecated 使用 updatePomodoroUIVisibility 替代
    */
   private initStatusBarTimer() {
     const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
@@ -879,6 +917,11 @@ export default class TaskAssistantPlugin extends Plugin {
       totalSeconds: number;
     }) => {
       this.updateTimerDisplaysFromStore(data, true);
+    });
+
+    // 监听设置变更事件，动态更新番茄钟 UI 显示/隐藏
+    eventBus.on(Events.SETTINGS_CHANGED, () => {
+      this.updatePomodoroUIVisibility();
     });
   }
 

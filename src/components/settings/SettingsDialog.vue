@@ -134,6 +134,8 @@ async function handleSave() {
     const settings = props.plugin.getSettings();
     eventBus.emit(Events.DATA_REFRESH, settings);
     broadcastDataRefresh(settings as object);
+    // 触发设置变更事件，通知插件主类更新 UI（如番茄钟显示/隐藏）
+    eventBus.emit(Events.SETTINGS_CHANGED, settings);
     showMessage(t('common').saveSuccess, 3000, 'info');
     props.closeDialog();
   } catch (e) {
