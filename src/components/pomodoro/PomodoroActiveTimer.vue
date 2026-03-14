@@ -128,41 +128,40 @@
         </div>
         <template #footer>
           <div class="item-footer-content">
-            <div class="item-links" v-if="currentItem?.links?.length > 0">
+            <div
+              v-for="link in currentItem?.links || []"
+              :key="link.url"
+              class="item-link-wrapper"
+            >
               <SyButton
-                v-for="link in currentItem.links"
-                :key="link.url"
                 type="link"
                 :text="link.name"
                 :href="link.url"
+                class="item-link"
               />
             </div>
             <div class="item-actions">
-              <div class="item-actions-hover">
-                <span
-                  class="block__icon b3-tooltips b3-tooltips__sw"
-                  :aria-label="t('todo').complete"
-                  @click.stop="handleDone"
-                >
-                  <svg><use xlink:href="#iconCheck"></use></svg>
-                </span>
-              </div>
-              <div class="item-actions-fixed">
-                <span
-                  class="block__icon b3-tooltips b3-tooltips__sw"
-                  :aria-label="t('todo').detail"
-                  @click.stop="openDetail"
-                >
-                  <svg><use xlink:href="#iconInfo"></use></svg>
-                </span>
-                <span
-                  class="block__icon b3-tooltips b3-tooltips__sw"
-                  :aria-label="t('todo').calendar"
-                  @click.stop="openCalendar"
-                >
-                  <svg><use xlink:href="#iconCalendar"></use></svg>
-                </span>
-              </div>
+              <span
+                class="block__icon b3-tooltips b3-tooltips__sw"
+                :aria-label="t('todo').complete"
+                @click.stop="handleDone"
+              >
+                <svg><use xlink:href="#iconCheck"></use></svg>
+              </span>
+              <span
+                class="block__icon b3-tooltips b3-tooltips__sw"
+                :aria-label="t('todo').detail"
+                @click.stop="openDetail"
+              >
+                <svg><use xlink:href="#iconInfo"></use></svg>
+              </span>
+              <span
+                class="block__icon b3-tooltips b3-tooltips__sw"
+                :aria-label="t('todo').calendar"
+                @click.stop="openCalendar"
+              >
+                <svg><use xlink:href="#iconCalendar"></use></svg>
+              </span>
             </div>
           </div>
         </template>
@@ -706,40 +705,26 @@ onUnmounted(() => hideLinkTooltip());
 .item-footer-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   width: 100%;
 }
 
-.item-links {
+.item-link-wrapper {
+  width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  justify-content: flex-end;
+}
+
+.item-link {
+  max-width: none !important;
 }
 
 .item-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-}
-
-.item-actions-hover {
-  display: flex;
   gap: 4px;
-
-  .block__icon {
-    opacity: 1;
-    cursor: pointer;
-
-    svg {
-      width: 14px;
-      height: 14px;
-    }
-  }
-}
-
-.item-actions-fixed {
-  display: flex;
-  gap: 4px;
+  margin-top: 4px;
 
   .block__icon {
     opacity: 1;
