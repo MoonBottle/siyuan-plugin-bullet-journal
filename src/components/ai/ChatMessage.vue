@@ -72,7 +72,7 @@
         ></div>
 
         <!-- Token 统计和插入按钮（含 toolCalls 的 assistant 消息不显示 footer，仅在最终回答展示） -->
-        <div v-if="showFooter" class="chat-message__footer">
+        <div v-if="showFooter && (message.usage || showInsertBtn)" class="chat-message__footer">
           <div v-if="message.usage" class="chat-message__usage">
             <span class="chat-message__usage-item">
               <span class="block__icon b3-tooltips b3-tooltips__ne" :aria-label="t('aiChat').inputTokens">
