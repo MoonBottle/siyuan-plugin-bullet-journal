@@ -324,10 +324,18 @@ function nextWeek() {
   flex: 1;
   min-height: 2px;
   background: transparent;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.15s;
+  border-radius: 1px;
 
   &.filled {
     background: var(--b3-theme-primary);
+
+    &:hover {
+      opacity: 1 !important;
+      transform: scaleX(1.08);
+      box-shadow: 0 0 4px rgba(var(--b3-theme-primary-rgb), 0.5);
+      z-index: 2;
+    }
   }
 }
 
