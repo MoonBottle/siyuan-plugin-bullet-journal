@@ -22,7 +22,7 @@
   <a
     v-else-if="type === 'link'"
     ref="linkRef"
-    class="sy-link-btn b3-tooltips"
+    class="sy-link-btn"
     :href="href"
     target="_blank"
     :aria-label="tooltip || text"

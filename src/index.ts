@@ -7,7 +7,7 @@ import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
-import { showItemDetailModal } from '@/utils/dialog';
+import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { getBlockIdFromElement, getBlockIdFromRange, findItemByBlockId } from '@/utils/itemBlockUtils';
 import { useProjectStore, usePomodoroStore } from '@/stores';
 import CalendarTab from '@/tabs/CalendarTab.vue';
@@ -1069,15 +1069,15 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarTimerEl = document.createElement('div');
     this.statusBarTimerEl.className = 'bullet-journal-status-bar-timer';
     this.statusBarTimerEl.innerHTML = `
-      <div class="timer-icon b3-tooltips b3-tooltips__nw" aria-label="${t('pomodoro').dockTitle}"></div>
+      <div class="timer-icon" data-tooltip="${t('pomodoro').dockTitle}"></div>
       <div class="timer-text"></div>
-      <div class="timer-skip-btn b3-tooltips b3-tooltips__nw" style="display:none" data-tooltip="${t('settings').pomodoro.skipBreak}">
+      <div class="timer-skip-btn" style="display:none" data-tooltip="${t('settings').pomodoro.skipBreak}">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
       </div>
-      <div class="timer-end-btn b3-tooltips b3-tooltips__nw" style="display:none" data-tooltip="${t('pomodoroActive').endFocus}">
+      <div class="timer-end-btn" style="display:none" data-tooltip="${t('pomodoroActive').endFocus}">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
       </div>
-      <div class="timer-control b3-tooltips b3-tooltips__nw" aria-label="${t('pomodoro').startFocus}">
+      <div class="timer-control" data-tooltip="${t('pomodoro').startFocus}">
         <svg class="timer-play-icon" viewBox="0 0 24 24" width="14" height="14">
           <path fill="currentColor" d="M8 5v14l11-7z"/>
         </svg>
@@ -1086,6 +1086,20 @@ export default class TaskAssistantPlugin extends Plugin {
         </svg>
       </div>
     `;
+
+    // 绑定 tooltip 事件
+    const bindTooltip = (selector: string, text: string) => {
+      const el = this.statusBarTimerEl!.querySelector(selector);
+      if (el) {
+        el.addEventListener('mouseenter', () => showIconTooltip(el as HTMLElement, text));
+        el.addEventListener('mouseleave', hideIconTooltip);
+      }
+    };
+
+    bindTooltip('.timer-icon', t('pomodoro').dockTitle);
+    bindTooltip('.timer-skip-btn', t('settings').pomodoro.skipBreak);
+    bindTooltip('.timer-end-btn', t('pomodoroActive').endFocus);
+    bindTooltip('.timer-control', t('pomodoro').startFocus);
 
     // 点击事件
     this.statusBarTimerEl.addEventListener('click', (e) => {
