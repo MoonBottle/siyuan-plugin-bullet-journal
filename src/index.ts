@@ -1087,19 +1087,22 @@ export default class TaskAssistantPlugin extends Plugin {
       </div>
     `;
 
-    // 绑定 tooltip 事件
-    const bindTooltip = (selector: string, text: string) => {
+    // 绑定 tooltip 事件（从 data-tooltip 属性动态获取文本）
+    const bindTooltip = (selector: string) => {
       const el = this.statusBarTimerEl!.querySelector(selector);
       if (el) {
-        el.addEventListener('mouseenter', () => showIconTooltip(el as HTMLElement, text));
+        el.addEventListener('mouseenter', () => {
+          const text = (el as HTMLElement).dataset.tooltip;
+          if (text) showIconTooltip(el as HTMLElement, text);
+        });
         el.addEventListener('mouseleave', hideIconTooltip);
       }
     };
 
-    bindTooltip('.timer-icon', t('pomodoro').dockTitle);
-    bindTooltip('.timer-skip-btn', t('settings').pomodoro.skipBreak);
-    bindTooltip('.timer-end-btn', t('pomodoroActive').endFocus);
-    bindTooltip('.timer-control', t('pomodoro').startFocus);
+    bindTooltip('.timer-icon');
+    bindTooltip('.timer-skip-btn');
+    bindTooltip('.timer-end-btn');
+    bindTooltip('.timer-control');
 
     // 点击事件
     this.statusBarTimerEl.addEventListener('click', (e) => {
@@ -1352,7 +1355,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 更新图标：休息时咖啡，专注时番茄，无倒计时时也显示番茄；tooltip 随状态更新
     if (iconEl) {
-      iconEl.setAttribute('aria-label', isBreak ? t('settings').pomodoro.breakLabel : t('pomodoro').dockTitle);
+      iconEl.dataset.tooltip = isBreak ? t('settings').pomodoro.breakLabel : t('pomodoro').dockTitle;
       if (isBreak) {
         // 咖啡图标
         iconEl.innerHTML = `<svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor"><path d="M828.36 955.46h-738C75.8 955.46 64 943.66 64 929.1s11.8-26.36 26.36-26.36h738c14.56 0 26.36 11.8 26.36 26.36s-11.81 26.36-26.36 26.36zM512.17 876.39H406.53c-159.87 0-289.93-130.06-289.93-289.93V481.04c0-43.6 35.47-79.07 79.07-79.07h527.36c43.6 0 79.07 35.47 79.07 79.07v105.43c0 159.86-130.06 289.92-289.93 289.92z m-316.5-421.71c-14.53 0-26.36 11.82-26.36 26.36v105.43c0 130.8 106.42 237.21 237.21 237.21h105.65c130.79 0 237.21-106.41 237.21-237.21V481.04c0-14.54-11.83-26.36-26.36-26.36H195.67z"/><path d="M828.19 705.07h-65.65c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h65.65c43.62 0 79.1-35.47 79.1-79.07s-35.48-79.07-79.1-79.07h-52.47c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h52.47c72.68 0 131.81 59.12 131.81 131.79s-59.14 131.79-131.81 131.79z"/></svg>`;
@@ -1375,13 +1378,13 @@ export default class TaskAssistantPlugin extends Plugin {
     // 跳过按钮：仅休息时显示
     if (skipBtnEl) {
       skipBtnEl.style.display = isBreak ? 'flex' : 'none';
-      skipBtnEl.setAttribute('aria-label', t('settings').pomodoro.skipBreak);
+      skipBtnEl.dataset.tooltip = t('settings').pomodoro.skipBreak;
     }
 
     // 结束按钮：专注且暂停时显示
     if (endBtnEl) {
       endBtnEl.style.display = !isBreak && hasActiveTimer && isPaused ? 'flex' : 'none';
-      endBtnEl.setAttribute('aria-label', t('pomodoroActive').endFocus);
+      endBtnEl.dataset.tooltip = t('pomodoroActive').endFocus;
     }
 
     // 控制按钮显示逻辑：
@@ -1395,7 +1398,7 @@ export default class TaskAssistantPlugin extends Plugin {
       } else if (!hasActiveTimer) {
         // 无专注时显示播放图标
         controlEl.style.display = 'flex';
-        controlEl.setAttribute('aria-label', t('pomodoro').startFocus);
+        controlEl.dataset.tooltip = t('pomodoro').startFocus;
         if (playIcon && pauseIcon) {
           playIcon.style.display = 'block';
           pauseIcon.style.display = 'none';
@@ -1403,7 +1406,7 @@ export default class TaskAssistantPlugin extends Plugin {
       } else {
         // 专注时显示暂停/继续按钮
         controlEl.style.display = 'flex';
-        controlEl.setAttribute('aria-label', isPaused ? t('pomodoroActive').resume : t('pomodoroActive').pause);
+        controlEl.dataset.tooltip = isPaused ? t('pomodoroActive').resume : t('pomodoroActive').pause;
         if (playIcon && pauseIcon) {
           if (isPaused) {
             playIcon.style.display = 'block';
