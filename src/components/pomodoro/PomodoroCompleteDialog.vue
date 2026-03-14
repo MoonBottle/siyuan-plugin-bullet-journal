@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onBeforeUnmount } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { t } from '@/i18n';
@@ -77,6 +77,16 @@ function handleStartBreak(minutes: number) {
 function handleClose() {
   props.closeDialog();
 }
+
+onBeforeUnmount(async () => {
+  if (!saved.value && props.pending) {
+    await pomodoroStore.savePomodoroRecordFromPending(
+      plugin,
+      props.pending,
+      description.value
+    );
+  }
+});
 </script>
 
 <style lang="scss" scoped>
