@@ -24,6 +24,7 @@
               status="expired"
               :show-header="true"
               :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
             >
