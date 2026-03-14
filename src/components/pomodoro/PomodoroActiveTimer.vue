@@ -142,11 +142,20 @@
             </div>
             <div class="item-actions">
               <span
+                v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
                 class="block__icon b3-tooltips b3-tooltips__sw"
                 :aria-label="t('todo').complete"
                 @click.stop="handleDone"
               >
                 <svg><use xlink:href="#iconCheck"></use></svg>
+              </span>
+              <span
+                v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
+                class="block__icon b3-tooltips b3-tooltips__sw"
+                :aria-label="t('todo').abandon"
+                @click.stop="handleAbandon"
+              >
+                <svg><use xlink:href="#iconCloseRound"></use></svg>
               </span>
               <span
                 class="block__icon b3-tooltips b3-tooltips__sw"
@@ -349,6 +358,17 @@ const handleDone = async () => {
   if (!currentItem.value?.blockId) return;
 
   const tag = getStatusTag('completed');
+  const success = await updateBlockContent(currentItem.value.blockId, tag);
+  if (success && plugin) {
+    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  }
+};
+
+// 标记放弃
+const handleAbandon = async () => {
+  if (!currentItem.value?.blockId) return;
+
+  const tag = getStatusTag('abandoned');
   const success = await updateBlockContent(currentItem.value.blockId, tag);
   if (success && plugin) {
     await projectStore.refresh(plugin, settingsStore.enabledDirectories);
