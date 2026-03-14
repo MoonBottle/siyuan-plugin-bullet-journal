@@ -39,7 +39,7 @@
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').complete"
                     @click.stop="handleDone(item)"
                   >
@@ -47,21 +47,21 @@
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').migrateToToday"
                     @click.stop="handleMigrateToday(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').abandon"
                     @click.stop="handleAbandon(item)"
                   >
@@ -69,10 +69,10 @@
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -112,7 +112,7 @@
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').complete"
                     @click.stop="handleDone(item)"
                   >
@@ -120,21 +120,21 @@
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').migrateToTomorrow"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').abandon"
                     @click.stop="handleAbandon(item)"
                   >
@@ -142,10 +142,10 @@
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -185,7 +185,7 @@
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').complete"
                     @click.stop="handleDone(item)"
                   >
@@ -193,21 +193,21 @@
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').startFocusAria"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').migrateToTomorrow"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__sw"
+                    class="block__icon b3-tooltips b3-tooltips__nw"
                     :aria-label="t('todo').abandon"
                     @click.stop="handleAbandon(item)"
                   >
@@ -215,10 +215,10 @@
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -265,7 +265,7 @@
                   <template #footer>
                     <div class="item-actions-hover">
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__sw"
+                        class="block__icon b3-tooltips b3-tooltips__nw"
                         :aria-label="t('todo').complete"
                         @click.stop="handleDone(item)"
                       >
@@ -273,21 +273,21 @@
                       </span>
                       <span
                         v-if="!pomodoroStore.isFocusing"
-                        class="block__icon b3-tooltips b3-tooltips__sw"
+                        class="block__icon b3-tooltips b3-tooltips__nw"
                         :aria-label="t('todo').startFocusAria"
                         @click.stop="openPomodoroDialog(item)"
                       >
                         <svg><use xlink:href="#iconClock"></use></svg>
                       </span>
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__sw"
+                        class="block__icon b3-tooltips b3-tooltips__nw"
                         :aria-label="t('todo').migrateToTomorrow"
                         @click.stop="handleMigrate(item)"
                       >
                         <svg><use xlink:href="#iconForward"></use></svg>
                       </span>
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__sw"
+                        class="block__icon b3-tooltips b3-tooltips__nw"
                         :aria-label="t('todo').abandon"
                         @click.stop="handleAbandon(item)"
                       >
@@ -295,10 +295,10 @@
                       </span>
                     </div>
                     <div class="item-actions-fixed">
-                      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                      <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                         <svg><use xlink:href="#iconInfo"></use></svg>
                       </span>
-                      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                      <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                         <svg><use xlink:href="#iconCalendar"></use></svg>
                       </span>
                     </div>
@@ -339,10 +339,10 @@
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
               <template #footer>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -381,10 +381,10 @@
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
               <template #footer>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
