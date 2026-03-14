@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.10.1] - 2026-03-15
+
+### Features
+
+- **AI Chat Enhancement**: Chat messages now support one-click copy to clipboard
+- **Pomodoro Abandon Feature**: Added abandon task button to timer, allowing users to mark tasks as abandoned
+- **Weekly Statistics ISO Standard**: Changed weekly statistics date range calculation to use ISO week standard for international consistency
+
+### Fixes
+
+- **Anti-duplicate Click**: Added execution state locks for critical operations to prevent duplicate execution caused by rapid clicking
+- **Tooltip Optimization**: Unified tooltip direction to northwest for better display positioning
+
+### Styles
+
+- Adjusted statistical chart component styling details
+- Added help cursor style to tooltip icons
+
+### Docs
+
+- Documentation Migration: Moved CHANGELOG.md and CONTRIBUTING.md to user guide directory, added English versions
+- Internationalization text optimization: Updated control button text in status bar timer description
+
 ## [0.10.0] - 2026-03-14
 
 ### Features
