@@ -75,18 +75,13 @@
           <span>{{ currentItem.project.name }}</span>
         </div>
         <template #footer>
-          <a
+          <SyButton
             v-for="link in currentItem.project.links"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag"
-            @click.prevent="openLink(link.url)"
-            @mouseenter="onLinkMouseenter($event, link)"
-            @mouseleave="hideLinkTooltip()"
-          >
-            {{ linkDisplay(link).display }}
-          </a>
+          />
         </template>
       </Card>
 
@@ -107,18 +102,13 @@
           <span>{{ currentItem.task.name }}</span>
         </div>
         <template #footer>
-          <a
+          <SyButton
             v-for="link in currentItem.task.links"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag"
-            @click.prevent="openLink(link.url)"
-            @mouseenter="onLinkMouseenter($event, link)"
-            @mouseleave="hideLinkTooltip()"
-          >
-            {{ linkDisplay(link).display }}
-          </a>
+          />
         </template>
       </Card>
 
@@ -136,18 +126,13 @@
           <span>{{ itemContent }}</span>
         </div>
         <template #footer>
-          <a
+          <SyButton
             v-for="link in currentItem?.links || []"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag"
-            @click.prevent.stop="openLink(link.url)"
-            @mouseenter="onLinkMouseenter($event, link)"
-            @mouseleave="hideLinkTooltip()"
-          >
-            {{ linkDisplay(link).display }}
-          </a>
+          />
         </template>
       </Card>
     </div>
@@ -191,7 +176,8 @@ import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import Card from '@/components/common/Card.vue';
 import { openDocumentAtLine } from '@/utils/fileUtils';
-import { showConfirmDialog, formatLinkForDisplay, showLinkTooltip, hideLinkTooltip } from '@/utils/dialog';
+import { showConfirmDialog, hideLinkTooltip } from '@/utils/dialog';
+import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
@@ -231,11 +217,6 @@ const accumulatedMinutes = computed(() => {
 // 目标分钟数
 const targetMinutes = computed(() => {
   return pomodoroStore.activePomodoro?.targetDurationMinutes || 25;
-});
-
-// 暂停次数
-const pauseCount = computed(() => {
-  return pomodoroStore.activePomodoro?.pauseCount || 0;
 });
 
 // 格式化的时间（MM:SS）：倒计时显示剩余，正计时显示已专注
@@ -294,23 +275,6 @@ const strokeDashoffset = computed(() => {
 
   return circumference * (1 - progress);
 });
-
-// 链接显示格式化（截断 + tooltip）
-const linkDisplay = (link: { name: string }) => formatLinkForDisplay(link.name);
-
-const onLinkMouseenter = (e: MouseEvent, link: { name: string }) => {
-  const { fullText } = formatLinkForDisplay(link.name);
-  if (fullText && e.currentTarget instanceof HTMLElement) {
-    showLinkTooltip(e.currentTarget, fullText);
-  }
-};
-
-// 打开外部链接
-const openLink = (url: string) => {
-  if (url) {
-    window.open(url, '_blank');
-  }
-};
 
 // 暂停专注
 const pausePomodoro = async () => {
@@ -590,29 +554,6 @@ onUnmounted(() => hideLinkTooltip());
 
   span {
     display: inline;
-  }
-}
-
-// 链接标签样式 - 参考 dialog.ts（hover 时提升 z-index 避免 tooltip 被遮挡）
-.link-tag {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  background: var(--b3-theme-surface);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    z-index: 100;
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-    border-color: var(--b3-theme-primary);
   }
 }
 
