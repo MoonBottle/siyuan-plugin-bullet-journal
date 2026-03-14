@@ -677,7 +677,7 @@ const openPomodoroDialog = (item: Item) => {
     title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
     width: '400px',
-    height: '480px'
+    height: 'auto'
   });
 
   const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
