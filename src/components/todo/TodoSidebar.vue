@@ -97,6 +97,7 @@
               status="today"
               :show-header="true"
               :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
             >
@@ -169,6 +170,7 @@
               status="tomorrow"
               :show-header="true"
               :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
             >
@@ -248,6 +250,7 @@
                   status="future"
                   :show-header="true"
                   :show-footer="true"
+                  :clickable="true"
                   @click="openItem(item)"
                   @contextmenu="handleContextMenu($event, item)"
                 >
@@ -322,6 +325,7 @@
               status="completed"
               :show-header="true"
               :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
             >
@@ -363,6 +367,7 @@
               status="abandoned"
               :show-header="true"
               :show-footer="true"
+              :clickable="true"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
             >
