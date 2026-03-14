@@ -69,8 +69,8 @@ const rangeDates = computed(() => {
     case 'week': {
       const w = base.add(offset.value, 'week');
       return {
-        startDate: w.startOf('week').add(1, 'day').format('YYYY-MM-DD'),
-        endDate: w.endOf('week').add(1, 'day').format('YYYY-MM-DD')
+        startDate: w.startOf('isoWeek').format('YYYY-MM-DD'),
+        endDate: w.endOf('isoWeek').format('YYYY-MM-DD')
       };
     }
     case 'day': {
@@ -95,8 +95,8 @@ const navLabel = computed(() => {
       if (offset.value === 0) return t('pomodoroStats').thisWeek;
       if (offset.value === -1) return t('pomodoroStats').lastWeek;
       const w = dayjs().add(offset.value, 'week');
-      const start = w.startOf('week').add(1, 'day');
-      const end = w.endOf('week').add(1, 'day');
+      const start = w.startOf('isoWeek');
+      const end = w.endOf('isoWeek');
       const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
       return `${start.format(fmt)} - ${end.format(fmt)}`;
     }
@@ -139,17 +139,12 @@ const chartData = computed(() => {
     }
   } else if (dimension.value === 'week') {
     const dows = (t('pomodoroStats') as any).weekDaysShort ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    let current = dayjs(startDate);
-    const end = dayjs(endDate);
-    let i = 0;
-    while (current.isBefore(end) || current.isSame(end, 'day')) {
-      const d = current.format('YYYY-MM-DD');
+    for (let i = 0; i < 7; i++) {
+      const d = dayjs(startDate).add(i, 'day').format('YYYY-MM-DD');
       result.push({
         label: dows[i],
         minutes: byDay.get(d) ?? 0
       });
-      current = current.add(1, 'day');
-      i++;
     }
   } else {
     const all = projectStore.getAllPomodoros('');

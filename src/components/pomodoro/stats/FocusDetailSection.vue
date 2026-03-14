@@ -97,8 +97,8 @@ const rangeDates = computed(() => {
     }
     case 'week': {
       const d = base.add(props.rangeOffset, 'week');
-      start = d.startOf('week').add(1, 'day');
-      end = d.endOf('week').add(1, 'day');
+      start = d.startOf('isoWeek');
+      end = d.endOf('isoWeek');
       break;
     }
     case 'month': {
@@ -129,8 +129,8 @@ const rangeLabel = computed(() => {
     if (props.rangeOffset === 0) return t('pomodoroStats').thisWeek;
     if (props.rangeOffset === -1) return t('pomodoroStats').lastWeek;
     const w = dayjs().add(props.rangeOffset, 'week');
-    const start = w.startOf('week').add(1, 'day');
-    const end = w.endOf('week').add(1, 'day');
+    const start = w.startOf('isoWeek');
+    const end = w.endOf('isoWeek');
     const fmt = (t('pomodoroStats') as any).formatMonthDay ?? 'M/D';
     return `${start.format(fmt)} - ${end.format(fmt)}`;
   }
