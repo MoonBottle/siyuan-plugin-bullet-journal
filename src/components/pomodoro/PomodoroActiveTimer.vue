@@ -116,7 +116,7 @@
       <Card
         status="pending"
         :show-header="true"
-        :show-footer="currentItem?.links?.length > 0"
+        :show-footer="true"
         :clickable="true"
         @click="openItemDocument"
       >
@@ -127,13 +127,44 @@
           <span>{{ itemContent }}</span>
         </div>
         <template #footer>
-          <SyButton
-            v-for="link in currentItem?.links || []"
-            :key="link.url"
-            type="link"
-            :text="link.name"
-            :href="link.url"
-          />
+          <div class="item-footer-content">
+            <div class="item-links" v-if="currentItem?.links?.length > 0">
+              <SyButton
+                v-for="link in currentItem.links"
+                :key="link.url"
+                type="link"
+                :text="link.name"
+                :href="link.url"
+              />
+            </div>
+            <div class="item-actions">
+              <div class="item-actions-hover">
+                <span
+                  class="block__icon b3-tooltips b3-tooltips__sw"
+                  :aria-label="t('todo').complete"
+                  @click.stop="handleDone"
+                >
+                  <svg><use xlink:href="#iconCheck"></use></svg>
+                </span>
+              </div>
+              <div class="item-actions-fixed">
+                <span
+                  class="block__icon b3-tooltips b3-tooltips__sw"
+                  :aria-label="t('todo').detail"
+                  @click.stop="openDetail"
+                >
+                  <svg><use xlink:href="#iconInfo"></use></svg>
+                </span>
+                <span
+                  class="block__icon b3-tooltips b3-tooltips__sw"
+                  :aria-label="t('todo').calendar"
+                  @click.stop="openCalendar"
+                >
+                  <svg><use xlink:href="#iconCalendar"></use></svg>
+                </span>
+              </div>
+            </div>
+          </div>
         </template>
       </Card>
     </div>
@@ -168,7 +199,7 @@
 
 <script setup lang="ts">
 import { computed, onUnmounted } from 'vue';
-import { usePomodoroStore, useProjectStore } from '@/stores';
+import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import type { Item } from '@/types/models';
@@ -176,14 +207,16 @@ import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import Card from '@/components/common/Card.vue';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { showConfirmDialog, hideLinkTooltip } from '@/utils/dialog';
+import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
+import { showConfirmDialog, hideLinkTooltip, showItemDetailModal } from '@/utils/dialog';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
+import { TAB_TYPES } from '@/constants';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
 const projectStore = useProjectStore();
+const settingsStore = useSettingsStore();
 
 // 圆周长
 const radius = 54;
@@ -304,6 +337,36 @@ const openItemDocument = async () => {
   const { docId, lineNumber, blockId } = currentItem.value;
   if (docId) {
     await openDocumentAtLine(docId, lineNumber, blockId);
+  }
+};
+
+// 获取状态标签
+const getStatusTag = (status: 'completed' | 'abandoned'): string => {
+  return t('statusTag')[status] || '';
+};
+
+// 标记完成
+const handleDone = async () => {
+  if (!currentItem.value?.blockId) return;
+
+  const tag = getStatusTag('completed');
+  const success = await updateBlockContent(currentItem.value.blockId, tag);
+  if (success && plugin) {
+    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  }
+};
+
+// 打开详情
+const openDetail = () => {
+  if (!currentItem.value) return;
+  showItemDetailModal(currentItem.value);
+};
+
+// 在日历中打开
+const openCalendar = () => {
+  if (!currentItem.value?.date) return;
+  if (plugin && plugin.openCustomTab) {
+    plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: currentItem.value.date });
   }
 };
 
@@ -637,5 +700,55 @@ onUnmounted(() => hideLinkTooltip());
   width: 16px;
   height: 16px;
   fill: currentColor;
+}
+
+// 事项卡片底部操作区域
+.item-footer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.item-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.item-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-actions-hover {
+  display: flex;
+  gap: 4px;
+
+  .block__icon {
+    opacity: 1;
+    cursor: pointer;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+.item-actions-fixed {
+  display: flex;
+  gap: 4px;
+
+  .block__icon {
+    opacity: 1;
+    cursor: pointer;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
 }
 </style>
