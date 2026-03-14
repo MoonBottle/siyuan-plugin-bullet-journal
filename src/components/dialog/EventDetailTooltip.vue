@@ -94,11 +94,19 @@
         <div class="item-meta">
           <div class="meta-row">
             <span class="meta-item">
-              <span class="meta-icon b3-tooltips b3-tooltips__n" :aria-label="t('todo').time">📅</span>
+              <span
+              class="meta-icon"
+              @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').time)"
+              @mouseleave="hideIconTooltip"
+            >📅</span>
               <span class="meta-text">{{ timeDisplay }}</span>
             </span>
             <span v-if="duration" class="meta-item">
-              <span class="meta-icon b3-tooltips b3-tooltips__n" :aria-label="t('todo').duration">⏱️</span>
+              <span
+                class="meta-icon"
+                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').duration)"
+                @mouseleave="hideIconTooltip"
+              >⏱️</span>
               <span class="meta-text">{{ duration }}</span>
               <span
                 v-if="!preview"
@@ -111,7 +119,11 @@
               </span>
             </span>
             <span v-if="focusTotalTimeDisplay" class="meta-item">
-              <span class="meta-icon b3-tooltips b3-tooltips__n" :aria-label="t('todo').focusTotalTime">🍅</span>
+              <span
+                class="meta-icon"
+                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').focusTotalTime)"
+                @mouseleave="hideIconTooltip"
+              >🍅</span>
               <span class="meta-text">{{ focusTotalTimeDisplay }}</span>
               <span
                 v-if="!preview"
@@ -163,7 +175,7 @@ import { computed, reactive } from 'vue';
 import Card from '@/components/common/Card.vue';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
-import { formatFocusDuration, calculateTotalFocusMinutes } from '@/utils/dialog';
+import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
@@ -474,6 +486,7 @@ function openLink(url: string) {
 
 .meta-icon {
   font-size: 11px;
+  cursor: help !important;
 }
 
 .meta-text {
