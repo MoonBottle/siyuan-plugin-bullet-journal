@@ -423,6 +423,7 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 14px;
   box-sizing: border-box;
+  line-height: 1;
 }
 
 .nav-btn:hover {
