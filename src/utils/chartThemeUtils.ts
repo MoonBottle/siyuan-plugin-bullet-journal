@@ -72,11 +72,13 @@ export function toRgba(color: string, alpha: number): string {
   if (color.startsWith('rgba(')) {
     return color.replace(/[\d.]+\)\s*$/, `${alpha})`);
   }
-  if (color.startsWith('#')) {
+  if (color.startsWith('#') && color.length >= 7) {
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
   }
   return `rgba(128, 128, 128, ${alpha})`;
 }
