@@ -401,7 +401,7 @@ onUnmounted(() => {
 }
 
 .dimension-dropdown {
-  width: 60px;
+  width: 80px;
 }
 
 .nav-btns {
