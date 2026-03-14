@@ -310,7 +310,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-right: 4px;
+  padding-right: 13px;
   font-size: 10px;
   color: var(--b3-theme-on-surface);
   flex-shrink: 0;

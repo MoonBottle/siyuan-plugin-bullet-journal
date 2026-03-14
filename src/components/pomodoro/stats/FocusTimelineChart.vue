@@ -53,7 +53,7 @@ const projectStore = useProjectStore();
 const weekOffset = ref(0);
 
 const weekStart = computed(() => {
-  return dayjs().add(weekOffset.value, 'week').startOf('week').add(1, 'day');
+  return dayjs().add(weekOffset.value, 'week').startOf('isoWeek');
 });
 
 const weekLabel = computed(() => {

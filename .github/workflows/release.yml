@@ -52,7 +52,7 @@ jobs:
             found && $0 ~ "^## \\[" && $0 !~ "^## \\[" ver "\\]" { exit }
             $0 ~ "^## \\[" ver "\\]" { found=1 }
             found { print }
-          ' CHANGELOG.md > release_notes.md
+          ' docs/user-guide/changelog.md > release_notes.md
 
       - name: Create Release and upload assets
         uses: softprops/action-gh-release@v2

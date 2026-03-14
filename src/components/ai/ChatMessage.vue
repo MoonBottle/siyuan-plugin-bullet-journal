@@ -103,8 +103,15 @@
               {{ message.usage.cached_tokens }}
             </span>
           </div>
-          <!-- 最后一条 AI 消息显示插入按钮 -->
-          <div v-if="showInsertBtn" class="chat-message__insert-btn">
+          <!-- 最后一条 AI 消息显示复制和插入按钮 -->
+          <div v-if="showInsertBtn" class="chat-message__action-btns">
+            <span
+              class="block__icon b3-tooltips b3-tooltips__nw"
+              :aria-label="t('aiChat').copyMessage"
+              @click="handleCopyMessage"
+            >
+              <svg><use xlink:href="#iconCopy"></use></svg>
+            </span>
             <span
               class="block__icon b3-tooltips b3-tooltips__nw"
               :aria-label="t('aiChat').insertToNote"
@@ -125,6 +132,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { t } from '@/i18n';
+import { pushMsg } from '@/api';
 import { renderMarkdown } from '@/utils/markdownRenderer';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
 import ToolCallDisplay from './ToolCallDisplay.vue';
@@ -187,6 +195,16 @@ const roleText = computed(() => {
 
 function handleInsertToNote() {
   emit('insertToNote', props.message);
+}
+
+async function handleCopyMessage() {
+  try {
+    const content = props.message.content || '';
+    await navigator.clipboard.writeText(content);
+    await pushMsg((t('aiChat') as Record<string, string>).copySuccess || '已复制到剪贴板', 1000);
+  } catch (error) {
+    console.error('Copy failed:', error);
+  }
 }
 
 function getToolName(): string {
@@ -652,6 +670,11 @@ function formatTime(timestamp: number): string {
       opacity: 1;
       cursor: default;
     }
+
+    // Tooltip 图标显示帮助光标
+    .b3-tooltips {
+      cursor: help;
+    }
   }
 
   &__usage-item {
@@ -674,7 +697,11 @@ function formatTime(timestamp: number): string {
     border-top: 1px solid var(--b3-theme-surface-lighter);
   }
 
-  &__insert-btn {
+  &__action-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
     .block__icon {
       cursor: pointer;
       opacity: 0.7;

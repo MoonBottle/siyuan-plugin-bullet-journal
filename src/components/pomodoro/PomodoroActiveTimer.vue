@@ -142,21 +142,30 @@
             </div>
             <div class="item-actions">
               <span
-                class="block__icon b3-tooltips b3-tooltips__sw"
+                v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
+                class="block__icon b3-tooltips b3-tooltips__nw"
                 :aria-label="t('todo').complete"
                 @click.stop="handleDone"
               >
                 <svg><use xlink:href="#iconCheck"></use></svg>
               </span>
               <span
-                class="block__icon b3-tooltips b3-tooltips__sw"
+                v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
+                class="block__icon b3-tooltips b3-tooltips__nw"
+                :aria-label="t('todo').abandon"
+                @click.stop="handleAbandon"
+              >
+                <svg><use xlink:href="#iconCloseRound"></use></svg>
+              </span>
+              <span
+                class="block__icon b3-tooltips b3-tooltips__nw"
                 :aria-label="t('todo').detail"
                 @click.stop="openDetail"
               >
                 <svg><use xlink:href="#iconInfo"></use></svg>
               </span>
               <span
-                class="block__icon b3-tooltips b3-tooltips__sw"
+                class="block__icon b3-tooltips b3-tooltips__nw"
                 :aria-label="t('todo').calendar"
                 @click.stop="openCalendar"
               >
@@ -197,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
@@ -216,6 +225,9 @@ const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
+
+// 防止重复点击的执行锁
+const isProcessing = ref(false);
 
 // 圆周长
 const radius = 54;
@@ -347,11 +359,34 @@ const getStatusTag = (status: 'completed' | 'abandoned'): string => {
 // 标记完成
 const handleDone = async () => {
   if (!currentItem.value?.blockId) return;
+  if (isProcessing.value) return; // 防止重复点击
 
-  const tag = getStatusTag('completed');
-  const success = await updateBlockContent(currentItem.value.blockId, tag);
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  isProcessing.value = true;
+  try {
+    const tag = getStatusTag('completed');
+    const success = await updateBlockContent(currentItem.value.blockId, tag);
+    if (success && plugin) {
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+// 标记放弃
+const handleAbandon = async () => {
+  if (!currentItem.value?.blockId) return;
+  if (isProcessing.value) return; // 防止重复点击
+
+  isProcessing.value = true;
+  try {
+    const tag = getStatusTag('abandoned');
+    const success = await updateBlockContent(currentItem.value.blockId, tag);
+    if (success && plugin) {
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
   }
 };
 

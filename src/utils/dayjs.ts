@@ -3,6 +3,10 @@
  * 使用用户本地时区，不硬编码特定时区
  */
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+
+// 加载插件
+dayjs.extend(isoWeek);
 
 // 导出配置好的 dayjs 实例（使用本地时区）
 export default dayjs;
