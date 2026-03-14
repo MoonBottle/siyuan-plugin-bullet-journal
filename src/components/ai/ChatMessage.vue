@@ -64,9 +64,9 @@
           :default-collapsed="true"
         />
 
-        <!-- AI 回答内容 -->
+        <!-- 消息内容（用户和助手的文本消息） -->
         <div
-          v-if="message.content && message.role === 'assistant'"
+          v-if="message.content && message.role !== 'tool'"
           class="chat-message__text"
           v-html="renderedContent"
         ></div>
