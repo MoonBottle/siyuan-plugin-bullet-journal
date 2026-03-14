@@ -57,9 +57,12 @@ export function showLinkTooltip(el: HTMLElement, fullText: string): void {
   tip.classList.add('visible');
   requestAnimationFrame(() => {
     const tipRect = tip!.getBoundingClientRect();
+    // 确保 tooltip 不会超出视口右边界
     if (tipRect.right > window.innerWidth - margin) {
       tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`;
-    } else if (tipRect.left < margin) {
+    }
+    // 确保 tooltip 不会超出视口左边界
+    if (tipRect.left < margin) {
       tip!.style.left = `${tipRect.width / 2 + margin}px`;
     }
   });
@@ -91,9 +94,12 @@ export function showIconTooltip(el: HTMLElement, text: string): void {
   tip.classList.add('visible');
   requestAnimationFrame(() => {
     const tipRect = tip!.getBoundingClientRect();
+    // 确保 tooltip 不会超出视口右边界
     if (tipRect.right > window.innerWidth - margin) {
       tip!.style.left = `${window.innerWidth - tipRect.width / 2 - margin}px`;
-    } else if (tipRect.left < margin) {
+    }
+    // 确保 tooltip 不会超出视口左边界
+    if (tipRect.left < margin) {
       tip!.style.left = `${tipRect.width / 2 + margin}px`;
     }
   });
