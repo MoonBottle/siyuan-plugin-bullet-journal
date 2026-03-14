@@ -840,6 +840,10 @@ export default class TaskAssistantPlugin extends Plugin {
         return;
       }
       // 属性变更（含属性面板手动删除）会广播 transactions，需刷新专注记录
+      // if (event.cmd === 'setBlockAttrs') {
+      //   this.scheduleRefresh();
+      //   return;
+      // }
       if (data.cmd === 'transactions' && Array.isArray(data.data)) {
         const hasAttrChange = data.data.some(
           (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
