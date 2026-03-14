@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="hasContent"
     class="chat-message"
     :class="{
       'chat-message--user': message.role === 'user',
@@ -148,6 +149,25 @@ const props = defineProps<{
 const emit = defineEmits<{
   insertToNote: [message: ChatMessage];
 }>();
+
+// 判断消息是否有实际内容需要显示
+const hasContent = computed(() => {
+  const m = props.message;
+  // 思考中状态
+  if (m.loading && !m.reasoning && !m.content) return true;
+  // 思考过程
+  if (m.reasoning && !(m.toolCalls && m.toolCalls.length)) return true;
+  // 错误消息
+  if (m.error) return true;
+  // 工具消息
+  if (m.role === 'tool') return true;
+  // 文本内容
+  if (m.content && m.role !== 'tool') return true;
+  // 头部或底部
+  if (props.showHeader) return true;
+  if (props.showFooter && (m.usage || props.showInsertBtn)) return true;
+  return false;
+});
 
 const roleText = computed(() => {
   const ai = t('aiChat') as Record<string, string>;
