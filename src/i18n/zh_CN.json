@@ -19,6 +19,8 @@
     "insertToNote": "插入到笔记",
     "insertSuccess": "已插入到笔记",
     "insertFailed": "插入失败，请重试",
+    "copyMessage": "复制内容",
+    "copySuccess": "已复制到剪贴板",
     "inputTokens": "输入 tokens",
     "outputTokens": "输出 tokens",
     "totalTokens": "总计 tokens",

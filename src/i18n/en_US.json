@@ -19,6 +19,8 @@
     "insertToNote": "Insert to Note",
     "insertSuccess": "Inserted to note",
     "insertFailed": "Insert failed, please retry",
+    "copyMessage": "Copy content",
+    "copySuccess": "Copied to clipboard",
     "inputTokens": "Input tokens",
     "outputTokens": "Output tokens",
     "totalTokens": "Total tokens",

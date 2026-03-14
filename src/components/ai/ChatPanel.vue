@@ -494,10 +494,10 @@ async function handleInsertToNote(message: ChatMessageType) {
     const contentToInsert = `> **${t('aiChat').title}** ${timestamp}\n>\n> ${formattedContent.replace(/\n/g, '\n> ')}`;
 
     await appendBlock('markdown', contentToInsert, docId);
-    await pushMsg(t('aiChat').insertSuccess, 3000);
+    await pushMsg(t('aiChat').insertSuccess, 1000);
   } catch (error) {
     console.error('插入到笔记失败:', error);
-    await pushMsg(t('aiChat').insertFailed, 3000);
+    await pushMsg(t('aiChat').insertFailed, 1000);
   }
 }
 
