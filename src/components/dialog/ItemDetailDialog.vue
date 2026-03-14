@@ -23,17 +23,13 @@
           </span>
         </div>
         <template #footer>
-          <a
+          <SyButton
             v-for="link in projectLinks"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag b3-tooltips"
-            :aria-label="link.name"
-            @click.prevent.stop="openLink(link.url)"
-          >
-            {{ formatLinkDisplay(link.name).display }}
-          </a>
+          />
         </template>
       </Card>
 
@@ -62,17 +58,13 @@
           </span>
         </div>
         <template #footer>
-          <a
+          <SyButton
             v-for="link in taskLinks"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag b3-tooltips"
-            :aria-label="link.name"
-            @click.prevent.stop="openLink(link.url)"
-          >
-            {{ formatLinkDisplay(link.name).display }}
-          </a>
+          />
         </template>
       </Card>
 
@@ -136,17 +128,13 @@
         </div>
 
         <template #footer>
-          <a
+          <SyButton
             v-for="link in itemLinks"
             :key="link.url"
+            type="link"
+            :text="link.name"
             :href="link.url"
-            target="_blank"
-            class="link-tag b3-tooltips"
-            :aria-label="link.name"
-            @click.prevent.stop="openLink(link.url)"
-          >
-            {{ formatLinkDisplay(link.name).display }}
-          </a>
+          />
         </template>
       </Card>
     </div>
@@ -169,6 +157,7 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import Card from '@/components/common/Card.vue';
+import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes } from '@/utils/dialog';
@@ -274,15 +263,6 @@ function getEffectiveDate(item: Item): string {
   return item.date;
 }
 
-// 格式化链接显示
-function formatLinkDisplay(name: string): { display: string; full: string } {
-  const maxLength = 12;
-  if (name.length <= maxLength) {
-    return { display: name, full: name };
-  }
-  return { display: name.slice(0, maxLength) + '...', full: name };
-}
-
 // 处理复制
 async function handleCopy(text: string, key: string) {
   if (!text) return;
@@ -294,13 +274,6 @@ async function handleCopy(text: string, key: string) {
     }, 2000);
   } catch (err) {
     console.error('复制失败:', err);
-  }
-}
-
-// 打开链接
-function openLink(url: string) {
-  if (url) {
-    window.open(url, '_blank');
   }
 }
 
@@ -476,28 +449,6 @@ function handleOpenCalendar() {
   gap: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
-}
-
-.link-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--b3-theme-primary);
-  background: var(--b3-theme-surface-lighter);
-  border-radius: 4px;
-  text-decoration: none;
-  transition: all 0.2s;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  &:hover {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-    z-index: 1;
-  }
 }
 
 .dialog-footer {
