@@ -252,6 +252,7 @@ function nextWeek() {
   flex-direction: column;
   height: 200px;
   position: relative;
+  margin-top: 8px;
 }
 
 .y-axis {
