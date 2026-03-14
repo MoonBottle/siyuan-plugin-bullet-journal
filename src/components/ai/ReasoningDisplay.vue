@@ -14,12 +14,6 @@
         <svg><use xlink:href="#iconSparkles"></use></svg>
       </span>
       <span class="reasoning-display__title">{{ title }}</span>
-      <!-- 加载动画 -->
-      <span v-if="loading" class="reasoning-display__loading">
-        <span class="loading-dot"></span>
-        <span class="loading-dot"></span>
-        <span class="loading-dot"></span>
-      </span>
     </div>
 
     <!-- 展开后的内容 -->
@@ -36,8 +30,6 @@ import { t } from '@/i18n';
 const props = defineProps<{
   /** 思考过程内容 */
   content: string;
-  /** 是否处于加载状态 */
-  loading?: boolean;
   /** 默认是否折叠，默认为 true */
   defaultCollapsed?: boolean;
   /** 自定义标题，默认使用 i18n 的 reasoningTitle */
@@ -114,27 +106,6 @@ function toggleCollapse() {
     white-space: nowrap;
   }
 
-  &__loading {
-    display: flex;
-    gap: 3px;
-
-    .loading-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--b3-theme-primary);
-      animation: loading-bounce 1.4s infinite ease-in-out both;
-
-      &:nth-child(1) {
-        animation-delay: -0.32s;
-      }
-
-      &:nth-child(2) {
-        animation-delay: -0.16s;
-      }
-    }
-  }
-
   &__content {
     padding: 6px 12px 8px;
     font-size: 12px;
@@ -145,12 +116,4 @@ function toggleCollapse() {
   }
 }
 
-@keyframes loading-bounce {
-  0%, 80%, 100% {
-    transform: scale(0);
-  }
-  40% {
-    transform: scale(1);
-  }
-}
 </style>

@@ -821,14 +821,10 @@ function formatTime(timestamp: number): string {
   &__card {
     background: var(--b3-theme-surface);
     border-radius: var(--b3-border-radius);
-    padding: 6px 12px;
+    padding: 8px 12px;
     display: flex;
     flex-direction: column;
-    gap: 0;
-  }
-
-  &__card :deep(.chat-message + .chat-message) {
-    margin-top: 4px;
+    gap: 6px;
   }
 
   &__avatar {

@@ -35,28 +35,26 @@
     </div>
     <div class="chat-message__content">
       <div class="chat-message__body">
-        <!-- 思考过程（reasoning）：仅在没有 toolCalls 的 assistant 消息上显示，避免与下一句重复 -->
+        <!-- 思考中：AI 正在思考但还没有 reasoning 内容 -->
+        <ThinkingIndicator
+          v-if="message.loading && !message.reasoning && !message.content"
+        />
+
+        <!-- 思考过程：展示已完成的 reasoning 内容 -->
         <ReasoningDisplay
           v-if="message.reasoning && !(message.toolCalls && message.toolCalls.length)"
           :content="message.reasoning"
-          :loading="message.loading && !message.content"
           :default-collapsed="true"
         />
 
+        <!-- 错误消息 -->
         <div
-          v-if="message.loading && !message.reasoning && !message.content"
-          class="chat-message__loading"
-        >
-          <span class="loading-dot"></span>
-          <span class="loading-dot"></span>
-          <span class="loading-dot"></span>
-        </div>
-        <div
-          v-else-if="message.error"
+          v-if="message.error"
           class="chat-message__error-text"
         >
           {{ message.error }}
         </div>
+
         <!-- 工具调用消息 -->
         <ToolCallDisplay
           v-else-if="message.role === 'tool'"
@@ -65,8 +63,10 @@
           :result="message.content"
           :default-collapsed="true"
         />
+
+        <!-- AI 回答内容 -->
         <div
-          v-else-if="message.content"
+          v-if="message.content && message.role === 'assistant'"
           class="chat-message__text"
           v-html="renderedContent"
         ></div>
@@ -128,6 +128,7 @@ import { renderMarkdown } from '@/utils/markdownRenderer';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
 import ToolCallDisplay from './ToolCallDisplay.vue';
 import ReasoningDisplay from './ReasoningDisplay.vue';
+import ThinkingIndicator from './ThinkingIndicator.vue';
 import type { ChatMessage } from '@/types/ai';
 
 const props = defineProps<{
@@ -275,7 +276,7 @@ function formatTime(timestamp: number): string {
   }
 
   &--grouped {
-    padding: 2px 0;
+    padding: 0;
     background: transparent;
 
     &.chat-message--assistant,
