@@ -59,18 +59,22 @@
       </div>
     </div>
 
-    <!-- 事项信息卡片 - 参考 dialog.ts 的卡片式设计 -->
+    <!-- 事项信息卡片 - 使用 Card 组件 -->
     <div class="item-info-section">
       <!-- 项目卡片 -->
-      <div class="info-card" v-if="currentItem?.project">
-        <div class="info-card-header">
+      <Card
+        v-if="currentItem?.project"
+        :show-header="true"
+        :show-footer="currentItem.project.links?.length > 0"
+        :hover-effect="false"
+      >
+        <template #header>
           <span class="info-card-label">{{ t('todo').project }}</span>
-        </div>
+        </template>
         <div class="info-card-content">
           <span>{{ currentItem.project.name }}</span>
         </div>
-        <!-- 项目链接 -->
-        <div class="info-card-footer" v-if="currentItem.project.links?.length">
+        <template #footer>
           <a
             v-for="link in currentItem.project.links"
             :key="link.url"
@@ -83,22 +87,26 @@
           >
             {{ linkDisplay(link).display }}
           </a>
-        </div>
-      </div>
+        </template>
+      </Card>
 
       <!-- 任务卡片 -->
-      <div class="info-card" v-if="currentItem?.task">
-        <div class="info-card-header">
+      <Card
+        v-if="currentItem?.task"
+        :show-header="true"
+        :show-footer="currentItem.task.links?.length > 0"
+        :hover-effect="false"
+      >
+        <template #header>
           <span class="info-card-label">{{ t('todo').task }}</span>
           <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
             {{ currentItem.task.level }}
           </span>
-        </div>
+        </template>
         <div class="info-card-content">
           <span>{{ currentItem.task.name }}</span>
         </div>
-        <!-- 任务链接 -->
-        <div class="info-card-footer" v-if="currentItem.task.links?.length">
+        <template #footer>
           <a
             v-for="link in currentItem.task.links"
             :key="link.url"
@@ -111,21 +119,25 @@
           >
             {{ linkDisplay(link).display }}
           </a>
-        </div>
-      </div>
+        </template>
+      </Card>
 
       <!-- 事项卡片 -->
-      <div class="info-card item-card clickable" @click="openItemDocument">
-        <div class="info-card-header">
+      <Card
+        status="pending"
+        :show-header="true"
+        :show-footer="currentItem?.links?.length > 0"
+        @click="openItemDocument"
+      >
+        <template #header>
           <span class="info-card-label">{{ t('todo').item }}</span>
-        </div>
+        </template>
         <div class="info-card-content">
           <span>{{ itemContent }}</span>
         </div>
-        <!-- 事项链接 -->
-        <div class="info-card-footer" v-if="currentItem?.links?.length">
+        <template #footer>
           <a
-            v-for="link in currentItem.links"
+            v-for="link in currentItem?.links || []"
             :key="link.url"
             :href="link.url"
             target="_blank"
@@ -136,8 +148,8 @@
           >
             {{ linkDisplay(link).display }}
           </a>
-        </div>
-      </div>
+        </template>
+      </Card>
     </div>
 
     <div class="timer-actions">
@@ -177,6 +189,7 @@ import type { Item } from '@/types/models';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
+import Card from '@/components/common/Card.vue';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { showConfirmDialog, formatLinkForDisplay, showLinkTooltip, hideLinkTooltip } from '@/utils/dialog';
 import { t } from '@/i18n';
@@ -559,46 +572,6 @@ onUnmounted(() => hideLinkTooltip());
   box-sizing: border-box;
 }
 
-.info-card {
-  width: 100%;
-  background: var(--b3-theme-background);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 8px;
-  padding: 12px 16px;
-  box-sizing: border-box;
-
-  &.item-card {
-    border-left: 3px solid var(--b3-theme-success);
-  }
-
-  &.clickable {
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      background: var(--b3-theme-surface);
-      border-color: var(--b3-theme-primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &:active {
-      transform: scale(0.99);
-    }
-  }
-}
-
-.info-card-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.info-card-icon {
-  font-size: 14px;
-  line-height: 1;
-}
-
 .info-card-label {
   font-size: 12px;
   font-weight: 600;
@@ -618,14 +591,6 @@ onUnmounted(() => hideLinkTooltip());
   span {
     display: inline;
   }
-}
-
-.info-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
 }
 
 // 链接标签样式 - 参考 dialog.ts（hover 时提升 z-index 避免 tooltip 被遮挡）

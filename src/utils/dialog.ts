@@ -8,6 +8,8 @@ import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion } f
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
+import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
+import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
@@ -227,7 +229,7 @@ function createLinksRow(label: string, links: Array<{ name: string; url: string 
 /**
  * 计算专注总时长（分钟）
  */
-function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
+export function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
   if (!pomodoros?.length) return 0;
   return pomodoros.reduce((sum, p) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
 }
@@ -235,7 +237,7 @@ function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
 /**
  * 格式化专注时长为可读字符串（国际化）
  */
-function formatFocusDuration(minutes: number): string {
+export function formatFocusDuration(minutes: number): string {
   const mins = t('common').minutes ?? 'min';
   const hrs = t('common').hours ?? 'h';
   if (minutes < 60) return `${minutes}${mins}`;
@@ -257,236 +259,50 @@ function createButtons(buttons: Array<{ text: string; class: string; action: str
  * 显示事项详情弹框
  */
 export function showItemDetailModal(item: Item): Dialog {
-  const settingsStore = useSettingsStore();
   const plugin = usePlugin();
 
-  // 时间显示
-  const timeDisplay = formatTimeRange(item.startDateTime, item.endDateTime);
+  // 创建容器元素
+  const container = document.createElement('div');
 
-  // 时长计算
-  let duration = '';
-  if (item.startDateTime && item.endDateTime) {
-    duration = calculateDuration(
-      item.startDateTime,
-      item.endDateTime,
-      settingsStore.lunchBreakStart,
-      settingsStore.lunchBreakEnd
-    );
-  }
-
-  // 项目链接和任务链接
-  const projectLinks = item.project?.links || [];
-  const taskLinks = item.task?.links || [];
-
-  // 构建链接 HTML（链接名过长时截断，hover 显示全部，与复制按钮一致使用 b3-tooltips）
-  const projectLinksHtml = projectLinks.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
-  }).join('');
-  const taskLinksHtml = taskLinks.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
-  }).join('');
-
-  // 构建内容 - 垂直卡片布局
-  let content = '<div class="sy-dialog-content">';
-  content += '<div class="sy-dialog-cards">';
-
-  // 项目卡片
-  if (item.project) {
-    content += `
-      <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">${t('todo').project}</div>
-        <div class="sy-dialog-card-content">
-          <span>${item.project.name}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.project.name}" aria-label="${t('common').copy}">${copyIconSvg}</span>
-        </div>
-        ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
-      </div>
-    `;
-  }
-
-  // 任务卡片
-  if (item.task) {
-    const levelHtml = item.task.level
-      ? `<span class="task-level level-${item.task.level.toLowerCase()}">${item.task.level}</span>`
-      : '';
-    content += `
-      <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">
-          <span class="sy-dialog-card-title-text">${t('todo').task}</span>
-          ${levelHtml}
-        </div>
-        <div class="sy-dialog-card-content">
-          <span>${item.task.name}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.task.name}" aria-label="${t('common').copy}">${copyIconSvg}</span>
-        </div>
-        ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
-      </div>
-    `;
-  }
-
-  // 事项卡片
-  const dateLabel = formatDateLabel(item.date, t('todo').today, t('todo').tomorrow);
-  const timeText = `${dateLabel}${timeDisplay ? ' · ' + timeDisplay : ''}`;
-
-  // 事项状态标签（多日期用 getDateRangeStatus，单日用原逻辑）
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  const statusMap: Record<string, { text: string; class: string }> = {
-    'pending': { text: t('todo').pending, class: 'pending' },
-    'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
-    'completed': { text: t('todo').completed, class: 'completed' },
-    'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
-    'expired': { text: t('todo').expired, class: 'expired' }
-  };
-  let statusKey: string;
-  if (item.status === 'completed' || item.status === 'abandoned') {
-    statusKey = item.status;
-  } else if (item.dateRangeStart && item.dateRangeEnd) {
-    const rangeStatus = getDateRangeStatus(item, todayStr);
-    statusKey = rangeStatus ?? (getEffectiveDate(item) < todayStr ? 'expired' : 'pending');
-  } else {
-    const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
-    if (timeStatus) {
-      statusKey = timeStatus;
-    } else {
-      const effectiveDate = getEffectiveDate(item);
-      statusKey = effectiveDate < todayStr ? 'expired' : item.status;
+  // 创建 Vue 应用
+  const app = createApp(ItemDetailDialog, {
+    item,
+    onClose: () => {
+      dialog.destroy();
+    },
+    onOpenDoc: async () => {
+      await openDocumentAtLine(item.docId, item.lineNumber, item.blockId);
+      dialog.destroy();
+    },
+    onOpenCalendar: (date: string) => {
+      console.warn('[Task Assistant] dialog open-calendar', date);
+      if (plugin && (plugin as any).openCustomTab) {
+        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date });
+      }
+      dialog.destroy();
     }
-  }
-  const statusInfo = statusMap[statusKey] || statusMap['pending'];
-  const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
+  });
 
-  // 事项链接
-  const itemLinks = item.links || [];
-  const itemLinksHtml = itemLinks.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
-  }).join('');
-
-  // 专注总时间
-  const totalFocusMinutes = calculateTotalFocusMinutes(item.pomodoros);
-  const focusTotalTimeDisplay = totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
-
-  content += `
-    <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">
-        <span class="sy-dialog-card-title-text">${t('todo').item}</span>
-        ${statusHtml}
-      </div>
-      <div class="sy-dialog-item-meta">
-        <div class="sy-dialog-item-time-row">
-          <span class="sy-dialog-time-text">
-            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').time}">📅</span>
-            ${timeText}
-          </span>
-          ${duration ? `
-            <span class="sy-dialog-duration-text">
-              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
-              ${duration}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${duration}" aria-label="${t('common').copy}">${copyIconSvg}</span>
-            </span>
-          ` : ''}
-          ${focusTotalTimeDisplay ? `
-            <span class="sy-dialog-duration-text">
-              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').focusTotalTime}">🍅</span>
-              ${focusTotalTimeDisplay}
-              <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${focusTotalTimeDisplay}" aria-label="${t('common').copy}">${copyIconSvg}</span>
-            </span>
-          ` : ''}
-        </div>
-      </div>
-      ${item.content ? `
-        <div class="sy-dialog-item-content">
-          <span>${item.content}</span>
-          <span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${item.content}" aria-label="${t('common').copy}">${copyIconSvg}</span>
-        </div>
-      ` : ''}
-      ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
-    </div>
-  `;
-
-  content += '</div>'; // 结束 cards
-
-  // 按钮
-  content += `
-    <div class="sy-dialog-footer">
-      ${createButtons([
-        { text: t('common').cancel, class: 'b3-button--outline', action: 'close' },
-        { text: t('todo').viewInCalendar, class: 'b3-button--outline', action: 'open-calendar' },
-        { text: t('todo').openDoc, class: 'b3-button--text', action: 'open-doc' },
-      ])}
-    </div>
-  `;
-
-  content += '</div>';
+  // 挂载应用
+  app.use(getSharedPinia());
+  app.mount(container);
 
   const dialog = createDialog({
     title: t('todo').itemDetail,
-    content,
+    content: container.innerHTML,
     width: '520px',
     destroyCallback: () => {
+      app.unmount();
       hideLinkTooltip();
     },
   });
 
-  // 绑定按钮事件
-  const element = dialog.element;
-  element.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const action = (e.currentTarget as HTMLElement).dataset.action;
-
-      if (action === 'open-doc') {
-        await openDocumentAtLine(item.docId, item.lineNumber, item.blockId);
-        dialog.destroy();
-      } else if (action === 'open-calendar') {
-        console.warn('[Task Assistant] dialog open-calendar', item.date);
-        if (plugin && (plugin as any).openCustomTab) {
-          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
-        }
-        dialog.destroy();
-      } else if (action === 'close') {
-        dialog.destroy();
-      }
-    });
-  });
-
-  // 绑定链接点击事件
-  element.querySelectorAll('.sy-dialog-link-tag').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const url = (e.currentTarget as HTMLAnchorElement).href;
-      if (url) {
-        window.open(url, '_blank');
-      }
-    });
-  });
-
-  bindLinkTooltips(element);
-
-  // 绑定复制按钮事件
-  element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const btnEl = e.currentTarget as HTMLElement;
-      if (!btnEl) return;
-      const text = btnEl.dataset.copy;
-      if (text) {
-        try {
-          await navigator.clipboard.writeText(text);
-          btnEl.innerHTML = checkIconSvg;
-          btnEl.classList.add('copied');
-          setTimeout(() => {
-            if (btnEl) {
-              btnEl.innerHTML = copyIconSvg;
-              btnEl.classList.remove('copied');
-            }
-          }, 2000);
-        } catch (err) {
-          console.error('复制失败:', err);
-        }
-      }
-    });
-  });
+  // 重新挂载到 dialog 内容区域以激活事件
+  const contentEl = dialog.element.querySelector('.b3-dialog__content');
+  if (contentEl) {
+    contentEl.innerHTML = '';
+    contentEl.appendChild(container);
+  }
 
   return dialog;
 }
@@ -525,7 +341,6 @@ export function buildEventDetailContent(
   options?: { preview?: boolean }
 ): string {
   const preview = options?.preview ?? false;
-  const settingsStore = useSettingsStore();
   const props = event.extendedProps;
 
   const start = event.start;
@@ -534,172 +349,46 @@ export function buildEventDetailContent(
   const rawDate = props.date
     || (typeof start === 'string' ? (start.includes('T') ? start.split('T')[0] : start.split(' ')[0]) : '')
     || (start ? dayjs(start).format('YYYY-MM-DD') : '');
-  const dateLabel = formatDateLabel(rawDate || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow);
+
   // 优先使用 originalStartDateTime/originalEndDateTime（日历事件可能被转为 ISO，原格式更可靠）
   const startForTime = props.originalStartDateTime || (typeof start === 'string' ? start : (start ? dayjs(start).format('YYYY-MM-DD HH:mm:ss') : ''));
   const endForTime = props.originalEndDateTime || (typeof end === 'string' ? end : (end ? dayjs(end).format('YYYY-MM-DD HH:mm:ss') : ''));
-  const timeRange = formatTimeRange(startForTime, endForTime);
-  const timeDisplay = `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;
 
-  let duration = '';
-  if (!allDay && start && end) {
-    duration = calculateDuration(
-      start,
-      end,
-      settingsStore.lunchBreakStart,
-      settingsStore.lunchBreakEnd
-    );
-  }
+  // 创建容器元素
+  const container = document.createElement('div');
 
-  const projectLinks = props.projectLinks || [];
-  const taskLinks = props.taskLinks || [];
-  const projectLinksHtml = projectLinks.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
-  }).join('');
-  const taskLinksHtml = taskLinks.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
-  }).join('');
+  // 创建 Vue 应用
+  const app = createApp(EventDetailTooltip, {
+    project: props.project,
+    projectLinks: props.projectLinks || [],
+    task: props.task,
+    level: props.level,
+    taskLinks: props.taskLinks || [],
+    item: props.item,
+    itemContent: props.item,
+    itemStatus: props.itemStatus || 'pending',
+    itemLinks: props.itemLinks || [],
+    date: rawDate,
+    startDateTime: startForTime,
+    endDateTime: endForTime,
+    allDay: allDay,
+    dateRangeStart: props.dateRangeStart,
+    dateRangeEnd: props.dateRangeEnd,
+    pomodoros: props.pomodoros || [],
+    preview: preview
+  });
 
-  const copyBtn = (text: string) =>
-    preview ? '' : `<span class="sy-dialog-copy-btn b3-tooltips b3-tooltips__nw" data-copy="${text.replace(/"/g, '&quot;')}" aria-label="${t('common').copy}">${copyIconSvg}</span>`;
+  // 挂载应用
+  app.use(getSharedPinia());
+  app.mount(container);
 
-  let content = '<div class="sy-dialog-content">';
-  content += '<div class="sy-dialog-cards">';
+  // 获取渲染后的 HTML
+  const html = container.innerHTML;
 
-  if (props.project) {
-    content += `
-      <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">${t('todo').project}</div>
-        <div class="sy-dialog-card-content">
-          <span>${props.project ?? ''}</span>
-          ${copyBtn(props.project ?? '')}
-        </div>
-        ${projectLinksHtml ? `<div class="sy-dialog-card-footer">${projectLinksHtml}</div>` : ''}
-      </div>
-    `;
-  }
+  // 卸载应用（因为这只是获取 HTML，实际事件处理由调用方负责）
+  app.unmount();
 
-  if (props.task) {
-    const levelHtml = props.level
-      ? `<span class="task-level level-${props.level.toLowerCase()}">${props.level}</span>`
-      : '';
-    content += `
-      <div class="sy-dialog-card">
-        <div class="sy-dialog-card-title">
-          <span class="sy-dialog-card-title-text">${t('todo').task}</span>
-          ${levelHtml}
-        </div>
-        <div class="sy-dialog-card-content">
-          <span>${props.task ?? ''}</span>
-          ${copyBtn(props.task ?? '')}
-        </div>
-        ${taskLinksHtml ? `<div class="sy-dialog-card-footer">${taskLinksHtml}</div>` : ''}
-      </div>
-    `;
-  }
-
-  const itemStatus = props.itemStatus || 'pending';
-  const itemDate = props.date;
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  const statusMap: Record<string, { text: string; class: string }> = {
-    'pending': { text: t('todo').pending, class: 'pending' },
-    'in_progress': { text: t('todo').inProgress, class: 'in-progress' },
-    'completed': { text: t('todo').completed, class: 'completed' },
-    'abandoned': { text: t('todo').abandoned, class: 'abandoned' },
-    'expired': { text: t('todo').expired, class: 'expired' }
-  };
-  let statusKey: string;
-  if (itemStatus === 'completed' || itemStatus === 'abandoned') {
-    statusKey = itemStatus;
-  } else if (props.dateRangeStart && props.dateRangeEnd) {
-    const rangeStatus = getDateRangeStatus(
-      { dateRangeStart: props.dateRangeStart, dateRangeEnd: props.dateRangeEnd, date: itemDate } as Item,
-      todayStr
-    );
-    const effectiveDate = props.dateRangeEnd ?? itemDate;
-    statusKey = rangeStatus ?? (effectiveDate && effectiveDate < todayStr ? 'expired' : 'pending');
-  } else if (itemDate) {
-    const timeStatus = getTimeRangeStatus(
-      { date: itemDate, startDateTime: props.originalStartDateTime, endDateTime: props.originalEndDateTime },
-      dayjs().format('YYYY-MM-DD HH:mm:ss')
-    );
-    if (timeStatus) {
-      statusKey = timeStatus;
-    } else {
-      const isExpired = itemDate < todayStr;
-      statusKey = isExpired ? 'expired' : itemStatus;
-    }
-  } else {
-    statusKey = itemStatus;
-  }
-  const statusInfo = statusMap[statusKey] || statusMap['pending'];
-  const statusHtml = `<span class="sy-dialog-status ${statusInfo.class}">${statusInfo.text}</span>`;
-
-  const itemLinks = props.itemLinks || [];
-  const itemLinksHtml = itemLinks.map(link => {
-    const { display, tooltipAttr } = formatLinkDisplay(link.name);
-    return `<a href="${link.url}" target="_blank" class="sy-dialog-link-tag"${tooltipAttr}>${display}</a>`;
-  }).join('');
-
-  const totalFocusMinutes = calculateTotalFocusMinutes(props.pomodoros);
-  const focusTotalTimeDisplay = totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
-
-  content += `
-    <div class="sy-dialog-card sy-dialog-item-card">
-      <div class="sy-dialog-card-title">
-        <span class="sy-dialog-card-title-text">${t('todo').item}</span>
-        ${statusHtml}
-      </div>
-      <div class="sy-dialog-item-meta">
-        <div class="sy-dialog-item-time-row">
-          <span class="sy-dialog-time-text">
-            <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').time}">📅</span>
-            ${timeDisplay}
-          </span>
-          ${duration ? `
-            <span class="sy-dialog-duration-text">
-              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').duration}">⏱️</span>
-              ${duration}
-              ${copyBtn(duration)}
-            </span>
-          ` : ''}
-          ${focusTotalTimeDisplay ? `
-            <span class="sy-dialog-duration-text">
-              <span class="sy-dialog-icon b3-tooltips b3-tooltips__n" aria-label="${t('todo').focusTotalTime}">🍅</span>
-              ${focusTotalTimeDisplay}
-              ${copyBtn(focusTotalTimeDisplay)}
-            </span>
-          ` : ''}
-        </div>
-      </div>
-      ${props.item ? `
-        <div class="sy-dialog-item-content">
-          <span>${props.item}</span>
-          ${copyBtn(props.item)}
-        </div>
-      ` : ''}
-      ${itemLinksHtml ? `<div class="sy-dialog-card-footer">${itemLinksHtml}</div>` : ''}
-    </div>
-  `;
-
-  content += '</div>';
-
-  if (!preview) {
-    content += `
-    <div class="sy-dialog-footer">
-      ${createButtons([
-        { text: t('common').cancel, class: 'b3-button--outline', action: 'close' },
-        { text: t('todo').viewInCalendar, class: 'b3-button--outline', action: 'open-calendar' },
-        { text: t('todo').openDoc, class: 'b3-button--text', action: 'open-doc' },
-      ])}
-    </div>
-  `;
-  }
-
-  content += '</div>';
-  return content;
+  return html;
 }
 
 /**
@@ -713,83 +402,76 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     || (event.start ? dayjs(event.start).format('YYYY-MM-DD') : '');
   const dateStr = rawDate || dayjs().format('YYYY-MM-DD');
 
-  const content = buildEventDetailContent(event, { preview: false });
-
   // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
   if (lastEventDetailDialog) {
     lastEventDetailDialog.destroy();
     lastEventDetailDialog = null;
   }
 
+  // 创建容器元素
+  const container = document.createElement('div');
+
+  // 构建 Item 对象
+  const item: Item = {
+    id: props.itemId || '',
+    content: props.item || '',
+    date: rawDate,
+    status: props.itemStatus || 'pending',
+    docId: props.docId,
+    lineNumber: props.lineNumber,
+    blockId: props.blockId,
+    project: props.project ? { name: props.project, links: props.projectLinks || [] } : undefined,
+    task: props.task ? { name: props.task, level: props.level, links: props.taskLinks || [] } : undefined,
+    links: props.itemLinks || [],
+    pomodoros: props.pomodoros || [],
+    startDateTime: props.originalStartDateTime,
+    endDateTime: props.originalEndDateTime,
+    dateRangeStart: props.dateRangeStart,
+    dateRangeEnd: props.dateRangeEnd,
+  };
+
+  // 创建 Vue 应用
+  const app = createApp(ItemDetailDialog, {
+    item,
+    onClose: () => {
+      dialog.destroy();
+    },
+    onOpenDoc: async () => {
+      await openDocumentAtLine(props.docId, props.lineNumber, props.blockId);
+      dialog.destroy();
+    },
+    onOpenCalendar: () => {
+      if (plugin && (plugin as any).openCustomTab) {
+        (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
+      }
+      dialog.destroy();
+    }
+  });
+
+  // 挂载应用
+  app.use(getSharedPinia());
+  app.mount(container);
+
   const dialog = createDialog({
     title: t('todo').itemDetail,
-    content,
+    content: container.innerHTML,
     width: '520px',
     destroyCallback: () => {
       if (lastEventDetailDialog === dialog) {
         lastEventDetailDialog = null;
       }
+      app.unmount();
       hideLinkTooltip();
     },
   });
   lastEventDetailDialog = dialog;
 
-  // 绑定按钮事件
-  const element = dialog.element;
-  element.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const action = (e.currentTarget as HTMLElement).dataset.action;
-
-      if (action === 'open-doc') {
-        await openDocumentAtLine(props.docId, props.lineNumber, props.blockId);
-        dialog.destroy();
-      } else if (action === 'open-calendar') {
-        if (plugin && (plugin as any).openCustomTab) {
-          (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
-        }
-        dialog.destroy();
-      } else if (action === 'close') {
-        dialog.destroy();
-      }
-    });
-  });
-
-  // 绑定链接点击事件
-  element.querySelectorAll('.sy-dialog-link-tag').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const url = (e.currentTarget as HTMLAnchorElement).href;
-      if (url) {
-        window.open(url, '_blank');
-      }
-    });
-  });
-
-  bindLinkTooltips(element);
-
-  // 绑定复制按钮事件
-  element.querySelectorAll('.sy-dialog-copy-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const btnEl = e.currentTarget as HTMLElement;
-      if (!btnEl) return;
-      const text = btnEl.dataset.copy;
-      if (text) {
-        try {
-          await navigator.clipboard.writeText(text);
-          btnEl.innerHTML = checkIconSvg;
-          btnEl.classList.add('copied');
-          setTimeout(() => {
-            if (btnEl) {
-              btnEl.innerHTML = copyIconSvg;
-              btnEl.classList.remove('copied');
-            }
-          }, 2000);
-        } catch (err) {
-          console.error('复制失败:', err);
-        }
-      }
-    });
-  });
+  // 重新挂载到 dialog 内容区域以激活事件
+  const contentEl = dialog.element.querySelector('.b3-dialog__content');
+  if (contentEl) {
+    contentEl.innerHTML = '';
+    contentEl.appendChild(container);
+  }
 
   return dialog;
 }
