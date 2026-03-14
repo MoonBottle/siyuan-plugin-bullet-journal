@@ -445,6 +445,9 @@ const projectStore = useProjectStore();
 const pomodoroStore = usePomodoroStore();
 const plugin = usePlugin();
 
+// 防止重复点击的执行锁
+const isProcessing = ref(false);
+
 // 从 store 获取当前日期，确保日期变化时 computed 会重新计算
 const currentDate = computed(() => projectStore.currentDate);
 
@@ -559,83 +562,102 @@ const openCalendar = (item: Item) => {
 // 标记完成
 const handleDone = async (item: Item) => {
   if (!item.blockId) return;
-  
-  const tag = getStatusTag('completed');
-  const success = await updateBlockContent(item.blockId, tag);
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  if (isProcessing.value) return; // 防止重复点击
+
+  isProcessing.value = true;
+  try {
+    const tag = getStatusTag('completed');
+    const success = await updateBlockContent(item.blockId, tag);
+    if (success && plugin) {
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
   }
 };
 
 // 迁移到明天
 const handleMigrate = async (item: Item) => {
   if (!item.blockId) return;
+  if (isProcessing.value) return; // 防止重复点击
 
-  // 计算明天的日期
-  const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+  isProcessing.value = true;
+  try {
+    // 计算明天的日期
+    const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
 
-  // 构建完整的 siblingItems（包含当前日期）
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime
-    }] : [])
-  ];
+    // 构建完整的 siblingItems（包含当前日期）
+    const completeSiblingItems = [
+      ...(item.siblingItems || []),
+      ...(item.date ? [{
+        date: item.date,
+        startDateTime: item.startDateTime,
+        endDateTime: item.endDateTime
+      }] : [])
+    ];
 
-  // 使用 updateBlockDateTime 更新日期，保留原时间
-  const success = await updateBlockDateTime(
-    item.blockId,
-    tomorrowStr,
-    item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-    item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    !item.startDateTime,
-    item.date,
-    completeSiblingItems,
-    item.status
-  );
+    // 使用 updateBlockDateTime 更新日期，保留原时间
+    const success = await updateBlockDateTime(
+      item.blockId,
+      tomorrowStr,
+      item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+      item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+      !item.startDateTime,
+      item.date,
+      completeSiblingItems,
+      item.status
+    );
 
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    if (success && plugin) {
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
   }
 };
 
 // 迁移到今天
 const handleMigrateToday = async (item: Item) => {
   if (!item.blockId) return;
+  if (isProcessing.value) return; // 防止重复点击
 
-  const todayStr = dayjs().format('YYYY-MM-DD');
+  isProcessing.value = true;
+  try {
+    const todayStr = dayjs().format('YYYY-MM-DD');
 
-  // 构建完整的 siblingItems（包含当前日期）
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime
-    }] : [])
-  ];
+    // 构建完整的 siblingItems（包含当前日期）
+    const completeSiblingItems = [
+      ...(item.siblingItems || []),
+      ...(item.date ? [{
+        date: item.date,
+        startDateTime: item.startDateTime,
+        endDateTime: item.endDateTime
+      }] : [])
+    ];
 
-  const success = await updateBlockDateTime(
-    item.blockId,
-    todayStr,
-    item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-    item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-    !item.startDateTime,
-    item.date,
-    completeSiblingItems,
-    item.status
-  );
+    const success = await updateBlockDateTime(
+      item.blockId,
+      todayStr,
+      item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+      item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+      !item.startDateTime,
+      item.date,
+      completeSiblingItems,
+      item.status
+    );
 
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    if (success && plugin) {
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
   }
 };
 
 // 迁移到自定义日期
 const handleMigrateCustom = (item: Item) => {
   if (!item.blockId) return;
+  if (isProcessing.value) return; // 防止重复点击
 
   // 构建完整的 siblingItems（包含当前日期）
   const completeSiblingItems = [
@@ -648,19 +670,25 @@ const handleMigrateCustom = (item: Item) => {
   ];
 
   showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-    const success = await updateBlockDateTime(
-      item.blockId,
-      newDate,
-      item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-      item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-      !item.startDateTime,
-      item.date,
-      completeSiblingItems,
-      item.status
-    );
+    if (isProcessing.value) return; // 防止在回调中重复点击
+    isProcessing.value = true;
+    try {
+      const success = await updateBlockDateTime(
+        item.blockId,
+        newDate,
+        item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+        item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+        !item.startDateTime,
+        item.date,
+        completeSiblingItems,
+        item.status
+      );
 
-    if (success && plugin) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+      if (success && plugin) {
+        await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+      }
+    } finally {
+      isProcessing.value = false;
     }
   });
 };
@@ -668,11 +696,17 @@ const handleMigrateCustom = (item: Item) => {
 // 标记放弃
 const handleAbandon = async (item: Item) => {
   if (!item.blockId) return;
-  
-  const tag = getStatusTag('abandoned');
-  const success = await updateBlockContent(item.blockId, tag);
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  if (isProcessing.value) return; // 防止重复点击
+
+  isProcessing.value = true;
+  try {
+    const tag = getStatusTag('abandoned');
+    const success = await updateBlockContent(item.blockId, tag);
+    if (success && plugin) {
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
   }
 };
 
@@ -712,12 +746,30 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       task: item.task
     },
     {
-      onComplete: () => handleDone(item),
-      onStartPomodoro: () => openPomodoroDialog(item),
-      onMigrateToday: () => handleMigrateToday(item),
-      onMigrateTomorrow: () => handleMigrate(item),
-      onMigrateCustom: () => handleMigrateCustom(item),
-      onAbandon: () => handleAbandon(item),
+      onComplete: () => {
+        if (isProcessing.value) return;
+        handleDone(item);
+      },
+      onStartPomodoro: () => {
+        if (isProcessing.value) return;
+        openPomodoroDialog(item);
+      },
+      onMigrateToday: () => {
+        if (isProcessing.value) return;
+        handleMigrateToday(item);
+      },
+      onMigrateTomorrow: () => {
+        if (isProcessing.value) return;
+        handleMigrate(item);
+      },
+      onMigrateCustom: () => {
+        if (isProcessing.value) return;
+        handleMigrateCustom(item);
+      },
+      onAbandon: () => {
+        if (isProcessing.value) return;
+        handleAbandon(item);
+      },
       onOpenDoc: () => openItem(item),
       onShowDetail: () => openDetail(item),
       onShowCalendar: () => openCalendar(item)
