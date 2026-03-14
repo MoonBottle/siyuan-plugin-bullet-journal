@@ -4,21 +4,18 @@
 
 ### Features
 
-- **番茄钟统计增强**：全新专注数据统计面板
-  - 年度热力图：可视化展示全年专注记录，支持月份标签和周标签
+- **番茄钟统计增强**：全新专注数据统计面板，包含五大图表
+  - 年度热力图：可视化展示全年专注记录
+  - 专注占比：环形图展示各任务专注时长占比，支持按任务/项目分组
   - 专注趋势图：支持日/周/月多维度查看专注时长变化趋势
-  - 最佳专注时段：分析一天中专注效率最高的时间段
-  - 时段分布图：展示 24 小时内的专注时间分布
-  - 按事项分组统计：支持按任务维度查看专注数据
+  - 周专注时段：展示一周内各时间段的专注分布（24小时热力图）
+  - 高效时段分析：分析一天中专注效率最高的时间段
 - **状态栏番茄钟**：新增底栏倒计时面板，支持从状态栏快速开始专注
 - **专注记录存储配置**：支持配置番茄钟记录存储位置
   - 事项块下（子块）：在事项下方创建子块存储记录
   - 事项块自定义属性：将记录存储在事项块的自定义属性中
 - **AI 对话优化**：
-  - 工具调用展示：新增工具调用详情组件，支持展开/折叠查看
   - Markdown 渲染：使用思源 Lute 引擎替代 marked.js，提升渲染质量
-  - 思考过程组件：独立封装推理过程展示组件，支持 Markdown 渲染
-  - 流式响应统计：显示 Token 使用量统计
 - **设置界面重构**：
   - 搜索功能：设置面板支持搜索配置项
   - 全新布局：使用 SySettingItem 组件统一设置项样式
@@ -92,9 +89,9 @@
   - 日历番茄钟状态：日历视图中显示当日番茄钟完成状态
   - 通知支持：专注完成时发送系统通知提醒
 
-!\[番茄钟专注中]\(https\://raw\.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png null)
+!\[番茄钟专注中]\(<https://raw.githubusercontent.com/MoonBottle/siyuan-plugin-bullet-journal/main/docs/user-guide/images/pomodoro-active.png> null)
 
-!\[番茄钟 Dock]\(https\://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png null)
+!\[番茄钟 Dock]\(<https://b3logfile.com/file/2026/03/pomodoro-dock-CqX5NnE.png> null)
 
 - **甘特图增强**：
   - 任务文字显示：任务条上直接显示任务名称，悬停显示完整信息
@@ -129,9 +126,9 @@
   - 支持生成日报并一键插入笔记
   - 多对话管理：支持创建多个独立对话场景，对话历史自动保存
 
-!\[AI 对话演示]\(https\://b3logfile.com/file/2026/03/PixPin\_2026-03-08\_01-11-20-aZI6SeB.gif null)
+!\[AI 对话演示]\(<https://b3logfile.com/file/2026/03/PixPin_2026-03-08_01-11-20-aZI6SeB.gif> null)
 
-!\[AI 对话面板]\(https\://b3logfile.com/file/2026/03/image-TzlXbcv.png null)
+!\[AI 对话面板]\(<https://b3logfile.com/file/2026/03/image-TzlXbcv.png> null)
 
 ## \[0.7.2] - 2026-03-07
 
