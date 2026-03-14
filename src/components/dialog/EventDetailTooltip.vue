@@ -331,7 +331,7 @@ function openLink(url: string) {
 
 <style lang="scss" scoped>
 .event-detail-tooltip {
-  padding: 12px;
+  padding: 3px;
   min-width: 280px;
   max-width: 400px;
 }
