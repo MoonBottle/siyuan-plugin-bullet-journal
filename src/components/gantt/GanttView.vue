@@ -111,7 +111,7 @@ const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
       }
     };
 
-    const html = buildEventDetailContent(eventData, { preview: true });
+    const html = buildEventDetailContent(eventData);
     if (eventTooltipEl.value) {
       eventTooltipEl.value.innerHTML = html;
       nextTick(() => {

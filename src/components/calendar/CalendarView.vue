@@ -179,7 +179,7 @@ const showEventTooltip = (info: any) => {
       allDay: info.event.allDay,
       extendedProps: info.event.extendedProps
     };
-    const html = buildEventDetailContent(eventData, { preview: true });
+    const html = buildEventDetailContent(eventData);
     if (eventTooltipEl.value) {
       eventTooltipEl.value.innerHTML = html;
       nextTick(() => {
