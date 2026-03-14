@@ -143,7 +143,7 @@
             <div class="item-actions">
               <span
                 v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
-                class="block__icon b3-tooltips b3-tooltips__sw"
+                class="block__icon b3-tooltips b3-tooltips__nw"
                 :aria-label="t('todo').complete"
                 @click.stop="handleDone"
               >
@@ -151,21 +151,21 @@
               </span>
               <span
                 v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
-                class="block__icon b3-tooltips b3-tooltips__sw"
+                class="block__icon b3-tooltips b3-tooltips__nw"
                 :aria-label="t('todo').abandon"
                 @click.stop="handleAbandon"
               >
                 <svg><use xlink:href="#iconCloseRound"></use></svg>
               </span>
               <span
-                class="block__icon b3-tooltips b3-tooltips__sw"
+                class="block__icon b3-tooltips b3-tooltips__nw"
                 :aria-label="t('todo').detail"
                 @click.stop="openDetail"
               >
                 <svg><use xlink:href="#iconInfo"></use></svg>
               </span>
               <span
-                class="block__icon b3-tooltips b3-tooltips__sw"
+                class="block__icon b3-tooltips b3-tooltips__nw"
                 :aria-label="t('todo').calendar"
                 @click.stop="openCalendar"
               >
