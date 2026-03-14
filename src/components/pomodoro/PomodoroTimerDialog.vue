@@ -46,11 +46,9 @@
 
       <!-- 右侧：专注时长设置 -->
       <div class="right-panel" :class="{ 'full-width': hideItemList }">
-        <!-- 预选事项信息（仅在预选模式下显示） -->
-        <div v-if="hideItemList && selectedItem" class="preselected-item-info">
-          <div class="info-label">{{ t('pomodoroDialog').focusItem }}</div>
-          <div class="info-content">{{ selectedItem.content }}</div>
-          <div v-if="selectedItem.task" class="info-task">{{ selectedItem.task.name }}</div>
+        <!-- 选中事项展示（预选模式或左侧选择联动） -->
+        <div v-if="selectedItem" class="selected-item-section">
+          <SelectedItemCard :item="selectedItem" :show-header="true" />
         </div>
 
         <div class="panel-title">{{ t('pomodoroDialog').timerMode }}</div>
@@ -123,6 +121,7 @@ import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { DOCK_TYPES } from '@/constants';
 import { t } from '@/i18n';
+import SelectedItemCard from './SelectedItemCard.vue';
 
 const props = defineProps<{
   closeDialog: () => void;
@@ -289,7 +288,7 @@ onMounted(() => {
       max-width: 280px;
     }
 
-    .preselected-item-info {
+    .selected-item-section {
       width: 100%;
       max-width: 280px;
     }
@@ -402,6 +401,8 @@ onMounted(() => {
 
 .duration-section {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .quick-buttons {
@@ -438,6 +439,7 @@ onMounted(() => {
   gap: 8px;
   font-size: 13px;
   color: var(--b3-theme-on-surface);
+  margin-bottom: 16px;
 }
 
 .duration-input {
@@ -463,33 +465,9 @@ onMounted(() => {
   gap: 8px;
 }
 
-.preselected-item-info {
+.selected-item-section {
   margin-bottom: 16px;
-  padding: 12px;
-  background: var(--b3-theme-surface-lighter);
-  border-radius: var(--b3-border-radius);
-  border-left: 3px solid var(--b3-theme-primary);
-  box-sizing: border-box;
   width: 100%;
-
-  .info-label {
-    font-size: 11px;
-    color: var(--b3-theme-on-surface);
-    margin-bottom: 4px;
-  }
-
-  .info-content {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--b3-theme-on-background);
-    margin-bottom: 4px;
-    word-break: break-word;
-  }
-
-  .info-task {
-    font-size: 11px;
-    color: var(--b3-theme-on-surface);
-  }
 }
 
 .start-btn {
