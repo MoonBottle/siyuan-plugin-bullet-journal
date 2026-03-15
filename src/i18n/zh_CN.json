@@ -377,5 +377,15 @@
   "pomodoroRecord": {
     "title": "专注记录",
     "unknown": "未知"
+  },
+  "slash": {
+    "markAsTodayItem": "标记为今日事项",
+    "openCalendar": "打开日历",
+    "openGantt": "打开甘特图",
+    "startFocus": "开始专注",
+    "openTodoDock": "打开待办 Dock",
+    "markSuccess": "已标记为今日事项",
+    "markFailed": "标记失败，请重试",
+    "alreadyFocusing": "已有进行中的专注"
   }
 }

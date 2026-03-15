@@ -377,5 +377,15 @@
   "pomodoroRecord": {
     "title": "Focus Records",
     "unknown": "Unknown"
+  },
+  "slash": {
+    "markAsTodayItem": "Mark as Today's Item",
+    "openCalendar": "Open Calendar",
+    "openGantt": "Open Gantt Chart",
+    "startFocus": "Start Focus",
+    "openTodoDock": "Open Todo Dock",
+    "markSuccess": "Marked as today's item",
+    "markFailed": "Failed to mark, please retry",
+    "alreadyFocusing": "Already focusing"
   }
 }

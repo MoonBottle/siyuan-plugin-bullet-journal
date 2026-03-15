@@ -24,6 +24,7 @@ import type { AIProviderConfig } from '@/types/ai';
 import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
+import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
 
 let PluginInfo = {
   version: '',
@@ -128,6 +129,9 @@ export default class TaskAssistantPlugin extends Plugin {
     setTimeout(() => {
       this.checkAndRestorePomodoro();
     }, 1000);
+
+    // 注册斜杠命令
+    this.registerSlashCommands();
   }
 
   /**
@@ -1464,6 +1468,40 @@ export default class TaskAssistantPlugin extends Plugin {
           }
         }
       }
+    }
+  }
+
+  /**
+   * 注册斜杠命令
+   */
+  private registerSlashCommands() {
+    const config: SlashCommandConfig = {
+      pluginName: this.name,
+      openCustomTab: (tabType: string, options?: { initialDate?: string }) => {
+        this.openCustomTab(tabType, options);
+      },
+      openPomodoroDock: () => {
+        this.openPomodoroDock();
+      },
+      openTodoDock: () => {
+        this.openTodoDock();
+      }
+    };
+
+    this.protyleSlash = createSlashCommands(config);
+  }
+
+  /**
+   * 打开待办 Dock
+   */
+  private openTodoDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.TODO}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open todo dock:', error);
     }
   }
 }
