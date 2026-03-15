@@ -1,0 +1,13 @@
+[workspace]
+members = ["parser-core", "parser-wasm"]
+resolver = "2"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.10"
+chrono = "0.4"
+
+# 开发依赖
+[workspace.dependencies.criterion]
+version = "0.5"

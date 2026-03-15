@@ -8,13 +8,15 @@
   "homepage": "",
   "repository": "",
   "scripts": {
-    "dev": "vite build --config vite.mcp.config.ts && concurrently \"vite build --config vite.mcp.config.ts -w\" \"vite build -w\"",
+    "dev": "npm run build:wasm && vite build --config vite.mcp.config.ts && concurrently \"vite build --config vite.mcp.config.ts -w\" \"vite build -w\"",
     "release": "node ./release.js",
     "release:manual": "node ./release.js --mode=manual",
     "release:patch": "node ./release.js --mode=patch",
     "release:minor": "node ./release.js --mode=minor",
     "release:major": "node ./release.js --mode=major",
-    "build": "vite build --config vite.mcp.config.ts && cross-env EMPTY_OUT_DIR=false vite build",
+    "build": "npm run build:wasm && vite build --config vite.mcp.config.ts && cross-env EMPTY_OUT_DIR=false vite build",
+    "build:wasm": "cd parser-rust/parser-wasm && wasm-pack build --target web --out-dir ../../src/parser/wasm/pkg",
+    "build:wasm:release": "cd parser-rust/parser-wasm && wasm-pack build --target web --release --out-dir ../../src/parser/wasm/pkg",
     "mcp": "node dist/mcp-server.js",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -1,0 +1,14 @@
+[package]
+name = "parser-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true }
+chrono = { workspace = true }
+lazy_static = "1.4"
+
+[dev-dependencies]
+criterion = { workspace = true }
