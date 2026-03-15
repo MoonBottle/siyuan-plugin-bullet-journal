@@ -310,12 +310,14 @@ export const useProjectStore = defineStore('project', {
                 const attrs = await getBlockAttrs(item.blockId);
                 const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
                 if (attrRecords.length > 0) {
-                  for (const r of attrRecords) {
+                  // FIX: 根据日期匹配，只合并日期匹配的记录（避免多日期事项重复）
+                  const matchingRecords = attrRecords.filter(r => r.date === item.date);
+                  for (const r of matchingRecords) {
                     r.itemId = item.id;
                     r.taskId = task.id;
                     r.projectId = project.id;
                   }
-                  item.pomodoros = [...(item.pomodoros || []), ...attrRecords];
+                  item.pomodoros = [...(item.pomodoros || []), ...matchingRecords];
                 }
               } catch {
                 // 忽略获取属性失败
