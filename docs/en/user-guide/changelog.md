@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.2] - 2026-03-15
+
+### Fixes
+
+- **Pomodoro Record Merge**: Fixed duplicate merging issue for pomodoro records of multi-date items
+
+### CI
+
+- Upgraded Node.js version from 20 to 22
+
 ## [0.10.1] - 2026-03-15
 
 ### Features
