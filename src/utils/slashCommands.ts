@@ -7,11 +7,10 @@ import { showMessage } from 'siyuan';
 import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
-import { usePomodoroStore } from '@/stores';
+import { usePomodoroStore, useProjectStore } from '@/stores';
 import { createDialog } from '@/utils/dialog';
 import { updateBlockContent } from '@/utils/fileUtils';
-import { LineParser } from '@/parser/lineParser';
-import { getBlockKramdown } from '@/api';
+import { findItemByBlockId } from '@/utils/itemBlockUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
@@ -122,39 +121,20 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
 
 /**
  * 从块内容中提取所有日期标记
- * 复用 LineParser.parseItemLine 的日期提取逻辑
+ * 直接从 pinia store 中获取，避免重新解析
  */
 async function extractDatesFromBlock(blockId: string): Promise<string[]> {
-  const result = await getBlockKramdown(blockId);
-  if (!result?.kramdown) return [];
+  const pinia = getSharedPinia();
+  if (!pinia) return [];
 
-  const blockContent = result.kramdown;
+  const projectStore = useProjectStore(pinia);
+  const item = findItemByBlockId(blockId, projectStore.items);
 
-  // 使用 LineParser 解析事项行，提取所有日期
-  const items = LineParser.parseItemLine(blockContent, 0);
-  if (!items || items.length === 0) {
-    // 如果无法解析为事项，尝试直接匹配日期模式
-    const datePattern = /@(\d{4}-\d{2}-\d{2})/g;
-    const dates: string[] = [];
-    let match;
-    while ((match = datePattern.exec(blockContent)) !== null) {
-      dates.push(match[1]);
-    }
-    return [...new Set(dates)];
+  if (item) {
+    return [item.date];
   }
 
-  // 从解析出的 items 中提取所有日期（包括 siblingItems）
-  const allDates = new Set<string>();
-  items.forEach(item => {
-    allDates.add(item.date);
-    if (item.siblingItems) {
-      item.siblingItems.forEach(sibling => {
-        allDates.add(sibling.date);
-      });
-    }
-  });
-
-  return Array.from(allDates);
+  return [];
 }
 
 /**
@@ -242,23 +222,16 @@ async function openGanttForBlock(
 
 /**
  * 从块内容提取事项信息
+ * 直接从 pinia store 中获取，避免重新解析
  */
 async function extractItemFromBlock(blockId: string): Promise<Item | null> {
-  const result = await getBlockKramdown(blockId);
-  if (!result?.kramdown) return null;
+  const pinia = getSharedPinia();
+  if (!pinia) return null;
 
-  const items = LineParser.parseItemLine(result.kramdown, 0);
-  if (!items || items.length === 0) return null;
+  const projectStore = useProjectStore(pinia);
+  const item = findItemByBlockId(blockId, projectStore.items);
 
-  // 使用第一个解析出的事项
-  const item = items[0];
-
-  // 补充 blockId 和 docId
-  return {
-    ...item,
-    blockId: blockId,
-    docId: blockId
-  };
+  return item || null;
 }
 
 /**
