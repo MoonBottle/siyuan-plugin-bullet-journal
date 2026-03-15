@@ -10,3 +10,7 @@ build
 tmp
 .env
 .trae/documents
+.trae/spec
+.claude
+.cursor
+package
