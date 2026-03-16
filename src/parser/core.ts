@@ -168,7 +168,8 @@ export function parseKramdown(
 
     // 检查是否是番茄钟行
     if (isPomodoroLine(content)) {
-      const pomodoro = LineParser.parsePomodoroLine(content, block.blockId);
+      // 传入完整块内容以支持多行描述解析
+      const pomodoro = LineParser.parsePomodoroLine(block.content, block.blockId);
       if (pomodoro) {
         // 根据上一个块类型决定关联到哪个父级
         if (lastBlockType === 'item' && currentItem) {
@@ -323,7 +324,8 @@ export function parseKramdown(
         for (let i = 1; i < blockLines.length; i++) {
           const line = blockLines[i].trim();
           if (isPomodoroLine(line)) {
-            const pomodoro = LineParser.parsePomodoroLine(line, block.blockId);
+            // 传入完整块内容以支持多行描述解析
+            const pomodoro = LineParser.parsePomodoroLine(block.content, block.blockId);
             if (pomodoro) {
               pomodoro.itemId = item.id;
               item.pomodoros.push(pomodoro);

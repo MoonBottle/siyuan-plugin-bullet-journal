@@ -673,4 +673,88 @@ describe('parseKramdown 番茄钟解析', () => {
     expect(project!.tasks[0].items[0].pomodoros![1].description).toBe('专注工作');
     expect(project!.tasks[0].items[0].pomodoros![1].endTime).toBe('16:25:00');
   });
+
+  it('多行描述番茄钟：项目级别', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+🍅2026-03-16 12:18:17~12:18:39
+测试
+测试2
+测试3
+{: id="pomodoro-1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.pomodoros).toHaveLength(1);
+    expect(project!.pomodoros![0].date).toBe('2026-03-16');
+    expect(project!.pomodoros![0].startTime).toBe('12:18:17');
+    expect(project!.pomodoros![0].endTime).toBe('12:18:39');
+    expect(project!.pomodoros![0].description).toBe('测试\n测试2\n测试3');
+  });
+
+  it('多行描述番茄钟：任务级别', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务A #任务
+{: id="task-block" }
+🍅2026-03-16 14:00:00~14:25:00
+第一行描述
+第二行描述
+{: id="pomodoro-1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].pomodoros).toHaveLength(1);
+    expect(project!.tasks[0].pomodoros![0].description).toBe('第一行描述\n第二行描述');
+  });
+
+  it('多行描述番茄钟：事项级别（普通文本行）', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务A #任务
+{: id="task-block" }
+事项A @2026-03-16
+{: id="item-block" }
+🍅2026-03-16 16:00:00~16:25:00
+事项描述1
+事项描述2
+事项描述3
+{: id="pomodoro-1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].pomodoros).toHaveLength(1);
+    expect(project!.tasks[0].items[0].pomodoros![0].description).toBe('事项描述1\n事项描述2\n事项描述3');
+  });
+
+  it('多行描述番茄钟：第一行已有描述+后续行', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+🍅2026-03-16 10:00:00~10:25:00 第一行描述
+第二行描述
+第三行描述
+{: id="pomodoro-1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.pomodoros).toHaveLength(1);
+    expect(project!.pomodoros![0].description).toBe('第一行描述\n第二行描述\n第三行描述');
+  });
+
+  it('多行描述番茄钟：含空行和块属性行', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+🍅2026-03-16 11:00:00~11:25:00
+描述1
+
+描述2
+{: id="pomodoro-1" updated="20260316110000"}
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.pomodoros).toHaveLength(1);
+    // 空行和块属性行应该被过滤
+    expect(project!.pomodoros![0].description).toBe('描述1\n描述2');
+  });
 });
