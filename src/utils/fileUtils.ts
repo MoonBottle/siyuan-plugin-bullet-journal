@@ -537,10 +537,12 @@ export async function updateBlockDateTime(
     // 拼接新事项行内容
     let newItemLine: string;
     if (targetBlockId !== blockId) {
-      // 更新父块时保留完整列表项格式（- 和 {: id=... }），仅替换日期部分
+      // 更新父块时保留完整列表项格式（- 和 {: id=... }），但需要用去除斜杠命令后的内容替换
       const dateExpr =
         /@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?(?:\s*[,\uFF0C]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?)*/g;
-      newItemLine = itemLine.replace(dateExpr, optimizedExpr);
+      // 先去除斜杠命令，再替换日期
+      const cleanedItemLine = processLineText(itemLine, ALL_SLASH_COMMAND_FILTERS);
+      newItemLine = cleanedItemLine.replace(dateExpr, optimizedExpr);
     } else {
       newItemLine = `${taskListMarker}${itemContent} ${optimizedExpr} ${statusTag}`.trim();
     }
