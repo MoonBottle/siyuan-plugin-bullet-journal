@@ -613,6 +613,69 @@ describe('parsePomodoroLine 实际时长解析', () => {
   });
 });
 
+describe('parsePomodoroLine 多行描述解析', () => {
+  it('多行描述（3行）', () => {
+    const multiLineContent = `🍅0,2026-03-16 12:18:17~12:18:39
+测试
+测试2
+测试3`;
+    const pomodoro = LineParser.parsePomodoroLine(multiLineContent, 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-16');
+    expect(pomodoro!.startTime).toBe('12:18:17');
+    expect(pomodoro!.endTime).toBe('12:18:39');
+    expect(pomodoro!.actualDurationMinutes).toBe(0);
+    expect(pomodoro!.description).toBe('测试\n测试2\n测试3');
+  });
+
+  it('多行描述包含块属性行', () => {
+    const multiLineContent = `🍅0,2026-03-16 12:18:17~12:18:39
+测试
+测试2
+{: id="20260316121856-j8txurz" updated="20260316121856"}`;
+    const pomodoro = LineParser.parsePomodoroLine(multiLineContent, 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.description).toBe('测试\n测试2');
+  });
+
+  it('多行描述包含空行', () => {
+    const multiLineContent = `🍅0,2026-03-16 12:18:17~12:18:39
+测试
+
+测试2`;
+    const pomodoro = LineParser.parsePomodoroLine(multiLineContent, 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.description).toBe('测试\n测试2');
+  });
+
+  it('第一行已有描述+多行描述', () => {
+    const multiLineContent = `🍅0,2026-03-16 12:18:17~12:18:39 第一行描述
+第二行描述
+第三行描述`;
+    const pomodoro = LineParser.parsePomodoroLine(multiLineContent, 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.description).toBe('第一行描述\n第二行描述\n第三行描述');
+  });
+
+  it('单行描述（向后兼容）', () => {
+    const pomodoro = LineParser.parsePomodoroLine('🍅0,2026-03-16 12:18:17~12:18:39 单行描述', 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.description).toBe('单行描述');
+  });
+
+  it('多行描述无结束时间', () => {
+    const multiLineContent = `🍅25,2026-03-16 12:18:17
+测试
+测试2`;
+    const pomodoro = LineParser.parsePomodoroLine(multiLineContent, 'block-1');
+    expect(pomodoro).not.toBeNull();
+    expect(pomodoro!.date).toBe('2026-03-16');
+    expect(pomodoro!.startTime).toBe('12:18:17');
+    expect(pomodoro!.endTime).toBeUndefined();
+    expect(pomodoro!.description).toBe('测试\n测试2');
+  });
+});
+
 describe('parseItemLine - 任务列表状态解析', () => {
   it('任务列表 [ ] 未选中状态', () => {
     const items = LineParser.parseItemLine('[ ] 整理资料 @2024-01-01', 1);

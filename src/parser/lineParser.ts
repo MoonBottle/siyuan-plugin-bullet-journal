@@ -22,7 +22,8 @@ export function parseBlockRefs(text: string): { stripped: string; links: Link[] 
     });
     return alias ?? '';
   });
-  return { stripped: stripped.trim().replace(/\s+/g, ' '), links };
+  // 保留换行符，只将非换行的连续空白字符替换为单个空格
+  return { stripped: stripped.trim().replace(/[ \t]+/g, ' '), links };
 }
 
 export class LineParser {
@@ -394,14 +395,19 @@ export class LineParser {
    * 或: - 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（列表项形式）
    * 或: 🍅N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（带实际时长）
    * 支持中英文逗号，逗号后可有任意空格
-   * @param line 番茄钟行内容
+   * 支持多行描述（第一行为番茄钟标记，后续行为描述）
+   * @param line 番茄钟行内容（可能包含多行）
    * @param blockId 块 ID
    * @param attrs 可选的块属性
    * @returns PomodoroRecord 对象，解析失败返回 null
    */
   public static parsePomodoroLine(line: string, blockId?: string, attrs?: { [key: string]: string }): PomodoroRecord | null {
+    // 分离多行内容
+    const lines = line.split('\n');
+    const firstLine = lines[0] || '';
+
     // 去除列表标记、块属性和缩进
-    const cleanedLine = line
+    const cleanedLine = firstLine
       .replace(/^\s*([-]|\d+\.)\s+/, '')  // 列表标记 - 或 1. 等
       .replace(/^\{\:\s*[^}]*\}\s*/, '') // 块属性 {: ... }
       .trim();
@@ -425,7 +431,23 @@ export class LineParser {
     const date = match[2];
     const startTime = match[3];
     const endTime = match[4];
-    const rawDescription = match[5]?.trim() || undefined;
+
+    // 处理描述：第一行可能已有描述，加上后续行
+    let rawDescription = match[5]?.trim() || '';
+
+    // 如果有后续行，合并为描述（过滤掉块属性行）
+    if (lines.length > 1) {
+      const descriptionLines = lines
+        .slice(1)
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('{:')); // 过滤空行和块属性行
+      if (descriptionLines.length > 0) {
+        rawDescription = rawDescription
+          ? rawDescription + '\n' + descriptionLines.join('\n')
+          : descriptionLines.join('\n');
+      }
+    }
+
     const description = rawDescription ? parseBlockRefs(rawDescription).stripped || undefined : undefined;
 
     // 计算专注时长（分钟）
