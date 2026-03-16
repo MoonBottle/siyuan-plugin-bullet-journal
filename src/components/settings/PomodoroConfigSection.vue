@@ -2,10 +2,10 @@
   <SySettingsSection icon="iconClock" :title="t('settings').pomodoro.title" :description="(t('settings').pomodoro as any).sectionDescription ?? ''">
     <SySettingItemList>
       <SySettingItem
-        :label="t('settings').pomodoro.enableStatusBar"
-        :description="t('settings').pomodoro.enableStatusBarDesc"
+        :label="t('settings').pomodoro.enableFloatingButton"
+        :description="t('settings').pomodoro.enableFloatingButtonDesc"
       >
-        <SySwitch v-model="pomodoro.enableStatusBar" />
+        <SySwitch v-model="pomodoro.enableFloatingButton" />
       </SySettingItem>
       <SySettingItem
         :label="t('settings').pomodoro.enableStatusBarTimer"
@@ -14,20 +14,10 @@
         <SySwitch v-model="pomodoro.enableStatusBarTimer" />
       </SySettingItem>
       <SySettingItem
-        :label="t('settings').pomodoro.enableFloatingButton"
-        :description="t('settings').pomodoro.enableFloatingButtonDesc"
+        :label="t('settings').pomodoro.enableStatusBar"
+        :description="t('settings').pomodoro.enableStatusBarDesc"
       >
-        <SySwitch v-model="pomodoro.enableFloatingButton" />
-      </SySettingItem>
-      <SySettingItem
-        :label="t('settings').pomodoro.recordMode"
-        :description="t('settings').pomodoro.recordModeDesc"
-      >
-        <SySelect
-          :model-value="pomodoro.recordMode || 'block'"
-          :options="recordModeOptions"
-          @update:model-value="pomodoro.recordMode = $event as 'block' | 'attr'"
-        />
+        <SySwitch v-model="pomodoro.enableStatusBar" />
       </SySettingItem>
       <SySettingItem
         :label="t('settings').pomodoro.statusBarDirection"
@@ -37,6 +27,16 @@
           :model-value="pomodoro.statusBarDirection || 'extend'"
           :options="statusBarDirectionOptions"
           @update:model-value="pomodoro.statusBarDirection = $event as 'extend' | 'shrink'"
+        />
+      </SySettingItem>
+      <SySettingItem
+        :label="t('settings').pomodoro.recordMode"
+        :description="t('settings').pomodoro.recordModeDesc"
+      >
+        <SySelect
+          :model-value="pomodoro.recordMode || 'block'"
+          :options="recordModeOptions"
+          @update:model-value="pomodoro.recordMode = $event as 'block' | 'attr'"
         />
       </SySettingItem>
     </SySettingItemList>
