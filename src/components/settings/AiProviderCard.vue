@@ -73,7 +73,7 @@ function handleDelete() {
 
 <style scoped>
 .ai-provider-card {
-  background: var(--b3-theme-surface-lighter);
+  background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
   overflow: hidden;
 }

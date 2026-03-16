@@ -23,12 +23,16 @@
             <div class="custom-item-header">
               <span class="custom-item-name">{{ cmd.name }}</span>
               <div class="custom-item-actions">
-                <button class="b3-button b3-button--text" @click="editCommand(cmd)">
-                  {{ t('settings').slashCommands.editButton }}
-                </button>
-                <button class="b3-button b3-button--text" @click="deleteCommand(cmd.id)">
-                  {{ t('settings').slashCommands.deleteButton }}
-                </button>
+                <SyButton
+                  icon="iconEdit"
+                  :aria-label="t('settings').slashCommands.editButton"
+                  @click="editCommand(cmd)"
+                />
+                <SyButton
+                  icon="iconTrashcan"
+                  :aria-label="t('settings').slashCommands.deleteButton"
+                  @click="deleteCommand(cmd.id)"
+                />
               </div>
             </div>
             <div class="custom-item-detail">
@@ -103,6 +107,7 @@ import { SLASH_COMMAND_FILTERS } from '@/constants';
 import SySettingsSection from './SySettingsSection.vue';
 import SySettingsActionButton from './SySettingsActionButton.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 
 const props = defineProps<{
   modelValue: CustomSlashCommand[];
