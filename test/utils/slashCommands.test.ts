@@ -166,6 +166,203 @@ describe('processLineText', () => {
     const result = processLineText('/calendar内容', ['/calendar']);
     expect(result).toBe('内容');
   });
+
+  it('处理斜杠命令在开头且后面紧跟内容', () => {
+    const result = processLineText('/sx待办内容', ['/sx', '/事项', '/today']);
+    expect(result).toBe('待办内容');
+  });
+
+  it('处理斜杠命令在开头且后面有空格', () => {
+    const result = processLineText('/sx 待办内容', ['/sx', '/事项', '/today']);
+    expect(result).toBe(' 待办内容');
+  });
+
+  it('处理多个不同 filter 同时存在', () => {
+    const result = processLineText('/sx/rl/db', ['/sx', '/rl', '/db']);
+    expect(result).toBe('');
+  });
+
+  it('处理 filter 和中文混合', () => {
+    const result = processLineText('/事项/日历', ['/事项', '/日历']);
+    expect(result).toBe('');
+  });
+
+  it('处理 filter 和英文混合', () => {
+    const result = processLineText('/today/calendar', ['/today', '/calendar']);
+    expect(result).toBe('');
+  });
+
+  it('处理斜杠命令后紧跟数字', () => {
+    const result = processLineText('/sx123', ['/sx']);
+    expect(result).toBe('123');
+  });
+
+  it('处理斜杠命令后紧跟中文', () => {
+    const result = processLineText('/sx中文', ['/sx']);
+    expect(result).toBe('中文');
+  });
+
+  it('处理只有斜杠命令无其他内容', () => {
+    const result = processLineText('/sx', ['/sx']);
+    expect(result).toBe('');
+  });
+
+  it('处理只有子集命令无其他内容', () => {
+    const result = processLineText('/s', ['/sx']);
+    expect(result).toBe('');
+  });
+
+  it('处理斜杠命令在末尾', () => {
+    const result = processLineText('内容/sx', ['/sx']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理斜杠命令在末尾且后面有空格', () => {
+    const result = processLineText('内容/sx ', ['/sx']);
+    expect(result).toBe('内容 ');
+  });
+
+  it('处理斜杠命令在中间且前后都有内容', () => {
+    const result = processLineText('前/sx后', ['/sx']);
+    expect(result).toBe('前后');
+  });
+
+  it('处理多个斜杠命令分散在文本中', () => {
+    const result = processLineText('/sx内容/sx更多/sx', ['/sx']);
+    expect(result).toBe('内容更多');
+  });
+
+  it('处理斜杠命令和正常文本斜杠共存', () => {
+    const result = processLineText('/sx路径/到/文件', ['/sx']);
+    expect(result).toBe('路径/到/文件');
+  });
+
+  it('处理超长 filter', () => {
+    const result = processLineText('/verylongcommand内容', ['/verylongcommand']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理超长 filter 的子集', () => {
+    const result = processLineText('/very内容', ['/verylongcommand']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理包含下划线的 filter', () => {
+    const result = processLineText('/test_cmd内容', ['/test_cmd']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理包含连字符的 filter', () => {
+    const result = processLineText('/test-cmd内容', ['/test-cmd']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理包含点的 filter', () => {
+    const result = processLineText('/test.cmd内容', ['/test.cmd']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理空 filters 数组', () => {
+    const result = processLineText('/sx内容', []);
+    expect(result).toBe('/sx内容');
+  });
+
+  it('处理 filters 包含空字符串', () => {
+    const result = processLineText('/sx内容', ['', '/sx']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理文本中无斜杠命令但包含斜杠字符', () => {
+    const result = processLineText('路径/到/文件', ['/sx']);
+    expect(result).toBe('路径/到/文件');
+  });
+
+  it('处理斜杠命令重复出现', () => {
+    const result = processLineText('/sx/sx/sx/sx', ['/sx']);
+    expect(result).toBe('');
+  });
+
+  it('处理斜杠命令和子集命令混合', () => {
+    const result = processLineText('/gtt/gt/g', ['/gtt']);
+    expect(result).toBe('');
+  });
+
+  it('处理中文 filter 的子集', () => {
+    const result = processLineText('/事', ['/事项']);
+    expect(result).toBe('');
+  });
+
+  it('处理中文 filter 的多个子集', () => {
+    const result = processLineText('/事项/事', ['/事项']);
+    expect(result).toBe('');
+  });
+
+  it('处理中英文混合 filter', () => {
+    const result = processLineText('/sx事项内容', ['/sx', '/事项']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理数字 filter', () => {
+    const result = processLineText('/123内容', ['/123']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理纯数字文本', () => {
+    const result = processLineText('123456', ['/sx']);
+    expect(result).toBe('123456');
+  });
+
+  it('处理包含空格的文本', () => {
+    const result = processLineText('  /sx  内容  ', ['/sx']);
+    expect(result).toBe('    内容  ');
+  });
+
+  it('处理换行符文本（只处理当前行）', () => {
+    const result = processLineText('第一行\n/sx第二行', ['/sx']);
+    expect(result).toBe('第一行\nsx第二行');
+  });
+
+  it('处理制表符文本', () => {
+    const result = processLineText('/sx\t内容', ['/sx']);
+    expect(result).toBe('\t内容');
+  });
+
+  it('处理特殊 Unicode 字符', () => {
+    const result = processLineText('/sx🎉内容', ['/sx']);
+    expect(result).toBe('🎉内容');
+  });
+
+  it('处理 emoji 作为 filter', () => {
+    const result = processLineText('/🎉内容', ['/🎉']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理多个 filters 但只有一个匹配', () => {
+    const result = processLineText('/sx内容', ['/abc', '/sx', '/def']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理 filters 顺序不影响结果', () => {
+    const result1 = processLineText('/sx/rl', ['/sx', '/rl']);
+    const result2 = processLineText('/sx/rl', ['/rl', '/sx']);
+    expect(result1).toBe(result2);
+    expect(result1).toBe('');
+  });
+
+  it('处理大小写敏感', () => {
+    const result = processLineText('/SX内容', ['/sx']);
+    expect(result).toBe('/SX内容');
+  });
+
+  it('处理大写 filter', () => {
+    const result = processLineText('/SX内容', ['/SX']);
+    expect(result).toBe('内容');
+  });
+
+  it('处理混合大小写 filter', () => {
+    const result = processLineText('/Sx内容', ['/Sx']);
+    expect(result).toBe('内容');
+  });
 });
 
 describe('formatDate 逻辑测试', () => {
