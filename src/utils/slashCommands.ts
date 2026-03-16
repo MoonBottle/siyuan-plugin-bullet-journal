@@ -73,9 +73,6 @@ export function deleteSlashCommandContent(protyle: any, filters: string[]): void
   // 处理行文本
   let newLineText = processLineText(lineText, filters);
 
-  // 去除尾部空格
-  newLineText = newLineText.trimEnd();
-
   // 如果有修改，更新文本
   if (newLineText !== lineText) {
     const newText = textContent.substring(0, lineStart) + newLineText + textContent.substring(lineEnd);
