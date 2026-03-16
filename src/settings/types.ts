@@ -22,6 +22,14 @@ export interface PomodoroSettings {
   attrPrefix?: string;
 }
 
+// 自定义斜杠命令配置
+export interface CustomSlashCommand {
+  id: string;
+  name: string;
+  commands: string[];
+  action: 'today' | 'calendar' | 'calendarDay' | 'calendarWeek' | 'calendarMonth' | 'calendarList' | 'gantt' | 'focus' | 'todo';
+}
+
 // 设置数据结构
 export interface SettingsData {
   directories: ProjectDirectory[];
@@ -37,6 +45,7 @@ export interface SettingsData {
     showToolCalls?: boolean;
   };
   pomodoro?: PomodoroSettings;
+  customSlashCommands?: CustomSlashCommand[];
 }
 
 export const defaultPomodoroSettings: PomodoroSettings = {
@@ -62,7 +71,8 @@ export const defaultSettings: SettingsData = {
     providers: [],
     activeProviderId: null
   },
-  pomodoro: defaultPomodoroSettings
+  pomodoro: defaultPomodoroSettings,
+  customSlashCommands: []
 };
 
 export const defaultChatHistory: AIChatHistory = {

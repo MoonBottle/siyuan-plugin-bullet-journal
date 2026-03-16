@@ -21,6 +21,7 @@ import {
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import type { Item } from '@/types/models';
+import type { CustomSlashCommand } from '@/settings/types';
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
@@ -155,6 +156,7 @@ export interface SlashCommandConfig {
   openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => void;
   openPomodoroDock: () => void;
   openTodoDock: () => void;
+  customSlashCommands?: CustomSlashCommand[];
 }
 
 /**
@@ -163,7 +165,7 @@ export interface SlashCommandConfig {
 export function createSlashCommands(config: SlashCommandConfig) {
   const today = formatDate(new Date());
 
-  return [
+  const builtinCommands = [
     {
       filter: SLASH_COMMAND_FILTERS.TODAY,
       html: `<div class="b3-list-item__first">
@@ -273,6 +275,95 @@ export function createSlashCommands(config: SlashCommandConfig) {
       }
     }
   ];
+
+  // 创建自定义命令
+  const customCommands = createCustomSlashCommands(config.customSlashCommands || [], config);
+
+  // 合并所有命令并去重（自定义命令优先）
+  const allCommands = [...builtinCommands, ...customCommands];
+  const commandMap = new Map<string, typeof allCommands[0]>();
+
+  for (const cmd of allCommands) {
+    // 使用命令的 id 作为唯一标识
+    commandMap.set(cmd.id, cmd);
+  }
+
+  return Array.from(commandMap.values());
+}
+
+/**
+ * 创建自定义斜杠命令
+ */
+function createCustomSlashCommands(
+  customCommands: CustomSlashCommand[],
+  config: SlashCommandConfig
+): Array<{ filter: string[]; html: string; id: string; callback: Function }> {
+  return customCommands.map(cmd => {
+    const actionHandler = getActionHandler(cmd.action, config);
+    const actionLabel = getActionLabel(cmd.action);
+
+    return {
+      filter: cmd.commands,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${cmd.name}</span>
+          <span class="b3-list-item__meta">${actionLabel}</span>
+      </div>`,
+      id: `bullet-journal-custom-${cmd.id}`,
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, cmd.commands);
+        actionHandler(protyle, nodeElement);
+      }
+    };
+  });
+}
+
+/**
+ * 获取动作处理器
+ */
+function getActionHandler(
+  action: CustomSlashCommand['action'],
+  config: SlashCommandConfig
+): (protyle: any, nodeElement: HTMLElement) => void {
+  switch (action) {
+    case 'today':
+      return (_protyle, nodeElement) => markAsTodayItem(nodeElement);
+    case 'calendar':
+      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab);
+    case 'calendarDay':
+      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
+    case 'calendarWeek':
+      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
+    case 'calendarMonth':
+      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
+    case 'calendarList':
+      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
+    case 'gantt':
+      return (_protyle, nodeElement) => openGanttForBlock(nodeElement, config.openCustomTab);
+    case 'focus':
+      return (_protyle, nodeElement) => startFocusFromSlash(nodeElement, config.openPomodoroDock);
+    case 'todo':
+      return () => config.openTodoDock();
+    default:
+      return () => {};
+  }
+}
+
+/**
+ * 获取动作标签
+ */
+function getActionLabel(action: CustomSlashCommand['action']): string {
+  const labels: Record<string, string> = {
+    today: 'Today',
+    calendar: 'Calendar',
+    calendarDay: 'Calendar Day',
+    calendarWeek: 'Calendar Week',
+    calendarMonth: 'Calendar Month',
+    calendarList: 'Calendar List',
+    gantt: 'Gantt',
+    focus: 'Focus',
+    todo: 'Todo'
+  };
+  return labels[action] || action;
 }
 
 /**

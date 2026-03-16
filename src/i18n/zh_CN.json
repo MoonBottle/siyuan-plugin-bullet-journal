@@ -234,6 +234,37 @@
       "breakEndMessage": "休息结束，请继续专注",
       "breakLabel": "休息",
       "skipBreak": "跳过休息"
+    },
+    "slashCommands": {
+      "title": "斜杠命令",
+      "description": "自定义斜杠命令快捷方式",
+      "builtinCommands": "现有内置命令",
+      "customCommands": "自定义命令",
+      "addButton": "添加命令",
+      "nameLabel": "名称",
+      "namePlaceholder": "如：快速标记今天",
+      "commandsLabel": "触发命令",
+      "commandsPlaceholder": "输入命令，如 /my, /我的",
+      "commandsHint": "用逗号分隔多个命令",
+      "actionLabel": "执行动作",
+      "actions": {
+        "today": "标记为今日事项",
+        "calendar": "打开日历",
+        "calendarDay": "打开日历-天视图",
+        "calendarWeek": "打开日历-周视图",
+        "calendarMonth": "打开日历-月视图",
+        "calendarList": "打开日历-列表视图",
+        "gantt": "打开甘特图",
+        "focus": "开始专注",
+        "todo": "打开待办 Dock"
+      },
+      "emptyMessage": "暂无自定义命令",
+      "deleteButton": "删除",
+      "editButton": "编辑",
+      "dialogTitleAdd": "添加自定义命令",
+      "dialogTitleEdit": "编辑自定义命令",
+      "saveButton": "保存",
+      "cancelButton": "取消"
     }
   },
   "pomodoro": {

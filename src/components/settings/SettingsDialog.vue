@@ -21,6 +21,7 @@
       <AiConfigSection v-show="sectionVisible('ai')" v-model:ai="local.ai" />
       <McpConfigSection v-show="sectionVisible('mcp')" />
       <LunchBreakConfigSection v-show="sectionVisible('lunch')" v-model:lunch-break-start="local.lunchBreakStart" v-model:lunch-break-end="local.lunchBreakEnd" />
+      <SlashCommandConfigSection v-show="sectionVisible('slash')" v-model="local.customSlashCommands" />
     </div>
     <div class="sy-settings-dialog__footer">
       <button type="button" class="b3-button b3-button--cancel" @click="handleCancel">
@@ -47,6 +48,7 @@ import CalendarConfigSection from './CalendarConfigSection.vue';
 import AiConfigSection from './AiConfigSection.vue';
 import McpConfigSection from './McpConfigSection.vue';
 import LunchBreakConfigSection from './LunchBreakConfigSection.vue';
+import SlashCommandConfigSection from './SlashCommandConfigSection.vue';
 
 const props = defineProps<{
   plugin: any;
@@ -75,7 +77,8 @@ const sectionKeywords: Record<string, string> = computed(() => {
     calendar: collectStrings(s.calendar).join(' '),
     ai: collectStrings(s.ai).join(' '),
     mcp: collectStrings(s.mcp).join(' '),
-    lunch: collectStrings(s.lunchBreak).join(' ')
+    lunch: collectStrings(s.lunchBreak).join(' '),
+    slash: collectStrings(s.slashCommands).join(' ')
   };
 });
 

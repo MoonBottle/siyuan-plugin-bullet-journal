@@ -1482,6 +1482,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * 注册斜杠命令
    */
   private registerSlashCommands() {
+    const settings = this.getSettings();
     const config: SlashCommandConfig = {
       pluginName: this.name,
       openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => {
@@ -1492,7 +1493,8 @@ export default class TaskAssistantPlugin extends Plugin {
       },
       openTodoDock: () => {
         this.openTodoDock();
-      }
+      },
+      customSlashCommands: settings.customSlashCommands || []
     };
 
     this.protyleSlash = createSlashCommands(config);

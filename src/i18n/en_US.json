@@ -234,6 +234,37 @@
       "breakEndMessage": "Break over, time to focus again",
       "breakLabel": "Break",
       "skipBreak": "Skip Break"
+    },
+    "slashCommands": {
+      "title": "Slash Commands",
+      "description": "Customize slash command shortcuts",
+      "builtinCommands": "Built-in Commands",
+      "customCommands": "Custom Commands",
+      "addButton": "Add Command",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Quick mark today",
+      "commandsLabel": "Trigger Commands",
+      "commandsPlaceholder": "Enter commands, e.g. /my, /custom",
+      "commandsHint": "Separate multiple commands with commas",
+      "actionLabel": "Action",
+      "actions": {
+        "today": "Mark as Today's Item",
+        "calendar": "Open Calendar",
+        "calendarDay": "Open Calendar - Day View",
+        "calendarWeek": "Open Calendar - Week View",
+        "calendarMonth": "Open Calendar - Month View",
+        "calendarList": "Open Calendar - List View",
+        "gantt": "Open Gantt Chart",
+        "focus": "Start Focus",
+        "todo": "Open Todo Dock"
+      },
+      "emptyMessage": "No custom commands",
+      "deleteButton": "Delete",
+      "editButton": "Edit",
+      "dialogTitleAdd": "Add Custom Command",
+      "dialogTitleEdit": "Edit Custom Command",
+      "saveButton": "Save",
+      "cancelButton": "Cancel"
     }
   },
   "pomodoro": {
