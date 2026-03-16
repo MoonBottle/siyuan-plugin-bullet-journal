@@ -299,7 +299,7 @@ describe('processLineText', () => {
 
   it('处理中英文混合 filter', () => {
     const result = processLineText('/sx事项内容', ['/sx', '/事项']);
-    expect(result).toBe('内容');
+    expect(result).toBe('事项内容');
   });
 
   it('处理数字 filter', () => {
@@ -314,12 +314,12 @@ describe('processLineText', () => {
 
   it('处理包含空格的文本', () => {
     const result = processLineText('  /sx  内容  ', ['/sx']);
-    expect(result).toBe('    内容  ');
+    expect(result).toBe('    内容');
   });
 
   it('处理换行符文本（只处理当前行）', () => {
     const result = processLineText('第一行\n/sx第二行', ['/sx']);
-    expect(result).toBe('第一行\nsx第二行');
+    expect(result).toBe('第一行\n第二行');
   });
 
   it('处理制表符文本', () => {
