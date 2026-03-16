@@ -728,11 +728,14 @@ export async function updateBlockContent(
           }
           if (usedParentKramdown) {
             // 更新父块时保留完整列表项格式（- 和块属性），仅替换任务标记
-            lines[itemLineIndex] = newLine;
+            // 去除斜杠命令
+            lines[itemLineIndex] = processLineText(newLine, ALL_SLASH_COMMAND_FILTERS);
           } else {
             // 更新内容子块时 strip 后拼接
             const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
-            const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+            let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+            // 去除斜杠命令
+            cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
             lines[itemLineIndex] = isAbandon && !cleanedContent.includes('#已放弃') && !cleanedContent.includes('#abandoned')
               ? `${newMarker}${cleanedContent} ${suffix}`.trim()
               : `${newMarker}${cleanedContent}`.trim();
@@ -756,7 +759,9 @@ export async function updateBlockContent(
           // 去除任务列表标记后的内容
           const contentWithoutMarker = itemLine.replace(taskListMarker, '');
           // 使用 stripListAndBlockAttr 去除列表标记、块属性
-          const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          // 去除斜杠命令
+          cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           // 重新拼接：任务列表标记 + 清理后的内容 + 后缀
           lines[itemLineIndex] = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
         } else {
