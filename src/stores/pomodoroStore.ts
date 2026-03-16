@@ -19,6 +19,8 @@ import {
 } from '@/utils/pomodoroStorage';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
+import { extractDatesFromBlock } from '@/utils/slashCommandUtils';
+import { updateBlockDateTime } from '@/utils/fileUtils';
 import { defaultPomodoroSettings } from '@/settings';
 import { t } from '@/i18n';
 
@@ -463,6 +465,24 @@ export const usePomodoroStore = defineStore('pomodoro', {
         }
 
         await removePendingCompletion(plugin);
+
+        // 检查事项是否包含专注记录对应的日期，不包含则自动追加
+        const pomodoroDate = dayjs(pending.startTime).format('YYYY-MM-DD');
+        const existingDates = await extractDatesFromBlock(pending.blockId);
+        const hasDate = existingDates.some(item => item.date === pomodoroDate);
+
+        if (!hasDate) {
+          await updateBlockDateTime(
+            pending.blockId,
+            pomodoroDate,
+            undefined, // newStartTime
+            undefined, // newEndTime
+            true,      // allDay
+            undefined, // originalDate - undefined 表示添加新日期
+            existingDates.length > 0 ? existingDates : undefined,
+            undefined  // status
+          );
+        }
 
         showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
