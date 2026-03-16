@@ -21,6 +21,10 @@ export const DOCK_TYPES = {
 export const SLASH_COMMAND_FILTERS = {
   TODAY: ['/sx', '/事项', '/today'],
   CALENDAR: ['/rl', '/日历', '/calendar'],
+  CALENDAR_DAY: ['/rlt', '/日历天', '/calendarday'],
+  CALENDAR_WEEK: ['/rlz', '/日历周', '/calendarweek'],
+  CALENDAR_MONTH: ['/rly', '/日历月', '/calendarmonth'],
+  CALENDAR_LIST: ['/rllb', '/日历列表', '/calendarlist'],
   GANTT: ['/gtt', '/甘特图', '/gantt'],
   FOCUS: ['/zz', '/专注', '/focus'],
   TODO: ['/db', '/待办', '/todo']
@@ -30,6 +34,10 @@ export const SLASH_COMMAND_FILTERS = {
 export const ALL_SLASH_COMMAND_FILTERS = [
   ...SLASH_COMMAND_FILTERS.TODAY,
   ...SLASH_COMMAND_FILTERS.CALENDAR,
+  ...SLASH_COMMAND_FILTERS.CALENDAR_DAY,
+  ...SLASH_COMMAND_FILTERS.CALENDAR_WEEK,
+  ...SLASH_COMMAND_FILTERS.CALENDAR_MONTH,
+  ...SLASH_COMMAND_FILTERS.CALENDAR_LIST,
   ...SLASH_COMMAND_FILTERS.GANTT,
   ...SLASH_COMMAND_FILTERS.FOCUS,
   ...SLASH_COMMAND_FILTERS.TODO

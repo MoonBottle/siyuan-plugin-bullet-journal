@@ -152,7 +152,7 @@ function updateTransaction(protyle: any, id: string, newHTML: string, html: stri
  */
 export interface SlashCommandConfig {
   pluginName: string;
-  openCustomTab: (tabType: string, options?: { initialDate?: string }) => void;
+  openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => void;
   openPomodoroDock: () => void;
   openTodoDock: () => void;
 }
@@ -186,6 +186,54 @@ export function createSlashCommands(config: SlashCommandConfig) {
       callback: (protyle: any, nodeElement: HTMLElement) => {
         deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR);
         openCalendarForBlock(nodeElement, config.openCustomTab);
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.CALENDAR_DAY,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').openCalendarDay}</span>
+          <span class="b3-list-item__meta">Calendar Day</span>
+      </div>`,
+      id: 'bullet-journal-open-calendar-day',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_DAY);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.CALENDAR_WEEK,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').openCalendarWeek}</span>
+          <span class="b3-list-item__meta">Calendar Week</span>
+      </div>`,
+      id: 'bullet-journal-open-calendar-week',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_WEEK);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.CALENDAR_MONTH,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').openCalendarMonth}</span>
+          <span class="b3-list-item__meta">Calendar Month</span>
+      </div>`,
+      id: 'bullet-journal-open-calendar-month',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_MONTH);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.CALENDAR_LIST,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').openCalendarList}</span>
+          <span class="b3-list-item__meta">Calendar List</span>
+      </div>`,
+      id: 'bullet-journal-open-calendar-list',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_LIST);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
       }
     },
     {
@@ -273,7 +321,8 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
  */
 async function openCalendarForBlock(
   nodeElement: HTMLElement,
-  openCustomTab: (tabType: string, options?: { initialDate?: string }) => void
+  openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => void,
+  initialView?: string
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
 
@@ -285,7 +334,7 @@ async function openCalendarForBlock(
     targetDate = findNearestDate(items);
   }
 
-  openCustomTab(TAB_TYPES.CALENDAR, { initialDate: targetDate });
+  openCustomTab(TAB_TYPES.CALENDAR, { initialDate: targetDate, initialView });
 }
 
 /**

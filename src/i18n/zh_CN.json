@@ -381,6 +381,10 @@
   "slash": {
     "markAsTodayItem": "标记为今日事项",
     "openCalendar": "打开日历",
+    "openCalendarDay": "打开日历-天视图",
+    "openCalendarWeek": "打开日历-周视图",
+    "openCalendarMonth": "打开日历-月视图",
+    "openCalendarList": "打开日历-列表视图",
     "openGantt": "打开甘特图",
     "startFocus": "开始专注",
     "openTodoDock": "打开待办 Dock",

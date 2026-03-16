@@ -381,6 +381,10 @@
   "slash": {
     "markAsTodayItem": "Mark as Today's Item",
     "openCalendar": "Open Calendar",
+    "openCalendarDay": "Open Calendar - Day View",
+    "openCalendarWeek": "Open Calendar - Week View",
+    "openCalendarMonth": "Open Calendar - Month View",
+    "openCalendarList": "Open Calendar - List View",
     "openGantt": "Open Gantt Chart",
     "startFocus": "Start Focus",
     "openTodoDock": "Open Todo Dock",

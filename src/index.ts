@@ -767,14 +767,15 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 使用官方 API 打开 Tab
    */
-  public openCustomTab(type: string, options?: { position?: 'right' | 'bottom'; initialDate?: string }) {
+  public openCustomTab(type: string, options?: { position?: 'right' | 'bottom'; initialDate?: string; initialView?: string }) {
     // 根据 API 文档，custom.id 需要是 plugin.name + tab.type
     const customId = `${this.name}${type}`;
 
     // custom.data 仅传 type，避免不同 initialDate 导致创建多个 Tab
     const customData = { type };
     const initialDate = options?.initialDate;
-    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate);
+    const initialView = options?.initialView;
+    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate, 'initialView:', initialView);
 
     try {
       openTab({
@@ -785,10 +786,16 @@ export default class TaskAssistantPlugin extends Plugin {
           title: this.getTabTitle(type),
           data: customData
         },
-        afterOpen: initialDate ? () => {
-          console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
-          eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
-        } : undefined
+        afterOpen: () => {
+          if (initialDate) {
+            console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
+            eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
+          }
+          if (initialView && type === TAB_TYPES.CALENDAR) {
+            console.warn('[Task Assistant] afterOpen emit CALENDAR_CHANGE_VIEW', initialView);
+            eventBus.emit(Events.CALENDAR_CHANGE_VIEW, initialView);
+          }
+        }
       });
     } catch (error) {
       console.error('[Task Assistant] Failed to open tab:', error);
@@ -1477,7 +1484,7 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerSlashCommands() {
     const config: SlashCommandConfig = {
       pluginName: this.name,
-      openCustomTab: (tabType: string, options?: { initialDate?: string }) => {
+      openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => {
         this.openCustomTab(tabType, options);
       },
       openPomodoroDock: () => {
