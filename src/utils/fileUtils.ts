@@ -7,7 +7,7 @@ import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
 import type { ItemStatus } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
-import { processLineText } from '@/utils/slashCommands';
+import { processLineText } from '@/utils/slashCommandUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /**
