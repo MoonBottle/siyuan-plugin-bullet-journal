@@ -61,14 +61,7 @@
         class="form-input"
       />
     </div>
-    <div class="form-actions fn__flex">
-      <button type="button" class="b3-button b3-button--cancel" @click="$emit('cancel')">
-        {{ t('common').cancel }}
-      </button>
-      <button type="button" class="b3-button b3-button--primary" @click="handleSave">
-        {{ t('common').save }}
-      </button>
-    </div>
+
   </div>
 </template>
 
@@ -88,8 +81,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   save: [data: Partial<AIProviderConfig>];
-  cancel: [];
 }>();
+
+// 暴露 handleSave 方法供父组件调用
+defineExpose({
+  handleSave
+});
 
 const providerTypeOptions = Object.entries(PROVIDER_PRESETS).map(([value, preset]) => ({
   value,
@@ -184,10 +181,7 @@ function handleSave() {
 .ai-provider-edit-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  background: var(--b3-theme-background);
-  border-top: 1px solid var(--b3-theme-surface);
+  gap: 16px;
 }
 
 .form-row {
@@ -225,9 +219,5 @@ function handleSave() {
   gap: 8px;
 }
 
-.form-actions {
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
+
 </style>
