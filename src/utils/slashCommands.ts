@@ -112,7 +112,10 @@ export function deleteSlashCommandContent(protyle: any, filters: string[]): void
   const lineText = textContent.substring(lineStart, lineEnd);
 
   // 处理行文本
-  const newLineText = processLineText(lineText, filters);
+  let newLineText = processLineText(lineText, filters);
+
+  // 去除尾部空格
+  newLineText = newLineText.trimEnd();
 
   // 如果有修改，更新文本
   if (newLineText !== lineText) {
