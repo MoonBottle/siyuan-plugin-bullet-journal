@@ -938,6 +938,8 @@ export default class TaskAssistantPlugin extends Plugin {
     // 监听设置变更事件，动态更新番茄钟 UI 显示/隐藏
     eventBus.on(Events.SETTINGS_CHANGED, () => {
       this.updatePomodoroUIVisibility();
+      // 重新注册斜杠命令以应用自定义命令变更
+      this.registerSlashCommands();
     });
   }
 
