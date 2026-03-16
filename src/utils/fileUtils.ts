@@ -741,7 +741,9 @@ export async function updateBlockContent(
         } else {
           // 如果匹配失败，使用原来的方式
           console.log('[Task Assistant] updateBlockContent - match failed, using fallback');
-          const cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent = stripListAndBlockAttr(itemLine);
+          // 去除斜杠命令
+          cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
         }
       } else if (isTaskList) {
@@ -759,14 +761,18 @@ export async function updateBlockContent(
           lines[itemLineIndex] = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
         } else {
           // 如果匹配失败，使用原来的方式
-          const cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent = stripListAndBlockAttr(itemLine);
+          // 去除斜杠命令
+          cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
         }
       } else {
         // 非任务列表格式：使用原来的方式
         console.log('[Task Assistant] updateBlockContent - non-task list format');
         // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
-        const cleanedContent = stripListAndBlockAttr(itemLine);
+        let cleanedContent = stripListAndBlockAttr(itemLine);
+        // 去除斜杠命令
+        cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
         // 添加后缀
         lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
       }
