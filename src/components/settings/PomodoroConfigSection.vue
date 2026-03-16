@@ -29,6 +29,16 @@
           @update:model-value="pomodoro.recordMode = $event as 'block' | 'attr'"
         />
       </SySettingItem>
+      <SySettingItem
+        :label="t('settings').pomodoro.statusBarDirection"
+        :description="t('settings').pomodoro.statusBarDirectionDesc"
+      >
+        <SySelect
+          :model-value="pomodoro.statusBarDirection || 'extend'"
+          :options="statusBarDirectionOptions"
+          @update:model-value="pomodoro.statusBarDirection = $event as 'extend' | 'shrink'"
+        />
+      </SySettingItem>
     </SySettingItemList>
   </SySettingsSection>
 </template>
@@ -49,6 +59,11 @@ defineProps<{
 const recordModeOptions = [
   { value: 'block', label: t('settings').pomodoro.recordModeBlock },
   { value: 'attr', label: t('settings').pomodoro.recordModeAttr }
+];
+
+const statusBarDirectionOptions = [
+  { value: 'extend', label: t('settings').pomodoro.statusBarDirectionExtend },
+  { value: 'shrink', label: t('settings').pomodoro.statusBarDirectionShrink }
 ];
 </script>
 

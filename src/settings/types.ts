@@ -20,6 +20,7 @@ export interface PomodoroSettings {
   enableFloatingButton?: boolean;
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
+  statusBarDirection?: 'extend' | 'shrink';
 }
 
 // 自定义斜杠命令配置
@@ -54,6 +55,7 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   enableFloatingButton: true,
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',
+  statusBarDirection: 'extend',
 };
 
 export const defaultSettings: SettingsData = {

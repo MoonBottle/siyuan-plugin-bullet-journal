@@ -1085,7 +1085,9 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarEl.style.cssText = 'position:fixed;bottom:0;left:0;height:4px;background:var(--b3-theme-surface-lighter);z-index:9999;width:100%;';
     const fill = document.createElement('div');
     fill.className = 'status-bar-fill';
-    fill.style.cssText = 'height:100%;background:var(--b3-theme-primary);transition:width 0.3s;';
+    const direction = pomodoro.statusBarDirection ?? 'extend';
+    const initialWidth = direction === 'shrink' ? '100%' : '0%';
+    fill.style.cssText = `height:100%;background:var(--b3-theme-primary);transition:width 0.3s;width:${initialWidth};`;
     this.statusBarEl.appendChild(fill);
     document.body.appendChild(this.statusBarEl);
   }
@@ -1344,7 +1346,9 @@ export default class TaskAssistantPlugin extends Plugin {
           if (fill) {
             const elapsed = Math.max(0, totalSeconds - d.remainingSeconds);
             const progress = totalSeconds > 0 ? Math.min(1, elapsed / totalSeconds) : 0;
-            fill.style.width = `${progress * 100}%`;
+            const direction = pomodoro.statusBarDirection ?? 'extend';
+            const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
+            fill.style.width = `${displayProgress * 100}%`;
           }
         }
         if (pomodoro.enableStatusBarTimer === true) {
@@ -1382,7 +1386,9 @@ export default class TaskAssistantPlugin extends Plugin {
         if (fill) {
           const refSeconds = isStopwatch ? 25 * 60 : targetSeconds;
           const progress = Math.min(1, accumulatedSeconds / refSeconds);
-          fill.style.width = `${progress * 100}%`;
+          const direction = pomodoro.statusBarDirection ?? 'extend';
+          const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
+          fill.style.width = `${displayProgress * 100}%`;
         }
       }
       if (pomodoro.enableStatusBarTimer === true) {
