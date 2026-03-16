@@ -451,22 +451,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           blockContent = `🍅${valueContent}`;
         }
 
-        if (recordMode === 'attr') {
-          const attrName = `${attrPrefix}-${pending.startTime}`;
-          const existingAttrs = await getBlockAttrs(pending.blockId).catch(() => ({}));
-          const newAttrs: Record<string, string> = {
-            ...existingAttrs,
-            [attrName]: valueContent,
-            bookmark: '🍅'
-          };
-          await setBlockAttrs(pending.blockId, newAttrs);
-        } else {
-          await appendBlock('markdown', blockContent, pending.blockId);
-        }
-
-        await removePendingCompletion(plugin);
-
-        // 检查事项是否包含专注记录对应的日期，不包含则自动追加
+        // 先检查并追加日期（如果需要）
         const pomodoroDate = dayjs(pending.startTime).format('YYYY-MM-DD');
         const existingDates = await extractDatesFromBlock(pending.blockId);
         const hasDate = existingDates.some(item => item.date === pomodoroDate);
@@ -483,6 +468,21 @@ export const usePomodoroStore = defineStore('pomodoro', {
             undefined  // status
           );
         }
+
+        if (recordMode === 'attr') {
+          const attrName = `${attrPrefix}-${pending.startTime}`;
+          const existingAttrs = await getBlockAttrs(pending.blockId).catch(() => ({}));
+          const newAttrs: Record<string, string> = {
+            ...existingAttrs,
+            [attrName]: valueContent,
+            bookmark: '🍅'
+          };
+          await setBlockAttrs(pending.blockId, newAttrs);
+        } else {
+          await appendBlock('markdown', blockContent, pending.blockId);
+        }
+
+        await removePendingCompletion(plugin);
 
         showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
