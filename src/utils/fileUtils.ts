@@ -3,7 +3,7 @@
  */
 import { openTab } from 'siyuan';
 import { usePlugin } from '@/main';
-import { sql, getBlockKramdown, getBlockByID, updateBlock, getBlockAttrs, setBlockAttrs } from '@/api';
+import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
 import type { ItemStatus } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
@@ -360,16 +360,6 @@ export async function updateBlockDateTime(
   if (!blockId) return false;
 
   try {
-    // 获取块的现有自定义属性（在更新前保存，因为 updateBlock 会清除自定义属性）
-    const existingAttrs = await getBlockAttrs(blockId).catch(() => ({}));
-    const attrsToPreserve: Record<string, string> = {};
-    for (const [key, value] of Object.entries(existingAttrs)) {
-      // 保留以 custom- 开头的属性和 bookmark
-      if (key.startsWith('custom-') || key === 'bookmark') {
-        attrsToPreserve[key] = value as string;
-      }
-    }
-
     // 统一先查父块：若父块 kramdown 中含 blockId 对应块且该块事项行有 [ ]/[x]，则用父块 kramdown（避免内容子块无 [x] 导致错误添加 #已完成）
     let kramdown: string | null = null;
     let targetBlockId = blockId;
@@ -420,6 +410,7 @@ export async function updateBlockDateTime(
 
     // 如果没有番茄钟行且不需要保留结构，使用单行处理逻辑
     if (!hasTomatoClock && !useMultiLineForStructure) {
+      const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
       const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
       const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
       const formattedEndTime = newEndTime
@@ -437,12 +428,7 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent, targetBlockId);
-
-      // 恢复自定义属性（updateBlock 会清除自定义属性）
-      if (Object.keys(attrsToPreserve).length > 0) {
-        await setBlockAttrs(targetBlockId, attrsToPreserve);
-      }
+      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
       return true;
     }
 
@@ -463,6 +449,7 @@ export async function updateBlockDateTime(
 
     // 如果没有找到事项行，使用单行处理逻辑作为回退
     if (itemLineIndex === -1) {
+      const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
       const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
       const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
       const formattedEndTime = newEndTime
@@ -480,12 +467,7 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent, targetBlockId);
-
-      // 恢复自定义属性（updateBlock 会清除自定义属性）
-      if (Object.keys(attrsToPreserve).length > 0) {
-        await setBlockAttrs(targetBlockId, attrsToPreserve);
-      }
+      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
       return true;
     }
 
@@ -570,12 +552,8 @@ export async function updateBlockDateTime(
     const newContent = lines.join('\n');
 
     // 更新块（使用 targetBlockId：父块解析时更新父块）
+    // 多行逻辑中 lines 已包含属性行 {: ...}，updateBlock 的 kramdown 会保留属性
     await updateBlock('markdown', newContent, targetBlockId);
-
-    // 恢复自定义属性（updateBlock 会清除自定义属性）
-    if (Object.keys(attrsToPreserve).length > 0) {
-      await setBlockAttrs(targetBlockId, attrsToPreserve);
-    }
 
     return true;
   } catch (error) {
