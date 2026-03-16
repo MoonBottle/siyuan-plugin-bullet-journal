@@ -315,7 +315,8 @@ export default class TaskAssistantPlugin extends Plugin {
           },
           pomodoro: data.pomodoro
             ? { ...defaultPomodoroSettings, ...data.pomodoro }
-            : defaultPomodoroSettings
+            : defaultPomodoroSettings,
+          customSlashCommands: data.customSlashCommands || []
         };
       }
       // 加载聊天记录（从单独的文件）
