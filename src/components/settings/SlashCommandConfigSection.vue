@@ -311,7 +311,7 @@ function deleteCommand(id: string) {
 .custom-item-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
 
