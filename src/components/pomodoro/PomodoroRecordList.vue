@@ -223,6 +223,7 @@ async function handleRecordClick(record: PomodoroRecord) {
   font-size: 11px;
   color: var(--b3-theme-on-surface);
   opacity: 0.8;
+  white-space: pre-line;
 }
 
 .record-duration {
