@@ -28,8 +28,13 @@
         </div>
         <div v-else class="custom-list">
           <div v-for="cmd in modelValue" :key="cmd.id" class="custom-item">
-            <div class="custom-item-header">
-              <span class="custom-item-name">{{ cmd.name }}</span>
+            <div class="custom-item-main">
+              <div class="custom-item-info">
+                <span class="custom-item-name">{{ cmd.name }}</span>
+                <span class="custom-item-detail">
+                  <code class="command-code">{{ cmd.commands.join(', ') }}</code>
+                </span>
+              </div>
               <div class="custom-item-actions">
                 <SyButton
                   icon="iconEdit"
@@ -42,9 +47,6 @@
                   @click="deleteCommand(cmd.id)"
                 />
               </div>
-            </div>
-            <div class="custom-item-detail">
-              <code class="command-code">{{ cmd.commands.join(', ') }}</code>
             </div>
             <div class="custom-item-action">
               {{ t('settings').slashCommands.actionLabel }}: {{ getActionLabel(cmd.action) }}
@@ -305,25 +307,35 @@ function deleteCommand(id: string) {
   padding: 12px;
 }
 
-.custom-item-header {
+.custom-item-main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.custom-item-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .custom-item-name {
   font-weight: 500;
   color: var(--b3-theme-on-background);
+  font-size: 13px;
 }
 
 .custom-item-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .custom-item-detail {
-  margin-bottom: 4px;
+  font-size: 12px;
 }
 
 .custom-item-action {
