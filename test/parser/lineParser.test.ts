@@ -795,6 +795,31 @@ describe('parsePomodoroAttrValue 块属性番茄钟解析（attr 模式）', () 
     expect(LineParser.parsePomodoroAttrValue('', 'block-6')).toBeNull();
     expect(LineParser.parsePomodoroAttrValue('25,2026-03-11', 'block-7')).toBeNull();
   });
+
+  it('多行描述（转义换行符 \\n）', () => {
+    const value = '25,2026-03-11 10:30:00~10:55:00\\n第一行描述\\n第二行描述\\n第三行描述';
+    const record = LineParser.parsePomodoroAttrValue(value, 'block-8');
+    expect(record).not.toBeNull();
+    expect(record!.durationMinutes).toBe(25);
+    expect(record!.date).toBe('2026-03-11');
+    expect(record!.startTime).toBe('10:30:00');
+    expect(record!.endTime).toBe('10:55:00');
+    expect(record!.description).toBe('第一行描述\n第二行描述\n第三行描述');
+  });
+
+  it('多行描述含空行（转义换行符）', () => {
+    const value = '25,2026-03-11 10:30:00~10:55:00\\n第一行描述\\n\\n第二行描述';
+    const record = LineParser.parsePomodoroAttrValue(value, 'block-9');
+    expect(record).not.toBeNull();
+    expect(record!.description).toBe('第一行描述\n第二行描述');
+  });
+
+  it('单行描述（向后兼容）', () => {
+    const value = '25,2026-03-11 10:30:00~10:55:00 单行描述';
+    const record = LineParser.parsePomodoroAttrValue(value, 'block-10');
+    expect(record).not.toBeNull();
+    expect(record!.description).toBe('单行描述');
+  });
 });
 
 describe('parsePomodoroAttrs 从块属性对象提取番茄钟', () => {

@@ -503,7 +503,8 @@ export class LineParser {
   /**
    * 解析块属性中的番茄钟值（attr 模式）
    * 格式: {durationMinutes},{date} {startTime}~{endTime} {description}
-   * 时间与描述之间为空格，无逗号
+   * 或: {durationMinutes},{date} {startTime}~{endTime}\n{多行描述}
+   * 时间与描述之间为空格或换行符
    * @param value 属性值
    * @param blockId 块 ID
    * @param attrPrefix 属性名前缀，用于生成 id
@@ -516,9 +517,41 @@ export class LineParser {
   ): PomodoroRecord | null {
     if (!value || typeof value !== 'string') return null;
 
-    // 格式: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述（空格分隔，无逗号）
+    const trimmedValue = value.trim();
+
+    // 检查是否包含转义的换行符 \n（多行描述格式）
+    if (trimmedValue.includes('\\n')) {
+      const parts = trimmedValue.split('\\n');
+      const headerPart = parts[0];
+      const descLines = parts.slice(1).map(line => line.trim()).filter(line => line);
+
+      // 解析头部: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss
+      const headerRegex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*$/;
+      const headerMatch = headerPart.match(headerRegex);
+
+      if (!headerMatch) return null;
+
+      const durationMinutes = parseInt(headerMatch[1], 10);
+      const date = headerMatch[2];
+      const startTime = headerMatch[3];
+      const endTime = headerMatch[4];
+      const description = descLines.join('\n') || undefined;
+
+      return {
+        id: `${attrPrefix}-${blockId || 'unknown'}-${date}-${startTime}`,
+        date,
+        startTime,
+        endTime,
+        description,
+        durationMinutes,
+        actualDurationMinutes: durationMinutes,
+        blockId
+      };
+    }
+
+    // 单行描述格式: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述
     const regex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*(.*)$/;
-    const match = value.trim().match(regex);
+    const match = trimmedValue.match(regex);
 
     if (!match) return null;
 

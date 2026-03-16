@@ -437,8 +437,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (trimmedDesc) {
           if (trimmedDesc.includes('\n')) {
             const descLines = trimmedDesc.split('\n').map(line => line.trim()).filter(line => line);
-            valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
-            blockContent = `🍅${valueContent}\n${descLines.join('\n')}`;
+            // attr 模式：用 \n 转义表示换行（块属性不支持真正的换行符）
+            valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}\n${descLines.join('\n')}`;
+            blockContent = `🍅${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}\n${descLines.join('\n')}`;
           } else {
             valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr} ${trimmedDesc}`;
             blockContent = `🍅${valueContent}`;
