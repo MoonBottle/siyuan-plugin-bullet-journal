@@ -19,12 +19,16 @@ function generateSlashPatterns(filters: string[]): Set<string> {
 
 /**
  * 处理行文本，删除所有匹配的斜杠命令
+ * 匹配规则：从长到短匹配，确保优先匹配完整的命令
  */
 function processLineText(lineText: string, filters: string[]): string {
   const allPatterns = generateSlashPatterns(filters);
 
+  // 将 patterns 按长度降序排序，确保从长到短匹配
+  const sortedPatterns = Array.from(allPatterns).sort((a, b) => b.length - a.length);
+
   let result = lineText;
-  for (const pattern of allPatterns) {
+  for (const pattern of sortedPatterns) {
     if (result.includes(pattern)) {
       const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'g');

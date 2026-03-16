@@ -57,9 +57,12 @@ export function generateSlashPatterns(filters: string[]): Set<string> {
 export function processLineText(lineText: string, filters: string[]): string {
   const allPatterns = generateSlashPatterns(filters);
 
+  // 将 patterns 按长度降序排序，确保从长到短匹配（/gtt -> /gt -> /g）
+  const sortedPatterns = Array.from(allPatterns).sort((a, b) => b.length - a.length);
+
   // 删除行中所有匹配的 pattern
   let result = lineText;
-  for (const pattern of allPatterns) {
+  for (const pattern of sortedPatterns) {
     if (result.includes(pattern)) {
       // 使用正则全局替换，删除所有出现的 pattern
       const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
