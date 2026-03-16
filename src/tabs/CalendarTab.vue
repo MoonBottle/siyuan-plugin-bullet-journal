@@ -39,8 +39,10 @@
     </div>
     <div class="tab-content">
       <CalendarView
+        v-if="isSettingsLoaded"
         ref="calendarRef"
         :events="filteredCalendarEvents"
+        :initial-view="currentView"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
@@ -69,11 +71,13 @@ const projectStore = useProjectStore();
 
 const tabRootRef = ref<HTMLElement | null>(null);
 const calendarRef = ref<any>(null);
-const currentView = ref(settingsStore.calendarDefaultView || 'timeGridDay');
+const currentView = ref('timeGridDay');
 const currentTitle = ref('');
 const selectedGroup = ref('');
 /** drill-down 返回栈：栈顶为上一个点击进入的视图，用于逐级返回 */
 const previousViewStack = ref<string[]>([]);
+/** 设置是否已加载，用于控制 CalendarView 的渲染 */
+const isSettingsLoaded = ref(false);
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
@@ -164,6 +168,9 @@ onMounted(async () => {
   // 应用日历默认视图配置
   currentView.value = settingsStore.calendarDefaultView || 'timeGridDay';
 
+  // 标记设置已加载，允许 CalendarView 渲染
+  isSettingsLoaded.value = true;
+
   if (selectedGroup.value === '' && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup;
   }
@@ -189,9 +196,8 @@ onMounted(async () => {
     // 忽略
   }
 
-  // 等待日历初始化后应用默认视图并更新标题
+  // 等待日历初始化后更新标题
   await nextTick();
-  calendarRef.value?.changeView(currentView.value);
   setTimeout(() => updateTitle(), 100);
 });
 
