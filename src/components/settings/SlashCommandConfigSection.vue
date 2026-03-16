@@ -39,10 +39,7 @@
             </div>
           </div>
         </div>
-        <button class="b3-button b3-button--outline" @click="showAddDialog">
-          <svg class="b3-button__icon"><use xlink:href="#iconAdd"></use></svg>
-          {{ t('settings').slashCommands.addButton }}
-        </button>
+        <SySettingsActionButton icon="iconAdd" :text="t('settings').slashCommands.addButton" @click="showAddDialog" />
       </div>
     </div>
 
@@ -62,7 +59,7 @@
             <input
               v-model="form.name"
               type="text"
-              class="b3-text-field"
+              class="b3-text-field form-input-fullwidth"
               :placeholder="t('settings').slashCommands.namePlaceholder"
             />
           </div>
@@ -71,7 +68,7 @@
             <input
               v-model="commandsInput"
               type="text"
-              class="b3-text-field"
+              class="b3-text-field form-input-fullwidth"
               :placeholder="t('settings').slashCommands.commandsPlaceholder"
             />
             <div class="form-hint">{{ t('settings').slashCommands.commandsHint }}</div>
@@ -81,6 +78,7 @@
             <SySelect
               v-model="form.action"
               :options="actionOptions"
+              class="form-select-fullwidth"
             />
           </div>
         </div>
@@ -88,7 +86,7 @@
           <button class="b3-button b3-button--cancel" @click="closeDialog">
             {{ t('settings').slashCommands.cancelButton }}
           </button>
-          <button class="b3-button b3-button--text" @click="saveCommand">
+          <button class="b3-button b3-button--text form-save-btn" @click="saveCommand">
             {{ t('settings').slashCommands.saveButton }}
           </button>
         </div>
@@ -103,6 +101,7 @@ import type { CustomSlashCommand } from '@/settings/types';
 import { t } from '@/i18n';
 import { SLASH_COMMAND_FILTERS } from '@/constants';
 import SySettingsSection from './SySettingsSection.vue';
+import SySettingsActionButton from './SySettingsActionButton.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 
 const props = defineProps<{
@@ -326,13 +325,25 @@ function deleteCommand(id: string) {
   margin-top: 4px;
 }
 
+.form-input-fullwidth {
+  width: 100%;
+}
+
+.form-select-fullwidth {
+  width: 100%;
+}
+
+.form-select-fullwidth :deep(.sy-select__trigger) {
+  width: 100%;
+}
+
+.form-save-btn {
+  margin-left: 3px;
+}
+
 .b3-dialog__container {
   width: 400px;
 }
 
-.b3-button__icon {
-  width: 12px;
-  height: 12px;
-  margin-right: 4px;
-}
+
 </style>

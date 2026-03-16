@@ -93,6 +93,7 @@ function cloneSettings(data: SettingsData): SettingsData {
   const merged = { ...defaultSettings, ...data };
   if (!merged.pomodoro) merged.pomodoro = { ...defaultSettings.pomodoro! };
   if (!merged.ai) merged.ai = { providers: [], activeProviderId: null };
+  if (!merged.customSlashCommands) merged.customSlashCommands = [];
   return JSON.parse(JSON.stringify(merged));
 }
 
