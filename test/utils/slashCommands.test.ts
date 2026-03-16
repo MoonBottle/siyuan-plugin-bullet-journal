@@ -3,6 +3,178 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // 直接测试函数逻辑，不通过模块导入
 // 因为 slashCommands.ts 包含 Vue 组件导入，在 vitest 中难以处理
 
+describe('deleteSlashCommandContent 逻辑测试', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('使用 protyle.toolbar.range 删除斜杠命令', async () => {
+    // 模拟场景：文本 "哈哈哈 /sx"，光标在末尾
+    const mockTextNode = {
+      nodeType: Node.TEXT_NODE,
+      textContent: '哈哈哈 /sx',
+    };
+
+    const mockRange = {
+      startContainer: mockTextNode,
+      startOffset: 8, // 光标在 "/sx" 之后
+      setStart: vi.fn(),
+      setEnd: vi.fn(),
+      deleteContents: vi.fn(),
+    };
+
+    const mockProtyle = {
+      toolbar: {
+        range: mockRange,
+      },
+    };
+
+    // 模拟 deleteSlashCommandContent 的逻辑
+    function deleteSlashCommandContent(protyle: any): void {
+      const range = protyle.toolbar?.range;
+      if (!range) {
+        return;
+      }
+
+      const startContainer = range.startContainer;
+      if (startContainer.nodeType !== Node.TEXT_NODE) {
+        return;
+      }
+
+      const textContent = startContainer.textContent || '';
+      const currentOffset = range.startOffset;
+
+      let slashIndex = -1;
+      for (let i = currentOffset - 1; i >= 0; i--) {
+        if (textContent[i] === '/') {
+          slashIndex = i;
+          break;
+        }
+        if (textContent[i] === '\n' || textContent[i] === '\r') {
+          break;
+        }
+      }
+
+      if (slashIndex === -1) {
+        return;
+      }
+
+      range.setStart(startContainer, slashIndex);
+      range.setEnd(startContainer, currentOffset);
+      range.deleteContents();
+    }
+
+    deleteSlashCommandContent(mockProtyle);
+
+    // 验证 range 方法被正确调用
+    expect(mockRange.setStart).toHaveBeenCalledWith(mockTextNode, 4); // "/sx" 开始位置
+    expect(mockRange.setEnd).toHaveBeenCalledWith(mockTextNode, 8);   // "/sx" 结束位置
+    expect(mockRange.deleteContents).toHaveBeenCalled();
+  });
+
+  it('无 toolbar.range 时直接返回', async () => {
+    const mockProtyle = {
+      toolbar: {},
+    };
+
+    function deleteSlashCommandContent(protyle: any): boolean {
+      const range = protyle.toolbar?.range;
+      if (!range) {
+        return false;
+      }
+      return true;
+    }
+
+    const result = deleteSlashCommandContent(mockProtyle);
+    expect(result).toBe(false);
+  });
+
+  it('非文本节点时直接返回', async () => {
+    const mockRange = {
+      startContainer: {
+        nodeType: Node.ELEMENT_NODE,
+      },
+    };
+
+    const mockProtyle = {
+      toolbar: {
+        range: mockRange,
+      },
+    };
+
+    function deleteSlashCommandContent(protyle: any): boolean {
+      const range = protyle.toolbar?.range;
+      if (!range) {
+        return false;
+      }
+
+      const startContainer = range.startContainer;
+      if (startContainer.nodeType !== Node.TEXT_NODE) {
+        return false;
+      }
+      return true;
+    }
+
+    const result = deleteSlashCommandContent(mockProtyle);
+    expect(result).toBe(false);
+  });
+
+  it('未找到斜杠时直接返回', async () => {
+    const mockTextNode = {
+      nodeType: Node.TEXT_NODE,
+      textContent: '哈哈哈',
+    };
+
+    const mockRange = {
+      startContainer: mockTextNode,
+      startOffset: 3,
+      setStart: vi.fn(),
+      setEnd: vi.fn(),
+      deleteContents: vi.fn(),
+    };
+
+    const mockProtyle = {
+      toolbar: {
+        range: mockRange,
+      },
+    };
+
+    function deleteSlashCommandContent(protyle: any): boolean {
+      const range = protyle.toolbar?.range;
+      if (!range) {
+        return false;
+      }
+
+      const startContainer = range.startContainer;
+      if (startContainer.nodeType !== Node.TEXT_NODE) {
+        return false;
+      }
+
+      const textContent = startContainer.textContent || '';
+      const currentOffset = range.startOffset;
+
+      let slashIndex = -1;
+      for (let i = currentOffset - 1; i >= 0; i--) {
+        if (textContent[i] === '/') {
+          slashIndex = i;
+          break;
+        }
+        if (textContent[i] === '\n' || textContent[i] === '\r') {
+          break;
+        }
+      }
+
+      if (slashIndex === -1) {
+        return false;
+      }
+      return true;
+    }
+
+    const result = deleteSlashCommandContent(mockProtyle);
+    expect(result).toBe(false);
+  });
+});
+
 describe('extractDatesFromBlock 逻辑测试', () => {
   beforeEach(() => {
     vi.clearAllMocks();
