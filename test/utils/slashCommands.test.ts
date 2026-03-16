@@ -1,43 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-// 直接测试函数逻辑，不通过模块导入
-// 因为 slashCommands.ts 包含 Vue 组件导入，在 vitest 中难以处理
-
-/**
- * 生成所有可能的子集命令（如 /sx -> /s）
- */
-function generateSlashPatterns(filters: string[]): Set<string> {
-  const allPatterns = new Set<string>();
-  for (const filter of filters) {
-    allPatterns.add(filter);
-    for (let i = 2; i < filter.length; i++) {
-      allPatterns.add(filter.substring(0, i));
-    }
-  }
-  return allPatterns;
-}
-
-/**
- * 处理行文本，删除所有匹配的斜杠命令
- * 匹配规则：从长到短匹配，确保优先匹配完整的命令
- */
-function processLineText(lineText: string, filters: string[]): string {
-  const allPatterns = generateSlashPatterns(filters);
-
-  // 将 patterns 按长度降序排序，确保从长到短匹配
-  const sortedPatterns = Array.from(allPatterns).sort((a, b) => b.length - a.length);
-
-  let result = lineText;
-  for (const pattern of sortedPatterns) {
-    if (result.includes(pattern)) {
-      const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(escaped, 'g');
-      result = result.replace(regex, '');
-    }
-  }
-
-  return result;
-}
+import { generateSlashPatterns, processLineText } from '@/utils/slashCommandUtils';
 
 describe('generateSlashPatterns', () => {
   it('生成完整 filter', () => {
@@ -219,7 +181,7 @@ describe('processLineText', () => {
 
   it('处理斜杠命令在末尾且后面有空格', () => {
     const result = processLineText('内容/sx ', ['/sx']);
-    expect(result).toBe('内容 ');
+    expect(result).toBe('内容');
   });
 
   it('处理斜杠命令在中间且前后都有内容', () => {
