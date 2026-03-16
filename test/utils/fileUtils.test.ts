@@ -45,9 +45,13 @@ vi.mock('@/i18n', () => ({
   t: (...args: any[]) => mockT(...args)
 }));
 
-// Mock @/utils/slashCommands
-vi.mock('@/utils/slashCommands', () => ({
-  processLineText: (text: string) => text // 默认直接返回原文本
+// Mock @/utils/slashCommandUtils
+vi.mock('@/utils/slashCommandUtils', () => ({
+  processLineText: (text: string) => text, // 默认直接返回原文本
+  formatDate: (date: Date) => date.toISOString().split('T')[0],
+  extractDatesFromBlock: vi.fn(),
+  findNearestDate: vi.fn(),
+  extractItemFromBlock: vi.fn()
 }));
 
 // Mock @/constants

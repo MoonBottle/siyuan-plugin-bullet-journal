@@ -7,11 +7,17 @@ import { showMessage } from 'siyuan';
 import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
-import { usePomodoroStore, useProjectStore } from '@/stores';
+import { usePomodoroStore } from '@/stores';
 import { createDialog } from '@/utils/dialog';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { findItemByBlockId } from '@/utils/itemBlockUtils';
-import { generateSlashPatterns, processLineText } from '@/utils/slashCommandUtils';
+import {
+  generateSlashPatterns,
+  processLineText,
+  formatDate,
+  extractDatesFromBlock,
+  findNearestDate,
+  extractItemFromBlock
+} from '@/utils/slashCommandUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import type { Item } from '@/types/models';
@@ -230,11 +236,16 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
 
   const today = formatDate(new Date());
 
-  // 从 pinia 中获取已有日期
-  const existingDates = await extractDatesFromBlock(blockId);
+  // 从 pinia 中获取已有日期时间信息
+  const existingItems = await extractDatesFromBlock(blockId);
 
-  // 构建 siblingItems
-  const siblingItems = existingDates.map(date => ({ date }));
+  // 检查今天是否已存在
+  const todayItem = existingItems.find(item => item.date === today);
+  if (todayItem) {
+    // 今天已存在，不需要重复添加
+    showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
+    return;
+  }
 
   // 使用 updateBlockDateTime 添加今日日期
   const success = await updateBlockDateTime(
@@ -244,7 +255,7 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
     undefined, // newEndTime
     true,      // allDay
     undefined, // originalDate - undefined 表示添加新日期
-    siblingItems.length > 0 ? siblingItems : undefined,
+    existingItems.length > 0 ? existingItems : undefined,
     undefined  // status
   );
 
@@ -255,82 +266,7 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
   }
 }
 
-/**
- * 格式化日期为 YYYY-MM-DD
- */
-function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
-/**
- * 从块内容中提取所有日期标记
- * 直接从 pinia store 中获取，避免重新解析
- * 包括 siblingItems 中的日期
- */
-async function extractDatesFromBlock(blockId: string): Promise<string[]> {
-  const pinia = getSharedPinia();
-  if (!pinia) return [];
-
-  const projectStore = useProjectStore(pinia);
-  const item = findItemByBlockId(blockId, projectStore.items);
-
-  if (item) {
-    const dates = [item.date];
-    // 添加 siblingItems 中的日期
-    if (item.siblingItems) {
-      dates.push(...item.siblingItems.map(s => s.date));
-    }
-    return dates;
-  }
-
-  return [];
-}
-
-/**
- * 找到离今天最近的日期
- * 规则：
- * 1. 如果有多个日期，找离今天最近的一天
- * 2. 间隔相同（今天前后各有一天），取今天之后的日期
- */
-function findNearestDate(dates: string[]): string {
-  if (dates.length === 0) {
-    return formatDate(new Date()); // 今天
-  }
-  if (dates.length === 1) {
-    return dates[0];
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayTime = today.getTime();
-
-  let nearestDate = dates[0];
-  let minDiff = Math.abs(new Date(dates[0]).getTime() - todayTime);
-  let isAfterToday = new Date(dates[0]).getTime() >= todayTime;
-
-  for (let i = 1; i < dates.length; i++) {
-    const dateTime = new Date(dates[i]).getTime();
-    const diff = Math.abs(dateTime - todayTime);
-    const afterToday = dateTime >= todayTime;
-
-    // 如果间隔更小，更新最近日期
-    if (diff < minDiff) {
-      minDiff = diff;
-      nearestDate = dates[i];
-      isAfterToday = afterToday;
-    }
-    // 如果间隔相同，优先取今天之后的日期
-    else if (diff === minDiff && afterToday && !isAfterToday) {
-      nearestDate = dates[i];
-      isAfterToday = true;
-    }
-  }
-
-  return nearestDate;
-}
 
 /**
  * 打开日历（跳转到事项所在日期）
@@ -345,8 +281,8 @@ async function openCalendarForBlock(
   if (!blockId) {
     targetDate = formatDate(new Date());
   } else {
-    const dates = await extractDatesFromBlock(blockId);
-    targetDate = findNearestDate(dates);
+    const items = await extractDatesFromBlock(blockId);
+    targetDate = findNearestDate(items);
   }
 
   openCustomTab(TAB_TYPES.CALENDAR, { initialDate: targetDate });
@@ -365,26 +301,14 @@ async function openGanttForBlock(
   if (!blockId) {
     targetDate = formatDate(new Date());
   } else {
-    const dates = await extractDatesFromBlock(blockId);
-    targetDate = findNearestDate(dates);
+    const items = await extractDatesFromBlock(blockId);
+    targetDate = findNearestDate(items);
   }
 
   openCustomTab(TAB_TYPES.GANTT, { initialDate: targetDate });
 }
 
-/**
- * 从块内容提取事项信息
- * 直接从 pinia store 中获取，避免重新解析
- */
-async function extractItemFromBlock(blockId: string): Promise<Item | null> {
-  const pinia = getSharedPinia();
-  if (!pinia) return null;
 
-  const projectStore = useProjectStore(pinia);
-  const item = findItemByBlockId(blockId, projectStore.items);
-
-  return item || null;
-}
 
 /**
  * 打开专注弹框（预选模式，无左侧列表）
