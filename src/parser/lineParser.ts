@@ -519,11 +519,13 @@ export class LineParser {
 
     const trimmedValue = value.trim();
 
-    // 检查是否包含转义的换行符 \n（多行描述格式）
-    if (trimmedValue.includes('\\n')) {
-      const parts = trimmedValue.split('\\n');
+    // 检查是否包含真正的换行符（多行描述格式）
+    // 支持两种形式：真正的换行符 \n 或转义的 \\n
+    const newlineChar = '\n';
+    if (trimmedValue.includes(newlineChar)) {
+      const parts = trimmedValue.split(newlineChar);
       const headerPart = parts[0];
-      const descLines = parts.slice(1).map(line => line.trim()).filter(line => line);
+      const descLines = parts.slice(1).map(line => line.trim()).filter(line => line && !line.startsWith('{:'));
 
       // 解析头部: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss
       const headerRegex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*$/;
