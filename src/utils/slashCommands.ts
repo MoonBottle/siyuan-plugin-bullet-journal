@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore } from '@/stores';
-import { createDialog } from '@/utils/dialog';
+import { showDatePickerDialog } from '@/utils/dialog';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
@@ -514,67 +514,37 @@ async function markAsDateItem(nodeElement: HTMLElement) {
   // 从 pinia 中获取已有日期时间信息
   const existingItems = await extractDatesFromBlock(blockId);
 
-  // 使用对话框选择日期
-  const { createDialog } = await import('@/utils/dialog');
-  const dialog = createDialog({
-    title: t('slash').selectDateTitle || '选择日期',
-    content: `
-      <div class="b3-dialog__content" style="padding: 16px;">
-        <input type="date" id="date-picker-input" class="b3-text-field" style="width: 100%;" value="${dayjs().format('YYYY-MM-DD')}">
-      </div>
-      <div class="b3-dialog__action">
-        <button class="b3-button b3-button--cancel" id="date-picker-cancel">${t('common').cancel}</button>
-        <button class="b3-button b3-button--text" id="date-picker-confirm">${t('common').confirm}</button>
-      </div>
-    `,
-    width: '300px',
-    height: 'auto'
-  });
+  // 使用 showDatePickerDialog 选择日期
+  showDatePickerDialog(
+    t('slash').selectDateTitle || '选择日期',
+    dayjs().format('YYYY-MM-DD'),
+    async (selectedDate) => {
+      // 检查日期是否已存在
+      const existingItem = existingItems.find(item => item.date === selectedDate);
+      if (existingItem) {
+        showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
+        return;
+      }
 
-  // 绑定按钮事件
-  const cancelBtn = dialog.element.querySelector('#date-picker-cancel');
-  const confirmBtn = dialog.element.querySelector('#date-picker-confirm');
-  const dateInput = dialog.element.querySelector('#date-picker-input') as HTMLInputElement;
+      // 使用 updateBlockDateTime 添加日期
+      const success = await updateBlockDateTime(
+        blockId,
+        selectedDate,
+        undefined, // newStartTime
+        undefined, // newEndTime
+        true,      // allDay
+        undefined, // originalDate - undefined 表示添加新日期
+        existingItems.length > 0 ? existingItems : undefined,
+        undefined  // status
+      );
 
-  cancelBtn?.addEventListener('click', () => {
-    dialog.destroy();
-  });
-
-  confirmBtn?.addEventListener('click', async () => {
-    const selectedDate = dateInput?.value;
-    if (!selectedDate) {
-      dialog.destroy();
-      return;
+      if (success) {
+        showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
+      } else {
+        showMessage(t('slash').markFailed, 2000, 'error');
+      }
     }
-
-    // 检查日期是否已存在
-    const existingItem = existingItems.find(item => item.date === selectedDate);
-    if (existingItem) {
-      showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
-      dialog.destroy();
-      return;
-    }
-
-    // 使用 updateBlockDateTime 添加日期
-    const success = await updateBlockDateTime(
-      blockId,
-      selectedDate,
-      undefined, // newStartTime
-      undefined, // newEndTime
-      true,      // allDay
-      undefined, // originalDate - undefined 表示添加新日期
-      existingItems.length > 0 ? existingItems : undefined,
-      undefined  // status
-    );
-
-    if (success) {
-      showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
-    } else {
-      showMessage(t('slash').markFailed, 2000, 'error');
-    }
-
-    dialog.destroy();
-  });
+  );
 }
 
 /**
