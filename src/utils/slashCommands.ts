@@ -122,9 +122,27 @@ export function deleteSlashCommandContent(protyle: any): void {
   // 找到斜杠命令的结束位置（到文本末尾或空格/换行）
   let endIndex = textContent.length;
   for (let i = slashIndex + 1; i < textContent.length; i++) {
-    // 遇到空格、换行或特殊字符，认为是命令结束
-    if (textContent[i] === ' ' || textContent[i] === '\n' || textContent[i] === '\r' || textContent[i] === '@') {
+    // 遇到换行，认为是命令结束
+    if (textContent[i] === '\n' || textContent[i] === '\r') {
       endIndex = i;
+      break;
+    }
+    // 遇到空格，继续向后查找，跳过连续的空格
+    if (textContent[i] === ' ') {
+      endIndex = i;
+      // 跳过所有连续的空格
+      while (endIndex < textContent.length && textContent[endIndex] === ' ') {
+        endIndex++;
+      }
+      break;
+    }
+    // 遇到 @，说明是日期标记，命令在这里结束（不包含 @ 及其后的内容）
+    if (textContent[i] === '@') {
+      endIndex = i;
+      // 向后跳过空格
+      while (endIndex < textContent.length && textContent[endIndex] === ' ') {
+        endIndex++;
+      }
       break;
     }
   }
