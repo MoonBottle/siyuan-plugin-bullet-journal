@@ -4,12 +4,20 @@
       <!-- 内置命令列表 -->
       <div class="builtin-commands">
         <div class="subsection-title">{{ t('settings').slashCommands.builtinCommands }}</div>
-        <div class="builtin-list">
-          <div v-for="(cmd, key) in builtinCommands" :key="key" class="builtin-item">
-            <code class="command-code">{{ cmd.commands.join(', ') }}</code>
-            <span class="command-desc">- {{ cmd.description }}</span>
-          </div>
-        </div>
+        <table class="builtin-table">
+          <thead>
+            <tr>
+              <th class="command-code-header">{{ t('settings').slashCommands.commandHeader }}</th>
+              <th class="command-desc-header">{{ t('settings').slashCommands.descriptionHeader }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(cmd, key) in builtinCommands" :key="key" class="builtin-row">
+              <td class="command-code-cell"><code class="command-code">{{ cmd.commands.join(', ') }}</code></td>
+              <td class="command-desc-cell">{{ cmd.description }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- 自定义命令列表 -->
@@ -232,22 +240,43 @@ function deleteCommand(id: string) {
   margin-bottom: 12px;
 }
 
-.builtin-list {
+.builtin-table {
+  width: 100%;
   background: var(--b3-theme-surface);
   border-radius: 6px;
-  padding: 12px;
+  border-collapse: collapse;
+  overflow: hidden;
 }
 
-.builtin-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
+.builtin-table thead {
+  background: var(--b3-theme-surface-lighter);
+}
+
+.builtin-table th,
+.builtin-table td {
+  padding: 10px 12px;
+  text-align: left;
   font-size: 13px;
+  border-bottom: 1px solid var(--b3-border-color);
 }
 
-.builtin-item:not(:last-child) {
-  border-bottom: 1px solid var(--b3-border-color);
+.builtin-table th {
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+}
+
+.builtin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.command-code-header,
+.command-desc-header {
+  width: 50%;
+}
+
+.command-code-cell,
+.command-desc-cell {
+  width: 50%;
 }
 
 .command-code {

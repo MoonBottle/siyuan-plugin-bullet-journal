@@ -240,6 +240,8 @@
       "description": "Customize slash command shortcuts",
       "builtinCommands": "Built-in Commands",
       "customCommands": "Custom Commands",
+      "commandHeader": "Command",
+      "descriptionHeader": "Description",
       "addButton": "Add Command",
       "nameLabel": "Name",
       "namePlaceholder": "e.g. Quick mark today",

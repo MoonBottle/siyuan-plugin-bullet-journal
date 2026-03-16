@@ -240,6 +240,8 @@
       "description": "自定义斜杠命令快捷方式",
       "builtinCommands": "现有内置命令",
       "customCommands": "自定义命令",
+      "commandHeader": "命令",
+      "descriptionHeader": "说明",
       "addButton": "添加命令",
       "nameLabel": "名称",
       "namePlaceholder": "如：快速标记今天",
