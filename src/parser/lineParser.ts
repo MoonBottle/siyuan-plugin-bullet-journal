@@ -146,6 +146,9 @@ export class LineParser {
       .replace(/,/g, '')  // 移除英文逗号（normalizedLine 中只有英文逗号）
       .trim();
 
+    // 移除最后一个斜杠命令（如 /todo /zz /sx 等）
+    content = this.removeLastSlashCommand(content);
+
     // 解析块引用：strip 显示内容，提取到 links
     const { stripped: contentStripped, links: blockRefLinks } = parseBlockRefs(content);
     content = contentStripped;
@@ -282,6 +285,20 @@ export class LineParser {
     }
 
     return expressions;
+  }
+
+  /**
+   * 移除最后一个斜杠命令
+   * 斜杠命令格式：/command 或 /command param
+   * 只移除行尾的斜杠命令，保留前面的内容
+   * @param content 内容字符串
+   * @returns 移除斜杠命令后的内容
+   */
+  private static removeLastSlashCommand(content: string): string {
+    // 匹配行尾的斜杠命令：以 / 开头，后跟字母数字中文，直到行尾或空格
+    // 支持格式：/todo /zz /sx /db /calendar /甘特图 /日历 /事项 等
+    const slashCommandRegex = /\s+\/[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/;
+    return content.replace(slashCommandRegex, '').trim();
   }
 
   /**
