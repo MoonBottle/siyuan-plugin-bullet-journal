@@ -407,9 +407,7 @@ export async function updateBlockDateTime(
 
     // 如果没有番茄钟行且不需要保留结构，使用单行处理逻辑
     if (!hasTomatoClock && !useMultiLineForStructure) {
-      // 移除斜杠命令（如 /sx /事项 /todo 等）
-      const contentWithoutSlash = kramdown.replace(/\s+\/[a-zA-Z0-9_\-\u4e00-\u9fa5]+/g, '').trim();
-      const content = contentWithoutSlash.replace(/\n\{:[^}]*\}/g, '').trim();
+      const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
       const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
       const formattedEndTime = newEndTime
         ? formatTimeToSeconds(newEndTime)

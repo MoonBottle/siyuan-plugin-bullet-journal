@@ -31,55 +31,90 @@ function getEditorRange(element: Element): Range | null {
 }
 
 /**
+ * 生成所有可能的子集命令（如 /sx -> /s）
+ * @param filters 可能的斜杠命令前缀数组
+ * @returns 所有子集命令的集合
+ */
+export function generateSlashPatterns(filters: string[]): Set<string> {
+  const allPatterns = new Set<string>();
+  for (const filter of filters) {
+    // 添加完整 filter
+    allPatterns.add(filter);
+    // 添加所有前缀（从 / 后开始，至少保留 / 和一个字符）
+    for (let i = 2; i < filter.length; i++) {
+      allPatterns.add(filter.substring(0, i));
+    }
+  }
+  return allPatterns;
+}
+
+/**
+ * 处理行文本，删除所有匹配的斜杠命令
+ * @param lineText 行文本
+ * @param filters 可能的斜杠命令前缀数组
+ * @returns 处理后的行文本
+ */
+export function processLineText(lineText: string, filters: string[]): string {
+  const allPatterns = generateSlashPatterns(filters);
+
+  // 删除行中所有匹配的 pattern
+  let result = lineText;
+  for (const pattern of allPatterns) {
+    if (result.includes(pattern)) {
+      // 使用正则全局替换，删除所有出现的 pattern
+      const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'g');
+      result = result.replace(regex, '');
+    }
+  }
+
+  return result;
+}
+
+/**
  * 删除斜杠命令触发的内容
- * 简化逻辑：删除整行中匹配的 filter 前缀，保留其他内容
+ * 简化逻辑：删除整行中所有出现的斜杠命令（包括子集），保留其他内容
  * @param protyle Protyle 编辑器实例
  * @param filters 可能的斜杠命令前缀数组
  */
 export function deleteSlashCommandContent(protyle: any, filters: string[]): void {
-  // 优先使用 protyle.toolbar.range，如果不存在则使用 getEditorRange
-  let range = protyle.toolbar?.range;
+  // 获取编辑器元素
   const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
+  if (!wysiwygElement) return;
 
-  if (!range && wysiwygElement) {
-    range = getEditorRange(wysiwygElement);
-  }
+  // 获取选中的 range 来确定当前位置
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
 
-  // 如果还是没有 range，直接使用 window.getSelection()
-  if (!range) {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-    }
-  }
-
-  if (!range) return;
-
+  const range = selection.getRangeAt(0);
   const startContainer = range.startContainer;
   if (startContainer.nodeType !== Node.TEXT_NODE) return;
 
   const textNode = startContainer as Text;
   const textContent = textNode.textContent || '';
-
-  // 找到当前行的起始位置
   const currentOffset = range.startOffset;
+
+  // 找到当前行的起始和结束位置
   let lineStart = currentOffset;
   while (lineStart > 0 && textContent[lineStart - 1] !== '\n' && textContent[lineStart - 1] !== '\r') {
     lineStart--;
   }
 
-  // 从行首开始的文本
-  const lineText = textContent.substring(lineStart);
+  let lineEnd = currentOffset;
+  while (lineEnd < textContent.length && textContent[lineEnd] !== '\n' && textContent[lineEnd] !== '\r') {
+    lineEnd++;
+  }
 
-  // 检查是否以任一 filter 开头，删除匹配的 filter 前缀
-  for (const filter of filters) {
-    if (lineText.startsWith(filter)) {
-      // 仅删除匹配的 filter 前缀
-      range.setStart(textNode, lineStart);
-      range.setEnd(textNode, lineStart + filter.length);
-      range.deleteContents();
-      return;
-    }
+  // 提取当前行
+  const lineText = textContent.substring(lineStart, lineEnd);
+
+  // 处理行文本
+  const newLineText = processLineText(lineText, filters);
+
+  // 如果有修改，更新文本
+  if (newLineText !== lineText) {
+    const newText = textContent.substring(0, lineStart) + newLineText + textContent.substring(lineEnd);
+    textNode.textContent = newText;
   }
 }
 
