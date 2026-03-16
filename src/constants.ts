@@ -19,20 +19,28 @@ export const DOCK_TYPES = {
 
 // 斜杠命令 filter 配置
 export const SLASH_COMMAND_FILTERS = {
-  TODAY: ['/sx', '/事项', '/today'],
-  CALENDAR: ['/rl', '/日历', '/calendar'],
-  CALENDAR_DAY: ['/rlt', '/日历天', '/calendarday'],
-  CALENDAR_WEEK: ['/rlz', '/日历周', '/calendarweek'],
-  CALENDAR_MONTH: ['/rly', '/日历月', '/calendarmonth'],
-  CALENDAR_LIST: ['/rllb', '/日历列表', '/calendarlist'],
-  GANTT: ['/gtt', '/甘特图', '/gantt'],
-  FOCUS: ['/zz', '/专注', '/focus'],
-  TODO: ['/db', '/待办', '/todo']
+  TODAY: ['/jt', '/today'],
+  TOMORROW: ['/mt', '/tomorrow'],
+  DATE: ['/rq', '/date'],
+  DONE: ['/wc', '/done'],
+  ABANDON: ['/fq', '/abandon'],
+  CALENDAR: ['/rl', '/calendar'],
+  CALENDAR_DAY: ['/rlt', '/calendarday'],
+  CALENDAR_WEEK: ['/rlz', '/calendarweek'],
+  CALENDAR_MONTH: ['/rly', '/calendarmonth'],
+  CALENDAR_LIST: ['/rllb', '/calendarlist'],
+  GANTT: ['/gtt', '/gantt'],
+  FOCUS: ['/zz', '/focus'],
+  TODO: ['/db', '/todo']
 };
 
 // 所有斜杠命令 filters 的集合（用于去除斜杠命令）
 export const ALL_SLASH_COMMAND_FILTERS = [
   ...SLASH_COMMAND_FILTERS.TODAY,
+  ...SLASH_COMMAND_FILTERS.TOMORROW,
+  ...SLASH_COMMAND_FILTERS.DATE,
+  ...SLASH_COMMAND_FILTERS.DONE,
+  ...SLASH_COMMAND_FILTERS.ABANDON,
   ...SLASH_COMMAND_FILTERS.CALENDAR,
   ...SLASH_COMMAND_FILTERS.CALENDAR_DAY,
   ...SLASH_COMMAND_FILTERS.CALENDAR_WEEK,

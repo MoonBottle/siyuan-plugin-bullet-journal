@@ -255,6 +255,10 @@
       "actionLabel": "执行动作",
       "actions": {
         "today": "标记为今日事项",
+        "tomorrow": "标记为明日事项",
+        "date": "选择日期",
+        "done": "标记为已完成",
+        "abandon": "标记为已放弃",
         "calendar": "打开日历",
         "calendarDay": "打开日历-天视图",
         "calendarWeek": "打开日历-周视图",
@@ -405,6 +409,8 @@
   },
   "pomodoroComplete": {
     "item": "事项",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
     "focusDuration": "专注时长",
     "durationMinutes": "{minutes} 分钟",
     "descriptionLabel": "输入事项说明（可选，支持换行）",
@@ -417,6 +423,10 @@
   },
   "slash": {
     "markAsTodayItem": "标记为今日事项",
+    "markAsTomorrowItem": "标记为明日事项",
+    "markAsDateItem": "选择日期",
+    "markAsDone": "标记为已完成",
+    "markAsAbandoned": "标记为已放弃",
     "openCalendar": "打开日历",
     "openCalendarDay": "打开日历-天视图",
     "openCalendarWeek": "打开日历-周视图",
@@ -426,7 +436,17 @@
     "startFocus": "开始专注",
     "openTodoDock": "打开待办 Dock",
     "markSuccess": "已标记为今日事项",
+    "markTomorrowSuccess": "已标记为明日事项",
+    "markDateSuccess": "已标记日期",
+    "markDoneSuccess": "已标记为已完成",
+    "markAbandonSuccess": "已标记为已放弃",
     "markFailed": "标记失败，请重试",
-    "alreadyFocusing": "已有进行中的专注"
+    "alreadyFocusing": "已有进行中的专注",
+    "alreadyMarkedToday": "今天已标记",
+    "alreadyMarkedTomorrow": "明天已标记",
+    "alreadyMarkedDate": "该日期已标记",
+    "alreadyMarkedDone": "已经标记为已完成",
+    "alreadyMarkedAbandoned": "已经标记为已放弃",
+    "selectDateTitle": "选择日期"
   }
 }

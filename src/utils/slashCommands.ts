@@ -20,6 +20,7 @@ import {
 } from '@/utils/slashCommandUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
+import dayjs from 'dayjs';
 import type { Item } from '@/types/models';
 import type { CustomSlashCommand } from '@/settings/types';
 
@@ -179,6 +180,54 @@ export function createSlashCommands(config: SlashCommandConfig) {
       }
     },
     {
+      filter: SLASH_COMMAND_FILTERS.TOMORROW,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').markAsTomorrowItem}</span>
+          <span class="b3-list-item__meta">@${dayjs().add(1, 'day').format('YYYY-MM-DD')}</span>
+      </div>`,
+      id: 'bullet-journal-mark-tomorrow',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.TOMORROW);
+        markAsTomorrowItem(nodeElement);
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.DATE,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').markAsDateItem}</span>
+          <span class="b3-list-item__meta">Date</span>
+      </div>`,
+      id: 'bullet-journal-mark-date',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.DATE);
+        markAsDateItem(nodeElement);
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.DONE,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').markAsDone}</span>
+          <span class="b3-list-item__meta">✓</span>
+      </div>`,
+      id: 'bullet-journal-mark-done',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.DONE);
+        markAsDone(nodeElement);
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.ABANDON,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').markAsAbandoned}</span>
+          <span class="b3-list-item__meta">✗</span>
+      </div>`,
+      id: 'bullet-journal-mark-abandon',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.ABANDON);
+        markAsAbandoned(nodeElement);
+      }
+    },
+    {
       filter: SLASH_COMMAND_FILTERS.CALENDAR,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').openCalendar}</span>
@@ -327,6 +376,14 @@ function getActionHandler(
   switch (action) {
     case 'today':
       return (_protyle, nodeElement) => markAsTodayItem(nodeElement);
+    case 'tomorrow':
+      return (_protyle, nodeElement) => markAsTomorrowItem(nodeElement);
+    case 'date':
+      return (_protyle, nodeElement) => markAsDateItem(nodeElement);
+    case 'done':
+      return (_protyle, nodeElement) => markAsDone(nodeElement);
+    case 'abandon':
+      return (_protyle, nodeElement) => markAsAbandoned(nodeElement);
     case 'calendar':
       return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab);
     case 'calendarDay':
@@ -354,6 +411,10 @@ function getActionHandler(
 function getActionLabel(action: CustomSlashCommand['action']): string {
   const labels: Record<string, string> = {
     today: 'Today',
+    tomorrow: 'Tomorrow',
+    date: 'Date',
+    done: 'Done',
+    abandon: 'Abandon',
     calendar: 'Calendar',
     calendarDay: 'Calendar Day',
     calendarWeek: 'Calendar Week',
@@ -400,6 +461,174 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
 
   if (success) {
     showMessage(t('slash').markSuccess, 2000, 'info');
+  } else {
+    showMessage(t('slash').markFailed, 2000, 'error');
+  }
+}
+
+/**
+ * 标记为明天事项
+ */
+async function markAsTomorrowItem(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) return;
+
+  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
+
+  // 从 pinia 中获取已有日期时间信息
+  const existingItems = await extractDatesFromBlock(blockId);
+
+  // 检查明天是否已存在
+  const tomorrowItem = existingItems.find(item => item.date === tomorrow);
+  if (tomorrowItem) {
+    showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
+    return;
+  }
+
+  // 使用 updateBlockDateTime 添加明天日期
+  const success = await updateBlockDateTime(
+    blockId,
+    tomorrow,
+    undefined, // newStartTime
+    undefined, // newEndTime
+    true,      // allDay
+    undefined, // originalDate - undefined 表示添加新日期
+    existingItems.length > 0 ? existingItems : undefined,
+    undefined  // status
+  );
+
+  if (success) {
+    showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
+  } else {
+    showMessage(t('slash').markFailed, 2000, 'error');
+  }
+}
+
+/**
+ * 标记为指定日期事项
+ */
+async function markAsDateItem(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) return;
+
+  // 从 pinia 中获取已有日期时间信息
+  const existingItems = await extractDatesFromBlock(blockId);
+
+  // 使用对话框选择日期
+  const { createDialog } = await import('@/utils/dialog');
+  const dialog = createDialog({
+    title: t('slash').selectDateTitle || '选择日期',
+    content: `
+      <div class="b3-dialog__content" style="padding: 16px;">
+        <input type="date" id="date-picker-input" class="b3-text-field" style="width: 100%;" value="${dayjs().format('YYYY-MM-DD')}">
+      </div>
+      <div class="b3-dialog__action">
+        <button class="b3-button b3-button--cancel" id="date-picker-cancel">${t('common').cancel}</button>
+        <button class="b3-button b3-button--text" id="date-picker-confirm">${t('common').confirm}</button>
+      </div>
+    `,
+    width: '300px',
+    height: 'auto'
+  });
+
+  // 绑定按钮事件
+  const cancelBtn = dialog.element.querySelector('#date-picker-cancel');
+  const confirmBtn = dialog.element.querySelector('#date-picker-confirm');
+  const dateInput = dialog.element.querySelector('#date-picker-input') as HTMLInputElement;
+
+  cancelBtn?.addEventListener('click', () => {
+    dialog.destroy();
+  });
+
+  confirmBtn?.addEventListener('click', async () => {
+    const selectedDate = dateInput?.value;
+    if (!selectedDate) {
+      dialog.destroy();
+      return;
+    }
+
+    // 检查日期是否已存在
+    const existingItem = existingItems.find(item => item.date === selectedDate);
+    if (existingItem) {
+      showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
+      dialog.destroy();
+      return;
+    }
+
+    // 使用 updateBlockDateTime 添加日期
+    const success = await updateBlockDateTime(
+      blockId,
+      selectedDate,
+      undefined, // newStartTime
+      undefined, // newEndTime
+      true,      // allDay
+      undefined, // originalDate - undefined 表示添加新日期
+      existingItems.length > 0 ? existingItems : undefined,
+      undefined  // status
+    );
+
+    if (success) {
+      showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
+    } else {
+      showMessage(t('slash').markFailed, 2000, 'error');
+    }
+
+    dialog.destroy();
+  });
+}
+
+/**
+ * 根据状态获取标签
+ */
+function getStatusTag(status: 'completed' | 'abandoned'): string {
+  return t('statusTag')[status] || '';
+}
+
+/**
+ * 标记为已完成
+ */
+async function markAsDone(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) return;
+
+  // 检查是否已完成
+  const blockContent = nodeElement.textContent || '';
+  const completedTag = getStatusTag('completed');
+  if (completedTag && blockContent.includes(completedTag)) {
+    showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
+    return;
+  }
+
+  const tag = getStatusTag('completed');
+  const success = await updateBlockContent(blockId, tag);
+
+  if (success) {
+    showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+  } else {
+    showMessage(t('slash').markFailed, 2000, 'error');
+  }
+}
+
+/**
+ * 标记为已放弃
+ */
+async function markAsAbandoned(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) return;
+
+  // 检查是否已放弃
+  const blockContent = nodeElement.textContent || '';
+  const abandonedTag = getStatusTag('abandoned');
+  if (abandonedTag && blockContent.includes(abandonedTag)) {
+    showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
+    return;
+  }
+
+  const tag = getStatusTag('abandoned');
+  const success = await updateBlockContent(blockId, tag);
+
+  if (success) {
+    showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
   }

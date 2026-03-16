@@ -255,6 +255,10 @@
       "actionLabel": "Action",
       "actions": {
         "today": "Mark as Today's Item",
+        "tomorrow": "Mark as Tomorrow's Item",
+        "date": "Select Date",
+        "done": "Mark as Completed",
+        "abandon": "Mark as Abandoned",
         "calendar": "Open Calendar",
         "calendarDay": "Open Calendar - Day View",
         "calendarWeek": "Open Calendar - Week View",
@@ -405,6 +409,8 @@
   },
   "pomodoroComplete": {
     "item": "Item",
+    "startTime": "Start Time",
+    "endTime": "End Time",
     "focusDuration": "Focus Duration",
     "durationMinutes": "{minutes} min",
     "descriptionLabel": "Enter item description (optional, supports multi-line)",
@@ -417,6 +423,10 @@
   },
   "slash": {
     "markAsTodayItem": "Mark as Today's Item",
+    "markAsTomorrowItem": "Mark as Tomorrow's Item",
+    "markAsDateItem": "Select Date",
+    "markAsDone": "Mark as Completed",
+    "markAsAbandoned": "Mark as Abandoned",
     "openCalendar": "Open Calendar",
     "openCalendarDay": "Open Calendar - Day View",
     "openCalendarWeek": "Open Calendar - Week View",
@@ -426,7 +436,17 @@
     "startFocus": "Start Focus",
     "openTodoDock": "Open Todo Dock",
     "markSuccess": "Marked as today's item",
+    "markTomorrowSuccess": "Marked as tomorrow's item",
+    "markDateSuccess": "Date marked",
+    "markDoneSuccess": "Marked as completed",
+    "markAbandonSuccess": "Marked as abandoned",
     "markFailed": "Failed to mark, please retry",
-    "alreadyFocusing": "Already focusing"
+    "alreadyFocusing": "Already focusing",
+    "alreadyMarkedToday": "Already marked today",
+    "alreadyMarkedTomorrow": "Already marked tomorrow",
+    "alreadyMarkedDate": "Date already marked",
+    "alreadyMarkedDone": "Already marked as completed",
+    "alreadyMarkedAbandoned": "Already marked as abandoned",
+    "selectDateTitle": "Select Date"
   }
 }

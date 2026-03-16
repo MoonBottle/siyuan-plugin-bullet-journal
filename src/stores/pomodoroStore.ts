@@ -97,9 +97,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
           totalPausedSeconds: 0,
           projectId: item.project?.id,
           projectName: item.project?.name,
+          projectLinks: item.project?.links,
           taskId: item.task?.id,
           taskName: item.task?.name,
           taskLevel: item.task?.level,
+          taskLinks: item.task?.links,
+          itemStatus: item.status,
+          itemLinks: item.links,
           timerMode
         };
 
@@ -367,9 +371,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
           durationMinutes: actualMinutes,
           projectId: ap.projectId,
           projectName: ap.projectName,
+          projectLinks: ap.projectLinks,
           taskId: ap.taskId,
           taskName: ap.taskName,
           taskLevel: ap.taskLevel,
+          taskLinks: ap.taskLinks,
+          itemStatus: ap.itemStatus,
+          itemLinks: ap.itemLinks,
           timerMode: ap.timerMode
         };
 

@@ -128,6 +128,10 @@ const emit = defineEmits<{
 // 内置命令列表
 const builtinCommands = computed(() => [
   { commands: SLASH_COMMAND_FILTERS.TODAY, description: t('slash').markAsTodayItem },
+  { commands: SLASH_COMMAND_FILTERS.TOMORROW, description: t('slash').markAsTomorrowItem },
+  { commands: SLASH_COMMAND_FILTERS.DATE, description: t('slash').markAsDateItem },
+  { commands: SLASH_COMMAND_FILTERS.DONE, description: t('slash').markAsDone },
+  { commands: SLASH_COMMAND_FILTERS.ABANDON, description: t('slash').markAsAbandoned },
   { commands: SLASH_COMMAND_FILTERS.CALENDAR, description: t('slash').openCalendar },
   { commands: SLASH_COMMAND_FILTERS.CALENDAR_DAY, description: t('slash').openCalendarDay },
   { commands: SLASH_COMMAND_FILTERS.CALENDAR_WEEK, description: t('slash').openCalendarWeek },
@@ -141,6 +145,10 @@ const builtinCommands = computed(() => [
 // 动作选项
 const actionOptions = computed(() => [
   { value: 'today', label: t('settings').slashCommands.actions.today },
+  { value: 'tomorrow', label: t('settings').slashCommands.actions.tomorrow },
+  { value: 'date', label: t('settings').slashCommands.actions.date },
+  { value: 'done', label: t('settings').slashCommands.actions.done },
+  { value: 'abandon', label: t('settings').slashCommands.actions.abandon },
   { value: 'calendar', label: t('settings').slashCommands.actions.calendar },
   { value: 'calendarDay', label: t('settings').slashCommands.actions.calendarDay },
   { value: 'calendarWeek', label: t('settings').slashCommands.actions.calendarWeek },
