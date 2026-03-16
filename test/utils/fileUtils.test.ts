@@ -45,6 +45,22 @@ vi.mock('@/i18n', () => ({
   t: (...args: any[]) => mockT(...args)
 }));
 
+// Mock @/utils/slashCommands
+vi.mock('@/utils/slashCommands', () => ({
+  processLineText: (text: string) => text // 默认直接返回原文本
+}));
+
+// Mock @/constants
+vi.mock('@/constants', () => ({
+  TAB_TYPES: {
+    CALENDAR: 'bullet-journal-calendar',
+    GANTT: 'bullet-journal-gantt',
+    PROJECT: 'bullet-journal-project',
+    POMODORO_STATS: 'bullet-journal-pomodoro-stats'
+  },
+  ALL_SLASH_COMMAND_FILTERS: ['/sx', '/事项', '/today', '/rl', '/日历', '/calendar', '/gtt', '/甘特图', '/gantt', '/zz', '/专注', '/focus', '/db', '/待办', '/todo']
+}));
+
 // 导入被测函数（在 mock 之后）
 import { updateBlockDateTime, updateBlockContent } from '@/utils/fileUtils';
 
