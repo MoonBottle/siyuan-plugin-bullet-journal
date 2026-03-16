@@ -3,7 +3,7 @@
  */
 import { openTab } from 'siyuan';
 import { usePlugin } from '@/main';
-import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
+import { sql, getBlockKramdown, getBlockByID, updateBlock, getBlockAttrs, setBlockAttrs } from '@/api';
 import type { ItemStatus } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
@@ -360,6 +360,16 @@ export async function updateBlockDateTime(
   if (!blockId) return false;
 
   try {
+    // 获取块的现有自定义属性（在更新前保存，因为 updateBlock 会清除自定义属性）
+    const existingAttrs = await getBlockAttrs(blockId).catch(() => ({}));
+    const attrsToPreserve: Record<string, string> = {};
+    for (const [key, value] of Object.entries(existingAttrs)) {
+      // 保留以 custom- 开头的属性和 bookmark
+      if (key.startsWith('custom-') || key === 'bookmark') {
+        attrsToPreserve[key] = value as string;
+      }
+    }
+
     // 统一先查父块：若父块 kramdown 中含 blockId 对应块且该块事项行有 [ ]/[x]，则用父块 kramdown（避免内容子块无 [x] 导致错误添加 #已完成）
     let kramdown: string | null = null;
     let targetBlockId = blockId;
@@ -428,6 +438,11 @@ export async function updateBlockDateTime(
       );
 
       await updateBlock('markdown', newContent, targetBlockId);
+
+      // 恢复自定义属性（updateBlock 会清除自定义属性）
+      if (Object.keys(attrsToPreserve).length > 0) {
+        await setBlockAttrs(targetBlockId, attrsToPreserve);
+      }
       return true;
     }
 
@@ -466,6 +481,11 @@ export async function updateBlockDateTime(
       );
 
       await updateBlock('markdown', newContent, targetBlockId);
+
+      // 恢复自定义属性（updateBlock 会清除自定义属性）
+      if (Object.keys(attrsToPreserve).length > 0) {
+        await setBlockAttrs(targetBlockId, attrsToPreserve);
+      }
       return true;
     }
 
@@ -551,6 +571,11 @@ export async function updateBlockDateTime(
 
     // 更新块（使用 targetBlockId：父块解析时更新父块）
     await updateBlock('markdown', newContent, targetBlockId);
+
+    // 恢复自定义属性（updateBlock 会清除自定义属性）
+    if (Object.keys(attrsToPreserve).length > 0) {
+      await setBlockAttrs(targetBlockId, attrsToPreserve);
+    }
 
     return true;
   } catch (error) {
