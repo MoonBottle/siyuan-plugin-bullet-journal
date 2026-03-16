@@ -9,7 +9,7 @@ import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useProjectStore } from '@/stores';
 import { createDialog } from '@/utils/dialog';
-import { updateBlockContent } from '@/utils/fileUtils';
+import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { findItemByBlockId } from '@/utils/itemBlockUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES } from '@/constants';
@@ -214,9 +214,24 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
   if (!blockId) return;
 
   const today = formatDate(new Date());
-  const dateSuffix = `@${today}`;
 
-  const success = await updateBlockContent(blockId, dateSuffix);
+  // 从 pinia 中获取已有日期
+  const existingDates = await extractDatesFromBlock(blockId);
+
+  // 构建 siblingItems
+  const siblingItems = existingDates.map(date => ({ date }));
+
+  // 使用 updateBlockDateTime 添加今日日期
+  const success = await updateBlockDateTime(
+    blockId,
+    today,
+    undefined, // newStartTime
+    undefined, // newEndTime
+    true,      // allDay
+    undefined, // originalDate - undefined 表示添加新日期
+    siblingItems.length > 0 ? siblingItems : undefined,
+    undefined  // status
+  );
 
   if (success) {
     showMessage(t('slash').markSuccess, 2000, 'info');
@@ -238,6 +253,7 @@ function formatDate(date: Date): string {
 /**
  * 从块内容中提取所有日期标记
  * 直接从 pinia store 中获取，避免重新解析
+ * 包括 siblingItems 中的日期
  */
 async function extractDatesFromBlock(blockId: string): Promise<string[]> {
   const pinia = getSharedPinia();
@@ -247,7 +263,12 @@ async function extractDatesFromBlock(blockId: string): Promise<string[]> {
   const item = findItemByBlockId(blockId, projectStore.items);
 
   if (item) {
-    return [item.date];
+    const dates = [item.date];
+    // 添加 siblingItems 中的日期
+    if (item.siblingItems) {
+      dates.push(...item.siblingItems.map(s => s.date));
+    }
+    return dates;
   }
 
   return [];
