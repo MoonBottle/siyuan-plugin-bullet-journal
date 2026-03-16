@@ -7,6 +7,8 @@ import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
 import type { ItemStatus } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
+import { processLineText } from '@/utils/slashCommands';
+import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /**
  * 时间加一小时
@@ -299,6 +301,9 @@ function handleSingleLineUpdate(
     .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
     .trim();
 
+  // 去除斜杠命令（/sx, /事项, /today 等）
+  itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS);
+
   // 构建所有日期时间项列表
   const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
 
@@ -478,6 +483,9 @@ export async function updateBlockDateTime(
       // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
       .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
       .trim();
+
+    // 去除斜杠命令（/sx, /事项, /today 等）
+    itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS);
 
     // 构建所有日期时间项列表
     const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];

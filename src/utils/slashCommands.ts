@@ -12,7 +12,7 @@ import { createDialog } from '@/utils/dialog';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { findItemByBlockId } from '@/utils/itemBlockUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
-import { TAB_TYPES } from '@/constants';
+import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import type { Item } from '@/types/models';
 
 /**
@@ -139,62 +139,62 @@ export function createSlashCommands(config: SlashCommandConfig) {
 
   return [
     {
-      filter: ['/sx', '/事项', '/today'],
+      filter: SLASH_COMMAND_FILTERS.TODAY,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').markAsTodayItem}</span>
           <span class="b3-list-item__meta">@${today}</span>
       </div>`,
       id: 'bullet-journal-mark-today',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, ['/sx', '/事项', '/today']);
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.TODAY);
         markAsTodayItem(nodeElement);
       }
     },
     {
-      filter: ['/rl', '/日历', '/calendar'],
+      filter: SLASH_COMMAND_FILTERS.CALENDAR,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').openCalendar}</span>
           <span class="b3-list-item__meta">Calendar</span>
       </div>`,
       id: 'bullet-journal-open-calendar',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, ['/rl', '/日历', '/calendar']);
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR);
         openCalendarForBlock(nodeElement, config.openCustomTab);
       }
     },
     {
-      filter: ['/gtt', '/甘特图', '/gantt'],
+      filter: SLASH_COMMAND_FILTERS.GANTT,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').openGantt}</span>
           <span class="b3-list-item__meta">Gantt</span>
       </div>`,
       id: 'bullet-journal-open-gantt',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, ['/gtt', '/甘特图', '/gantt']);
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.GANTT);
         openGanttForBlock(nodeElement, config.openCustomTab);
       }
     },
     {
-      filter: ['/zz', '/专注', '/focus'],
+      filter: SLASH_COMMAND_FILTERS.FOCUS,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').startFocus}</span>
           <span class="b3-list-item__meta">🍅</span>
       </div>`,
       id: 'bullet-journal-start-focus',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, ['/zz', '/专注', '/focus']);
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.FOCUS);
         startFocusFromSlash(nodeElement, config.openPomodoroDock);
       }
     },
     {
-      filter: ['/db', '/待办', '/todo'],
+      filter: SLASH_COMMAND_FILTERS.TODO,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').openTodoDock}</span>
           <span class="b3-list-item__meta">Todo</span>
       </div>`,
       id: 'bullet-journal-open-todo-dock',
       callback: (protyle: any) => {
-        deleteSlashCommandContent(protyle, ['/db', '/待办', '/todo']);
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.TODO);
         config.openTodoDock();
       }
     }
