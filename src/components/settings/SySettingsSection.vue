@@ -6,9 +6,14 @@
     <div v-else class="sy-settings-section__header" :class="{ 'sy-settings-section__header--inline': $slots.headerRight }">
       <div class="sy-settings-section__header-left">
         <div class="sy-settings-section__title-row fn__flex">
-          <svg v-if="icon" class="sy-settings-section__icon">
-            <use :xlink:href="`#${icon}`"></use>
-          </svg>
+          <template v-if="svgIcon">
+            <div class="sy-settings-section__icon" v-html="svgIcon"></div>
+          </template>
+          <template v-else-if="icon">
+            <svg class="sy-settings-section__icon">
+              <use :xlink:href="`#${icon}`"></use>
+            </svg>
+          </template>
           <span class="sy-settings-section__title">{{ title }}</span>
         </div>
         <div v-if="description" class="sy-settings-section__description">{{ description }}</div>
@@ -29,6 +34,8 @@ defineProps<{
   description?: string;
   /** 思源图标名，如 iconFolder、iconCalendar，与 dock/tab 一致 */
   icon?: string;
+  /** 内联 SVG 图标代码，优先级高于 icon */
+  svgIcon?: string;
 }>()
 </script>
 

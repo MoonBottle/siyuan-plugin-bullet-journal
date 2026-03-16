@@ -1,5 +1,9 @@
 <template>
-  <SySettingsSection icon="iconSlash" :title="t('settings').slashCommands.title" :description="t('settings').slashCommands.description">
+  <SySettingsSection
+    svg-icon="<svg viewBox='0 0 1024 1024' xmlns='http://www.w3.org/2000/svg'><path d='M1024 512l-241.365333 241.365333-60.330667-60.330666L903.338667 512l-181.034667-181.034667 60.330667-60.330666L1024 512zM120.661333 512l181.034667 181.034667-60.330667 60.330666L0 512l241.365333-241.365333L301.653333 330.965333 120.661333 512z m296.96 384H326.826667l279.552-768h90.794666L417.621333 896z' fill='currentColor'></path></svg>"
+    :title="t('settings').slashCommands.title"
+    :description="t('settings').slashCommands.description"
+  >
     <div class="slash-command-section">
       <!-- 内置命令列表 -->
       <div class="builtin-commands">
