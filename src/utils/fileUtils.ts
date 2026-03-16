@@ -293,16 +293,14 @@ function handleSingleLineUpdate(
   siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
   status?: ItemStatus
 ): string {
-  // 提取事项内容：先去除列表标记和块属性（支持父块 kramdown 格式），再去除日期时间标记和状态标签
-  let itemContent = stripListAndBlockAttr(content)
+  // 提取事项内容：先去除斜杠命令，再去除列表标记和块属性（支持父块 kramdown 格式），最后去除日期时间标记和状态标签
+  let itemContent = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
+  itemContent = stripListAndBlockAttr(itemContent)
     .replace(/@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
     .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
     // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
     .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
     .trim();
-
-  // 去除斜杠命令（/sx, /事项, /today 等）
-  itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS);
 
   // 构建所有日期时间项列表
   const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
