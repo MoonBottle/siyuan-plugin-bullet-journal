@@ -73,10 +73,71 @@ export function deleteSlashCommandContent(protyle: any, filters: string[]): void
   // 处理行文本
   let newLineText = processLineText(lineText, filters);
 
-  // 如果有修改，更新文本
+  // 如果有修改，更新文本并提交事务
   if (newLineText !== lineText) {
+    // 找到包含当前文本节点的块元素
+    let blockElement = startContainer.parentElement;
+    while (blockElement && !blockElement.getAttribute('data-node-id')) {
+      blockElement = blockElement.parentElement;
+    }
+
+    if (!blockElement) return;
+
+    const blockId = blockElement.getAttribute('data-node-id');
+    const oldHTML = blockElement.outerHTML;
+
+    // 更新文本
     const newText = textContent.substring(0, lineStart) + newLineText + textContent.substring(lineEnd);
     textNode.textContent = newText;
+
+    // 更新块的 updated 属性
+    const now = new Date();
+    const updated = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+    blockElement.setAttribute('updated', updated);
+
+    // 提交事务以持久化修改
+    const newHTML = blockElement.outerHTML;
+    if (newHTML !== oldHTML) {
+      protyle.toolbar?.setInlineMark?.(protyle, '', 'clear', {});
+      updateTransaction(protyle, blockId, newHTML, oldHTML);
+    }
+  }
+}
+
+/**
+ * 更新事务 - 参考思源官方实现
+ * @param protyle Protyle 编辑器实例
+ * @param id 块 ID
+ * @param newHTML 新 HTML
+ * @param html 旧 HTML
+ */
+function updateTransaction(protyle: any, id: string, newHTML: string, html: string): void {
+  if (newHTML === html) {
+    return;
+  }
+
+  const doOperations = [{
+    id,
+    data: newHTML,
+    action: 'update'
+  }];
+
+  const undoOperations = [{
+    id,
+    data: html,
+    action: 'update'
+  }];
+
+  // 调用思源的 transaction 方法
+  if (protyle.transaction) {
+    protyle.transaction(doOperations, undoOperations);
+  } else if (window.siyuan?.transactions) {
+    // 备用方案：直接添加到 transactions 队列
+    window.siyuan.transactions.push({
+      protyle,
+      doOperations,
+      undoOperations
+    });
   }
 }
 
