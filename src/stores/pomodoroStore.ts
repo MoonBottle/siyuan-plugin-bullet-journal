@@ -429,8 +429,24 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const dateStr = dayjs(pending.startTime).format('YYYY-MM-DD');
         const startTimeStr = dayjs(pending.startTime).format('HH:mm:ss');
         const endTimeStr = dayjs(pending.endTime).format('HH:mm:ss');
-        const descPart = description.trim() ? ' ' + description.trim() : '';
-        const valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}${descPart}`;
+        const trimmedDesc = description.trim();
+
+        let valueContent: string;
+        let blockContent: string;
+
+        if (trimmedDesc) {
+          if (trimmedDesc.includes('\n')) {
+            const descLines = trimmedDesc.split('\n').map(line => line.trim()).filter(line => line);
+            valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
+            blockContent = `🍅${valueContent}\n${descLines.join('\n')}`;
+          } else {
+            valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr} ${trimmedDesc}`;
+            blockContent = `🍅${valueContent}`;
+          }
+        } else {
+          valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
+          blockContent = `🍅${valueContent}`;
+        }
 
         if (recordMode === 'attr') {
           const attrName = `${attrPrefix}-${pending.startTime}`;
@@ -442,8 +458,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           };
           await setBlockAttrs(pending.blockId, newAttrs);
         } else {
-          const pomodoroContent = `🍅${valueContent}`;
-          await appendBlock('markdown', pomodoroContent, pending.blockId);
+          await appendBlock('markdown', blockContent, pending.blockId);
         }
 
         await removePendingCompletion(plugin);

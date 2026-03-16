@@ -370,7 +370,7 @@
     "item": "事项",
     "focusDuration": "专注时长",
     "durationMinutes": "{minutes} 分钟",
-    "descriptionLabel": "输入事项说明（可选）",
+    "descriptionLabel": "输入事项说明（可选，支持换行）",
     "descriptionPlaceholder": "例如：完成每日复习",
     "save": "保存"
   },

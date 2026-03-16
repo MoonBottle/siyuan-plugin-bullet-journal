@@ -15,11 +15,11 @@
         </div>
         <div class="description-section">
           <label class="desc-label">{{ t('pomodoroComplete').descriptionLabel }}</label>
-          <input
+          <textarea
             v-model="description"
-            type="text"
-            class="desc-input"
+            class="desc-input desc-textarea"
             :placeholder="t('pomodoroComplete').descriptionPlaceholder"
+            rows="3"
           />
         </div>
       </template>
@@ -149,6 +149,13 @@ onBeforeUnmount(async () => {
   color: var(--b3-theme-on-background);
   font-size: 14px;
   box-sizing: border-box;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.desc-textarea {
+  min-height: 60px;
+  line-height: 1.5;
 }
 
 .break-hint {

@@ -370,7 +370,7 @@
     "item": "Item",
     "focusDuration": "Focus Duration",
     "durationMinutes": "{minutes} min",
-    "descriptionLabel": "Enter item description (optional)",
+    "descriptionLabel": "Enter item description (optional, supports multi-line)",
     "descriptionPlaceholder": "e.g. Complete daily review",
     "save": "Save"
   },
