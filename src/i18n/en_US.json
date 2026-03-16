@@ -51,7 +51,7 @@
     "list": "List",
     "weekNumber": "W{num}",
     "navLinkHint": "Go to $0",
-    "weekDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "weekDays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     "yearMonthFormat": "{year}/{month}"
   },
   "gantt": {

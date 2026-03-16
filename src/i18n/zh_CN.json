@@ -51,7 +51,7 @@
     "list": "列表",
     "weekNumber": "第{num}周",
     "navLinkHint": "跳转到 $0",
-    "weekDays": ["日", "一", "二", "三", "四", "五", "六"],
+    "weekDays": ["一", "二", "三", "四", "五", "六", "日"],
     "yearMonthFormat": "{year}年{month}月"
   },
   "gantt": {

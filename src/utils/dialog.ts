@@ -651,46 +651,47 @@ export function showSettingsDialog(plugin: any): Dialog {
  * 生成日历网格 HTML
  */
 function generateCalendarGrid(year: number, month: number, selectedDate?: string): string {
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const startDayOfWeek = firstDay.getDay();
-  const daysInMonth = lastDay.getDate();
-  
+  const firstDay = dayjs().year(year).month(month).date(1);
+  const daysInMonth = firstDay.daysInMonth();
+
+  // 周一开始：dayjs.day() 返回 0-6（周日开始），转换为周一开始
+  const startDayOfWeek = firstDay.day() === 0 ? 6 : firstDay.day() - 1;
+
   const todayStr = dayjs().format('YYYY-MM-DD');
-  
+
   let html = '<div class="date-picker-calendar">';
-  
-  // 星期标题
-  const weekDays = (t('calendar') as any).weekDays ?? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // 星期标题（周一开始）
+  const weekDays = (t('calendar') as any).weekDays ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   html += '<div class="date-picker-header">';
   weekDays.forEach(day => {
     html += `<span class="date-picker-weekday">${day}</span>`;
   });
   html += '</div>';
-  
+
   // 日期网格
   html += '<div class="date-picker-grid">';
-  
+
   // 填充前面的空白
   for (let i = 0; i < startDayOfWeek; i++) {
     html += '<span class="date-picker-day empty"></span>';
   }
-  
+
   // 填充日期
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = firstDay.date(day).format('YYYY-MM-DD');
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === selectedDate;
-    
+
     let classes = 'date-picker-day';
     if (isToday) classes += ' today';
     if (isSelected) classes += ' selected';
-    
+
     html += `<span class="${classes}" data-date="${dateStr}">${day}</span>`;
   }
-  
+
   html += '</div></div>';
-  
+
   return html;
 }
 
