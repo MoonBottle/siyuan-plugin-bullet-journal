@@ -16,27 +16,72 @@ import { TAB_TYPES } from '@/constants';
 import type { Item } from '@/types/models';
 
 /**
+ * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
+ * @param element 编辑器元素
+ */
+function getEditorRange(element: Element): Range | null {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    if (element === range.startContainer || element.contains(range.startContainer)) {
+      return range;
+    }
+  }
+  return null;
+}
+
+/**
  * 删除斜杠命令触发的内容
  * 参考思源官方实现 insertHTML.ts#L272：通过 range.deleteContents() 删除斜杠及其后续内容
  * @param protyle Protyle 编辑器实例
  */
 export function deleteSlashCommandContent(protyle: any): void {
-  // 参考官方实现 insertHTML.ts#L272，使用 protyle.toolbar.range
-  const range = protyle.toolbar?.range;
+  console.log('[deleteSlashCommandContent] 开始执行，protyle:', protyle);
+  console.log('[deleteSlashCommandContent] protyle.protyle:', protyle.protyle);
+  console.log('[deleteSlashCommandContent] protyle.wysiwyg:', protyle.wysiwyg);
+  console.log('[deleteSlashCommandContent] protyle.toolbar:', protyle.toolbar);
+
+  // 优先使用 protyle.toolbar.range，如果不存在则使用 getEditorRange
+  let range = protyle.toolbar?.range;
+  console.log('[deleteSlashCommandContent] protyle.toolbar.range:', range);
+
+  // 尝试从 protyle.protyle.wysiwyg.element 获取（因为传入的 protyle 可能是 wrapper）
+  const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
+  console.log('[deleteSlashCommandContent] wysiwygElement:', wysiwygElement);
+
+  if (!range && wysiwygElement) {
+    range = getEditorRange(wysiwygElement);
+    console.log('[deleteSlashCommandContent] 使用 getEditorRange 获取的 range:', range);
+  }
+
+  // 如果还是没有 range，直接使用 window.getSelection()
   if (!range) {
+    const selection = window.getSelection();
+    console.log('[deleteSlashCommandContent] window.getSelection():', selection, 'rangeCount:', selection?.rangeCount);
+    if (selection && selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+      console.log('[deleteSlashCommandContent] 使用 window.getSelection() 获取的 range:', range);
+    }
+  }
+
+  if (!range) {
+    console.log('[deleteSlashCommandContent] 无 range，直接返回');
     return;
   }
 
   const startContainer = range.startContainer;
+  console.log('[deleteSlashCommandContent] startContainer:', startContainer, 'nodeType:', startContainer?.nodeType);
 
   // 只在文本节点中处理
   if (startContainer.nodeType !== Node.TEXT_NODE) {
+    console.log('[deleteSlashCommandContent] 不是文本节点，直接返回');
     return;
   }
 
   const textNode = startContainer as Text;
   const textContent = textNode.textContent || '';
   const currentOffset = range.startOffset;
+  console.log('[deleteSlashCommandContent] textContent:', textContent, 'currentOffset:', currentOffset);
 
   // 从当前光标位置向前查找斜杠字符
   let slashIndex = -1;
@@ -51,17 +96,49 @@ export function deleteSlashCommandContent(protyle: any): void {
     }
   }
 
-  // 没有找到斜杠，不处理
+  console.log('[deleteSlashCommandContent] 向前查找 slashIndex:', slashIndex);
+
+  // 如果向前没找到，尝试从光标位置向后查找（斜杠可能在光标之后）
   if (slashIndex === -1) {
+    for (let i = currentOffset; i < textContent.length; i++) {
+      if (textContent[i] === '/') {
+        slashIndex = i;
+        break;
+      }
+      // 如果遇到换行，停止查找
+      if (textContent[i] === '\n' || textContent[i] === '\r') {
+        break;
+      }
+    }
+    console.log('[deleteSlashCommandContent] 向后查找 slashIndex:', slashIndex);
+  }
+
+  // 还是没有找到斜杠，不处理
+  if (slashIndex === -1) {
+    console.log('[deleteSlashCommandContent] 未找到斜杠，直接返回');
     return;
   }
 
-  // 设置 range 从斜杠位置到当前光标位置
+  // 找到斜杠命令的结束位置（到文本末尾或空格/换行）
+  let endIndex = textContent.length;
+  for (let i = slashIndex + 1; i < textContent.length; i++) {
+    // 遇到空格、换行或特殊字符，认为是命令结束
+    if (textContent[i] === ' ' || textContent[i] === '\n' || textContent[i] === '\r' || textContent[i] === '@') {
+      endIndex = i;
+      break;
+    }
+  }
+
+  console.log('[deleteSlashCommandContent] slashIndex:', slashIndex, 'endIndex:', endIndex);
+
+  // 设置 range 从斜杠位置到命令结束位置
   range.setStart(textNode, slashIndex);
-  range.setEnd(textNode, currentOffset);
+  range.setEnd(textNode, endIndex);
+  console.log('[deleteSlashCommandContent] range 已设置，准备删除内容');
 
   // 删除斜杠命令内容
   range.deleteContents();
+  console.log('[deleteSlashCommandContent] 删除完成，删除内容: "' + textContent.substring(slashIndex, endIndex) + '"');
 }
 
 /**
