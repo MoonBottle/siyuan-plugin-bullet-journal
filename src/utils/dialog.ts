@@ -546,7 +546,7 @@ export function showPomodoroCompleteDialog(
   const dialog = new Dialog({
     title: t('settings').pomodoro.completeTitle,
     content: '<div id="pomodoro-complete-dialog-mount"></div>',
-    width: '650px',
+    width: '600px',
     destroyCallback: () => {
       if (dialogApp) {
         dialogApp.unmount();
