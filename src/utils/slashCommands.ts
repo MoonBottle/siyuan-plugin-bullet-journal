@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal } from '@/utils/dialog';
+import { showDatePickerDialog, showItemDetailModal, createDialog } from '@/utils/dialog';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
