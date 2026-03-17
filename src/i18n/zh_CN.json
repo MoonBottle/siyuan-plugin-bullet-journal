@@ -92,7 +92,7 @@
     "noTodos": "暂无待办事项",
     "emptyGuideTitle": "开始使用任务助手",
     "emptyGuideDesc": "在笔记中使用 #任务 和 @日期 标记来创建任务和事项",
-    "createExampleDoc": "创建示例项目",
+    "createExampleDoc": "创建示例文档",
     "exampleDocCreated": "示例文档已创建",
     "exampleDocFailed": "创建示例文档失败",
     "expired": "已过期",
@@ -379,7 +379,8 @@
     "dirsExist": "所选目录已存在于设置中",
     "minutes": "分钟",
     "hours": "小时",
-    "uncategorized": "未分类"
+    "uncategorized": "未分类",
+    "help": "帮助"
   },
   "pomodoroDialog": {
     "selectItem": "选择待办事项",

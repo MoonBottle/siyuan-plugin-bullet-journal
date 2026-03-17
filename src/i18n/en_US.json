@@ -92,7 +92,7 @@
     "noTodos": "No pending items",
     "emptyGuideTitle": "Get Started with Task Assistant",
     "emptyGuideDesc": "Use #task and @date tags in your notes to create tasks and items",
-    "createExampleDoc": "Create Example Project",
+    "createExampleDoc": "Create Example Document",
     "exampleDocCreated": "Example document created",
     "exampleDocFailed": "Failed to create example document",
     "expired": "Expired",
@@ -379,7 +379,8 @@
     "dirsExist": "Selected directories already exist in settings",
     "minutes": "min",
     "hours": "h",
-    "uncategorized": "Uncategorized"
+    "uncategorized": "Uncategorized",
+    "help": "Help"
   },
   "pomodoroDialog": {
     "selectItem": "Select Todo Item",

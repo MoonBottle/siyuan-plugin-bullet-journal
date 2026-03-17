@@ -3,7 +3,7 @@
  */
 import { createDocWithMd, lsNotebooks, pushMsg } from '@/api';
 import { openDocument } from '@/utils/fileUtils';
-import { t } from '@/i18n';
+import { t, getCurrentLocale } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 
 /**
@@ -28,15 +28,59 @@ function getYesterday(): string {
 }
 
 /**
+ * 获取示例文档名称
+ */
+function getExampleDocName(): string {
+  const lang = getCurrentLocale();
+  console.log('[Task Assistant] getExampleDocName - current locale:', lang);
+  return lang.startsWith('en') ? 'Task Assistant Example' : '任务助手示例文档';
+}
+
+/**
  * 生成示例文档的 Markdown 内容
  */
 function generateExampleContent(): string {
   const today = getToday();
   const tomorrow = getTomorrow();
   const yesterday = getYesterday();
+  const lang = getCurrentLocale();
+  const isEn = lang.startsWith('en');
+  console.log('[Task Assistant] generateExampleContent - current locale:', lang, 'isEn:', isEn);
+
   const taskTag = t('taskTag') || '#任务';
   const completedTag = t('statusTag').completed || '#已完成';
   const abandonedTag = t('statusTag').abandoned || '#已放弃';
+
+  if (isEn) {
+    return `## Website Redesign Project
+
+> Company website overhaul to improve user experience
+
+[Design Mockup](https://figma.com/design/xxx)
+
+Homepage Redesign ${taskTag}
+
+[Requirements Doc](https://doc.example.com/homepage)
+
+Determine Design Style @${today}
+
+[Reference Case](https://example.com/ref)
+
+Complete Homepage Prototype @${yesterday} 10:00:00~12:00:00 ${completedTag}
+
+Review Meeting @${yesterday} 14:00:00~15:00:00 ${abandonedTag}
+
+Develop Homepage Components @${tomorrow} 09:00:00~12:00:00
+
+Responsive Adaptation @${tomorrow} 14:00:00~17:00:00
+
+Performance Optimization ${taskTag}
+
+Image Compression and Lazy Loading @${today}
+
+Code Splitting and Caching Strategy @${tomorrow}
+`;
+  }
 
   return `## 网站重构项目
 
@@ -91,7 +135,7 @@ export async function createExampleDocument(
     }
 
     // 生成文档路径
-    const fullPath = path || `任务助手示例项目`;
+    const fullPath = path || getExampleDocName();
 
     // 生成内容
     const content = generateExampleContent();

@@ -25,6 +25,7 @@ import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoro
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
+import { createExampleDocument } from '@/utils/exampleDocUtils';
 
 let PluginInfo = {
   version: '',
@@ -755,6 +756,27 @@ export default class TaskAssistantPlugin extends Plugin {
           click: () => {
             this.openCustomTab(TAB_TYPES.PROJECT);
           }
+        });
+        menu.addSeparator();
+        menu.addItem({
+          icon: 'iconHelp',
+          label: t('common').help || '帮助',
+          submenu: [
+            {
+              icon: 'iconAdd',
+              label: t('todo').createExampleDoc,
+              click: async () => {
+                const docId = await createExampleDocument();
+                if (docId) {
+                  const pinia = getSharedPinia();
+                  if (pinia) {
+                    const projectStore = useProjectStore(pinia);
+                    await projectStore.refresh(this, this.getEnabledDirectories());
+                  }
+                }
+              }
+            }
+          ]
         });
         menu.open({
           x: event.clientX,
