@@ -84,9 +84,16 @@ export function deleteSlashCommandContent(protyle: any, filters: string[], suffi
   // 处理行文本
   let newLineText = processLineText(lineText, filters);
 
-  // 如果有 suffix 且内容中不包含该标记，追加到行末
-  if (suffix && !newLineText.includes(suffix)) {
-    newLineText = newLineText.trimEnd() + ' ' + suffix;
+  // 如果有 suffix，处理标记追加
+  if (suffix) {
+    // 如果是任务标记，先移除所有可能的任务标记（支持语言切换场景）
+    if (suffix === '#任务' || suffix === '#task') {
+      newLineText = newLineText.replace(/#任务#?/g, '').replace(/#task#?/gi, '');
+    }
+    // 追加新标记（如果不存在）
+    if (!newLineText.includes(suffix)) {
+      newLineText = newLineText.trimEnd() + ' ' + suffix;
+    }
   }
 
   // 如果有修改，更新文本并提交事务
