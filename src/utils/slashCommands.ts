@@ -224,7 +224,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
       id: 'bullet-journal-mark-done',
       callback: (protyle: any, nodeElement: HTMLElement) => {
         deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.DONE);
-        markAsDone(nodeElement);
+        setTimeout(() => markAsDone(nodeElement), 500);
       }
     },
     {
@@ -236,7 +236,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
       id: 'bullet-journal-mark-abandon',
       callback: (protyle: any, nodeElement: HTMLElement) => {
         deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.ABANDON);
-        markAsAbandoned(nodeElement);
+        setTimeout(() => markAsAbandoned(nodeElement), 500);
       }
     },
     {
@@ -552,9 +552,9 @@ function getActionHandler(
     case 'date':
       return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement);
     case 'done':
-      return (_protyle, nodeElement) => markAsDone(nodeElement);
+      return (_protyle, nodeElement) => setTimeout(() => markAsDone(nodeElement), 500);
     case 'abandon':
-      return (_protyle, nodeElement) => markAsAbandoned(nodeElement);
+      return (_protyle, nodeElement) => setTimeout(() => markAsAbandoned(nodeElement), 500);
     case 'calendar':
       return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab);
     case 'calendarDay':
