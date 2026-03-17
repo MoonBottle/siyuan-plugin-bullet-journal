@@ -149,9 +149,17 @@ const visibleMenuItems = computed(() => {
   });
 });
 
+// 用于标记是否正在手动滚动，避免 IntersectionObserver 干扰
+let isManualScrolling = false;
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
 function scrollToSection(key: string) {
   const item = menuItems.value.find(i => i.key === key);
   if (!item) return;
+
+  // 标记为手动滚动，暂时禁用 observer 的自动更新
+  isManualScrolling = true;
+  activeSection.value = key;
 
   const sectionEl = document.getElementById(item.sectionId);
   if (sectionEl && contentRef.value) {
@@ -160,7 +168,14 @@ function scrollToSection(key: string) {
     const scrollTop = contentRef.value.scrollTop + sectionRect.top - containerRect.top;
     contentRef.value.scrollTo({ top: scrollTop, behavior: 'smooth' });
   }
-  activeSection.value = key;
+
+  // 滚动动画完成后恢复 observer（smooth 滚动大约 300-500ms）
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
+  }
+  scrollTimeout = setTimeout(() => {
+    isManualScrolling = false;
+  }, 600);
 }
 
 /** 递归收集对象中所有字符串值，用于搜索匹配 */
@@ -202,6 +217,9 @@ onMounted(() => {
   if (contentRef.value) {
     observer = new IntersectionObserver(
       (entries) => {
+        // 手动滚动期间忽略 observer 的回调
+        if (isManualScrolling) return;
+
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const sectionId = entry.target.id;
@@ -231,6 +249,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) {
     observer.disconnect();
+  }
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
   }
 });
 

@@ -781,6 +781,11 @@ export default class TaskAssistantPlugin extends Plugin {
         });
         menu.addSeparator();
         menu.addItem({
+          icon: 'iconSettings',
+          label: t('settings').title || '设置',
+          click: () => showSettingsDialog(this)
+        });
+        menu.addItem({
           icon: 'iconHelp',
           label: t('helpMenu').title || '帮助',
           submenu: [
@@ -798,11 +803,6 @@ export default class TaskAssistantPlugin extends Plugin {
                   }
                 }
               }
-            },
-            {
-              icon: 'iconSettings',
-              label: t('helpMenu').openSettings,
-              click: () => showSettingsDialog(this)
             },
             { type: 'separator' },
             // 2. 文档分组
