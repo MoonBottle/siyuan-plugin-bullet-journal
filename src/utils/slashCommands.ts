@@ -50,7 +50,7 @@ function getEditorRange(element: Element): Range | null {
  * @param filters 可能的斜杠命令前缀数组
  * @param suffix 可选的要追加的标记（如 '#任务'），在删除斜杠命令后追加
  */
-export async function deleteSlashCommandContent(protyle: any, filters: string[], suffix?: string): Promise<void> {
+export function deleteSlashCommandContent(protyle: any, filters: string[], suffix?: string): void {
   // 获取编辑器元素
   const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
   if (!wysiwygElement) return;
@@ -122,100 +122,45 @@ export async function deleteSlashCommandContent(protyle: any, filters: string[],
     const newHTML = blockElement.outerHTML;
     if (newHTML !== oldHTML) {
       protyle.toolbar?.setInlineMark?.(protyle, '', 'clear', {});
-      await updateTransaction(protyle, blockId, newHTML, oldHTML);
+      updateTransaction(protyle, blockId, newHTML, oldHTML);
     }
   }
 }
 
 /**
- * 思源事务操作类型
- */
-type OperationAction = 'update' | 'insert' | 'delete' | 'move' | 'setAttrs' | 'unfoldHeading' | 'foldHeading';
-
-/**
- * 思源事务操作
- */
-interface IOperation {
-  id: string;
-  data?: string;
-  action: OperationAction;
-  parentID?: string;
-  previousID?: string;
-  nextID?: string;
-}
-
-/**
- * 思源事务请求体
- */
-interface ITransactionRequest {
-  session: string;
-  app: string;
-  transactions: {
-    doOperations: IOperation[];
-    undoOperations?: IOperation[];
-  }[];
-  reqId: number;
-}
-
-/**
- * Protyle 编辑器实例（简化版）
- */
-interface IProtyle {
-  id?: string;
-  protyle?: {
-    id: string;
-    app?: {
-      appId: string;
-    };
-  };
-}
-
-/**
- * 更新事务 - 直接调用思源 API
+ * 更新事务 - 参考思源官方实现
  * @param protyle Protyle 编辑器实例
  * @param id 块 ID
  * @param newHTML 新 HTML
  * @param html 旧 HTML
  */
-async function updateTransaction(protyle: IProtyle | undefined, id: string, newHTML: string, html: string): Promise<void> {
+function updateTransaction(protyle: any, id: string, newHTML: string, html: string): void {
   if (newHTML === html) {
     return;
   }
 
-  const doOperations: IOperation[] = [{
+  const doOperations = [{
     id,
     data: newHTML,
     action: 'update'
   }];
 
-  const undoOperations: IOperation[] = [{
+  const undoOperations = [{
     id,
     data: html,
     action: 'update'
   }];
 
-  // 直接调用思源 API
-  try {
-    const requestBody: ITransactionRequest = {
-      session: protyle?.protyle?.id || protyle?.id || 'bullet-journal-plugin',
-      app: protyle?.protyle?.app?.appId || 'bullet-journal',
-      transactions: [{
-        doOperations,
-        undoOperations
-      }],
-      reqId: Date.now()
-    };
-
-    await fetch('/api/transactions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
+  // 调用思源的 transaction 方法
+  if (protyle.transaction) {
+    protyle.transaction(doOperations, undoOperations);
+  } else if (window.siyuan?.transactions) {
+    // 备用方案：直接添加到 transactions 队列
+    window.siyuan.transactions.push({
+      protyle,
+      doOperations,
+      undoOperations
     });
-  } catch (error) {
-    console.error('更新块失败:', error);
-    showMessage('更新失败: ' + (error as Error).message, 3000, 'error');
   }
 }
 
@@ -512,75 +457,75 @@ function getActionHandler(
     case 'date':
       return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement, filter);
     case 'done':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
-        markAsDone(nodeElement);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setTimeout(() => markAsDone(nodeElement), 500);
       };
     case 'abandon':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
-        markAsAbandoned(nodeElement);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setTimeout(() => markAsAbandoned(nodeElement), 500);
       };
     case 'calendar':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         openCalendarForBlock(nodeElement, config.openCustomTab);
       };
     case 'calendarDay':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
       };
     case 'calendarWeek':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
       };
     case 'calendarMonth':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
       };
     case 'calendarList':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
       };
     case 'gantt':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         openGanttForBlock(nodeElement, config.openCustomTab);
       };
     case 'focus':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
-        startFocusFromSlash(nodeElement, config.openPomodoroDock);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setTimeout(() => startFocusFromSlash(nodeElement, config.openPomodoroDock), 300);
       };
     case 'todo':
-      return async (protyle) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle) => {
+        deleteSlashCommandContent(protyle, filter);
         config.openTodoDock();
       };
     case 'setProjectDir':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         setAsProjectDir(nodeElement);
       };
     case 'markAsTask':
-      return async (protyle, nodeElement) => {
+      return (protyle, nodeElement) => {
         const taskTag = t('taskTag');
         const blockContent = nodeElement.textContent || '';
         if (blockContent.includes(taskTag)) {
-          await deleteSlashCommandContent(protyle, filter);
+          deleteSlashCommandContent(protyle, filter);
           showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
           return;
         }
-        await deleteSlashCommandContent(protyle, filter, taskTag);
+        deleteSlashCommandContent(protyle, filter, taskTag);
         showMessage(t('slash').markTaskSuccess, 2000, 'info');
       };
     case 'viewDetail':
-      return async (protyle, nodeElement) => {
-        await deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
         viewDetail(nodeElement);
       };
     default:
@@ -635,7 +580,7 @@ async function markAsTodayItem(
   const todayItem = existingItems.find(item => item.date === today);
   if (todayItem) {
     // 日期已存在，删除斜杠命令并提示
-    await deleteSlashCommandContent(protyle, filter);
+    deleteSlashCommandContent(protyle, filter);
     showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
     return;
   }
@@ -680,7 +625,7 @@ async function markAsTomorrowItem(
   // 检查明天是否已存在
   const tomorrowItem = existingItems.find(item => item.date === tomorrow);
   if (tomorrowItem) {
-    await deleteSlashCommandContent(protyle, filter);
+    deleteSlashCommandContent(protyle, filter);
     showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
     return;
   }
@@ -728,7 +673,7 @@ async function markAsDateItem(
       // 检查日期是否已存在
       const existingItem = existingItems.find(item => item.date === selectedDate);
       if (existingItem) {
-        await deleteSlashCommandContent(protyle, filter);
+        deleteSlashCommandContent(protyle, filter);
         showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
         return;
       }
