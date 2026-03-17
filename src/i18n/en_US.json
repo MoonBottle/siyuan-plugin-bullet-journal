@@ -445,7 +445,10 @@
   },
   "pomodoroRecord": {
     "title": "Focus Records",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "emptyGuideTitle": "No Focus Records",
+    "emptyGuideDesc": "Your focus records will appear here after you start a focus timer",
+    "createExampleDoc": "Create Example Document"
   },
   "slash": {
     "markAsTodayItem": "Mark as Today's Item",

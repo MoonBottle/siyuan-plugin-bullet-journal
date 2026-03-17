@@ -445,7 +445,10 @@
   },
   "pomodoroRecord": {
     "title": "专注记录",
-    "unknown": "未知"
+    "unknown": "未知",
+    "emptyGuideTitle": "暂无专注记录",
+    "emptyGuideDesc": "开始专注计时后，您的专注记录将显示在这里",
+    "createExampleDoc": "创建示例文档"
   },
   "slash": {
     "markAsTodayItem": "标记为今日事项",
