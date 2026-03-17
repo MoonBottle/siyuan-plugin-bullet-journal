@@ -17,7 +17,9 @@
           </thead>
           <tbody>
             <tr v-for="(cmd, key) in builtinCommands" :key="key" class="builtin-row">
-              <td class="command-code-cell"><code class="command-code">{{ cmd.commands.join(', ') }}</code></td>
+              <td class="command-code-cell">
+                <code v-for="(command, idx) in cmd.commands" :key="idx" class="command-code">{{ command }}</code>
+              </td>
               <td class="command-desc-cell">{{ cmd.description }}</td>
             </tr>
           </tbody>
@@ -304,6 +306,13 @@ function deleteCommand(id: string) {
   border-radius: 4px;
   font-size: 12px;
   color: var(--b3-theme-primary);
+  display: inline-block;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.command-code:last-child {
+  margin-right: 0;
 }
 
 .command-desc {

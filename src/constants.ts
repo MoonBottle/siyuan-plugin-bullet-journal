@@ -28,11 +28,11 @@ export const SLASH_COMMAND_FILTERS = {
   CALENDAR_DAY: ['/rlt', '/calendarday'],
   CALENDAR_WEEK: ['/rlz', '/calendarweek'],
   CALENDAR_MONTH: ['/rly', '/calendarmonth'],
-  CALENDAR_LIST: ['/rllb', '/calendarlist'],
-  GANTT: ['/gtt', '/gantt'],
+  CALENDAR_LIST: ['/rll', '/calendarlist'],
+  GANTT: ['/gt', '/gantt'],
   FOCUS: ['/zz', '/focus'],
   TODO: ['/db', '/todo'],
-  SET_PROJECT_DIR: ['/xmml', '/projectdir'],
+  SET_PROJECT_DIR: ['/ml', '/projectdir'],
   MARK_AS_TASK: ['/rw', '/task'],
   VIEW_DETAIL: ['/xq', '/detail']
 };
