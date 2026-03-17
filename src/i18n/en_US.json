@@ -354,6 +354,7 @@
     "abandoned": "#abandoned",
     "pending": ""
   },
+  "taskTag": "#task",
   "common": {
     "more": "More",
     "loading": "Loading...",

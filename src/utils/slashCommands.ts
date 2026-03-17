@@ -351,7 +351,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-mark-task',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        const taskTag = '#任务';
+        const taskTag = t('taskTag');
         const blockContent = nodeElement.textContent || '';
         if (blockContent.includes(taskTag)) {
           deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.MARK_AS_TASK);
@@ -487,7 +487,7 @@ async function markAsTask(nodeElement: HTMLElement) {
 
   // 检查是否已标记为任务
   const blockContent = nodeElement.textContent || '';
-  const taskTag = '#任务';
+  const taskTag = t('taskTag');
   if (blockContent.includes(taskTag)) {
     showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
     return;

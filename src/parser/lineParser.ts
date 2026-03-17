@@ -62,6 +62,7 @@ export class LineParser {
     // 注意：思源 Kramdown 中 #任务 会显示为 #任务#（末尾多一个 #）
     let name = line
       .replace(/#任务#?/g, '')
+      .replace(/#task#?/gi, '')
       .replace(/@L[123]/g, '')
       .replace(/@\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(~\d{2}:\d{2}:\d{2})?)?/g, '')
       .replace(/https?:\/\/[^\s]+/g, '')

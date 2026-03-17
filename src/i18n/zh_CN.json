@@ -354,6 +354,7 @@
     "abandoned": "#已放弃",
     "pending": ""
   },
+  "taskTag": "#任务",
   "common": {
     "more": "更多",
     "loading": "加载中...",
