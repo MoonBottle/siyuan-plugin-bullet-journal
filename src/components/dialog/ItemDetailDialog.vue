@@ -185,6 +185,8 @@ import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
 import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
+import { collectPomodorosForBlock } from '@/utils/itemBlockUtils';
+import { useProjectStore } from '@/stores';
 import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
 
 interface Props {
@@ -195,6 +197,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   showAllDates: false
 });
+
+console.log('[ItemDetailDialog] props.item:', props.item);
+console.log('[ItemDetailDialog] props.item.pomodoros:', props.item.pomodoros);
+console.log('[ItemDetailDialog] props.item keys:', Object.keys(props.item));
 
 const emit = defineEmits<{
   close: [];
@@ -315,22 +321,27 @@ const focusTotalTimeDisplay = computed(() => {
   console.log('[ItemDetailDialog] focusTotalTimeDisplay computed', {
     showAllDates: props.showAllDates,
     itemDate: props.item.date,
+    blockId: props.item.blockId,
     pomodoros: props.item.pomodoros,
     pomodorosCount: props.item.pomodoros?.length || 0
   });
-  
+
   let pomodorosToCount: PomodoroRecord[];
-  
+
   if (!props.showAllDates) {
     // 只统计主日期的番茄钟
     pomodorosToCount = filterPomodorosByDate(props.item.pomodoros, props.item.date);
     console.log('[ItemDetailDialog] filtering by date', props.item.date, 'result:', pomodorosToCount.length);
+  } else if (props.item.blockId) {
+    // 统计所有日期的番茄钟 - 从 store 中获取所有同 blockId 的 Item 的番茄钟
+    const projectStore = useProjectStore();
+    pomodorosToCount = collectPomodorosForBlock(props.item.blockId, projectStore.items);
+    console.log('[ItemDetailDialog] collecting all pomodoros for block', props.item.blockId, 'result:', pomodorosToCount.length);
   } else {
-    // 统计所有日期的番茄钟
     pomodorosToCount = props.item.pomodoros || [];
-    console.log('[ItemDetailDialog] using all pomodoros:', pomodorosToCount.length);
+    console.log('[ItemDetailDialog] using item pomodoros:', pomodorosToCount.length);
   }
-  
+
   const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount);
   return totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
 });

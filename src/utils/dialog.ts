@@ -236,6 +236,7 @@ function createLinksRow(label: string, links: Array<{ name: string; url: string 
  * 计算专注总时长（分钟）
  */
 export function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
+  console.log('[calculateTotalFocusMinutes] pomodoros:', pomodoros);
   if (!pomodoros?.length) return 0;
   return pomodoros.reduce((sum, p) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
 }
