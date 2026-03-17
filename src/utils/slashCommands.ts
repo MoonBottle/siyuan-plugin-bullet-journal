@@ -189,9 +189,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">@${today}</span>
       </div>`,
       id: 'bullet-journal-mark-today',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        markAsTodayItem(protyle, nodeElement);
-      }
+      callback: getActionHandler('today', config, SLASH_COMMAND_FILTERS.TODAY)
     },
     {
       filter: SLASH_COMMAND_FILTERS.TOMORROW,
@@ -200,9 +198,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">@${dayjs().add(1, 'day').format('YYYY-MM-DD')}</span>
       </div>`,
       id: 'bullet-journal-mark-tomorrow',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        markAsTomorrowItem(protyle, nodeElement);
-      }
+      callback: getActionHandler('tomorrow', config, SLASH_COMMAND_FILTERS.TOMORROW)
     },
     {
       filter: SLASH_COMMAND_FILTERS.DATE,
@@ -211,9 +207,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Date</span>
       </div>`,
       id: 'bullet-journal-mark-date',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        markAsDateItem(protyle, nodeElement);
-      }
+      callback: getActionHandler('date', config, SLASH_COMMAND_FILTERS.DATE)
     },
     {
       filter: SLASH_COMMAND_FILTERS.DONE,
@@ -222,10 +216,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">✓</span>
       </div>`,
       id: 'bullet-journal-mark-done',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.DONE);
-        setTimeout(() => markAsDone(nodeElement), 500);
-      }
+      callback: getActionHandler('done', config, SLASH_COMMAND_FILTERS.DONE)
     },
     {
       filter: SLASH_COMMAND_FILTERS.ABANDON,
@@ -234,10 +225,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">✗</span>
       </div>`,
       id: 'bullet-journal-mark-abandon',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.ABANDON);
-        setTimeout(() => markAsAbandoned(nodeElement), 500);
-      }
+      callback: getActionHandler('abandon', config, SLASH_COMMAND_FILTERS.ABANDON)
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR,
@@ -246,10 +234,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar</span>
       </div>`,
       id: 'bullet-journal-open-calendar',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR);
-        openCalendarForBlock(nodeElement, config.openCustomTab);
-      }
+      callback: getActionHandler('calendar', config, SLASH_COMMAND_FILTERS.CALENDAR)
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_DAY,
@@ -258,10 +243,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar Day</span>
       </div>`,
       id: 'bullet-journal-open-calendar-day',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_DAY);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
-      }
+      callback: getActionHandler('calendarDay', config, SLASH_COMMAND_FILTERS.CALENDAR_DAY)
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_WEEK,
@@ -270,10 +252,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar Week</span>
       </div>`,
       id: 'bullet-journal-open-calendar-week',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_WEEK);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
-      }
+      callback: getActionHandler('calendarWeek', config, SLASH_COMMAND_FILTERS.CALENDAR_WEEK)
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_MONTH,
@@ -282,10 +261,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar Month</span>
       </div>`,
       id: 'bullet-journal-open-calendar-month',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_MONTH);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
-      }
+      callback: getActionHandler('calendarMonth', config, SLASH_COMMAND_FILTERS.CALENDAR_MONTH)
     },
     {
       filter: SLASH_COMMAND_FILTERS.CALENDAR_LIST,
@@ -294,10 +270,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Calendar List</span>
       </div>`,
       id: 'bullet-journal-open-calendar-list',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.CALENDAR_LIST);
-        openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
-      }
+      callback: getActionHandler('calendarList', config, SLASH_COMMAND_FILTERS.CALENDAR_LIST)
     },
     {
       filter: SLASH_COMMAND_FILTERS.GANTT,
@@ -306,10 +279,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Gantt</span>
       </div>`,
       id: 'bullet-journal-open-gantt',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.GANTT);
-        openGanttForBlock(nodeElement, config.openCustomTab);
-      }
+      callback: getActionHandler('gantt', config, SLASH_COMMAND_FILTERS.GANTT)
     },
     {
       filter: SLASH_COMMAND_FILTERS.FOCUS,
@@ -318,10 +288,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">🍅</span>
       </div>`,
       id: 'bullet-journal-start-focus',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.FOCUS);
-        startFocusFromSlash(nodeElement, config.openPomodoroDock);
-      }
+      callback: getActionHandler('focus', config, SLASH_COMMAND_FILTERS.FOCUS)
     },
     {
       filter: SLASH_COMMAND_FILTERS.TODO,
@@ -330,10 +297,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Todo</span>
       </div>`,
       id: 'bullet-journal-open-todo-dock',
-      callback: (protyle: any) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.TODO);
-        config.openTodoDock();
-      }
+      callback: getActionHandler('todo', config, SLASH_COMMAND_FILTERS.TODO)
     },
     {
       filter: SLASH_COMMAND_FILTERS.SET_PROJECT_DIR,
@@ -342,10 +306,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Dir</span>
       </div>`,
       id: 'bullet-journal-set-project-dir',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.SET_PROJECT_DIR);
-        setAsProjectDir(nodeElement);
-      }
+      callback: getActionHandler('setProjectDir', config, SLASH_COMMAND_FILTERS.SET_PROJECT_DIR)
     },
     {
       filter: SLASH_COMMAND_FILTERS.MARK_AS_TASK,
@@ -354,17 +315,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Task</span>
       </div>`,
       id: 'bullet-journal-mark-task',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        const taskTag = t('taskTag');
-        const blockContent = nodeElement.textContent || '';
-        if (blockContent.includes(taskTag)) {
-          deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.MARK_AS_TASK);
-          showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
-          return;
-        }
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.MARK_AS_TASK, taskTag);
-        showMessage(t('slash').markTaskSuccess, 2000, 'info');
-      }
+      callback: getActionHandler('markAsTask', config, SLASH_COMMAND_FILTERS.MARK_AS_TASK)
     },
     {
       filter: SLASH_COMMAND_FILTERS.VIEW_DETAIL,
@@ -373,10 +324,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
           <span class="b3-list-item__meta">Detail</span>
       </div>`,
       id: 'bullet-journal-view-detail',
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.VIEW_DETAIL);
-        viewDetail(nodeElement);
-      }
+      callback: getActionHandler('viewDetail', config, SLASH_COMMAND_FILTERS.VIEW_DETAIL)
     }
   ];
 
@@ -402,32 +350,15 @@ function createCustomSlashCommands(
   customCommands: CustomSlashCommand[],
   config: SlashCommandConfig
 ): Array<{ filter: string[]; html: string; id: string; callback: Function }> {
-  return customCommands.map(cmd => {
-    const actionHandler = getActionHandler(cmd.action, config);
-    const actionLabel = getActionLabel(cmd.action);
-
-    return {
-      filter: cmd.commands,
-      html: `<div class="b3-list-item__first">
+  return customCommands.map(cmd => ({
+    filter: cmd.commands,
+    html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${cmd.name}</span>
-          <span class="b3-list-item__meta">${actionLabel}</span>
+          <span class="b3-list-item__meta">${getActionLabel(cmd.action)}</span>
       </div>`,
-      id: `bullet-journal-custom-${cmd.id}`,
-      callback: (protyle: any, nodeElement: HTMLElement) => {
-        // today/tomorrow/date 由 markAs* 在日期已存在时内部调用 deleteSlashCommandContent
-        if (cmd.action === 'today') {
-          markAsTodayItem(protyle, nodeElement, cmd.commands);
-        } else if (cmd.action === 'tomorrow') {
-          markAsTomorrowItem(protyle, nodeElement, cmd.commands);
-        } else if (cmd.action === 'date') {
-          markAsDateItem(protyle, nodeElement, cmd.commands);
-        } else {
-          deleteSlashCommandContent(protyle, cmd.commands);
-          actionHandler(protyle, nodeElement);
-        }
-      }
-    };
-  });
+    id: `bullet-journal-custom-${cmd.id}`,
+    callback: getActionHandler(cmd.action, config, cmd.commands)
+  }));
 }
 
 /**
@@ -488,34 +419,6 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
 }
 
 /**
- * 标记为任务
- * 在块内容中添加任务标记
- */
-async function markAsTask(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
-  }
-
-  // 检查是否已标记为任务
-  const blockContent = nodeElement.textContent || '';
-  const taskTag = t('taskTag');
-  if (blockContent.includes(taskTag)) {
-    showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
-    return;
-  }
-
-  const success = await updateBlockContent(blockId, taskTag);
-
-  if (success) {
-    showMessage(t('slash').markTaskSuccess, 2000, 'info');
-  } else {
-    showMessage(t('slash').markFailed, 2000, 'error');
-  }
-}
-
-/**
  * 查看详情
  * 打开事项详情弹框
  */
@@ -539,44 +442,92 @@ async function viewDetail(nodeElement: HTMLElement) {
 
 /**
  * 获取动作处理器
+ * 每个 handler 内部封装 delete + 业务逻辑（需要时）
  */
 function getActionHandler(
   action: CustomSlashCommand['action'],
-  config: SlashCommandConfig
+  config: SlashCommandConfig,
+  filter: string[]
 ): (protyle: any, nodeElement: HTMLElement) => void {
   switch (action) {
     case 'today':
-      return (protyle, nodeElement) => markAsTodayItem(protyle, nodeElement);
+      return (protyle, nodeElement) => markAsTodayItem(protyle, nodeElement, filter);
     case 'tomorrow':
-      return (protyle, nodeElement) => markAsTomorrowItem(protyle, nodeElement);
+      return (protyle, nodeElement) => markAsTomorrowItem(protyle, nodeElement, filter);
     case 'date':
-      return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement);
+      return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement, filter);
     case 'done':
-      return (_protyle, nodeElement) => setTimeout(() => markAsDone(nodeElement), 500);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setTimeout(() => markAsDone(nodeElement), 500);
+      };
     case 'abandon':
-      return (_protyle, nodeElement) => setTimeout(() => markAsAbandoned(nodeElement), 500);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setTimeout(() => markAsAbandoned(nodeElement), 500);
+      };
     case 'calendar':
-      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        openCalendarForBlock(nodeElement, config.openCustomTab);
+      };
     case 'calendarDay':
-      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
+      };
     case 'calendarWeek':
-      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
+      };
     case 'calendarMonth':
-      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
+      };
     case 'calendarList':
-      return (_protyle, nodeElement) => openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
+      };
     case 'gantt':
-      return (_protyle, nodeElement) => openGanttForBlock(nodeElement, config.openCustomTab);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        openGanttForBlock(nodeElement, config.openCustomTab);
+      };
     case 'focus':
-      return (_protyle, nodeElement) => startFocusFromSlash(nodeElement, config.openPomodoroDock);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        startFocusFromSlash(nodeElement, config.openPomodoroDock);
+      };
     case 'todo':
-      return () => config.openTodoDock();
+      return (protyle) => {
+        deleteSlashCommandContent(protyle, filter);
+        config.openTodoDock();
+      };
     case 'setProjectDir':
-      return (_protyle, nodeElement) => setAsProjectDir(nodeElement);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setAsProjectDir(nodeElement);
+      };
     case 'markAsTask':
-      return (_protyle, nodeElement) => markAsTask(nodeElement);
+      return (protyle, nodeElement) => {
+        const taskTag = t('taskTag');
+        const blockContent = nodeElement.textContent || '';
+        if (blockContent.includes(taskTag)) {
+          deleteSlashCommandContent(protyle, filter);
+          showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
+          return;
+        }
+        deleteSlashCommandContent(protyle, filter, taskTag);
+        showMessage(t('slash').markTaskSuccess, 2000, 'info');
+      };
     case 'viewDetail':
-      return (_protyle, nodeElement) => viewDetail(nodeElement);
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        viewDetail(nodeElement);
+      };
     default:
       return () => {};
   }
