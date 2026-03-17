@@ -382,6 +382,21 @@
     "uncategorized": "Uncategorized",
     "help": "Help"
   },
+  "helpMenu": {
+    "title": "Help",
+    "createExampleDoc": "Create Example Document",
+    "docs": "Documentation",
+    "quickStart": "Quick Start",
+    "dataFormat": "Data Format",
+    "views": "Views",
+    "pomodoro": "Pomodoro",
+    "configuration": "Configuration",
+    "examples": "Examples",
+    "mcp": "MCP AI Assistant",
+    "links": "Links",
+    "github": "GitHub Repository",
+    "issues": "Report Issues"
+  },
   "pomodoroDialog": {
     "selectItem": "Select Todo Item",
     "expiredItems": "⚠️ Expired Items",

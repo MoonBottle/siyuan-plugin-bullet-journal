@@ -382,6 +382,21 @@
     "uncategorized": "未分类",
     "help": "帮助"
   },
+  "helpMenu": {
+    "title": "帮助",
+    "createExampleDoc": "创建示例文档",
+    "docs": "文档",
+    "quickStart": "快速开始",
+    "dataFormat": "数据格式",
+    "views": "视图功能",
+    "pomodoro": "番茄钟",
+    "configuration": "配置说明",
+    "examples": "完整示例",
+    "mcp": "MCP AI 助手",
+    "links": "链接",
+    "github": "GitHub 仓库",
+    "issues": "问题反馈"
+  },
   "pomodoroDialog": {
     "selectItem": "选择待办事项",
     "expiredItems": "⚠️ 过期事项",

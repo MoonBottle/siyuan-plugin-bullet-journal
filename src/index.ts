@@ -782,11 +782,12 @@ export default class TaskAssistantPlugin extends Plugin {
         menu.addSeparator();
         menu.addItem({
           icon: 'iconHelp',
-          label: t('common').help || '帮助',
+          label: t('helpMenu').title || '帮助',
           submenu: [
+            // 1. 创建示例文档 - 放在最上面，让用户快速上手
             {
               icon: 'iconAdd',
-              label: t('todo').createExampleDoc,
+              label: t('helpMenu').createExampleDoc,
               click: async () => {
                 const docId = await createExampleDocument();
                 if (docId) {
@@ -797,6 +798,66 @@ export default class TaskAssistantPlugin extends Plugin {
                   }
                 }
               }
+            },
+            { type: 'separator' },
+            // 2. 文档分组
+            {
+              icon: 'iconBookmark',
+              label: t('helpMenu').docs,
+              submenu: [
+                {
+                  icon: 'iconPlay',
+                  label: t('helpMenu').quickStart,
+                  click: () => this.openHelpDoc('quick-start.md')
+                },
+                {
+                  icon: 'iconMarkdown',
+                  label: t('helpMenu').dataFormat,
+                  click: () => this.openHelpDoc('data-format.md')
+                },
+                {
+                  icon: 'iconCalendar',
+                  label: t('helpMenu').views,
+                  click: () => this.openHelpDoc('views.md')
+                },
+                {
+                  icon: 'iconClock',
+                  label: t('helpMenu').pomodoro,
+                  click: () => this.openHelpDoc('pomodoro.md')
+                },
+                {
+                  icon: 'iconSettings',
+                  label: t('helpMenu').configuration,
+                  click: () => this.openHelpDoc('configuration.md')
+                },
+                {
+                  icon: 'iconFile',
+                  label: t('helpMenu').examples,
+                  click: () => this.openHelpDoc('examples.md')
+                },
+                {
+                  icon: 'iconSparkles',
+                  label: t('helpMenu').mcp,
+                  click: () => this.openHelpDoc('mcp.md')
+                }
+              ]
+            },
+            // 3. 链接分组
+            {
+              icon: 'iconLink',
+              label: t('helpMenu').links,
+              submenu: [
+                {
+                  icon: 'iconGithub',
+                  label: t('helpMenu').github,
+                  click: () => window.open('https://github.com/MoonBottle/siyuan-plugin-bullet-journal', '_blank')
+                },
+                {
+                  icon: 'iconBug',
+                  label: t('helpMenu').issues,
+                  click: () => window.open('https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues', '_blank')
+                }
+              ]
             }
           ]
         });
@@ -807,6 +868,17 @@ export default class TaskAssistantPlugin extends Plugin {
         });
       }
     });
+  }
+
+  /**
+   * 打开帮助文档（支持国际化）
+   */
+  private openHelpDoc(docName: string) {
+    const lang = (window as any).siyuan?.config?.lang || 'zh_CN';
+    const isEnglish = lang === 'en_US';
+    const baseUrl = 'https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main';
+    const docPath = isEnglish ? `docs/en/user-guide/${docName}` : `docs/user-guide/${docName}`;
+    window.open(`${baseUrl}/${docPath}`, '_blank');
   }
 
   /**

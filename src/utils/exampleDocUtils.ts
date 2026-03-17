@@ -64,6 +64,8 @@ Homepage Redesign ${taskTag}
 
 Determine Design Style @${today}
 
+🍅${today} 10:00:00~10:25:00 Collecting materials
+
 [Reference Case](https://example.com/ref)
 
 Complete Homepage Prototype @${yesterday} 10:00:00~12:00:00 ${completedTag}
@@ -93,6 +95,8 @@ Code Splitting and Caching Strategy @${tomorrow}
 [需求文档](https://doc.example.com/homepage)
 
 确定设计风格 @${today}
+
+🍅${today} 10:00:00~10:25:00 收集素材
 
 [参考案例](https://example.com/ref)
 
