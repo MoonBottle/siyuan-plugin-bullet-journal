@@ -55,37 +55,47 @@ interface EnrichedPomodoro {
  */
 export function aggregatePomodorosFromProjects(projects: Project[]): EnrichedPomodoro[] {
   const result: EnrichedPomodoro[] = [];
+  const addedPomodoroIds = new Set<string>();
 
   for (const project of projects) {
     if (project.pomodoros) {
       for (const p of project.pomodoros) {
-        result.push({
-          record: p,
-          projectName: project.name,
-          itemContent: p.itemContent
-        });
+        if (!addedPomodoroIds.has(p.id)) {
+          addedPomodoroIds.add(p.id);
+          result.push({
+            record: p,
+            projectName: project.name,
+            itemContent: p.itemContent
+          });
+        }
       }
     }
     for (const task of project.tasks) {
       if (task.pomodoros) {
         for (const p of task.pomodoros) {
-          result.push({
-            record: p,
-            projectName: project.name,
-            taskName: task.name,
-            itemContent: p.itemContent
-          });
+          if (!addedPomodoroIds.has(p.id)) {
+            addedPomodoroIds.add(p.id);
+            result.push({
+              record: p,
+              projectName: project.name,
+              taskName: task.name,
+              itemContent: p.itemContent
+            });
+          }
         }
       }
       for (const item of task.items) {
         if (item.pomodoros) {
           for (const p of item.pomodoros) {
-            result.push({
-              record: p,
-              projectName: project.name,
-              taskName: task.name,
-              itemContent: p.itemContent ?? item.content
-            });
+            if (!addedPomodoroIds.has(p.id)) {
+              addedPomodoroIds.add(p.id);
+              result.push({
+                record: p,
+                projectName: project.name,
+                taskName: task.name,
+                itemContent: p.itemContent ?? item.content
+              });
+            }
           }
         }
       }
