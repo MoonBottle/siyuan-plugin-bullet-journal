@@ -218,7 +218,7 @@ const openPomodoroDialog = (item: Item) => {
       closeDialog: () => {
         dialog.destroy();
       },
-      preselectedItem: item,
+      preselectedBlockId: item.blockId,
       hideItemList: true
     });
     app.mount(mountEl);

@@ -859,7 +859,7 @@ async function openGanttForBlock(
 /**
  * 打开专注弹框（预选模式，无左侧列表）
  */
-function openPomodoroDialogWithItem(item: Item, openPomodoroDock: () => void) {
+function openPomodoroDialogWithItem(blockId: string, openPomodoroDock: () => void) {
   const dialog = createDialog({
     title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
@@ -871,7 +871,7 @@ function openPomodoroDialogWithItem(item: Item, openPomodoroDock: () => void) {
   if (mountEl) {
     const app = createApp(PomodoroTimerDialog, {
       closeDialog: () => dialog.destroy(),
-      preselectedItem: item,
+      preselectedBlockId: blockId,
       hideItemList: true,
       onStartFocus: () => {
         // 开始专注后打开番茄钟 Dock
@@ -911,6 +911,7 @@ async function startFocusFromSlash(
     return;
   }
 
-  // 打开预选弹框（无左侧列表）
-  openPomodoroDialogWithItem(preselectedItem, openPomodoroDock);
+  // 打开预选弹框（无左侧列表），传递 blockId 而非 item 引用
+  // 这样弹框内部可以实时从 store 获取最新的 item 数据
+  openPomodoroDialogWithItem(blockId, openPomodoroDock);
 }
