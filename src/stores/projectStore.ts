@@ -325,7 +325,10 @@ export const useProjectStore = defineStore('project', {
                     r.taskId = task.id;
                     r.projectId = project.id;
                   }
-                  item.pomodoros = [...(item.pomodoros || []), ...matchingRecords];
+                  // 使用 push 合并到共享数组，而不是创建新数组
+                  if (matchingRecords.length > 0) {
+                    item.pomodoros.push(...matchingRecords);
+                  }
                 }
               } catch {
                 // 忽略获取属性失败
