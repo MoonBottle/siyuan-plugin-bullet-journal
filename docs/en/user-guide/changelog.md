@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1] - 2026-03-17
+
+### Fixes
+
+- **API Error Handling**: Enhanced API request and document creation error handling
+  - Added more status checks and error handling when creating example documents, including filtering closed notebooks
+
 ## [0.11.0] - 2026-03-17
 
 ### Features
