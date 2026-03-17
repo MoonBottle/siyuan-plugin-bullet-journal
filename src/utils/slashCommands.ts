@@ -48,8 +48,9 @@ function getEditorRange(element: Element): Range | null {
  * 简化逻辑：删除整行中所有出现的斜杠命令（包括子集），保留其他内容
  * @param protyle Protyle 编辑器实例
  * @param filters 可能的斜杠命令前缀数组
+ * @param suffix 可选的要追加的标记（如 '#任务'），在删除斜杠命令后追加
  */
-export function deleteSlashCommandContent(protyle: any, filters: string[]): void {
+export function deleteSlashCommandContent(protyle: any, filters: string[], suffix?: string): void {
   // 获取编辑器元素
   const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
   if (!wysiwygElement) return;
@@ -82,6 +83,11 @@ export function deleteSlashCommandContent(protyle: any, filters: string[]): void
 
   // 处理行文本
   let newLineText = processLineText(lineText, filters);
+
+  // 如果有 suffix 且内容中不包含该标记，追加到行末
+  if (suffix && !newLineText.includes(suffix)) {
+    newLineText = newLineText.trimEnd() + ' ' + suffix;
+  }
 
   // 如果有修改，更新文本并提交事务
   if (newLineText !== lineText) {
@@ -345,8 +351,15 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-mark-task',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.MARK_AS_TASK);
-        markAsTask(nodeElement);
+        const taskTag = '#任务';
+        const blockContent = nodeElement.textContent || '';
+        if (blockContent.includes(taskTag)) {
+          deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.MARK_AS_TASK);
+          showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
+          return;
+        }
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.MARK_AS_TASK, taskTag);
+        showMessage(t('slash').markTaskSuccess, 2000, 'info');
       }
     },
     {
