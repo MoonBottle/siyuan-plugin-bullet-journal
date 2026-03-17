@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.11.0] - 2026-03-17
+
+### Features
+
+- **Slash Commands**: Brand new slash command system for quick task operations
+  - Built-in commands: Mark today/tomorrow/date, complete task, abandon task, view details, start focus
+  - Custom commands: Support configuring custom slash commands for flexible workflow extension
+- **Pomodoro Enhancements**:
+  - Multi-line description support: Focus timer supports entering multi-line task descriptions
+  - Focus completion dialog: Refactored completion dialog with project/task/item card display
+  - Status bar progress bar: Supports gradually shortening display mode
+  - Auto-append date: Automatically append date to items when focus ends
+- **Date Picker Enhancements**:
+  - Monday start: Calendar now starts on Monday, selected date changed to circular style
+- **Settings Panel Refactor**:
+  - Sidebar navigation: New settings dialog layout with left-side category navigation
+  - AI Provider interaction optimization: Add/edit changed to dialog interaction
+- **Empty State Guidance**:
+  - Task Assistant empty state: Added empty state guidance and sample document creation
+  - Focus records empty state: Added empty state guidance and sample document creation
+- **Help Menu**: New help menu supporting sample document creation and help documentation viewing
+
+### Fixes
+
+- Fixed pomodoro record sharing issue for multi-date items
+
+### Refactors
+
+- Optimized slash command management logic with centralized configuration
+- Optimized pomodoro data parsing and merging logic
+- Use blockId instead of item reference passed to pre-selected item start focus dialog
+
+### Styles
+
+- Settings dialog sidebar and content area style adjustments
+- Pomodoro completion dialog unified width to 600px
+- Removed fade-in effect for todo item action buttons
+
+### Tests
+
+- Improved fileUtils unit test cases
+- Added various test cases for slash command handling
+- Modified focus record sharing tests for multi-date items
+
 ## [0.10.2] - 2026-03-15
 
 ### Fixes
