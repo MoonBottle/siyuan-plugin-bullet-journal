@@ -385,6 +385,7 @@
   "helpMenu": {
     "title": "帮助",
     "createExampleDoc": "创建示例文档",
+    "openSettings": "打开设置",
     "docs": "文档",
     "quickStart": "快速开始",
     "dataFormat": "数据格式",

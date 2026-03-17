@@ -799,6 +799,11 @@ export default class TaskAssistantPlugin extends Plugin {
                 }
               }
             },
+            {
+              icon: 'iconSettings',
+              label: t('helpMenu').openSettings,
+              click: () => showSettingsDialog(this)
+            },
             { type: 'separator' },
             // 2. 文档分组
             {

@@ -621,7 +621,7 @@ export function showSettingsDialog(plugin: any): Dialog {
   const dialog = new Dialog({
     title: t('settings').title,
     content: '<div id="bullet-journal-settings-mount"></div>',
-    width: '640px',
+    width: '960px',
     height: '70vh',
     destroyCallback: () => {
       if (settingsDialogApp) {

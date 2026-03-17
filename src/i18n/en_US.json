@@ -385,6 +385,7 @@
   "helpMenu": {
     "title": "Help",
     "createExampleDoc": "Create Example Document",
+    "openSettings": "Open Settings",
     "docs": "Documentation",
     "quickStart": "Quick Start",
     "dataFormat": "Data Format",
