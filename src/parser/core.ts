@@ -310,28 +310,29 @@ export function parseKramdown(
         lineNumber,
         itemLinks.length > 0 ? itemLinks : undefined
       );
+
+      // 只解析一次块内的番茄钟，创建共享的 pomodoros 数组
+      const sharedPomodoros: PomodoroRecord[] = [];
+      const pomodoroLines = block.content.split('\n');
+      for (let i = 1; i < pomodoroLines.length; i++) {
+        const line = pomodoroLines[i].trim();
+        if (isPomodoroLine(line)) {
+          const pomodoro = LineParser.parsePomodoroLine(line, block.blockId);
+          if (pomodoro) {
+            sharedPomodoros.push(pomodoro);
+          }
+        }
+      }
+
+      // 所有拆分后的 items 共享同一个 pomodoros 数组
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
-        item.pomodoros = [];
+        item.pomodoros = sharedPomodoros;
 
         currentTask.items.push(item);
         currentItem = item;
         lastBlockType = 'item';
-
-        // 检查块内是否有行内番茄钟（多行块的情况）
-        const blockLines = block.content.split('\n');
-        for (let i = 1; i < blockLines.length; i++) {
-          const line = blockLines[i].trim();
-          if (isPomodoroLine(line)) {
-            // 传入完整块内容以支持多行描述解析
-            const pomodoro = LineParser.parsePomodoroLine(block.content, block.blockId);
-            if (pomodoro) {
-              pomodoro.itemId = item.id;
-              item.pomodoros.push(pomodoro);
-            }
-          }
-        }
       }
     }
   }

@@ -163,6 +163,7 @@ export const useProjectStore = defineStore('project', {
     // 获取所有番茄钟记录（包括项目、任务、事项的番茄钟）
     getAllPomodoros: (state) => (groupId: string = ''): PomodoroRecord[] => {
       const pomodoros: PomodoroRecord[] = [];
+      const seenBlockIds = new Set<string>(); // 用于去重
       const projects = !groupId ? state.projects : state.projects.filter(p => p.groupId === groupId);
 
       projects.forEach(project => {
@@ -176,7 +177,14 @@ export const useProjectStore = defineStore('project', {
             pomodoros.push(...task.pomodoros);
           }
           task.items.forEach(item => {
-            if (item.pomodoros) {
+            if (item.pomodoros && item.blockId) {
+              // 根据 blockId 去重：同一个 blockId 的 item 只收集一次 pomodoros
+              if (!seenBlockIds.has(item.blockId)) {
+                seenBlockIds.add(item.blockId);
+                pomodoros.push(...item.pomodoros);
+              }
+            } else if (item.pomodoros) {
+              // 没有 blockId 的 item，直接收集
               pomodoros.push(...item.pomodoros);
             }
           });
