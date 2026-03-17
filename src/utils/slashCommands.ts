@@ -459,12 +459,12 @@ function getActionHandler(
     case 'done':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
-        setTimeout(() => markAsDone(nodeElement), 500);
+        setTimeout(() => markAsDone(nodeElement), 300);
       };
     case 'abandon':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
-        setTimeout(() => markAsAbandoned(nodeElement), 500);
+        setTimeout(() => markAsAbandoned(nodeElement), 300);
       };
     case 'calendar':
       return (protyle, nodeElement) => {
@@ -498,8 +498,10 @@ function getActionHandler(
       };
     case 'focus':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setTimeout(() => startFocusFromSlash(nodeElement, config.openPomodoroDock), 300);
+        startFocusFromSlash(nodeElement, config.openPomodoroDock);
+        setTimeout(() => {
+          deleteSlashCommandContent(protyle, filter);
+        }, 300);
       };
     case 'todo':
       return (protyle) => {
