@@ -91,7 +91,12 @@
                 @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').time)"
                 @mouseleave="hideIconTooltip"
               >📅</span>
-              <span class="meta-text">{{ timeDisplay }}</span>
+              <span
+                class="meta-text"
+                :class="{ 'has-tooltip': timeDisplayNeedsTooltip }"
+                @mouseenter="(e) => timeDisplayNeedsTooltip && showIconTooltip(e.currentTarget as HTMLElement, timeDisplay)"
+                @mouseleave="hideIconTooltip"
+              >{{ timeDisplayTruncated }}</span>
             </span>
             <span v-if="duration" class="meta-item">
               <span
@@ -174,11 +179,12 @@ import { computed, reactive } from 'vue';
 import Card from '@/components/common/Card.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
-import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
+import { calculateDuration } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
+import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
 import type { Item, Project, Task } from '@/types/models';
 
 interface Props {
@@ -218,11 +224,29 @@ const itemLinks = computed(() => props.item.links || []);
 // 事项内容
 const itemContent = computed(() => props.item.content || '');
 
-// 时间显示
+// 时间显示 - 支持多日期
 const timeDisplay = computed(() => {
-  const dateLabel = formatDateLabel(props.item.date, t('todo').today, t('todo').tomorrow);
-  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
-  return `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;
+  const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
+    { date: props.item.date, startDateTime: props.item.startDateTime, endDateTime: props.item.endDateTime }
+  ];
+  
+  if (props.item.siblingItems?.length) {
+    allItems.push(...props.item.siblingItems);
+  }
+  
+  const optimized = optimizeDateTimeExpressions(allItems);
+  return optimized.replace(/^@/, '');
+});
+
+// 时间显示是否过长，需要 tooltip
+const timeDisplayNeedsTooltip = computed(() => {
+  return timeDisplay.value.length > 30;
+});
+
+// 截断后的时间显示
+const timeDisplayTruncated = computed(() => {
+  if (!timeDisplayNeedsTooltip.value) return timeDisplay.value;
+  return timeDisplay.value.slice(0, 27) + '...';
 });
 
 // 时长计算
@@ -465,6 +489,10 @@ function handleLinkClick(url: string) {
 
 .meta-text {
   font-weight: 500;
+
+  &.has-tooltip {
+    cursor: help;
+  }
 }
 
 .item-content-row {

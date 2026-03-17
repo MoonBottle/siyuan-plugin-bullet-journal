@@ -204,7 +204,7 @@ function groupByTime(
  * 将多个日期时间合并为最简表达方式
  * 按日期顺序排列，相同时间的连续日期合并为范围
  */
-function optimizeDateTimeExpressions(
+export function optimizeDateTimeExpressions(
   items: Array<{ date: string; startDateTime?: string; endDateTime?: string }>
 ): string {
   if (items.length === 0) return '';
