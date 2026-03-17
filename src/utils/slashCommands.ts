@@ -128,24 +128,67 @@ export async function deleteSlashCommandContent(protyle: any, filters: string[],
 }
 
 /**
+ * 思源事务操作类型
+ */
+type OperationAction = 'update' | 'insert' | 'delete' | 'move' | 'setAttrs' | 'unfoldHeading' | 'foldHeading';
+
+/**
+ * 思源事务操作
+ */
+interface IOperation {
+  id: string;
+  data?: string;
+  action: OperationAction;
+  parentID?: string;
+  previousID?: string;
+  nextID?: string;
+}
+
+/**
+ * 思源事务请求体
+ */
+interface ITransactionRequest {
+  session: string;
+  app: string;
+  transactions: {
+    doOperations: IOperation[];
+    undoOperations?: IOperation[];
+  }[];
+  reqId: number;
+}
+
+/**
+ * Protyle 编辑器实例（简化版）
+ */
+interface IProtyle {
+  id?: string;
+  protyle?: {
+    id: string;
+    app?: {
+      appId: string;
+    };
+  };
+}
+
+/**
  * 更新事务 - 直接调用思源 API
  * @param protyle Protyle 编辑器实例
  * @param id 块 ID
  * @param newHTML 新 HTML
  * @param html 旧 HTML
  */
-async function updateTransaction(protyle: any, id: string, newHTML: string, html: string): Promise<void> {
+async function updateTransaction(protyle: IProtyle | undefined, id: string, newHTML: string, html: string): Promise<void> {
   if (newHTML === html) {
     return;
   }
 
-  const doOperations = [{
+  const doOperations: IOperation[] = [{
     id,
     data: newHTML,
     action: 'update'
   }];
 
-  const undoOperations = [{
+  const undoOperations: IOperation[] = [{
     id,
     data: html,
     action: 'update'
@@ -153,20 +196,22 @@ async function updateTransaction(protyle: any, id: string, newHTML: string, html
 
   // 直接调用思源 API
   try {
+    const requestBody: ITransactionRequest = {
+      session: protyle?.protyle?.id || protyle?.id || 'bullet-journal-plugin',
+      app: protyle?.protyle?.app?.appId || 'bullet-journal',
+      transactions: [{
+        doOperations,
+        undoOperations
+      }],
+      reqId: Date.now()
+    };
+
     await fetch('/api/transactions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        session: protyle?.id || 'bullet-journal-plugin',
-        app: window.siyuan?.config?.system?.id || 'bullet-journal',
-        transactions: [{
-          doOperations,
-          undoOperations
-        }],
-        reqId: Date.now()
-      })
+      body: JSON.stringify(requestBody)
     });
   } catch (error) {
     console.error('更新块失败:', error);
