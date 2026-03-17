@@ -298,7 +298,12 @@ export const useProjectStore = defineStore('project', {
       for (const project of projects) {
         for (const task of project.tasks) {
           if (task.blockId) {
-            const attrs = await getBlockAttrs(task.blockId);
+            let attrs: Record<string, string> = {};
+            try {
+              attrs = await getBlockAttrs(task.blockId);
+            } catch {
+              // 获取失败时跳过该 task，不影响其他
+            }
             const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
             if (attrRecords.length > 0) {
               for (const r of attrRecords) {
@@ -323,23 +328,21 @@ export const useProjectStore = defineStore('project', {
           });
 
           for (const item of uniqueItems) {
-            const attrs = await getBlockAttrs(item.blockId);
+            let attrs: Record<string, string> = {};
+            try {
+              attrs = await getBlockAttrs(item.blockId);
+            } catch {
+              // 获取失败时跳过该 item，不影响其他
+            }
             const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
             if (attrRecords.length > 0) {
-              // 找到所有共享同一个 blockId 的 items
-              const itemsWithSameBlockId = task.items.filter(i => i.blockId === item.blockId);
               for (const r of attrRecords) {
-                // 关联到第一个 item（它们共享 pomodoros 数组）
-                r.itemId = itemsWithSameBlockId[0]?.id;
+                r.itemId = item.id;
                 r.taskId = task.id;
                 r.projectId = project.id;
               }
-              // 确保 pomodoros 数组已初始化（共享数组）
-              if (!itemsWithSameBlockId[0].pomodoros) {
-                itemsWithSameBlockId[0].pomodoros = [];
-              }
-              // 使用 push 合并到共享数组，所有共享 blockId 的 items 都会看到这个更新
-              itemsWithSameBlockId[0].pomodoros.push(...attrRecords);
+              // parser 已确保同 blockId 的 items 共享同一 pomodoros 引用，push 即可
+              item.pomodoros!.push(...attrRecords);
             }
           }
         }

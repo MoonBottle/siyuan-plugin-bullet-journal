@@ -36,6 +36,18 @@ const mkItem = (
     ...overrides
   }) as Item;
 
+/** 模拟 parser 行为：同 blockId 的 items 共享同一个 pomodoros 数组 */
+const mkItemsWithSharedBlockId = (
+  configs: Array<{ date: string } & Partial<Item>>,
+  sharedBlockId: string
+): Item[] => {
+  const sharedPomodoros: PomodoroRecord[] = [];
+  return configs.map(c => {
+    const { date, ...rest } = c;
+    return mkItem(date, sharedBlockId, { ...rest, pomodoros: sharedPomodoros });
+  });
+};
+
 const mkTask = (items: Item[], overrides?: Partial<Task>): Task =>
   ({
     id: `task-${Math.random().toString(36).substr(2, 5)}`,
@@ -72,16 +84,14 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
   it('多日期事项：共享同一个 pomodoros 数组', async () => {
     const store = useProjectStore();
 
-    // 创建一个多日期事项，共享同一个 blockId
     const sharedBlockId = '20250315123456-abcdef';
-    const item1 = mkItem('2026-03-15', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
-    const item2 = mkItem('2026-03-16', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
+    const [item1, item2] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
@@ -105,18 +115,14 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     const store = useProjectStore();
 
     const sharedBlockId = '20250315123456-abcdef';
-    const item1 = mkItem('2026-03-15', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-17'
-    });
-    const item2 = mkItem('2026-03-16', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-17'
-    });
-    const item3 = mkItem('2026-03-17', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-17'
-    });
+    const [item1, item2, item3] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-17' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-17' },
+        { date: '2026-03-17', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-17' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask([item1, item2, item3]);
     const project = mkProject([task]);
@@ -139,7 +145,7 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     const store = useProjectStore();
 
     const blockId = '20250315123456-abcdef';
-    const item = mkItem('2026-03-15', blockId);
+    const [item] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], blockId);
     const task = mkTask([item]);
     const project = mkProject([task]);
 
@@ -159,8 +165,8 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
   it('多个事项有不同的 blockId：各自获取自己的专注记录', async () => {
     const store = useProjectStore();
 
-    const item1 = mkItem('2026-03-15', 'block-id-1');
-    const item2 = mkItem('2026-03-16', 'block-id-2');
+    const [item1] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], 'block-id-1');
+    const [item2] = mkItemsWithSharedBlockId([{ date: '2026-03-16' }], 'block-id-2');
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
 
@@ -196,14 +202,13 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     const store = useProjectStore();
 
     const sharedBlockId = '20250315123456-abcdef';
-    const item1 = mkItem('2026-03-15', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
-    const item2 = mkItem('2026-03-16', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
+    const [item1, item2] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
@@ -254,8 +259,8 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
   it('获取属性失败时不影响其他事项', async () => {
     const store = useProjectStore();
 
-    const item1 = mkItem('2026-03-15', 'block-id-1');
-    const item2 = mkItem('2026-03-16', 'block-id-2');
+    const [item1] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], 'block-id-1');
+    const [item2] = mkItemsWithSharedBlockId([{ date: '2026-03-16' }], 'block-id-2');
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
 
@@ -272,8 +277,8 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     // 不应该抛出错误
     await expect(store.mergePomodoroAttrs([project], mockPlugin)).resolves.not.toThrow();
 
-    // 验证：item1 没有记录，item2 有记录
-    expect(item1.pomodoros).toBeUndefined();
+    // 验证：item1 没有记录（API 抛错未合并），item2 有记录
+    expect(item1.pomodoros).toHaveLength(0);
     expect(item2.pomodoros).toHaveLength(1);
   });
 
@@ -308,7 +313,7 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     };
 
     const blockId = '20250315123456-abcdef';
-    const item = mkItem('2026-03-15', blockId);
+    const [item] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], blockId);
     const task = mkTask([item]);
     const project = mkProject([task]);
 
@@ -328,9 +333,11 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     const store = useProjectStore();
 
     const sharedBlockId = '20250315123456-abcdef';
-    const item1 = mkItem('2026-03-15', sharedBlockId);
-    const item2 = mkItem('2026-03-16', sharedBlockId);
-    const item3 = mkItem('2026-03-17', 'different-block-id');
+    const [item1, item2] = mkItemsWithSharedBlockId(
+      [{ date: '2026-03-15' }, { date: '2026-03-16' }],
+      sharedBlockId
+    );
+    const [item3] = mkItemsWithSharedBlockId([{ date: '2026-03-17' }], 'different-block-id');
 
     const task = mkTask([item1, item2, item3]);
     const project = mkProject([task]);
@@ -357,24 +364,21 @@ describe('mergePomodoroAttrs - 实际应用场景', () => {
   it('日期范围跨天的场景：所有 Item 共享同一个 pomodoros 数组', async () => {
     const store = useProjectStore();
 
-    // 模拟：一个事项跨越3天，每天不同时间段
     const sharedBlockId = '20250315000000-xyzabc';
-    const items = [
-      mkItem('2026-03-15', sharedBlockId, {
-        startDateTime: '2026-03-15 06:15:00',
-        endDateTime: '2026-03-15 08:00:00',
-        dateRangeStart: '2026-03-15',
-        dateRangeEnd: '2026-03-21'
-      }),
-      mkItem('2026-03-16', sharedBlockId, {
-        dateRangeStart: '2026-03-15',
-        dateRangeEnd: '2026-03-21'
-      }),
-      mkItem('2026-03-21', sharedBlockId, {
-        dateRangeStart: '2026-03-15',
-        dateRangeEnd: '2026-03-21'
-      })
-    ];
+    const items = mkItemsWithSharedBlockId(
+      [
+        {
+          date: '2026-03-15',
+          startDateTime: '2026-03-15 06:15:00',
+          endDateTime: '2026-03-15 08:00:00',
+          dateRangeStart: '2026-03-15',
+          dateRangeEnd: '2026-03-21'
+        },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-21' },
+        { date: '2026-03-21', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-21' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask(items);
     const project = mkProject([task]);
@@ -399,19 +403,18 @@ describe('mergePomodoroAttrs - 实际应用场景', () => {
     const store = useProjectStore();
 
     // 项目1：单日期事项
-    const item1 = mkItem('2026-03-15', 'block-1');
+    const [item1] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], 'block-1');
     const task1 = mkTask([item1]);
     const project1 = mkProject([task1], { id: 'proj-1', name: '项目1' });
 
     // 项目2：多日期事项（共享 blockId）
-    const item2a = mkItem('2026-03-15', 'block-2', {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
-    const item2b = mkItem('2026-03-16', 'block-2', {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
+    const [item2a, item2b] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' }
+      ],
+      'block-2'
+    );
     const task2 = mkTask([item2a, item2b]);
     const project2 = mkProject([task2], { id: 'proj-2', name: '项目2' });
 
