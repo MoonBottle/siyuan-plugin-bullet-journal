@@ -538,7 +538,7 @@ export default class TaskAssistantPlugin extends Plugin {
     detail.menu.addItem({
       icon: 'iconInfo',
       label: t('todo').viewDetail,
-      click: () => showItemDetailModal(item)
+      click: () => showItemDetailModal(item, { showAllDates: true })
     });
     detail.menu.addItem({
       icon: 'iconCalendar',
@@ -561,7 +561,7 @@ export default class TaskAssistantPlugin extends Plugin {
     if (!item) return;
     detail.event.preventDefault();
     detail.event.stopPropagation();
-    showItemDetailModal(item);
+    showItemDetailModal(item, { showAllDates: true });
   }
 
   /**

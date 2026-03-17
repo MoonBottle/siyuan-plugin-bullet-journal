@@ -179,19 +179,22 @@ import { computed, reactive } from 'vue';
 import Card from '@/components/common/Card.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
-import { calculateDuration } from '@/utils/dateUtils';
+import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
 import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
-import type { Item, Project, Task } from '@/types/models';
+import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
 
 interface Props {
   item: Item;
+  showAllDates?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showAllDates: false
+});
 
 const emit = defineEmits<{
   close: [];
@@ -224,8 +227,15 @@ const itemLinks = computed(() => props.item.links || []);
 // 事项内容
 const itemContent = computed(() => props.item.content || '');
 
-// 时间显示 - 支持多日期
+// 时间显示 - 根据 showAllDates 决定展示单个日期还是所有日期
 const timeDisplay = computed(() => {
+  if (!props.showAllDates) {
+    // 只展示主日期
+    const dateLabel = formatDateLabel(props.item.date, t('todo').today, t('todo').tomorrow);
+    const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
+    return `${dateLabel}${timeRange ? ' ' + timeRange : ''}`;
+  }
+  // 展示所有日期
   const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
     { date: props.item.date, startDateTime: props.item.startDateTime, endDateTime: props.item.endDateTime }
   ];
@@ -249,22 +259,79 @@ const timeDisplayTruncated = computed(() => {
   return timeDisplay.value.slice(0, 27) + '...';
 });
 
-// 时长计算
+// 时长计算 - 根据 showAllDates 决定计算单个日期还是所有日期
 const duration = computed(() => {
-  if (props.item.startDateTime && props.item.endDateTime) {
-    return calculateDuration(
-      props.item.startDateTime,
-      props.item.endDateTime,
-      settingsStore.lunchBreakStart,
-      settingsStore.lunchBreakEnd
-    );
+  if (!props.showAllDates) {
+    // 只计算主日期
+    if (props.item.startDateTime && props.item.endDateTime) {
+      return calculateDuration(
+        props.item.startDateTime,
+        props.item.endDateTime,
+        settingsStore.lunchBreakStart,
+        settingsStore.lunchBreakEnd
+      );
+    }
+    return '';
   }
-  return '';
+  
+  // 累加所有日期时长
+  const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
+    { date: props.item.date, startDateTime: props.item.startDateTime, endDateTime: props.item.endDateTime }
+  ];
+  if (props.item.siblingItems?.length) {
+    allItems.push(...props.item.siblingItems);
+  }
+  
+  let totalMinutes = 0;
+  for (const item of allItems) {
+    if (item.startDateTime && item.endDateTime) {
+      const dur = calculateDuration(
+        item.startDateTime,
+        item.endDateTime,
+        settingsStore.lunchBreakStart,
+        settingsStore.lunchBreakEnd
+      );
+      if (dur) {
+        const [hours, mins] = dur.split(':').map(Number);
+        totalMinutes += hours * 60 + mins;
+      }
+    }
+  }
+  
+  if (totalMinutes === 0) return '';
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}:${m.toString().padStart(2, '0')}` : `${h}:00`;
 });
 
-// 专注总时间
+// 过滤番茄钟记录 - 按日期
+function filterPomodorosByDate(pomodoros: PomodoroRecord[] | undefined, date: string): PomodoroRecord[] {
+  if (!pomodoros) return [];
+  return pomodoros.filter(p => p.date === date);
+}
+
+// 专注总时间 - 根据 showAllDates 决定统计单个日期还是所有日期
 const focusTotalTimeDisplay = computed(() => {
-  const totalFocusMinutes = calculateTotalFocusMinutes(props.item.pomodoros);
+  console.log('[ItemDetailDialog] focusTotalTimeDisplay computed', {
+    showAllDates: props.showAllDates,
+    itemDate: props.item.date,
+    pomodoros: props.item.pomodoros,
+    pomodorosCount: props.item.pomodoros?.length || 0
+  });
+  
+  let pomodorosToCount: PomodoroRecord[];
+  
+  if (!props.showAllDates) {
+    // 只统计主日期的番茄钟
+    pomodorosToCount = filterPomodorosByDate(props.item.pomodoros, props.item.date);
+    console.log('[ItemDetailDialog] filtering by date', props.item.date, 'result:', pomodorosToCount.length);
+  } else {
+    // 统计所有日期的番茄钟
+    pomodorosToCount = props.item.pomodoros || [];
+    console.log('[ItemDetailDialog] using all pomodoros:', pomodorosToCount.length);
+  }
+  
+  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount);
   return totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
 });
 

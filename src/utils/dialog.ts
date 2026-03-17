@@ -264,8 +264,9 @@ function createButtons(buttons: Array<{ text: string; class: string; action: str
 /**
  * 显示事项详情弹框
  */
-export function showItemDetailModal(item: Item): Dialog {
+export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean }): Dialog {
   const plugin = usePlugin();
+  const showAllDates = options?.showAllDates ?? false;
 
   // 创建容器元素
   const container = document.createElement('div');
@@ -273,6 +274,7 @@ export function showItemDetailModal(item: Item): Dialog {
   // 创建 Vue 应用
   const app = createApp(ItemDetailDialog, {
     item,
+    showAllDates,
     onClose: () => {
       dialog.destroy();
     },
@@ -430,6 +432,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     pomodoros: props.pomodoros || [],
     startDateTime: props.originalStartDateTime,
     endDateTime: props.originalEndDateTime,
+    siblingItems: props.siblingItems,
     dateRangeStart: props.dateRangeStart,
     dateRangeEnd: props.dateRangeEnd,
   };

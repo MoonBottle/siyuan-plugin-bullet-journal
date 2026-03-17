@@ -527,8 +527,8 @@ async function viewDetail(nodeElement: HTMLElement) {
     return;
   }
 
-  // 打开详情弹框
-  showItemDetailModal(item);
+  // 打开详情弹框 - 斜杠命令展示所有日期
+  showItemDetailModal(item, { showAllDates: true });
 }
 
 /**
