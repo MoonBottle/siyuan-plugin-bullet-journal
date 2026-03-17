@@ -1027,12 +1027,6 @@ const handleCreateExample = async () => {
 .item-actions-hover {
   display: flex;
   gap: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-
-  .card:hover & {
-    opacity: 1;
-  }
 
   .block__icon {
     opacity: 1;

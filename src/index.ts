@@ -759,6 +759,28 @@ export default class TaskAssistantPlugin extends Plugin {
         });
         menu.addSeparator();
         menu.addItem({
+          icon: 'iconList',
+          label: t('todo').title,
+          click: () => {
+            this.openTodoDock();
+          }
+        });
+        menu.addItem({
+          icon: 'iconClock',
+          label: t('pomodoro').dockTitle,
+          click: () => {
+            this.openPomodoroDock();
+          }
+        });
+        menu.addItem({
+          icon: 'iconSparkles',
+          label: t('aiChat').title,
+          click: () => {
+            this.openAiChatDock();
+          }
+        });
+        menu.addSeparator();
+        menu.addItem({
           icon: 'iconHelp',
           label: t('common').help || '帮助',
           submenu: [
@@ -1542,6 +1564,20 @@ export default class TaskAssistantPlugin extends Plugin {
       }
     } catch (error) {
       console.error('[Task Assistant] Failed to open todo dock:', error);
+    }
+  }
+
+  /**
+   * 打开 AI 对话 Dock
+   */
+  private openAiChatDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.AI_CHAT}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open AI chat dock:', error);
     }
   }
 }
