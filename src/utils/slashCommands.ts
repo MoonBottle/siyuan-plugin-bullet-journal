@@ -499,7 +499,7 @@ function getActionHandler(
     case 'focus':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
-        startFocusFromSlash(nodeElement, config.openPomodoroDock);
+        setTimeout(() => startFocusFromSlash(nodeElement, config.openPomodoroDock), 300);
       };
     case 'todo':
       return (protyle) => {
