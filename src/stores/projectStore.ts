@@ -312,25 +312,34 @@ export const useProjectStore = defineStore('project', {
               task.pomodoros.push(...attrRecords);
             }
           }
-          for (const item of task.items) {
-            if (item.blockId) {
-              const attrs = await getBlockAttrs(item.blockId);
-              const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
-              if (attrRecords.length > 0) {
-                for (const r of attrRecords) {
-                  r.itemId = item.id;
-                  r.taskId = task.id;
-                  r.projectId = project.id;
-                }
-                // 确保 pomodoros 数组已初始化
-                if (!item.pomodoros) {
-                  item.pomodoros = [];
-                }
-                // 使用 push 合并到共享数组，而不是创建新数组
-                if (attrRecords.length > 0) {
-                  item.pomodoros.push(...attrRecords);
-                }
+
+          // 按 blockId 对 items 去重，避免重复获取属性
+          const seenBlockIds = new Set<string>();
+          const uniqueItems = task.items.filter(item => {
+            if (!item.blockId) return false;
+            if (seenBlockIds.has(item.blockId)) return false;
+            seenBlockIds.add(item.blockId);
+            return true;
+          });
+
+          for (const item of uniqueItems) {
+            const attrs = await getBlockAttrs(item.blockId);
+            const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
+            if (attrRecords.length > 0) {
+              // 找到所有共享同一个 blockId 的 items
+              const itemsWithSameBlockId = task.items.filter(i => i.blockId === item.blockId);
+              for (const r of attrRecords) {
+                // 关联到第一个 item（它们共享 pomodoros 数组）
+                r.itemId = itemsWithSameBlockId[0]?.id;
+                r.taskId = task.id;
+                r.projectId = project.id;
               }
+              // 确保 pomodoros 数组已初始化（共享数组）
+              if (!itemsWithSameBlockId[0].pomodoros) {
+                itemsWithSameBlockId[0].pomodoros = [];
+              }
+              // 使用 push 合并到共享数组，所有共享 blockId 的 items 都会看到这个更新
+              itemsWithSameBlockId[0].pomodoros.push(...attrRecords);
             }
           }
         }
