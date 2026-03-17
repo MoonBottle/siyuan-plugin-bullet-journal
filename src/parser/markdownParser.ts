@@ -167,6 +167,13 @@ export class MarkdownParser {
    */
   public async getAllItems(): Promise<Item[]> {
     const projects = await this.parseAllProjects();
+    return this.getAllItemsFromProjects(projects);
+  }
+
+  /**
+   * 从已有项目中获取所有工作事项
+   */
+  public getAllItemsFromProjects(projects: Project[]): Item[] {
     const items: Item[] = [];
 
     for (const project of projects) {

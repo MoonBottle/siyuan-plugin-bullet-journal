@@ -76,6 +76,7 @@ export const Events = {
   SETTINGS_CHANGED: 'settings:changed',
   DOCUMENT_CHANGED: 'document:changed',
   CALENDAR_NAVIGATE: 'calendar:navigate', // 导航到指定日期
+  CALENDAR_CHANGE_VIEW: 'calendar:change-view', // 切换日历视图
   POMODORO_STARTED: 'pomodoro:started',
   POMODORO_COMPLETED: 'pomodoro:completed',
   POMODORO_CANCELLED: 'pomodoro:cancelled',

@@ -7,6 +7,8 @@ import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
 import type { ItemStatus } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
+import { processLineText } from '@/utils/slashCommandUtils';
+import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /**
  * 时间加一小时
@@ -202,7 +204,7 @@ function groupByTime(
  * 将多个日期时间合并为最简表达方式
  * 按日期顺序排列，相同时间的连续日期合并为范围
  */
-function optimizeDateTimeExpressions(
+export function optimizeDateTimeExpressions(
   items: Array<{ date: string; startDateTime?: string; endDateTime?: string }>
 ): string {
   if (items.length === 0) return '';
@@ -291,8 +293,9 @@ function handleSingleLineUpdate(
   siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
   status?: ItemStatus
 ): string {
-  // 提取事项内容：先去除列表标记和块属性（支持父块 kramdown 格式），再去除日期时间标记和状态标签
-  let itemContent = stripListAndBlockAttr(content)
+  // 提取事项内容：先去除斜杠命令，再去除列表标记和块属性（支持父块 kramdown 格式），最后去除日期时间标记和状态标签
+  let itemContent = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
+  itemContent = stripListAndBlockAttr(itemContent)
     .replace(/@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
     .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
     // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
@@ -407,6 +410,7 @@ export async function updateBlockDateTime(
 
     // 如果没有番茄钟行且不需要保留结构，使用单行处理逻辑
     if (!hasTomatoClock && !useMultiLineForStructure) {
+      const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
       const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
       const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
       const formattedEndTime = newEndTime
@@ -424,7 +428,7 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent, targetBlockId);
+      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
       return true;
     }
 
@@ -445,6 +449,7 @@ export async function updateBlockDateTime(
 
     // 如果没有找到事项行，使用单行处理逻辑作为回退
     if (itemLineIndex === -1) {
+      const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
       const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
       const formattedStartTime = newStartTime ? formatTimeToSeconds(newStartTime) : undefined;
       const formattedEndTime = newEndTime
@@ -462,7 +467,7 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent, targetBlockId);
+      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
       return true;
     }
 
@@ -478,6 +483,9 @@ export async function updateBlockDateTime(
       // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
       .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
       .trim();
+
+    // 去除斜杠命令（/sx, /事项, /today 等）
+    itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS);
 
     // 构建所有日期时间项列表
     const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
@@ -529,10 +537,12 @@ export async function updateBlockDateTime(
     // 拼接新事项行内容
     let newItemLine: string;
     if (targetBlockId !== blockId) {
-      // 更新父块时保留完整列表项格式（- 和 {: id=... }），仅替换日期部分
+      // 更新父块时保留完整列表项格式（- 和 {: id=... }），但需要用去除斜杠命令后的内容替换
       const dateExpr =
         /@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?(?:\s*[,\uFF0C]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?)*/g;
-      newItemLine = itemLine.replace(dateExpr, optimizedExpr);
+      // 先去除斜杠命令，再替换日期
+      const cleanedItemLine = processLineText(itemLine, ALL_SLASH_COMMAND_FILTERS);
+      newItemLine = cleanedItemLine.replace(dateExpr, optimizedExpr);
     } else {
       newItemLine = `${taskListMarker}${itemContent} ${optimizedExpr} ${statusTag}`.trim();
     }
@@ -544,6 +554,7 @@ export async function updateBlockDateTime(
     const newContent = lines.join('\n');
 
     // 更新块（使用 targetBlockId：父块解析时更新父块）
+    // 多行逻辑中 lines 已包含属性行 {: ...}，updateBlock 的 kramdown 会保留属性
     await updateBlock('markdown', newContent, targetBlockId);
 
     return true;
@@ -719,11 +730,14 @@ export async function updateBlockContent(
           }
           if (usedParentKramdown) {
             // 更新父块时保留完整列表项格式（- 和块属性），仅替换任务标记
-            lines[itemLineIndex] = newLine;
+            // 去除斜杠命令
+            lines[itemLineIndex] = processLineText(newLine, ALL_SLASH_COMMAND_FILTERS);
           } else {
             // 更新内容子块时 strip 后拼接
             const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
-            const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+            let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+            // 去除斜杠命令
+            cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
             lines[itemLineIndex] = isAbandon && !cleanedContent.includes('#已放弃') && !cleanedContent.includes('#abandoned')
               ? `${newMarker}${cleanedContent} ${suffix}`.trim()
               : `${newMarker}${cleanedContent}`.trim();
@@ -732,7 +746,9 @@ export async function updateBlockContent(
         } else {
           // 如果匹配失败，使用原来的方式
           console.log('[Task Assistant] updateBlockContent - match failed, using fallback');
-          const cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent = stripListAndBlockAttr(itemLine);
+          // 去除斜杠命令
+          cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
         }
       } else if (isTaskList) {
@@ -745,19 +761,25 @@ export async function updateBlockContent(
           // 去除任务列表标记后的内容
           const contentWithoutMarker = itemLine.replace(taskListMarker, '');
           // 使用 stripListAndBlockAttr 去除列表标记、块属性
-          const cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          // 去除斜杠命令
+          cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           // 重新拼接：任务列表标记 + 清理后的内容 + 后缀
           lines[itemLineIndex] = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
         } else {
           // 如果匹配失败，使用原来的方式
-          const cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent = stripListAndBlockAttr(itemLine);
+          // 去除斜杠命令
+          cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
         }
       } else {
         // 非任务列表格式：使用原来的方式
         console.log('[Task Assistant] updateBlockContent - non-task list format');
         // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
-        const cleanedContent = stripListAndBlockAttr(itemLine);
+        let cleanedContent = stripListAndBlockAttr(itemLine);
+        // 去除斜杠命令
+        cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
         // 添加后缀
         lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
       }

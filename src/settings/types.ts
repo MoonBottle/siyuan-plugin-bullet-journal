@@ -20,6 +20,15 @@ export interface PomodoroSettings {
   enableFloatingButton?: boolean;
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
+  statusBarDirection?: 'extend' | 'shrink';
+}
+
+// 自定义斜杠命令配置
+export interface CustomSlashCommand {
+  id: string;
+  name: string;
+  commands: string[];
+  action: 'today' | 'tomorrow' | 'date' | 'done' | 'abandon' | 'calendar' | 'calendarDay' | 'calendarWeek' | 'calendarMonth' | 'calendarList' | 'gantt' | 'focus' | 'todo' | 'setProjectDir' | 'markAsTask' | 'viewDetail';
 }
 
 // 设置数据结构
@@ -37,6 +46,7 @@ export interface SettingsData {
     showToolCalls?: boolean;
   };
   pomodoro?: PomodoroSettings;
+  customSlashCommands?: CustomSlashCommand[];
 }
 
 export const defaultPomodoroSettings: PomodoroSettings = {
@@ -45,6 +55,7 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   enableFloatingButton: true,
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',
+  statusBarDirection: 'extend',
 };
 
 export const defaultSettings: SettingsData = {
@@ -62,7 +73,8 @@ export const defaultSettings: SettingsData = {
     providers: [],
     activeProviderId: null
   },
-  pomodoro: defaultPomodoroSettings
+  pomodoro: defaultPomodoroSettings,
+  customSlashCommands: []
 };
 
 export const defaultChatHistory: AIChatHistory = {

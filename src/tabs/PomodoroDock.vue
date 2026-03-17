@@ -115,7 +115,7 @@ const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
   completeDialog = new Dialog({
     title: t('settings').pomodoro.completeTitle,
     content: '<div id="pomodoro-complete-dialog-mount"></div>',
-    width: '400px',
+    width: '600px',
     destroyCallback: () => {
       if (completeDialogApp) {
         completeDialogApp.unmount();

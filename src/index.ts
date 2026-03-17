@@ -24,6 +24,8 @@ import type { AIProviderConfig } from '@/types/ai';
 import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
+import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
+import { createExampleDocument } from '@/utils/exampleDocUtils';
 
 let PluginInfo = {
   version: '',
@@ -128,6 +130,9 @@ export default class TaskAssistantPlugin extends Plugin {
     setTimeout(() => {
       this.checkAndRestorePomodoro();
     }, 1000);
+
+    // 注册斜杠命令
+    this.registerSlashCommands();
   }
 
   /**
@@ -311,7 +316,8 @@ export default class TaskAssistantPlugin extends Plugin {
           },
           pomodoro: data.pomodoro
             ? { ...defaultPomodoroSettings, ...data.pomodoro }
-            : defaultPomodoroSettings
+            : defaultPomodoroSettings,
+          customSlashCommands: data.customSlashCommands || []
         };
       }
       // 加载聊天记录（从单独的文件）
@@ -533,7 +539,7 @@ export default class TaskAssistantPlugin extends Plugin {
     detail.menu.addItem({
       icon: 'iconInfo',
       label: t('todo').viewDetail,
-      click: () => showItemDetailModal(item)
+      click: () => showItemDetailModal(item, { showAllDates: true })
     });
     detail.menu.addItem({
       icon: 'iconCalendar',
@@ -556,7 +562,7 @@ export default class TaskAssistantPlugin extends Plugin {
     if (!item) return;
     detail.event.preventDefault();
     detail.event.stopPropagation();
-    showItemDetailModal(item);
+    showItemDetailModal(item, { showAllDates: true });
   }
 
   /**
@@ -751,6 +757,120 @@ export default class TaskAssistantPlugin extends Plugin {
             this.openCustomTab(TAB_TYPES.PROJECT);
           }
         });
+        menu.addSeparator();
+        menu.addItem({
+          icon: 'iconList',
+          label: t('todo').title,
+          click: () => {
+            this.openTodoDock();
+          }
+        });
+        menu.addItem({
+          icon: 'iconClock',
+          label: t('pomodoro').dockTitle,
+          click: () => {
+            this.openPomodoroDock();
+          }
+        });
+        menu.addItem({
+          icon: 'iconSparkles',
+          label: t('aiChat').title,
+          click: () => {
+            this.openAiChatDock();
+          }
+        });
+        menu.addSeparator();
+        menu.addItem({
+          icon: 'iconSettings',
+          label: t('settings').title || '设置',
+          click: () => showSettingsDialog(this)
+        });
+        menu.addItem({
+          icon: 'iconHelp',
+          label: t('helpMenu').title || '帮助',
+          submenu: [
+            // 1. 创建示例文档 - 放在最上面，让用户快速上手
+            {
+              icon: 'iconAdd',
+              label: t('helpMenu').createExampleDoc,
+              click: async () => {
+                const docId = await createExampleDocument();
+                if (docId) {
+                  const pinia = getSharedPinia();
+                  if (pinia) {
+                    const projectStore = useProjectStore(pinia);
+                    await projectStore.refresh(this, this.getEnabledDirectories());
+                  }
+                }
+              }
+            },
+            { type: 'separator' },
+            // 2. 文档分组
+            {
+              icon: 'iconBookmark',
+              label: t('helpMenu').docs,
+              submenu: [
+                {
+                  icon: 'iconPlay',
+                  label: t('helpMenu').quickStart,
+                  click: () => this.openHelpDoc('quick-start.md')
+                },
+                {
+                  icon: 'iconMarkdown',
+                  label: t('helpMenu').dataFormat,
+                  click: () => this.openHelpDoc('data-format.md')
+                },
+                {
+                  icon: 'iconCalendar',
+                  label: t('helpMenu').views,
+                  click: () => this.openHelpDoc('views.md')
+                },
+                {
+                  icon: 'iconClock',
+                  label: t('helpMenu').pomodoro,
+                  click: () => this.openHelpDoc('pomodoro.md')
+                },
+                {
+                  icon: 'iconSettings',
+                  label: t('helpMenu').configuration,
+                  click: () => this.openHelpDoc('configuration.md')
+                },
+                {
+                  icon: 'iconFile',
+                  label: t('helpMenu').examples,
+                  click: () => this.openHelpDoc('examples.md')
+                },
+                {
+                  icon: 'iconSparkles',
+                  label: t('helpMenu').mcp,
+                  click: () => this.openHelpDoc('mcp.md')
+                },
+                {
+                  icon: 'iconHistory',
+                  label: t('helpMenu').changelog,
+                  click: () => this.openHelpDoc('changelog.md')
+                }
+              ]
+            },
+            // 3. 链接分组
+            {
+              icon: 'iconLink',
+              label: t('helpMenu').links,
+              submenu: [
+                {
+                  icon: 'iconGithub',
+                  label: t('helpMenu').github,
+                  click: () => window.open('https://github.com/MoonBottle/siyuan-plugin-bullet-journal', '_blank')
+                },
+                {
+                  icon: 'iconBug',
+                  label: t('helpMenu').issues,
+                  click: () => window.open('https://github.com/MoonBottle/siyuan-plugin-bullet-journal/issues', '_blank')
+                }
+              ]
+            }
+          ]
+        });
         menu.open({
           x: event.clientX,
           y: event.clientY,
@@ -761,16 +881,28 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
+   * 打开帮助文档（支持国际化）
+   */
+  private openHelpDoc(docName: string) {
+    const lang = (window as any).siyuan?.config?.lang || 'zh_CN';
+    const isEnglish = lang === 'en_US';
+    const baseUrl = 'https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main';
+    const docPath = isEnglish ? `docs/en/user-guide/${docName}` : `docs/user-guide/${docName}`;
+    window.open(`${baseUrl}/${docPath}`, '_blank');
+  }
+
+  /**
    * 使用官方 API 打开 Tab
    */
-  public openCustomTab(type: string, options?: { position?: 'right' | 'bottom'; initialDate?: string }) {
+  public openCustomTab(type: string, options?: { position?: 'right' | 'bottom'; initialDate?: string; initialView?: string }) {
     // 根据 API 文档，custom.id 需要是 plugin.name + tab.type
     const customId = `${this.name}${type}`;
 
     // custom.data 仅传 type，避免不同 initialDate 导致创建多个 Tab
     const customData = { type };
     const initialDate = options?.initialDate;
-    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate);
+    const initialView = options?.initialView;
+    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate, 'initialView:', initialView);
 
     try {
       openTab({
@@ -781,10 +913,16 @@ export default class TaskAssistantPlugin extends Plugin {
           title: this.getTabTitle(type),
           data: customData
         },
-        afterOpen: initialDate ? () => {
-          console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
-          eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
-        } : undefined
+        afterOpen: () => {
+          if (initialDate) {
+            console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
+            eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
+          }
+          if (initialView && type === TAB_TYPES.CALENDAR) {
+            console.warn('[Task Assistant] afterOpen emit CALENDAR_CHANGE_VIEW', initialView);
+            eventBus.emit(Events.CALENDAR_CHANGE_VIEW, initialView);
+          }
+        }
       });
     } catch (error) {
       console.error('[Task Assistant] Failed to open tab:', error);
@@ -829,7 +967,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * WebSocket 消息处理
    */
   private onWsMain(event: any) {
-    console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
+    // console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
     // 检测数据变化相关的事件
     const data = event.detail;
     if (data && data.cmd) {
@@ -926,6 +1064,8 @@ export default class TaskAssistantPlugin extends Plugin {
     // 监听设置变更事件，动态更新番茄钟 UI 显示/隐藏
     eventBus.on(Events.SETTINGS_CHANGED, () => {
       this.updatePomodoroUIVisibility();
+      // 重新注册斜杠命令以应用自定义命令变更
+      this.registerSlashCommands();
     });
   }
 
@@ -1071,7 +1211,9 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarEl.style.cssText = 'position:fixed;bottom:0;left:0;height:4px;background:var(--b3-theme-surface-lighter);z-index:9999;width:100%;';
     const fill = document.createElement('div');
     fill.className = 'status-bar-fill';
-    fill.style.cssText = 'height:100%;background:var(--b3-theme-primary);transition:width 0.3s;';
+    const direction = pomodoro.statusBarDirection ?? 'extend';
+    const initialWidth = direction === 'shrink' ? '100%' : '0%';
+    fill.style.cssText = `height:100%;background:var(--b3-theme-primary);transition:width 0.3s;width:${initialWidth};`;
     this.statusBarEl.appendChild(fill);
     document.body.appendChild(this.statusBarEl);
   }
@@ -1330,7 +1472,9 @@ export default class TaskAssistantPlugin extends Plugin {
           if (fill) {
             const elapsed = Math.max(0, totalSeconds - d.remainingSeconds);
             const progress = totalSeconds > 0 ? Math.min(1, elapsed / totalSeconds) : 0;
-            fill.style.width = `${progress * 100}%`;
+            const direction = pomodoro.statusBarDirection ?? 'extend';
+            const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
+            fill.style.width = `${displayProgress * 100}%`;
           }
         }
         if (pomodoro.enableStatusBarTimer === true) {
@@ -1368,7 +1512,9 @@ export default class TaskAssistantPlugin extends Plugin {
         if (fill) {
           const refSeconds = isStopwatch ? 25 * 60 : targetSeconds;
           const progress = Math.min(1, accumulatedSeconds / refSeconds);
-          fill.style.width = `${progress * 100}%`;
+          const direction = pomodoro.statusBarDirection ?? 'extend';
+          const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
+          fill.style.width = `${displayProgress * 100}%`;
         }
       }
       if (pomodoro.enableStatusBarTimer === true) {
@@ -1464,6 +1610,56 @@ export default class TaskAssistantPlugin extends Plugin {
           }
         }
       }
+    }
+  }
+
+  /**
+   * 注册斜杠命令
+   */
+  private registerSlashCommands() {
+    const settings = this.getSettings();
+    const config: SlashCommandConfig = {
+      pluginName: this.name,
+      openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => {
+        this.openCustomTab(tabType, options);
+      },
+      openPomodoroDock: () => {
+        this.openPomodoroDock();
+      },
+      openTodoDock: () => {
+        this.openTodoDock();
+      },
+      customSlashCommands: settings.customSlashCommands || []
+    };
+
+    this.protyleSlash = createSlashCommands(config);
+  }
+
+  /**
+   * 打开待办 Dock
+   */
+  private openTodoDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.TODO}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open todo dock:', error);
+    }
+  }
+
+  /**
+   * 打开 AI 对话 Dock
+   */
+  private openAiChatDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.AI_CHAT}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open AI chat dock:', error);
     }
   }
 }

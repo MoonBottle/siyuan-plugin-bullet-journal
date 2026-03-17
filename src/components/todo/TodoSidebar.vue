@@ -3,8 +3,18 @@
     <div class="todo-content">
       <SyLoading v-if="loading" :text="t('common').loading" />
 
-      <div v-else-if="todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty">
-        {{ t('todo').noTodos }}
+      <div v-else-if="todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty-guide">
+        <div class="empty-guide-icon">
+          <svg><use xlink:href="#iconTask"></use></svg>
+        </div>
+        <div class="empty-guide-title">{{ t('todo').emptyGuideTitle }}</div>
+        <div class="empty-guide-desc">{{ t('todo').emptyGuideDesc }}</div>
+        <div class="empty-guide-actions">
+          <button class="b3-button b3-button--outline" @click="handleCreateExample">
+            <svg><use xlink:href="#iconAdd"></use></svg>
+            <span>{{ t('todo').createExampleDoc }}</span>
+          </button>
+        </div>
       </div>
 
       <div v-else class="todo-list">
@@ -415,6 +425,7 @@ import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
+import { createExampleDocument } from '@/utils/exampleDocUtils';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
@@ -725,7 +736,7 @@ const openPomodoroDialog = (item: Item) => {
       closeDialog: () => {
         dialog.destroy();
       },
-      preselectedItem: item,
+      preselectedBlockId: item.blockId,
       hideItemList: true
     });
     app.mount(mountEl);
@@ -815,6 +826,21 @@ onUnmounted(() => {
     unsubscribePomodoroRestore();
   }
 });
+
+// 创建示例文档
+const handleCreateExample = async () => {
+  if (isProcessing.value) return;
+  isProcessing.value = true;
+  try {
+    const docId = await createExampleDocument();
+    if (docId && plugin) {
+      // 刷新项目数据
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
+  }
+};
 </script>
 
 <style lang="scss" scoped>
@@ -834,6 +860,60 @@ onUnmounted(() => {
   color: var(--b3-theme-on-surface);
   opacity: 0.6;
   font-size: 13px;
+}
+
+.empty-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--b3-theme-on-surface);
+
+  .empty-guide-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+
+    svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+    }
+  }
+
+  .empty-guide-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--b3-theme-on-background);
+  }
+
+  .empty-guide-desc {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    max-width: 240px;
+  }
+
+  .empty-guide-actions {
+    .b3-button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+    }
+  }
 }
 
 .todo-list {
@@ -947,12 +1027,6 @@ onUnmounted(() => {
 .item-actions-hover {
   display: flex;
   gap: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-
-  .card:hover & {
-    opacity: 1;
-  }
 
   .block__icon {
     opacity: 1;

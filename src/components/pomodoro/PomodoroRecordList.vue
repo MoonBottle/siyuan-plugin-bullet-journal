@@ -4,6 +4,19 @@
       <span class="header-title">{{ t('pomodoroRecord').title }}</span>
     </div>
     <div class="record-list-content">
+      <div v-if="sortedGroupedPomodoros.length === 0" class="empty-guide">
+        <div class="empty-guide-icon">
+          <TomatoIcon :width="48" :height="48" />
+        </div>
+        <div class="empty-guide-title">{{ t('pomodoroRecord').emptyGuideTitle }}</div>
+        <div class="empty-guide-desc">{{ t('pomodoroRecord').emptyGuideDesc }}</div>
+        <div class="empty-guide-actions">
+          <button class="b3-button b3-button--outline" @click="handleCreateExample">
+            <svg><use xlink:href="#iconAdd"></use></svg>
+            <span>{{ t('pomodoroRecord').createExampleDoc }}</span>
+          </button>
+        </div>
+      </div>
       <div v-for="[date, records] in sortedGroupedPomodoros" :key="date" class="date-group">
         <div class="date-header">{{ formatDate(date) }}</div>
         <div class="record-items">
@@ -30,17 +43,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useProjectStore } from '@/stores';
+import { computed, ref } from 'vue';
+import { useProjectStore, useSettingsStore } from '@/stores';
 import type { PomodoroRecord } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { usePlugin } from '@/main';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import { t } from '@/i18n';
+import { createExampleDocument } from '@/utils/exampleDocUtils';
 
 const plugin = usePlugin();
 
 const projectStore = useProjectStore();
+const settingsStore = useSettingsStore();
+
+// 防止重复点击的执行锁
+const isProcessing = ref(false);
 
 const groupedPomodoros = computed(() => projectStore.getPomodorosByDate(''));
 
@@ -124,6 +142,23 @@ async function handleRecordClick(record: PomodoroRecord) {
 
   await openDocumentAtLine(docId, undefined, record.blockId);
 }
+
+/**
+ * 创建示例文档
+ */
+async function handleCreateExample() {
+  if (isProcessing.value) return;
+  isProcessing.value = true;
+  try {
+    const docId = await createExampleDocument();
+    if (docId && plugin) {
+      // 刷新项目数据
+      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    }
+  } finally {
+    isProcessing.value = false;
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -153,6 +188,57 @@ async function handleRecordClick(record: PomodoroRecord) {
   flex: 1;
   overflow-y: auto;
   padding: 8px 0;
+}
+
+.empty-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--b3-theme-on-surface);
+
+  .empty-guide-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-guide-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--b3-theme-on-background);
+  }
+
+  .empty-guide-desc {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    max-width: 240px;
+  }
+
+  .empty-guide-actions {
+    .b3-button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+    }
+  }
 }
 
 .date-group {
@@ -223,6 +309,7 @@ async function handleRecordClick(record: PomodoroRecord) {
   font-size: 11px;
   color: var(--b3-theme-on-surface);
   opacity: 0.8;
+  white-space: pre-line;
 }
 
 .record-duration {

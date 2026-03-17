@@ -22,7 +22,8 @@ export function parseBlockRefs(text: string): { stripped: string; links: Link[] 
     });
     return alias ?? '';
   });
-  return { stripped: stripped.trim().replace(/\s+/g, ' '), links };
+  // 保留换行符，只将非换行的连续空白字符替换为单个空格
+  return { stripped: stripped.trim().replace(/[ \t]+/g, ' '), links };
 }
 
 export class LineParser {
@@ -61,6 +62,7 @@ export class LineParser {
     // 注意：思源 Kramdown 中 #任务 会显示为 #任务#（末尾多一个 #）
     let name = line
       .replace(/#任务#?/g, '')
+      .replace(/#task#?/gi, '')
       .replace(/@L[123]/g, '')
       .replace(/@\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(~\d{2}:\d{2}:\d{2})?)?/g, '')
       .replace(/https?:\/\/[^\s]+/g, '')
@@ -394,14 +396,19 @@ export class LineParser {
    * 或: - 🍅YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（列表项形式）
    * 或: 🍅N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述文字（带实际时长）
    * 支持中英文逗号，逗号后可有任意空格
-   * @param line 番茄钟行内容
+   * 支持多行描述（第一行为番茄钟标记，后续行为描述）
+   * @param line 番茄钟行内容（可能包含多行）
    * @param blockId 块 ID
    * @param attrs 可选的块属性
    * @returns PomodoroRecord 对象，解析失败返回 null
    */
   public static parsePomodoroLine(line: string, blockId?: string, attrs?: { [key: string]: string }): PomodoroRecord | null {
+    // 分离多行内容
+    const lines = line.split('\n');
+    const firstLine = lines[0] || '';
+
     // 去除列表标记、块属性和缩进
-    const cleanedLine = line
+    const cleanedLine = firstLine
       .replace(/^\s*([-]|\d+\.)\s+/, '')  // 列表标记 - 或 1. 等
       .replace(/^\{\:\s*[^}]*\}\s*/, '') // 块属性 {: ... }
       .trim();
@@ -425,7 +432,23 @@ export class LineParser {
     const date = match[2];
     const startTime = match[3];
     const endTime = match[4];
-    const rawDescription = match[5]?.trim() || undefined;
+
+    // 处理描述：第一行可能已有描述，加上后续行
+    let rawDescription = match[5]?.trim() || '';
+
+    // 如果有后续行，合并为描述（过滤掉块属性行）
+    if (lines.length > 1) {
+      const descriptionLines = lines
+        .slice(1)
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('{:')); // 过滤空行和块属性行
+      if (descriptionLines.length > 0) {
+        rawDescription = rawDescription
+          ? rawDescription + '\n' + descriptionLines.join('\n')
+          : descriptionLines.join('\n');
+      }
+    }
+
     const description = rawDescription ? parseBlockRefs(rawDescription).stripped || undefined : undefined;
 
     // 计算专注时长（分钟）
@@ -481,7 +504,8 @@ export class LineParser {
   /**
    * 解析块属性中的番茄钟值（attr 模式）
    * 格式: {durationMinutes},{date} {startTime}~{endTime} {description}
-   * 时间与描述之间为空格，无逗号
+   * 或: {durationMinutes},{date} {startTime}~{endTime}\n{多行描述}
+   * 时间与描述之间为空格或换行符
    * @param value 属性值
    * @param blockId 块 ID
    * @param attrPrefix 属性名前缀，用于生成 id
@@ -494,9 +518,43 @@ export class LineParser {
   ): PomodoroRecord | null {
     if (!value || typeof value !== 'string') return null;
 
-    // 格式: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述（空格分隔，无逗号）
+    const trimmedValue = value.trim();
+
+    // 检查是否包含真正的换行符（多行描述格式）
+    // 支持两种形式：真正的换行符 \n 或转义的 \\n
+    const newlineChar = '\n';
+    if (trimmedValue.includes(newlineChar)) {
+      const parts = trimmedValue.split(newlineChar);
+      const headerPart = parts[0];
+      const descLines = parts.slice(1).map(line => line.trim()).filter(line => line && !line.startsWith('{:'));
+
+      // 解析头部: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss
+      const headerRegex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*$/;
+      const headerMatch = headerPart.match(headerRegex);
+
+      if (!headerMatch) return null;
+
+      const durationMinutes = parseInt(headerMatch[1], 10);
+      const date = headerMatch[2];
+      const startTime = headerMatch[3];
+      const endTime = headerMatch[4];
+      const description = descLines.join('\n') || undefined;
+
+      return {
+        id: `${attrPrefix}-${blockId || 'unknown'}-${date}-${startTime}`,
+        date,
+        startTime,
+        endTime,
+        description,
+        durationMinutes,
+        actualDurationMinutes: durationMinutes,
+        blockId
+      };
+    }
+
+    // 单行描述格式: N,YYYY-MM-DD HH:mm:ss~HH:mm:ss 描述
     const regex = /^(\d+)[,，]\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})\s*(.*)$/;
-    const match = value.trim().match(regex);
+    const match = trimmedValue.match(regex);
 
     if (!match) return null;
 

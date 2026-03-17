@@ -43,9 +43,13 @@ export interface ActivePomodoroData {
   currentPauseStartTime?: number;// 当前暂停开始时间戳（如果有）
   projectId?: string;           // 项目ID（可选）
   projectName?: string;         // 项目名称（可选）
+  projectLinks?: Link[];        // 项目链接（可选）
   taskId?: string;              // 任务ID（可选）
   taskName?: string;            // 任务名称（可选）
   taskLevel?: string;           // 任务层级（可选）
+  taskLinks?: Link[];           // 任务链接（可选）
+  itemStatus?: ItemStatus;      // 事项状态（可选）
+  itemLinks?: Link[];           // 事项链接（可选）
   timerMode?: 'countdown' | 'stopwatch'; // 计时模式
 }
 
@@ -60,9 +64,13 @@ export interface PendingPomodoroCompletion {
   durationMinutes: number;
   projectId?: string;
   projectName?: string;
+  projectLinks?: Link[];
   taskId?: string;
   taskName?: string;
   taskLevel?: string;
+  taskLinks?: Link[];
+  itemStatus?: ItemStatus;
+  itemLinks?: Link[];
   timerMode?: 'countdown' | 'stopwatch';
 }
 

@@ -163,6 +163,7 @@ export const useProjectStore = defineStore('project', {
     // 获取所有番茄钟记录（包括项目、任务、事项的番茄钟）
     getAllPomodoros: (state) => (groupId: string = ''): PomodoroRecord[] => {
       const pomodoros: PomodoroRecord[] = [];
+      const seenBlockIds = new Set<string>(); // 用于去重
       const projects = !groupId ? state.projects : state.projects.filter(p => p.groupId === groupId);
 
       projects.forEach(project => {
@@ -176,7 +177,14 @@ export const useProjectStore = defineStore('project', {
             pomodoros.push(...task.pomodoros);
           }
           task.items.forEach(item => {
-            if (item.pomodoros) {
+            if (item.pomodoros && item.blockId) {
+              // 根据 blockId 去重：同一个 blockId 的 item 只收集一次 pomodoros
+              if (!seenBlockIds.has(item.blockId)) {
+                seenBlockIds.add(item.blockId);
+                pomodoros.push(...item.pomodoros);
+              }
+            } else if (item.pomodoros) {
+              // 没有 blockId 的 item，直接收集
               pomodoros.push(...item.pomodoros);
             }
           });
@@ -290,38 +298,51 @@ export const useProjectStore = defineStore('project', {
       for (const project of projects) {
         for (const task of project.tasks) {
           if (task.blockId) {
+            let attrs: Record<string, string> = {};
             try {
-              const attrs = await getBlockAttrs(task.blockId);
-              const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
-              if (attrRecords.length > 0) {
-                for (const r of attrRecords) {
-                  r.taskId = task.id;
-                  r.projectId = project.id;
-                }
-                task.pomodoros = [...(task.pomodoros || []), ...attrRecords];
-              }
+              attrs = await getBlockAttrs(task.blockId);
             } catch {
-              // 忽略获取属性失败
+              // 获取失败时跳过该 task，不影响其他
+            }
+            const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
+            if (attrRecords.length > 0) {
+              for (const r of attrRecords) {
+                r.taskId = task.id;
+                r.projectId = project.id;
+              }
+              // 确保 pomodoros 数组已初始化
+              if (!task.pomodoros) {
+                task.pomodoros = [];
+              }
+              task.pomodoros.push(...attrRecords);
             }
           }
-          for (const item of task.items) {
-            if (item.blockId) {
-              try {
-                const attrs = await getBlockAttrs(item.blockId);
-                const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
-                if (attrRecords.length > 0) {
-                  // FIX: 根据日期匹配，只合并日期匹配的记录（避免多日期事项重复）
-                  const matchingRecords = attrRecords.filter(r => r.date === item.date);
-                  for (const r of matchingRecords) {
-                    r.itemId = item.id;
-                    r.taskId = task.id;
-                    r.projectId = project.id;
-                  }
-                  item.pomodoros = [...(item.pomodoros || []), ...matchingRecords];
-                }
-              } catch {
-                // 忽略获取属性失败
+
+          // 按 blockId 对 items 去重，避免重复获取属性
+          const seenBlockIds = new Set<string>();
+          const uniqueItems = task.items.filter(item => {
+            if (!item.blockId) return false;
+            if (seenBlockIds.has(item.blockId)) return false;
+            seenBlockIds.add(item.blockId);
+            return true;
+          });
+
+          for (const item of uniqueItems) {
+            let attrs: Record<string, string> = {};
+            try {
+              attrs = await getBlockAttrs(item.blockId);
+            } catch {
+              // 获取失败时跳过该 item，不影响其他
+            }
+            const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
+            if (attrRecords.length > 0) {
+              for (const r of attrRecords) {
+                r.itemId = item.id;
+                r.taskId = task.id;
+                r.projectId = project.id;
               }
+              // parser 已确保同 blockId 的 items 共享同一 pomodoros 引用，push 即可
+              item.pomodoros!.push(...attrRecords);
             }
           }
         }
@@ -341,7 +362,7 @@ export const useProjectStore = defineStore('project', {
         const projects = await parser.parseAllProjects();
         await this.mergePomodoroAttrs(projects, _plugin);
         console.log('[Task Assistant] Parsed projects:', projects?.length || 0);
-        const items = await parser.getAllItems();
+        const items = parser.getAllItemsFromProjects(projects);
         console.log('[Task Assistant] Parsed items:', items?.length || 0);
         const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
         console.log('[Task Assistant] Converted events:', calendarEvents?.length || 0);
@@ -374,7 +395,7 @@ export const useProjectStore = defineStore('project', {
         const parser = new MarkdownParser(directories);
         const projects = await parser.parseAllProjects();
         await this.mergePomodoroAttrs(projects, _plugin);
-        const items = await parser.getAllItems();
+        const items = parser.getAllItemsFromProjects(projects);
         const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
 
         this.projects = projects;

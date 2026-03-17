@@ -131,6 +131,7 @@ const renderEventContent = (arg: any) => {
 
 interface Props {
   events: CalendarEvent[];
+  initialView?: string;
 }
 
 const props = defineProps<Props>();
@@ -217,7 +218,7 @@ const openPomodoroDialog = (item: Item) => {
       closeDialog: () => {
         dialog.destroy();
       },
-      preselectedItem: item,
+      preselectedBlockId: item.blockId,
       hideItemList: true
     });
     app.mount(mountEl);
@@ -362,7 +363,7 @@ onMounted(async () => {
   try {
     calendarInstance = new Calendar(calendarEl.value, {
       plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
-      initialView: 'timeGridDay',
+      initialView: props.initialView || 'timeGridDay',
       headerToolbar: false, // 禁用默认工具栏，使用自定义工具栏
       eventContent: renderEventContent, // 自定义事件渲染
       locale: getCurrentLocale().startsWith('zh') ? 'zh-cn' : 'en',

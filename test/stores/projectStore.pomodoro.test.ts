@@ -36,6 +36,18 @@ const mkItem = (
     ...overrides
   }) as Item;
 
+/** 模拟 parser 行为：同 blockId 的 items 共享同一个 pomodoros 数组 */
+const mkItemsWithSharedBlockId = (
+  configs: Array<{ date: string } & Partial<Item>>,
+  sharedBlockId: string
+): Item[] => {
+  const sharedPomodoros: PomodoroRecord[] = [];
+  return configs.map(c => {
+    const { date, ...rest } = c;
+    return mkItem(date, sharedBlockId, { ...rest, pomodoros: sharedPomodoros });
+  });
+};
+
 const mkTask = (items: Item[], overrides?: Partial<Task>): Task =>
   ({
     id: `task-${Math.random().toString(36).substr(2, 5)}`,
@@ -69,19 +81,17 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     vi.clearAllMocks();
   });
 
-  it('多日期事项：专注记录只合并到对应日期的 Item', async () => {
+  it('多日期事项：共享同一个 pomodoros 数组', async () => {
     const store = useProjectStore();
 
-    // 创建一个多日期事项，共享同一个 blockId
     const sharedBlockId = '20250315123456-abcdef';
-    const item1 = mkItem('2026-03-15', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
-    const item2 = mkItem('2026-03-16', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
+    const [item1, item2] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
@@ -94,32 +104,25 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
 
     await store.mergePomodoroAttrs([project], mockPlugin);
 
-    // 验证：每个 Item 只包含对应日期的记录
-    expect(item1.pomodoros).toHaveLength(1);
-    expect(item1.pomodoros?.[0].date).toBe('2026-03-15');
-    expect(item1.pomodoros?.[0].durationMinutes).toBe(25);
-
-    expect(item2.pomodoros).toHaveLength(1);
-    expect(item2.pomodoros?.[0].date).toBe('2026-03-16');
-    expect(item2.pomodoros?.[0].durationMinutes).toBe(30);
+    // 验证：两个 Item 共享同一个 pomodoros 数组
+    expect(item1.pomodoros).toBe(item2.pomodoros);
+    // 验证：共享数组包含所有记录
+    expect(item1.pomodoros).toHaveLength(2);
+    expect(item2.pomodoros).toHaveLength(2);
   });
 
-  it('多日期事项：某日期没有专注记录时该 Item 的 pomodoros 为空', async () => {
+  it('多日期事项：共享 pomodoros 包含所有日期的记录', async () => {
     const store = useProjectStore();
 
     const sharedBlockId = '20250315123456-abcdef';
-    const item1 = mkItem('2026-03-15', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-17'
-    });
-    const item2 = mkItem('2026-03-16', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-17'
-    });
-    const item3 = mkItem('2026-03-17', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-17'
-    });
+    const [item1, item2, item3] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-17' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-17' },
+        { date: '2026-03-17', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-17' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask([item1, item2, item3]);
     const project = mkProject([task]);
@@ -132,17 +135,17 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
 
     await store.mergePomodoroAttrs([project], mockPlugin);
 
-    // 验证：只有对应日期的 Item 有记录
-    expect(item1.pomodoros).toHaveLength(1);
-    expect(item2.pomodoros).toHaveLength(0);
-    expect(item3.pomodoros).toHaveLength(1);
+    // 验证：所有 Item 共享同一个数组，包含所有记录
+    expect(item1.pomodoros).toBe(item2.pomodoros);
+    expect(item2.pomodoros).toBe(item3.pomodoros);
+    expect(item1.pomodoros).toHaveLength(2);
   });
 
   it('单日期事项：专注记录正常合并', async () => {
     const store = useProjectStore();
 
     const blockId = '20250315123456-abcdef';
-    const item = mkItem('2026-03-15', blockId);
+    const [item] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], blockId);
     const task = mkTask([item]);
     const project = mkProject([task]);
 
@@ -162,8 +165,8 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
   it('多个事项有不同的 blockId：各自获取自己的专注记录', async () => {
     const store = useProjectStore();
 
-    const item1 = mkItem('2026-03-15', 'block-id-1');
-    const item2 = mkItem('2026-03-16', 'block-id-2');
+    const [item1] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], 'block-id-1');
+    const [item2] = mkItemsWithSharedBlockId([{ date: '2026-03-16' }], 'block-id-2');
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
 
@@ -190,20 +193,22 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
 
     expect(item2.pomodoros).toHaveLength(1);
     expect(item2.pomodoros?.[0].description).toBe('事项2的专注');
+
+    // 验证：不同的 blockId 不共享数组
+    expect(item1.pomodoros).not.toBe(item2.pomodoros);
   });
 
-  it('多日期事项：同一天有多条专注记录时全部合并', async () => {
+  it('多日期事项：同一天有多条专注记录时全部合并到共享数组', async () => {
     const store = useProjectStore();
 
     const sharedBlockId = '20250315123456-abcdef';
-    const item1 = mkItem('2026-03-15', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
-    const item2 = mkItem('2026-03-16', sharedBlockId, {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
+    const [item1, item2] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
@@ -217,13 +222,10 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
 
     await store.mergePomodoroAttrs([project], mockPlugin);
 
-    // 验证：3月15日的 Item 有两条记录
-    expect(item1.pomodoros).toHaveLength(2);
-    expect(item1.pomodoros?.every(p => p.date === '2026-03-15')).toBe(true);
-
-    // 验证：3月16日的 Item 只有一条记录
-    expect(item2.pomodoros).toHaveLength(1);
-    expect(item2.pomodoros?.[0].date).toBe('2026-03-16');
+    // 验证：两个 Item 共享同一个数组，包含所有3条记录
+    expect(item1.pomodoros).toBe(item2.pomodoros);
+    expect(item1.pomodoros).toHaveLength(3);
+    expect(item2.pomodoros).toHaveLength(3);
   });
 
   it('没有自定义属性时 pomodoros 保持原值', async () => {
@@ -257,8 +259,8 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
   it('获取属性失败时不影响其他事项', async () => {
     const store = useProjectStore();
 
-    const item1 = mkItem('2026-03-15', 'block-id-1');
-    const item2 = mkItem('2026-03-16', 'block-id-2');
+    const [item1] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], 'block-id-1');
+    const [item2] = mkItemsWithSharedBlockId([{ date: '2026-03-16' }], 'block-id-2');
     const task = mkTask([item1, item2]);
     const project = mkProject([task]);
 
@@ -275,8 +277,8 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     // 不应该抛出错误
     await expect(store.mergePomodoroAttrs([project], mockPlugin)).resolves.not.toThrow();
 
-    // 验证：item1 没有记录，item2 有记录
-    expect(item1.pomodoros).toBeUndefined();
+    // 验证：item1 没有记录（API 抛错未合并），item2 有记录
+    expect(item1.pomodoros).toHaveLength(0);
     expect(item2.pomodoros).toHaveLength(1);
   });
 
@@ -311,7 +313,7 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     };
 
     const blockId = '20250315123456-abcdef';
-    const item = mkItem('2026-03-15', blockId);
+    const [item] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], blockId);
     const task = mkTask([item]);
     const project = mkProject([task]);
 
@@ -326,6 +328,31 @@ describe('mergePomodoroAttrs - 多日期事项自定义属性专注记录', () =
     expect(item.pomodoros).toHaveLength(1);
     expect(item.pomodoros?.[0].description).toBe('自定义前缀');
   });
+
+  it('按 blockId 去重：同一个 blockId 只调用一次 getBlockAttrs', async () => {
+    const store = useProjectStore();
+
+    const sharedBlockId = '20250315123456-abcdef';
+    const [item1, item2] = mkItemsWithSharedBlockId(
+      [{ date: '2026-03-15' }, { date: '2026-03-16' }],
+      sharedBlockId
+    );
+    const [item3] = mkItemsWithSharedBlockId([{ date: '2026-03-17' }], 'different-block-id');
+
+    const task = mkTask([item1, item2, item3]);
+    const project = mkProject([task]);
+
+    mockGetBlockAttrs.mockResolvedValue({
+      'custom-pomodoro-1': '25,2026-03-15 10:00:00~10:25:00 测试'
+    });
+
+    await store.mergePomodoroAttrs([project], mockPlugin);
+
+    // 验证：共享 blockId 的 item 只调用一次 API
+    expect(mockGetBlockAttrs).toHaveBeenCalledTimes(2);
+    expect(mockGetBlockAttrs).toHaveBeenCalledWith(sharedBlockId);
+    expect(mockGetBlockAttrs).toHaveBeenCalledWith('different-block-id');
+  });
 });
 
 describe('mergePomodoroAttrs - 实际应用场景', () => {
@@ -334,64 +361,60 @@ describe('mergePomodoroAttrs - 实际应用场景', () => {
     vi.clearAllMocks();
   });
 
-  it('日期范围跨天的场景：每天只显示当天的记录', async () => {
+  it('日期范围跨天的场景：所有 Item 共享同一个 pomodoros 数组', async () => {
     const store = useProjectStore();
 
-    // 模拟：一个事项跨越3天，每天不同时间段
     const sharedBlockId = '20250315000000-xyzabc';
-    const items = [
-      mkItem('2026-03-15', sharedBlockId, {
-        startDateTime: '2026-03-15 06:15:00',
-        endDateTime: '2026-03-15 08:00:00',
-        dateRangeStart: '2026-03-15',
-        dateRangeEnd: '2026-03-21'
-      }),
-      mkItem('2026-03-16', sharedBlockId, {
-        dateRangeStart: '2026-03-15',
-        dateRangeEnd: '2026-03-21'
-      }),
-      mkItem('2026-03-21', sharedBlockId, {
-        dateRangeStart: '2026-03-15',
-        dateRangeEnd: '2026-03-21'
-      })
-    ];
+    const items = mkItemsWithSharedBlockId(
+      [
+        {
+          date: '2026-03-15',
+          startDateTime: '2026-03-15 06:15:00',
+          endDateTime: '2026-03-15 08:00:00',
+          dateRangeStart: '2026-03-15',
+          dateRangeEnd: '2026-03-21'
+        },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-21' },
+        { date: '2026-03-21', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-21' }
+      ],
+      sharedBlockId
+    );
 
     const task = mkTask(items);
     const project = mkProject([task]);
 
-    // 3月15日有专注记录，其他日期没有
+    // 3月15日有专注记录
     mockGetBlockAttrs.mockResolvedValue({
       'custom-pomodoro-20250315-194000': '1,2026-03-15 19:40:00~19:41:00 测试记录'
     });
 
     await store.mergePomodoroAttrs([project], mockPlugin);
 
-    // 验证：只有3月15日的 Item 有记录
+    // 验证：所有 Item 共享同一个 pomodoros 数组
+    expect(items[0].pomodoros).toBe(items[1].pomodoros);
+    expect(items[1].pomodoros).toBe(items[2].pomodoros);
+    // 验证：所有 Item 都能看到这条记录
     expect(items[0].pomodoros).toHaveLength(1);
-    expect(items[0].pomodoros?.[0].date).toBe('2026-03-15');
-    expect(items[0].pomodoros?.[0].startTime).toBe('19:40:00');
-
-    expect(items[1].pomodoros).toHaveLength(0);
-    expect(items[2].pomodoros).toHaveLength(0);
+    expect(items[1].pomodoros).toHaveLength(1);
+    expect(items[2].pomodoros).toHaveLength(1);
   });
 
   it('复杂场景：多个项目、多个任务、多种日期范围', async () => {
     const store = useProjectStore();
 
     // 项目1：单日期事项
-    const item1 = mkItem('2026-03-15', 'block-1');
+    const [item1] = mkItemsWithSharedBlockId([{ date: '2026-03-15' }], 'block-1');
     const task1 = mkTask([item1]);
     const project1 = mkProject([task1], { id: 'proj-1', name: '项目1' });
 
-    // 项目2：多日期事项
-    const item2a = mkItem('2026-03-15', 'block-2', {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
-    const item2b = mkItem('2026-03-16', 'block-2', {
-      dateRangeStart: '2026-03-15',
-      dateRangeEnd: '2026-03-16'
-    });
+    // 项目2：多日期事项（共享 blockId）
+    const [item2a, item2b] = mkItemsWithSharedBlockId(
+      [
+        { date: '2026-03-15', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' },
+        { date: '2026-03-16', dateRangeStart: '2026-03-15', dateRangeEnd: '2026-03-16' }
+      ],
+      'block-2'
+    );
     const task2 = mkTask([item2a, item2b]);
     const project2 = mkProject([task2], { id: 'proj-2', name: '项目2' });
 
@@ -418,14 +441,10 @@ describe('mergePomodoroAttrs - 实际应用场景', () => {
     expect(item1.pomodoros?.[0].description).toBe('项目1专注');
     expect(item1.pomodoros?.[0].projectId).toBe('proj-1');
 
-    // 验证项目2：item2a 只有3月15日的记录
-    expect(item2a.pomodoros).toHaveLength(1);
-    expect(item2a.pomodoros?.[0].date).toBe('2026-03-15');
+    // 验证项目2：item2a 和 item2b 共享同一个数组，包含所有记录
+    expect(item2a.pomodoros).toBe(item2b.pomodoros);
+    expect(item2a.pomodoros).toHaveLength(2);
+    expect(item2b.pomodoros).toHaveLength(2);
     expect(item2a.pomodoros?.[0].projectId).toBe('proj-2');
-
-    // 验证项目2：item2b 只有3月16日的记录
-    expect(item2b.pomodoros).toHaveLength(1);
-    expect(item2b.pomodoros?.[0].date).toBe('2026-03-16');
-    expect(item2b.pomodoros?.[0].projectId).toBe('proj-2');
   });
 });

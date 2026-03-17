@@ -92,7 +92,9 @@ export default defineConfig(({
     // 在这里自定义变量
     define: {
       "process.env.DEV_MODE": `"${isWatch}"`,
-      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+      "process.env.NODE_ENV": JSON.stringify(isWatch ? 'development' : 'production'),
+      __VUE_OPTIONS_API__: true,
+      __VUE_PROD_DEVTOOLS__: isWatch,
     },
 
     build: {
@@ -101,7 +103,7 @@ export default defineConfig(({
       emptyOutDir: !isWatch && process.env.EMPTY_OUT_DIR !== 'false',
 
       // 构建后是否生成 source map 文件
-      sourcemap: false,
+      sourcemap: isWatch,
 
       // 设置为 false 可以禁用最小化混淆
       // 或是用来指定是应用哪种混淆器

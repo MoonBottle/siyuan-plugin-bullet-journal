@@ -2,7 +2,7 @@
  * 事项块相关工具
  * 用于从文档块获取 blockId、匹配 Item 等
  */
-import type { Item } from '@/types/models';
+import type { Item, PomodoroRecord } from '@/types/models';
 
 /**
  * 从 DOM 元素向上查找块元素，获取 blockId

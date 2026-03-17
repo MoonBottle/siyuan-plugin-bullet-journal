@@ -45,6 +45,26 @@ vi.mock('@/i18n', () => ({
   t: (...args: any[]) => mockT(...args)
 }));
 
+// Mock @/utils/slashCommandUtils
+vi.mock('@/utils/slashCommandUtils', () => ({
+  processLineText: (text: string) => text, // 默认直接返回原文本
+  formatDate: (date: Date) => date.toISOString().split('T')[0],
+  extractDatesFromBlock: vi.fn(),
+  findNearestDate: vi.fn(),
+  extractItemFromBlock: vi.fn()
+}));
+
+// Mock @/constants
+vi.mock('@/constants', () => ({
+  TAB_TYPES: {
+    CALENDAR: 'bullet-journal-calendar',
+    GANTT: 'bullet-journal-gantt',
+    PROJECT: 'bullet-journal-project',
+    POMODORO_STATS: 'bullet-journal-pomodoro-stats'
+  },
+  ALL_SLASH_COMMAND_FILTERS: ['/sx', '/事项', '/today', '/rl', '/日历', '/calendar', '/gtt', '/甘特图', '/gantt', '/zz', '/专注', '/focus', '/db', '/待办', '/todo']
+}));
+
 // 导入被测函数（在 mock 之后）
 import { updateBlockDateTime, updateBlockContent } from '@/utils/fileUtils';
 
@@ -79,7 +99,7 @@ describe('updateBlockDateTime', () => {
     expect(result).toBe(true);
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02 14:00:00~15:00:00',
+      '整理资料 @2024-01-02 14:00:00~15:00:00\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -101,7 +121,7 @@ describe('updateBlockDateTime', () => {
     expect(result).toBe(true);
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02',
+      '整理资料 @2024-01-02\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -130,7 +150,7 @@ describe('updateBlockDateTime', () => {
     // 连续日期合并为范围
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02~01-03',
+      '整理资料 @2024-01-02~01-03\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -160,8 +180,8 @@ describe('updateBlockDateTime', () => {
 
     expect(result).toBe(true);
     const callArg = mockUpdateBlock.mock.calls[0][1];
-    // 应该拆分为不连续的日期，只有一个 @ 前缀
-    expect(callArg).toBe('整理资料 @2026-03-06, 2026-03-10, 2026-03-12, 2026-03-20');
+    // 应该拆分为不连续的日期，只有一个 @ 前缀，并保留 kramdown 属性行
+    expect(callArg).toBe('整理资料 @2026-03-06, 2026-03-10, 2026-03-12, 2026-03-20\n{: id="block-1" }');
   });
 
   it('多日期场景：添加时间到某一天', async () => {
@@ -189,8 +209,8 @@ describe('updateBlockDateTime', () => {
 
     expect(result).toBe(true);
     const callArg = mockUpdateBlock.mock.calls[0][1];
-    // 03-11 应该带时间，按日期顺序排列：03-06, 03-10, 03-11(带时间), 03-12
-    expect(callArg).toBe('整理资料 @2026-03-06, 2026-03-10, 2026-03-11 09:00:00~09:30:00, 2026-03-12');
+    // 03-11 应该带时间，按日期顺序排列：03-06, 03-10, 03-11(带时间), 03-12，并保留 kramdown 属性行
+    expect(callArg).toBe('整理资料 @2026-03-06, 2026-03-10, 2026-03-11 09:00:00~09:30:00, 2026-03-12\n{: id="block-1" }');
   });
 
   it('多日期场景：保留状态标签（已完成）', async () => {
@@ -215,10 +235,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该使用 #已完成 标签（根据 i18n 配置）
+    // 应该使用 #已完成 标签（根据 i18n 配置），并保留 kramdown 属性行
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02~01-03 #已完成',
+      '整理资料 @2024-01-02~01-03 #已完成\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -245,10 +265,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该使用 #已放弃 标签（根据 i18n 配置）
+    // 应该使用 #已放弃 标签（根据 i18n 配置），并保留 kramdown 属性行
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02~01-03 #已放弃',
+      '整理资料 @2024-01-02~01-03 #已放弃\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -275,10 +295,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 待办状态不应该有标签
+    // 待办状态不应该有标签，并保留 kramdown 属性行
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02~01-03',
+      '整理资料 @2024-01-02~01-03\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -306,10 +326,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 03-06 和 03-07 应该合并为范围，只有一个 @ 前缀
+    // 03-06 和 03-07 应该合并为范围，只有一个 @ 前缀，并保留 kramdown 属性行
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2026-03-06~03-07, 2026-03-10',
+      '整理资料 @2026-03-06~03-07, 2026-03-10\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -357,7 +377,7 @@ describe('updateBlockDateTime', () => {
     expect(result).toBe(true);
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-02 09:00:00~10:00:00',
+      '整理资料 @2024-01-02 09:00:00~10:00:00\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -387,10 +407,10 @@ describe('updateBlockDateTime', () => {
 
     expect(result).toBe(true);
     // 应该保留所有三个日期，其中 2024-02-29 带时间
-    // 日期按时间顺序排列：28号 → 29号 → 3月1号
+    // 日期按时间顺序排列：28号 → 29号 → 3月1号，并保留 kramdown 属性行
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '边界闰年 @2024-02-28, 2024-02-29 08:00:00~09:00:00, 2024-03-01',
+      '边界闰年 @2024-02-28, 2024-02-29 08:00:00~09:00:00, 2024-03-01\n{: id="block-1" }',
       'block-1'
     );
   });
@@ -419,10 +439,10 @@ describe('updateBlockDateTime', () => {
     );
 
     expect(result).toBe(true);
-    // 应该保留 2024-01-01 和 2024-01-05，将 2024-01-03 替换为 2024-01-10
+    // 应该保留 2024-01-01 和 2024-01-05，将 2024-01-03 替换为 2024-01-10，并保留 kramdown 属性行
     expect(mockUpdateBlock).toHaveBeenCalledWith(
       'markdown',
-      '整理资料 @2024-01-01, 2024-01-05, 2024-01-10',
+      '整理资料 @2024-01-01, 2024-01-05, 2024-01-10\n{: id="block-1" }',
       'block-1'
     );
   });

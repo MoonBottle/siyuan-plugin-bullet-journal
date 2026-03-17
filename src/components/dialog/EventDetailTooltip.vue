@@ -183,9 +183,17 @@ const duration = computed(() => {
   return '';
 });
 
+// 过滤番茄钟记录 - 按日期
+function filterPomodorosByDate(pomodoros: PomodoroRecord[] | undefined, date: string): PomodoroRecord[] {
+  if (!pomodoros) return [];
+  return pomodoros.filter(p => p.date === date);
+}
+
 // 专注总时间
 const focusTotalTimeDisplay = computed(() => {
-  const totalFocusMinutes = calculateTotalFocusMinutes(props.pomodoros);
+  // 只统计当前日期的番茄钟
+  const pomodorosToCount = filterPomodorosByDate(props.pomodoros, props.date || '');
+  const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount);
   return totalFocusMinutes > 0 ? formatFocusDuration(totalFocusMinutes) : '';
 });
 

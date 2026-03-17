@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { getSharedPinia } from '@/utils/sharedPinia';
@@ -125,7 +125,7 @@ import SelectedItemCard from './SelectedItemCard.vue';
 
 const props = defineProps<{
   closeDialog: () => void;
-  preselectedItem?: Item;
+  preselectedBlockId?: string;
   hideItemList?: boolean;
 }>()
 
@@ -136,6 +136,12 @@ const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
 
 // 选中的事项
 const selectedItem = ref<Item | null>(null);
+
+// 根据 preselectedBlockId 实时查找 item，确保获取最新的数据
+const preselectedItem = computed(() => {
+  if (!props.preselectedBlockId || !projectStore) return null;
+  return projectStore.items.find(item => item.blockId === props.preselectedBlockId) || null;
+});
 
 // 计时模式：倒计时 / 正计时
 const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
@@ -233,8 +239,8 @@ const closeDialog = () => {
 
 onMounted(() => {
   // 如果有预选事项，直接使用
-  if (props.preselectedItem) {
-    selectedItem.value = props.preselectedItem;
+  if (preselectedItem.value) {
+    selectedItem.value = preselectedItem.value;
   } else {
     // 默认选中第一个事项（如果有）
     if (expiredItems.value.length > 0) {
@@ -242,6 +248,13 @@ onMounted(() => {
     } else if (todayItems.value.length > 0) {
       selectedItem.value = todayItems.value[0];
     }
+  }
+});
+
+// 监听 preselectedItem 变化，当 store 刷新后更新 selectedItem
+watch(preselectedItem, (newItem) => {
+  if (newItem && props.preselectedBlockId) {
+    selectedItem.value = newItem;
   }
 });
 </script>

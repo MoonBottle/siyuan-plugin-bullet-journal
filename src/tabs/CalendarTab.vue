@@ -39,8 +39,10 @@
     </div>
     <div class="tab-content">
       <CalendarView
+        v-if="isSettingsLoaded"
         ref="calendarRef"
         :events="filteredCalendarEvents"
+        :initial-view="currentView"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
         @event-resize="handleEventResize"
@@ -69,11 +71,13 @@ const projectStore = useProjectStore();
 
 const tabRootRef = ref<HTMLElement | null>(null);
 const calendarRef = ref<any>(null);
-const currentView = ref(settingsStore.calendarDefaultView || 'timeGridDay');
+const currentView = ref('timeGridDay');
 const currentTitle = ref('');
 const selectedGroup = ref('');
 /** drill-down 返回栈：栈顶为上一个点击进入的视图，用于逐级返回 */
 const previousViewStack = ref<string[]>([]);
+/** 设置是否已加载，用于控制 CalendarView 的渲染 */
+const isSettingsLoaded = ref(false);
 
 // 当前分组下的日历事件
 const filteredCalendarEvents = computed(() => {
@@ -124,9 +128,30 @@ const handleCalendarNavigate = (date: string) => {
   updateTitle();
 };
 
+// 日历视图切换处理函数
+const handleCalendarChangeView = (view: string) => {
+  const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
+  console.warn('[Task Assistant] handleCalendarChangeView', view, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
+  if (!isVisible || !calendarRef.value || !view) return;
+
+  // 将简写的视图名称映射为 FullCalendar 的视图名称
+  const viewMap: Record<string, string> = {
+    'day': 'timeGridDay',
+    'week': 'timeGridWeek',
+    'month': 'dayGridMonth',
+    'list': 'listWeek'
+  };
+  const fullCalendarView = viewMap[view] || view;
+
+  currentView.value = fullCalendarView;
+  calendarRef.value.changeView(fullCalendarView);
+  updateTitle();
+};
+
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let unsubscribeNavigate: (() => void) | null = null;
+let unsubscribeChangeView: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据
@@ -135,12 +160,16 @@ onMounted(async () => {
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
+  unsubscribeChangeView = eventBus.on(Events.CALENDAR_CHANGE_VIEW, handleCalendarChangeView);
 
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
   // 应用日历默认视图配置
   currentView.value = settingsStore.calendarDefaultView || 'timeGridDay';
+
+  // 标记设置已加载，允许 CalendarView 渲染
+  isSettingsLoaded.value = true;
 
   if (selectedGroup.value === '' && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup;
@@ -167,9 +196,8 @@ onMounted(async () => {
     // 忽略
   }
 
-  // 等待日历初始化后应用默认视图并更新标题
+  // 等待日历初始化后更新标题
   await nextTick();
-  calendarRef.value?.changeView(currentView.value);
   setTimeout(() => updateTitle(), 100);
 });
 
@@ -179,6 +207,9 @@ onUnmounted(() => {
   }
   if (unsubscribeNavigate) {
     unsubscribeNavigate();
+  }
+  if (unsubscribeChangeView) {
+    unsubscribeChangeView();
   }
   if (refreshChannel) {
     refreshChannel.close();

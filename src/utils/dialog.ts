@@ -236,6 +236,7 @@ function createLinksRow(label: string, links: Array<{ name: string; url: string 
  * 计算专注总时长（分钟）
  */
 export function calculateTotalFocusMinutes(pomodoros?: PomodoroRecord[]): number {
+  console.log('[calculateTotalFocusMinutes] pomodoros:', pomodoros);
   if (!pomodoros?.length) return 0;
   return pomodoros.reduce((sum, p) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
 }
@@ -264,8 +265,9 @@ function createButtons(buttons: Array<{ text: string; class: string; action: str
 /**
  * 显示事项详情弹框
  */
-export function showItemDetailModal(item: Item): Dialog {
+export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean }): Dialog {
   const plugin = usePlugin();
+  const showAllDates = options?.showAllDates ?? false;
 
   // 创建容器元素
   const container = document.createElement('div');
@@ -273,6 +275,7 @@ export function showItemDetailModal(item: Item): Dialog {
   // 创建 Vue 应用
   const app = createApp(ItemDetailDialog, {
     item,
+    showAllDates,
     onClose: () => {
       dialog.destroy();
     },
@@ -430,6 +433,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     pomodoros: props.pomodoros || [],
     startDateTime: props.originalStartDateTime,
     endDateTime: props.originalEndDateTime,
+    siblingItems: props.siblingItems,
     dateRangeStart: props.dateRangeStart,
     dateRangeEnd: props.dateRangeEnd,
   };
@@ -546,7 +550,7 @@ export function showPomodoroCompleteDialog(
   const dialog = new Dialog({
     title: t('settings').pomodoro.completeTitle,
     content: '<div id="pomodoro-complete-dialog-mount"></div>',
-    width: '400px',
+    width: '600px',
     destroyCallback: () => {
       if (dialogApp) {
         dialogApp.unmount();
@@ -617,7 +621,7 @@ export function showSettingsDialog(plugin: any): Dialog {
   const dialog = new Dialog({
     title: t('settings').title,
     content: '<div id="bullet-journal-settings-mount"></div>',
-    width: '640px',
+    width: '960px',
     height: '70vh',
     destroyCallback: () => {
       if (settingsDialogApp) {
@@ -651,46 +655,47 @@ export function showSettingsDialog(plugin: any): Dialog {
  * 生成日历网格 HTML
  */
 function generateCalendarGrid(year: number, month: number, selectedDate?: string): string {
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const startDayOfWeek = firstDay.getDay();
-  const daysInMonth = lastDay.getDate();
-  
+  const firstDay = dayjs().year(year).month(month).date(1);
+  const daysInMonth = firstDay.daysInMonth();
+
+  // 周一开始：dayjs.day() 返回 0-6（周日开始），转换为周一开始
+  const startDayOfWeek = firstDay.day() === 0 ? 6 : firstDay.day() - 1;
+
   const todayStr = dayjs().format('YYYY-MM-DD');
-  
+
   let html = '<div class="date-picker-calendar">';
-  
-  // 星期标题
-  const weekDays = (t('calendar') as any).weekDays ?? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // 星期标题（周一开始）
+  const weekDays = (t('calendar') as any).weekDays ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   html += '<div class="date-picker-header">';
   weekDays.forEach(day => {
     html += `<span class="date-picker-weekday">${day}</span>`;
   });
   html += '</div>';
-  
+
   // 日期网格
   html += '<div class="date-picker-grid">';
-  
+
   // 填充前面的空白
   for (let i = 0; i < startDayOfWeek; i++) {
     html += '<span class="date-picker-day empty"></span>';
   }
-  
+
   // 填充日期
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = firstDay.date(day).format('YYYY-MM-DD');
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === selectedDate;
-    
+
     let classes = 'date-picker-day';
     if (isToday) classes += ' today';
     if (isSelected) classes += ' selected';
-    
+
     html += `<span class="${classes}" data-date="${dateStr}">${day}</span>`;
   }
-  
+
   html += '</div></div>';
-  
+
   return html;
 }
 

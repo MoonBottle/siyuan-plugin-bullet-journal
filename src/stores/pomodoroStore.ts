@@ -19,6 +19,8 @@ import {
 } from '@/utils/pomodoroStorage';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
+import { extractDatesFromBlock } from '@/utils/slashCommandUtils';
+import { updateBlockDateTime } from '@/utils/fileUtils';
 import { defaultPomodoroSettings } from '@/settings';
 import { t } from '@/i18n';
 
@@ -95,9 +97,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
           totalPausedSeconds: 0,
           projectId: item.project?.id,
           projectName: item.project?.name,
+          projectLinks: item.project?.links,
           taskId: item.task?.id,
           taskName: item.task?.name,
           taskLevel: item.task?.level,
+          taskLinks: item.task?.links,
+          itemStatus: item.status,
+          itemLinks: item.links,
           timerMode
         };
 
@@ -365,9 +371,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
           durationMinutes: actualMinutes,
           projectId: ap.projectId,
           projectName: ap.projectName,
+          projectLinks: ap.projectLinks,
           taskId: ap.taskId,
           taskName: ap.taskName,
           taskLevel: ap.taskLevel,
+          taskLinks: ap.taskLinks,
+          itemStatus: ap.itemStatus,
+          itemLinks: ap.itemLinks,
           timerMode: ap.timerMode
         };
 
@@ -429,8 +439,43 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const dateStr = dayjs(pending.startTime).format('YYYY-MM-DD');
         const startTimeStr = dayjs(pending.startTime).format('HH:mm:ss');
         const endTimeStr = dayjs(pending.endTime).format('HH:mm:ss');
-        const descPart = description.trim() ? ' ' + description.trim() : '';
-        const valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}${descPart}`;
+        const trimmedDesc = description.trim();
+
+        let valueContent: string;
+        let blockContent: string;
+
+        if (trimmedDesc) {
+          if (trimmedDesc.includes('\n')) {
+            const descLines = trimmedDesc.split('\n').map(line => line.trim()).filter(line => line);
+            // attr 模式：用 \n 转义表示换行（块属性不支持真正的换行符）
+            valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}\n${descLines.join('\n')}`;
+            blockContent = `🍅${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}\n${descLines.join('\n')}`;
+          } else {
+            valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr} ${trimmedDesc}`;
+            blockContent = `🍅${valueContent}`;
+          }
+        } else {
+          valueContent = `${pending.durationMinutes},${dateStr} ${startTimeStr}~${endTimeStr}`;
+          blockContent = `🍅${valueContent}`;
+        }
+
+        // 先检查并追加日期（如果需要）
+        const pomodoroDate = dayjs(pending.startTime).format('YYYY-MM-DD');
+        const existingDates = await extractDatesFromBlock(pending.blockId);
+        const hasDate = existingDates.some(item => item.date === pomodoroDate);
+
+        if (!hasDate) {
+          await updateBlockDateTime(
+            pending.blockId,
+            pomodoroDate,
+            undefined, // newStartTime
+            undefined, // newEndTime
+            true,      // allDay
+            undefined, // originalDate - undefined 表示添加新日期
+            existingDates.length > 0 ? existingDates : undefined,
+            undefined  // status
+          );
+        }
 
         if (recordMode === 'attr') {
           const attrName = `${attrPrefix}-${pending.startTime}`;
@@ -442,8 +487,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           };
           await setBlockAttrs(pending.blockId, newAttrs);
         } else {
-          const pomodoroContent = `🍅${valueContent}`;
-          await appendBlock('markdown', pomodoroContent, pending.blockId);
+          await appendBlock('markdown', blockContent, pending.blockId);
         }
 
         await removePendingCompletion(plugin);
