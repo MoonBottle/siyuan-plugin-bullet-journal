@@ -317,9 +317,7 @@ export const useProjectStore = defineStore('project', {
               const attrs = await getBlockAttrs(item.blockId);
               const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
               if (attrRecords.length > 0) {
-                // FIX: 根据日期匹配，只合并日期匹配的记录（避免多日期事项重复）
-                const matchingRecords = attrRecords.filter(r => r.date === item.date);
-                for (const r of matchingRecords) {
+                for (const r of attrRecords) {
                   r.itemId = item.id;
                   r.taskId = task.id;
                   r.projectId = project.id;
@@ -329,8 +327,8 @@ export const useProjectStore = defineStore('project', {
                   item.pomodoros = [];
                 }
                 // 使用 push 合并到共享数组，而不是创建新数组
-                if (matchingRecords.length > 0) {
-                  item.pomodoros.push(...matchingRecords);
+                if (attrRecords.length > 0) {
+                  item.pomodoros.push(...attrRecords);
                 }
               }
             }
