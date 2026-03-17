@@ -30,26 +30,3 @@ export function getBlockIdFromRange(range: Range): string | null {
 export function findItemByBlockId(blockId: string, items: Item[]): Item | undefined {
   return items.find((item) => item.blockId === blockId);
 }
-
-/**
- * 根据 blockId 从 items 中查找所有相关的 Item（包括多日期展开的所有 Item）
- */
-export function findAllItemsByBlockId(blockId: string, items: Item[]): Item[] {
-  return items.filter((item) => item.blockId === blockId);
-}
-
-/**
- * 收集指定 blockId 的所有 Item 的番茄钟记录
- */
-export function collectPomodorosForBlock(blockId: string, items: Item[]): PomodoroRecord[] {
-  const relatedItems = findAllItemsByBlockId(blockId, items);
-  const allPomodoros: PomodoroRecord[] = [];
-  
-  for (const item of relatedItems) {
-    if (item.pomodoros && item.pomodoros.length > 0) {
-      allPomodoros.push(...item.pomodoros);
-    }
-  }
-  
-  return allPomodoros;
-}

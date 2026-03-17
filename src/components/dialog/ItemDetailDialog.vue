@@ -185,7 +185,6 @@ import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
 import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
-import { collectPomodorosForBlock } from '@/utils/itemBlockUtils';
 import { useProjectStore } from '@/stores';
 import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
 
@@ -332,14 +331,16 @@ const focusTotalTimeDisplay = computed(() => {
     // 只统计主日期的番茄钟
     pomodorosToCount = filterPomodorosByDate(props.item.pomodoros, props.item.date);
     console.log('[ItemDetailDialog] filtering by date', props.item.date, 'result:', pomodorosToCount.length);
-  } else if (props.item.blockId) {
-    // 统计所有日期的番茄钟 - 从 store 中获取所有同 blockId 的 Item 的番茄钟
-    const projectStore = useProjectStore();
-    pomodorosToCount = collectPomodorosForBlock(props.item.blockId, projectStore.items);
-    console.log('[ItemDetailDialog] collecting all pomodoros for block', props.item.blockId, 'result:', pomodorosToCount.length);
   } else {
-    pomodorosToCount = props.item.pomodoros || [];
-    console.log('[ItemDetailDialog] using item pomodoros:', pomodorosToCount.length);
+    // 统计所有日期的番茄钟 - 包括当前 item 和 siblingItems 中的番茄钟
+    pomodorosToCount = [];
+    
+    // 添加当前 item 的番茄钟
+    if (props.item.pomodoros && props.item.pomodoros.length > 0) {
+      pomodorosToCount.push(...props.item.pomodoros);
+    }
+    
+    console.log('[ItemDetailDialog] collecting all pomodoros from item and siblings', 'result:', pomodorosToCount.length);
   }
 
   const totalFocusMinutes = calculateTotalFocusMinutes(pomodorosToCount);
