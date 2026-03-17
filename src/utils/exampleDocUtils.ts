@@ -5,6 +5,7 @@ import { createDocWithMd, lsNotebooks, pushMsg } from '@/api';
 import { openDocument } from '@/utils/fileUtils';
 import { t, getCurrentLocale } from '@/i18n';
 import dayjs from '@/utils/dayjs';
+import { expandDocTree } from 'siyuan';
 
 /**
  * 获取今天的日期字符串
@@ -151,6 +152,8 @@ export async function createExampleDocument(
       await pushMsg(t('todo').exampleDocCreated, 3000);
       // 自动打开文档
       await openDocument(docId);
+      // 在文档树中定位并展开该文档
+      expandDocTree({ id: docId, isSetCurrent: true });
     }
 
     return docId;

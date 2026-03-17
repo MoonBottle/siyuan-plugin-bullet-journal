@@ -844,6 +844,11 @@ export default class TaskAssistantPlugin extends Plugin {
                   icon: 'iconSparkles',
                   label: t('helpMenu').mcp,
                   click: () => this.openHelpDoc('mcp.md')
+                },
+                {
+                  icon: 'iconHistory',
+                  label: t('helpMenu').changelog,
+                  click: () => this.openHelpDoc('changelog.md')
                 }
               ]
             },
