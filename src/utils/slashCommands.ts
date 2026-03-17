@@ -7,8 +7,8 @@ import { showMessage } from 'siyuan';
 import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
-import { usePomodoroStore } from '@/stores';
-import { showDatePickerDialog } from '@/utils/dialog';
+import { usePomodoroStore, useSettingsStore } from '@/stores';
+import { showDatePickerDialog, showItemDetailModal } from '@/utils/dialog';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
@@ -21,8 +21,10 @@ import {
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
-import type { Item } from '@/types/models';
+import type { Item, ProjectDirectory } from '@/types/models';
 import type { CustomSlashCommand } from '@/settings/types';
+import { getHPathByID } from '@/api';
+import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
@@ -322,6 +324,42 @@ export function createSlashCommands(config: SlashCommandConfig) {
         deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.TODO);
         config.openTodoDock();
       }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.SET_PROJECT_DIR,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setAsProjectDir}</span>
+          <span class="b3-list-item__meta">Dir</span>
+      </div>`,
+      id: 'bullet-journal-set-project-dir',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.SET_PROJECT_DIR);
+        setAsProjectDir(nodeElement);
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.MARK_AS_TASK,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').markAsTask}</span>
+          <span class="b3-list-item__meta">Task</span>
+      </div>`,
+      id: 'bullet-journal-mark-task',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.MARK_AS_TASK);
+        markAsTask(nodeElement);
+      }
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.VIEW_DETAIL,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').viewDetail}</span>
+          <span class="b3-list-item__meta">Detail</span>
+      </div>`,
+      id: 'bullet-journal-view-detail',
+      callback: (protyle: any, nodeElement: HTMLElement) => {
+        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.VIEW_DETAIL);
+        viewDetail(nodeElement);
+      }
     }
   ];
 
@@ -367,6 +405,113 @@ function createCustomSlashCommands(
 }
 
 /**
+ * 设置为项目目录
+ * 根据块 ID 找到所在文档，将文档路径添加到项目目录
+ */
+async function setAsProjectDir(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  try {
+    // 获取文档路径
+    const hPath = await getHPathByID(blockId);
+    if (!hPath) {
+      showMessage('无法获取文档路径', 2000, 'error');
+      return;
+    }
+
+    // 获取设置 store
+    const pinia = getSharedPinia();
+    if (!pinia) {
+      showMessage('无法获取设置', 2000, 'error');
+      return;
+    }
+
+    const settingsStore = useSettingsStore(pinia);
+    const existingPaths = settingsStore.directories.map(d => d.path);
+
+    // 检查是否已存在
+    if (existingPaths.includes(hPath)) {
+      showMessage(t('common').dirsExist, 3000, 'info');
+      return;
+    }
+
+    // 添加新目录
+    const newDir: ProjectDirectory = {
+      id: 'dir-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      path: hPath,
+      enabled: true,
+      groupId: settingsStore.defaultGroup || undefined
+    };
+
+    settingsStore.directories.push(newDir);
+    settingsStore.saveToPlugin();
+
+    // 触发数据刷新
+    eventBus.emit(Events.DATA_REFRESH);
+    broadcastDataRefresh(settingsStore.$state as object);
+
+    showMessage(t('slash').setProjectDirSuccess, 3000, 'info');
+  } catch (error) {
+    console.error('[Task Assistant] Failed to set project dir:', error);
+    showMessage('设置项目目录失败', 3000, 'error');
+  }
+}
+
+/**
+ * 标记为任务
+ * 在块内容中添加任务标记
+ */
+async function markAsTask(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  // 检查是否已标记为任务
+  const blockContent = nodeElement.textContent || '';
+  const taskTag = '#任务';
+  if (blockContent.includes(taskTag)) {
+    showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
+    return;
+  }
+
+  const success = await updateBlockContent(blockId, taskTag);
+
+  if (success) {
+    showMessage(t('slash').markTaskSuccess, 2000, 'info');
+  } else {
+    showMessage(t('slash').markFailed, 2000, 'error');
+  }
+}
+
+/**
+ * 查看详情
+ * 打开事项详情弹框
+ */
+async function viewDetail(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  // 从块内容提取事项信息
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  // 打开详情弹框
+  showItemDetailModal(item);
+}
+
+/**
  * 获取动作处理器
  */
 function getActionHandler(
@@ -400,6 +545,12 @@ function getActionHandler(
       return (_protyle, nodeElement) => startFocusFromSlash(nodeElement, config.openPomodoroDock);
     case 'todo':
       return () => config.openTodoDock();
+    case 'setProjectDir':
+      return (_protyle, nodeElement) => setAsProjectDir(nodeElement);
+    case 'markAsTask':
+      return (_protyle, nodeElement) => markAsTask(nodeElement);
+    case 'viewDetail':
+      return (_protyle, nodeElement) => viewDetail(nodeElement);
     default:
       return () => {};
   }
@@ -422,7 +573,10 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     calendarList: 'Calendar List',
     gantt: 'Gantt',
     focus: 'Focus',
-    todo: 'Todo'
+    todo: 'Todo',
+    setProjectDir: 'Project Dir',
+    markAsTask: 'Task',
+    viewDetail: 'Detail'
   };
   return labels[action] || action;
 }

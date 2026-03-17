@@ -144,6 +144,9 @@ const builtinCommands = computed(() => [
   { commands: SLASH_COMMAND_FILTERS.GANTT, description: t('slash').openGantt },
   { commands: SLASH_COMMAND_FILTERS.FOCUS, description: t('slash').startFocus },
   { commands: SLASH_COMMAND_FILTERS.TODO, description: t('slash').openTodoDock },
+  { commands: SLASH_COMMAND_FILTERS.SET_PROJECT_DIR, description: t('slash').setAsProjectDir },
+  { commands: SLASH_COMMAND_FILTERS.MARK_AS_TASK, description: t('slash').markAsTask },
+  { commands: SLASH_COMMAND_FILTERS.VIEW_DETAIL, description: t('slash').viewDetail },
 ]);
 
 // 动作选项
@@ -161,6 +164,9 @@ const actionOptions = computed(() => [
   { value: 'gantt', label: t('settings').slashCommands.actions.gantt },
   { value: 'focus', label: t('settings').slashCommands.actions.focus },
   { value: 'todo', label: t('settings').slashCommands.actions.todo },
+  { value: 'setProjectDir', label: t('settings').slashCommands.actions.setProjectDir },
+  { value: 'markAsTask', label: t('settings').slashCommands.actions.markAsTask },
+  { value: 'viewDetail', label: t('settings').slashCommands.actions.viewDetail },
 ]);
 
 function getActionLabel(action: string): string {

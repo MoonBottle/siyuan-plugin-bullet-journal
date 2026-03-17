@@ -266,7 +266,10 @@
         "calendarList": "打开日历-列表视图",
         "gantt": "打开甘特图",
         "focus": "开始专注",
-        "todo": "打开待办 Dock"
+        "todo": "打开待办 Dock",
+        "setProjectDir": "设置为项目目录",
+        "markAsTask": "标记为任务",
+        "viewDetail": "查看详情"
       },
       "emptyMessage": "暂无自定义命令",
       "deleteButton": "删除",
@@ -435,6 +438,9 @@
     "openGantt": "打开甘特图",
     "startFocus": "开始专注",
     "openTodoDock": "打开待办 Dock",
+    "setAsProjectDir": "设置为项目目录",
+    "markAsTask": "标记为任务",
+    "viewDetail": "查看详情",
     "markSuccess": "已标记为今日事项",
     "markTomorrowSuccess": "已标记为明日事项",
     "markDateSuccess": "已标记日期",
@@ -447,6 +453,9 @@
     "alreadyMarkedDate": "该日期已标记",
     "alreadyMarkedDone": "已经标记为已完成",
     "alreadyMarkedAbandoned": "已经标记为已放弃",
-    "selectDateTitle": "选择日期"
+    "selectDateTitle": "选择日期",
+    "setProjectDirSuccess": "已设置为项目目录",
+    "markTaskSuccess": "已标记为任务",
+    "alreadyMarkedTask": "已经标记为任务"
   }
 }

@@ -266,7 +266,10 @@
         "calendarList": "Open Calendar - List View",
         "gantt": "Open Gantt Chart",
         "focus": "Start Focus",
-        "todo": "Open Todo Dock"
+        "todo": "Open Todo Dock",
+        "setProjectDir": "Set as Project Directory",
+        "markAsTask": "Mark as Task",
+        "viewDetail": "View Detail"
       },
       "emptyMessage": "No custom commands",
       "deleteButton": "Delete",
@@ -435,6 +438,9 @@
     "openGantt": "Open Gantt Chart",
     "startFocus": "Start Focus",
     "openTodoDock": "Open Todo Dock",
+    "setAsProjectDir": "Set as Project Directory",
+    "markAsTask": "Mark as Task",
+    "viewDetail": "View Detail",
     "markSuccess": "Marked as today's item",
     "markTomorrowSuccess": "Marked as tomorrow's item",
     "markDateSuccess": "Date marked",
@@ -447,6 +453,9 @@
     "alreadyMarkedDate": "Date already marked",
     "alreadyMarkedDone": "Already marked as completed",
     "alreadyMarkedAbandoned": "Already marked as abandoned",
-    "selectDateTitle": "Select Date"
+    "selectDateTitle": "Select Date",
+    "setProjectDirSuccess": "Set as project directory",
+    "markTaskSuccess": "Marked as task",
+    "alreadyMarkedTask": "Already marked as task"
   }
 }

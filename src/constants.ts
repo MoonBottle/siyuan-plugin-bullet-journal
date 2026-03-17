@@ -31,7 +31,10 @@ export const SLASH_COMMAND_FILTERS = {
   CALENDAR_LIST: ['/rllb', '/calendarlist'],
   GANTT: ['/gtt', '/gantt'],
   FOCUS: ['/zz', '/focus'],
-  TODO: ['/db', '/todo']
+  TODO: ['/db', '/todo'],
+  SET_PROJECT_DIR: ['/xmml', '/projectdir'],
+  MARK_AS_TASK: ['/rw', '/task'],
+  VIEW_DETAIL: ['/xq', '/detail']
 };
 
 // 所有斜杠命令 filters 的集合（用于去除斜杠命令）
@@ -48,5 +51,8 @@ export const ALL_SLASH_COMMAND_FILTERS = [
   ...SLASH_COMMAND_FILTERS.CALENDAR_LIST,
   ...SLASH_COMMAND_FILTERS.GANTT,
   ...SLASH_COMMAND_FILTERS.FOCUS,
-  ...SLASH_COMMAND_FILTERS.TODO
+  ...SLASH_COMMAND_FILTERS.TODO,
+  ...SLASH_COMMAND_FILTERS.SET_PROJECT_DIR,
+  ...SLASH_COMMAND_FILTERS.MARK_AS_TASK,
+  ...SLASH_COMMAND_FILTERS.VIEW_DETAIL
 ];
