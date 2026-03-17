@@ -339,6 +339,7 @@ function handleCancel() {
 
 /* 左侧栏 */
 .sy-settings-dialog__sidebar {
+  border-radius: 8px;
   width: 200px;
   flex-shrink: 0;
   display: flex;
@@ -347,7 +348,6 @@ function handleCancel() {
   border-right: 1px solid var(--b3-border-color);
   padding: 16px 12px;
   gap: 12px;
-  border-radius: 8px 0 0 8px;
 }
 
 .sy-settings-sidebar__search {
@@ -453,7 +453,7 @@ function handleCancel() {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 0 20px 0 20px;
   background: var(--b3-theme-background);
 }
 
