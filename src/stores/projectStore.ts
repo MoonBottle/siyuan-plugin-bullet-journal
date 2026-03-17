@@ -341,7 +341,7 @@ export const useProjectStore = defineStore('project', {
         const projects = await parser.parseAllProjects();
         await this.mergePomodoroAttrs(projects, _plugin);
         console.log('[Task Assistant] Parsed projects:', projects?.length || 0);
-        const items = await parser.getAllItems();
+        const items = parser.getAllItemsFromProjects(projects);
         console.log('[Task Assistant] Parsed items:', items?.length || 0);
         const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
         console.log('[Task Assistant] Converted events:', calendarEvents?.length || 0);
@@ -374,7 +374,7 @@ export const useProjectStore = defineStore('project', {
         const parser = new MarkdownParser(directories);
         const projects = await parser.parseAllProjects();
         await this.mergePomodoroAttrs(projects, _plugin);
-        const items = await parser.getAllItems();
+        const items = parser.getAllItemsFromProjects(projects);
         const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
 
         this.projects = projects;
