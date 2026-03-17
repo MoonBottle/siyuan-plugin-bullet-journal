@@ -128,15 +128,25 @@ export async function createExampleDocument(
   path?: string
 ): Promise<string | null> {
   try {
-    // 如果没有提供 notebookId，获取第一个笔记本
+    // 如果没有提供 notebookId，获取第一个未关闭的笔记本
     let targetNotebookId = notebookId;
     if (!targetNotebookId) {
       const result = await lsNotebooks();
-      if (!result?.notebooks || result.notebooks.length === 0) {
-        console.error('[Task Assistant] No notebooks found');
+      console.log('[Task Assistant] lsNotebooks result:', result);
+      if (!result) {
+        console.error('[Task Assistant] Failed to query notebooks: API returned null');
+        await pushMsg(t('todo').exampleDocFailed + ': 查询笔记本失败', 3000);
         return null;
       }
-      targetNotebookId = result.notebooks[0].id;
+      // 过滤掉已关闭的笔记本
+      const availableNotebooks = result.notebooks?.filter(nb => !nb.closed) || [];
+      if (availableNotebooks.length === 0) {
+        console.error('[Task Assistant] No available notebooks found (all closed)');
+        await pushMsg(t('todo').exampleDocFailed + ': 没有可用的笔记本（请打开一个笔记本）', 3000);
+        return null;
+      }
+      targetNotebookId = availableNotebooks[0].id;
+      console.log('[Task Assistant] Using notebook:', availableNotebooks[0].name, 'id:', targetNotebookId);
     }
 
     // 生成文档路径
@@ -146,7 +156,9 @@ export async function createExampleDocument(
     const content = generateExampleContent();
 
     // 创建文档
+    console.log('[Task Assistant] Creating document with notebookId:', targetNotebookId, 'path:', fullPath);
     const docId = await createDocWithMd(targetNotebookId, fullPath, content);
+    console.log('[Task Assistant] createDocWithMd returned:', docId);
 
     if (docId) {
       await pushMsg(t('todo').exampleDocCreated, 3000);
@@ -154,6 +166,9 @@ export async function createExampleDocument(
       await openDocument(docId);
       // 在文档树中定位并展开该文档
       expandDocTree({ id: docId, isSetCurrent: true });
+    } else {
+      console.error('[Task Assistant] createDocWithMd returned null or undefined');
+      await pushMsg(t('todo').exampleDocFailed + ': 创建文档失败', 3000);
     }
 
     return docId;
