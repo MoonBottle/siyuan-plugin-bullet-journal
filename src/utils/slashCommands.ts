@@ -190,8 +190,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-mark-today',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.TODAY);
-        markAsTodayItem(nodeElement);
+        markAsTodayItem(protyle, nodeElement);
       }
     },
     {
@@ -202,8 +201,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-mark-tomorrow',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.TOMORROW);
-        markAsTomorrowItem(nodeElement);
+        markAsTomorrowItem(protyle, nodeElement);
       }
     },
     {
@@ -214,8 +212,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-mark-date',
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, SLASH_COMMAND_FILTERS.DATE);
-        markAsDateItem(nodeElement);
+        markAsDateItem(protyle, nodeElement);
       }
     },
     {
@@ -417,8 +414,17 @@ function createCustomSlashCommands(
       </div>`,
       id: `bullet-journal-custom-${cmd.id}`,
       callback: (protyle: any, nodeElement: HTMLElement) => {
-        deleteSlashCommandContent(protyle, cmd.commands);
-        actionHandler(protyle, nodeElement);
+        // today/tomorrow/date 由 markAs* 在日期已存在时内部调用 deleteSlashCommandContent
+        if (cmd.action === 'today') {
+          markAsTodayItem(protyle, nodeElement, cmd.commands);
+        } else if (cmd.action === 'tomorrow') {
+          markAsTomorrowItem(protyle, nodeElement, cmd.commands);
+        } else if (cmd.action === 'date') {
+          markAsDateItem(protyle, nodeElement, cmd.commands);
+        } else {
+          deleteSlashCommandContent(protyle, cmd.commands);
+          actionHandler(protyle, nodeElement);
+        }
       }
     };
   });
@@ -540,11 +546,11 @@ function getActionHandler(
 ): (protyle: any, nodeElement: HTMLElement) => void {
   switch (action) {
     case 'today':
-      return (_protyle, nodeElement) => markAsTodayItem(nodeElement);
+      return (protyle, nodeElement) => markAsTodayItem(protyle, nodeElement);
     case 'tomorrow':
-      return (_protyle, nodeElement) => markAsTomorrowItem(nodeElement);
+      return (protyle, nodeElement) => markAsTomorrowItem(protyle, nodeElement);
     case 'date':
-      return (_protyle, nodeElement) => markAsDateItem(nodeElement);
+      return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement);
     case 'done':
       return (_protyle, nodeElement) => markAsDone(nodeElement);
     case 'abandon':
@@ -603,8 +609,14 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
 
 /**
  * 标记为今日事项
+ * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
+ * @param filter 斜杠命令过滤器，自定义命令时传入
  */
-async function markAsTodayItem(nodeElement: HTMLElement) {
+async function markAsTodayItem(
+  protyle: any,
+  nodeElement: HTMLElement,
+  filter: string[] = SLASH_COMMAND_FILTERS.TODAY
+) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
 
@@ -616,7 +628,8 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
   // 检查今天是否已存在
   const todayItem = existingItems.find(item => item.date === today);
   if (todayItem) {
-    // 今天已存在，不需要重复添加
+    // 日期已存在，删除斜杠命令并提示
+    deleteSlashCommandContent(protyle, filter);
     showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
     return;
   }
@@ -642,8 +655,14 @@ async function markAsTodayItem(nodeElement: HTMLElement) {
 
 /**
  * 标记为明天事项
+ * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
+ * @param filter 斜杠命令过滤器，自定义命令时传入
  */
-async function markAsTomorrowItem(nodeElement: HTMLElement) {
+async function markAsTomorrowItem(
+  protyle: any,
+  nodeElement: HTMLElement,
+  filter: string[] = SLASH_COMMAND_FILTERS.TOMORROW
+) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
 
@@ -655,6 +674,7 @@ async function markAsTomorrowItem(nodeElement: HTMLElement) {
   // 检查明天是否已存在
   const tomorrowItem = existingItems.find(item => item.date === tomorrow);
   if (tomorrowItem) {
+    deleteSlashCommandContent(protyle, filter);
     showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
     return;
   }
@@ -680,8 +700,14 @@ async function markAsTomorrowItem(nodeElement: HTMLElement) {
 
 /**
  * 标记为指定日期事项
+ * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
+ * @param filter 斜杠命令过滤器，自定义命令时传入
  */
-async function markAsDateItem(nodeElement: HTMLElement) {
+async function markAsDateItem(
+  protyle: any,
+  nodeElement: HTMLElement,
+  filter: string[] = SLASH_COMMAND_FILTERS.DATE
+) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
 
@@ -696,6 +722,7 @@ async function markAsDateItem(nodeElement: HTMLElement) {
       // 检查日期是否已存在
       const existingItem = existingItems.find(item => item.date === selectedDate);
       if (existingItem) {
+        deleteSlashCommandContent(protyle, filter);
         showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
         return;
       }

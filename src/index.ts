@@ -841,7 +841,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * WebSocket 消息处理
    */
   private onWsMain(event: any) {
-    console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
+    // console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
     // 检测数据变化相关的事件
     const data = event.detail;
     if (data && data.cmd) {
