@@ -84,37 +84,61 @@
 - 可以紧跟在单个日期后，也可以放在整行末尾
 - 相对提醒 `!-Xm` 会基于每个日期的开始时间计算
 
+### 3.8 标记语法解析与潜在冲突解决
+
+**问题**：多日期 + 不同提醒 `周会 @2026-03-06 !09:00, 2026-03-13 !14:00` 中，`extractDateTimeExpressions` 的 continuation 正则无法跳过 ` !09:00, ` 到达下一个日期。
+
+**解决方案**：扩展 `lineParser.ts` 的 continuation 正则，允许「可选的提醒标记 + 逗号/空格 + 日期」：
+
+```typescript
+// 提醒标记模式：!HH:mm | !-Xm | !daily:HH:mm 等
+const REMINDER_PATTERN = /!\s*(?:-?\d+[mhd]|\d{2}:\d{2}(?::\d{2})?|(?:daily|weekly|monthly|yearly|workday|holiday|lunar|ebbinghaus)(?::\d{2}:\d{2})?)/;
+
+// 扩展后的 continuation：允许 [提醒标记] [逗号/空格] 日期
+const continuationRegex = new RegExp(
+  `^(?:${REMINDER_PATTERN.source}\\s*)?` +
+  `(?:\\s*,\\s*|\\s+)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)` +
+  `(?:\\s+(\\d{2}:\\d{2}:\\d{2}(?:~\\d{2}:\\d{2}:\\d{2})?))?`
+);
+```
+
+**内容提取**：在 `parseItemLine` 的 content 清理逻辑中增加 `replace(/\s*![^\s@#]+/g, '')`，移除提醒标记避免显示在事项内容中。
+
+**解析优先级**（避免歧义）：`parseReminderFromItemLine` 匹配顺序为 **relative > repeat > absolute**。
+
 ## 四、数据模型扩展
+
+> **统一采用完整模型**：以下定义与第八章「数据模型（完整版）」一致，实现时以 8.1、8.2 为准。
 
 ### 4.1 Item 模型扩展
 
 ```typescript
-// 在 Item 模型中增加提醒字段
+// 在 Item 模型中增加提醒字段，使用完整 ReminderConfig
 interface Item {
   // ... 现有字段
-  reminder?: {
-    time: string;                    // 提醒时间 HH:mm:ss
-    type: 'absolute' | 'relative';   // 提醒类型
-    relativeMinutes?: number;        // 相对提醒的提前分钟数
-    enabled: boolean;                // 是否启用
-    notified?: boolean;              // 是否已通知（当日有效）
-  };
+  reminder?: ReminderConfig;  // 完整配置，见 8.1
 }
 ```
 
 ### 4.2 提醒记录
 
 ```typescript
-// 提醒记录（用于存储到本地）
+// 提醒记录（用于存储到本地），完整模型见 8.2
 interface ReminderRecord {
-  id: string;              // 提醒 ID
-  itemId: string;          // 关联事项 ID
-  itemContent: string;     // 事项内容（快照）
-  projectName: string;     // 项目名称
-  taskName?: string;       // 任务名称
-  reminderTime: number;    // 提醒时间戳
-  notified: boolean;       // 是否已通知
-  createdAt: number;       // 创建时间
+  id: string;
+  blockId: string;         // 关联事项块 ID
+  itemContent: string;
+  projectName: string;
+  taskName?: string;
+  reminderTime: string;    // 提醒时间 HH:mm
+  alertMode: ReminderAlertMode;
+  repeat: ReminderRepeatRule;
+  endCondition?: ReminderEndCondition;
+  nextReminderTime: number;  // 下次提醒时间戳
+  notifiedCount: number;
+  lastNotifiedTime?: number;
+  createdAt: number;
+  updatedAt: number;
 }
 ```
 
@@ -232,8 +256,7 @@ sequenceDiagram
     PS->>PS: 7. 解析发现无提醒标记
     PS->>ST: 8. 调用删除提醒<br/>deleteReminderByBlockId
     ST->>ST: 9. 查找关联提醒记录
-    ST->>ST: 10. 移动到历史记录<br/>(标记为 deleted)
-    ST->>ST: 11. 从待提醒列表删除
+    ST->>ST: 10. 直接从 pending.json 删除<br/>（不保留历史，见「存储策略」）
 ```
 
 #### 5.2.5 增量同步机制（解决频繁 DATA_REFRESH 问题）
@@ -355,8 +378,14 @@ function parseReminderFromItemLine(line: string): ReminderConfig | undefined {
 插件数据目录/
 ├── reminders/
 │   ├── pending.json      # 待提醒列表（按时间排序）
+│   ├── checksums.json    # 增量同步 checksum 缓存
 │   └── config.json       # 提醒功能配置
 ```
+
+**存储策略**：
+- **MVP 阶段**：`deleteReminderByBlockId` 直接从 `pending.json` 删除记录，**不保留历史**
+- **理由**：简化实现、降低存储膨胀、符合「事项完成即结束」的语义
+- **Phase 3+ 预留**：若需「已提醒历史」功能，可增加 `history.json`，保留策略为最近 N 条或最近 7 天
 
 **核心逻辑**：
 ```typescript
@@ -366,10 +395,10 @@ class ReminderStorage {
   async saveReminder(plugin: Plugin, record: ReminderRecord): Promise<void> {
     const reminders = await this.loadPendingReminders(plugin);
     
-    // 检查是否已存在（根据 blockId + 时间）
-    const existingIndex = reminders.findIndex(
-      r => r.blockId === record.blockId && r.reminderTime === record.reminderTime
-    );
+    // 检查是否已存在（更新时按 id 匹配，新增时插入）
+    const existingIndex = record.id
+      ? reminders.findIndex(r => r.id === record.id)
+      : -1;
     
     if (existingIndex >= 0) {
       // 更新现有记录
@@ -443,7 +472,7 @@ class ReminderStorage {
     return reminders.filter(r => r.blockId === blockId);
   }
   
-  // 获取所有提醒记录（包括已过期的）
+  // 获取所有提醒记录（用于 blockId 变化检测，仅从 pending.json 读取）
   async loadAllReminders(plugin: Plugin): Promise<ReminderRecord[]> {
     return await plugin.loadData('reminders/pending.json') || [];
   }
@@ -720,7 +749,7 @@ class ReminderService {
     // 保存新记录
     await reminderStorage.saveReminder(plugin, newReminder);
     
-    // 删除旧记录（移动到历史记录）
+    // 删除旧记录（直接删除，不保留历史）
     await reminderStorage.deleteReminderByBlockId(plugin, oldReminder.blockId);
     
     // 更新 checksum 映射
@@ -936,30 +965,30 @@ export function showItemReminderNotification(
 ): Notification | null;
 ```
 
+### 5.4 与 performance-optimization 的集成
+
+提醒模块需与 [performance-optimization.md](./performance-optimization.md) 的增量更新架构协同：
+
+| 时机 | 触发源 | 处理方式 |
+|------|--------|----------|
+| 全量刷新 | `refresh()` 完成 | `DATA_REFRESH` 后，ReminderService 订阅并执行 `syncRemindersFromProjects(projectStore.items)` |
+| 定向刷新 | ws-main `rootIDs` | Phase 2.5 实现后，仅对 `rootIDs` 对应文档的 items 做提醒同步 |
+| 防抖 | 300ms | ReminderService 内部防抖，取消时立即执行 |
+
+**Checksum 解耦**：`reminderChecksums` 独立存储于 `reminders/checksums.json`，不依赖 `DocumentCache.updated`，仅依赖 items 的 `blockId` + `reminder` 配置。
+
+**实现顺序**：与 performance-optimization 的 Phase 1/2/3 对齐——Phase 1 基础监听 DATA_REFRESH；Phase 2 支持 `affectedDocIds` 定向同步；Phase 3 与精细化状态更新同步。
+
 ## 六、集成点
 
 ### 6.1 在事项解析中集成 (src/parser/lineParser.ts)
 
 修改 `parseItemLine` 函数，增加提醒解析：
 
-```typescript
-export function parseItemLine(
-  line: string,
-  lineNumber: number,
-  links?: Link[]
-): Item[] {
-  // ... 现有解析逻辑
-
-  // 新增：解析提醒标记
-  const reminder = parseReminderFromItemLine(line);
-
-  // 生成 Item 时包含提醒信息
-  return items.map(item => ({
-    ...item,
-    reminder
-  }));
-}
-```
+1. **扩展 `extractDateTimeExpressions`**：按 3.8 节扩展 continuation 正则，支持多日期+不同提醒
+2. **内容清理**：在 content 清理逻辑中增加 `.replace(/\s*![^\s@#]+/g, '')` 移除提醒标记
+3. **解析提醒**：调用 `parseReminderFromItemLine(line)` 获取 `ReminderConfig`
+4. **生成 Item**：为每个日期生成 Item 时包含 `reminder` 字段
 
 ### 6.2 在插件主类中集成 (src/index.ts)
 
@@ -1454,7 +1483,7 @@ src/
    - 艾宾浩斯曲线需要特殊处理
 
 6. **事项状态与提醒处理**
-   - 事项标记为 `#已完成`/`#done` 或 `#已放弃`/`#abandoned` 后，**直接删除提醒记录**
+   - 事项标记为 `#已完成`/`#done` 或 `#已放弃`/`#abandoned` 后，**直接删除提醒记录**（从 pending.json 移除，不保留历史）
    - **如果删除完成/放弃标记**，事项恢复为待办状态，下次 DATA_REFRESH 时会根据提醒标记重新创建提醒
    - 简化设计：不保留 `disabled` 状态，直接删除/重新创建
 
