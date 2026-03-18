@@ -168,7 +168,7 @@ sequenceDiagram
     actor U as User
 
     RS->>ST: 1. 定时检查(30s周期)
-    ST-->>RS: 2. 返回待提醒列表<br/>(排除disabled的)
+    ST-->>RS: 2. 返回待提醒列表
     RS->>RS: 3. 遍历检查到期时间
     RS->>N: 4. 触发到期提醒
     N->>U: 5. 显示系统通知
@@ -178,7 +178,7 @@ sequenceDiagram
 
 #### 5.2.3 事项状态变更流程
 
-##### 场景 A：标记事项完成/放弃（提醒失效）
+##### 场景 A：标记事项完成/放弃（删除提醒）
 
 ```mermaid
 sequenceDiagram
@@ -191,12 +191,11 @@ sequenceDiagram
     U->>E: 1. 标记事项完成<br/>(添加#已完成)
     E->>PS: 2. 解析事项状态变化
     PS->>RS: 3. 触发状态变更事件<br/>ITEM_STATUS_CHANGED
-    RS->>ST: 4. 根据blockId查找<br/>关联提醒记录
-    ST-->>RS: 5. 返回提醒记录
-    RS->>ST: 6. 设置disabled=true<br/>disabledReason
+    RS->>ST: 4. 根据blockId删除<br/>关联提醒记录
+    ST->>ST: 5. 从pending.json<br/>删除记录
 ```
 
-##### 场景 B：删除完成/放弃标记（提醒恢复）
+##### 场景 B：删除完成/放弃标记（重新创建提醒）
 
 ```mermaid
 sequenceDiagram
@@ -208,12 +207,9 @@ sequenceDiagram
 
     U->>E: 1. 删除完成标记<br/>(删除#已完成)
     E->>PS: 2. 解析事项状态变化<br/>状态变为 pending
-    PS->>RS: 3. 触发状态变更事件<br/>ITEM_STATUS_CHANGED
-    RS->>ST: 4. 根据blockId查找<br/>关联提醒记录
-    ST-->>RS: 5. 返回提醒记录<br/>(disabled=true)
-    RS->>ST: 6. 设置disabled=false<br/>清除disabledReason
-    RS->>RS: 7. 重新计算<br/>nextReminderTime
-    RS->>ST: 8. 更新提醒记录
+    Note over PS: 事项中仍有提醒标记 !xxx
+    PS->>RS: 3. 下次DATA_REFRESH时<br/>检测到提醒标记
+    RS->>ST: 4. 重新创建<br/>提醒记录
 ```
 
 #### 5.2.4 删除提醒流程
@@ -359,7 +355,6 @@ function parseReminderFromItemLine(line: string): ReminderConfig | undefined {
 插件数据目录/
 ├── reminders/
 │   ├── pending.json      # 待提醒列表（按时间排序）
-│   ├── history.json      # 历史提醒记录
 │   └── config.json       # 提醒功能配置
 ```
 
@@ -395,9 +390,10 @@ class ReminderStorage {
   // 获取待提醒列表（已按时间排序）
   async getPendingReminders(plugin: Plugin): Promise<ReminderRecord[]> {
     const reminders = await plugin.loadData('reminders/pending.json') || [];
-    // 过滤掉 disabled 和已过期的
+    // 过滤掉已过期的（nextReminderTime <= now 且不是重复提醒）
+    const now = Date.now();
     return reminders.filter(r => 
-      !r.disabled && r.nextReminderTime > Date.now()
+      r.repeat.type !== 'once' || r.nextReminderTime > now
     );
   }
   
@@ -414,17 +410,16 @@ class ReminderStorage {
     if (reminder.repeat.type !== 'once') {
       reminder.nextReminderTime = calculateNextReminderTime(reminder);
     } else {
-      // 一次性提醒，移动到历史记录
-      await this.moveToHistory(plugin, reminder);
+      // 一次性提醒，直接从列表中删除
       reminders.splice(reminders.indexOf(reminder), 1);
     }
     
     await plugin.saveData('reminders/pending.json', reminders);
   }
   
-  // 删除提醒记录（当用户删除事项中的提醒标记时调用）
+  // 删除提醒记录（当用户删除事项中的提醒标记或事项完成/放弃时调用）
   async deleteReminderByBlockId(plugin: Plugin, blockId: string): Promise<void> {
-    const reminders = await this.loadPendingReminders(plugin);
+    const reminders = await this.loadAllReminders(plugin);
     const indexesToRemove: number[] = [];
     
     // 查找所有关联的提醒记录
@@ -436,13 +431,6 @@ class ReminderStorage {
     
     // 从后往前删除，避免索引错乱
     for (let i = indexesToRemove.length - 1; i >= 0; i--) {
-      const reminder = reminders[indexesToRemove[i]];
-      // 移动到历史记录（标记为已删除）
-      await this.moveToHistory(plugin, { 
-        ...reminder, 
-        disabled: true, 
-        disabledReason: 'deleted' 
-      });
       reminders.splice(indexesToRemove[i], 1);
     }
     
@@ -455,14 +443,9 @@ class ReminderStorage {
     return reminders.filter(r => r.blockId === blockId);
   }
   
-  // 移动到历史记录
-  private async moveToHistory(plugin: Plugin, reminder: ReminderRecord): Promise<void> {
-    const history = await plugin.loadData('reminders/history.json') || [];
-    history.push({
-      ...reminder,
-      archivedAt: Date.now()
-    });
-    await plugin.saveData('reminders/history.json', history);
+  // 获取所有提醒记录（包括已过期的）
+  async loadAllReminders(plugin: Plugin): Promise<ReminderRecord[]> {
+    return await plugin.loadData('reminders/pending.json') || [];
   }
 }
 ```
@@ -665,20 +648,14 @@ class ReminderService {
   ): Promise<void> {
     const reminders = await reminderStorage.getRemindersByBlockId(plugin, blockId);
     
-    for (const reminder of reminders) {
-      if (status === 'completed' || status === 'abandoned') {
-        // 事项完成/放弃，提醒失效
-        reminder.disabled = true;
-        reminder.disabledReason = status;
-      } else if (status === 'pending' && reminder.disabled) {
-        // 事项恢复为待办，提醒重新生效
-        reminder.disabled = false;
-        reminder.disabledReason = undefined;
-        // 重新计算下次提醒时间（避免错过已过期的时间）
-        reminder.nextReminderTime = this.calculateNextReminderTime(reminder);
-      }
-      await reminderStorage.saveReminder(plugin, reminder);
+    if (reminders.length === 0) return;
+    
+    if (status === 'completed' || status === 'abandoned') {
+      // 事项完成/放弃，直接删除提醒记录
+      await reminderStorage.deleteReminderByBlockId(plugin, blockId);
     }
+    // 事项恢复为待办时，不需要处理，因为提醒标记还在事项中
+    // 下次 DATA_REFRESH 会自动重新创建提醒记录
     
     // 更新内存中的提醒列表
     await this.loadReminders(plugin);
@@ -1283,8 +1260,6 @@ interface ReminderRecord {
   nextReminderTime: number;  // 下次提醒时间戳
   notifiedCount: number;     // 已提醒次数
   lastNotifiedTime?: number; // 上次提醒时间
-  disabled: boolean;         // 是否已失效（事项完成/放弃时设为true）
-  disabledReason?: 'completed' | 'abandoned';  // 失效原因
   
   createdAt: number;
   updatedAt: number;
@@ -1385,10 +1360,8 @@ src/
 │   │   └── EndConditionPicker.vue     # 结束条件选择
 │   └── settings/
 │       └── ReminderConfigSection.vue  # 提醒设置面板
-├── types/
-│   └── reminder.ts                    # 提醒相关类型定义
-└── stores/
-    └── reminderStore.ts               # 提醒状态管理
+└── types/
+    └── reminder.ts                    # 提醒相关类型定义
 ```
 
 ## 十一、实现步骤
@@ -1480,12 +1453,10 @@ src/
    - 考虑结束条件，避免无限生成提醒
    - 艾宾浩斯曲线需要特殊处理
 
-6. **事项状态与提醒失效/恢复**
-   - 事项标记为 `#已完成`/`#done` 或 `#已放弃`/`#abandoned` 后，提醒自动失效
-   - 失效的提醒不再触发通知
-   - 已失效的提醒记录保留，但标记为 `disabled`
-   - **如果删除完成/放弃标记，事项恢复为待办状态，提醒自动恢复生效**
-   - 提醒恢复时重新计算下次提醒时间，避免错过已过期的时间
+6. **事项状态与提醒处理**
+   - 事项标记为 `#已完成`/`#done` 或 `#已放弃`/`#abandoned` 后，**直接删除提醒记录**
+   - **如果删除完成/放弃标记**，事项恢复为待办状态，下次 DATA_REFRESH 时会根据提醒标记重新创建提醒
+   - 简化设计：不保留 `disabled` 状态，直接删除/重新创建
 
 7. **blockId 变化处理**
    - 当用户复制粘贴事项或重新创建同内容事项时，blockId 会变化
@@ -1506,6 +1477,6 @@ src/
 - [ ] 设置面板可以配置提醒功能开关
 - [ ] 支持多日期事项的提醒
 - [ ] 国际化支持（中英文）
-- [ ] 事项完成或放弃后提醒自动失效
-- [ ] 删除完成/放弃标记后提醒自动恢复
+- [ ] 事项完成或放弃后提醒自动删除
+- [ ] 删除完成/放弃标记后提醒自动重新创建
 - [ ] blockId 变化时提醒记录自动迁移

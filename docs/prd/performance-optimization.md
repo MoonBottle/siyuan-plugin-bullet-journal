@@ -48,21 +48,22 @@ async refresh(_plugin: any, directories: ProjectDirectory[]) {
 ┌─────────────────────────────────────────────────────────────┐
 │                      增量更新架构                            │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────┐     ┌──────────────┐     ┌─────────────┐ │
-│  │  Change      │────►│  Incremental │────►│  State      │ │
-│  │  Detector    │     │  Updater     │     │  Merger     │ │
-│  │  (变更检测)   │     │  (增量解析)   │     │  (状态合并)  │ │
-│  └──────────────┘     └──────────────┘     └─────────────┘ │
-│         │                    │                    │         │
-│         ▼                    ▼                    ▼         │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Cache Layer (缓存层)                    │   │
-│  │  • Document Cache (文档内容缓存)                     │   │
-│  │  • Attribute Cache (属性缓存)                        │   │
-│  │  • Parse Result Cache (解析结果缓存)                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
+│  事件源: ws-main (transactions/savedoc) / DATA_REFRESH       │
+│         │                                                    │
+│  ┌──────▼──────┐     ┌──────────────┐     ┌─────────────┐   │
+│  │  Change     │────►│  Incremental │────►│  State      │   │
+│  │  Detector   │     │  Updater     │     │  Merger     │   │
+│  │ (文档updated │     │  (增量解析)   │     │  (状态合并)  │   │
+│  │  +rootIDs)  │     │              │     │             │   │
+│  └─────────────┘     └──────────────┘     └─────────────┘   │
+│         │                    │                    │          │
+│         ▼                    ▼                    ▼          │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Cache Layer (缓存层)                     │    │
+│  │  • Document Cache (文档内容缓存)                      │    │
+│  │  • Attribute Cache (属性缓存，SQL 批量获取)            │    │
+│  │  • Parse Result Cache (解析结果缓存)                   │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,7 +71,9 @@ async refresh(_plugin: any, directories: ProjectDirectory[]) {
 
 #### 3.2.1 文档级别变更检测
 
-利用思源笔记的 `updated` 字段检测文档是否变更：
+**主要来源**：利用思源笔记的 `updated` 字段检测文档内容是否变更。
+
+**重要限制**：子块 `setBlockAttrs` 后，文档块（type='d'）的 `updated` **不会**更新。因此必须结合 ws-main 事件做属性变更检测（见 3.2.1.1）。
 
 ```typescript
 interface DocumentCache {
@@ -103,6 +106,20 @@ SELECT id, updated FROM blocks
 WHERE type = 'd'
 AND id IN (/* 当前目录下的所有文档ID */)
 ```
+
+**空目录场景**（`directories.length === 0`）：使用 `getAllDocs()` 扫描含 `#任务/#task` 的文档时，需用 SQL 获取当前文档列表及 `updated`，与缓存对比得到 added/modified/removed。
+
+#### 3.2.1.1 ws-main 属性变更定向刷新
+
+当 ws-main 收到 `transactions` 或 `savedoc` 时，从 `detail.context.rootIDs`（注意大写 IDs）直接获取受影响的文档 ID 数组，仅刷新这些文档，而非全量刷新。
+
+| 字段 | 路径 | 说明 |
+|------|------|------|
+| 受影响文档 ID | `detail.context.rootIDs` | 数组，需刷新的文档 |
+| 变更块 ID | `detail.data[i].doOperations[j].id` | 具体变更的块 |
+| 操作类型 | `op.action` | `update`、`updateAttrs` 等 |
+
+**实现要点**：在 `transactions` 含 `updateAttrs` 或收到 `savedoc` 时，提取 `rootIDs`，使对应文档的 attrCache 失效或按文档维度做增量刷新。
 
 #### 3.2.2 增量解析器
 
@@ -143,8 +160,16 @@ class IncrementalMarkdownParser {
       this.cache.delete(docId);
     }
 
+    // 4. 按 directories 和文档原始顺序合并，避免打乱 UI 显示顺序
+    const merged = this.mergeInOriginalOrder(
+      directories,
+      changes,
+      unchangedProjects,
+      modifiedProjects
+    );
+
     return {
-      projects: [...unchangedProjects, ...modifiedProjects],
+      projects: merged,
       updated: [...changes.added, ...changes.modified]
     };
   }
@@ -152,6 +177,8 @@ class IncrementalMarkdownParser {
 ```
 
 #### 3.2.3 属性增量合并
+
+**优先方案**：用 SQL 查询 `attributes` 表一次性获取番茄钟属性，替代逐块调用 `getBlockAttrs`。已验证：`custom-*` 属性在 attributes 表与 getBlockAttrs 中**完全一致**（`id`、`updated` 来自 blocks.ial，不在 attributes 表）。
 
 ```typescript
 class PomodoroAttrMerger {
@@ -166,18 +193,16 @@ class PomodoroAttrMerger {
     updatedDocIds: string[],
     plugin: any
   ): Promise<void> {
-    // 只获取变更文档中的 task/item 属性
+    // 只获取变更文档中的 task/item blockIds
     const blocksToFetch: string[] = [];
 
     for (const project of projects) {
-      // 只处理变更的项目
       if (!updatedDocIds.includes(project.id)) continue;
 
       for (const task of project.tasks) {
         if (task.blockId && !this.attrCache.has(task.blockId)) {
           blocksToFetch.push(task.blockId);
         }
-
         for (const item of task.items) {
           if (item.blockId && !this.attrCache.has(item.blockId)) {
             blocksToFetch.push(item.blockId);
@@ -186,38 +211,44 @@ class PomodoroAttrMerger {
       }
     }
 
-    // 批量获取属性（如果思源支持批量 API）
-    // 或并行获取（控制并发数）
-    await this.fetchAttrsBatch(blocksToFetch, plugin);
+    if (blocksToFetch.length === 0) return;
+
+    // 一次 SQL 替代数百次 getBlockAttrs 调用
+    await this.fetchAttrsBySql(blocksToFetch);
   }
 
-  private async fetchAttrsBatch(
-    blockIds: string[],
-    plugin: any,
-    concurrency: number = 10
-  ): Promise<void> {
-    // 使用 p-limit 控制并发
-    const limit = pLimit(concurrency);
+  private async fetchAttrsBySql(blockIds: string[]): Promise<void> {
+    const placeholders = blockIds.map(id => `'${id}'`).join(',');
+    const attrPrefix = 'custom-pomodoro'; // 可配置
+    const result = await sql(`
+      SELECT block_id, name, value FROM attributes
+      WHERE block_id IN (${placeholders})
+      AND name LIKE '${attrPrefix}%'
+    `);
 
-    await Promise.all(
-      blockIds.map(blockId =>
-        limit(async () => {
-          try {
-            const attrs = await getBlockAttrs(blockId);
-            this.attrCache.set(blockId, {
-              blockId,
-              attrs,
-              fetchedAt: Date.now()
-            });
-          } catch (e) {
-            console.warn(`Failed to fetch attrs for ${blockId}`);
-          }
-        })
-      )
-    );
+    // 按 block_id 聚合成 attrs 对象
+    const byBlock = new Map<string, Record<string, string>>();
+    for (const row of result) {
+      if (!byBlock.has(row.block_id)) {
+        byBlock.set(row.block_id, {});
+      }
+      byBlock.get(row.block_id)![row.name] = row.value;
+    }
+
+    for (const [blockId, attrs] of byBlock) {
+      this.attrCache.set(blockId, { blockId, attrs, fetchedAt: Date.now() });
+    }
+    // 无属性的 block 也缓存空对象，避免重复查询
+    for (const blockId of blockIds) {
+      if (!this.attrCache.has(blockId)) {
+        this.attrCache.set(blockId, { blockId, attrs: {}, fetchedAt: Date.now() });
+      }
+    }
   }
 }
 ```
+
+**降级方案**：若 SQL 不可用，可用 p-limit 控制并发调用 getBlockAttrs（需添加 p-limit 依赖或自定义实现）。
 
 #### 3.2.4 精细化状态更新
 
@@ -307,6 +338,8 @@ interface CacheManager {
 | 场景 | 处理方式 |
 |------|----------|
 | 文档更新时间变化 | 重新解析该文档 |
+| ws-main 收到 transactions/savedoc | 从 `context.rootIDs` 获取受影响文档，使对应 attrCache 失效 |
+| 文档删除（changes.removed） | 从 attrCache 移除该文档下所有 block 的缓存（需维护 docId→blockIds 映射或按 root_id 查询） |
 | 手动强制刷新 | 清空缓存，全量更新 |
 | 超过最大缓存时间 | LRU 淘汰 |
 | 内存压力 | 淘汰最久未使用的缓存 |
@@ -356,18 +389,31 @@ class RefreshController {
 1. 添加 `ChangeDetector` 类
 2. 修改 `MarkdownParser` 支持增量解析
 3. 添加文档元数据缓存
+4. 空目录场景：单独处理 getAllDocs 的变更检测
 
-### Phase 2: 属性增量获取
+### Phase 1.5: SQL 批量获取属性
+
+1. 实现 `fetchAttrsBySql`，用 SQL 替代 getBlockAttrs
+2. 属性按 block_id 聚合并写入 attrCache
+
+### Phase 2: 属性缓存 + 增量合并
 
 1. 添加 `PomodoroAttrMerger` 类
 2. 实现属性缓存机制
-3. 优化并发控制
+3. 与 Phase 1.5 的 SQL 方案集成
+
+### Phase 2.5: 属性变更定向刷新
+
+1. 在 ws-main 监听中解析 `detail.context.rootIDs`
+2. 收到 transactions/savedoc 时，仅刷新 rootIDs 中的文档
+3. 使对应文档的 attrCache 失效
 
 ### Phase 3: 精细化状态更新
 
 1. 修改 `projectStore` 的 `refresh` 方法
 2. 实现 `StateUpdater` 类
-3. 优化派生数据计算
+3. 项目合并时保持原始顺序（mergeInOriginalOrder）
+4. 优化派生数据计算
 
 ### Phase 4: 持久化缓存
 
@@ -386,6 +432,7 @@ interface IncrementalRefreshOptions {
   force?: boolean;           // 强制全量刷新
   maxConcurrency?: number;   // 最大并发数
   cacheTimeout?: number;     // 缓存超时时间
+  fullRefreshThreshold?: number;  // 变更超过此比例时降级全量刷新，默认 0.5
 }
 
 interface RefreshResult {
@@ -427,14 +474,14 @@ interface ProjectStoreActions {
 | 指标 | 优化前 | 优化后 | 提升 |
 |------|--------|--------|------|
 | 文档解析 | 全量 O(N) | 增量 O(变更数) | 90%+ |
-| 属性获取 | O(M) | O(变更块数) | 95%+ |
+| 属性获取 | O(M) getBlockAttrs | 1 次 SQL 批量查询 | 95%+ |
 | 刷新耗时（典型场景） | 2000ms | 200ms | 10x |
 | 内存占用 | 稳定 | +10%（缓存） | 可接受 |
 
 ### 6.2 极端场景处理
 
 - **首次加载**：全量解析，建立缓存
-- **大量变更**：超过阈值（如 50%）时自动降级为全量刷新
+- **大量变更**：超过阈值（默认 50%）时自动降级为全量刷新；建议阈值可配置（`performance.fullRefreshThreshold`）
 - **缓存失效**：优雅降级到全量刷新
 
 ## 七、监控与调试
@@ -473,6 +520,16 @@ window.__BULLET_JOURNAL_DEBUG__ = {
 | 内存泄漏 | 低 | 中 | LRU 淘汰、定期清理 |
 | 并发问题 | 中 | 中 | 队列化刷新、状态锁 |
 | 降级失败 | 低 | 高 | 完善的异常处理、自动降级 |
+
+## 八.1 测试验证（已确认）
+
+控制台测试脚本 `docs/prd/console-test-ws-main.js` 验证结论：
+
+| 验证项 | 结论 |
+|--------|------|
+| 文档 updated 与子块属性 | 子块 `setBlockAttrs` 后，文档块 `updated` **不会**更新，必须实现 ws-main 定向刷新 |
+| transactions 结构 | `detail.context.rootIDs`（大写 IDs）为受影响文档 ID 数组；`detail.data[i].doOperations[j].id` 为变更块 ID |
+| attributes 表与 getBlockAttrs | `custom-*` 属性在两者中**完全一致**；用 SQL 查 attributes 表替代 getBlockAttrs 可行 |
 
 ## 九、时序图
 
@@ -564,12 +621,10 @@ sequenceDiagram
         Parser-->>Store: {projects, updated}
         
         Store->>Store: mergeAttrsIncremental()
-        loop 仅变更项目的Task/Item
-            opt 缓存未命中
-                Store->>API: getBlockAttrs(blockId)
-                API-->>Store: 属性
-                Store->>Cache: 缓存属性
-            end
+        opt 缓存未命中
+            Store->>API: sql(attributes 表批量查询)
+            API-->>Store: custom-pomodoro 属性
+            Store->>Cache: 缓存属性
         end
         
         Store->>Store: 精细化更新state
@@ -662,3 +717,5 @@ sequenceDiagram
 - `src/utils/changeDetector.ts` - 新增：变更检测
 - `src/utils/cacheManager.ts` - 新增：缓存管理
 - `src/types/performance.ts` - 新增：性能相关类型
+- `src/index.ts` - 修改 onWsMain：解析 `context.rootIDs` 做定向刷新
+- `docs/prd/console-test-ws-main.js` - 控制台测试脚本（验证 rootIDs、attributes 一致性）
