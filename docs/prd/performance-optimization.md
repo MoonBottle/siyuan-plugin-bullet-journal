@@ -531,6 +531,51 @@ window.__BULLET_JOURNAL_DEBUG__ = {
 | transactions 结构 | `detail.context.rootIDs`（大写 IDs）为受影响文档 ID 数组；`detail.data[i].doOperations[j].id` 为变更块 ID |
 | attributes 表与 getBlockAttrs | `custom-*` 属性在两者中**完全一致**；用 SQL 查 attributes 表替代 getBlockAttrs 可行 |
 
+## 八.2 测试用例
+
+### 变更检测
+
+| 用例 | 前置条件 | 操作 | 预期结果 |
+|------|----------|------|----------|
+| TC-D01 | 有缓存，文档 A 未修改 | 刷新 | ChangeDetector 返回 A 在 unchanged |
+| TC-D02 | 有缓存，文档 A 内容已修改 | 刷新 | ChangeDetector 返回 A 在 modified |
+| TC-D03 | 有缓存，新增文档 B | 刷新 | ChangeDetector 返回 B 在 added |
+| TC-D04 | 有缓存，文档 C 已删除 | 刷新 | ChangeDetector 返回 C 在 removed |
+| TC-D05 | 有缓存，仅对文档 A 内某块 setBlockAttrs | ws-main 触发 | 从 rootIDs 解析出 A，仅刷新 A |
+| TC-D06 | directories 为空 | 刷新 | 使用 getAllDocs 逻辑，正确检测 added/modified/removed |
+
+### 增量解析
+
+| 用例 | 前置条件 | 操作 | 预期结果 |
+|------|----------|------|----------|
+| TC-P01 | 50 文档，仅 1 个修改 | 增量刷新 | 只解析 1 个文档，复用 49 个缓存 |
+| TC-P02 | 50 文档，25 个修改 | 增量刷新 | 变更超过 50%，降级为全量刷新 |
+| TC-P03 | 有缓存，合并 unchanged + modified | 增量刷新 | 项目顺序与原始 directories 一致 |
+
+### 属性获取
+
+| 用例 | 前置条件 | 操作 | 预期结果 |
+|------|----------|------|----------|
+| TC-A01 | 变更文档含 10 个 task/item block | 增量合并 | 1 次 SQL 查询，结果与 getBlockAttrs 的 custom-* 一致 |
+| TC-A02 | block 无番茄钟属性 | 增量合并 | attrCache 中该 block 存空对象，不重复查询 |
+| TC-A03 | ws-main 收到 updateAttrs | 定向刷新 | 对应文档的 attrCache 失效，重新获取属性 |
+
+### 状态更新
+
+| 用例 | 前置条件 | 操作 | 预期结果 |
+|------|----------|------|----------|
+| TC-S01 | 有 3 个项目，删除 1 个 | 增量刷新 | state.projects 剩 2 个，items/calendarEvents 同步移除 |
+| TC-S02 | 有 3 个项目，修改 1 个 | 增量刷新 | 仅被修改项目引用更新，未变更项目引用不变（减少重渲染） |
+| TC-S03 | 增量刷新完成 | 检查 getters | getDisplayItems、getFilteredCalendarEvents 等返回正确数据 |
+
+### 并发与降级
+
+| 用例 | 前置条件 | 操作 | 预期结果 |
+|------|----------|------|----------|
+| TC-C01 | 正在刷新中 | 再次触发刷新 | pendingRefresh=true，首次完成后自动执行第二次 |
+| TC-C02 | 缓存损坏或异常 | 增量刷新 | 降级为全量刷新，不抛错 |
+| TC-C03 | 首次加载（无缓存） | 刷新 | 全量解析，建立缓存 |
+
 ## 九、时序图
 
 ### 9.1 全量更新流程（优化前）
@@ -719,3 +764,4 @@ sequenceDiagram
 - `src/types/performance.ts` - 新增：性能相关类型
 - `src/index.ts` - 修改 onWsMain：解析 `context.rootIDs` 做定向刷新
 - `docs/prd/console-test-ws-main.js` - 控制台测试脚本（验证 rootIDs、attributes 一致性）
+- `src/**/*.test.ts` 或 `tests/` - 单元/集成测试（覆盖 8.2 测试用例）
