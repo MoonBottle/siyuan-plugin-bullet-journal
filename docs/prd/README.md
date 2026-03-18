@@ -12,6 +12,8 @@
 | [views.md](./views.md) | 视图功能（日历/甘特图/项目列表） |
 | [todo-dock.md](./todo-dock.md) | 待办 Dock 功能 |
 | [pomodoro.md](./pomodoro.md) | 番茄钟功能 |
+| [reminder.md](./reminder.md) | 提醒功能 |
+| [recurring-items.md](./recurring-items.md) | 重复事项（重复规则与结束条件） |
 | [ai-assistant.md](./ai-assistant.md) | AI 对话功能 |
 | [mcp-server.md](./mcp-server.md) | MCP 服务器功能 |
 | [settings.md](./settings.md) | 设置与配置 |

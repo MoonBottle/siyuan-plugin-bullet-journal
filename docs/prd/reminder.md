@@ -32,9 +32,10 @@
 
 | 类型 | 标记示例 | 说明 |
 |------|----------|------|
-| 绝对时间 | `!10:00` | 在指定时间的当天 10:00 提醒 |
+| 绝对时间 | `!10:00` | 在指定日期的当天 10:00 提醒 |
 | 相对时间 | `!-10m` | 提前10分钟提醒（相对于事项开始时间）|
-| 重复提醒 | `!daily:09:00` | 每天 9:00 提醒（用于多日期事项）|
+
+> **与重复事项解耦**：提醒仅负责**单次**通知。重复规则（如每月、每周）和结束条件属于**事项层**，由 `#重复:每月` 等标记表达，用于「创建下次」功能。详见「重复事项与提醒解耦」章节。
 
 ## 三、与复杂日期格式的结合
 
@@ -91,8 +92,8 @@
 **解决方案**：扩展 `lineParser.ts` 的 continuation 正则，允许「可选的提醒标记 + 逗号/空格 + 日期」：
 
 ```typescript
-// 提醒标记模式：!HH:mm | !-Xm | !daily:HH:mm 等
-const REMINDER_PATTERN = /!\s*(?:-?\d+[mhd]|\d{2}:\d{2}(?::\d{2})?|(?:daily|weekly|monthly|yearly|workday|holiday|lunar|ebbinghaus)(?::\d{2}:\d{2})?)/;
+// 提醒标记模式：!HH:mm | !-Xm（仅单次提醒）
+const REMINDER_PATTERN = /!\s*(?:-?\d+[mhd]|\d{2}:\d{2}(?::\d{2})?)/;
 
 // 扩展后的 continuation：允许 [提醒标记] [逗号/空格] 日期
 const continuationRegex = new RegExp(
@@ -104,26 +105,50 @@ const continuationRegex = new RegExp(
 
 **内容提取**：在 `parseItemLine` 的 content 清理逻辑中增加 `replace(/\s*![^\s@#]+/g, '')`，移除提醒标记避免显示在事项内容中。
 
-**解析优先级**（避免歧义）：`parseReminderFromItemLine` 匹配顺序为 **relative > repeat > absolute**。
+**解析优先级**（避免歧义）：`parseReminderFromItemLine` 匹配顺序为 **relative > absolute**。
 
-## 四、数据模型扩展
+## 四、重复事项与提醒解耦
 
-> **统一采用完整模型**：以下定义与第八章「数据模型（完整版）」一致，实现时以 8.1、8.2 为准。
+### 4.0 设计决策
 
-### 4.1 Item 模型扩展
+**重复事项**采用「多个 block」方式：每个 occurrence 为独立事项块，各自有 blockId、子块（链接、番茄钟等）。
+
+**职责划分**：
+
+| 层级 | 职责 | 标记 |
+|------|------|------|
+| **事项** | 重复规则、结束条件、「创建下次」 | `#重复:每月`、`:until:2026-12-31`、`:count:10` |
+| **提醒** | 本次何时通知 | `!14:00`、`!-10m` |
+
+**示例**：
+```markdown
+月度汇报 @2026-03-17 !14:00 #重复:每月:until:2026-12-31
+```
+- `!14:00` → 提醒：本次 14:00 通知
+- `#重复:每月` → 事项：创建下次时按每月
+- `:until:2026-12-31` → 事项：创建下次时检查结束条件
+
+**创建下次**：用户完成事项后，在事项详情中点击「创建下次」，系统根据 `#重复` 和结束条件创建新 block（如 `月度汇报 @2026-04-17 !14:00 #重复:每月:until:2026-12-31`），并继承 reminder 配置。重复与结束的详细设计见 [recurring-items.md](./recurring-items.md)。
+
+## 五、数据模型扩展
+
+> **提醒与重复解耦**：以下为提醒专用模型，不含 repeat、endCondition。重复规则见「重复事项」PRD。
+
+### 5.1 Item 模型扩展
 
 ```typescript
-// 在 Item 模型中增加提醒字段，使用完整 ReminderConfig
+// 在 Item 模型中增加提醒字段
 interface Item {
   // ... 现有字段
-  reminder?: ReminderConfig;  // 完整配置，见 8.1
+  reminder?: ReminderConfig;  // 单次提醒配置，见 9.1
+  // repeatRule、endCondition 为事项层字段，见「重复事项」PRD
 }
 ```
 
-### 4.2 提醒记录
+### 5.2 提醒记录
 
 ```typescript
-// 提醒记录（用于存储到本地），完整模型见 8.2
+// 提醒记录（用于存储到本地），每个 block 一条，单次提醒，见 9.2
 interface ReminderRecord {
   id: string;
   blockId: string;         // 关联事项块 ID
@@ -132,19 +157,16 @@ interface ReminderRecord {
   taskName?: string;
   reminderTime: string;    // 提醒时间 HH:mm
   alertMode: ReminderAlertMode;
-  repeat: ReminderRepeatRule;
-  endCondition?: ReminderEndCondition;
-  nextReminderTime: number;  // 下次提醒时间戳
-  notifiedCount: number;
-  lastNotifiedTime?: number;
+  nextReminderTime: number;  // 本次提醒时间戳（单次，无下次计算）
+  notifiedCount: number;     // 通常为 0，通知后删除记录
   createdAt: number;
   updatedAt: number;
 }
 ```
 
-## 五、技术实现方案
+## 六、技术实现方案
 
-### 5.1 架构设计
+### 6.1 架构设计
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -159,9 +181,9 @@ interface ReminderRecord {
 └─────────────┴─────────────┴─────────────┴───────────────────┘
 ```
 
-### 5.2 数据流转时序图
+### 6.2 数据流转时序图
 
-#### 5.2.1 提醒创建流程
+#### 6.2.1 提醒创建流程
 
 ```mermaid
 sequenceDiagram
@@ -182,7 +204,7 @@ sequenceDiagram
     S->>S: 9. 写入本地存储
 ```
 
-#### 5.2.2 提醒触发流程
+#### 6.2.2 提醒触发流程
 
 ```mermaid
 sequenceDiagram
@@ -196,11 +218,10 @@ sequenceDiagram
     RS->>RS: 3. 遍历检查到期时间
     RS->>N: 4. 触发到期提醒
     N->>U: 5. 显示系统通知
-    RS->>ST: 6. 更新提醒状态<br/>(notifiedCount++)
-    RS->>ST: 7. 计算下次提醒时间<br/>(根据重复规则)
+    RS->>ST: 6. 从 pending.json 删除该记录<br/>（单次提醒，通知后即移除）
 ```
 
-#### 5.2.3 事项状态变更流程
+#### 6.2.3 事项状态变更流程
 
 ##### 场景 A：标记事项完成/放弃（删除提醒）
 
@@ -236,7 +257,7 @@ sequenceDiagram
     RS->>ST: 4. 重新创建<br/>提醒记录
 ```
 
-#### 5.2.4 删除提醒流程
+#### 6.2.4 删除提醒流程
 
 ```mermaid
 sequenceDiagram
@@ -259,7 +280,7 @@ sequenceDiagram
     ST->>ST: 10. 直接从 pending.json 删除<br/>（不保留历史，见「存储策略」）
 ```
 
-#### 5.2.5 增量同步机制（解决频繁 DATA_REFRESH 问题）
+#### 6.2.5 增量同步机制（解决频繁 DATA_REFRESH 问题）
 
 ##### 场景 A：普通增量同步
 
@@ -324,52 +345,37 @@ sequenceDiagram
     RS->>RS: 10. 加载待提醒列表到内存
 ```
 
-### 5.3 各层实现逻辑详解
+### 6.3 各层实现逻辑详解
 
-#### 5.3.1 解析层 (reminderParser.ts)
+#### 6.3.1 解析层 (reminderParser.ts)
 
-**职责**：将 Markdown 标记解析为结构化数据
+**职责**：将 Markdown 提醒标记解析为 ReminderConfig（仅单次提醒）
 
 **输入输出**：
-- 输入：`string` (如 `"!每天:09:00"`)
+- 输入：`string` (如 `"!09:00"` 或 `"!-10m"`)
 - 输出：`ReminderConfig` 对象
 
 **核心逻辑**：
 ```typescript
-// 正则匹配规则（按优先级排序）
+// 正则匹配规则（按优先级排序，仅支持单次提醒）
 const PATTERNS = {
   // 相对时间: !-5分钟 或 !-5m
   relative: /!-(\d+)(分钟|m|小时|h|天|d)/,
-  
-  // 重复提醒: !每天:09:00 或 !daily:09:00
-  repeat: /!(每天|daily|每周|weekly|每月|monthly|每年|yearly|工作日|workday|节假日|holiday|农历|lunar|记忆|ebbinghaus):(\d{2}:\d{2})/,
-  
   // 绝对时间: !09:00
-  absolute: /!(\d{2}:\d{2})/
+  absolute: /!(\d{2}:\d{2})(?::\d{2})?/
 };
 
 // 解析流程
 function parseReminderFromItemLine(line: string): ReminderConfig | undefined {
-  // 1. 提取提醒标记部分（从 ! 开始到行尾或下一个标记前）
   const reminderMatch = line.match(/![^@#]+/);
   if (!reminderMatch) return undefined;
-  
-  // 2. 按优先级匹配模式
-  if (PATTERNS.relative.test(reminderMatch[0])) {
-    return parseRelativeReminder(reminderMatch[0]);
-  }
-  if (PATTERNS.repeat.test(reminderMatch[0])) {
-    return parseRepeatReminder(reminderMatch[0]);
-  }
-  if (PATTERNS.absolute.test(reminderMatch[0])) {
-    return parseAbsoluteReminder(reminderMatch[0]);
-  }
-  
+  if (PATTERNS.relative.test(reminderMatch[0])) return parseRelativeReminder(reminderMatch[0]);
+  if (PATTERNS.absolute.test(reminderMatch[0])) return parseAbsoluteReminder(reminderMatch[0]);
   return undefined;
 }
 ```
 
-#### 5.3.2 存储层 (reminderStorage.ts)
+#### 6.3.2 存储层 (reminderStorage.ts)
 
 **职责**：管理提醒记录的持久化存储
 
@@ -416,34 +422,18 @@ class ReminderStorage {
     await plugin.saveData('reminders/pending.json', reminders);
   }
   
-  // 获取待提醒列表（已按时间排序）
+  // 获取待提醒列表（已按时间排序，过滤已过期）
   async getPendingReminders(plugin: Plugin): Promise<ReminderRecord[]> {
     const reminders = await plugin.loadData('reminders/pending.json') || [];
-    // 过滤掉已过期的（nextReminderTime <= now 且不是重复提醒）
     const now = Date.now();
-    return reminders.filter(r => 
-      r.repeat.type !== 'once' || r.nextReminderTime > now
-    );
+    return reminders.filter(r => r.nextReminderTime > now);
   }
   
-  // 标记为已通知并更新下次提醒时间
-  async markNotified(plugin: Plugin, reminderId: string): Promise<void> {
-    const reminders = await this.loadPendingReminders(plugin);
-    const reminder = reminders.find(r => r.id === reminderId);
-    if (!reminder) return;
-    
-    reminder.notifiedCount++;
-    reminder.lastNotifiedTime = Date.now();
-    
-    // 根据重复规则计算下次提醒时间
-    if (reminder.repeat.type !== 'once') {
-      reminder.nextReminderTime = calculateNextReminderTime(reminder);
-    } else {
-      // 一次性提醒，直接从列表中删除
-      reminders.splice(reminders.indexOf(reminder), 1);
-    }
-    
-    await plugin.saveData('reminders/pending.json', reminders);
+  // 通知后删除记录（单次提醒，无下次）
+  async deleteAfterNotified(plugin: Plugin, reminderId: string): Promise<void> {
+    const reminders = await plugin.loadData('reminders/pending.json') || [];
+    const filtered = reminders.filter(r => r.id !== reminderId);
+    await plugin.saveData('reminders/pending.json', filtered);
   }
   
   // 删除提醒记录（当用户删除事项中的提醒标记或事项完成/放弃时调用）
@@ -479,24 +469,16 @@ class ReminderStorage {
 }
 ```
 
-#### 5.3.3 调度层 (reminderService.ts)
+#### 6.3.3 调度层 (reminderService.ts)
 
 **职责**：定时检查并触发提醒，实现增量同步避免频繁 DATA_REFRESH 影响性能
 
-**状态流转**：
+**状态流转**（单次提醒）：
 ```
 ┌──────────┐    启动服务     ┌──────────┐    检查到期     ┌──────────┐
 │  初始化   │───────────────>│  待提醒   │───────────────>│  已通知   │
-│          │                │          │                │          │
-└──────────┘                └──────────┘                └────┬─────┘
-                                                              │
-                         ┌────────────────────────────────────┘
-                         │ 计算下次时间
-                         ▼
-                    ┌──────────┐
-                    │  下次提醒 │
-                    │  (循环)   │
-                    └──────────┘
+│          │                │          │                │  (删除)   │
+└──────────┘                └──────────┘                └──────────┘
 ```
 
 **增量同步策略**：
@@ -603,12 +585,7 @@ class ReminderService {
    */
   private calculateReminderChecksum(item: Item): string {
     const reminder = item.reminder!;
-    const data = {
-      time: reminder.time,
-      alertMode: reminder.alertMode,
-      repeat: reminder.repeat,
-      endCondition: reminder.endCondition
-    };
+    const data = { time: reminder.time, alertMode: reminder.alertMode };
     return hashString(JSON.stringify(data));
   }
   
@@ -619,16 +596,13 @@ class ReminderService {
     const existing = await reminderStorage.getRemindersByBlockId(plugin, item.blockId);
     
     if (existing.length > 0) {
-      // 更新现有提醒
       for (const reminder of existing) {
         reminder.reminderTime = item.reminder!.time;
         reminder.alertMode = item.reminder!.alertMode;
-        reminder.repeat = item.reminder!.repeat;
-        reminder.nextReminderTime = this.calculateNextReminderTime(reminder);
+        reminder.nextReminderTime = this.calculateReminderTime(item);
         await reminderStorage.saveReminder(plugin, reminder);
       }
     } else {
-      // 创建新提醒
       const newReminder: ReminderRecord = {
         id: generateId(),
         blockId: item.blockId,
@@ -637,10 +611,8 @@ class ReminderService {
         taskName: item.taskName,
         reminderTime: item.reminder!.time,
         alertMode: item.reminder!.alertMode,
-        repeat: item.reminder!.repeat,
-        nextReminderTime: this.calculateFirstReminderTime(item),
+        nextReminderTime: this.calculateReminderTime(item),
         notifiedCount: 0,
-        disabled: false,
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -652,20 +624,12 @@ class ReminderService {
     const now = Date.now();
     
     for (const reminder of this.reminders) {
-      // 跳过已失效的提醒
-      if (reminder.disabled) continue;
-      
-      // 检查是否到期
       if (reminder.nextReminderTime <= now) {
-        // 触发通知
         await this.triggerNotification(plugin, reminder);
-        
-        // 更新状态
-        await reminderStorage.markNotified(plugin, reminder.id);
+        await reminderStorage.deleteAfterNotified(plugin, reminder.id);
       }
     }
     
-    // 重新加载（可能已更新）
     await this.loadReminders(plugin);
   }
   
@@ -764,12 +728,7 @@ class ReminderService {
    * 从存储的提醒记录计算 checksum
    */
   private calculateReminderChecksumFromStored(reminder: ReminderRecord): string {
-    const data = {
-      time: reminder.reminderTime,
-      alertMode: reminder.alertMode,
-      repeat: reminder.repeat,
-      endCondition: reminder.endCondition
-    };
+    const data = { time: reminder.reminderTime, alertMode: reminder.alertMode };
     return hashString(JSON.stringify(data));
   }
   
@@ -824,18 +783,18 @@ export function showItemReminderNotification(
 }
 ```
 
-### 5.2 核心模块
+### 6.5 核心模块 API 摘要
 
-#### 5.2.1 解析模块 (src/parser/reminderParser.ts)
+#### 6.5.1 解析模块 (src/parser/reminderParser.ts)
 
 ```typescript
 /**
  * 从事项行解析提醒信息
  */
-export function parseReminderFromItemLine(line: string): ItemReminder | undefined {
-  // 1. 匹配提醒标记 !HH:mm 或 !HH:mm:ss
+export function parseReminderFromItemLine(line: string): ReminderConfig | undefined {
+  // 1. 匹配提醒标记 !HH:mm 或 !HH:mm:ss（绝对时间）
   // 2. 匹配相对提醒标记 !-Xm (分钟) 或 !-Xh (小时)
-  // 3. 返回提醒配置
+  // 3. 返回 ReminderConfig（单次提醒）
 }
 
 /**
@@ -844,13 +803,13 @@ export function parseReminderFromItemLine(line: string): ItemReminder | undefine
 export function calculateReminderTime(
   itemDate: string,
   itemStartTime?: string,
-  reminder: ItemReminder
+  reminder: ReminderConfig
 ): number {
-  // 根据提醒类型计算时间戳
+  // 根据 alertMode（准时/提前）计算时间戳
 }
 ```
 
-#### 5.2.2 存储模块 (src/utils/reminderStorage.ts)
+#### 6.5.2 存储模块 (src/utils/reminderStorage.ts)
 
 ```typescript
 /**
@@ -862,36 +821,29 @@ export async function saveReminder(
 ): Promise<void>;
 
 /**
- * 获取所有待提醒记录（排除 disabled 和已过期的）
+ * 获取所有待提醒记录（过滤已过期）
  */
 export async function getPendingReminders(
   plugin: Plugin
 ): Promise<ReminderRecord[]>;
 
 /**
- * 获取所有提醒记录（包括 disabled 的，用于 blockId 变化检测）
+ * 获取所有提醒记录（用于 blockId 变化检测）
  */
-export async function getAllReminders(
+export async function loadAllReminders(
   plugin: Plugin
 ): Promise<ReminderRecord[]>;
 
 /**
- * 标记提醒为已通知
+ * 通知后删除记录（单次提醒）
  */
-export async function markReminderNotified(
+export async function deleteAfterNotified(
   plugin: Plugin,
   reminderId: string
 ): Promise<void>;
-
-/**
- * 清理过期提醒记录
- */
-export async function cleanupExpiredReminders(
-  plugin: Plugin
-): Promise<void>;
 ```
 
-#### 5.2.3 调度模块 (src/services/reminderService.ts)
+#### 6.5.3 调度模块 (src/services/reminderService.ts)
 
 ```typescript
 export class ReminderService {
@@ -919,8 +871,8 @@ export class ReminderService {
    */
   private async checkReminders(plugin: Plugin): Promise<void> {
     // 1. 获取当前时间
-    // 2. 遍历待提醒事项（排除 disabled 的提醒）
-    // 3. 触发到期提醒
+    // 2. 遍历待提醒事项
+    // 3. 触发到期提醒，通知后删除记录
   }
 
   /**
@@ -936,22 +888,23 @@ export class ReminderService {
   }
 
   /**
-   * 根据事项状态更新提醒失效状态
-   * 当事项完成或放弃时，关联的提醒自动失效
+   * 根据事项状态更新提醒
+   * 当事项完成或放弃时，直接删除关联提醒记录
    */
-  async updateReminderStatusByItem(
+  async onItemStatusChanged(
     plugin: Plugin,
     blockId: string,
     status: 'pending' | 'completed' | 'abandoned'
   ): Promise<void> {
-    // 1. 根据 blockId 查找关联的提醒记录
-    // 2. 如果状态为 completed/abandoned，设置 disabled = true
-    // 3. 如果状态恢复为 pending，设置 disabled = false
+    if (status === 'completed' || status === 'abandoned') {
+      await reminderStorage.deleteReminderByBlockId(plugin, blockId);
+    }
+    // 恢复为 pending 时，下次 DATA_REFRESH 会重新创建提醒
   }
 }
 ```
 
-#### 5.2.4 通知模块 (扩展 src/utils/notification.ts)
+#### 6.5.4 通知模块 (扩展 src/utils/notification.ts)
 
 ```typescript
 /**
@@ -965,7 +918,7 @@ export function showItemReminderNotification(
 ): Notification | null;
 ```
 
-### 5.4 与 performance-optimization 的集成
+### 6.4 与 performance-optimization 的集成
 
 提醒模块需与 [performance-optimization.md](./performance-optimization.md) 的增量更新架构协同：
 
@@ -979,9 +932,9 @@ export function showItemReminderNotification(
 
 **实现顺序**：与 performance-optimization 的 Phase 1/2/3 对齐——Phase 1 基础监听 DATA_REFRESH；Phase 2 支持 `affectedDocIds` 定向同步；Phase 3 与精细化状态更新同步。
 
-## 六、集成点
+## 七、集成点
 
-### 6.1 在事项解析中集成 (src/parser/lineParser.ts)
+### 7.1 在事项解析中集成 (src/parser/lineParser.ts)
 
 修改 `parseItemLine` 函数，增加提醒解析：
 
@@ -990,7 +943,7 @@ export function showItemReminderNotification(
 3. **解析提醒**：调用 `parseReminderFromItemLine(line)` 获取 `ReminderConfig`
 4. **生成 Item**：为每个日期生成 Item 时包含 `reminder` 字段
 
-### 6.2 在插件主类中集成 (src/index.ts)
+### 7.2 在插件主类中集成 (src/index.ts)
 
 ```typescript
 export default class TaskAssistantPlugin extends Plugin {
@@ -1017,9 +970,9 @@ export default class TaskAssistantPlugin extends Plugin {
 }
 ```
 
-## 七、UI 组件
+## 八、UI 组件
 
-### 7.1 提醒设置弹框 (src/components/dialog/ReminderSettingDialog.vue)
+### 8.1 提醒设置弹框 (src/components/dialog/ReminderSettingDialog.vue)
 
 完整的提醒设置界面，参考截图中的功能：
 
@@ -1050,31 +1003,6 @@ export default class TaskAssistantPlugin extends Plugin {
       </div>
     </div>
 
-    <!-- 重复规则 -->
-    <div class="setting-item">
-      <div class="setting-label">
-        <SyIcon name="iconRefresh" />
-        <span>重复</span>
-      </div>
-      <div class="setting-value" @click="showRepeatPicker = true">
-        {{ repeatLabel }}
-        <SyIcon name="iconClose" v-if="repeat !== 'once'" @click.stop="clearRepeat" />
-        <SyIcon name="iconRight" v-else />
-      </div>
-    </div>
-
-    <!-- 结束条件 -->
-    <div class="setting-item" v-if="repeat !== 'once'">
-      <div class="setting-label">
-        <SyIcon name="iconRepeat" />
-        <span>结束</span>
-      </div>
-      <div class="setting-value" @click="showEndConditionPicker = true">
-        {{ endConditionLabel }}
-        <SyIcon name="iconRight" />
-      </div>
-    </div>
-
     <!-- 操作按钮 -->
     <div class="dialog-actions">
       <SyButton type="primary" @click="save">保存</SyButton>
@@ -1084,7 +1012,7 @@ export default class TaskAssistantPlugin extends Plugin {
 </template>
 ```
 
-### 7.2 提醒方式选择弹框
+### 8.2 提醒方式选择弹框
 
 ```vue
 <template>
@@ -1119,89 +1047,9 @@ const alertModes = [
 </script>
 ```
 
-### 7.3 重复规则选择弹框
+> **重复与结束条件**：已解耦至事项层，由「重复事项」PRD 定义。UI 中「创建下次」按钮在事项详情中提供。
 
-```vue
-<template>
-  <div class="repeat-picker">
-    <!-- 基础重复选项 -->
-    <div class="picker-section">
-      <div 
-        v-for="option in repeatOptions" 
-        :key="option.value"
-        class="picker-item"
-        :class="{ active: selectedRepeat === option.value }"
-        @click="selectRepeat(option.value)"
-      >
-        <span>{{ option.label }}</span>
-        <SyIcon name="iconCheck" v-if="selectedRepeat === option.value" />
-      </div>
-    </div>
-
-    <!-- 高级重复选项 -->
-    <div class="picker-section advanced">
-      <div class="section-title">高级选项</div>
-      <div 
-        v-for="option in advancedRepeatOptions" 
-        :key="option.value"
-        class="picker-item"
-        :class="{ active: selectedRepeat === option.value }"
-        @click="selectRepeat(option.value)"
-      >
-        <span>{{ option.label }}</span>
-        <SyIcon name="iconRight" />
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
-const repeatOptions = [
-  { value: 'once', label: '仅一次' },
-  { value: 'daily', label: '每天' },
-  { value: 'weekly', label: '每周（周二）' },
-  { value: 'monthly', label: '每月（17日）' },
-  { value: 'yearly', label: '每年（3月17日）' },
-];
-
-const advancedRepeatOptions = [
-  { value: 'workday', label: '工作日' },
-  { value: 'holiday', label: '节假日' },
-  { value: 'lunar', label: '农历重复' },
-  { value: 'ebbinghaus', label: '艾宾浩斯记忆法' },
-  { value: 'custom', label: '自定义' },
-];
-</script>
-```
-
-### 7.4 结束条件选择弹框
-
-```vue
-<template>
-  <div class="end-condition-picker">
-    <div 
-      v-for="condition in endConditions" 
-      :key="condition.value"
-      class="picker-item"
-      :class="{ active: selectedEnd === condition.value }"
-      @click="selectEnd(condition.value)"
-    >
-      <span>{{ condition.label }}</span>
-      <SyIcon name="iconCheck" v-if="selectedEnd === condition.value" />
-    </div>
-  </div>
-</template>
-
-<script setup>
-const endConditions = [
-  { value: 'never', label: '永不结束' },
-  { value: 'date', label: '按日期结束' },
-  { value: 'count', label: '按次数结束' },
-];
-</script>
-```
-
-### 7.5 事项详情弹框集成提醒入口
+### 8.3 事项详情弹框集成提醒入口
 
 ```vue
 <template>
@@ -1221,9 +1069,9 @@ const endConditions = [
 </template>
 ```
 
-## 八、数据模型（完整版）
+## 九、数据模型（完整版）
 
-### 8.1 提醒配置模型
+### 9.1 提醒配置模型（单次提醒）
 
 ```typescript
 // 提醒方式
@@ -1232,35 +1080,11 @@ interface ReminderAlertMode {
   minutes?: number;  // 提前分钟数（type为before时使用）
 }
 
-// 重复规则
-interface ReminderRepeatRule {
-  type: 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 
-        'workday' | 'holiday' | 'lunar' | 'ebbinghaus' | 'custom';
-  // 每周/每月/每年的具体设置
-  weekDay?: number;      // 每周几（0-6）
-  monthDay?: number;     // 每月几号（1-31）
-  month?: number;        // 每年几月（0-11）
-  // 自定义规则
-  interval?: number;     // 间隔（每N天/周/月）
-  intervalUnit?: 'day' | 'week' | 'month' | 'year';
-  // 艾宾浩斯记忆曲线
-  ebbinghausDays?: number[];  // [1, 2, 4, 7, 15, 30]
-}
-
-// 结束条件
-interface ReminderEndCondition {
-  type: 'never' | 'date' | 'count';
-  endDate?: string;      // 结束日期（YYYY-MM-DD）
-  maxCount?: number;     // 最大提醒次数
-}
-
-// 完整提醒配置
+// 提醒配置（不含 repeat、endCondition，已解耦至事项层）
 interface ReminderConfig {
   enabled: boolean;
   time: string;                    // 提醒时间 HH:mm
   alertMode: ReminderAlertMode;    // 提醒方式
-  repeat: ReminderRepeatRule;      // 重复规则
-  endCondition: ReminderEndCondition;  // 结束条件
 }
 
 // 扩展 Item 类型
@@ -1270,36 +1094,29 @@ interface Item {
 }
 ```
 
-### 8.2 提醒记录模型
+### 9.2 提醒记录模型
 
 ```typescript
 interface ReminderRecord {
-  id: string;              // 提醒 ID
-  blockId: string;         // 关联事项块 ID（思源笔记中的唯一标识）
-  itemContent: string;     // 事项内容（快照）
-  projectName: string;     // 项目名称
-  taskName?: string;       // 任务名称
-  
-  // 提醒配置快照
-  reminderTime: string;    // 提醒时间 HH:mm
+  id: string;
+  blockId: string;
+  itemContent: string;
+  projectName: string;
+  taskName?: string;
+  reminderTime: string;       // HH:mm
   alertMode: ReminderAlertMode;
-  repeat: ReminderRepeatRule;
-  
-  // 运行时状态
-  nextReminderTime: number;  // 下次提醒时间戳
-  notifiedCount: number;     // 已提醒次数
-  lastNotifiedTime?: number; // 上次提醒时间
-  
+  nextReminderTime: number;   // 本次提醒时间戳
+  notifiedCount: number;
   createdAt: number;
   updatedAt: number;
 }
 ```
 
-## 九、标记语法映射（国际化）
+## 十、标记语法映射（国际化）
 
-将 UI 设置映射到 Markdown 标记，支持中英文两种标记方式：
+将 UI 设置映射到 Markdown 标记，**仅提醒相关**（重复与结束条件见「重复事项」PRD）：
 
-### 9.1 基础提醒标记
+### 10.1 提醒标记
 
 | UI 设置 | 中文标记 | 英文标记 | 示例 |
 |---------|----------|----------|------|
@@ -1309,72 +1126,16 @@ interface ReminderRecord {
 | 提前1小时 | `!-1小时` / `!-1h` | `!-1h` | `事项 @2026-03-17 09:00~10:00 !-1h` |
 | 提前1天 | `!-1天` / `!-1d` | `!-1d` | `事项 @2026-03-17 09:00~10:00 !-1d` |
 
-### 9.2 重复规则标记
+### 10.2 解析规则
 
-| UI 设置 | 中文标记 | 英文标记 | 示例 |
-|---------|----------|----------|------|
-| 每天 | `!每天:08:00` / `!daily:08:00` | `!daily:08:00` | `事项 @2026-03-17 !每天:08:00` |
-| 每周二 | `!每周:2:08:00` / `!weekly:2:08:00` | `!weekly:2:08:00` | `事项 @2026-03-17 !每周:2:08:00` |
-| 每月17日 | `!每月:17:08:00` / `!monthly:17:08:00` | `!monthly:17:08:00` | `事项 @2026-03-17 !每月:17:08:00` |
-| 每年3月17日 | `!每年:3-17:08:00` / `!yearly:3-17:08:00` | `!yearly:3-17:08:00` | `事项 @2026-03-17 !每年:3-17:08:00` |
-| 工作日 | `!工作日:08:00` / `!workday:08:00` | `!workday:08:00` | `事项 @2026-03-17 !工作日:08:00` |
-| 节假日 | `!节假日:08:00` / `!holiday:08:00` | `!holiday:08:00` | `事项 @2026-03-17 !节假日:08:00` |
-| 农历重复 | `!农历:08:00` / `!lunar:08:00` | `!lunar:08:00` | `事项 @2026-03-17 !农历:08:00` |
-| 艾宾浩斯 | `!记忆:08:00` / `!ebbinghaus:08:00` | `!ebbinghaus:08:00` | `事项 @2026-03-17 !记忆:08:00` |
+- 时间单位：`m`/`分钟`、`h`/`小时`、`d`/`天`
 
-### 9.3 结束条件标记
-
-结束条件作为重复规则的附加参数：
-
-| UI 设置 | 中文标记 | 英文标记 | 示例 |
-|---------|----------|----------|------|
-| 永不结束 | （无参数） | （无参数） | `!每天:08:00` |
-| 按日期结束 | `:结束于2026-12-31` / `:until:2026-12-31` | `:until:2026-12-31` | `!每天:08:00:结束于2026-12-31` |
-| 按次数结束 | `:共10次` / `:count:10` | `:count:10` | `!每天:08:00:共10次` |
-
-### 9.4 完整示例
-
-```markdown
-; 中文标记示例
-晨会 @2026-03-17 09:00:00~10:00:00 !-15分钟
-周会 @2026-03-17 !每周:2:09:00
-月度汇报 @2026-03-17 !每月:1:14:00:结束于2026-12-31
-背单词 @2026-03-17 !记忆:08:00
-
-; 英文标记示例（与中文等价）
-晨会 @2026-03-17 09:00:00~10:00:00 !-15m
-周会 @2026-03-17 !weekly:2:09:00
-月度汇报 @2026-03-17 !monthly:1:14:00:until:2026-12-31
-背单词 @2026-03-17 !ebbinghaus:08:00
-```
-
-### 9.5 解析规则
-
-1. **时间单位缩写**（中英文通用）：
-   - `m` / `分钟` = 分钟
-   - `h` / `小时` = 小时
-   - `d` / `天` = 天
-
-2. **重复类型映射**：
-   - `每天` / `daily` = 每天
-   - `每周` / `weekly` = 每周
-   - `每月` / `monthly` = 每月
-   - `每年` / `yearly` = 每年
-   - `工作日` / `workday` = 工作日
-   - `节假日` / `holiday` = 节假日
-   - `农历` / `lunar` = 农历重复
-   - `记忆` / `ebbinghaus` = 艾宾浩斯记忆法
-
-3. **结束条件参数**：
-   - `结束于` / `until` = 按日期结束
-   - `共N次` / `count:N` = 按次数结束
-
-## 十、文件结构
+## 十一、文件结构
 
 ```
 src/
 ├── parser/
-│   └── reminderParser.ts              # 提醒标记解析
+│   └── reminderParser.ts              # 提醒标记解析（单次）
 ├── services/
 │   └── reminderService.ts             # 提醒调度服务
 ├── utils/
@@ -1384,16 +1145,14 @@ src/
 │   ├── dialog/
 │   │   ├── ItemDetailDialog.vue       # 扩展现有弹框（添加提醒入口）
 │   │   ├── ReminderSettingDialog.vue  # 提醒设置主弹框
-│   │   ├── AlertModePicker.vue        # 提醒方式选择
-│   │   ├── RepeatPicker.vue           # 重复规则选择
-│   │   └── EndConditionPicker.vue     # 结束条件选择
+│   │   └── AlertModePicker.vue        # 提醒方式选择
 │   └── settings/
 │       └── ReminderConfigSection.vue  # 提醒设置面板
 └── types/
     └── reminder.ts                    # 提醒相关类型定义
 ```
 
-## 十一、实现步骤
+## 十二、实现步骤
 
 ### 阶段一：基础功能（MVP）
 
@@ -1426,38 +1185,24 @@ src/
    - [ ] 实现时间选择器
    - [ ] 实现提醒方式选择
 
-7. **重复规则选择**
-   - [ ] 创建 `RepeatPicker.vue`
-   - [ ] 实现基础重复选项（每天/每周/每月/每年）
-   - [ ] 实现高级选项（工作日/节假日/农历/艾宾浩斯）
-
-8. **结束条件选择**
-   - [ ] 创建 `EndConditionPicker.vue`
-   - [ ] 实现永不结束/按日期结束/按次数结束
-
-9. **事项详情集成**
+7. **事项详情集成**
    - [ ] 扩展 `ItemDetailDialog.vue`
    - [ ] 添加提醒设置入口
 
-10. **设置面板**
+8. **设置面板**
     - [ ] 创建 `ReminderConfigSection.vue`
     - [ ] 集成到设置对话框
 
-### 阶段三：增强功能
+### 阶段三：增强功能（可选）
 
-11. **艾宾浩斯记忆曲线**
-    - [ ] 实现艾宾浩斯提醒算法
-    - [ ] 支持自定义间隔天数
+9. **艾宾浩斯等高级提醒**
+    - [ ] （若需）实现艾宾浩斯等，归属「重复事项」PRD
 
-12. **农历重复**
-    - [ ] 集成农历计算库
-    - [ ] 支持农历日期提醒
-
-13. **国际化**
+10. **国际化**
     - [ ] 添加中文翻译
     - [ ] 添加英文翻译
 
-## 十二、注意事项
+## 十三、注意事项
 
 1. **权限处理**
    - 首次使用提醒功能时请求通知权限
@@ -1477,34 +1222,26 @@ src/
    - 移动端使用思源内置通知
    - 浏览器环境检查 Notification API 支持
 
-5. **重复提醒计算**
-   - 根据重复规则计算下次提醒时间
-   - 考虑结束条件，避免无限生成提醒
-   - 艾宾浩斯曲线需要特殊处理
-
-6. **事项状态与提醒处理**
+5. **事项状态与提醒处理**
    - 事项标记为 `#已完成`/`#done` 或 `#已放弃`/`#abandoned` 后，**直接删除提醒记录**（从 pending.json 移除，不保留历史）
    - **如果删除完成/放弃标记**，事项恢复为待办状态，下次 DATA_REFRESH 时会根据提醒标记重新创建提醒
    - 简化设计：不保留 `disabled` 状态，直接删除/重新创建
 
-7. **blockId 变化处理**
+6. **blockId 变化处理**
    - 当用户复制粘贴事项或重新创建同内容事项时，blockId 会变化
    - 通过内容指纹匹配检测 blockId 变化
    - 自动将旧 blockId 的提醒记录迁移到新 blockId
    - 迁移后删除旧 blockId 的提醒记录
 
-## 十三、验收标准
+## 十四、验收标准
 
 - [ ] 可以使用 `!HH:mm` 语法为事项设置提醒
 - [ ] 支持提前提醒（5分钟/30分钟/1小时/1天/自定义）
-- [ ] 支持重复提醒（每天/每周/每月/每年）
-- [ ] 支持高级重复（工作日/节假日/农历/艾宾浩斯）
-- [ ] 支持结束条件设置（永不/按日期/按次数）
 - [ ] 到达提醒时间时显示系统通知
 - [ ] 点击通知可以跳转到对应事项
 - [ ] 在事项详情弹框中可以设置/修改提醒
 - [ ] 设置面板可以配置提醒功能开关
-- [ ] 支持多日期事项的提醒
+- [ ] 支持多日期事项的提醒（每个日期单次提醒）
 - [ ] 国际化支持（中英文）
 - [ ] 事项完成或放弃后提醒自动删除
 - [ ] 删除完成/放弃标记后提醒自动重新创建
