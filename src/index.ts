@@ -1099,7 +1099,7 @@ export default class TaskAssistantPlugin extends Plugin {
     btn.addEventListener('click', (e) => {
       // 如果不是拖拽操作，则打开 Dock
       if (!btn.classList.contains('dragging')) {
-        this.openPomodoroDock();
+        this.togglePomodoroDock();
       }
     });
 
@@ -1120,6 +1120,21 @@ export default class TaskAssistantPlugin extends Plugin {
       }
     } catch (error) {
       console.error('[Task Assistant] Failed to open pomodoro dock:', error);
+    }
+  }
+
+  /**
+   * 切换番茄钟 Dock 显示/隐藏
+   * 与思源 Dock 图标点击行为一致：show=false, close=true
+   */
+  private togglePomodoroDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.POMODORO}`, false, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to toggle pomodoro dock:', error);
     }
   }
 
@@ -1296,10 +1311,10 @@ export default class TaskAssistantPlugin extends Plugin {
     // 点击事件
     this.statusBarTimerEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      // 如果点击的是番茄图标，则打开 Dock
+      // 如果点击的是番茄图标，则切换 Dock 显示/隐藏
       if (target.closest('.timer-icon')) {
         e.stopPropagation();
-        this.openPomodoroDock();
+        this.togglePomodoroDock();
         return;
       }
       // 如果点击的是跳过休息按钮
