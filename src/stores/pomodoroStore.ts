@@ -34,6 +34,8 @@ interface PomodoroState {
   breakRemainingSeconds: number;
   breakTotalSeconds: number; // 休息总时长（秒），用于进度环
   breakInterval: number | null;
+  // 休息弹窗状态
+  isBreakOverlayVisible: boolean;
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
@@ -45,7 +47,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
     isBreakActive: false,
     breakRemainingSeconds: 0,
     breakTotalSeconds: 0,
-    breakInterval: null
+    breakInterval: null,
+    isBreakOverlayVisible: false
   }),
 
   getters: {
@@ -688,6 +691,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.isBreakActive = true;
       this.breakRemainingSeconds = totalSeconds;
       this.breakTotalSeconds = totalSeconds;
+      // 休息开始时自动显示弹窗
+      this.isBreakOverlayVisible = true;
 
       if (plugin) {
         await saveActiveBreak(plugin, { startTime, durationMinutes: minutes });
@@ -710,6 +715,22 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
+     * 显示休息弹窗
+     */
+    showBreakOverlay(): void {
+      if (this.isBreakActive) {
+        this.isBreakOverlayVisible = true;
+      }
+    },
+
+    /**
+     * 隐藏休息弹窗
+     */
+    hideBreakOverlay(): void {
+      this.isBreakOverlayVisible = false;
+    },
+
+    /**
      * 停止休息
      * @param plugin 思源插件实例，用于删除持久化文件
      */
@@ -722,6 +743,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.isBreakActive = false;
       this.breakRemainingSeconds = 0;
       this.breakTotalSeconds = 0;
+      // 休息结束时关闭弹窗
+      this.isBreakOverlayVisible = false;
       if (wasActive && plugin) {
         await removeActiveBreak(plugin);
       }

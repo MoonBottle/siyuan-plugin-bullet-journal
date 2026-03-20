@@ -39,6 +39,12 @@
           @update:model-value="pomodoro.recordMode = $event as 'block' | 'attr'"
         />
       </SySettingItem>
+      <SySettingItem
+        :label="t('settings').pomodoro.autoCompleteOnItemDone"
+        :description="t('settings').pomodoro.autoCompleteOnItemDoneDesc"
+      >
+        <SySwitch v-model="pomodoro.autoCompleteOnItemDone" />
+      </SySettingItem>
     </SySettingItemList>
   </SySettingsSection>
 </template>

@@ -130,23 +130,33 @@ export class LineParser {
       status = taskListStatus;
     }
 
-    // 将中文逗号替换为英文逗号，便于统一处理
-    const normalizedLine = line.replace(/，/g, ',');
+    // 提取所有日期时间表达式（支持逗号分隔的多个日期）
+    // 使用英文逗号处理日期分隔，但保留原始行用于内容提取
+    const normalizedLineForDates = line.replace(/，/g, ',');
 
     // 提取所有日期时间表达式（支持逗号分隔的多个日期）
-    const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLine);
+    const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLineForDates);
     if (dateTimeExpressions.length === 0) return [];
 
-    // 提取内容（在 normalizedLine 上移除所有日期时间表达式、状态标签和任务列表标记）
-    let content = normalizedLine;
+    // 提取内容（在原始 line 上移除所有日期时间表达式、状态标签和任务列表标记）
+    // 使用原始 line 以保留中文逗号等内容
+    let content = line;
     for (const expr of dateTimeExpressions) {
-      content = content.replace(expr.fullMatch, '');
+      // 在原始行中匹配时，需要考虑中英文逗号的差异
+      const fullMatchWithChineseComma = expr.fullMatch.replace(/,/g, '[,，]');
+      const regex = new RegExp(fullMatchWithChineseComma.replace(/\[/g, '[').replace(/\]/g, ']'));
+      content = content.replace(regex, '').replace(expr.fullMatch, '');
     }
     content = content
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
       .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
-      .replace(/,/g, '')  // 移除英文逗号（normalizedLine 中只有英文逗号）
       .trim();
+
+    // 清理日期表达式之间残留的逗号分隔符
+    // 匹配模式：空白 + 逗号（中英文）+ 空白/日期，这些是日期分隔符
+    content = content.replace(/\s*[,，]\s*(?=\d{4}-\d{2}-\d{2})/g, ' ').trim();
+    // 清理行尾的逗号当它是独立的（前面是空白字符）
+    content = content.replace(/\s+[，,]$/g, '').trim();
 
     // 解析块引用：strip 显示内容，提取到 links
     const { stripped: contentStripped, links: blockRefLinks } = parseBlockRefs(content);

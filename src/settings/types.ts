@@ -21,6 +21,7 @@ export interface PomodoroSettings {
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
   statusBarDirection?: 'extend' | 'shrink';
+  autoCompleteOnItemDone?: boolean; // 事项完成时自动结束番茄钟，默认 true
 }
 
 // 自定义斜杠命令配置
@@ -56,6 +57,7 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',
   statusBarDirection: 'extend',
+  autoCompleteOnItemDone: true,
 };
 
 export const defaultSettings: SettingsData = {

@@ -33,6 +33,8 @@
         <PomodoroRecordList />
       </template>
     </div>
+    <!-- 休息弹窗 -->
+    <PomodoroBreakOverlay :visible="pomodoroStore.isBreakOverlayVisible" @close="onBreakOverlayClose" />
   </div>
 </template>
 
@@ -48,6 +50,7 @@ import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
 import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
 import PomodoroBreakTimer from '@/components/pomodoro/PomodoroBreakTimer.vue';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
+import PomodoroBreakOverlay from '@/components/pomodoro/PomodoroBreakOverlay.vue';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import type { PendingPomodoroCompletion } from '@/types/models';
 import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
@@ -144,11 +147,19 @@ const handlePendingCompletion = (pending: PendingPomodoroCompletion) => {
   openCompleteDialog(pending);
 };
 
+// 处理休息弹窗关闭
+const onBreakOverlayClose = () => {
+  // 弹窗关闭时不需要额外操作，store 中的状态已经更新
+  console.log('[PomodoroDock] 休息弹窗已关闭');
+};
+
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let unsubscribePomodoroRestore: (() => void) | null = null;
 let unsubscribePendingCompletion: (() => void) | null = null;
 let unsubscribeOpenTimerDialog: (() => void) | null = null;
+let unsubscribeBreakStarted: (() => void) | null = null;
+let unsubscribeBreakEnded: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 // 恢复专注状态
@@ -230,6 +241,12 @@ onUnmounted(() => {
   }
   if (unsubscribeOpenTimerDialog) {
     unsubscribeOpenTimerDialog();
+  }
+  if (unsubscribeBreakStarted) {
+    unsubscribeBreakStarted();
+  }
+  if (unsubscribeBreakEnded) {
+    unsubscribeBreakEnded();
   }
   if (refreshChannel) {
     refreshChannel.close();

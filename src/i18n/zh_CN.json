@@ -233,6 +233,8 @@
       "statusBarDirectionDesc": "进度条的显示方式",
       "statusBarDirectionExtend": "逐渐延长",
       "statusBarDirectionShrink": "逐渐缩短",
+      "autoCompleteOnItemDone": "事项完成时自动结束番茄钟",
+      "autoCompleteOnItemDoneDesc": "在待办面板标记事项完成时，自动结束关联的番茄钟",
       "completeTitle": "专注完成",
       "breakTitle": "开始休息",
       "breakHint": "选择休息时长，休息结束后将提醒您继续专注",
@@ -242,7 +244,11 @@
       "close": "关闭",
       "breakEndMessage": "休息结束，请继续专注",
       "breakLabel": "休息",
-      "skipBreak": "跳过休息"
+      "skipBreak": "跳过休息",
+      "breakOverlayTitle": "休息一下",
+      "breakOverlayHint": "离开电脑，放松一下吧",
+      "breakOverlayClose": "关闭弹窗",
+      "breakOverlayReopen": "打开休息弹窗"
     },
     "slashCommands": {
       "title": "斜杠命令",
