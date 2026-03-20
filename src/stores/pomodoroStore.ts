@@ -332,6 +332,55 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
+     * 设置数据刷新监听
+     * 当项目数据刷新后，检测当前专注的事项是否已完成
+     */
+    setupDataRefreshListener() {
+      // 先移除已有的监听
+      this.removeDataRefreshListener();
+
+      // 创建监听函数
+      const dataRefreshHandler = ({ plugin, items }: { plugin: any; items: Item[] }) => {
+        if (!plugin) return;
+
+        // 检查设置是否开启自动结束番茄钟
+        const pomodoroSettings = plugin.getSettings?.()?.pomodoro;
+        const autoCompleteOnItemDone = pomodoroSettings?.autoCompleteOnItemDone !== false; // 默认 true
+        if (!autoCompleteOnItemDone) return;
+
+        if (!this.isFocusing) return;
+
+        const activeBlockId = this.activePomodoro?.blockId;
+        if (!activeBlockId) return;
+
+        // 查找当前专注的事项
+        const focusingItem = items.find((item: Item) => item.blockId === activeBlockId);
+        if (!focusingItem) return;
+
+        // 如果事项已完成，结束番茄钟
+        if (focusingItem.status === 'completed') {
+          this.completePomodoro(plugin);
+        }
+      };
+
+      // 保存引用以便后续移除
+      (this as any)._dataRefreshHandler = dataRefreshHandler;
+      eventBus.on(Events.DATA_REFRESHED, dataRefreshHandler);
+    },
+
+    /**
+     * 移除数据刷新监听
+     */
+    removeDataRefreshListener() {
+      const handler = (this as any)._dataRefreshHandler;
+      if (handler) {
+        // eventBus.on 返回的是取消订阅函数
+        handler();
+        (this as any)._dataRefreshHandler = null;
+      }
+    },
+
+    /**
      * 停止倒计时定时器
      */
     stopTimer() {

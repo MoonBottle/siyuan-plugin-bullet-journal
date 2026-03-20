@@ -200,11 +200,17 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private async checkAndRestorePomodoro() {
     try {
+      // 设置数据刷新监听（用于检测事项完成时自动结束番茄钟）
+      const pinia = getSharedPinia();
+      if (pinia) {
+        const store = usePomodoroStore(pinia);
+        store.setupDataRefreshListener();
+      }
+
       const data = await loadActivePomodoro(this);
 
       if (data) {
         console.log('[Task Assistant] 发现进行中的番茄钟，执行恢复');
-        const pinia = getSharedPinia();
         if (pinia) {
           const store = usePomodoroStore(pinia);
           await store.restorePomodoro(this);
