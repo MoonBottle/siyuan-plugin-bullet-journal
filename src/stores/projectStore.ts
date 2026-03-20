@@ -21,6 +21,7 @@ function computeDisplayItems(
   return filterDateRangeRepresentative(filtered, currentDate);
 }
 import { useSettingsStore } from './settingsStore';
+import { usePomodoroStore } from './pomodoroStore';
 import dayjs from '@/utils/dayjs';
 
 interface ProjectState {
@@ -371,6 +372,9 @@ export const useProjectStore = defineStore('project', {
         this.items = items;
         this.calendarEvents = calendarEvents;
         this.currentDate = dayjs().format('YYYY-MM-DD');
+
+        // 检测当前专注的事项是否已完成，如果是则结束番茄钟
+        this.checkFocusingItemAndEndPomodoro(_plugin);
       } catch (error) {
         console.error('[Task Assistant] Failed to load projects:', error);
       } finally {
@@ -403,6 +407,9 @@ export const useProjectStore = defineStore('project', {
         this.calendarEvents = calendarEvents;
         this.currentDate = newDate;
         console.log('[Task Assistant] Refresh completed, currentDate updated to:', this.currentDate);
+
+        // 检测当前专注的事项是否已完成，如果是则结束番茄钟
+        this.checkFocusingItemAndEndPomodoro(_plugin);
       } catch (error) {
         console.error('[Task Assistant] Failed to refresh projects:', error);
       } finally {
@@ -441,6 +448,35 @@ export const useProjectStore = defineStore('project', {
         ? this.projects.filter(p => p.groupId === groupId)
         : this.projects;
       return DataConverter.projectsToGanttTasks(projects, showItems, dateFilter);
+    },
+
+    /**
+     * 检测当前专注的事项是否已完成，如果是则结束番茄钟
+     * 统一处理所有完成操作（checkbox、handleDone、斜杠命令）
+     */
+    checkFocusingItemAndEndPomodoro(plugin: any) {
+      if (!plugin) return;
+
+      // 检查设置是否开启自动结束番茄钟
+      const pomodoroSettings = plugin.getSettings?.()?.pomodoro;
+      const autoCompleteOnItemDone = pomodoroSettings?.autoCompleteOnItemDone !== false; // 默认 true
+      if (!autoCompleteOnItemDone) return;
+
+      // 获取 pomodoroStore
+      const pomodoroStore = usePomodoroStore();
+      if (!pomodoroStore.isFocusing) return;
+
+      const activeBlockId = pomodoroStore.activePomodoro?.blockId;
+      if (!activeBlockId) return;
+
+      // 查找当前专注的事项
+      const focusingItem = this.items.find(item => item.blockId === activeBlockId);
+      if (!focusingItem) return;
+
+      // 如果事项已完成，结束番茄钟
+      if (focusingItem.status === 'completed') {
+        pomodoroStore.completePomodoro(plugin);
+      }
     }
   }
 });

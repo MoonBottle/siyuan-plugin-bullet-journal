@@ -363,21 +363,12 @@ const handleDone = async () => {
 
   isProcessing.value = true;
   try {
-    // 1. 先标记事项完成
+    // 标记事项完成
     const tag = getStatusTag('completed');
     const success = await updateBlockContent(currentItem.value.blockId, tag);
 
     if (success && plugin) {
-      // 2. 检查是否需要自动结束关联的番茄钟
-      const pomodoroSettings = plugin.getSettings()?.pomodoro;
-      const autoCompleteOnItemDone = pomodoroSettings?.autoCompleteOnItemDone !== false; // 默认 true
-
-      if (autoCompleteOnItemDone && pomodoroStore.isFocusing) {
-        // 触发番茄钟正常结束流程（包含弹框）
-        await pomodoroStore.completePomodoro(plugin);
-      }
-
-      // 3. 刷新项目数据
+      // 刷新项目数据（会触发统一检测逻辑）
       await projectStore.refresh(plugin, settingsStore.enabledDirectories);
     }
   } finally {
