@@ -273,18 +273,34 @@ onBeforeUnmount(async () => {
 .desc-input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--b3-theme-surface-light);
+  border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 6px;
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
   color: var(--b3-theme-on-background);
   font-size: 14px;
   box-sizing: border-box;
   resize: vertical;
   font-family: inherit;
+  transition: border-color 0.2s ease;
+
+  &::placeholder {
+    color: var(--b3-theme-on-surface);
+    opacity: 0.6;
+  }
+
+  &:hover {
+    border-color: var(--b3-theme-on-surface);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+    box-shadow: 0 0 0 2px rgba(var(--b3-theme-primary-rgb), 0.15);
+  }
 }
 
 .desc-textarea {
-  min-height: 80px;
+  min-height: 185px;
   line-height: 1.5;
 }
 

@@ -1589,9 +1589,9 @@ export default class TaskAssistantPlugin extends Plugin {
       skipBtnEl.dataset.tooltip = t('settings').pomodoro.skipBreak;
     }
 
-    // 结束按钮：专注且暂停时显示
+    // 结束按钮：专注中始终显示（暂停/进行中都可结束）
     if (endBtnEl) {
-      endBtnEl.style.display = !isBreak && hasActiveTimer && isPaused ? 'flex' : 'none';
+      endBtnEl.style.display = !isBreak && hasActiveTimer ? 'flex' : 'none';
       endBtnEl.dataset.tooltip = t('pomodoroActive').endFocus;
     }
 
