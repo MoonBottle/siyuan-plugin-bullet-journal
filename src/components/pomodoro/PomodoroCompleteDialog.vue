@@ -1,5 +1,10 @@
 <template>
   <div class="pomodoro-complete-dialog">
+    <!-- 时长不足警告 -->
+    <div v-if="isDurationTooShort && !saved" class="duration-warning">
+      <span class="warning-icon">⚠️</span>
+      <span class="warning-text">{{ durationWarningMessage }}</span>
+    </div>
     <div class="dialog-content">
       <template v-if="!saved">
         <!-- 左侧：卡片区域 -->
@@ -119,7 +124,13 @@
       </template>
     </div>
     <div class="dialog-actions">
-      <button v-if="!saved" class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
+      <template v-if="!saved">
+        <template v-if="isDurationTooShort">
+          <button class="discard-btn" @click="handleDiscard">{{ t('pomodoroComplete').discardRecord }}</button>
+          <button class="save-btn" @click="handleSave">{{ t('pomodoroComplete').confirmRecord }}</button>
+        </template>
+        <button v-else class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
+      </template>
       <button v-else class="close-btn" @click="handleClose">{{ t('settings').pomodoro.close }}</button>
     </div>
   </div>
@@ -134,6 +145,8 @@ import type { PendingPomodoroCompletion } from '@/types/models';
 import Card from '@/components/common/Card.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import dayjs from '@/utils/dayjs';
+import { defaultPomodoroSettings } from '@/settings';
+import { removePendingCompletion } from '@/utils/pomodoroStorage';
 
 const props = defineProps<{
   pending: PendingPomodoroCompletion;
@@ -145,6 +158,26 @@ const plugin = usePlugin() as any;
 
 const description = ref('');
 const saved = ref(false);
+const discarded = ref(false);
+
+// 最小专注时间（分钟）
+const minFocusMinutes = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.minFocusMinutes ?? defaultPomodoroSettings.minFocusMinutes ?? 5;
+});
+
+// 专注时长是否过短
+const isDurationTooShort = computed(() => {
+  const duration = props.pending?.durationMinutes || 0;
+  return duration < minFocusMinutes.value;
+});
+
+// 时长警告信息
+const durationWarningMessage = computed(() => {
+  return t('pomodoroComplete').durationTooShortMessage
+    .replace('{actual}', String(props.pending?.durationMinutes || 0))
+    .replace('{min}', String(minFocusMinutes.value));
+});
 
 // 格式化的开始时间
 const formattedStartTime = computed(() => {
@@ -179,14 +212,29 @@ function handleClose() {
   props.closeDialog();
 }
 
+async function handleDiscard() {
+  discarded.value = true;
+  // 删除待完成记录
+  if (plugin) {
+    await removePendingCompletion(plugin);
+  }
+  props.closeDialog();
+}
+
 onBeforeUnmount(async () => {
-  if (!saved.value && props.pending) {
+  // 如果用户选择不记录，则不保存
+  if (discarded.value) {
+    return;
+  }
+  // 正常情况：未保存且专注时长足够，自动保存
+  if (!saved.value && props.pending && !isDurationTooShort.value) {
     await pomodoroStore.savePomodoroRecordFromPending(
       plugin,
       props.pending,
       description.value
     );
   }
+  // 如果时长过短且未保存也未丢弃，则不自动保存（让用户决定）
 });
 </script>
 
@@ -413,6 +461,45 @@ onBeforeUnmount(async () => {
 .close-btn {
   background: var(--b3-theme-surface-lighter);
   color: var(--b3-theme-on-background);
+}
+
+.discard-btn {
+  padding: 10px 24px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.discard-btn:hover {
+  border-color: var(--b3-theme-error);
+  color: var(--b3-theme-error);
+}
+
+// 时长不足警告
+.duration-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: rgba(255, 152, 0, 0.15);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 6px;
+}
+
+.warning-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  font-size: 13px;
+  color: #FF9800;
+  font-weight: 500;
 }
 
 // 响应式适配

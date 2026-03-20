@@ -235,6 +235,8 @@
       "statusBarDirectionShrink": "逐渐缩短",
       "autoCompleteOnItemDone": "事项完成时自动结束番茄钟",
       "autoCompleteOnItemDoneDesc": "在待办面板标记事项完成时，自动结束关联的番茄钟",
+      "minFocusMinutes": "最小专注时间",
+      "minFocusMinutesDesc": "专注时长低于此值时将提醒用户（分钟）",
       "completeTitle": "专注完成",
       "breakTitle": "开始休息",
       "breakHint": "选择休息时长，休息结束后将提醒您继续专注",
@@ -448,7 +450,11 @@
     "durationMinutes": "{minutes} 分钟",
     "descriptionLabel": "输入事项说明（可选，支持换行）",
     "descriptionPlaceholder": "例如：完成每日复习",
-    "save": "保存"
+    "save": "保存",
+    "durationTooShort": "专注时长过短",
+    "durationTooShortMessage": "当前专注时长 {actual} 分钟，未达到最小专注时间 {min} 分钟",
+    "discardRecord": "不记录",
+    "confirmRecord": "仍要记录"
   },
   "pomodoroRecord": {
     "title": "专注记录",

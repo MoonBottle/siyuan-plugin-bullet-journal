@@ -45,6 +45,19 @@
       >
         <SySwitch v-model="pomodoro.autoCompleteOnItemDone" />
       </SySettingItem>
+      <SySettingItem
+        :label="t('settings').pomodoro.minFocusMinutes"
+        :description="t('settings').pomodoro.minFocusMinutesDesc"
+      >
+        <input
+          type="number"
+          class="b3-text-field fn__flex-center fn__size200"
+          :value="pomodoro.minFocusMinutes ?? 5"
+          @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value) || 5"
+          min="1"
+          max="60"
+        />
+      </SySettingItem>
     </SySettingItemList>
   </SySettingsSection>
 </template>
