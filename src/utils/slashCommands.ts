@@ -9,6 +9,7 @@ import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog } from '@/utils/dialog';
+import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
@@ -723,11 +724,27 @@ async function markAsDone(nodeElement: HTMLElement) {
     return;
   }
 
+  // 1. 先标记事项完成
   const tag = getStatusTag('completed');
   const success = await updateBlockContent(blockId, tag);
 
   if (success) {
     showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+
+    // 2. 检查是否需要自动结束关联的番茄钟
+    const plugin = usePlugin() as any;
+    const pomodoroSettings = plugin?.getSettings()?.pomodoro;
+    const autoCompleteOnItemDone = pomodoroSettings?.autoCompleteOnItemDone !== false; // 默认 true
+
+    if (autoCompleteOnItemDone) {
+      const pinia = getSharedPinia();
+      const pomodoroStore = usePomodoroStore(pinia);
+
+      if (pomodoroStore.isFocusing && pomodoroStore.activePomodoro?.blockId === blockId) {
+        // 触发番茄钟正常结束流程（包含弹框）
+        await pomodoroStore.completePomodoro(plugin);
+      }
+    }
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
   }
