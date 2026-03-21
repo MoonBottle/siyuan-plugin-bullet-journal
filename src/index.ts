@@ -200,11 +200,17 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private async checkAndRestorePomodoro() {
     try {
+      // 设置数据刷新监听（用于检测事项完成时自动结束番茄钟）
+      const pinia = getSharedPinia();
+      if (pinia) {
+        const store = usePomodoroStore(pinia);
+        store.setupDataRefreshListener();
+      }
+
       const data = await loadActivePomodoro(this);
 
       if (data) {
         console.log('[Task Assistant] 发现进行中的番茄钟，执行恢复');
-        const pinia = getSharedPinia();
         if (pinia) {
           const store = usePomodoroStore(pinia);
           await store.restorePomodoro(this);
@@ -967,7 +973,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * WebSocket 消息处理
    */
   private onWsMain(event: any) {
-    // console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
+    console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
     // 检测数据变化相关的事件
     const data = event.detail;
     if (data && data.cmd) {
@@ -1099,7 +1105,7 @@ export default class TaskAssistantPlugin extends Plugin {
     btn.addEventListener('click', (e) => {
       // 如果不是拖拽操作，则打开 Dock
       if (!btn.classList.contains('dragging')) {
-        this.openPomodoroDock();
+        this.togglePomodoroDock();
       }
     });
 
@@ -1120,6 +1126,21 @@ export default class TaskAssistantPlugin extends Plugin {
       }
     } catch (error) {
       console.error('[Task Assistant] Failed to open pomodoro dock:', error);
+    }
+  }
+
+  /**
+   * 切换番茄钟 Dock 显示/隐藏
+   * 与思源 Dock 图标点击行为一致：show=false, close=true
+   */
+  private togglePomodoroDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.POMODORO}`, false, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to toggle pomodoro dock:', error);
     }
   }
 
@@ -1296,10 +1317,10 @@ export default class TaskAssistantPlugin extends Plugin {
     // 点击事件
     this.statusBarTimerEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      // 如果点击的是番茄图标，则打开 Dock
+      // 如果点击的是番茄图标，则切换 Dock 显示/隐藏
       if (target.closest('.timer-icon')) {
         e.stopPropagation();
-        this.openPomodoroDock();
+        this.togglePomodoroDock();
         return;
       }
       // 如果点击的是跳过休息按钮
@@ -1574,9 +1595,9 @@ export default class TaskAssistantPlugin extends Plugin {
       skipBtnEl.dataset.tooltip = t('settings').pomodoro.skipBreak;
     }
 
-    // 结束按钮：专注且暂停时显示
+    // 结束按钮：专注中始终显示（暂停/进行中都可结束）
     if (endBtnEl) {
-      endBtnEl.style.display = !isBreak && hasActiveTimer && isPaused ? 'flex' : 'none';
+      endBtnEl.style.display = !isBreak && hasActiveTimer ? 'flex' : 'none';
       endBtnEl.dataset.tooltip = t('pomodoroActive').endFocus;
     }
 

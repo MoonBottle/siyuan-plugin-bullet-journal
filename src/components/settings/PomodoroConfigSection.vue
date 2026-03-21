@@ -39,6 +39,25 @@
           @update:model-value="pomodoro.recordMode = $event as 'block' | 'attr'"
         />
       </SySettingItem>
+      <SySettingItem
+        :label="t('settings').pomodoro.autoCompleteOnItemDone"
+        :description="t('settings').pomodoro.autoCompleteOnItemDoneDesc"
+      >
+        <SySwitch v-model="pomodoro.autoCompleteOnItemDone" />
+      </SySettingItem>
+      <SySettingItem
+        :label="t('settings').pomodoro.minFocusMinutes"
+        :description="t('settings').pomodoro.minFocusMinutesDesc"
+      >
+        <input
+          type="number"
+          class="b3-text-field fn__flex-center fn__size200"
+          :value="pomodoro.minFocusMinutes ?? 5"
+          @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value)"
+          min="1"
+          max="60"
+        />
+      </SySettingItem>
     </SySettingItemList>
   </SySettingsSection>
 </template>

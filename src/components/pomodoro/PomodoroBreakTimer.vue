@@ -33,6 +33,12 @@
     </div>
 
     <div class="timer-actions">
+      <button class="overlay-btn" @click="showBreakOverlay">
+        <svg class="btn-icon" viewBox="0 0 24 24">
+          <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="currentColor"/>
+        </svg>
+        {{ t('settings').pomodoro.breakOverlayReopen }}
+      </button>
       <button class="skip-btn" @click="skipBreak">
         <svg class="btn-icon" viewBox="0 0 24 24">
           <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
@@ -81,6 +87,11 @@ const formattedTime = computed(() => {
 // 跳过休息
 const skipBreak = async () => {
   await pomodoroStore.stopBreak(plugin);
+};
+
+// 显示休息弹窗
+const showBreakOverlay = () => {
+  pomodoroStore.showBreakOverlay();
 };
 </script>
 
@@ -167,7 +178,8 @@ const skipBreak = async () => {
   justify-content: center;
 }
 
-.skip-btn {
+.skip-btn,
+.overlay-btn {
   display: flex;
   align-items: center;
   gap: 6px;

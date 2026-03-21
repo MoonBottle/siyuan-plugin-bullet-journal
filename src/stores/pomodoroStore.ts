@@ -34,6 +34,8 @@ interface PomodoroState {
   breakRemainingSeconds: number;
   breakTotalSeconds: number; // 休息总时长（秒），用于进度环
   breakInterval: number | null;
+  // 休息弹窗状态
+  isBreakOverlayVisible: boolean;
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
@@ -45,7 +47,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
     isBreakActive: false,
     breakRemainingSeconds: 0,
     breakTotalSeconds: 0,
-    breakInterval: null
+    breakInterval: null,
+    isBreakOverlayVisible: false
   }),
 
   getters: {
@@ -329,6 +332,55 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
+     * 设置数据刷新监听
+     * 当项目数据刷新后，检测当前专注的事项是否已完成
+     */
+    setupDataRefreshListener() {
+      // 先移除已有的监听
+      this.removeDataRefreshListener();
+
+      // 创建监听函数
+      const dataRefreshHandler = ({ plugin, items }: { plugin: any; items: Item[] }) => {
+        if (!plugin) return;
+
+        // 检查设置是否开启自动结束番茄钟
+        const pomodoroSettings = plugin.getSettings?.()?.pomodoro;
+        const autoCompleteOnItemDone = pomodoroSettings?.autoCompleteOnItemDone !== false; // 默认 true
+        if (!autoCompleteOnItemDone) return;
+
+        if (!this.isFocusing) return;
+
+        const activeBlockId = this.activePomodoro?.blockId;
+        if (!activeBlockId) return;
+
+        // 查找当前专注的事项
+        const focusingItem = items.find((item: Item) => item.blockId === activeBlockId);
+        if (!focusingItem) return;
+
+        // 如果事项已完成，结束番茄钟
+        if (focusingItem.status === 'completed') {
+          this.completePomodoro(plugin);
+        }
+      };
+
+      // 保存引用以便后续移除
+      (this as any)._dataRefreshHandler = dataRefreshHandler;
+      eventBus.on(Events.DATA_REFRESHED, dataRefreshHandler);
+    },
+
+    /**
+     * 移除数据刷新监听
+     */
+    removeDataRefreshListener() {
+      const handler = (this as any)._dataRefreshHandler;
+      if (handler) {
+        // eventBus.on 返回的是取消订阅函数
+        handler();
+        (this as any)._dataRefreshHandler = null;
+      }
+    },
+
+    /**
      * 停止倒计时定时器
      */
     stopTimer() {
@@ -393,6 +445,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 3. 清理状态
         this.stopTimer();
         this.activePomodoro = null;
+
+        // 3.5 触发完成事件，通知悬浮窗和底栏隐藏
+        eventBus.emit(Events.POMODORO_COMPLETED);
 
         // 4. 播放提示音
         this.playNotificationSound();
@@ -494,7 +549,6 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
-        eventBus.emit(Events.POMODORO_COMPLETED);
         // 触发数据刷新，专注列表（含 attr 模式新记录）自动更新
         eventBus.emit(Events.DATA_REFRESH);
         broadcastDataRefresh();
@@ -688,6 +742,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.isBreakActive = true;
       this.breakRemainingSeconds = totalSeconds;
       this.breakTotalSeconds = totalSeconds;
+      // 休息开始时自动显示弹窗
+      this.isBreakOverlayVisible = true;
 
       if (plugin) {
         await saveActiveBreak(plugin, { startTime, durationMinutes: minutes });
@@ -710,6 +766,22 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     /**
+     * 显示休息弹窗
+     */
+    showBreakOverlay(): void {
+      if (this.isBreakActive) {
+        this.isBreakOverlayVisible = true;
+      }
+    },
+
+    /**
+     * 隐藏休息弹窗
+     */
+    hideBreakOverlay(): void {
+      this.isBreakOverlayVisible = false;
+    },
+
+    /**
      * 停止休息
      * @param plugin 思源插件实例，用于删除持久化文件
      */
@@ -722,6 +794,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.isBreakActive = false;
       this.breakRemainingSeconds = 0;
       this.breakTotalSeconds = 0;
+      // 休息结束时关闭弹窗
+      this.isBreakOverlayVisible = false;
       if (wasActive && plugin) {
         await removeActiveBreak(plugin);
       }

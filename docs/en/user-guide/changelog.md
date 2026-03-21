@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.11.2] - 2026-03-20
+
+### Features
+
+- **Pomodoro Break Overlay**: New break overlay component for immersive focus breaks
+- **Auto-complete Pomodoro**: Automatically end associated pomodoro when item is completed
+  - New `autoCompleteOnItemDone` configuration option
+  - Supports multiple completion methods: checkbox, handleDone, slash commands
+- **Minimum Focus Time Config**: New `minFocusMinutes` configuration (default 5 minutes)
+- **Pomodoro Button Interaction**: Click to toggle Dock show/hide, consistent with SiYuan Dock icon behavior
+
+### Refactors
+
+- **Event Bus Decoupling**: Decoupled projectStore and pomodoroStore using event bus
+  - Added `DATA_REFRESHED` event type
+  - Removed direct dependencies between stores
+- **Unified Completion Logic**: Unified handling of auto-ending pomodoro when item is completed
+
+### Styles
+
+- Optimized Pomodoro completion dialog styles and interactions
+  - Description input border color, hover/focus effects improved
+  - Description textarea minimum height increased to 185px
+  - End button now always visible during focus
+
 ## [0.11.1] - 2026-03-17
 
 ### Fixes

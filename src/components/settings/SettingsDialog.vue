@@ -257,7 +257,12 @@ onUnmounted(() => {
 
 function cloneSettings(data: SettingsData): SettingsData {
   const merged = { ...defaultSettings, ...data };
-  if (!merged.pomodoro) merged.pomodoro = { ...defaultSettings.pomodoro! };
+  // 合并 pomodoro 设置，确保新字段有默认值
+  if (!merged.pomodoro) {
+    merged.pomodoro = { ...defaultSettings.pomodoro! };
+  } else {
+    merged.pomodoro = { ...defaultSettings.pomodoro!, ...merged.pomodoro };
+  }
   if (!merged.ai) merged.ai = { providers: [], activeProviderId: null };
   if (!merged.customSlashCommands) merged.customSlashCommands = [];
   return JSON.parse(JSON.stringify(merged));
@@ -271,6 +276,24 @@ watch(() => props.plugin.getSettings(), (newSettings) => {
 }, { deep: true });
 
 function validateSettings(): string | null {
+  // 校验番茄钟最小专注时间
+  if (local.pomodoro?.minFocusMinutes !== undefined) {
+    const minFocus = local.pomodoro.minFocusMinutes;
+    console.log('[Settings] 校验最小专注时间:', minFocus);
+    if (isNaN(minFocus)) {
+      console.log('[Settings] 最小专注时间校验失败: 不是有效数字');
+      return '最小专注时间必须是有效数字';
+    }
+    if (minFocus < 1) {
+      console.log('[Settings] 最小专注时间校验失败: 小于 1 分钟');
+      return '最小专注时间不能小于 1 分钟';
+    }
+    if (minFocus > 60) {
+      console.log('[Settings] 最小专注时间校验失败: 大于 60 分钟');
+      return '最小专注时间不能大于 60 分钟';
+    }
+  }
+
   // 校验 AI Provider 配置
   if (local.ai?.providers) {
     for (const provider of local.ai.providers) {

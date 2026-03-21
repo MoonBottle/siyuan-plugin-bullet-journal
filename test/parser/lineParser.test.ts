@@ -861,3 +861,52 @@ describe('parsePomodoroAttrs 从块属性对象提取番茄钟', () => {
     expect(records).toHaveLength(0);
   });
 });
+
+describe('parseItemLine - 事项内容保留逗号', () => {
+  it('事项内容包含中文逗号应保留', () => {
+    const items = LineParser.parseItemLine('测试，手机号登录开发 @2026-03-21', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('测试，手机号登录开发');
+    expect(items[0].date).toBe('2026-03-21');
+  });
+
+  it('事项内容包含英文逗号应保留', () => {
+    const items = LineParser.parseItemLine('Test, phone login development @2026-03-21', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('Test, phone login development');
+    expect(items[0].date).toBe('2026-03-21');
+  });
+
+  it('事项内容包含多个逗号应全部保留', () => {
+    const items = LineParser.parseItemLine('测试，开发，验证 @2026-03-21', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('测试，开发，验证');
+    expect(items[0].date).toBe('2026-03-21');
+  });
+
+  it('多日期事项中内容逗号应保留', () => {
+    const items = LineParser.parseItemLine('测试，内容 @2024-01-01, 2024-01-03', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].content).toBe('测试，内容');
+    expect(items[1].content).toBe('测试，内容');
+  });
+
+  it('多日期事项（中文逗号分隔）中内容逗号应保留', () => {
+    const items = LineParser.parseItemLine('测试，内容 @2024-01-01，2024-01-03', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].content).toBe('测试，内容');
+    expect(items[1].content).toBe('测试，内容');
+  });
+
+  it('内容以逗号结尾应保留', () => {
+    const items = LineParser.parseItemLine('测试， @2026-03-21', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('测试，');
+  });
+
+  it('内容以逗号开头应保留', () => {
+    const items = LineParser.parseItemLine('，测试 @2026-03-21', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('，测试');
+  });
+});

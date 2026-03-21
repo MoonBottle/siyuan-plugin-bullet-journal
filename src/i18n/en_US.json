@@ -233,6 +233,10 @@
       "statusBarDirectionDesc": "How the progress bar displays",
       "statusBarDirectionExtend": "Extend (fill up)",
       "statusBarDirectionShrink": "Shrink (count down)",
+      "autoCompleteOnItemDone": "Auto-complete pomodoro when item is done",
+      "autoCompleteOnItemDoneDesc": "Automatically end the associated pomodoro when marking an item as completed in the todo panel",
+      "minFocusMinutes": "Minimum Focus Duration",
+      "minFocusMinutesDesc": "Warn user when focus duration is below this value (minutes)",
       "completeTitle": "Focus Complete",
       "breakTitle": "Start Break",
       "breakHint": "Choose break duration. You will be reminded when break ends.",
@@ -242,7 +246,11 @@
       "close": "Close",
       "breakEndMessage": "Break over, time to focus again",
       "breakLabel": "Break",
-      "skipBreak": "Skip Break"
+      "skipBreak": "Skip Break",
+      "breakOverlayTitle": "Take a Break",
+      "breakOverlayHint": "Step away from your computer and relax",
+      "breakOverlayClose": "Close",
+      "breakOverlayReopen": "Open Break Overlay"
     },
     "slashCommands": {
       "title": "Slash Commands",
@@ -442,7 +450,11 @@
     "durationMinutes": "{minutes} min",
     "descriptionLabel": "Enter item description (optional, supports multi-line)",
     "descriptionPlaceholder": "e.g. Complete daily review",
-    "save": "Save"
+    "save": "Save",
+    "durationTooShort": "Focus Duration Too Short",
+    "durationTooShortMessage": "Current focus duration {actual} min, minimum required {min} min",
+    "discardRecord": "Discard",
+    "confirmRecord": "Save Anyway"
   },
   "pomodoroRecord": {
     "title": "Focus Records",

@@ -9,6 +9,7 @@ import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog } from '@/utils/dialog';
+import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
@@ -723,11 +724,13 @@ async function markAsDone(nodeElement: HTMLElement) {
     return;
   }
 
+  // 标记事项完成
   const tag = getStatusTag('completed');
   const success = await updateBlockContent(blockId, tag);
 
   if (success) {
     showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+    // 数据刷新会触发统一检测逻辑
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
   }

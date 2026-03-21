@@ -10,6 +10,7 @@ import { getBlockAttrs } from '@/api';
 import { LineParser } from '@/parser/lineParser';
 import { defaultPomodoroSettings } from '@/settings';
 import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRangeUtils';
+import { eventBus, Events } from '@/utils/eventBus';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -371,6 +372,9 @@ export const useProjectStore = defineStore('project', {
         this.items = items;
         this.calendarEvents = calendarEvents;
         this.currentDate = dayjs().format('YYYY-MM-DD');
+
+        // 触发数据刷新完成事件，供其他模块监听处理
+        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items });
       } catch (error) {
         console.error('[Task Assistant] Failed to load projects:', error);
       } finally {
@@ -403,6 +407,9 @@ export const useProjectStore = defineStore('project', {
         this.calendarEvents = calendarEvents;
         this.currentDate = newDate;
         console.log('[Task Assistant] Refresh completed, currentDate updated to:', this.currentDate);
+
+        // 触发数据刷新完成事件，供其他模块监听处理
+        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items });
       } catch (error) {
         console.error('[Task Assistant] Failed to refresh projects:', error);
       } finally {
@@ -441,6 +448,7 @@ export const useProjectStore = defineStore('project', {
         ? this.projects.filter(p => p.groupId === groupId)
         : this.projects;
       return DataConverter.projectsToGanttTasks(projects, showItems, dateFilter);
-    }
+    },
+
   }
 });

@@ -577,9 +577,12 @@ const handleDone = async (item: Item) => {
 
   isProcessing.value = true;
   try {
+    // 标记事项完成
     const tag = getStatusTag('completed');
     const success = await updateBlockContent(item.blockId, tag);
+
     if (success && plugin) {
+      // 刷新项目数据（会触发统一检测逻辑）
       await projectStore.refresh(plugin, settingsStore.enabledDirectories);
     }
   } finally {
