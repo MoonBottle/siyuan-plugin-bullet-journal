@@ -132,6 +132,7 @@ export class LineParser {
 
     // 提取所有日期时间表达式（支持逗号分隔的多个日期）
     // 使用英文逗号处理日期分隔，但保留原始行用于内容提取
+    // 将中文逗号替换为英文逗号，便于统一处理
     const normalizedLineForDates = line.replace(/，/g, ',');
 
     // 提取所有日期时间表达式（支持逗号分隔的多个日期）
