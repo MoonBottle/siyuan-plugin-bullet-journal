@@ -792,26 +792,24 @@ export default class TaskAssistantPlugin extends Plugin {
           click: () => showSettingsDialog(this)
         });
         menu.addItem({
+          icon: 'iconAdd',
+          label: t('helpMenu').createExampleDoc,
+          click: async () => {
+            const docId = await createExampleDocument();
+            if (docId) {
+              const pinia = getSharedPinia();
+              if (pinia) {
+                const projectStore = useProjectStore(pinia);
+                await projectStore.refresh(this, this.getEnabledDirectories());
+              }
+            }
+          }
+        });
+        menu.addItem({
           icon: 'iconHelp',
           label: t('helpMenu').title || '帮助',
           submenu: [
-            // 1. 创建示例文档 - 放在最上面，让用户快速上手
-            {
-              icon: 'iconAdd',
-              label: t('helpMenu').createExampleDoc,
-              click: async () => {
-                const docId = await createExampleDocument();
-                if (docId) {
-                  const pinia = getSharedPinia();
-                  if (pinia) {
-                    const projectStore = useProjectStore(pinia);
-                    await projectStore.refresh(this, this.getEnabledDirectories());
-                  }
-                }
-              }
-            },
-            { type: 'separator' },
-            // 2. 文档分组
+            // 1. 文档分组
             {
               icon: 'iconBookmark',
               label: t('helpMenu').docs,

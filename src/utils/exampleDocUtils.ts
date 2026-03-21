@@ -59,6 +59,8 @@ function generateExampleContent(): string {
 
 [Design Mockup](https://figma.com/design/xxx)
 
+---
+
 Homepage Redesign ${taskTag}
 
 [Requirements Doc](https://doc.example.com/homepage)
@@ -77,6 +79,8 @@ Develop Homepage Components @${tomorrow} 09:00:00~12:00:00
 
 Responsive Adaptation @${tomorrow} 14:00:00~17:00:00
 
+---
+
 Performance Optimization ${taskTag}
 
 Image Compression and Lazy Loading @${today}
@@ -90,6 +94,8 @@ Code Splitting and Caching Strategy @${tomorrow}
 > 公司官网全面改版，提升用户体验
 
 [设计稿](https://figma.com/design/xxx)
+
+---
 
 首页改版 ${taskTag}
 
@@ -108,6 +114,8 @@ Code Splitting and Caching Strategy @${tomorrow}
 开发首页组件 @${tomorrow} 09:00:00~12:00:00
 
 响应式适配 @${tomorrow} 14:00:00~17:00:00
+
+---
 
 性能优化 ${taskTag}
 
