@@ -158,7 +158,7 @@ export default defineConfig(({
             if (assetInfo.name === "style.css") {
               return "index.css"
             }
-            return assetInfo.name
+            return assetInfo.name || "assets/[name][extname]"
           },
         },
       },
