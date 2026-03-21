@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, h, createApp } from 'vue';
-import { getSharedPinia } from '@/index';
+import { getSharedPinia } from '@/utils/sharedPinia';
 import { Dialog } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';

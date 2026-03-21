@@ -45,7 +45,6 @@ const { version } = PluginInfo;
  * 同上下文下所有视图共享同一份 settings/project store。若某视图跑在另一上下文（如 iframe），
  * 该处 sharedPinia 为 null，会 fallback 到 createPinia()，此时仍依赖 BroadcastChannel 同步数据。
  */
-export { getSharedPinia } from '@/utils/sharedPinia';
 
 // 全局设置
 let settings: SettingsData = { ...defaultSettings };

@@ -95,6 +95,7 @@
     "createExampleDoc": "Create Example Document",
     "exampleDocCreated": "Example document created",
     "exampleDocFailed": "Failed to create example document",
+    "pending": "Pending",
     "expired": "Expired",
     "inProgress": "In Progress",
     "completed": "Completed",

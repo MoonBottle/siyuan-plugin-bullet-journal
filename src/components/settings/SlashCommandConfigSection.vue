@@ -400,7 +400,7 @@ function deleteCommand(id: string) {
 }
 
 .form-select-fullwidth :deep(.sy-select__trigger) {
-  width: 100%;
+    width: 100%;
 }
 
 .form-save-btn {

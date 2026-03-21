@@ -49,7 +49,6 @@
     "rollup-plugin-livereload": "^2.0.5",
     "sass": "^1.98.0",
     "siyuan": "1.1.8",
-    "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "vite": "^8.0.1",
     "vite-plugin-remove-console": "^2.2.0",

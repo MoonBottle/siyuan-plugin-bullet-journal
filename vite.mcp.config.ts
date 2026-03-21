@@ -15,6 +15,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: false,
+    // 添加 sourcemap 便于调试
+    sourcemap: true,
+    // 标记为 SSR 构建（Node 环境）
+    ssr: true,
     lib: {
       entry: resolve(__dirname, 'src/mcp/server.ts'),
       fileName: () => 'mcp-server.js',

@@ -95,6 +95,7 @@
     "createExampleDoc": "创建示例文档",
     "exampleDocCreated": "示例文档已创建",
     "exampleDocFailed": "创建示例文档失败",
+    "pending": "待办",
     "expired": "已过期",
     "inProgress": "进行中",
     "completed": "已完成",

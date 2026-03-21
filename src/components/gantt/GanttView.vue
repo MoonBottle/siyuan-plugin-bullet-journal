@@ -707,17 +707,17 @@ const updateGantt = () => {
     opacity: 1;
   }
 
-  :deep(.sy-dialog-content) {
+  .sy-dialog-content {
     padding: 0 !important;
   }
 
-  :deep(.sy-dialog-cards) {
+  .sy-dialog-cards {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  :deep(.sy-dialog-card) {
+  .sy-dialog-card {
     font-size: 12px;
     padding: 10px 14px;
     border-radius: 4px;
