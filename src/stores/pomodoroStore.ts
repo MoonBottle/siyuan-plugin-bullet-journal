@@ -446,6 +446,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
         this.stopTimer();
         this.activePomodoro = null;
 
+        // 3.5 触发完成事件，通知悬浮窗和底栏隐藏
+        eventBus.emit(Events.POMODORO_COMPLETED);
+
         // 4. 播放提示音
         this.playNotificationSound();
 
@@ -546,7 +549,6 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
-        eventBus.emit(Events.POMODORO_COMPLETED);
         // 触发数据刷新，专注列表（含 attr 模式新记录）自动更新
         eventBus.emit(Events.DATA_REFRESH);
         broadcastDataRefresh();

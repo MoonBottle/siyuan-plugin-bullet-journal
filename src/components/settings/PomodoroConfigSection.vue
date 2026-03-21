@@ -53,7 +53,7 @@
           type="number"
           class="b3-text-field fn__flex-center fn__size200"
           :value="pomodoro.minFocusMinutes ?? 5"
-          @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value) || 5"
+          @input="pomodoro.minFocusMinutes = parseInt(($event.target as HTMLInputElement).value)"
           min="1"
           max="60"
         />

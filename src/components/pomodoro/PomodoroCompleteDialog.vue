@@ -147,7 +147,6 @@ import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import dayjs from '@/utils/dayjs';
 import { defaultPomodoroSettings } from '@/settings';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
-import { eventBus, Events } from '@/utils/eventBus';
 
 const props = defineProps<{
   pending: PendingPomodoroCompletion;
@@ -219,11 +218,7 @@ async function handleDiscard() {
   if (plugin) {
     await removePendingCompletion(plugin);
   }
-  // 停止计时器并清空状态
-  pomodoroStore.stopTimer();
-  pomodoroStore.activePomodoro = null;
-  // 触发取消事件，通知悬浮窗和底栏隐藏
-  eventBus.emit(Events.POMODORO_CANCELLED);
+  // 悬浮窗和底栏已在倒计时结束时隐藏，无需额外处理
   props.closeDialog();
 }
 
