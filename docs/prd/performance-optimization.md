@@ -121,6 +121,72 @@ AND id IN (/* 当前目录下的所有文档ID */)
 
 **实现要点**：在 `transactions` 含 `updateAttrs` 或收到 `savedoc` 时，提取 `rootIDs`，使对应文档的 attrCache 失效或按文档维度做增量刷新。
 
+**关键设计：双路径协调机制**
+
+| 刷新触发源 | ChangeDetector 行为 | 属性获取行为 |
+|-----------|-------------------|------------|
+| 定时/手动刷新 | 基于 `updated` 字段对比 | 仅更新 `modified` 文档的属性 |
+| ws-main 事件 | 将 `rootIDs` 强制加入 `modified` 列表 | 强制重新获取这些文档的属性 |
+
+**问题场景**：
+```
+1. 用户对块 B (属于文档 A) setBlockAttrs
+2. ws-main 触发 → attrCache[A] 失效
+3. ChangeDetector 对比发现文档 A 的 updated 未变 → 判为 unchanged
+4. 如果跳过处理，attrCache 将永远为空，导致数据丢失
+```
+
+**解决方案**：
+```typescript
+class RefreshCoordinator {
+  // ws-main 事件标记需要强制刷新的文档
+  private dirtyDocIds: Set<string> = new Set();
+
+  // ws-main 触发时调用
+  markDirty(docIds: string[]) {
+    docIds.forEach(id => this.dirtyDocIds.add(id));
+  }
+
+  // ChangeDetector 检测前调用
+  getForceModifiedDocs(): string[] {
+    return Array.from(this.dirtyDocIds);
+  }
+
+  // 刷新完成后调用
+  clearDirty(docIds: string[]) {
+    docIds.forEach(id => this.dirtyDocIds.delete(id));
+  }
+}
+
+// 在 ChangeDetector.detectChanges() 中：
+async detectChanges(
+  directories: ProjectDirectory[],
+  cache: Map<string, DocumentCache>,
+  forceModified: string[]  // 来自 RefreshCoordinator.getForceModifiedDocs()
+): Promise<ChangeDetectionResult> {
+  // 正常对比逻辑
+  const { added, modified, removed, unchanged } = await this.compareWithCache(...);
+
+  // 强制修改的文档，从 unchanged 移到 modified
+  const forceModifiedSet = new Set(forceModified);
+  const finalUnchanged = unchanged.filter(id => !forceModifiedSet.has(id));
+  const finalModified = [...modified, ...unchanged.filter(id => forceModifiedSet.has(id))];
+
+  return {
+    added,
+    modified: finalModified,
+    removed,
+    unchanged: finalUnchanged
+  };
+}
+```
+
+**时序保证**：
+- ws-main 事件 → 立即 `markDirty()` + 触发 `scheduleRefresh()`
+- 下一次刷新 → `detectChanges()` 读取 `dirtyDocIds` → 强制加入 `modified`
+- `mergeIncremental()` 正常处理 `modified` 文档 → 重新获取属性
+- 刷新完成 → `clearDirty()` 清理已处理的文档
+
 #### 3.2.2 增量解析器
 
 ```typescript
@@ -187,6 +253,35 @@ class PomodoroAttrMerger {
     attrs: Record<string, string>;
     fetchedAt: number;
   }>;
+  // 反向映射：docId -> 该文档下所有 blockIds
+  // 用于文档删除时快速定位并清理 attrCache
+  private docToBlocksMap: Map<string, Set<string>> = new Map();
+
+  // 维护 docId 到 blockIds 的映射关系
+  private updateDocBlocksMap(docId: string, blockIds: string[]) {
+    const currentSet = this.docToBlocksMap.get(docId) || new Set();
+    const newSet = new Set(blockIds);
+
+    // 找出被移除的 blockIds，从 attrCache 中删除
+    for (const blockId of currentSet) {
+      if (!newSet.has(blockId)) {
+        this.attrCache.delete(blockId);
+      }
+    }
+
+    this.docToBlocksMap.set(docId, newSet);
+  }
+
+  // 文档删除时清理缓存
+  clearDocCache(docId: string) {
+    const blockIds = this.docToBlocksMap.get(docId);
+    if (blockIds) {
+      for (const blockId of blockIds) {
+        this.attrCache.delete(blockId);
+      }
+      this.docToBlocksMap.delete(docId);
+    }
+  }
 
   async mergeIncremental(
     projects: Project[],
@@ -197,18 +292,28 @@ class PomodoroAttrMerger {
     const blocksToFetch: string[] = [];
 
     for (const project of projects) {
-      if (!updatedDocIds.includes(project.id)) continue;
+      // 更新 docId 到 blockIds 的映射（用于后续缓存清理）
+      const projectBlockIds: string[] = [];
 
       for (const task of project.tasks) {
-        if (task.blockId && !this.attrCache.has(task.blockId)) {
-          blocksToFetch.push(task.blockId);
+        if (task.blockId) {
+          projectBlockIds.push(task.blockId);
+          if (task.blockId && !this.attrCache.has(task.blockId)) {
+            blocksToFetch.push(task.blockId);
+          }
         }
         for (const item of task.items) {
-          if (item.blockId && !this.attrCache.has(item.blockId)) {
-            blocksToFetch.push(item.blockId);
+          if (item.blockId) {
+            projectBlockIds.push(item.blockId);
+            if (item.blockId && !this.attrCache.has(item.blockId)) {
+              blocksToFetch.push(item.blockId);
+            }
           }
         }
       }
+
+      // 维护反向映射关系
+      this.updateDocBlocksMap(project.id, projectBlockIds);
     }
 
     if (blocksToFetch.length === 0) return;
@@ -217,8 +322,20 @@ class PomodoroAttrMerger {
     await this.fetchAttrsBySql(blocksToFetch);
   }
 
+  // 思源块 ID 格式为 20 位字母数字，严格校验防止注入
+  private validateBlockId(id: string): boolean {
+    return /^[a-z0-9]{14,26}$/.test(id);
+  }
+
   private async fetchAttrsBySql(blockIds: string[]): Promise<void> {
-    const placeholders = blockIds.map(id => `'${id}'`).join(',');
+    // 过滤非法 ID，避免 SQL 注入
+    const safeIds = blockIds.filter(id => this.validateBlockId(id));
+    if (safeIds.length !== blockIds.length) {
+      console.warn('[PomodoroAttrMerger] Filtered invalid blockIds:', blockIds.filter(id => !this.validateBlockId(id)));
+    }
+    if (safeIds.length === 0) return;
+
+    const placeholders = safeIds.map(id => `'${id}'`).join(',');
     const attrPrefix = 'custom-pomodoro'; // 可配置
     const result = await sql(`
       SELECT block_id, name, value FROM attributes
@@ -335,14 +452,14 @@ interface CacheManager {
 
 #### 3.3.2 缓存失效策略
 
-| 场景 | 处理方式 |
-|------|----------|
-| 文档更新时间变化 | 重新解析该文档 |
-| ws-main 收到 transactions/savedoc | 从 `context.rootIDs` 获取受影响文档，使对应 attrCache 失效 |
-| 文档删除（changes.removed） | 从 attrCache 移除该文档下所有 block 的缓存（需维护 docId→blockIds 映射或按 root_id 查询） |
-| 手动强制刷新 | 清空缓存，全量更新 |
-| 超过最大缓存时间 | LRU 淘汰 |
-| 内存压力 | 淘汰最久未使用的缓存 |
+| 场景 | 处理方式 | 实现方法 |
+|------|----------|----------|
+| 文档更新时间变化 | 重新解析该文档 | `detectChanges()` 判定为 modified |
+| ws-main 收到 transactions/savedoc | 从 `context.rootIDs` 获取受影响文档，加入 `dirtyDocIds` 强制刷新 | `RefreshCoordinator.markDirty()` |
+| 文档删除（changes.removed） | 调用 `clearDocCache(docId)` 清理该文档下所有 block 的缓存 | `PomodoroAttrMerger.clearDocCache()` |
+| 手动强制刷新 | 清空所有缓存，全量更新 | `clearCache()` 清空 attrCache + docToBlocksMap |
+| 超过最大缓存时间 | LRU 淘汰 | 遍历 attrCache 移除最旧的条目 |
+| 内存压力 | 淘汰最久未使用的缓存 | 按 `fetchedAt` 排序移除 |
 
 ### 3.4 并发控制
 
@@ -350,34 +467,45 @@ interface CacheManager {
 class RefreshController {
   private isRefreshing = false;
   private pendingRefresh = false;
+  private pendingResolve?: () => void;
   private refreshQueue: Promise<void> = Promise.resolve();
 
   async scheduleRefresh(
     directories: ProjectDirectory[],
     force: boolean = false
   ): Promise<void> {
-    // 防抖：如果正在刷新，标记待刷新
+    // 如果正在刷新，标记待刷新，返回一个等待完成的 Promise
     if (this.isRefreshing) {
       this.pendingRefresh = true;
-      return;
+      // 关键修复：返回一个在下次刷新完成时 resolve 的 Promise
+      return new Promise((resolve) => {
+        this.pendingResolve = resolve;
+      });
     }
 
     // 队列化刷新请求
-    this.refreshQueue = this.refreshQueue.then(async () => {
+    const refreshPromise = this.refreshQueue.then(async () => {
       this.isRefreshing = true;
       try {
         await this.performIncrementalRefresh(directories, force);
       } finally {
         this.isRefreshing = false;
+        // 如果有等待中的 resolve，执行它
+        if (this.pendingResolve) {
+          this.pendingResolve();
+          this.pendingResolve = undefined;
+        }
         // 检查是否有待处理的刷新
         if (this.pendingRefresh) {
           this.pendingRefresh = false;
+          // 递归调用，确保链式处理
           await this.scheduleRefresh(directories, false);
         }
       }
     });
 
-    return this.refreshQueue;
+    this.refreshQueue = refreshPromise;
+    return refreshPromise;
   }
 }
 ```
@@ -415,11 +543,13 @@ class RefreshController {
 3. 项目合并时保持原始顺序（mergeInOriginalOrder）
 4. 优化派生数据计算
 
-### Phase 4: 持久化缓存
+### Phase 4: 持久化缓存（建议推迟评估）
 
-1. 添加 LocalStorage 缓存
-2. 添加 IndexedDB 支持（可选）
-3. 实现缓存清理策略
+**注意**：思源是 Electron 应用，L1 内存缓存在整个 App 生命周期内有效。Project 对象包含复杂类型（Date、Map 等），序列化/反序列化开销较大。建议先实现 L1，评估实际效果后再决定是否引入 L2/L3。
+
+1. 评估 L1 内存缓存的实际命中率
+2. 如确需跨会话缓存，优先使用 LocalStorage 存储文档元数据（updated 时间戳）
+3. IndexedDB 存储完整 Project 数据需考虑版本迁移和兼容性，暂缓实现
 
 ## 五、API 变更
 
@@ -502,15 +632,26 @@ console.log('[Performance] Refresh metrics:', metrics);
 
 ### 7.2 调试支持
 
+**仅在开发环境注册**，生产环境不暴露内部 API：
+
 ```typescript
-// 全局调试对象
-window.__BULLET_JOURNAL_DEBUG__ = {
-  clearCache: () => store.clearCache(),
-  forceFullRefresh: () => store.refreshFull(),
-  getCacheStats: () => cacheManager.getStats(),
-  enableDetailedLogging: (enabled: boolean) => { ... }
-};
+// 全局调试对象（开发模式限定）
+if (process.env.NODE_ENV === 'development' || import.meta.env?.DEV) {
+  window.__BULLET_JOURNAL_DEBUG__ = {
+    clearCache: () => store.clearCache(),
+    forceFullRefresh: () => store.refreshFull(),
+    getCacheStats: () => cacheManager.getStats(),
+    enableDetailedLogging: (enabled: boolean) => { ... },
+    // 新增：查看当前 dirtyDocIds
+    getDirtyDocs: () => refreshCoordinator.getForceModifiedDocs()
+  };
+}
 ```
+
+**安全说明**：
+- 生产构建工具（Vite/Webpack）会剔除 `process.env.NODE_ENV === 'development'` 代码块
+- 思源插件使用 Vite 时，通过 `import.meta.env.DEV` 判断
+- 确保 `__BULLET_JOURNAL_DEBUG__` 不会在生产环境泄露 store 内部状态
 
 ## 八、风险评估
 
@@ -754,7 +895,30 @@ sequenceDiagram
     end
 ```
 
-## 十、相关文件
+## 十、问题修复汇总
+
+针对审查发现的问题，已在文档中补充以下解决方案：
+
+| 问题 | 位置 | 解决方案 |
+|------|------|----------|
+| SQL 注入风险 | 3.2.3 | 增加 `validateBlockId()` 白名单校验（`/^[a-z0-9]{14,26}$/`），过滤非法 ID 后再拼接 SQL |
+| ws-main 与增量刷新路径协调 | 3.2.1.1 | 新增 `RefreshCoordinator` 类，维护 `dirtyDocIds` 集合；ws-main 触发时 `markDirty()`，`detectChanges()` 将 dirty 文档强制加入 modified 列表，确保属性被重新获取 |
+| RefreshController Promise 语义 | 3.4 | 修复 `pendingRefresh=true` 时返回 `undefined` 的问题，改为返回 `new Promise()` 并在下次刷新完成后 resolve |
+| docId→blockIds 反向映射 | 3.2.3 | 在 `PomodoroAttrMerger` 中新增 `docToBlocksMap` 和 `updateDocBlocksMap()`/`clearDocCache()` 方法，维护文档到块 ID 的映射关系 |
+| 调试对象环境守卫 | 7.2 | 添加 `process.env.NODE_ENV === 'development'` 判断，确保生产环境不暴露调试 API |
+
+## 十一、相关文件
+
+**新增文件**：
+- `src/parser/incrementalParser.ts` - 增量解析器
+- `src/utils/changeDetector.ts` - 变更检测（含 `RefreshCoordinator`）
+- `src/utils/cacheManager.ts` - 缓存管理
+- `src/types/performance.ts` - 性能相关类型
+
+**修改文件**：
+- `src/stores/projectStore.ts` - 主状态管理
+- `src/parser/markdownParser.ts` - Markdown 解析器
+- `src/index.ts` - ws-main 监听，解析 `context.rootIDs` 做定向刷新
 
 - `src/stores/projectStore.ts` - 主状态管理
 - `src/parser/markdownParser.ts` - Markdown 解析器
