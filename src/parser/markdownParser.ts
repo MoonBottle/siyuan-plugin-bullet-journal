@@ -5,7 +5,7 @@
  */
 import type { Project, Item, ProjectDirectory } from '@/types/models';
 import { parseKramdown } from './core';
-import { sql, getDocKramdown, getBlockAttrs } from '@/api';
+import { sql, getDocKramdown } from '@/api';
 import { LineParser } from './lineParser';
 import { defaultPomodoroSettings } from '@/settings';
 
@@ -224,7 +224,41 @@ export class MarkdownParser {
   }
 
   /**
+   * 使用 SQL 批量查询项目的番茄钟属性
+   * 替代多次 getBlockAttrs 调用，大幅提升性能
+   */
+  private async fetchPomodoroAttrsByProject(
+    docId: string
+  ): Promise<Map<string, Record<string, string>>> {
+    try {
+      const sqlQuery = `
+        SELECT block_id as blockId, name, value
+        FROM attributes
+        WHERE root_id = '${docId}'
+          AND name LIKE 'custom-pomodoro-%'
+      `;
+
+      const results = await sql(sqlQuery) as Array<{ blockId: string; name: string; value: string }>;
+
+      // 按 blockId 分组
+      const attrsMap = new Map<string, Record<string, string>>();
+      for (const row of results) {
+        if (!attrsMap.has(row.blockId)) {
+          attrsMap.set(row.blockId, {});
+        }
+        attrsMap.get(row.blockId)![row.name] = row.value;
+      }
+
+      return attrsMap;
+    } catch (error) {
+      console.error(`[Task Assistant] Failed to fetch pomodoro attrs for doc ${docId}:`, error);
+      return new Map();
+    }
+  }
+
+  /**
    * 为单个项目合并番茄钟属性
+   * 使用 SQL 批量查询替代多次 getBlockAttrs 调用
    */
   private async mergePomodoroAttrsForSingleProject(
     project: Project,
@@ -233,21 +267,20 @@ export class MarkdownParser {
     const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
     const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
 
+    // 一次性批量查询所有番茄钟属性
+    const attrsMap = await this.fetchPomodoroAttrsByProject(project.id);
+
     for (const task of project.tasks) {
       // Task 级别番茄钟
-      if (task.blockId) {
-        try {
-          const attrs = await getBlockAttrs(task.blockId);
-          const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
-          if (attrRecords.length > 0) {
-            for (const r of attrRecords) {
-              r.taskId = task.id;
-              r.projectId = project.id;
-            }
-            task.pomodoros = [...(task.pomodoros || []), ...attrRecords];
+      if (task.blockId && attrsMap.has(task.blockId)) {
+        const attrs = attrsMap.get(task.blockId)!;
+        const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
+        if (attrRecords.length > 0) {
+          for (const r of attrRecords) {
+            r.taskId = task.id;
+            r.projectId = project.id;
           }
-        } catch {
-          // 跳过
+          task.pomodoros = [...(task.pomodoros || []), ...attrRecords];
         }
       }
 
@@ -257,8 +290,8 @@ export class MarkdownParser {
         if (!item.blockId || seenBlockIds.has(item.blockId)) continue;
         seenBlockIds.add(item.blockId);
 
-        try {
-          const attrs = await getBlockAttrs(item.blockId);
+        if (attrsMap.has(item.blockId)) {
+          const attrs = attrsMap.get(item.blockId)!;
           const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
           if (attrRecords.length > 0) {
             for (const r of attrRecords) {
@@ -268,8 +301,6 @@ export class MarkdownParser {
             }
             item.pomodoros = [...(item.pomodoros || []), ...attrRecords];
           }
-        } catch {
-          // 跳过
         }
       }
     }
