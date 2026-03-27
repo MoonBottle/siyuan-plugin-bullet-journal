@@ -348,7 +348,7 @@ export const useProjectStore = defineStore('project', {
         console.log('[Task Assistant] Total projects loaded:', this.projects.length);
 
         // 触发数据刷新完成事件，供其他模块监听处理
-        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin });
+        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
       } catch (error) {
         console.error('[Task Assistant] Failed to load projects:', error);
       } finally {
@@ -382,7 +382,7 @@ export const useProjectStore = defineStore('project', {
         }
 
         this.currentDate = newDate;
-        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin });
+        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
       } catch (error) {
         console.error('[Task Assistant] Refresh failed:', error);
         // 出错时回退到全量刷新
