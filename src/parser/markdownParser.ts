@@ -3,7 +3,7 @@
  * 通过思源 API 获取文档 Kramdown 内容并解析（包含 blockId）
  * 解析逻辑复用 src/parser/core.ts
  */
-import type { Project, Item, ProjectDirectory } from '@/types/models';
+import type { Project, Item, ProjectDirectory, PomodoroRecord } from '@/types/models';
 import { parseKramdown } from './core';
 import { sql, getDocKramdown } from '@/api';
 import { LineParser } from './lineParser';
@@ -306,11 +306,18 @@ export class MarkdownParser {
       }
 
       // Item 级别番茄钟
-      const seenBlockIds = new Set<string>();
+      // Map blockId -> 第一个 item 的 pomodoros 数组（用于多日期事项共享）
+      const blockIdToPomodoros = new Map<string, PomodoroRecord[]>();
       for (const item of task.items) {
-        if (!item.blockId || seenBlockIds.has(item.blockId)) continue;
-        seenBlockIds.add(item.blockId);
+        if (!item.blockId) continue;
 
+        // 如果已经处理过这个 blockId，共享同一个 pomodoros 数组
+        if (blockIdToPomodoros.has(item.blockId)) {
+          item.pomodoros = blockIdToPomodoros.get(item.blockId)!;
+          continue;
+        }
+
+        // 第一次遇到这个 blockId，创建新的 pomodoros 数组
         if (attrsMap.has(item.blockId)) {
           const attrs = attrsMap.get(item.blockId)!;
           const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
@@ -323,6 +330,8 @@ export class MarkdownParser {
             item.pomodoros = [...(item.pomodoros || []), ...attrRecords];
           }
         }
+        // 记录这个 blockId 对应的 pomodoros 数组（可能是空数组或 undefined）
+        blockIdToPomodoros.set(item.blockId, item.pomodoros || []);
       }
     }
   }

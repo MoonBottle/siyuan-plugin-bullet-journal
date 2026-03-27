@@ -6,8 +6,7 @@ import { defineStore } from 'pinia';
 import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord } from '@/types/models';
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
-import { getBlockAttrs } from '@/api';
-import { LineParser } from '@/parser/lineParser';
+
 import { defaultPomodoroSettings } from '@/settings';
 import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { eventBus, Events } from '@/utils/eventBus';
@@ -325,68 +324,6 @@ export const useProjectStore = defineStore('project', {
     },
 
     /**
-     * 合并块属性中的番茄钟记录（attr 模式）
-     * 从 getBlockAttrs 获取 custom-pomodoro-* 属性，解析后合并到 item/task.pomodoros
-     */
-    async mergePomodoroAttrs(projects: Project[], plugin: any) {
-      const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
-      const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
-
-      for (const project of projects) {
-        for (const task of project.tasks) {
-          if (task.blockId) {
-            let attrs: Record<string, string> = {};
-            try {
-              attrs = await getBlockAttrs(task.blockId);
-            } catch {
-              // 获取失败时跳过该 task，不影响其他
-            }
-            const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
-            if (attrRecords.length > 0) {
-              for (const r of attrRecords) {
-                r.taskId = task.id;
-                r.projectId = project.id;
-              }
-              // 确保 pomodoros 数组已初始化
-              if (!task.pomodoros) {
-                task.pomodoros = [];
-              }
-              task.pomodoros.push(...attrRecords);
-            }
-          }
-
-          // 按 blockId 对 items 去重，避免重复获取属性
-          const seenBlockIds = new Set<string>();
-          const uniqueItems = task.items.filter(item => {
-            if (!item.blockId) return false;
-            if (seenBlockIds.has(item.blockId)) return false;
-            seenBlockIds.add(item.blockId);
-            return true;
-          });
-
-          for (const item of uniqueItems) {
-            let attrs: Record<string, string> = {};
-            try {
-              attrs = await getBlockAttrs(item.blockId);
-            } catch {
-              // 获取失败时跳过该 item，不影响其他
-            }
-            const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
-            if (attrRecords.length > 0) {
-              for (const r of attrRecords) {
-                r.itemId = item.id;
-                r.taskId = task.id;
-                r.projectId = project.id;
-              }
-              // parser 已确保同 blockId 的 items 共享同一 pomodoros 引用，push 即可
-              item.pomodoros!.push(...attrRecords);
-            }
-          }
-        }
-      }
-    },
-
-    /**
      * 加载项目数据（首次加载，显示加载状态）
      * 流式更新：每解析完一个项目就立即显示
      */
@@ -456,16 +393,21 @@ export const useProjectStore = defineStore('project', {
     },
 
     /**
-     * 全量刷新（原有逻辑）
+     * 全量刷新（使用流式解析）
      */
     async refreshFull(_plugin: any, directories: ProjectDirectory[]): Promise<void> {
       console.log('[Task Assistant] Full refresh');
 
       const parser = new MarkdownParser(directories);
-      const projects = await parser.parseAllProjects();
-      await this.mergePomodoroAttrs(projects, _plugin);
 
-      this.projects = projects;
+      // 清空现有数据
+      this.projects = [];
+
+      // 流式解析（已使用 SQL 批量查询番茄钟）
+      await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+        this.projects.push(project);
+      });
+
       dirtyDocTracker.clearAll();
     },
 
