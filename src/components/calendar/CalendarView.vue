@@ -262,9 +262,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
         if (!item.blockId) return;
         const tag = getStatusTag('completed');
         const success = await updateBlockContent(item.blockId, tag);
-        if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
+        // 操作成功，等待 ws-main 事件触发定向刷新
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),
       onMigrateToday: async () => {
@@ -280,9 +278,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           completeSiblingItems,
           item.status
         );
-        if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
+        // 操作成功，等待 ws-main 事件触发定向刷新
       },
       onMigrateTomorrow: async () => {
         if (!item.blockId) return;
@@ -297,9 +293,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           completeSiblingItems,
           item.status
         );
-        if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
+        // 操作成功，等待 ws-main 事件触发定向刷新
       },
       onMigrateCustom: async () => {
         if (!item.blockId) return;
@@ -314,18 +308,14 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
             completeSiblingItems,
             item.status
           );
-          if (plugin) {
-            await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-          }
+          // 操作成功，等待 ws-main 事件触发定向刷新
         });
       },
       onAbandon: async () => {
         if (!item.blockId) return;
         const tag = getStatusTag('abandoned');
         const success = await updateBlockContent(item.blockId, tag);
-        if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
+        // 操作成功，等待 ws-main 事件触发定向刷新
       },
       onOpenDoc: () => {
         if (item.docId && item.lineNumber) {

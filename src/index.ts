@@ -1070,7 +1070,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.refreshTimeout = setTimeout(() => {
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
-    }, 1000);
+    }, 150);
   }
 
   // ============================================

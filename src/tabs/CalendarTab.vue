@@ -349,8 +349,7 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
 
   if (success) {
     showMessage(action === 'move' ? t('common').moveSuccess : t('common').resizeSuccess);
-    // 刷新数据
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    // 操作成功，等待 ws-main 事件触发定向刷新
   } else {
     showMessage(t('common').actionFailed, 'error');
   }
