@@ -496,6 +496,40 @@
     "selectDateTitle": "Select Date",
     "setProjectDirSuccess": "Set as project directory",
     "markTaskSuccess": "Marked as task",
-    "alreadyMarkedTask": "Already marked as task"
+    "alreadyMarkedTask": "Already marked as task",
+    "setReminder": "Set Reminder",
+    "setRecurring": "Set Recurring"
+  },
+  "reminder": {
+    "settingTitle": "Set Reminder",
+    "enableReminder": "Enable Reminder",
+    "reminderType": "Reminder Type",
+    "reminderTime": "Reminder Time",
+    "relativeTime": "Relative Time",
+    "absoluteTime": "Absolute Time",
+    "beforeStart": "Before Start",
+    "beforeEnd": "Before End",
+    "setReminder": "Set Reminder",
+    "minutes": "{n} min",
+    "hour": "{n} hr"
+  },
+  "recurring": {
+    "settingTitle": "Set Recurring",
+    "enableRecurring": "Enable Recurring",
+    "repeatRule": "Repeat Rule",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "workday": "Workday",
+    "specificDay": "Specific Day",
+    "dayOfMonth": "Day of Month",
+    "endCondition": "End Condition",
+    "never": "Never",
+    "endByDate": "End by Date",
+    "endByCount": "End by Count",
+    "times": "times",
+    "setRecurring": "Set Recurring",
+    "skipThis": "Skip This"
   }
 }

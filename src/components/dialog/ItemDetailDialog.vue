@@ -146,6 +146,39 @@
           </span>
         </div>
 
+        <!-- 提醒设置 -->
+        <div class="item-actions-row">
+          <button
+            class="action-btn"
+            :class="{ active: hasReminder }"
+            @click="handleSetReminder"
+          >
+            <span class="action-icon">⏰</span>
+            <span class="action-text">{{ reminderText }}</span>
+          </button>
+        </div>
+
+        <!-- 重复设置 -->
+        <div v-if="canSetRecurring" class="item-actions-row">
+          <button
+            class="action-btn"
+            :class="{ active: hasRecurring }"
+            @click="handleSetRecurring"
+          >
+            <span class="action-icon">🔁</span>
+            <span class="action-text">{{ recurringText }}</span>
+          </button>
+          
+          <!-- 跳过本次（仅过期事项显示） -->
+          <button
+            v-if="showSkipButton"
+            class="action-btn skip-btn"
+            @click="handleSkipOccurrence"
+          >
+            <span class="action-text">{{ t('recurring.skipThis') }}</span>
+          </button>
+        </div>
+
         <template #footer>
           <SyButton
             v-for="link in itemLinks"
@@ -205,6 +238,9 @@ const emit = defineEmits<{
   close: [];
   openDoc: [];
   openCalendar: [date: string];
+  setReminder: [];
+  setRecurring: [];
+  skipOccurrence: [];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -373,6 +409,50 @@ const statusInfo = computed(() => {
   return statusMap[itemStatus.value] || statusMap['pending'];
 });
 
+// 提醒相关
+const hasReminder = computed(() => props.item.reminder?.enabled);
+const reminderText = computed(() => {
+  if (!hasReminder.value) return t('reminder.setReminder');
+  const reminder = props.item.reminder!;
+  if (reminder.type === 'absolute' && reminder.time) {
+    return `⏰ ${reminder.time}`;
+  }
+  if (reminder.type === 'relative') {
+    const prefix = reminder.relativeTo === 'end' ? 'e-' : '-';
+    const offset = reminder.offsetMinutes || 0;
+    if (offset % 60 === 0) {
+      return `⏰ ${prefix}${offset / 60}h`;
+    }
+    return `⏰ ${prefix}${offset}m`;
+  }
+  return t('reminder.setReminder');
+});
+
+// 重复相关
+const hasRecurring = computed(() => !!props.item.repeatRule);
+const canSetRecurring = computed(() => !props.item.siblingItems?.length); // 多日期事项不能设置重复
+const recurringText = computed(() => {
+  if (!hasRecurring.value) return t('recurring.setRecurring');
+  const rule = props.item.repeatRule!;
+  const typeMap: Record<string, string> = {
+    'daily': t('recurring.daily'),
+    'weekly': t('recurring.weekly'),
+    'monthly': t('recurring.monthly'),
+    'yearly': t('recurring.yearly'),
+    'workday': t('recurring.workday')
+  };
+  let text = `🔁 ${typeMap[rule.type] || rule.type}`;
+  if (rule.dayOfMonth) {
+    text += `:${rule.dayOfMonth}日`;
+  }
+  return text;
+});
+
+// 是否显示跳过按钮（有重复规则且已过期）
+const showSkipButton = computed(() => {
+  return hasRecurring.value && itemStatus.value === 'expired';
+});
+
 // 获取有效日期
 function getEffectiveDate(item: Item): string {
   if (item.dateRangeEnd) {
@@ -417,6 +497,21 @@ function handleLinkClick(url: string) {
     console.log('[ItemDetailDialog] siyuan link detected, closing dialog');
     handleClose();
   }
+}
+
+// 设置提醒
+function handleSetReminder() {
+  emit('setReminder');
+}
+
+// 设置重复
+function handleSetRecurring() {
+  emit('setRecurring');
+}
+
+// 跳过本次
+function handleSkipOccurrence() {
+  emit('skipOccurrence');
 }
 </script>
 
@@ -590,5 +685,52 @@ function handleLinkClick(url: string) {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--b3-border-color);
+}
+
+.item-actions-row {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--b3-border-color);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--b3-theme-surface-light);
+    border-color: var(--b3-theme-primary);
+  }
+
+  &.active {
+    background: var(--b3-theme-primary-light);
+    border-color: var(--b3-theme-primary);
+    color: var(--b3-theme-primary);
+  }
+}
+
+.action-icon {
+  font-size: 12px;
+}
+
+.skip-btn {
+  margin-left: auto;
+  color: var(--b3-theme-warning);
+  border-color: var(--b3-theme-warning-light);
+
+  &:hover {
+    background: var(--b3-theme-warning-light);
+    border-color: var(--b3-theme-warning);
+  }
 }
 </style>

@@ -496,6 +496,40 @@
     "selectDateTitle": "选择日期",
     "setProjectDirSuccess": "已设置为项目目录",
     "markTaskSuccess": "已标记为任务",
-    "alreadyMarkedTask": "已经标记为任务"
+    "alreadyMarkedTask": "已经标记为任务",
+    "setReminder": "设置提醒",
+    "setRecurring": "设置重复"
+  },
+  "reminder": {
+    "settingTitle": "设置提醒",
+    "enableReminder": "启用提醒",
+    "reminderType": "提醒类型",
+    "reminderTime": "提醒时间",
+    "relativeTime": "相对时间",
+    "absoluteTime": "绝对时间",
+    "beforeStart": "开始前",
+    "beforeEnd": "结束前",
+    "setReminder": "设置提醒",
+    "minutes": "{n}分钟",
+    "hour": "{n}小时"
+  },
+  "recurring": {
+    "settingTitle": "设置重复",
+    "enableRecurring": "启用重复",
+    "repeatRule": "重复规则",
+    "daily": "每天",
+    "weekly": "每周",
+    "monthly": "每月",
+    "yearly": "每年",
+    "workday": "工作日",
+    "specificDay": "指定日期",
+    "dayOfMonth": "每月几日",
+    "endCondition": "结束条件",
+    "never": "永不结束",
+    "endByDate": "按日期结束",
+    "endByCount": "按次数结束",
+    "times": "次",
+    "setRecurring": "设置重复",
+    "skipThis": "跳过本次"
   }
 }

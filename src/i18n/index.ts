@@ -47,10 +47,21 @@ export function initI18n(language?: string) {
 }
 
 /**
- * 获取翻译
+ * 获取翻译，支持嵌套路径如 'reminder.absoluteTime'
  */
-export function t<K extends keyof Translations>(key: K): Translations[K] {
-  return currentLocale[key];
+export function t(key: string): any {
+  const keys = key.split('.');
+  let value: any = currentLocale;
+  
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = value[k];
+    } else {
+      return key; // 找不到时返回 key 本身
+    }
+  }
+  
+  return value;
 }
 
 /**

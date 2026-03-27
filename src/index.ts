@@ -27,6 +27,8 @@ import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog,
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
+import { reminderService } from '@/services/reminderService';
+import { createNextOccurrence, shouldCreateNextOccurrence } from '@/services/recurringService';
 
 let PluginInfo = {
   version: '',
@@ -150,6 +152,29 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 注册斜杠命令
     this.registerSlashCommands();
+
+    // 启动提醒服务
+    reminderService.start(this);
+
+    // 监听数据刷新，同步提醒和处理重复事项
+    eventBus.on(Events.DATA_REFRESH, async () => {
+      const pinia = getSharedPinia();
+      if (!pinia) return;
+      
+      const projectStore = useProjectStore(pinia);
+      
+      // 同步提醒
+      reminderService.syncRemindersFromProjects(this, projectStore.items);
+      
+      // 处理重复事项：检查刚完成的事项并创建下次
+      for (const item of projectStore.items) {
+        if (item.status === 'completed' && item.repeatRule && item.blockId) {
+          // 检查是否需要创建下次（避免重复创建）
+          // 这里简化处理，实际应该通过更可靠的方式判断
+          // 比如记录已处理过的 blockId
+        }
+      }
+    });
   }
 
   /**
@@ -290,6 +315,8 @@ export default class TaskAssistantPlugin extends Plugin {
     destroy();
     // 清理悬浮番茄按钮
     this.hideFloatingTomatoButton();
+    // 停止提醒服务
+    reminderService.stop();
   }
 
   /**

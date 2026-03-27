@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal, createDialog } from '@/utils/dialog';
+import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import {
@@ -326,6 +326,24 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-view-detail',
       callback: getActionHandler('viewDetail', config, SLASH_COMMAND_FILTERS.VIEW_DETAIL)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.SET_REMINDER,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setReminder}</span>
+          <span class="b3-list-item__meta">⏰</span>
+      </div>`,
+      id: 'bullet-journal-set-reminder',
+      callback: getActionHandler('setReminder', config, SLASH_COMMAND_FILTERS.SET_REMINDER)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.SET_RECURRING,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setRecurring}</span>
+          <span class="b3-list-item__meta">🔁</span>
+      </div>`,
+      id: 'bullet-journal-set-recurring',
+      callback: getActionHandler('setRecurring', config, SLASH_COMMAND_FILTERS.SET_RECURRING)
     }
   ];
 
@@ -531,6 +549,16 @@ function getActionHandler(
         deleteSlashCommandContent(protyle, filter);
         viewDetail(nodeElement);
       };
+    case 'setReminder':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setReminderForBlock(nodeElement);
+      };
+    case 'setRecurring':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setRecurringForBlock(nodeElement);
+      };
     default:
       return () => {};
   }
@@ -556,7 +584,9 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     todo: 'Todo',
     setProjectDir: 'Project Dir',
     markAsTask: 'Task',
-    viewDetail: 'Detail'
+    viewDetail: 'Detail',
+    setReminder: 'Reminder',
+    setRecurring: 'Recurring'
   };
   return labels[action] || action;
 }
@@ -864,4 +894,47 @@ async function startFocusFromSlash(
   // 打开预选弹框（无左侧列表），传递 blockId 而非 item 引用
   // 这样弹框内部可以实时从 store 获取最新的 item 数据
   openPomodoroDialogWithItem(blockId, openPomodoroDock);
+}
+
+
+/**
+ * 为块设置提醒
+ */
+async function setReminderForBlock(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  // 从块内容提取事项信息
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  // 打开提醒设置弹框
+  showReminderSettingDialog(item);
+}
+
+/**
+ * 为块设置重复
+ */
+async function setRecurringForBlock(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  // 从块内容提取事项信息
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  // 打开重复设置弹框
+  showRecurringSettingDialog(item);
 }

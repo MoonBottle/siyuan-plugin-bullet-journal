@@ -3,6 +3,8 @@
  * 从 obsidian-hk-work-plugin 移植
  */
 import type { Task, Item, Link, ItemStatus, PomodoroRecord, PomodoroStatus } from '@/types/models';
+import { parseReminderFromLine, stripReminderMarker } from './reminderParser';
+import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
 
 /** 思源块引用正则：((blockId)) 或 ((blockId "alias")) 或 ((blockId 'alias')) */
 const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g;
@@ -97,6 +99,9 @@ export class LineParser {
    * 格式: 事项内容 @2024-01-01 10:00:00~11:00:00, 2024-01-03 14:00:00~15:00:00 #done
    * 支持: @2024-01-01, @2024-01-01~2024-01-05, @2024-01-01~01-05（简写）
    * 支持中英文逗号分隔
+   * 支持提醒: ⏰HH:mm, ⏰-Xm, ⏰e-Xm
+   * 支持重复: 🔁每天, 🔁每周, 🔁每月, 🔁每年, 🔁工作日
+   * 支持结束条件: 🔚YYYY-MM-DD, 🔢N
    * @param line 事项行内容
    * @param lineNumber 行号
    * @param links 关联的链接列表（可选，由上层解析器提供）
@@ -106,6 +111,14 @@ export class LineParser {
     if (!line.match(/@\d{4}-\d{2}-\d{2}/)) {
       return [];
     }
+
+    // 解析提醒配置
+    const reminder = parseReminderFromLine(line);
+
+    // 解析重复规则（多日期与重复互斥时优先多日期）
+    const hasMultipleDates = line.match(/@\d{4}-\d{2}-\d{2}.*[,，]|@\d{4}-\d{2}-\d{2}.*~/);
+    const repeatRule = (!hasMultipleDates && hasRepeatRule(line)) ? parseRepeatRule(line) : undefined;
+    const endCondition = repeatRule ? parseEndCondition(line) : undefined;
 
     // 解析任务列表标记 [ ] [x] [X]（在去除块属性后解析）
     let taskListStatus: ItemStatus | null = null;
@@ -152,6 +165,12 @@ export class LineParser {
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
       .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
       .trim();
+
+    // 移除提醒标记
+    content = stripReminderMarker(content);
+
+    // 移除重复和结束条件标记
+    content = stripRecurringMarkers(content);
 
     // 清理日期表达式之间残留的逗号分隔符
     // 匹配模式：空白 + 逗号（中英文）+ 空白/日期，这些是日期分隔符
@@ -226,7 +245,10 @@ export class LineParser {
         links: mergedLinks.length > 0 ? mergedLinks : undefined,  // 块引用 + 事项下方链接
         siblingItems: siblingItems.length > 0 ? siblingItems : undefined,
         dateRangeStart,
-        dateRangeEnd
+        dateRangeEnd,
+        reminder,
+        repeatRule,
+        endCondition
       });
     }
 

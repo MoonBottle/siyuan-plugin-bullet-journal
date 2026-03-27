@@ -225,6 +225,26 @@ describe('processLineText', () => {
     expect(result).toBe('路径/到/文件');
   });
 
+  it('删除 /tx 提醒命令', () => {
+    const result = processLineText('/tx 待办内容', ['/tx', '/reminder']);
+    expect(result).toBe(' 待办内容');
+  });
+
+  it('删除 /tx 命令及其子集 /t', () => {
+    const result = processLineText('/t提醒内容', ['/tx', '/reminder']);
+    expect(result).toBe('提醒内容');
+  });
+
+  it('删除 /cf 重复命令', () => {
+    const result = processLineText('/cf 待办内容', ['/cf', '/recurring']);
+    expect(result).toBe(' 待办内容');
+  });
+
+  it('删除 /cf 命令及其子集 /c', () => {
+    const result = processLineText('/c重复内容', ['/cf', '/recurring']);
+    expect(result).toBe('重复内容');
+  });
+
   it('处理超长 filter', () => {
     const result = processLineText('/verylongcommand内容', ['/verylongcommand']);
     expect(result).toBe('内容');

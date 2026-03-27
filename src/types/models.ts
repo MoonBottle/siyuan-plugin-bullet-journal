@@ -110,6 +110,36 @@ export interface Task {
 // 事项状态
 export type ItemStatus = 'pending' | 'completed' | 'abandoned';
 
+// 提醒配置
+export interface ReminderConfig {
+  enabled: boolean;
+  type: 'absolute' | 'relative';
+  time?: string;                   // 绝对时间 HH:mm（type='absolute' 时使用）
+  alertMode?: {                    // 提醒方式（type='absolute' 时使用）
+    type: 'ontime' | 'before' | 'custom';
+    minutes?: number;
+  };
+  // 相对提醒专用字段
+  relativeTo?: 'start' | 'end';    // 相对开始时间还是结束时间
+  offsetMinutes?: number;          // 偏移分钟数（正数表示提前）
+}
+
+// 重复规则类型
+export type RepeatRuleType = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'workday';
+
+// 重复规则
+export interface RepeatRule {
+  type: RepeatRuleType;
+  dayOfMonth?: number;  // 每月指定日期（如 15 表示每月15日）
+}
+
+// 结束条件
+export interface EndCondition {
+  type: 'never' | 'date' | 'count';
+  endDate?: string;    // YYYY-MM-DD，type='date' 时使用
+  maxCount?: number;   // type='count' 时使用
+}
+
 // 工作事项
 export interface Item {
   id: string;              // 事项 ID
@@ -135,6 +165,10 @@ export interface Item {
   /** 日期跨度结束日（同上，用于分组、过期与进行中判断） */
   dateRangeEnd?: string;
   pomodoros?: PomodoroRecord[]; // 事项级别番茄钟记录
+  // 提醒和重复功能
+  reminder?: ReminderConfig;     // 提醒配置
+  repeatRule?: RepeatRule;       // 重复规则
+  endCondition?: EndCondition;   // 结束条件
 }
 
 // 分组
