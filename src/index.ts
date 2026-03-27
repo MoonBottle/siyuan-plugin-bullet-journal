@@ -1003,9 +1003,38 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 处理定向刷新
    * 从 ws-main 事件数据中提取 rootIDs，标记脏文档，触发定向刷新
+   * 
+   * 支持三种 rootID 位置（不会同时出现，按优先级依次检查）：
+   * 1. data.context.rootIDs - transactions 命令
+   * 2. data.data.rootID - savedoc 命令
+   * 3. data.data[].doOperations[].rootID - transactions 命令（备选）
    */
   private handleDirectedRefresh(data: any) {
-    const rootIDs: string[] = data?.context?.rootIDs || [];
+    let rootIDs: string[] = [];
+
+    // 1. transactions 命令：context.rootIDs
+    if (data?.context?.rootIDs && Array.isArray(data.context.rootIDs)) {
+      rootIDs = data.context.rootIDs;
+    }
+    // 2. savedoc 命令：data.rootID
+    else if (data?.data?.rootID && typeof data.data.rootID === 'string') {
+      rootIDs = [data.data.rootID];
+    }
+    // 3. transactions 命令（备选）：doOperations[].rootID
+    else if (Array.isArray(data?.data)) {
+      const ids: string[] = [];
+      for (const tx of data.data) {
+        if (Array.isArray(tx?.doOperations)) {
+          for (const op of tx.doOperations) {
+            if (op?.rootID && typeof op.rootID === 'string') {
+              ids.push(op.rootID);
+            }
+          }
+        }
+      }
+      rootIDs = ids;
+    }
+
     if (rootIDs.length > 0) {
       dirtyDocTracker.markDirty(rootIDs);
       console.log('[Task Assistant] ws-main directed refresh for docs:', rootIDs);
