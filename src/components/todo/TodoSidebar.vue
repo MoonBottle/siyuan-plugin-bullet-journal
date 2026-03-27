@@ -426,6 +426,7 @@ import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
+import { createNextOccurrence } from '@/services/recurringService';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
@@ -580,6 +581,12 @@ const handleDone = async (item: Item) => {
     // 标记事项完成
     const tag = getStatusTag('completed');
     const success = await updateBlockContent(item.blockId, tag);
+
+    // 如果有重复规则，自动创建下一次事项
+    if (success && item.repeatRule) {
+      const plugin = usePlugin();
+      await createNextOccurrence(plugin, item);
+    }
 
     // 操作成功，等待 ws-main 事件触发定向刷新
     // 无需手动调用 refresh

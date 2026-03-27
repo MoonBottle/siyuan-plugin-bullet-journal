@@ -29,6 +29,7 @@ import type { Item } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
+import { createNextOccurrence } from '@/services/recurringService';
 
 interface Props {
   projects: Project[];
@@ -251,6 +252,10 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         if (!item.blockId) return;
         const tag = getStatusTag('completed');
         const success = await updateBlockContent(item.blockId, tag);
+        // 如果有重复规则，自动创建下一次事项
+        if (success && item.repeatRule && plugin) {
+          await createNextOccurrence(plugin, item as Item);
+        }
         if (success && plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
