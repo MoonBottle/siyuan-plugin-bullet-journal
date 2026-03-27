@@ -388,6 +388,7 @@ export const useProjectStore = defineStore('project', {
 
     /**
      * 加载项目数据（首次加载，显示加载状态）
+     * 流式更新：每解析完一个项目就立即显示
      */
     async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
       if (this.loading) return;
@@ -396,12 +397,15 @@ export const useProjectStore = defineStore('project', {
 
       try {
         const parser = new MarkdownParser(directories);
-        const projects = await parser.parseAllProjects();
-        await this.mergePomodoroAttrs(projects, _plugin);
-        console.log('[Task Assistant] Parsed projects:', projects?.length || 0);
 
-        this.projects = projects;
+        // 流式解析：每解析完一个项目就立即添加到 store
+        await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+          this.projects.push(project);
+          console.log('[Task Assistant] Project loaded:', project.name);
+        });
+
         this.currentDate = dayjs().format('YYYY-MM-DD');
+        console.log('[Task Assistant] Total projects loaded:', this.projects.length);
 
         // 触发数据刷新完成事件，供其他模块监听处理
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin });
@@ -464,7 +468,7 @@ export const useProjectStore = defineStore('project', {
 
     /**
      * 定向刷新脏文档
-     * 精细化更新：只替换变更的项目，保持其他项目引用不变
+     * 流式更新：每解析完一个项目就立即更新 store
      */
     async refreshDirtyDocs(
       _plugin: any,
@@ -473,45 +477,30 @@ export const useProjectStore = defineStore('project', {
     ): Promise<void> {
       console.log('[Task Assistant] Refreshing dirty docs:', dirtyDocIds);
 
-      const parser = new MarkdownParser(directories);
+      // 只解析脏文档对应的目录，提高性能
+      const targetDirectories = directories.filter(dir =>
+        dirtyDocIds.some(docId => {
+          const project = this.projects.find(p => p.id === docId);
+          return project?.path?.includes(dir.path);
+        })
+      );
 
-      // 1. 解析每个脏文档
-      const updatedProjects: Project[] = [];
-      for (const docId of dirtyDocIds) {
-        const project = await this.parseSingleDoc(parser, docId);
-        if (project) {
-          updatedProjects.push(project);
+      // 如果没有匹配的目录，使用所有目录
+      const parser = new MarkdownParser(targetDirectories.length > 0 ? targetDirectories : directories);
+
+      // 流式解析：每解析完一个项目就立即更新
+      await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+        // 只更新在脏文档列表中的项目
+        if (dirtyDocIds.includes(project.id)) {
+          this.updateProjectsIncrementally([project]);
+          console.log('[Task Assistant] Project refreshed:', project.name);
         }
-      }
+      });
 
-      // 2. 精细化更新 projects 数组（保持引用，只替换元素）
-      this.updateProjectsIncrementally(updatedProjects);
-
-      // 3. 合并番茄钟属性（仅更新的项目）
-      await this.mergePomodoroAttrsForProjects(updatedProjects, _plugin);
-
-      // 4. 清除脏标记
+      // 清除脏标记
       dirtyDocTracker.clearDirty(dirtyDocIds);
 
-      console.log('[Task Assistant] Dirty docs refreshed:', updatedProjects.length);
-    },
-
-    /**
-     * 解析单个文档
-     */
-    async parseSingleDoc(parser: MarkdownParser, docId: string): Promise<Project | null> {
-      try {
-        // 从现有项目获取 groupId 和 path
-        const existingProject = this.projects.find(p => p.id === docId);
-        const groupId = existingProject?.groupId;
-        const path = existingProject?.path || '';
-
-        // notebookId 用于路径构建，在定向刷新时传空字符串即可
-        return await parser.parseProjectDocument(docId, '', groupId, path);
-      } catch (error) {
-        console.error(`[Task Assistant] Failed to parse doc ${docId}:`, error);
-        return null;
-      }
+      console.log('[Task Assistant] Dirty docs refreshed:', dirtyDocIds.length);
     },
 
     /**
@@ -530,60 +519,6 @@ export const useProjectStore = defineStore('project', {
         }
       }
       // 注意：删除项目暂不处理，需额外逻辑
-    },
-
-    /**
-     * 仅为指定项目合并番茄钟属性
-     */
-    async mergePomodoroAttrsForProjects(
-      projects: Project[],
-      plugin: any
-    ): Promise<void> {
-      const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
-      const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
-
-      for (const project of projects) {
-        for (const task of project.tasks) {
-          // Task 级别番茄钟
-          if (task.blockId) {
-            try {
-              const attrs = await getBlockAttrs(task.blockId);
-              const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
-              if (attrRecords.length > 0) {
-                for (const r of attrRecords) {
-                  r.taskId = task.id;
-                  r.projectId = project.id;
-                }
-                task.pomodoros = [...(task.pomodoros || []), ...attrRecords];
-              }
-            } catch {
-              // 跳过
-            }
-          }
-
-          // Item 级别番茄钟
-          const seenBlockIds = new Set<string>();
-          for (const item of task.items) {
-            if (!item.blockId || seenBlockIds.has(item.blockId)) continue;
-            seenBlockIds.add(item.blockId);
-
-            try {
-              const attrs = await getBlockAttrs(item.blockId);
-              const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
-              if (attrRecords.length > 0) {
-                for (const r of attrRecords) {
-                  r.itemId = item.id;
-                  r.taskId = task.id;
-                  r.projectId = project.id;
-                }
-                item.pomodoros = [...(item.pomodoros || []), ...attrRecords];
-              }
-            } catch {
-              // 跳过
-            }
-          }
-        }
-      }
     },
 
     /**

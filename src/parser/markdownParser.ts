@@ -5,7 +5,9 @@
  */
 import type { Project, Item, ProjectDirectory } from '@/types/models';
 import { parseKramdown } from './core';
-import { sql, getDocKramdown } from '@/api';
+import { sql, getDocKramdown, getBlockAttrs } from '@/api';
+import { LineParser } from './lineParser';
+import { defaultPomodoroSettings } from '@/settings';
 
 export class MarkdownParser {
   private directories: ProjectDirectory[];
@@ -159,6 +161,117 @@ export class MarkdownParser {
     } catch (error) {
       console.error('[Task Assistant] Failed to get kramdown content:', error);
       return null;
+    }
+  }
+
+  /**
+   * 流式解析所有项目
+   * 每解析完一个项目（包括番茄钟属性）就回调，让用户更快看到更新
+   */
+  public async parseAllProjectsWithCallback(
+    _plugin: any,
+    onProjectReady: (project: Project) => void
+  ): Promise<void> {
+    console.log('[Task Assistant][Parser] 开始流式解析项目，目录数量:', this.directories.length);
+    const processedDocIds = new Set<string>();
+
+    if (this.directories.length === 0) {
+      // 目录配置为空：扫描所有文档
+      const docs = await this.getAllDocs();
+      for (const doc of docs) {
+        if (processedDocIds.has(doc.id)) continue;
+        processedDocIds.add(doc.id);
+        try {
+          const project = await this.parseProjectDocument(
+            doc.id,
+            doc.notebookId,
+            undefined,
+            doc.path
+          );
+          if (project) {
+            await this.mergePomodoroAttrsForSingleProject(project, _plugin);
+            onProjectReady(project);
+          }
+        } catch (error) {
+          console.error(`[Task Assistant] Error parsing project document ${doc.id}:`, error);
+        }
+      }
+    } else {
+      for (const directory of this.directories) {
+        const docs = await this.getProjectDocs(directory.path);
+        for (const doc of docs) {
+          if (processedDocIds.has(doc.id)) continue;
+          processedDocIds.add(doc.id);
+          try {
+            const project = await this.parseProjectDocument(
+              doc.id,
+              doc.notebookId,
+              directory.groupId,
+              doc.path
+            );
+            if (project) {
+              await this.mergePomodoroAttrsForSingleProject(project, _plugin);
+              onProjectReady(project);
+            }
+          } catch (error) {
+            console.error(`[Bullet Journal] Error parsing project document ${doc.id}:`, error);
+          }
+        }
+      }
+    }
+
+    console.log('[Task Assistant][Parser] 流式解析完成，项目总数:', processedDocIds.size);
+  }
+
+  /**
+   * 为单个项目合并番茄钟属性
+   */
+  private async mergePomodoroAttrsForSingleProject(
+    project: Project,
+    plugin: any
+  ): Promise<void> {
+    const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
+    const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
+
+    for (const task of project.tasks) {
+      // Task 级别番茄钟
+      if (task.blockId) {
+        try {
+          const attrs = await getBlockAttrs(task.blockId);
+          const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
+          if (attrRecords.length > 0) {
+            for (const r of attrRecords) {
+              r.taskId = task.id;
+              r.projectId = project.id;
+            }
+            task.pomodoros = [...(task.pomodoros || []), ...attrRecords];
+          }
+        } catch {
+          // 跳过
+        }
+      }
+
+      // Item 级别番茄钟
+      const seenBlockIds = new Set<string>();
+      for (const item of task.items) {
+        if (!item.blockId || seenBlockIds.has(item.blockId)) continue;
+        seenBlockIds.add(item.blockId);
+
+        try {
+          const attrs = await getBlockAttrs(item.blockId);
+          const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
+          if (attrRecords.length > 0) {
+            for (const r of attrRecords) {
+              r.itemId = item.id;
+              r.taskId = task.id;
+              r.projectId = project.id;
+            }
+            item.pomodoros = [...(item.pomodoros || []), ...attrRecords];
+          }
+        } catch {
+          // 跳过
+        }
+      }
     }
   }
 
