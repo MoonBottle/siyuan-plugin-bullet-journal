@@ -471,7 +471,7 @@ export const useProjectStore = defineStore('project', {
 
     /**
      * 定向刷新脏文档
-     * 流式更新：每解析完一个项目就立即更新 store
+     * 只解析指定的脏文档，而不是整个目录
      */
     async refreshDirtyDocs(
       _plugin: any,
@@ -480,25 +480,29 @@ export const useProjectStore = defineStore('project', {
     ): Promise<void> {
       console.log('[Task Assistant] Refreshing dirty docs:', dirtyDocIds);
 
-      // 只解析脏文档对应的目录，提高性能
-      const targetDirectories = directories.filter(dir =>
-        dirtyDocIds.some(docId => {
-          const project = this.projects.find(p => p.id === docId);
-          return project?.path?.includes(dir.path);
-        })
-      );
+      const parser = new MarkdownParser(directories);
 
-      // 如果没有匹配的目录，使用所有目录
-      const parser = new MarkdownParser(targetDirectories.length > 0 ? targetDirectories : directories);
+      // 只解析脏文档，而不是整个目录
+      for (const docId of dirtyDocIds) {
+        try {
+          // 从现有项目获取 groupId 和 path
+          const existingProject = this.projects.find(p => p.id === docId);
+          const groupId = existingProject?.groupId;
+          const path = existingProject?.path || '';
 
-      // 流式解析：每解析完一个项目就立即更新
-      await parser.parseAllProjectsWithCallback(_plugin, (project) => {
-        // 只更新在脏文档列表中的项目
-        if (dirtyDocIds.includes(project.id)) {
-          this.updateProjectsIncrementally([project]);
-          console.log('[Task Assistant] Project refreshed:', project.name);
+          // 使用 parser 的复用方法：解析 + 番茄钟合并
+          const project = await parser.parseAndProcessSingleDocument(
+            docId, '', groupId, path, _plugin
+          );
+
+          if (project) {
+            this.updateProjectsIncrementally([project]);
+            console.log('[Task Assistant] Project refreshed:', project.name);
+          }
+        } catch (error) {
+          console.error(`[Task Assistant] Failed to refresh doc ${docId}:`, error);
         }
-      });
+      }
 
       // 清除脏标记
       dirtyDocTracker.clearDirty(dirtyDocIds);

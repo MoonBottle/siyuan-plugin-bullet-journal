@@ -152,6 +152,27 @@ export class MarkdownParser {
   }
 
   /**
+   * 解析并处理单个文档（含番茄钟属性）
+   * 供定向刷新使用
+   */
+  public async parseAndProcessSingleDocument(
+    docId: string,
+    notebookId: string,
+    groupId: string | undefined,
+    docPath: string,
+    plugin: any
+  ): Promise<Project | null> {
+    // 1. 解析文档
+    const project = await this.parseProjectDocument(docId, notebookId, groupId, docPath);
+    if (!project) return null;
+
+    // 2. 合并番茄钟属性
+    await this.mergePomodoroAttrsForSingleProject(project, plugin);
+
+    return project;
+  }
+
+  /**
    * 通过思源 API 获取文档的 Kramdown 内容
    */
   private async getKramdownContent(docId: string): Promise<string | null> {
@@ -182,14 +203,14 @@ export class MarkdownParser {
         if (processedDocIds.has(doc.id)) continue;
         processedDocIds.add(doc.id);
         try {
-          const project = await this.parseProjectDocument(
+          const project = await this.parseAndProcessSingleDocument(
             doc.id,
             doc.notebookId,
             undefined,
-            doc.path
+            doc.path,
+            _plugin
           );
           if (project) {
-            await this.mergePomodoroAttrsForSingleProject(project, _plugin);
             onProjectReady(project);
           }
         } catch (error) {
@@ -203,14 +224,14 @@ export class MarkdownParser {
           if (processedDocIds.has(doc.id)) continue;
           processedDocIds.add(doc.id);
           try {
-            const project = await this.parseProjectDocument(
+            const project = await this.parseAndProcessSingleDocument(
               doc.id,
               doc.notebookId,
               directory.groupId,
-              doc.path
+              doc.path,
+              _plugin
             );
             if (project) {
-              await this.mergePomodoroAttrsForSingleProject(project, _plugin);
               onProjectReady(project);
             }
           } catch (error) {
