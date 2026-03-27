@@ -192,11 +192,6 @@ onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
-  // 加载项目数据
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-  }
-
   // 恢复专注状态（如果插件启动时没有恢复）
   await restorePomodoroState();
 

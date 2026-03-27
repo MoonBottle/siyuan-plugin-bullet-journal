@@ -396,6 +396,9 @@ export const useProjectStore = defineStore('project', {
       this.loading = true;
 
       try {
+        // 清空现有数据，避免重复
+        this.projects = [];
+        
         const parser = new MarkdownParser(directories);
 
         // 流式解析：每解析完一个项目就立即添加到 store

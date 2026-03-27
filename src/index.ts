@@ -100,13 +100,30 @@ export default class TaskAssistantPlugin extends Plugin {
     await this.loadSettings();
 
     // 创建唯一 Pinia 实例，供所有 Tab/Dock 复用，避免多实例导致 store 不同步
-    setSharedPinia(createPinia());
+    const pinia = createPinia();
+    setSharedPinia(pinia);
 
     // 注册自定义 Tab
     this.registerTabs();
 
     // 注册 Dock
     this.registerDocks();
+
+    // 首次加载项目数据（所有 Tab/Dock 共享这份数据）
+    const settings = this.getSettings();
+    const enabledDirs = settings.directories.filter(d => d.enabled);
+    console.log('[Task Assistant] Init loadProjects check:', {
+      directoriesCount: settings.directories.length,
+      enabledDirsCount: enabledDirs.length,
+      enabledDirs: enabledDirs.map(d => d.path)
+    });
+    console.log('[Task Assistant] Starting initial loadProjects...');
+    const projectStore = useProjectStore(pinia);
+    projectStore.loadProjects(this, enabledDirs).then(() => {
+      console.log('[Task Assistant] Initial loadProjects completed');
+    }).catch(err => {
+      console.error('[Task Assistant] Failed to load projects on init:', err);
+    });
 
     // 注册顶栏按钮
     this.registerTopBar();

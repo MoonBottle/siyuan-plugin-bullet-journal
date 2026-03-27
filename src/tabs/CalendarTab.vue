@@ -175,13 +175,6 @@ onMounted(async () => {
     selectedGroup.value = settingsStore.defaultGroup;
   }
 
-  // 加载项目数据
-  console.log('[Task Assistant] Plugin:', !!plugin, 'Directories:', settingsStore.enabledDirectories?.length || 0);
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-    console.log('[Task Assistant] Projects loaded:', projectStore.projects?.length || 0, 'Events:', projectStore.calendarEvents?.length || 0);
-  }
-
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);

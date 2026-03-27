@@ -143,11 +143,6 @@ onMounted(async () => {
   projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
   projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
 
-  // 加载项目数据
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-  }
-
   // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 
