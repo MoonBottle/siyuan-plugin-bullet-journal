@@ -8,6 +8,17 @@ import {
 } from '@/services/recurringService';
 import type { Item, RepeatRule, EndCondition } from '@/types/models';
 
+// Mock getSharedPinia and useProjectStore
+vi.mock('@/utils/sharedPinia', () => ({
+  getSharedPinia: vi.fn(() => ({})),
+}));
+
+vi.mock('@/stores', () => ({
+  useProjectStore: vi.fn(() => ({
+    projects: []
+  })),
+}));
+
 describe('recurringService', () => {
   describe('shouldCreateNextOccurrence', () => {
     it('有重复规则且已完成时应该返回 true', () => {
