@@ -8,104 +8,99 @@
 
 - **记录驱动**: 提醒作为事项的附加属性，不改变现有的记录驱动理念
 - **无侵入式**: 使用标准 Markdown 格式扩展，保持数据可迁移性
+- **单一提醒**: 一个事项只支持一个提醒时间，简化设计
 - **可选功能**: 用户可选择是否为事项设置提醒
+
+---
 
 ## 二、提醒标记语法
 
-在现有事项格式基础上，增加提醒时间标记：
+在现有事项格式基础上，使用 ⏰ 作为提醒标记。
+
+### 交互方式
+
+| 方式 | 触发 | 说明 |
+|------|------|------|
+| **UI 面板** | 事项详情 → 设置提醒 | 可视化时间选择器，自动生成本地化标记 |
+| **右键菜单** | 右键点击事项 | 快捷设置：提前 5/10/30 分钟、1 小时 |
+| **斜杠命令** | `/提醒` | 输入 `/提醒` 唤起时间选择器 |
+| **手动输入** | 直接编辑 Markdown | 支持 ⏰HH:mm 或 ⏰-Xm 语法 |
 
 ### 2.1 基本语法
 
 ```markdown
-事项内容 @2026-01-15 !10:00              // 在指定日期当天 10:00 提醒
-事项内容 @2026-01-15 !10:00:00           // 同上，支持完整时间格式
-事项内容 @2026-01-15 14:00:00~16:00:00 !13:50   // 带时间范围的事项，13:50 提醒
+事项内容 @2026-01-15 ⏰10:00              // 在指定日期当天 10:00 提醒
+事项内容 @2026-01-15 ⏰10:00:00           // 同上，支持完整时间格式
+事项内容 @2026-01-15 14:00:00~16:00:00 ⏰13:50   // 手动指定提醒时间
 ```
 
 ### 2.2 标记规则
 
-- 使用 `!HH:mm` 或 `!HH:mm:ss` 格式标记提醒时间
+- 使用 `⏰HH:mm` 或 `⏰HH:mm:ss` 格式标记提醒时间
 - 提醒时间位于日期标记之后
-- 支持相对提醒（如 `!-10m` 表示提前10分钟）
+- **一个事项只支持一个提醒时间**，多日期请使用多个事项块
 
 ### 2.3 提醒类型
 
 | 类型 | 标记示例 | 说明 |
 |------|----------|------|
-| 绝对时间 | `!10:00` | 在指定日期的当天 10:00 提醒 |
-| 相对时间 | `!-10m` | 提前10分钟提醒（相对于事项开始时间）|
+| 绝对时间 | `⏰10:00` | 在指定日期的当天 10:00 提醒 |
 
-> **与重复事项解耦**：提醒仅负责**单次**通知。重复规则（如每月、每周）和结束条件属于**事项层**，由 `#重复:每月` 等标记表达，用于「创建下次」功能。详见「重复事项与提醒解耦」章节。
+> **注**：相对提醒（如提前10分钟）通过 UI 设置时自动计算为绝对时间存储。如需手动输入相对时间，使用 `⏰-10m` 语法，解析时基于事项日期转换为绝对时间。
+
+> **与重复事项解耦**：提醒仅负责**单次**通知。重复规则（如每月、每周）和结束条件属于**事项层**，由 🔁 标记表达，用于「创建下次」功能。详见「重复事项与提醒解耦」章节。
+
+---
 
 ## 三、与复杂日期格式的结合
 
 ### 3.1 单个日期 + 提醒
 
 ```markdown
-事项内容 @2026-03-06 !09:00
+事项内容 @2026-03-06 ⏰09:00
 ```
 
-### 3.2 带时间范围的事项 + 提醒（提前10分钟）
+### 3.2 带时间范围的事项 + 提醒
+
+**相对开始时间**（会前提醒）：
+```markdown
+周会 @2026-03-06 14:00:00~16:00:00 ⏰-10m   // 13:50 提醒（14:00 提前 10 分钟）
+```
+
+**相对结束时间**（会前提醒收尾）：
+```markdown
+周会 @2026-03-06 14:00:00~16:00:00 ⏰e-10m  // 15:50 提醒（16:00 提前 10 分钟）
+```
+
+**手动指定绝对时间**：
+```markdown
+事项内容 @2026-03-06 14:00:00~16:00:00 ⏰13:50  // 手动指定 13:50 提醒
+```
+
+### 3.3 日期范围 + 提醒
+
+**限制**：日期范围事项只支持一个提醒时间，应用于范围内的每一天。如需不同日期不同提醒时间，请拆分为多个事项块。
 
 ```markdown
-事项内容 @2026-03-06 14:00:00~16:00:00 !-10m
+出差 @2026-03-10~03-12 ⏰08:00   // 每天 08:00 提醒
 ```
 
-### 3.3 多日期 + 统一提醒时间（每个日期都会提醒）
+### 3.4 标记语法解析规则
 
-```markdown
-周会 @2026-03-06, 2026-03-13, 2026-03-20 !09:00
-```
+**简化设计**：
+- 一个事项只支持一个提醒时间
+- 多日期用多个事项块（配合「创建下次」功能快速创建）
 
-### 3.4 多日期 + 不同提醒时间（需要分别设置）
-
-```markdown
-周会 @2026-03-06 !09:00, 2026-03-13 !14:00
-```
-
-### 3.5 日期范围 + 统一提醒
-
-```markdown
-出差 @2026-03-10~03-12 !08:00
-```
-
-### 3.6 混合模式 + 相对提醒（每个日期都提前10分钟）
-
-```markdown
-整理资料 @2026-03-06 09:00:00~09:30:00, 2026-03-10~03-12 14:00:00~15:00:00 !-10m
-```
-
-这表示：
-- 3月6日 08:50 提醒（09:00 提前10分钟）
-- 3月10日、11日、12日 每天 13:50 提醒（14:00 提前10分钟）
-
-### 3.7 提醒标记的位置规则
-
-- 放在日期表达式之后
-- 可以紧跟在单个日期后，也可以放在整行末尾
-- 相对提醒 `!-Xm` 会基于每个日期的开始时间计算
-
-### 3.8 标记语法解析与潜在冲突解决
-
-**问题**：多日期 + 不同提醒 `周会 @2026-03-06 !09:00, 2026-03-13 !14:00` 中，`extractDateTimeExpressions` 的 continuation 正则无法跳过 ` !09:00, ` 到达下一个日期。
-
-**解决方案**：扩展 `lineParser.ts` 的 continuation 正则，允许「可选的提醒标记 + 逗号/空格 + 日期」：
+**解析优先级**：`parseReminderFromItemLine` 匹配顺序为 **relative > absolute**
 
 ```typescript
-// 提醒标记模式：!HH:mm | !-Xm（仅单次提醒）
-const REMINDER_PATTERN = /!\s*(?:-?\d+[mhd]|\d{2}:\d{2}(?::\d{2})?)/;
-
-// 扩展后的 continuation：允许 [提醒标记] [逗号/空格] 日期
-const continuationRegex = new RegExp(
-  `^(?:${REMINDER_PATTERN.source}\\s*)?` +
-  `(?:\\s*,\\s*|\\s+)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)` +
-  `(?:\\s+(\\d{2}:\\d{2}:\\d{2}(?:~\\d{2}:\\d{2}:\\d{2})?))?`
-);
+// 提醒标记模式：⏰HH:mm | ⏰-Xm
+const REMINDER_PATTERN = /⏰\s*(?:-?\d+[mhd]|\d{2}:\d{2}(?::\d{2})?)/;
 ```
 
-**内容提取**：在 `parseItemLine` 的 content 清理逻辑中增加 `replace(/\s*![^\s@#]+/g, '')`，移除提醒标记避免显示在事项内容中。
+**内容提取**：在 `parseItemLine` 的 content 清理逻辑中增加 `replace(/\s*⏰[^\s@🔁]+/g, '')`，移除提醒标记避免显示在事项内容中。
 
-**解析优先级**（避免歧义）：`parseReminderFromItemLine` 匹配顺序为 **relative > absolute**。
+---
 
 ## 四、重复事项与提醒解耦
 
@@ -117,18 +112,20 @@ const continuationRegex = new RegExp(
 
 | 层级 | 职责 | 标记 |
 |------|------|------|
-| **事项** | 重复规则、结束条件、「创建下次」 | `#重复:每月`、`:until:2026-12-31`、`:count:10` |
-| **提醒** | 本次何时通知 | `!14:00`、`!-10m` |
+| **事项** | 重复规则、结束条件、「创建下次」 | `🔁每月`、`:until:2026-12-31`、`:count:10` |
+| **提醒** | 本次何时通知 | `⏰14:00` |
 
 **示例**：
 ```markdown
-月度汇报 @2026-03-17 !14:00 #重复:每月:until:2026-12-31
+月度汇报 @2026-03-17 ⏰14:00 🔁每月:until:2026-12-31
 ```
-- `!14:00` → 提醒：本次 14:00 通知
-- `#重复:每月` → 事项：创建下次时按每月
+- `⏰14:00` → 提醒：本次 14:00 通知
+- `🔁每月` → 事项：创建下次时按每月
 - `:until:2026-12-31` → 事项：创建下次时检查结束条件
 
-**创建下次**：用户完成事项后，在事项详情中点击「创建下次」，系统根据 `#重复` 和结束条件创建新 block（如 `月度汇报 @2026-04-17 !14:00 #重复:每月:until:2026-12-31`），并继承 reminder 配置。重复与结束的详细设计见 [recurring-items.md](./recurring-items.md)。
+**创建下次**：用户完成事项后，在事项详情中点击「创建下次」，系统根据 `🔁` 和结束条件创建新 block（如 `月度汇报 @2026-04-17 ⏰14:00 🔁每月:until:2026-12-31`），并继承 reminder 配置。
+
+---
 
 ## 五、数据模型扩展
 
@@ -164,6 +161,8 @@ interface ReminderRecord {
 }
 ```
 
+---
+
 ## 六、技术实现方案
 
 ### 6.1 架构设计
@@ -194,9 +193,9 @@ sequenceDiagram
     participant PD as Plugin Data
 
     U->>D: 1. 点击设置提醒
-    U->>D: 2. 配置提醒参数<br/>(时间/方式/重复)
+    U->>D: 2. 配置提醒参数<br/>(时间/方式)
     U->>D: 3. 点击保存
-    D->>P: 4. 生成标记语法<br/>(如 !每天:09:00)
+    D->>P: 4. 生成标记语法<br/>(如 ⏰09:00)
     P-->>D: 5. 解析标记生成 ReminderConfig
     D->>PD: 6. 保存到笔记<br/>(更新事项行)
     PD-->>S: 7. 触发数据刷新<br/>DATA_REFRESH
@@ -213,7 +212,7 @@ sequenceDiagram
     participant N as Notification
     actor U as User
 
-    RS->>ST: 1. 定时检查(30s周期)
+    RS->>ST: 1. 定时检查(60s周期)
     ST-->>RS: 2. 返回待提醒列表
     RS->>RS: 3. 遍历检查到期时间
     RS->>N: 4. 触发到期提醒
@@ -252,7 +251,7 @@ sequenceDiagram
 
     U->>E: 1. 删除完成标记<br/>(删除#已完成)
     E->>PS: 2. 解析事项状态变化<br/>状态变为 pending
-    Note over PS: 事项中仍有提醒标记 !xxx
+    Note over PS: 事项中仍有提醒标记 ⏰xxx
     PS->>RS: 3. 下次DATA_REFRESH时<br/>检测到提醒标记
     RS->>ST: 4. 重新创建<br/>提醒记录
 ```
@@ -270,7 +269,7 @@ sequenceDiagram
 
     U->>D: 1. 进入提醒设置<br/>取消勾选"启用提醒"
     U->>D: 2. 点击保存
-    D->>P: 3. 移除标记语法<br/>(删除 !xxx)
+    D->>P: 3. 移除标记语法<br/>(删除 ⏰xxx)
     P-->>D: 4. 返回空 ReminderConfig
     D->>PD: 5. 保存到笔记<br/>(更新事项行，移除提醒标记)
     PD-->>PS: 6. 触发数据刷新<br/>DATA_REFRESH
@@ -314,37 +313,6 @@ sequenceDiagram
     RS->>RS: 8. 加载待提醒列表到内存
 ```
 
-##### 场景 B：blockId 变化（事项被重新创建）
-
-```mermaid
-sequenceDiagram
-    participant PS as projectStore
-    participant RS as ReminderService
-    participant ST as reminderStorage
-    participant Cache as ReminderCache
-
-    Note over PS,Cache: 用户复制粘贴事项或重新创建同内容事项
-    
-    PS->>RS: 1. DATA_REFRESH 触发
-    RS->>Cache: 2. 获取上次同步数据<br/>reminderChecksums + blockId映射
-    RS->>PS: 3. 获取当前所有 items
-    RS->>RS: 4. 检测 blockId 变化<br/>通过内容指纹匹配
-    
-    alt 发现内容相同但 blockId 不同
-        RS->>RS: 5a. 识别为新 blockId<br/>但内容/提醒配置相同
-        RS->>ST: 6a. 为新 blockId<br/>创建提醒记录
-        RS->>ST: 7a. 删除旧 blockId<br/>的提醒记录
-        RS->>Cache: 8a. 更新 blockId 映射<br/>旧 -> 新
-    end
-    
-    alt 全新事项（无历史记录）
-        RS->>RS: 5b. 按正常新增流程处理
-    end
-    
-    RS->>Cache: 9. 更新 reminderChecksums
-    RS->>RS: 10. 加载待提醒列表到内存
-```
-
 ### 6.3 各层实现逻辑详解
 
 #### 6.3.1 解析层 (reminderParser.ts)
@@ -352,28 +320,69 @@ sequenceDiagram
 **职责**：将 Markdown 提醒标记解析为 ReminderConfig（仅单次提醒）
 
 **输入输出**：
-- 输入：`string` (如 `"!09:00"` 或 `"!-10m"`)
+- 输入：`string` (如 `"⏰09:00"` 或 `"⏰-10m"`)
 - 输出：`ReminderConfig` 对象
 
 **核心逻辑**：
 ```typescript
 // 正则匹配规则（按优先级排序，仅支持单次提醒）
 const PATTERNS = {
-  // 相对时间: !-5分钟 或 !-5m
-  relative: /!-(\d+)(分钟|m|小时|h|天|d)/,
-  // 绝对时间: !09:00
-  absolute: /!(\d{2}:\d{2})(?::\d{2})?/
+  // 相对结束时间: ⏰e-5m，基于事项结束时间计算
+  relativeToEnd: /⏰e-(\d+)(分钟|m|小时|h|天|d)/i,
+  // 相对开始时间: ⏰-5m，基于事项开始时间计算
+  relativeToStart: /⏰-(\d+)(分钟|m|小时|h|天|d)/,
+  // 绝对时间: ⏰09:00
+  absolute: /⏰(\d{2}:\d{2})(?::\d{2})?/
 };
 
 // 解析流程
 function parseReminderFromItemLine(line: string): ReminderConfig | undefined {
-  const reminderMatch = line.match(/![^@#]+/);
+  const reminderMatch = line.match(/⏰[^@🔁]+/);
   if (!reminderMatch) return undefined;
-  if (PATTERNS.relative.test(reminderMatch[0])) return parseRelativeReminder(reminderMatch[0]);
-  if (PATTERNS.absolute.test(reminderMatch[0])) return parseAbsoluteReminder(reminderMatch[0]);
+  
+  if (PATTERNS.relativeToEnd.test(reminderMatch[0])) {
+    return parseRelativeReminder(reminderMatch[0], 'end');
+  }
+  if (PATTERNS.relativeToStart.test(reminderMatch[0])) {
+    return parseRelativeReminder(reminderMatch[0], 'start');
+  }
+  if (PATTERNS.absolute.test(reminderMatch[0])) {
+    return parseAbsoluteReminder(reminderMatch[0]);
+  }
   return undefined;
 }
+
+// 相对提醒计算
+function calculateReminderTime(
+  item: Item,
+  reminder: ReminderConfig
+): number {
+  const { date, startTime, endTime } = item;
+  
+  if (reminder.type === 'relative') {
+    const baseTime = reminder.relativeTo === 'end' ? endTime : startTime;
+    
+    if (baseTime) {
+      // 基于时间范围计算：日期 + 时间 - 偏移量
+      const baseDateTime = new Date(`${date}T${baseTime}`);
+      return baseDateTime.getTime() - reminder.offsetMinutes * 60 * 1000;
+    } else {
+      // 无时间范围，基于日期 00:00 计算
+      const baseDate = new Date(date);
+      return baseDate.getTime() - reminder.offsetMinutes * 60 * 1000;
+    }
+  }
+  
+  // 绝对时间...
+}
 ```
+
+**相对提醒语义明确化**：
+- `⏰-10m`：**基于事项开始时间**提前 10 分钟提醒（默认行为）
+- `⏰e-10m`：**基于事项结束时间**提前 10 分钟提醒（需要 e- 前缀）
+- 无时间范围时：
+  - `⏰-Xm`：相对 **00:00** 计算（前一天）
+  - `⏰e-Xm`：相对 **23:59:59** 计算（当天）
 
 #### 6.3.2 存储层 (reminderStorage.ts)
 
@@ -485,10 +494,12 @@ class ReminderStorage {
 
 | 策略 | 说明 | 实现方式 |
 |------|------|----------|
-| Checksum 比对 | 为每个提醒配置生成唯一指纹 | `hash(blockId + reminderConfig)` |
+| Checksum 比对 | 为每个提醒配置生成唯一指纹 | `hash(blockId + date + reminderConfig)` |
 | 内存缓存 | 缓存上次同步的 checksums | `Map<blockId, checksum>` |
 | 增量更新 | 只处理变化的提醒 | 新增/删除/修改 |
 | 防抖处理 | 避免短时间内重复同步 | 300ms 防抖 |
+
+**关键修正**：checksum 必须包含日期字段，否则事项日期修改后提醒时间不会更新。
 
 **核心逻辑**：
 ```typescript
@@ -498,6 +509,7 @@ class ReminderService {
   private reminderChecksums: Map<string, string> = new Map(); // blockId -> checksum
   private syncDebounceTimer: NodeJS.Timeout | null = null;
   private readonly SYNC_DEBOUNCE_MS = 300;
+  private readonly CHECK_INTERVAL_MS = 60000; // 60秒检查一次（优化性能）
   
   start(plugin: Plugin): void {
     // 1. 加载上次同步的 checksums
@@ -506,10 +518,10 @@ class ReminderService {
     // 2. 加载待提醒列表
     this.loadReminders(plugin);
     
-    // 3. 启动定时检查（30秒）
+    // 3. 启动定时检查（60秒）
     this.checkInterval = setInterval(() => {
       this.checkReminders(plugin);
-    }, 30000);
+    }, this.CHECK_INTERVAL_MS);
     
     // 4. 请求通知权限
     requestNotificationPermission();
@@ -540,13 +552,10 @@ class ReminderService {
     plugin: Plugin,
     items: Item[]
   ): Promise<void> {
-    // 0. 首先检测并处理 blockId 变化（复制粘贴/重新创建事项）
-    await this.detectAndHandleBlockIdChanges(plugin, items);
-    
     const currentChecksums = new Map<string, string>();
     const itemsWithReminder = items.filter(item => item.reminder?.enabled);
     
-    // 1. 计算当前所有提醒的 checksum
+    // 1. 计算当前所有提醒的 checksum（包含日期）
     for (const item of itemsWithReminder) {
       const checksum = this.calculateReminderChecksum(item);
       currentChecksums.set(item.blockId, checksum);
@@ -581,11 +590,16 @@ class ReminderService {
   }
   
   /**
-   * 计算提醒配置的 checksum
+   * 计算提醒配置的 checksum（关键：必须包含日期）
    */
   private calculateReminderChecksum(item: Item): string {
     const reminder = item.reminder!;
-    const data = { time: reminder.time, alertMode: reminder.alertMode };
+    // 重要：checksum 必须包含日期，否则修改日期后提醒时间不更新
+    const data = { 
+      date: item.date,  // 加入日期字段
+      time: reminder.time, 
+      alertMode: reminder.alertMode 
+    };
     return hashString(JSON.stringify(data));
   }
   
@@ -654,84 +668,6 @@ class ReminderService {
     await this.loadReminders(plugin);
   }
   
-  /**
-   * 检测并处理 blockId 变化
-   * 当用户复制粘贴事项或重新创建时，blockId 会变化但内容相同
-   */
-  private async detectAndHandleBlockIdChanges(
-    plugin: Plugin,
-    items: Item[]
-  ): Promise<Map<string, string>> {
-    // blockId 映射表：旧 blockId -> 新 blockId
-    const blockIdMapping = new Map<string, string>();
-    const storedReminders = await reminderStorage.getAllReminders(plugin);
-    
-    for (const storedReminder of storedReminders) {
-      // 检查该 blockId 是否还在当前 items 中
-      const stillExists = items.some(item => item.blockId === storedReminder.blockId);
-      if (stillExists) continue;
-      
-      // 查找内容相同的新事项（通过内容指纹匹配）
-      const matchingItem = items.find(item => {
-        // 匹配条件：内容相同 + 提醒配置相同
-        const contentMatch = item.content === storedReminder.itemContent;
-        const reminderMatch = item.reminder?.enabled &&
-          this.calculateReminderChecksum(item) === 
-          this.calculateReminderChecksumFromStored(storedReminder);
-        return contentMatch && reminderMatch;
-      });
-      
-      if (matchingItem) {
-        // 发现 blockId 变化，建立映射
-        blockIdMapping.set(storedReminder.blockId, matchingItem.blockId);
-        
-        // 迁移提醒记录到新 blockId
-        await this.migrateReminder(plugin, storedReminder, matchingItem.blockId);
-      }
-    }
-    
-    return blockIdMapping;
-  }
-  
-  /**
-   * 迁移提醒记录到新 blockId
-   */
-  private async migrateReminder(
-    plugin: Plugin,
-    oldReminder: ReminderRecord,
-    newBlockId: string
-  ): Promise<void> {
-    // 创建新的提醒记录
-    const newReminder: ReminderRecord = {
-      ...oldReminder,
-      id: generateId(),
-      blockId: newBlockId,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-    
-    // 保存新记录
-    await reminderStorage.saveReminder(plugin, newReminder);
-    
-    // 删除旧记录（直接删除，不保留历史）
-    await reminderStorage.deleteReminderByBlockId(plugin, oldReminder.blockId);
-    
-    // 更新 checksum 映射
-    const checksum = this.reminderChecksums.get(oldReminder.blockId);
-    if (checksum) {
-      this.reminderChecksums.delete(oldReminder.blockId);
-      this.reminderChecksums.set(newBlockId, checksum);
-    }
-  }
-  
-  /**
-   * 从存储的提醒记录计算 checksum
-   */
-  private calculateReminderChecksumFromStored(reminder: ReminderRecord): string {
-    const data = { time: reminder.reminderTime, alertMode: reminder.alertMode };
-    return hashString(JSON.stringify(data));
-  }
-  
   private async loadChecksums(plugin: Plugin): Promise<void> {
     const data = await plugin.loadData('reminders/checksums.json');
     if (data) {
@@ -750,7 +686,7 @@ class ReminderService {
 }
 ```
 
-#### 5.3.4 通知层 (notification.ts)
+#### 6.3.4 通知层 (notification.ts)
 
 **职责**：显示系统通知
 
@@ -783,33 +719,38 @@ export function showItemReminderNotification(
 }
 ```
 
-### 6.5 核心模块 API 摘要
+### 6.4 核心模块 API 摘要
 
-#### 6.5.1 解析模块 (src/parser/reminderParser.ts)
+#### 6.4.1 解析模块 (src/parser/reminderParser.ts)
 
 ```typescript
 /**
  * 从事项行解析提醒信息
  */
 export function parseReminderFromItemLine(line: string): ReminderConfig | undefined {
-  // 1. 匹配提醒标记 !HH:mm 或 !HH:mm:ss（绝对时间）
-  // 2. 匹配相对提醒标记 !-Xm (分钟) 或 !-Xh (小时)
-  // 3. 返回 ReminderConfig（单次提醒）
+  // 1. 匹配提醒标记 ⏰HH:mm 或 ⏰HH:mm:ss（绝对时间）
+  // 2. 匹配相对开始时间 ⏰-Xm (分钟) 或 ⏰-Xh (小时)
+  // 3. 匹配相对结束时间 ⏰e-Xm 或 ⏰e-Xh（e = end）
+  // 4. 返回 ReminderConfig（单次提醒）
 }
 
 /**
  * 计算实际提醒时间
+ * @param item 事项对象（包含 date, startTime, endTime）
+ * @param reminder 提醒配置
+ * @returns 提醒时间戳
+ * 
+ * 相对提醒计算：
+ * - ⏰-10m: 基于 startTime 或日期 00:00 提前 10 分钟
+ * - ⏰e-10m: 基于 endTime 或日期 23:59:59 提前 10 分钟
  */
 export function calculateReminderTime(
-  itemDate: string,
-  itemStartTime?: string,
+  item: Item,
   reminder: ReminderConfig
-): number {
-  // 根据 alertMode（准时/提前）计算时间戳
-}
+): number;
 ```
 
-#### 6.5.2 存储模块 (src/utils/reminderStorage.ts)
+#### 6.4.2 存储模块 (src/utils/reminderStorage.ts)
 
 ```typescript
 /**
@@ -843,19 +784,19 @@ export async function deleteAfterNotified(
 ): Promise<void>;
 ```
 
-#### 6.5.3 调度模块 (src/services/reminderService.ts)
+#### 6.4.3 调度模块 (src/services/reminderService.ts)
 
 ```typescript
 export class ReminderService {
   private checkInterval: ReturnType<typeof setInterval> | null = null;
-  private readonly CHECK_INTERVAL_MS = 30000; // 30秒检查一次
+  private readonly CHECK_INTERVAL_MS = 60000; // 60秒检查一次（优化性能）
 
   /**
    * 启动提醒服务
    */
   start(plugin: Plugin): void {
     // 1. 加载所有待提醒事项
-    // 2. 启动定时检查
+    // 2. 启动定时检查（60秒）
     // 3. 请求通知权限
   }
 
@@ -904,7 +845,7 @@ export class ReminderService {
 }
 ```
 
-#### 6.5.4 通知模块 (扩展 src/utils/notification.ts)
+#### 6.4.4 通知模块 (扩展 src/utils/notification.ts)
 
 ```typescript
 /**
@@ -918,7 +859,7 @@ export function showItemReminderNotification(
 ): Notification | null;
 ```
 
-### 6.4 与 performance-optimization 的集成
+### 6.5 与 performance-optimization 的集成
 
 提醒模块需与 [performance-optimization.md](./performance-optimization.md) 的增量更新架构协同：
 
@@ -928,9 +869,11 @@ export function showItemReminderNotification(
 | 定向刷新 | ws-main `rootIDs` | Phase 2.5 实现后，仅对 `rootIDs` 对应文档的 items 做提醒同步 |
 | 防抖 | 300ms | ReminderService 内部防抖，取消时立即执行 |
 
-**Checksum 解耦**：`reminderChecksums` 独立存储于 `reminders/checksums.json`，不依赖 `DocumentCache.updated`，仅依赖 items 的 `blockId` + `reminder` 配置。
+**Checksum 解耦**：`reminderChecksums` 独立存储于 `reminders/checksums.json`，不依赖 `DocumentCache.updated`，仅依赖 items 的 `blockId` + `date` + `reminder` 配置。
 
-**实现顺序**：与 performance-optimization 的 Phase 1/2/3 对齐——Phase 1 基础监听 DATA_REFRESH；Phase 2 支持 `affectedDocIds` 定向同步；Phase 3 与精细化状态更新同步。
+**关键修正**：checksum 必须包含 `date` 字段，否则修改事项日期后提醒时间不会重新计算。
+
+---
 
 ## 七、集成点
 
@@ -938,10 +881,9 @@ export function showItemReminderNotification(
 
 修改 `parseItemLine` 函数，增加提醒解析：
 
-1. **扩展 `extractDateTimeExpressions`**：按 3.8 节扩展 continuation 正则，支持多日期+不同提醒
-2. **内容清理**：在 content 清理逻辑中增加 `.replace(/\s*![^\s@#]+/g, '')` 移除提醒标记
-3. **解析提醒**：调用 `parseReminderFromItemLine(line)` 获取 `ReminderConfig`
-4. **生成 Item**：为每个日期生成 Item 时包含 `reminder` 字段
+1. **内容清理**：在 content 清理逻辑中增加 `.replace(/\s*⏰[^\s@🔁]+/g, '')` 移除提醒标记
+2. **解析提醒**：调用 `parseReminderFromItemLine(line)` 获取 `ReminderConfig`
+3. **生成 Item**：为每个日期生成 Item 时包含 `reminder` 字段（**一个事项只支持一个提醒时间**）
 
 ### 7.2 在插件主类中集成 (src/index.ts)
 
@@ -970,19 +912,29 @@ export default class TaskAssistantPlugin extends Plugin {
 }
 ```
 
+---
+
 ## 八、UI 组件
 
 ### 8.1 提醒设置弹框 (src/components/dialog/ReminderSettingDialog.vue)
 
-完整的提醒设置界面，参考截图中的功能：
-
 ```vue
 <template>
   <div class="reminder-setting-dialog">
-    <!-- 提醒时间设置 -->
+    <!-- 启用提醒开关 -->
     <div class="setting-item">
       <div class="setting-label">
-        <SyIcon name="iconClock" />
+        <span>启用提醒</span>
+      </div>
+      <div class="setting-value">
+        <SySwitch v-model="enabled" />
+      </div>
+    </div>
+
+    <!-- 提醒时间设置 -->
+    <div class="setting-item" v-if="enabled">
+      <div class="setting-label">
+        <span class="emoji">⏰</span>
         <span>提醒时间</span>
       </div>
       <div class="setting-value" @click="showTimePicker = true">
@@ -992,9 +944,8 @@ export default class TaskAssistantPlugin extends Plugin {
     </div>
 
     <!-- 提醒方式（提前/准时） -->
-    <div class="setting-item">
+    <div class="setting-item" v-if="enabled">
       <div class="setting-label">
-        <SyIcon name="iconAlarm" />
         <span>提醒方式</span>
       </div>
       <div class="setting-value" @click="showAlertModePicker = true">
@@ -1047,8 +998,6 @@ const alertModes = [
 </script>
 ```
 
-> **重复与结束条件**：已解耦至事项层，由「重复事项」PRD 定义。UI 中「创建下次」按钮在事项详情中提供。
-
 ### 8.3 事项详情弹框集成提醒入口
 
 ```vue
@@ -1060,7 +1009,7 @@ const alertModes = [
     <!-- 提醒设置入口 -->
     <div class="reminder-entry" @click="openReminderSetting">
       <div class="entry-left">
-        <SyIcon name="iconBell" :class="{ active: hasReminder }" />
+        <span class="emoji" :class="{ active: hasReminder }">⏰</span>
         <span>{{ reminderText }}</span>
       </div>
       <SyIcon name="iconRight" />
@@ -1069,22 +1018,28 @@ const alertModes = [
 </template>
 ```
 
+---
+
 ## 九、数据模型（完整版）
 
 ### 9.1 提醒配置模型（单次提醒）
 
 ```typescript
 // 提醒方式
-interface ReminderAlertMode {
-  type: 'ontime' | 'before' | 'custom';
-  minutes?: number;  // 提前分钟数（type为before时使用）
-}
+type ReminderAlertMode = 
+  | { type: 'ontime' }
+  | { type: 'before'; minutes: number; }
+  | { type: 'custom'; minutes: number; };
 
 // 提醒配置（不含 repeat、endCondition，已解耦至事项层）
 interface ReminderConfig {
   enabled: boolean;
-  time: string;                    // 提醒时间 HH:mm
-  alertMode: ReminderAlertMode;    // 提醒方式
+  type: 'absolute' | 'relative';
+  time?: string;                   // 绝对时间 HH:mm（type='absolute' 时使用）
+  alertMode?: ReminderAlertMode;   // 提醒方式（type='absolute' 时使用）
+  // 相对提醒专用字段
+  relativeTo?: 'start' | 'end';    // 相对开始时间还是结束时间
+  offsetMinutes?: number;          // 偏移分钟数（正数表示提前）
 }
 
 // 扩展 Item 类型
@@ -1112,29 +1067,92 @@ interface ReminderRecord {
 }
 ```
 
+---
+
 ## 十、标记语法映射（国际化）
 
 将 UI 设置映射到 Markdown 标记，**仅提醒相关**（重复与结束条件见「重复事项」PRD）：
 
 ### 10.1 提醒标记
 
-| UI 设置 | 中文标记 | 英文标记 | 示例 |
-|---------|----------|----------|------|
-| 时间 08:00 | `!08:00` | `!08:00` | `事项 @2026-03-17 !08:00` |
-| 提前5分钟 | `!-5分钟` / `!-5m` | `!-5m` | `事项 @2026-03-17 09:00~10:00 !-5m` |
-| 提前30分钟 | `!-30分钟` / `!-30m` | `!-30m` | `事项 @2026-03-17 09:00~10:00 !-30m` |
-| 提前1小时 | `!-1小时` / `!-1h` | `!-1h` | `事项 @2026-03-17 09:00~10:00 !-1h` |
-| 提前1天 | `!-1天` / `!-1d` | `!-1d` | `事项 @2026-03-17 09:00~10:00 !-1d` |
+| UI 设置 | 标记 | 示例 |
+|---------|------|------|
+| 绝对时间 08:00 | `⏰08:00` | `事项 @2026-03-17 ⏰08:00` |
+| 相对开始时间提前 5 分钟 | `⏰-5m` | `周会 @2026-03-17 14:00~16:00 ⏰-5m` |
+| 相对开始时间提前 30 分钟 | `⏰-30m` | `周会 @2026-03-17 14:00~16:00 ⏰-30m` |
+| 相对开始时间提前 1 小时 | `⏰-1h` | `周会 @2026-03-17 14:00~16:00 ⏰-1h` |
+| 相对开始时间提前 1 天 | `⏰-1d` | `事项 @2026-03-17 ⏰-1d` |
+| 相对结束时间提前 10 分钟 | `⏰e-10m` | `周会 @2026-03-17 14:00~16:00 ⏰e-10m` |
+| 相对结束时间提前 30 分钟 | `⏰e-30m` | `周会 @2026-03-17 14:00~16:00 ⏰e-30m` |
 
-### 10.2 解析规则
+### 10.2 交互方式支持
 
-- 时间单位：`m`/`分钟`、`h`/`小时`、`d`/`天`
+| 方式 | 触发 | 说明 |
+|------|------|------|
+| **UI 面板** | 事项详情 → 设置提醒 | 可视化时间选择器，自动生成本地化标记 |
+| **右键菜单** | 右键点击事项 | 快捷选项：提前 5/10/30 分钟、1 小时 |
+| **斜杠命令** | `/提醒` | 输入 `/提醒` 唤起时间选择器 |
+| **手动输入** | 直接编辑 Markdown | 支持完整语法 |
+
+### 10.3 相对提醒语义
+
+**默认行为（相对开始时间）**：
+
+| 标记 | 计算基准 | 适用场景 | 示例 |
+|------|----------|----------|------|
+| `⏰-10m` | 事项开始时间提前 10 分钟 | 有时间范围的事项 | `@2026-03-17 14:00~16:00 ⏰-10m` = 13:50 提醒 |
+| `⏰-1h` | 事项开始时间提前 1 小时 | 需要准备时间 | `@2026-03-17 14:00~16:00 ⏰-1h` = 13:00 提醒 |
+| `⏰-1d` | 事项日期 00:00 提前 1 天 | 提前一天准备 | `@2026-03-17 ⏰-1d` = 2026-03-16 00:00 提醒 |
+
+**相对结束时间（e- 前缀）**：
+
+| 标记 | 计算基准 | 适用场景 | 示例 |
+|------|----------|----------|------|
+| `⏰e-10m` | 事项结束时间提前 10 分钟 | 会议结束前提醒 | `@2026-03-17 14:00~16:00 ⏰e-10m` = 15:50 提醒 |
+| `⏰e-30m` | 事项结束时间提前 30 分钟 | 准备收尾工作 | `@2026-03-17 14:00~16:00 ⏰e-30m` = 15:30 提醒 |
+
+**计算规则详细说明**：
+
+```
+事项：周会 @2026-03-17 14:00~16:00
+
+⏰-10m  → 14:00 - 10m = 13:50 提醒（会前准备）
+⏰e-10m → 16:00 - 10m = 15:50 提醒（准备收尾）
+
+事项：提交报告 @2026-03-17（无时间范围）
+
+⏰-10m  → 基于日期 00:00 - 10m = 前一天 23:50
+⏰e-10m → 基于日期 23:59:59 - 10m = 当天 23:49:59
+```
+
+**无时间范围时的处理**：
+- `⏰-Xm`：相对 **00:00** 计算（前一天）
+- `⏰e-Xm`：相对 **23:59:59** 计算（当天）
+
+**建议**：
+- 有时间范围的事项：使用相对提醒更灵活
+- 无时间范围的事项：使用绝对时间 `⏰HH:mm` 更清晰
+- UI 设置时：根据用户选择自动转换为合适的标记
+
+### 10.3 标记语法顺序约定
+
+```
+内容 @日期 [⏰提醒时间] [🔁重复规则] [其他标签]
+```
+
+**示例**：
+```markdown
+月度汇报 @2026-03-17 ⏰14:00 🔁每月:until:2026-12-31
+```
+
+---
 
 ## 十一、文件结构
 
 ```
 src/
 ├── parser/
+│   ├── lineParser.ts                  # 扩展：增加提醒标记解析
 │   └── reminderParser.ts              # 提醒标记解析（单次）
 ├── services/
 │   └── reminderService.ts             # 提醒调度服务
@@ -1144,13 +1162,14 @@ src/
 ├── components/
 │   ├── dialog/
 │   │   ├── ItemDetailDialog.vue       # 扩展现有弹框（添加提醒入口）
-│   │   ├── ReminderSettingDialog.vue  # 提醒设置主弹框
-│   │   └── AlertModePicker.vue        # 提醒方式选择
+│   │   └── ReminderSettingDialog.vue  # 提醒设置主弹框
 │   └── settings/
 │       └── ReminderConfigSection.vue  # 提醒设置面板
 └── types/
     └── reminder.ts                    # 提醒相关类型定义
 ```
+
+---
 
 ## 十二、实现步骤
 
@@ -1162,7 +1181,7 @@ src/
 
 2. **解析功能**
    - [ ] 创建 `src/parser/reminderParser.ts`
-   - [ ] 实现 `!HH:mm` 和 `!-Xm` 格式解析
+   - [ ] 实现 `⏰HH:mm` 和 `⏰-Xm` 格式解析
    - [ ] 在 `lineParser.ts` 中集成提醒解析
 
 3. **存储功能**
@@ -1171,7 +1190,7 @@ src/
 
 4. **调度服务**
    - [ ] 创建 `src/services/reminderService.ts`
-   - [ ] 实现定时检查逻辑
+   - [ ] 实现定时检查逻辑（60秒间隔）
    - [ ] 集成到插件生命周期
 
 5. **通知功能**
@@ -1195,27 +1214,28 @@ src/
 
 ### 阶段三：增强功能（可选）
 
-9. **艾宾浩斯等高级提醒**
-    - [ ] （若需）实现艾宾浩斯等，归属「重复事项」PRD
-
-10. **国际化**
+9. **国际化**
     - [ ] 添加中文翻译
     - [ ] 添加英文翻译
+
+---
 
 ## 十三、注意事项
 
 1. **权限处理**
    - 首次使用提醒功能时请求通知权限
-   - 权限被拒绝时提供友好提示
+   - 权限被拒绝时提供友好提示（如视觉角标提醒）
 
 2. **性能考虑**
-   - 提醒检查间隔设置为 30 秒
+   - 提醒检查间隔设置为 **60秒**（平衡及时性与资源占用）
    - 数据刷新时增量更新提醒记录
+   - checksum 必须包含日期字段
    - 定期清理过期提醒记录
 
 3. **数据一致性**
    - 事项修改时同步更新提醒记录
    - 事项删除时清理关联提醒
+   - **关键**：修改事项日期后，提醒时间必须重新计算
 
 4. **跨平台兼容**
    - 桌面端使用系统通知
@@ -1227,22 +1247,27 @@ src/
    - **如果删除完成/放弃标记**，事项恢复为待办状态，下次 DATA_REFRESH 时会根据提醒标记重新创建提醒
    - 简化设计：不保留 `disabled` 状态，直接删除/重新创建
 
-6. **blockId 变化处理**
-   - 当用户复制粘贴事项或重新创建同内容事项时，blockId 会变化
-   - 通过内容指纹匹配检测 blockId 变化
-   - 自动将旧 blockId 的提醒记录迁移到新 blockId
-   - 迁移后删除旧 blockId 的提醒记录
+6. **简化设计原则**
+   - **一个事项只支持一个提醒时间**
+   - 多日期事项请拆分为多个事项块
+   - 相对提醒建议仅在 UI 层使用，存储时转换为绝对时间
+
+---
 
 ## 十四、验收标准
 
-- [ ] 可以使用 `!HH:mm` 语法为事项设置提醒
-- [ ] 支持提前提醒（5分钟/30分钟/1小时/1天/自定义）
+- [ ] 可以使用 `⏰HH:mm` 语法为事项设置提醒
+- [ ] 支持相对开始时间 `⏰-Xm`/`⏰-Xh`/`⏰-Xd`
+- [ ] 支持相对结束时间 `⏰e-Xm`/`⏰e-Xh`/`⏰e-Xd`
+- [ ] 相对结束时间对无时间范围事项相对 23:59:59 计算
+- [ ] 支持 UI 面板、右键菜单、斜杠命令 `/提醒` 设置提醒
+- [ ] 相对提醒正确基于事项时间范围计算
 - [ ] 到达提醒时间时显示系统通知
 - [ ] 点击通知可以跳转到对应事项
 - [ ] 在事项详情弹框中可以设置/修改提醒
 - [ ] 设置面板可以配置提醒功能开关
-- [ ] 支持多日期事项的提醒（每个日期单次提醒）
 - [ ] 国际化支持（中英文）
 - [ ] 事项完成或放弃后提醒自动删除
 - [ ] 删除完成/放弃标记后提醒自动重新创建
-- [ ] blockId 变化时提醒记录自动迁移
+- [ ] 修改事项日期后提醒时间自动重新计算（checksum 包含日期）
+- [ ] 定时检查间隔为 60 秒
