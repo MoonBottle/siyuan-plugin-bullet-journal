@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
 import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
-import { getBlockIdFromElement, getBlockIdFromRange, findItemByBlockId } from '@/utils/itemBlockUtils';
+import { getBlockIdFromElement, getBlockIdFromRange } from '@/utils/itemBlockUtils';
 import { useProjectStore, usePomodoroStore } from '@/stores';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
@@ -26,6 +26,7 @@ import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiv
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
+import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
 
 let PluginInfo = {
   version: '',
@@ -539,7 +540,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const pinia = getSharedPinia();
     if (!pinia) return;
     const projectStore = useProjectStore(pinia);
-    const item = findItemByBlockId(blockId, projectStore.items);
+    const item = projectStore.getItemByBlockId(blockId);
     if (!item) return;
     detail.menu.addItem({
       icon: 'iconInfo',
@@ -563,7 +564,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const pinia = getSharedPinia();
     if (!pinia) return;
     const projectStore = useProjectStore(pinia);
-    const item = findItemByBlockId(blockId, projectStore.items);
+    const item = projectStore.getItemByBlockId(blockId);
     if (!item) return;
     detail.event.preventDefault();
     detail.event.stopPropagation();
@@ -970,30 +971,46 @@ export default class TaskAssistantPlugin extends Plugin {
    * WebSocket 消息处理
    */
   private onWsMain(event: any) {
-    // console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
+    console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
     // 检测数据变化相关的事件
     const data = event.detail;
-    if (data && data.cmd) {
-      // 这些命令表示数据可能发生变化（savedoc：文档保存；setBlockAttrs 可能不触发 ws-main，专注记录保存后由 pomodoroStore 主动 emit DATA_REFRESH）
-      const refreshCmds = ['txerr', 'savedoc', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
-      if (refreshCmds.includes(data.cmd)) {
-        this.scheduleRefresh();
-        return;
-      }
-      // 属性变更（含属性面板手动删除）会广播 transactions，需刷新专注记录
-      // if (event.cmd === 'setBlockAttrs') {
-      //   this.scheduleRefresh();
-      //   return;
-      // }
-      if (data.cmd === 'transactions' && Array.isArray(data.data)) {
-        const hasAttrChange = data.data.some(
-          (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
-        );
-        if (hasAttrChange) {
-          this.scheduleRefresh();
-        }
+    if (!data || !data.cmd) return;
+
+    // 全量刷新命令
+    const fullRefreshCmds = ['txerr', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
+    if (fullRefreshCmds.includes(data.cmd)) {
+      this.scheduleRefresh();
+      return;
+    }
+
+    // 保存文档 - 定向刷新
+    if (data.cmd === 'savedoc') {
+      this.handleDirectedRefresh(data);
+      return;
+    }
+
+    // 属性变更（含属性面板手动删除）会广播 transactions
+    if (data.cmd === 'transactions' && Array.isArray(data.data)) {
+      const hasAttrChange = data.data.some(
+        (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
+      );
+      if (hasAttrChange) {
+        this.handleDirectedRefresh(data);
       }
     }
+  }
+
+  /**
+   * 处理定向刷新
+   * 从 ws-main 事件数据中提取 rootIDs，标记脏文档，触发定向刷新
+   */
+  private handleDirectedRefresh(data: any) {
+    const rootIDs: string[] = data?.context?.rootIDs || [];
+    if (rootIDs.length > 0) {
+      dirtyDocTracker.markDirty(rootIDs);
+      console.log('[Task Assistant] ws-main directed refresh for docs:', rootIDs);
+    }
+    this.scheduleRefresh();
   }
 
   /**

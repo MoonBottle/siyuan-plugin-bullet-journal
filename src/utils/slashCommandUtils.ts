@@ -5,7 +5,7 @@
 
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { useProjectStore } from '@/stores';
-import { findItemByBlockId } from '@/utils/itemBlockUtils';
+
 import type { Item } from '@/types/models';
 
 /**
@@ -77,7 +77,7 @@ export async function extractDatesFromBlock(
   if (!pinia) return [];
 
   const projectStore = useProjectStore(pinia);
-  const item = findItemByBlockId(blockId, projectStore.items);
+  const item = projectStore.getItemByBlockId(blockId);
 
   if (item) {
     const items: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
@@ -149,7 +149,7 @@ export async function extractItemFromBlock(blockId: string): Promise<Item | null
   if (!pinia) return null;
 
   const projectStore = useProjectStore(pinia);
-  const item = findItemByBlockId(blockId, projectStore.items);
+  const item = projectStore.getItemByBlockId(blockId);
 
   return item || null;
 }

@@ -233,11 +233,11 @@ const isProcessing = ref(false);
 const radius = 54;
 const circumference = 2 * Math.PI * radius;
 
-// 根据 blockId 从 projectStore 中查找对应的 item
+// 根据 blockId 从 projectStore 中查找对应的 item（使用 Map 索引，O(1) 查找）
 const currentItem = computed<Item | undefined>(() => {
   const blockId = pomodoroStore.activePomodoro?.blockId;
   if (!blockId) return undefined;
-  return projectStore.items.find(item => item.blockId === blockId);
+  return projectStore.getItemByBlockId(blockId);
 });
 
 // 当前专注的事项内容（优先使用 store 中的，但用 currentItem 作为后备）

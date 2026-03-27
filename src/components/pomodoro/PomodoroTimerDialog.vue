@@ -137,10 +137,10 @@ const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
 // 选中的事项
 const selectedItem = ref<Item | null>(null);
 
-// 根据 preselectedBlockId 实时查找 item，确保获取最新的数据
+// 根据 preselectedBlockId 实时查找 item，确保获取最新的数据（使用 Map 索引，O(1) 查找）
 const preselectedItem = computed(() => {
   if (!props.preselectedBlockId || !projectStore) return null;
-  return projectStore.items.find(item => item.blockId === props.preselectedBlockId) || null;
+  return projectStore.getItemByBlockId(props.preselectedBlockId) || null;
 });
 
 // 计时模式：倒计时 / 正计时
