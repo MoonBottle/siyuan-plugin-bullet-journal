@@ -48,8 +48,9 @@ export function initI18n(language?: string) {
 
 /**
  * 获取翻译，支持嵌套路径如 'reminder.absoluteTime'
+ * 支持参数替换，如 t('reminder.minutes', { n: 5 }) => "5分钟"
  */
-export function t(key: string): any {
+export function t(key: string, params?: Record<string, string | number>): any {
   const keys = key.split('.');
   let value: any = currentLocale;
   
@@ -59,6 +60,13 @@ export function t(key: string): any {
     } else {
       return key; // 找不到时返回 key 本身
     }
+  }
+  
+  // 如果结果是字符串且有参数，进行模板替换
+  if (typeof value === 'string' && params) {
+    return value.replace(/\{(\w+)\}/g, (match, key) => {
+      return params[key] !== undefined ? String(params[key]) : match;
+    });
   }
   
   return value;

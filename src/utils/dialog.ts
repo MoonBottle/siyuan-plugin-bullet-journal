@@ -880,6 +880,14 @@ export function showReminderSettingDialog(item: Item): Dialog {
     bodyEl.appendChild(container);
   }
 
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
   return dialog;
 }
 
@@ -917,6 +925,14 @@ export function showRecurringSettingDialog(item: Item): Dialog {
   if (bodyEl) {
     bodyEl.appendChild(container);
   }
+
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
 
   return dialog;
 }
