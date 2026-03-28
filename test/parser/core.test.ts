@@ -897,4 +897,38 @@ describe('parseKramdown lastBlockId 解析', () => {
     expect(project!.tasks[0].items[0].blockId).toBe('after-i1');
     expect(project!.tasks[0].items[0].lastBlockId).toBe('content2');
   });
+
+  it('事项和事项相关内容都是文本块：lastBlockId 正确记录', () => {
+    // 场景：事项本身是普通文本块（不是列表项），事项相关内容也是普通文本块
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务G #任务#
+{: id="after-t" }
+完成首页原型设计 @2026-03-26 10:00:00~12:00:00
+{: id="item-block" }
+事项内容1
+{: id="content1" }
+事项内容2
+{: id="content2" }
+评审会议 @2026-03-26 14:00:00~15:00:00 #已放弃
+{: id="next-item" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    // 应该解析出2个事项（完成首页原型设计、评审会议）
+    expect(project!.tasks[0].items).toHaveLength(2);
+    
+    // 第一个事项（完成首页原型设计）
+    expect(project!.tasks[0].items[0].content).toBe('完成首页原型设计');
+    expect(project!.tasks[0].items[0].blockId).toBe('item-block');
+    // lastBlockId 应该指向事项内容2（content2）
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('content2');
+    
+    // 第二个事项（评审会议）
+    expect(project!.tasks[0].items[1].content).toBe('评审会议');
+    expect(project!.tasks[0].items[1].blockId).toBe('next-item');
+    // 没有相关内容，lastBlockId 等于 blockId
+    expect(project!.tasks[0].items[1].lastBlockId).toBe('next-item');
+  });
 });
