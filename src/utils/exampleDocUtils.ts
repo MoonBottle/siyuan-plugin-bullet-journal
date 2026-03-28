@@ -54,16 +54,7 @@ function generateExampleContent(): string {
   const dateMarker = t('dateMarker') || '📅';
 
   if (isEn) {
-    return `## Task Assistant Tutorial
-
-Quick Add with Slash Commands:
-Type /task then Enter → Mark as task ${taskTag}
-Type /today then Enter → Add today's item ${dateMarker}${today}
-Type /tomorrow then Enter → Add tomorrow's item ${dateMarker}${tomorrow}
-Type /done then Enter → Mark as completed ${completedTag}
-Type /focus then Enter → Start pomodoro 🍅
-
-This is a task ${taskTag}
+    return `This is a task ${taskTag}
 
 This is an all-day item ${dateMarker}${today}
 
@@ -74,6 +65,15 @@ This is a completed item ${dateMarker}${today} ${completedTag}
 This is an abandoned item ${dateMarker}${today} ${abandonedTag}
 
 🍅${today} 10:00:00~10:25:00 This is a pomodoro record
+
+  > 📌 Quick Add with Slash Commands:
+Type /task then Enter → Mark as task
+Type /today then Enter → Add today's item
+Type /tomorrow then Enter → Add tomorrow's item
+Type /done then Enter → Mark as completed
+Type /cal then Enter → View calendar view
+Type /todo then Enter → View todo items
+Type /focus then Enter → Start pomodoro
 `;
   }
 
