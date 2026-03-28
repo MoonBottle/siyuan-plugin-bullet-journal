@@ -79,6 +79,8 @@ export default class TaskAssistantPlugin extends Plugin {
   private pomodoroDockModel: any = null;
   /** 已处理过的任务列表完成事件，用于去重 */
   private processedTaskCompletions = new Set<string>();
+  /** 正在处理的任务列表完成，防止并发重复 */
+  private processingTaskCompletions = new Map<string, Promise<void>>();
 
   async onload() {
     const frontEnd = getFrontend();
@@ -1119,11 +1121,34 @@ export default class TaskAssistantPlugin extends Plugin {
       return;
     }
 
-    // 添加到处理集合，5秒后清除
+    // 检查是否正在处理中（防止并发重复）
+    if (this.processingTaskCompletions.has(contentBlockId)) {
+      console.log('[Task Assistant] Task completion already in progress:', contentBlockId);
+      await this.processingTaskCompletions.get(contentBlockId);
+      return;
+    }
+
+    // 添加到处理集合
     this.processedTaskCompletions.add(contentBlockId);
     setTimeout(() => {
       this.processedTaskCompletions.delete(contentBlockId);
     }, 5000);
+
+    // 创建处理 Promise
+    const processPromise = this.doHandleTaskListCompletion(listItemBlockId, contentBlockId, op);
+    this.processingTaskCompletions.set(contentBlockId, processPromise);
+    
+    try {
+      await processPromise;
+    } finally {
+      this.processingTaskCompletions.delete(contentBlockId);
+    }
+  }
+
+  /**
+   * 实际处理任务列表完成
+   */
+  private async doHandleTaskListCompletion(listItemBlockId: string, contentBlockId: string, op: any) {
 
     // 从 projectStore 获取该 block 对应的事项
     const pinia = getSharedPinia();
