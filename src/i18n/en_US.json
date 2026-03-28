@@ -511,7 +511,18 @@
     "beforeEnd": "Before End",
     "setReminder": "Set Reminder",
     "minutes": "{n} min",
-    "hour": "{n} hr"
+    "hour": "{n} hr",
+    "custom": "Custom",
+    "customTimeLabel": "Time",
+    "relativeBase": "Relative Base",
+    "beforeStart": "Before Start",
+    "beforeEnd": "Before End",
+    "offsetTime": "Offset Time",
+    "unitMinutes": "minutes",
+    "unitHours": "hours",
+    "unitDays": "days",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "recurring": {
     "settingTitle": "Set Recurring",

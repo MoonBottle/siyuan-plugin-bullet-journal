@@ -502,20 +502,29 @@
   },
   "reminder": {
     "settingTitle": "设置提醒",
-    "enableReminder": "启用提醒",
-    "reminderType": "提醒类型",
     "reminderTime": "提醒时间",
-    "relativeTime": "相对时间",
-    "absoluteTime": "绝对时间",
+    "reminderMethod": "提醒方式",
+    "ontime": "准时",
+    "before5m": "提前5分",
+    "before15m": "提前15分",
+    "before30m": "提前30分",
+    "before1h": "提前1小时",
+    "before1d": "提前1天",
+    "custom": "自定义",
+    "relativeBase": "相对基准",
     "beforeStart": "开始前",
     "beforeEnd": "结束前",
-    "setReminder": "设置提醒",
-    "minutes": "{n}分钟",
-    "hour": "{n}小时"
+    "offsetTime": "偏移时间",
+    "unitMinutes": "分钟",
+    "unitHours": "小时",
+    "unitDays": "天",
+    "clickToSet": "点击设置",
+    "customTimeLabel": "提醒时间",
+    "save": "保存",
+    "cancel": "取消"
   },
   "recurring": {
     "settingTitle": "设置重复",
-    "enableRecurring": "启用重复",
     "repeatRule": "重复规则",
     "daily": "每天",
     "weekly": "每周",
@@ -530,6 +539,8 @@
     "endByCount": "按次数结束",
     "times": "次",
     "setRecurring": "设置重复",
-    "skipThis": "跳过本次"
+    "skipThis": "跳过本次",
+    "save": "保存",
+    "cancel": "取消"
   }
 }

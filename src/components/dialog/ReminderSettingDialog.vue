@@ -1,157 +1,242 @@
 <template>
   <div class="reminder-setting-dialog">
-    <div class="setting-section">
-      <label class="setting-label">
-        <SySwitch v-model="enabled" />
-        <span class="setting-text">{{ t('reminder.enableReminder') }}</span>
-      </label>
+    <!-- 事项信息卡片 -->
+    <div v-if="item" class="selected-item-section">
+      <SelectedItemCard :item="item" :show-header="true" />
     </div>
 
-    <template v-if="enabled">
-      <!-- 提醒类型选择 -->
-      <div class="setting-section">
-        <div class="section-title">{{ t('reminder.reminderType') }}</div>
-        <div class="type-options">
-          <button
-            v-for="type in reminderTypes"
-            :key="type.value"
-            class="b3-button"
-            :class="reminderType === type.value ? 'b3-button--primary' : 'b3-button--outline'"
-            @click="reminderType = type.value"
-          >
-            {{ type.label }}
-          </button>
+    <template v-if="item">
+      <!-- 提醒方式 -->
+      <div class="panel-title">{{ t('reminder.reminderMethod') }}</div>
+      <div class="quick-buttons">
+        <button
+          v-for="method in reminderMethods"
+          :key="method.value"
+          class="mode-btn"
+          :class="{ active: selectedMethod === method.value }"
+          @click="selectMethod(method.value)"
+        >
+          {{ method.label }}
+        </button>
+      </div>
+
+      <!-- 自定义提醒方式展开区域 -->
+      <div v-if="selectedMethod === 'custom'" class="custom-section">
+        <div class="custom-row">
+          <span class="custom-label">{{ t('reminder.relativeBase') }}</span>
+          <div class="base-options">
+            <button
+              class="mode-btn small"
+              :class="{ active: relativeBase === 'start' }"
+              @click="relativeBase = 'start'"
+            >
+              {{ t('reminder.beforeStart') }}
+            </button>
+            <button
+              class="mode-btn small"
+              :class="{ active: relativeBase === 'end' }"
+              @click="relativeBase = 'end'"
+            >
+              {{ t('reminder.beforeEnd') }}
+            </button>
+          </div>
+        </div>
+        <div class="custom-row">
+          <span class="custom-label">{{ t('reminder.offsetTime') }}</span>
+          <div class="offset-inputs">
+            <input
+              v-model.number="customOffset"
+              type="number"
+              min="1"
+              max="999"
+              class="offset-input"
+            />
+            <select v-model="offsetUnit" class="unit-select">
+              <option value="minutes">{{ t('reminder.unitMinutes') }}</option>
+              <option value="hours">{{ t('reminder.unitHours') }}</option>
+              <option value="days">{{ t('reminder.unitDays') }}</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <!-- 绝对时间设置 -->
-      <div v-if="reminderType === 'absolute'" class="setting-section">
-        <div class="section-title">{{ t('reminder.reminderTime') }}</div>
-        <input
-          type="time"
-          v-model="absoluteTime"
-          class="b3-text-field time-input"
-        />
-      </div>
-
-      <!-- 相对时间设置 -->
-      <div v-else class="setting-section">
-        <div class="section-title">{{ t('reminder.relativeTime') }}</div>
-        
-        <!-- 相对基准选择 -->
-        <div class="relative-base-options">
+      <!-- 提醒时间（仅准时模式显示） -->
+      <template v-if="selectedMethod === 'ontime'">
+        <div class="panel-title">{{ t('reminder.reminderTime') }}</div>
+        <div class="quick-buttons time-presets">
           <button
-            v-for="base in relativeBases"
-            :key="base.value"
-            class="b3-button"
-            :class="relativeBase === base.value ? 'b3-button--primary' : 'b3-button--outline'"
-            @click="relativeBase = base.value"
+            v-for="time in timePresets"
+            :key="time"
+            class="mode-btn"
+            :class="{ active: !isCustomTime && reminderTime === time }"
+            @click="selectTime(time)"
           >
-            {{ base.label }}
+            {{ time }}
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ active: isCustomTime }"
+            @click="setCustomTime"
+          >
+            {{ t('reminder.custom') }}
           </button>
         </div>
 
-        <!-- 提前时间选择 -->
-        <div class="offset-options">
-          <button
-            v-for="offset in offsetPresets"
-            :key="offset.value"
-            class="b3-button b3-button--small"
-            :class="offsetMinutes === offset.value ? 'b3-button--primary' : 'b3-button--outline'"
-            @click="offsetMinutes = offset.value"
-          >
-            {{ offset.label }}
-          </button>
+        <!-- 自定义时间展开区域 -->
+        <div v-if="isCustomTime" class="custom-section">
+          <div class="custom-row">
+            <span class="custom-label">{{ t('reminder.customTimeLabel') }}</span>
+            <input
+              v-model="reminderTime"
+              type="time"
+              class="time-input"
+            />
+          </div>
         </div>
-      </div>
+      </template>
     </template>
 
     <!-- 底部按钮 -->
-    <div class="dialog-footer">
-      <button class="b3-button b3-button--outline" @click="handleCancel">
-        {{ t('common').cancel }}
+    <div class="action-section">
+      <button class="start-btn" :disabled="!item" @click="handleSave">
+        {{ t('reminder.save') }}
       </button>
-      <button class="b3-button b3-button--text" @click="handleSave">
-        {{ t('common').save }}
+      <button class="cancel-btn" @click="handleCancel">
+        {{ t('reminder.cancel') }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useProjectStore } from '@/stores';
+import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import type { ReminderConfig } from '@/types/models';
-import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
+import SelectedItemCard from '@/components/pomodoro/SelectedItemCard.vue';
 
 interface Props {
+  blockId: string;
   initialConfig?: ReminderConfig;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  initialConfig: () => ({
-    enabled: false,
-    type: 'absolute',
-    time: '09:00'
-  })
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   save: [config: ReminderConfig];
   cancel: [];
 }>();
 
-// 本地状态
-const enabled = ref(props.initialConfig?.enabled ?? false);
-const reminderType = ref<'absolute' | 'relative'>(props.initialConfig?.type ?? 'absolute');
-const absoluteTime = ref(props.initialConfig?.time ?? '09:00');
-const relativeBase = ref<'start' | 'end'>(props.initialConfig?.relativeTo ?? 'start');
-const offsetMinutes = ref(props.initialConfig?.offsetMinutes ?? 10);
+// 获取事项信息
+const pinia = getSharedPinia();
+const projectStore = pinia ? useProjectStore(pinia) : null;
 
-// 选项定义
-const reminderTypes = computed(() => [
-  { value: 'absolute', label: t('reminder.absoluteTime') },
-  { value: 'relative', label: t('reminder.relativeTime') }
+const item = computed(() => {
+  if (!props.blockId || !projectStore) return null;
+  return projectStore.getItemByBlockId(props.blockId) || null;
+});
+
+// 提醒时间（更多预设）
+const timePresets = ['07:00', '08:00', '09:00', '10:00', '12:00', '14:00', '15:00', '18:00', '20:00'];
+const reminderTime = ref(props.initialConfig?.time ?? '09:00');
+const isCustomTime = ref(!timePresets.includes(reminderTime.value));
+
+// 提醒方法
+const reminderMethods = computed(() => [
+  { value: 'ontime', label: t('reminder.ontime') },
+  { value: 'before5m', label: t('reminder.before5m') },
+  { value: 'before15m', label: t('reminder.before15m') },
+  { value: 'before30m', label: t('reminder.before30m') },
+  { value: 'before1h', label: t('reminder.before1h') },
+  { value: 'before1d', label: t('reminder.before1d') },
+  { value: 'custom', label: t('reminder.custom') }
 ]);
 
-const relativeBases = computed(() => [
-  { value: 'start', label: t('reminder.beforeStart') },
-  { value: 'end', label: t('reminder.beforeEnd') }
-]);
+const selectedMethod = ref('ontime');
+const relativeBase = ref<'start' | 'end'>('start');
+const customOffset = ref(30);
+const offsetUnit = ref<'minutes' | 'hours' | 'days'>('minutes');
 
-const offsetPresets = computed(() => [
-  { value: 5, label: t('reminder.minutes', { n: 5 }) },
-  { value: 10, label: t('reminder.minutes', { n: 10 }) },
-  { value: 15, label: t('reminder.minutes', { n: 15 }) },
-  { value: 30, label: t('reminder.minutes', { n: 30 }) },
-  { value: 60, label: t('reminder.hour', { n: 1 }) }
-]);
-
-// 保存
-function handleSave() {
-  if (!enabled.value) {
-    emit('save', { enabled: false, type: 'absolute' });
-    return;
+// 初始化方法选择
+onMounted(() => {
+  const config = props.initialConfig;
+  if (config?.type === 'relative' && config.offsetMinutes) {
+    const minutes = config.offsetMinutes;
+    if (minutes === 5) selectedMethod.value = 'before5m';
+    else if (minutes === 15) selectedMethod.value = 'before15m';
+    else if (minutes === 30) selectedMethod.value = 'before30m';
+    else if (minutes === 60) selectedMethod.value = 'before1h';
+    else if (minutes === 1440) selectedMethod.value = 'before1d';
+    else {
+      selectedMethod.value = 'custom';
+      relativeBase.value = config.relativeTo ?? 'start';
+      if (minutes % 1440 === 0) {
+        customOffset.value = minutes / 1440;
+        offsetUnit.value = 'days';
+      } else if (minutes % 60 === 0) {
+        customOffset.value = minutes / 60;
+        offsetUnit.value = 'hours';
+      } else {
+        customOffset.value = minutes;
+        offsetUnit.value = 'minutes';
+      }
+    }
+  } else {
+    selectedMethod.value = 'ontime';
   }
+});
 
-  if (reminderType.value === 'absolute') {
-    emit('save', {
+function selectTime(time: string) {
+  reminderTime.value = time;
+  isCustomTime.value = false;
+}
+
+function setCustomTime() {
+  isCustomTime.value = true;
+}
+
+function selectMethod(method: string) {
+  selectedMethod.value = method;
+}
+
+function handleSave() {
+  let config: ReminderConfig;
+  
+  if (selectedMethod.value === 'ontime') {
+    config = {
       enabled: true,
       type: 'absolute',
-      time: absoluteTime.value,
+      time: reminderTime.value,
       alertMode: { type: 'ontime' }
-    });
+    };
   } else {
-    emit('save', {
+    let offsetMinutes: number;
+    switch (selectedMethod.value) {
+      case 'before5m': offsetMinutes = 5; break;
+      case 'before15m': offsetMinutes = 15; break;
+      case 'before30m': offsetMinutes = 30; break;
+      case 'before1h': offsetMinutes = 60; break;
+      case 'before1d': offsetMinutes = 1440; break;
+      case 'custom':
+        if (offsetUnit.value === 'days') offsetMinutes = customOffset.value * 1440;
+        else if (offsetUnit.value === 'hours') offsetMinutes = customOffset.value * 60;
+        else offsetMinutes = customOffset.value;
+        break;
+      default: offsetMinutes = 10;
+    }
+    
+    config = {
       enabled: true,
       type: 'relative',
       relativeTo: relativeBase.value,
-      offsetMinutes: offsetMinutes.value
-    });
+      offsetMinutes
+    };
   }
+  
+  emit('save', config);
 }
 
-// 取消
 function handleCancel() {
   emit('cancel');
 }
@@ -160,53 +245,189 @@ function handleCancel() {
 <style lang="scss" scoped>
 .reminder-setting-dialog {
   padding: 16px;
-  min-width: 280px;
+  min-width: 320px;
+  max-width: 360px;
 }
 
-.setting-section {
-  margin-bottom: 16px;
+.selected-item-section {
+  margin-bottom: 20px;
+}
 
-  &:last-child {
-    margin-bottom: 0;
+.panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
+  margin-bottom: 12px;
+  margin-top: 16px;
+
+  &:first-of-type {
+    margin-top: 0;
   }
 }
 
-.setting-label {
-  display: flex;
-  align-items: center;
+.quick-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
+
+  &.time-presets {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.mode-btn {
+  padding: 8px 4px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
   color: var(--b3-theme-on-background);
-}
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
 
-.section-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--b3-theme-on-surface);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
+  &:hover {
+    border-color: var(--b3-theme-primary);
+  }
 
-.type-options,
-.relative-base-options,
-.offset-options {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  &.active {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary, #fff);
+    border-color: var(--b3-theme-primary);
+  }
+
+  &.small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
 }
 
 .time-input {
+  padding: 8px 12px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 14px;
   width: 120px;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+
+  &.full-width {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
-.dialog-footer {
+.custom-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--b3-theme-surface-lightest);
+  border-radius: var(--b3-border-radius);
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.custom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.custom-label {
+  font-size: 13px;
+  color: var(--b3-theme-on-surface);
+  flex-shrink: 0;
+}
+
+.base-options {
+  display: flex;
   gap: 8px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--b3-border-color);
+}
+
+.offset-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offset-input {
+  width: 60px;
+  padding: 6px 8px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 13px;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.unit-select {
+  padding: 6px 8px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 13px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.action-section {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.start-btn {
+  padding: 10px 16px;
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary, #fff);
+  border: none;
+  border-radius: var(--b3-border-radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.cancel-btn {
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--b3-theme-on-surface);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--b3-theme-surface-lighter);
+  }
 }
 </style>

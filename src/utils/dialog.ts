@@ -849,10 +849,10 @@ export function showDatePickerDialog(
  * 显示提醒设置弹框
  */
 export function showReminderSettingDialog(item: Item): Dialog {
-  const plugin = usePlugin();
   const container = document.createElement('div');
 
   const app = createApp(ReminderSettingDialog, {
+    blockId: item.blockId!,
     initialConfig: item.reminder,
     onSave: async (config: ReminderConfig) => {
       await updateItemWithReminder(item, config);
@@ -869,7 +869,7 @@ export function showReminderSettingDialog(item: Item): Dialog {
   const dialog = new Dialog({
     title: t('reminder').settingTitle,
     content: '',
-    width: '320px',
+    width: '380px',
     destroyCallback: () => {
       app.unmount();
     }
@@ -898,6 +898,7 @@ export function showRecurringSettingDialog(item: Item): Dialog {
   const container = document.createElement('div');
 
   const app = createApp(RecurringSettingDialog, {
+    blockId: item.blockId!,
     initialRepeatRule: item.repeatRule,
     initialEndCondition: item.endCondition,
     onSave: async (repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) => {
@@ -915,7 +916,7 @@ export function showRecurringSettingDialog(item: Item): Dialog {
   const dialog = new Dialog({
     title: t('recurring').settingTitle,
     content: '',
-    width: '320px',
+    width: '380px',
     destroyCallback: () => {
       app.unmount();
     }
