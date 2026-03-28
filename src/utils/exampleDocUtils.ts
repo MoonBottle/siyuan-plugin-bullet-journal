@@ -94,6 +94,8 @@ This is an abandoned item ${dateMarker}${today} ${abandonedTag}
 输入 /jt 回车 → 添加今日事项
 输入 /mt 回车 → 添加明日事项
 输入 /wc 回车 → 标记为完成
+输入 /rl 回车 → 查看日历视图
+输入 /todo 回车 → 查看待办事项
 输入 /zz 回车 → 开始番茄钟
 `;
 }

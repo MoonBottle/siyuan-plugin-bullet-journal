@@ -388,7 +388,7 @@ export function parseKramdown(
   if (!project.name) {
     if (docPath) {
       const pathParts = docPath.split('/');
-      project.name = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || '';
+      project.name = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || docPath;
     }
     if (!project.name) {
       project.name = `项目 ${docId.substring(0, 6)}`;
