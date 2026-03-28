@@ -526,7 +526,22 @@
     "beforeEndTime": "{time} before end",
     "minutes": "{count} minutes",
     "hours": "{count} hours",
-    "days": "{count} days"
+    "days": "{count} days",
+    "parse": {
+      "before": "before",
+      "beforeEnd": "before end",
+      "minutes": "minutes",
+      "hours": "hours",
+      "days": "days"
+    },
+    "generate": {
+      "beforeMinutes": "{count} minutes before",
+      "beforeHours": "{count} hours before",
+      "beforeDays": "{count} days before",
+      "beforeEndMinutes": "{count} minutes before end",
+      "beforeEndHours": "{count} hours before end",
+      "beforeEndDays": "{count} days before end"
+    }
   },
   "recurring": {
     "settingTitle": "Set Recurring",
@@ -558,6 +573,20 @@
     "withEndDate": "{rule}, until {date}",
     "withRemainingCount": "{rule}, {count} remaining",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "parse": {
+      "until": "until",
+      "remaining": "remaining",
+      "times": "times",
+      "monthlyOnDayPrefix": "monthly on day",
+      "weeklyOnPrefix": "weekly on",
+      "daysSeparator": ", "
+    },
+    "generate": {
+      "withEndDate": "until {date}",
+      "withRemainingCount": "{count} times remaining",
+      "monthlyOnDay": "monthly on day {day}",
+      "weeklyOnDays": "weekly on {days}"
+    }
   }
 }

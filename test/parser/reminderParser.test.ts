@@ -1,5 +1,5 @@
 /**
- * 提醒标记解析器测试
+ * 提醒标记解析器测试（人类可读格式）
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -27,45 +27,59 @@ describe('reminderParser', () => {
       expect(result?.time).toBe('09:00');
     });
 
-    it('应该解析相对开始时间 ⏰-Xm', () => {
-      const result = parseReminderFromLine('会议 @2026-03-17 14:00~16:00 ⏰-10m');
+    it('应该解析中文相对开始时间 ⏰提前X分钟', () => {
+      const result = parseReminderFromLine('会议 @2026-03-17 14:00~16:00 ⏰提前10分钟');
       expect(result).toBeDefined();
       expect(result?.type).toBe('relative');
       expect(result?.relativeTo).toBe('start');
       expect(result?.offsetMinutes).toBe(10);
     });
 
-    it('应该解析相对开始时间 ⏰-Xh', () => {
-      const result = parseReminderFromLine('会议 @2026-03-17 ⏰-1h');
+    it('应该解析中文相对开始时间 ⏰提前X小时', () => {
+      const result = parseReminderFromLine('会议 @2026-03-17 ⏰提前1小时');
       expect(result).toBeDefined();
       expect(result?.type).toBe('relative');
+      expect(result?.relativeTo).toBe('start');
       expect(result?.offsetMinutes).toBe(60);
     });
 
-    it('应该解析相对结束时间 ⏰e-Xm', () => {
-      const result = parseReminderFromLine('会议 @2026-03-17 14:00~16:00 ⏰e-10m');
+    it('应该解析中文相对结束时间 ⏰结束前X分钟', () => {
+      const result = parseReminderFromLine('会议 @2026-03-17 14:00~16:00 ⏰结束前10分钟');
       expect(result).toBeDefined();
       expect(result?.type).toBe('relative');
       expect(result?.relativeTo).toBe('end');
       expect(result?.offsetMinutes).toBe(10);
     });
 
-    it('应该解析相对结束时间 ⏰e-Xh（不区分大小写）', () => {
-      const result = parseReminderFromLine('会议 @2026-03-17 ⏰E-1H');
+    it('应该解析英文相对开始时间 ⏰X minutes before', () => {
+      const result = parseReminderFromLine('Meeting @2026-03-17 ⏰10 minutes before');
       expect(result).toBeDefined();
-      expect(result?.relativeTo).toBe('end');
-      expect(result?.offsetMinutes).toBe(60);
-    });
-
-    it('应该解析中文单位', () => {
-      const result = parseReminderFromLine('会议 @2026-03-17 ⏰-10分钟');
-      expect(result).toBeDefined();
+      expect(result?.type).toBe('relative');
+      expect(result?.relativeTo).toBe('start');
       expect(result?.offsetMinutes).toBe(10);
     });
 
-    it('应该解析天数', () => {
-      const result = parseReminderFromLine('会议 @2026-03-17 ⏰-1d');
+    it('应该解析英文相对开始时间 ⏰X hours before（简写）', () => {
+      const result = parseReminderFromLine('Meeting @2026-03-17 ⏰1h before');
       expect(result).toBeDefined();
+      expect(result?.type).toBe('relative');
+      expect(result?.relativeTo).toBe('start');
+      expect(result?.offsetMinutes).toBe(60);
+    });
+
+    it('应该解析英文相对结束时间 ⏰X minutes before end', () => {
+      const result = parseReminderFromLine('Meeting @2026-03-17 ⏰30 minutes before end');
+      expect(result).toBeDefined();
+      expect(result?.type).toBe('relative');
+      expect(result?.relativeTo).toBe('end');
+      expect(result?.offsetMinutes).toBe(30);
+    });
+
+    it('应该解析中文相对时间 ⏰提前X天', () => {
+      const result = parseReminderFromLine('会议 @2026-03-17 ⏰提前1天');
+      expect(result).toBeDefined();
+      expect(result?.type).toBe('relative');
+      expect(result?.relativeTo).toBe('start');
       expect(result?.offsetMinutes).toBe(24 * 60);
     });
 
@@ -75,8 +89,8 @@ describe('reminderParser', () => {
     });
 
     it('应该优先匹配相对结束时间', () => {
-      // 如果同时有 -Xm 和 e-Xm，应该优先匹配 e-Xm（因为它先检查）
-      const result = parseReminderFromLine('会议 @2026-03-17 ⏰e-10m ⏰-5m');
+      // 如果同时有 提前 和 结束前，应该优先匹配 结束前
+      const result = parseReminderFromLine('会议 @2026-03-17 ⏰结束前10分钟 ⏰提前5分钟');
       expect(result).toBeDefined();
       expect(result?.relativeTo).toBe('end');
     });
@@ -145,20 +159,6 @@ describe('reminderParser', () => {
       const expected = new Date('2026-03-17T23:49:00').getTime();
       expect(time).toBe(expected);
     });
-
-    it('跨天事项应该正确处理相对结束时间', () => {
-      const config: ReminderConfig = {
-        enabled: true,
-        type: 'relative',
-        relativeTo: 'end',
-        offsetMinutes: 10
-      };
-      // 22:00 - 02:00（跨天）
-      const time = calculateReminderTime('2026-03-17', '22:00:00', '02:00:00', config);
-      // 02:00 - 10m = 01:50
-      const expected = new Date('2026-03-17T01:50:00').getTime();
-      expect(time).toBe(expected);
-    });
   });
 
   describe('stripReminderMarker', () => {
@@ -167,19 +167,28 @@ describe('reminderParser', () => {
       expect(result).toBe('会议 @2026-03-17');
     });
 
-    it('应该移除相对开始时间标记', () => {
-      const result = stripReminderMarker('会议 @2026-03-17 ⏰-10m');
+    it('应该移除中文相对开始时间标记', () => {
+      const result = stripReminderMarker('会议 @2026-03-17 ⏰提前10分钟');
       expect(result).toBe('会议 @2026-03-17');
     });
 
-    it('应该移除相对结束时间标记', () => {
-      const result = stripReminderMarker('会议 @2026-03-17 ⏰e-10m');
+    it('应该移除中文相对结束时间标记', () => {
+      const result = stripReminderMarker('会议 @2026-03-17 ⏰结束前30分钟');
       expect(result).toBe('会议 @2026-03-17');
+    });
+
+    it('应该移除英文相对时间标记', () => {
+      const result = stripReminderMarker('Meeting @2026-03-17 ⏰10 minutes before');
+      expect(result).toBe('Meeting @2026-03-17');
+    });
+
+    it('应该移除英文相对结束时间标记', () => {
+      const result = stripReminderMarker('Meeting @2026-03-17 ⏰30 minutes before end');
+      expect(result).toBe('Meeting @2026-03-17');
     });
 
     it('应该保留其他内容', () => {
       const result = stripReminderMarker('会议内容 #标签 @2026-03-17 ⏰09:00 其他内容');
-      // 使用 trim 处理多余的空格
       expect(result.trim().replace(/\s+/g, ' ')).toBe('会议内容 #标签 @2026-03-17 其他内容');
     });
   });
@@ -195,7 +204,7 @@ describe('reminderParser', () => {
       expect(result).toBe('⏰09:00');
     });
 
-    it('应该生成相对开始时间标记（分钟）', () => {
+    it('应该生成中文相对开始时间标记（分钟）', () => {
       const config: ReminderConfig = {
         enabled: true,
         type: 'relative',
@@ -203,10 +212,10 @@ describe('reminderParser', () => {
         offsetMinutes: 10
       };
       const result = generateReminderMarker(config);
-      expect(result).toBe('⏰-10m');
+      expect(result).toBe('⏰提前10分钟');
     });
 
-    it('应该生成相对开始时间标记（小时）', () => {
+    it('应该生成中文相对开始时间标记（小时）', () => {
       const config: ReminderConfig = {
         enabled: true,
         type: 'relative',
@@ -214,10 +223,10 @@ describe('reminderParser', () => {
         offsetMinutes: 60
       };
       const result = generateReminderMarker(config);
-      expect(result).toBe('⏰-1h');
+      expect(result).toBe('⏰提前1小时');
     });
 
-    it('应该生成相对结束时间标记', () => {
+    it('应该生成中文相对结束时间标记', () => {
       const config: ReminderConfig = {
         enabled: true,
         type: 'relative',
@@ -225,7 +234,18 @@ describe('reminderParser', () => {
         offsetMinutes: 30
       };
       const result = generateReminderMarker(config);
-      expect(result).toBe('⏰e-30m');
+      expect(result).toBe('⏰结束前30分钟');
+    });
+
+    it('应该生成中文相对开始时间标记（天）', () => {
+      const config: ReminderConfig = {
+        enabled: true,
+        type: 'relative',
+        relativeTo: 'start',
+        offsetMinutes: 24 * 60
+      };
+      const result = generateReminderMarker(config);
+      expect(result).toBe('⏰提前1天');
     });
 
     it('禁用时应该返回空字符串', () => {

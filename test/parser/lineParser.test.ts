@@ -934,15 +934,15 @@ describe('parseItemLine - 重复规则解析', () => {
     expect(items[0].repeatRule).toEqual({ type: 'weekly' });
   });
 
-  it('🔁每月:15日 应被正确识别指定日期', () => {
-    const items = LineParser.parseItemLine('月会 📅2026-03-28 🔁每月:15日', 1);
+  it('🔁每月15日 应被正确识别指定日期', () => {
+    const items = LineParser.parseItemLine('月会 📅2026-03-28 🔁每月15日', 1);
     expect(items).toHaveLength(1);
     expect(items[0].content).toBe('月会');
     expect(items[0].repeatRule).toEqual({ type: 'monthly', dayOfMonth: 15 });
   });
 
   it('带结束日期的重复规则', () => {
-    const items = LineParser.parseItemLine('临时任务 📅2026-03-28 🔁每天 🔚2026-04-30', 1);
+    const items = LineParser.parseItemLine('临时任务 📅2026-03-28 🔁每天 截止到2026-04-30', 1);
     expect(items).toHaveLength(1);
     expect(items[0].content).toBe('临时任务');
     expect(items[0].repeatRule).toEqual({ type: 'daily' });
@@ -950,7 +950,7 @@ describe('parseItemLine - 重复规则解析', () => {
   });
 
   it('带次数限制的重复规则', () => {
-    const items = LineParser.parseItemLine('限时任务 📅2026-03-28 🔁每天 🔢5', 1);
+    const items = LineParser.parseItemLine('限时任务 📅2026-03-28 🔁每天 剩余5次', 1);
     expect(items).toHaveLength(1);
     expect(items[0].content).toBe('限时任务');
     expect(items[0].repeatRule).toEqual({ type: 'daily' });
@@ -958,8 +958,8 @@ describe('parseItemLine - 重复规则解析', () => {
   });
 
   it('用户问题案例：带时间范围和每月指定日期的重复规则', () => {
-    // 用户提供的例子：这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月:3日🔚2026-05-31
-    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月:3日🔚2026-05-31', 1);
+    // 新格式：这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月3日 截止到2026-05-31
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月3日 截止到2026-05-31', 1);
     expect(items).toHaveLength(1);
     expect(items[0].content).toBe('这是一个带时间的事项');
     expect(items[0].date).toBe('2026-03-28');
@@ -967,5 +967,15 @@ describe('parseItemLine - 重复规则解析', () => {
     expect(items[0].endDateTime).toBe('2026-03-28 10:00:00');
     expect(items[0].repeatRule).toEqual({ type: 'monthly', dayOfMonth: 3 });
     expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-05-31' });
+  });
+
+  it('用户问题案例：每周周六重复，内容中不应包含"周六"', () => {
+    // 这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周周六 截止到2026-11-28
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周周六 截止到2026-11-28', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个带时间的事项');
+    expect(items[0].date).toBe('2026-03-28');
+    expect(items[0].repeatRule).toEqual({ type: 'weekly', daysOfWeek: [6] });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-11-28' });
   });
 });

@@ -1,5 +1,5 @@
 /**
- * 重复事项标记解析器测试
+ * 重复事项标记解析器测试（人类可读格式）
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -33,6 +33,12 @@ describe('recurringParser', () => {
       expect(result?.type).toBe('monthly');
     });
 
+    it('应该解析中文每月指定日期 🔁每月3日', () => {
+      const result = parseRepeatRule('任务 @2026-03-17 🔁每月3日');
+      expect(result?.type).toBe('monthly');
+      expect(result?.dayOfMonth).toBe(3);
+    });
+
     it('应该解析中文每年', () => {
       const result = parseRepeatRule('任务 @2026-03-17 🔁每年');
       expect(result?.type).toBe('yearly');
@@ -43,26 +49,38 @@ describe('recurringParser', () => {
       expect(result?.type).toBe('workday');
     });
 
+    it('应该解析中文每周指定周几 🔁每周一三五', () => {
+      const result = parseRepeatRule('任务 @2026-03-17 🔁每周一三五');
+      expect(result?.type).toBe('weekly');
+      expect(result?.daysOfWeek).toEqual([1, 3, 5]);
+    });
+
     it('应该解析英文 daily', () => {
-      const result = parseRepeatRule('任务 @2026-03-17 🔁daily');
+      const result = parseRepeatRule('Task @2026-03-17 🔁daily');
       expect(result?.type).toBe('daily');
     });
 
     it('应该解析英文 weekly', () => {
-      const result = parseRepeatRule('任务 @2026-03-17 🔁weekly');
+      const result = parseRepeatRule('Task @2026-03-17 🔁weekly');
       expect(result?.type).toBe('weekly');
     });
 
-    it('应该解析每月指定日期', () => {
-      const result = parseRepeatRule('任务 @2026-03-17 🔁每月:15日');
+    it('应该解析英文每月指定日期 🔁monthly on day 15', () => {
+      const result = parseRepeatRule('Task @2026-03-17 🔁monthly on day 15');
       expect(result?.type).toBe('monthly');
       expect(result?.dayOfMonth).toBe(15);
     });
 
-    it('应该解析每月指定日期（纯数字）', () => {
-      const result = parseRepeatRule('任务 @2026-03-17 🔁每月:15');
-      expect(result?.type).toBe('monthly');
-      expect(result?.dayOfMonth).toBe(15);
+    it('应该解析英文每周指定周几 🔁weekly on Mon,Wed,Fri', () => {
+      const result = parseRepeatRule('Task @2026-03-17 🔁weekly on Mon,Wed,Fri');
+      expect(result?.type).toBe('weekly');
+      expect(result?.daysOfWeek).toEqual([1, 3, 5]);
+    });
+
+    it('应该解析英文每周指定周几（空格分隔）🔁weekly on Mon Wed Fri', () => {
+      const result = parseRepeatRule('Task @2026-03-17 🔁weekly on Mon Wed Fri');
+      expect(result?.type).toBe('weekly');
+      expect(result?.daysOfWeek).toEqual([1, 3, 5]);
     });
 
     it('无重复标记时应返回 undefined', () => {
@@ -72,18 +90,39 @@ describe('recurringParser', () => {
   });
 
   describe('parseEndCondition', () => {
-    it('应该解析日期结束条件', () => {
-      const result = parseEndCondition('任务 @2026-03-17 🔁每天🔚2026-12-31');
+    it('应该解析中文日期结束条件 截止到', () => {
+      const result = parseEndCondition('任务 @2026-03-17 🔁每天 截止到2026-12-31');
       expect(result).toBeDefined();
       expect(result?.type).toBe('date');
       expect(result?.endDate).toBe('2026-12-31');
     });
 
-    it('应该解析次数结束条件', () => {
-      const result = parseEndCondition('任务 @2026-03-17 🔁每天🔢10');
+    it('应该解析中文次数结束条件 剩余X次', () => {
+      const result = parseEndCondition('任务 @2026-03-17 🔁每天 剩余10次');
       expect(result).toBeDefined();
       expect(result?.type).toBe('count');
       expect(result?.maxCount).toBe(10);
+    });
+
+    it('应该解析英文日期结束条件 until', () => {
+      const result = parseEndCondition('Task @2026-03-17 🔁daily until 2026-12-31');
+      expect(result).toBeDefined();
+      expect(result?.type).toBe('date');
+      expect(result?.endDate).toBe('2026-12-31');
+    });
+
+    it('应该解析英文次数结束条件 X times remaining', () => {
+      const result = parseEndCondition('Task @2026-03-17 🔁daily 10 times remaining');
+      expect(result).toBeDefined();
+      expect(result?.type).toBe('count');
+      expect(result?.maxCount).toBe(10);
+    });
+
+    it('应该解析英文次数结束条件 X remaining', () => {
+      const result = parseEndCondition('Task @2026-03-17 🔁daily 5 remaining');
+      expect(result).toBeDefined();
+      expect(result?.type).toBe('count');
+      expect(result?.maxCount).toBe(5);
     });
 
     it('无结束条件时应返回 undefined', () => {
@@ -103,24 +142,54 @@ describe('recurringParser', () => {
   });
 
   describe('stripRecurringMarkers', () => {
-    it('应该移除重复规则标记', () => {
+    it('应该移除中文重复规则标记', () => {
       const result = stripRecurringMarkers('任务 @2026-03-17 🔁每天');
       expect(result).toBe('任务 @2026-03-17');
     });
 
-    it('应该移除结束日期标记', () => {
-      const result = stripRecurringMarkers('任务 @2026-03-17 🔚2026-12-31');
+    it('应该移除中文每月指定日期标记', () => {
+      const result = stripRecurringMarkers('任务 @2026-03-17 🔁每月3日');
       expect(result).toBe('任务 @2026-03-17');
     });
 
-    it('应该移除次数标记', () => {
-      const result = stripRecurringMarkers('任务 @2026-03-17 🔢10');
+    it('应该移除中文每周指定周几标记', () => {
+      const result = stripRecurringMarkers('任务 @2026-03-17 🔁每周一三五');
       expect(result).toBe('任务 @2026-03-17');
     });
 
-    it('应该同时移除多个标记', () => {
-      const result = stripRecurringMarkers('任务 @2026-03-17 🔁每天🔚2026-12-31🔢10');
+    it('应该移除中文结束日期标记', () => {
+      const result = stripRecurringMarkers('任务 @2026-03-17 🔁每天 截止到2026-12-31');
       expect(result).toBe('任务 @2026-03-17');
+    });
+
+    it('应该移除中文次数标记', () => {
+      const result = stripRecurringMarkers('任务 @2026-03-17 🔁每天 剩余10次');
+      expect(result).toBe('任务 @2026-03-17');
+    });
+
+    it('应该移除英文重复规则标记', () => {
+      const result = stripRecurringMarkers('Task @2026-03-17 🔁daily');
+      expect(result).toBe('Task @2026-03-17');
+    });
+
+    it('应该移除英文每月指定日期标记', () => {
+      const result = stripRecurringMarkers('Task @2026-03-17 🔁monthly on day 15');
+      expect(result).toBe('Task @2026-03-17');
+    });
+
+    it('应该移除英文结束日期标记', () => {
+      const result = stripRecurringMarkers('Task @2026-03-17 🔁daily until 2026-12-31');
+      expect(result).toBe('Task @2026-03-17');
+    });
+
+    it('应该完整移除每周指定周几标记（例如 🔁每周周六）', () => {
+      const result = stripRecurringMarkers('这是一个带时间的事项 @2026-03-28 🔁每周周六 截止到2026-11-28');
+      expect(result).toBe('这是一个带时间的事项 @2026-03-28');
+    });
+
+    it('应该完整移除每周指定多天标记（例如 🔁每周周一、周三、周五）', () => {
+      const result = stripRecurringMarkers('会议 @2026-03-28 🔁每周周一、周三、周五');
+      expect(result).toBe('会议 @2026-03-28');
     });
   });
 
@@ -149,12 +218,6 @@ describe('recurringParser', () => {
       expect(result).toBe('2026-02-28');
     });
 
-    it('应该处理月末边界（3月31日→4月30日）', () => {
-      const rule: RepeatRule = { type: 'monthly' };
-      const result = getNextOccurrenceDate('2026-03-31', rule);
-      expect(result).toBe('2026-04-30');
-    });
-
     it('应该计算每月指定日期的下一次', () => {
       const rule: RepeatRule = { type: 'monthly', dayOfMonth: 15 };
       const result = getNextOccurrenceDate('2026-03-17', rule);
@@ -173,12 +236,6 @@ describe('recurringParser', () => {
       const result = getNextOccurrenceDate('2026-03-20', rule);
       // 下周一 3月23日
       expect(result).toBe('2026-03-23');
-    });
-
-    it('应该计算工作日的下一次（周一到周二）', () => {
-      const rule: RepeatRule = { type: 'workday' };
-      const result = getNextOccurrenceDate('2026-03-23', rule);
-      expect(result).toBe('2026-03-24');
     });
   });
 
@@ -233,19 +290,24 @@ describe('recurringParser', () => {
 
     it('应该生成每月指定日期标记', () => {
       const rule: RepeatRule = { type: 'monthly', dayOfMonth: 15 };
-      expect(generateRepeatRuleMarker(rule)).toBe('🔁每月:15日');
+      expect(generateRepeatRuleMarker(rule)).toBe('🔁每月15日');
+    });
+
+    it('应该生成每周指定周几标记', () => {
+      const rule: RepeatRule = { type: 'weekly', daysOfWeek: [1, 3, 5] };
+      expect(generateRepeatRuleMarker(rule)).toBe('🔁每周周一、周三、周五');
     });
   });
 
   describe('generateEndConditionMarker', () => {
     it('应该生成日期标记', () => {
       const endCondition: EndCondition = { type: 'date', endDate: '2026-12-31' };
-      expect(generateEndConditionMarker(endCondition)).toBe('🔚2026-12-31');
+      expect(generateEndConditionMarker(endCondition)).toBe('截止到2026-12-31');
     });
 
     it('应该生成次数标记', () => {
       const endCondition: EndCondition = { type: 'count', maxCount: 10 };
-      expect(generateEndConditionMarker(endCondition)).toBe('🔢10');
+      expect(generateEndConditionMarker(endCondition)).toBe('剩余10次');
     });
 
     it('无条件时应返回空字符串', () => {

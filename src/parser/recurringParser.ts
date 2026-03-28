@@ -1,21 +1,18 @@
 /**
- * 重复事项标记解析器
+ * 重复事项标记解析器（人类可读格式，中英文）
  * 支持格式：
  * - 🔁每天 / 🔁daily
  * - 🔁每周 / 🔁weekly
- * - 🔁每月 / 🔁monthly
- * - 🔁每月:15日 / 🔁monthly:15（每月指定日期）
- * - 🔁每年 / 🔁yearly
- * - 🔁工作日 / 🔁workday
- * 
- * 结束条件：
- * - 🔚YYYY-MM-DD（按日期结束）
- * - 🔢N（按次数结束，创建时递减）
+ * - 🔁每月3日 / 🔁monthly on day 3
+ * - 🔁每周一三五 / 🔁weekly on Mon,Wed,Fri
+ * - 截止到2026-12-31 / until 2026-12-31
+ * - 剩余5次 / 5 times remaining
  */
 
 import type { RepeatRule, EndCondition, RepeatRuleType } from '@/types/models';
+import { t } from '@/i18n';
 
-// 重复规则映射（支持中英文）
+// 重复规则类型映射（解析用）
 const REPEAT_RULE_MAP: Record<string, RepeatRuleType> = {
   // 中文
   '每天': 'daily',
@@ -31,13 +28,15 @@ const REPEAT_RULE_MAP: Record<string, RepeatRuleType> = {
   'workday': 'workday'
 };
 
-// 重复规则正则
-// 支持格式：🔁每周、🔁每周:1,3,5（周几，0=周日，1=周一...）
-const REPEAT_RULE_REGEX = /🔁(每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)(?::([\d,]+)日?)?/i;
+// 中文周几到数字的映射
+const CHINESE_WEEKDAY_MAP: Record<string, number> = {
+  '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '日': 0, '天': 0
+};
 
-// 结束条件正则
-const END_DATE_REGEX = /🔚(\d{4}-\d{2}-\d{2})/;
-const END_COUNT_REGEX = /🔢(\d+)/;
+// 英文周几缩写到数字的映射
+const ENGLISH_WEEKDAY_MAP: Record<string, number> = {
+  'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6, 'sun': 0
+};
 
 /**
  * 解析重复规则
@@ -45,28 +44,66 @@ const END_COUNT_REGEX = /🔢(\d+)/;
  * @returns RepeatRule | undefined
  */
 export function parseRepeatRule(line: string): RepeatRule | undefined {
-  const match = line.match(REPEAT_RULE_REGEX);
-  if (!match) return undefined;
+  // 尝试匹配带参数的格式
+  // 中文: 🔁每月3日
+  // 英文: 🔁monthly on day 3
+  const monthlyWithDayMatch = line.match(/🔁(?:每月(\d+)日|monthly\s+on\s+day\s+(\d+))/i);
+  if (monthlyWithDayMatch) {
+    const dayOfMonth = parseInt(monthlyWithDayMatch[1] || monthlyWithDayMatch[2], 10);
+    return { type: 'monthly', dayOfMonth };
+  }
 
-  const ruleKey = match[1].toLowerCase();
-  const param = match[2]; // 可能是 "15"（每月15日）或 "1,3,5"（周一、周三、周五）
-  
-  const type = REPEAT_RULE_MAP[ruleKey];
-  if (!type) return undefined;
+  // 中文: 🔁每周一三五（紧凑格式）或 🔁每周周一、周三、周五（扩展格式）
+  // 英文: 🔁weekly on Mon,Wed,Fri 或 🔁weekly on Mon Wed Fri
+  const weeklyWithDaysMatch = line.match(/🔁(?:每周((?:周[一二三四五六日天](?:、周[一二三四五六日天])*|[一二三四五六日天]+))|weekly\s+on\s+([MonTueWedThuFriSatSun,\s]+))/i);
+  if (weeklyWithDaysMatch) {
+    let daysOfWeek: number[] = [];
 
-  const result: RepeatRule = { type };
+    if (weeklyWithDaysMatch[1]) {
+      // 中文格式
+      const chinesePart = weeklyWithDaysMatch[1];
+      
+      if (chinesePart.includes('周')) {
+        // 扩展格式："周X、周Y" 或 "周X"
+        const chineseDaysStr = chinesePart.replace(/、/g, ' ');
+        const chineseDays = chineseDaysStr.match(/周[一二三四五六日天]/g) || [];
+        daysOfWeek = chineseDays
+          .map(d => CHINESE_WEEKDAY_MAP[d.charAt(1)]) // 取 "周X" 中的 X
+          .filter((d): d is number => d !== undefined);
+      } else {
+        // 紧凑格式："一三五"（没有"周"前缀，连续字符）
+        const chineseDays = chinesePart.split('');
+        daysOfWeek = chineseDays
+          .map(d => CHINESE_WEEKDAY_MAP[d])
+          .filter((d): d is number => d !== undefined);
+      }
+    } else if (weeklyWithDaysMatch[2]) {
+      // 英文格式
+      const englishDays = weeklyWithDaysMatch[2]
+        .replace(/,/g, ' ')
+        .split(/\s+/)
+        .map(d => d.trim().toLowerCase().substring(0, 3));
+      daysOfWeek = englishDays
+        .map(d => ENGLISH_WEEKDAY_MAP[d])
+        .filter((d): d is number => d !== undefined);
+    }
 
-  if (param) {
-    if (type === 'monthly') {
-      // 每月指定日期
-      result.dayOfMonth = parseInt(param, 10);
-    } else if (type === 'weekly') {
-      // 每周指定周几
-      result.daysOfWeek = param.split(',').map(d => parseInt(d.trim(), 10)).filter(d => d >= 0 && d <= 6);
+    if (daysOfWeek.length > 0) {
+      return { type: 'weekly', daysOfWeek };
     }
   }
 
-  return result;
+  // 基础规则: 🔁每天 / 🔁daily
+  const baseMatch = line.match(/🔁(每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)/i);
+  if (baseMatch) {
+    const ruleKey = baseMatch[1].toLowerCase();
+    const type = REPEAT_RULE_MAP[ruleKey];
+    if (type) {
+      return { type };
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -75,8 +112,10 @@ export function parseRepeatRule(line: string): RepeatRule | undefined {
  * @returns EndCondition | undefined
  */
 export function parseEndCondition(line: string): EndCondition | undefined {
-  // 检查日期结束条件
-  const dateMatch = line.match(END_DATE_REGEX);
+  // 按日期结束
+  // 中文: 截止到2026-12-31
+  // 英文: until 2026-12-31
+  const dateMatch = line.match(/(?:截止到|until)\s*(\d{4}-\d{2}-\d{2})/i);
   if (dateMatch) {
     return {
       type: 'date',
@@ -84,12 +123,15 @@ export function parseEndCondition(line: string): EndCondition | undefined {
     };
   }
 
-  // 检查次数结束条件
-  const countMatch = line.match(END_COUNT_REGEX);
+  // 按次数结束
+  // 中文: 剩余5次
+  // 英文: 5 times remaining / 5 remaining
+  const countMatch = line.match(/(?:剩余\s*(\d+)\s*次|(\d+)\s*(?:times?\s*)?remaining)/i);
   if (countMatch) {
+    const maxCount = parseInt(countMatch[1] || countMatch[2], 10);
     return {
       type: 'count',
-      maxCount: parseInt(countMatch[1], 10)
+      maxCount
     };
   }
 
@@ -97,11 +139,11 @@ export function parseEndCondition(line: string): EndCondition | undefined {
 }
 
 /**
- * 检查是否有重复规则（用于多日期与重复互斥时的判断）
+ * 检查是否有重复规则
  * @param line 行内容
  */
 export function hasRepeatRule(line: string): boolean {
-  return REPEAT_RULE_REGEX.test(line);
+  return /🔁/.test(line);
 }
 
 /**
@@ -110,11 +152,35 @@ export function hasRepeatRule(line: string): boolean {
  * @returns 清理后的内容
  */
 export function stripRecurringMarkers(content: string): string {
-  return content
-    .replace(REPEAT_RULE_REGEX, '')
-    .replace(END_DATE_REGEX, '')
-    .replace(END_COUNT_REGEX, '')
-    .trim();
+  // 使用更宽松的匹配方式，先匹配完整的重复规则标记
+  // 中文格式：🔁每月3日, 🔁每周周一、周三、周五, 🔁每天, 🔁每周, 🔁每月, 🔁每年, 🔁工作日
+  // 英文格式：🔁monthly on day 3, 🔁weekly on Mon,Wed,Fri, 🔁daily, 🔁weekly, 🔁monthly, 🔁yearly, 🔁workday
+  
+  // 使用 🔁 的 unicode 转义 \u{1F501} 以确保正确匹配
+  const repeatEmoji = '🔁';
+  
+  // 第一步：移除带参数的复杂格式
+  // 注意：必须先匹配更具体的模式（如 🔁每周周一、🔁每周一三五）再匹配通用的（如 🔁每周）
+  content = content
+    .replace(new RegExp(`${repeatEmoji}\\s*每月\\d+日`, 'gi'), '')
+    // 匹配扩展格式：🔁每周周X 或 🔁每周周X、周Y（支持顿号分隔的多个星期几）
+    .replace(new RegExp(`${repeatEmoji}\\s*每周(?:周[一二三四五六日天](?:、周[一二三四五六日天])*)`, 'gi'), '')
+    // 匹配紧凑格式：🔁每周一三五（连续星期几字符，没有顿号）
+    .replace(new RegExp(`${repeatEmoji}\\s*每周[一二三四五六日天]+`, 'gi'), '')
+    .replace(new RegExp(`${repeatEmoji}\\s*monthly\\s+on\\s+day\\s+\\d+`, 'gi'), '')
+    .replace(new RegExp(`${repeatEmoji}\\s*weekly\\s+on\\s+[MonTueWedThuFriSatSun,\\s]+`, 'gi'), '');
+  
+  // 第二步：移除基础格式（通用的，不带参数）
+  content = content
+    .replace(new RegExp(`${repeatEmoji}\\s*(?:每天|每周|每月|每年|工作日)`, 'gi'), '')
+    .replace(new RegExp(`${repeatEmoji}\\s*(?:daily|weekly|monthly|yearly|workday)`, 'gi'), '');
+  
+  // 第三步：移除结束条件
+  content = content
+    .replace(/(?:截止到|until)\s*\d{4}-\d{2}-\d{2}/gi, '')
+    .replace(/(?:剩余\s*\d+\s*次|\d+\s*(?:times?\s*)?remaining)/gi, '');
+  
+  return content.replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -138,22 +204,16 @@ export function getNextOccurrenceDate(
     case 'weekly': {
       const daysOfWeek = repeatRule.daysOfWeek;
       if (daysOfWeek && daysOfWeek.length > 0) {
-        // 指定周几：找下一个最近的指定周几
-        const currentDay = date.getDay(); // 0=周日, 1=周一, ..., 6=周六
-        // 排序确保正确查找
+        const currentDay = date.getDay();
         const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
-        
-        // 找下一个周几
         let nextDay = sortedDays.find(d => d > currentDay);
         if (nextDay === undefined) {
-          // 下周的第一个指定日
           nextDay = sortedDays[0];
           date.setDate(date.getDate() + (7 - currentDay + nextDay));
         } else {
           date.setDate(date.getDate() + (nextDay - currentDay));
         }
       } else {
-        // 普通每周：+7天
         date.setDate(date.getDate() + 7);
       }
       break;
@@ -161,19 +221,13 @@ export function getNextOccurrenceDate(
 
     case 'monthly':
       if (dayOfMonth !== undefined) {
-        // 指定每月几号
-        // 从当前日期往后找下个指定日期
         date.setMonth(date.getMonth() + 1);
         date.setDate(dayOfMonth);
       } else {
-        // 保持当前日号
         const currentDay = date.getDate();
         date.setMonth(date.getMonth() + 1);
-        
-        // 边界处理：如果日期变成了下个月的月初，说明当月没有这一天
-        // 比如 1月31日 → 2月（没有31日）→ 调整为2月最后一天
         if (date.getDate() !== currentDay) {
-          date.setDate(0); // 设置为上月最后一天，即当月最后一天
+          date.setDate(0);
         }
       }
       break;
@@ -183,7 +237,6 @@ export function getNextOccurrenceDate(
       break;
 
     case 'workday':
-      // 简单实现：+1天，如果是周末则跳过
       do {
         date.setDate(date.getDate() + 1);
       } while (date.getDay() === 0 || date.getDay() === 6);
@@ -200,7 +253,7 @@ export function getNextOccurrenceDate(
  * 检查是否满足结束条件
  * @param nextDate 下次日期
  * @param endCondition 结束条件
- * @param currentCount 当前已创建次数（可选）
+ * @param _currentCount 当前已创建次数（可选）
  * @returns { canCreate: boolean; reason?: string }
  */
 export function checkEndCondition(
@@ -222,8 +275,6 @@ export function checkEndCondition(
   }
 
   if (endCondition.type === 'count' && endCondition.maxCount !== undefined) {
-    // 次数检查在创建时通过递减处理
-    // 这里只检查是否已为 0
     if (endCondition.maxCount <= 0) {
       return {
         canCreate: false,
@@ -236,37 +287,48 @@ export function checkEndCondition(
 }
 
 /**
- * 生成重复规则标记
+ * 生成重复规则标记（人类可读格式）
  * @param repeatRule 重复规则
  * @returns 标记字符串
  */
 export function generateRepeatRuleMarker(repeatRule: RepeatRule): string {
-  const { type, dayOfMonth } = repeatRule;
-  
-  // 中文优先
+  const { type, dayOfMonth, daysOfWeek } = repeatRule;
+
+  // 获取基础类型文本
   const typeMap: Record<RepeatRuleType, string> = {
-    'daily': '每天',
-    'weekly': '每周',
-    'monthly': '每月',
-    'yearly': '每年',
-    'workday': '工作日'
+    'daily': t('recurring.daily'),
+    'weekly': t('recurring.weekly'),
+    'monthly': t('recurring.monthly'),
+    'yearly': t('recurring.yearly'),
+    'workday': t('recurring.workday')
   };
 
   const typeStr = typeMap[type] || type;
-  
-  if (type === 'monthly' && repeatRule.dayOfMonth !== undefined) {
-    return `🔁每月:${repeatRule.dayOfMonth}日`;
+
+  if (type === 'monthly' && dayOfMonth !== undefined) {
+    return `🔁${t('recurring.generate.monthlyOnDay', { day: String(dayOfMonth) })}`;
   }
 
-  if (type === 'weekly' && repeatRule.daysOfWeek && repeatRule.daysOfWeek.length > 0) {
-    return `🔁每周:${repeatRule.daysOfWeek.join(',')}`;
+  if (type === 'weekly' && daysOfWeek && daysOfWeek.length > 0) {
+    const weekDays = [
+      t('recurring.sunday'),
+      t('recurring.monday'),
+      t('recurring.tuesday'),
+      t('recurring.wednesday'),
+      t('recurring.thursday'),
+      t('recurring.friday'),
+      t('recurring.saturday')
+    ];
+    const dayNames = daysOfWeek.map(d => weekDays[d]).filter(Boolean);
+    const separator = t('recurring.parse.daysSeparator') || '、';
+    return `🔁${t('recurring.generate.weeklyOnDays', { days: dayNames.join(separator) })}`;
   }
 
   return `🔁${typeStr}`;
 }
 
 /**
- * 生成结束条件标记
+ * 生成结束条件标记（人类可读格式）
  * @param endCondition 结束条件
  * @returns 标记字符串
  */
@@ -276,11 +338,11 @@ export function generateEndConditionMarker(endCondition: EndCondition | undefine
   }
 
   if (endCondition.type === 'date' && endCondition.endDate) {
-    return `🔚${endCondition.endDate}`;
+    return t('recurring.generate.withEndDate', { date: endCondition.endDate });
   }
 
   if (endCondition.type === 'count' && endCondition.maxCount !== undefined) {
-    return `🔢${endCondition.maxCount}`;
+    return t('recurring.generate.withRemainingCount', { count: String(endCondition.maxCount) });
   }
 
   return '';
@@ -297,7 +359,7 @@ export function decrementCount(endCondition: EndCondition | undefined): EndCondi
   }
 
   const newMaxCount = (endCondition.maxCount || 0) - 1;
-  
+
   return {
     ...endCondition,
     maxCount: Math.max(0, newMaxCount)

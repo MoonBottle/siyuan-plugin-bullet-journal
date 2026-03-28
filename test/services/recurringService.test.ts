@@ -365,10 +365,10 @@ describe('recurringService', () => {
         expect.stringContaining('📅2026-04-03 09:00:00~10:00:00'),
         'block123'
       );
-      // 验证重复规则和结束条件保留
+      // 验证重复规则和结束条件保留（新格式）
       const callArg = mockUpdateBlock.mock.calls[0][1] as string;
-      expect(callArg).toContain('🔁每月:3日');
-      expect(callArg).toContain('🔚2026-05-31');
+      expect(callArg).toContain('🔁每月3日');
+      expect(callArg).toContain('截止到2026-05-31');
     });
 
     it('更新失败时应返回 false', async () => {

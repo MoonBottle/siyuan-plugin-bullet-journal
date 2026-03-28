@@ -21,8 +21,8 @@ import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
 import dayjs from './dayjs';
-import { generateReminderMarker } from '@/parser/reminderParser';
-import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
+import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
+import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMarkers } from '@/parser/recurringParser';
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 
@@ -953,8 +953,7 @@ async function updateItemWithReminder(item: Item, config: ReminderConfig): Promi
   let content = block.content || block.markdown || '';
   
   // 移除旧的提醒标记
-  content = content.replace(/⏰e?-\d+(分钟|m|小时|h|天|d)/gi, '');
-  content = content.replace(/⏰\d{2}:\d{2}(?::\d{2})?/g, '');
+  content = stripReminderMarker(content);
   
   // 添加新的提醒标记
   if (config.enabled) {
@@ -985,10 +984,8 @@ async function updateItemWithRecurring(
   // 构建新的内容
   let content = block.content || block.markdown || '';
   
-  // 移除旧的重复和结束条件标记
-  content = content.replace(/🔁(每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)(?::\d+日?)?/gi, '');
-  content = content.replace(/🔚\d{4}-\d{2}-\d{2}/g, '');
-  content = content.replace(/🔢\d+/g, '');
+  // 移除旧的重复和结束条件标记（支持新旧格式）
+  content = stripRecurringMarkers(content);
   
   // 添加新的标记
   if (repeatRule) {
@@ -997,7 +994,7 @@ async function updateItemWithRecurring(
     if (endCondition) {
       const endMarker = generateEndConditionMarker(endCondition);
       if (endMarker) {
-        content += endMarker;
+        content += ` ${endMarker}`;
       }
     }
   }

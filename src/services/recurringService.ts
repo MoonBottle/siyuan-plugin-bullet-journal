@@ -8,8 +8,11 @@ import type { Item } from '@/types/models';
 import {
   getNextOccurrenceDate,
   checkEndCondition,
-  generateRepeatRuleMarker
+  generateRepeatRuleMarker,
+  generateEndConditionMarker,
+  stripRecurringMarkers
 } from '@/parser/recurringParser';
+import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
 import * as siyuanAPI from '@/api';
 
 /**
@@ -101,14 +104,9 @@ export async function createNextOccurrence(
 function buildNextOccurrenceBlock(item: Item, nextDate: string): string {
   const { reminder, repeatRule, endCondition } = item;
   
-  // 清理内容：移除原有的日期标记、重复规则标记、结束条件标记和状态标记
-  let content = item.content
+  // 清理内容：使用解析器的 strip 函数
+  let content = stripRecurringMarkers(stripReminderMarker(item.content))
     .replace(/[@📅]\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')  // 日期和时间
-    .replace(/🔁(?:每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)(?::\d+日?)?/gi, '')  // 重复规则
-    .replace(/🔚\d{4}-\d{2}-\d{2}/g, '')  // 结束日期
-    .replace(/🔢\d+/g, '')  // 次数限制
-    .replace(/⏰[\d:-]+/g, '')  // 绝对提醒时间
-    .replace(/⏰e?-\d+[dhm]/gi, '')  // 相对提醒时间
     .replace(/[✅❌✔️]/gu, '')  // 完成标记
     .trim();
 
@@ -125,23 +123,8 @@ function buildNextOccurrenceBlock(item: Item, nextDate: string): string {
     datePart = `📅${nextDate} ${startTime}`;
   }
 
-  // 构建提醒部分
-  let reminderPart = '';
-  if (reminder?.enabled) {
-    if (reminder.type === 'absolute' && reminder.time) {
-      reminderPart = ` ⏰${reminder.time}`;
-    } else if (reminder.type === 'relative') {
-      const prefix = reminder.relativeTo === 'end' ? '⏰e-' : '⏰-';
-      const offset = reminder.offsetMinutes || 0;
-      if (offset % (24 * 60) === 0) {
-        reminderPart = ` ${prefix}${offset / (24 * 60)}d`;
-      } else if (offset % 60 === 0) {
-        reminderPart = ` ${prefix}${offset / 60}h`;
-      } else {
-        reminderPart = ` ${prefix}${offset}m`;
-      }
-    }
-  }
+  // 构建提醒部分（使用新的生成器）
+  const reminderPart = reminder?.enabled ? ` ${generateReminderMarker(reminder)}` : '';
 
   // 构建重复规则部分
   const repeatPart = repeatRule ? ` ${generateRepeatRuleMarker(repeatRule)}` : '';
@@ -150,11 +133,11 @@ function buildNextOccurrenceBlock(item: Item, nextDate: string): string {
   let endConditionPart = '';
   if (endCondition) {
     if (endCondition.type === 'date' && endCondition.endDate) {
-      endConditionPart = ` 🔚${endCondition.endDate}`;
+      endConditionPart = ` ${generateEndConditionMarker(endCondition)}`;
     } else if (endCondition.type === 'count' && endCondition.maxCount !== undefined) {
       const newCount = endCondition.maxCount - 1;
       if (newCount > 0) {
-        endConditionPart = ` 🔢${newCount}`;
+        endConditionPart = ` ${generateEndConditionMarker({ ...endCondition, maxCount: newCount })}`;
       }
       // 如果递减后为 0，不显示标记
     }

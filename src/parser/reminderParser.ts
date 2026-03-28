@@ -1,21 +1,25 @@
 /**
- * 提醒标记解析器
- * 支持格式：
+ * 提醒标记解析器（人类可读格式）
+ * 支持格式（中英文）：
  * - 绝对时间: ⏰HH:mm 或 ⏰HH:mm:ss
- * - 相对开始时间: ⏰-Xm (分钟) / ⏰-Xh (小时) / ⏰-Xd (天)
- * - 相对结束时间: ⏰e-Xm / ⏰e-Xh / ⏰e-Xd
+ * - 相对开始时间: ⏰提前5分钟 / ⏰5 minutes before
+ * - 相对结束时间: ⏰结束前30分钟 / ⏰30 minutes before end
  */
 
 import type { ReminderConfig } from '@/types/models';
+import { t } from '@/i18n';
 
-// 正则匹配规则
-const PATTERNS = {
-  // 相对结束时间: ⏰e-5m / ⏰e-5h / ⏰e-5d（e = end，基于结束时间）
-  relativeToEnd: /⏰e-(\d+)(分钟|m|小时|h|天|d)/i,
-  // 相对开始时间: ⏰-5m / ⏰-5h / ⏰-5d（基于开始时间）
-  relativeToStart: /⏰-(\d+)(分钟|m|小时|h|天|d)/i,
-  // 绝对时间: ⏰09:00 或 ⏰09:00:00
-  absolute: /⏰(\d{2}:\d{2})(?::\d{2})?/
+// 单位到分钟的转换
+const UNIT_TO_MINUTES: Record<string, number> = {
+  'm': 1,
+  'minutes': 1,
+  '分钟': 1,
+  'h': 60,
+  'hours': 60,
+  '小时': 60,
+  'd': 24 * 60,
+  'days': 24 * 60,
+  '天': 24 * 60
 };
 
 /**
@@ -24,43 +28,77 @@ const PATTERNS = {
  * @returns ReminderConfig | undefined
  */
 export function parseReminderFromLine(line: string): ReminderConfig | undefined {
-  // 按优先级匹配：相对结束时间 > 相对开始时间 > 绝对时间
-  
-  // 1. 尝试匹配相对结束时间
-  const relativeToEndMatch = line.match(PATTERNS.relativeToEnd);
+  // 1. 尝试匹配相对结束时间（中英文）
+  // 中文: ⏰结束前5分钟
+  // 英文: ⏰5 minutes before end / ⏰30m before end
+  const relativeToEndMatch = line.match(/⏰(?:结束前|(\d+)\s*(minutes?|hours?|days?|m|h|d)\s*before\s*end)/i);
   if (relativeToEndMatch) {
-    const value = parseInt(relativeToEndMatch[1], 10);
-    const unit = relativeToEndMatch[2].toLowerCase();
-    const offsetMinutes = convertToMinutes(value, unit);
-    
-    return {
-      enabled: true,
-      type: 'relative',
-      relativeTo: 'end',
-      offsetMinutes
-    };
+    if (line.includes('结束前')) {
+      // 中文格式
+      const match = line.match(/⏰结束前(\d+)(分钟|小时|天)/);
+      if (match) {
+        const value = parseInt(match[1], 10);
+        const unit = match[2];
+        const offsetMinutes = convertToMinutes(value, unit);
+        return {
+          enabled: true,
+          type: 'relative',
+          relativeTo: 'end',
+          offsetMinutes
+        };
+      }
+    } else if (relativeToEndMatch[1]) {
+      // 英文格式
+      const value = parseInt(relativeToEndMatch[1], 10);
+      const unit = relativeToEndMatch[2].toLowerCase();
+      const offsetMinutes = convertToMinutes(value, unit);
+      return {
+        enabled: true,
+        type: 'relative',
+        relativeTo: 'end',
+        offsetMinutes
+      };
+    }
   }
 
-  // 2. 尝试匹配相对开始时间
-  const relativeToStartMatch = line.match(PATTERNS.relativeToStart);
+  // 2. 尝试匹配相对开始时间（中英文）
+  // 中文: ⏰提前5分钟
+  // 英文: ⏰5 minutes before / ⏰30m before
+  const relativeToStartMatch = line.match(/⏰(?:提前|(\d+)\s*(minutes?|hours?|days?|m|h|d)\s*before(?!\s*end))/i);
   if (relativeToStartMatch) {
-    const value = parseInt(relativeToStartMatch[1], 10);
-    const unit = relativeToStartMatch[2].toLowerCase();
-    const offsetMinutes = convertToMinutes(value, unit);
-    
-    return {
-      enabled: true,
-      type: 'relative',
-      relativeTo: 'start',
-      offsetMinutes
-    };
+    if (line.includes('提前')) {
+      // 中文格式
+      const match = line.match(/⏰提前(\d+)(分钟|小时|天)/);
+      if (match) {
+        const value = parseInt(match[1], 10);
+        const unit = match[2];
+        const offsetMinutes = convertToMinutes(value, unit);
+        return {
+          enabled: true,
+          type: 'relative',
+          relativeTo: 'start',
+          offsetMinutes
+        };
+      }
+    } else if (relativeToStartMatch[1]) {
+      // 英文格式
+      const value = parseInt(relativeToStartMatch[1], 10);
+      const unit = relativeToStartMatch[2].toLowerCase();
+      const offsetMinutes = convertToMinutes(value, unit);
+      return {
+        enabled: true,
+        type: 'relative',
+        relativeTo: 'start',
+        offsetMinutes
+      };
+    }
   }
 
   // 3. 尝试匹配绝对时间
-  const absoluteMatch = line.match(PATTERNS.absolute);
+  // ⏰09:00 或 ⏰09:00:00
+  const absoluteMatch = line.match(/⏰(\d{2}:\d{2})(?::\d{2})?/);
   if (absoluteMatch) {
     const time = absoluteMatch[1];
-    
     return {
       enabled: true,
       type: 'absolute',
@@ -76,19 +114,9 @@ export function parseReminderFromLine(line: string): ReminderConfig | undefined 
  * 将时间单位转换为分钟
  */
 function convertToMinutes(value: number, unit: string): number {
-  switch (unit) {
-    case 'm':
-    case '分钟':
-      return value;
-    case 'h':
-    case '小时':
-      return value * 60;
-    case 'd':
-    case '天':
-      return value * 60 * 24;
-    default:
-      return value;
-  }
+  const normalizedUnit = unit.toLowerCase();
+  const multiplier = UNIT_TO_MINUTES[normalizedUnit] || 1;
+  return value * multiplier;
 }
 
 /**
@@ -106,12 +134,12 @@ export function calculateReminderTime(
   reminder: ReminderConfig
 ): number {
   console.log(`[calculateReminderTime] itemDate=${itemDate}, startTime=${startTime}, endTime=${endTime}, reminder=`, reminder);
-  
+
   if (reminder.type === 'absolute' && reminder.time) {
     // 绝对时间：日期 + 时间
     const [hours, minutes] = reminder.time.split(':').map(Number);
     const date = new Date(itemDate);
-    date.setHours(hours, minutes, 0, 0); // 秒数统一为 00
+    date.setHours(hours, minutes, 0, 0);
     const result = date.getTime();
     console.log(`[calculateReminderTime] Absolute: ${reminder.time} -> ${new Date(result).toLocaleString()}`);
     return result;
@@ -119,11 +147,10 @@ export function calculateReminderTime(
 
   if (reminder.type === 'relative' && reminder.offsetMinutes !== undefined) {
     const { relativeTo, offsetMinutes } = reminder;
-    
+
     if (relativeTo === 'end') {
       // 相对结束时间
       if (endTime) {
-        // 有结束时间：基于结束时间计算
         const baseTime = parseTime(endTime);
         const date = new Date(itemDate);
         date.setHours(baseTime.hours, baseTime.minutes, 0, 0);
@@ -131,9 +158,8 @@ export function calculateReminderTime(
         console.log(`[calculateReminderTime] Relative to end: ${endTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
         return result;
       } else {
-        // 无结束时间：基于 23:59:59 计算
         const date = new Date(itemDate);
-        date.setHours(23, 59, 0, 0); // 秒数 00
+        date.setHours(23, 59, 0, 0);
         const result = date.getTime() - offsetMinutes * 60 * 1000;
         console.log(`[calculateReminderTime] Relative to end (no endTime): 23:59 - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
         return result;
@@ -141,7 +167,6 @@ export function calculateReminderTime(
     } else {
       // 相对开始时间（默认）
       if (startTime) {
-        // 有开始时间：基于开始时间计算
         const baseTime = parseTime(startTime);
         const date = new Date(itemDate);
         date.setHours(baseTime.hours, baseTime.minutes, 0, 0);
@@ -149,7 +174,6 @@ export function calculateReminderTime(
         console.log(`[calculateReminderTime] Relative to start: ${startTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
         return result;
       } else {
-        // 无开始时间：基于 00:00 计算
         const date = new Date(itemDate);
         date.setHours(0, 0, 0, 0);
         const result = date.getTime() - offsetMinutes * 60 * 1000;
@@ -180,15 +204,20 @@ function parseTime(timeStr: string): { hours: number; minutes: number } {
  * @returns 清理后的内容
  */
 export function stripReminderMarker(content: string): string {
+  // 匹配所有可能的提醒格式：
+  // 1. 中文相对时间: ⏰提前5分钟, ⏰结束前30分钟, ⏰提前1小时, ⏰提前1天
+  // 2. 英文相对时间: ⏰5 minutes before, ⏰30 minutes before end, ⏰1 hour before
+  // 3. 绝对时间: ⏰09:00, ⏰09:00:00
   return content
-    .replace(/⏰e-\d+(分钟|m|小时|h|天|d)/gi, '')
-    .replace(/⏰-\d+(分钟|m|小时|h|天|d)/g, '')
-    .replace(/⏰\d{2}:\d{2}(?::\d{2})?/g, '')
+    .replace(/⏰\s*(?:提前|结束前)\s*\d+\s*(?:分钟|小时|天)/g, '')
+    .replace(/⏰\s*\d+\s*(?:minutes?|hours?|days?)\s*before(?:\s*end)?/gi, '')
+    .replace(/⏰\s*\d{1,2}:\d{2}(?::\d{2})?/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
 /**
- * 生成提醒标记
+ * 生成提醒标记（人类可读格式）
  * @param reminder 提醒配置
  * @returns 标记字符串
  */
@@ -201,15 +230,22 @@ export function generateReminderMarker(reminder: ReminderConfig): string {
 
   if (reminder.type === 'relative' && reminder.offsetMinutes !== undefined) {
     const { relativeTo, offsetMinutes } = reminder;
-    const prefix = relativeTo === 'end' ? '⏰e-' : '⏰-';
-    
+
     // 转换为合适的单位
     if (offsetMinutes % (24 * 60) === 0) {
-      return `${prefix}${offsetMinutes / (24 * 60)}d`;
+      const days = offsetMinutes / (24 * 60);
+      return relativeTo === 'end'
+        ? `⏰${t('reminder.generate.beforeEndDays', { count: String(days) })}`
+        : `⏰${t('reminder.generate.beforeDays', { count: String(days) })}`;
     } else if (offsetMinutes % 60 === 0) {
-      return `${prefix}${offsetMinutes / 60}h`;
+      const hours = offsetMinutes / 60;
+      return relativeTo === 'end'
+        ? `⏰${t('reminder.generate.beforeEndHours', { count: String(hours) })}`
+        : `⏰${t('reminder.generate.beforeHours', { count: String(hours) })}`;
     } else {
-      return `${prefix}${offsetMinutes}m`;
+      return relativeTo === 'end'
+        ? `⏰${t('reminder.generate.beforeEndMinutes', { count: String(offsetMinutes) })}`
+        : `⏰${t('reminder.generate.beforeMinutes', { count: String(offsetMinutes) })}`;
     }
   }
 
