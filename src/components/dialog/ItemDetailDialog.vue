@@ -215,6 +215,7 @@ import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
+import { formatReminderDisplay, formatRepeatRuleDisplay } from '@/utils/displayUtils';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
@@ -420,19 +421,7 @@ const isCompletedOrAbandoned = computed(() =>
 const hasReminder = computed(() => props.item.reminder?.enabled);
 const reminderText = computed(() => {
   if (!hasReminder.value) return t('reminder.setReminder');
-  const reminder = props.item.reminder!;
-  if (reminder.type === 'absolute' && reminder.time) {
-    return reminder.time;
-  }
-  if (reminder.type === 'relative') {
-    const prefix = reminder.relativeTo === 'end' ? 'e-' : '-';
-    const offset = reminder.offsetMinutes || 0;
-    if (offset % 60 === 0) {
-      return `${prefix}${offset / 60}h`;
-    }
-    return `${prefix}${offset}m`;
-  }
-  return t('reminder.setReminder');
+  return formatReminderDisplay(props.item.reminder, t);
 });
 
 // 重复相关
@@ -440,20 +429,7 @@ const hasRecurring = computed(() => !!props.item.repeatRule);
 const canSetRecurring = computed(() => !props.item.siblingItems?.length); // 多日期事项不能设置重复
 const recurringText = computed(() => {
   if (!hasRecurring.value) return t('recurring.setRecurring');
-  const rule = props.item.repeatRule!;
-  const typeMap: Record<string, string> = {
-    'daily': t('recurring.daily'),
-    'weekly': t('recurring.weekly'),
-    'monthly': t('recurring.monthly'),
-    'yearly': t('recurring.yearly'),
-    'workday': t('recurring.workday')
-  };
-  // 移除 🔁 前缀，因为按钮上已经有 action-icon 显示图标了
-  let text = typeMap[rule.type] || rule.type;
-  if (rule.dayOfMonth) {
-    text += `:${rule.dayOfMonth}日`;
-  }
-  return text;
+  return formatRepeatRuleDisplay(props.item.repeatRule, props.item.endCondition, t);
 });
 
 // 是否显示跳过按钮（有重复规则且已过期）
@@ -721,9 +697,9 @@ function handleSkipOccurrence() {
   }
 
   &.active {
-    background: var(--b3-theme-primary);
+    background: var(--b3-theme-surface);
     border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
+    color: var(--b3-theme-primary);
   }
 
   &.readonly {
@@ -731,7 +707,7 @@ function handleSkipOccurrence() {
     opacity: 0.8;
 
     &:hover {
-      background: var(--b3-theme-primary);
+      background: var(--b3-theme-surface);
       border-color: var(--b3-theme-primary);
     }
   }
@@ -746,13 +722,14 @@ function handleSkipOccurrence() {
 }
 
 .skip-btn {
-  margin-left: auto;
-  color: var(--b3-theme-warning);
-  border-color: var(--b3-theme-warning-light);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface);
+  border-color: var(--b3-border-color);
 
   &:hover {
-    background: var(--b3-theme-warning-light);
-    border-color: var(--b3-theme-warning);
+    background: var(--b3-theme-surface);
+    border-color: var(--b3-theme-primary);
+    color: var(--b3-theme-primary);
   }
 }
 </style>

@@ -22,7 +22,8 @@ import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
 import dayjs from './dayjs';
 import { generateReminderMarker } from '@/parser/reminderParser';
-import { generateRepeatRuleMarker, generateEndConditionMarker, getNextOccurrenceDate } from '@/parser/recurringParser';
+import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
+import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
@@ -305,7 +306,7 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     },
     onSkipOccurrence: () => {
       dialog.destroy();
-      skipCurrentOccurrence(item);
+      void skipCurrentOccurrence(plugin, item);
     }
   });
 
@@ -1005,25 +1006,3 @@ async function updateItemWithRecurring(
   await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
 }
 
-/**
- * 跳过当前重复事项
- */
-async function skipCurrentOccurrence(item: Item): Promise<void> {
-  if (!item.repeatRule || !item.blockId) return;
-  
-  const nextDate = getNextOccurrenceDate(item.date, item.repeatRule);
-
-  // 获取当前 block 内容
-  const block = await siyuanAPI.getBlockByID(item.blockId);
-  if (!block) return;
-
-  // 替换日期
-  let content = block.content || block.markdown || '';
-  content = content.replace(
-    new RegExp(`@${item.date.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`),
-    `@${nextDate}`
-  );
-
-  // 更新 block
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
-}

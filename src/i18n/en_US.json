@@ -511,8 +511,8 @@
     "absoluteTime": "Absolute Time",
     "beforeStart": "Before Start",
     "beforeEnd": "Before End",
-    "minutes": "{n} min",
-    "hour": "{n} hr",
+    "minutesShort": "{n} min",
+    "hourShort": "{n} hr",
     "custom": "Custom",
     "customTimeLabel": "Time",
     "relativeBase": "Relative Base",
@@ -521,7 +521,12 @@
     "unitHours": "hours",
     "unitDays": "days",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "beforeTime": "{time} before",
+    "beforeEndTime": "{time} before end",
+    "minutes": "{count} minutes",
+    "hours": "{count} hours",
+    "days": "{count} days"
   },
   "recurring": {
     "settingTitle": "Set Recurring",
@@ -549,6 +554,8 @@
     "times": "times",
     "setRecurring": "Set Recurring",
     "skipThis": "Skip This",
+    "withEndDate": "{rule}, until {date}",
+    "withRemainingCount": "{rule}, {count} remaining",
     "save": "Save",
     "cancel": "Cancel"
   }
