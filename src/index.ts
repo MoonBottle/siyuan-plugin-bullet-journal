@@ -77,6 +77,8 @@ export default class TaskAssistantPlugin extends Plugin {
   private statusBarTimerEl: HTMLElement | null = null;
   /** 番茄钟 Dock model */
   private pomodoroDockModel: any = null;
+  /** 已处理过的任务列表完成事件，用于去重 */
+  private processedTaskCompletions = new Set<string>();
 
   async onload() {
     const frontEnd = getFrontend();
@@ -1014,7 +1016,7 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * WebSocket 消息处理
    */
-  private onWsMain(event: any) {
+  private async onWsMain(event: any) {
     console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
     // 检测数据变化相关的事件
     const data = event.detail;
@@ -1041,6 +1043,129 @@ export default class TaskAssistantPlugin extends Plugin {
       if (hasAttrChange) {
         this.handleDirectedRefresh(data);
       }
+
+      // 检测任务列表完成（勾选 [ ] -> [x]）
+      await this.handleTaskListCompletions(data);
+    }
+  }
+
+  /**
+   * 检测并处理任务列表完成事件
+   * 当用户通过思源的任务勾选按钮完成事项时触发
+   */
+  private async handleTaskListCompletions(data: any) {
+    console.log('[Task Assistant] handleTaskListCompletions called, data:', JSON.stringify(data).substring(0, 500));
+    
+    if (!Array.isArray(data.data)) {
+      console.log('[Task Assistant] data.data is not an array:', typeof data.data);
+      return;
+    }
+    
+    for (const transaction of data.data) {
+      if (!transaction.doOperations) {
+        console.log('[Task Assistant] transaction has no doOperations');
+        continue;
+      }
+
+      console.log('[Task Assistant] Processing transaction with', transaction.doOperations.length, 'operations');
+      
+      for (const op of transaction.doOperations) {
+        console.log('[Task Assistant] Checking operation:', op.action, 'id:', op.id, 'data type:', typeof op.data);
+        
+        // 只处理 update 操作，且数据包含 protyle-task--done 类名
+        if (op.action === 'update' && op.id && typeof op.data === 'string') {
+          const hasDoneClass = op.data.includes('protyle-task--done');
+          console.log('[Task Assistant] Operation is update, has protyle-task--done:', hasDoneClass);
+          
+          if (hasDoneClass) {
+            console.log('[Task Assistant] Found task completion operation:', op.id);
+            await this.handleTaskListCompletion(op);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * 处理单个任务列表完成
+   * 检查是否是重复事项，如果是则自动创建下一次
+   */
+  private async handleTaskListCompletion(op: any) {
+    const listItemBlockId = op.id;
+    if (!listItemBlockId) {
+      console.log('[Task Assistant] No blockId in operation');
+      return;
+    }
+
+    console.log('[Task Assistant] Processing task completion for list item:', listItemBlockId);
+
+    // 从 HTML 中提取第二个 data-node-id（内容块 ID）
+    // 格式：<div data-node-id="列表项块ID">...<div data-node-id="内容块ID">...
+    let contentBlockId = listItemBlockId;
+    const dataNodeIdMatches = op.data.match(/data-node-id="([^"]+)"/g);
+    if (dataNodeIdMatches && dataNodeIdMatches.length >= 2) {
+      // 第二个 data-node-id 是内容块的 ID
+      const secondMatch = dataNodeIdMatches[1];
+      const idMatch = secondMatch.match(/data-node-id="([^"]+)"/);
+      if (idMatch) {
+        contentBlockId = idMatch[1];
+        console.log('[Task Assistant] Extracted content block ID:', contentBlockId);
+      }
+    }
+
+    // 去重：如果最近已经处理过，则跳过（使用内容块 ID 去重）
+    if (this.processedTaskCompletions.has(contentBlockId)) {
+      console.log('[Task Assistant] Already processed task completion:', contentBlockId);
+      return;
+    }
+
+    // 添加到处理集合，5秒后清除
+    this.processedTaskCompletions.add(contentBlockId);
+    setTimeout(() => {
+      this.processedTaskCompletions.delete(contentBlockId);
+    }, 5000);
+
+    // 从 projectStore 获取该 block 对应的事项
+    const pinia = getSharedPinia();
+    if (!pinia) {
+      console.log('[Task Assistant] No shared pinia available');
+      return;
+    }
+
+    const projectStore = useProjectStore(pinia);
+    
+    const item = projectStore.getItemByBlockId(contentBlockId);
+    
+    if (!item) {
+      console.log('[Task Assistant] No item found for content block:', contentBlockId);
+      console.log('[Task Assistant] List item block was:', listItemBlockId);
+      return;
+    }
+
+    console.log('[Task Assistant] Found item:', item.content, 'repeatRule:', item.repeatRule);
+
+    if (!item.repeatRule) {
+      console.log('[Task Assistant] Task completed but no repeat rule:', item.content);
+      return;
+    }
+
+    // 检查是否允许创建下一次（检查结束条件）
+    if (!shouldCreateNextOccurrence({ ...item, status: 'completed' })) {
+      console.log('[Task Assistant] Cannot create next occurrence for:', item.content);
+      return;
+    }
+
+    // 创建下一次事项
+    console.log('[Task Assistant] Task list item completed, creating next occurrence:', item.content);
+    const success = await createNextOccurrence(this, item);
+    
+    if (success) {
+      console.log('[Task Assistant] Next occurrence created successfully');
+      // 触发数据刷新
+      eventBus.emit(Events.DATA_REFRESH);
+      broadcastDataRefresh();
+    } else {
+      console.log('[Task Assistant] Failed to create next occurrence');
     }
   }
 
