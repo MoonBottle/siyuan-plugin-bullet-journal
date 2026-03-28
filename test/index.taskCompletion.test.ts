@@ -109,6 +109,153 @@ describe('任务列表完成检测', () => {
   });
 });
 
+describe('任务列表完成 - 与 undoOperations 比较', () => {
+  it('应该触发：undoOperations 没有完成标记，doOperations 有完成标记', () => {
+    const transaction = {
+      timestamp: 1774702613518,
+      doOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div>这是一个已完成的事项 📅2026-03-28 🔁每月 ✅</div>',
+        },
+      ],
+      undoOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div>这是一个事项 📅2026-03-28 🔁每月</div>',
+        },
+      ],
+    };
+
+    const op = transaction.doOperations[0];
+    const undoOp = transaction.undoOperations.find((u: any) => u.id === op.id && u.action === 'update');
+    
+    const hasDoneMarker = op.data.includes('✅') || op.data.includes('#done') || op.data.includes('#已完成');
+    const hadDoneMarker = undoOp?.data?.includes('✅') || undoOp?.data?.includes('#done') || undoOp?.data?.includes('#已完成');
+    const isNewCompletion = hasDoneMarker && !hadDoneMarker;
+    
+    expect(isNewCompletion).toBe(true);
+  });
+
+  it('不应该触发：undoOperations 已有完成标记，doOperations 也有完成标记（普通编辑）', () => {
+    const transaction = {
+      timestamp: 1774702613518,
+      doOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div>这是一个已完成的事项 📅2026-03-28 🔁每月<wbr></div>',
+        },
+      ],
+      undoOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div>这是一个已完成的事项 📅2026-03-28 🔁每月 </div>',
+        },
+      ],
+    };
+
+    const op = transaction.doOperations[0];
+    const undoOp = transaction.undoOperations.find((u: any) => u.id === op.id && u.action === 'update');
+    
+    const hasDoneMarker = op.data.includes('✅') || op.data.includes('#done') || op.data.includes('#已完成');
+    const hadDoneMarker = undoOp?.data?.includes('✅') || undoOp?.data?.includes('#done') || undoOp?.data?.includes('#已完成');
+    const isNewCompletion = hasDoneMarker && !hadDoneMarker;
+    
+    expect(isNewCompletion).toBe(false);
+  });
+
+  it('不应该触发：undoOperations 和 doOperations 都没有完成标记', () => {
+    const transaction = {
+      timestamp: 1774702613518,
+      doOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div>这是一个事项 📅2026-03-28 🔁每月 已修改</div>',
+        },
+      ],
+      undoOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div>这是一个事项 📅2026-03-28 🔁每月</div>',
+        },
+      ],
+    };
+
+    const op = transaction.doOperations[0];
+    const undoOp = transaction.undoOperations.find((u: any) => u.id === op.id && u.action === 'update');
+    
+    const hasDoneMarker = op.data.includes('✅') || op.data.includes('#done') || op.data.includes('#已完成');
+    const hadDoneMarker = undoOp?.data?.includes('✅') || undoOp?.data?.includes('#done') || undoOp?.data?.includes('#已完成');
+    const isNewCompletion = hasDoneMarker && !hadDoneMarker;
+    
+    expect(isNewCompletion).toBe(false);
+  });
+
+  it('应该触发任务列表勾选完成：undoOperations 无 protyle-task--done', () => {
+    const transaction = {
+      timestamp: 1774658981745,
+      doOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div class="li protyle-task--done">任务内容</div>',
+        },
+      ],
+      undoOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div class="li">任务内容</div>',
+        },
+      ],
+    };
+
+    const op = transaction.doOperations[0];
+    const undoOp = transaction.undoOperations.find((u: any) => u.id === op.id && u.action === 'update');
+    
+    const hasDoneClass = op.data.includes('protyle-task--done');
+    const hadDoneClass = undoOp?.data?.includes('protyle-task--done');
+    const isNewCompletion = hasDoneClass && !hadDoneClass;
+    
+    expect(isNewCompletion).toBe(true);
+  });
+
+  it('不应该触发：已勾选的任务列表再次编辑', () => {
+    const transaction = {
+      timestamp: 1774658981745,
+      doOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div class="li protyle-task--done">任务内容已修改</div>',
+        },
+      ],
+      undoOperations: [
+        {
+          action: 'update',
+          id: 'block-1',
+          data: '<div class="li protyle-task--done">任务内容</div>',
+        },
+      ],
+    };
+
+    const op = transaction.doOperations[0];
+    const undoOp = transaction.undoOperations.find((u: any) => u.id === op.id && u.action === 'update');
+    
+    const hasDoneClass = op.data.includes('protyle-task--done');
+    const hadDoneClass = undoOp?.data?.includes('protyle-task--done');
+    const isNewCompletion = hasDoneClass && !hadDoneClass;
+    
+    expect(isNewCompletion).toBe(false);
+  });
+});
+
 describe('任务列表完成 - blockId 提取', () => {
   it('应该从 HTML 中提取第二个 data-node-id 作为内容块 ID', () => {
     // 实际 WebSocket 数据结构

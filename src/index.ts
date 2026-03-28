@@ -1037,6 +1037,10 @@ export default class TaskAssistantPlugin extends Plugin {
    * 检测并处理任务列表完成事件
    * 当用户通过思源的任务勾选按钮完成事项时触发
    * 也支持检测直接添加完成标记（✅、#done、#已完成）的情况
+   * 
+   * 关键逻辑：比较 doOperations 和 undoOperations
+   * - 只有当 undoOperations 中没有完成标记，而 doOperations 中有完成标记时，才是真正的新完成动作
+   * - 如果 undoOperations 中已有完成标记，说明这只是对已有完成事项的编辑，不应触发重复创建
    */
   private async handleTaskListCompletions(data: any) {
     console.log('[Task Assistant] handleTaskListCompletions called, data:', JSON.stringify(data).substring(0, 500));
@@ -1064,9 +1068,19 @@ export default class TaskAssistantPlugin extends Plugin {
           // 检测方式2：直接添加完成标记（✅、#done、#已完成）
           const hasDoneMarker = op.data.includes('✅') || op.data.includes('#done') || op.data.includes('#已完成');
           
-          console.log('[Task Assistant] Operation is update, has protyle-task--done:', hasDoneClass, 'has done marker:', hasDoneMarker);
+          // 关键：检查 undoOperations 中是否已经有完成标记
+          // 如果 undoOperations 中已有，说明这不是新的完成动作
+          const undoOp = transaction.undoOperations?.find((u: any) => u.id === op.id && u.action === 'update');
+          const hadDoneClass = undoOp?.data?.includes('protyle-task--done');
+          const hadDoneMarker = undoOp?.data?.includes('✅') || undoOp?.data?.includes('#done') || undoOp?.data?.includes('#已完成');
           
-          if (hasDoneClass || hasDoneMarker) {
+          // 新完成动作：do 有完成标记，且 undo 没有完成标记
+          const isNewCompletion = (hasDoneClass && !hadDoneClass) || (hasDoneMarker && !hadDoneMarker);
+          
+          console.log('[Task Assistant] Operation is update, has protyle-task--done:', hasDoneClass, 'had:', hadDoneClass, 
+                      'has done marker:', hasDoneMarker, 'had:', hadDoneMarker, 'isNewCompletion:', isNewCompletion);
+          
+          if (isNewCompletion) {
             console.log('[Task Assistant] Found task completion operation:', op.id, hasDoneClass ? '(checkbox)' : '(marker)');
             await this.handleTaskListCompletion(op);
           }
