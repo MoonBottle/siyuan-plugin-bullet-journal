@@ -969,9 +969,9 @@ describe('parseItemLine - 重复规则解析', () => {
     expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-05-31' });
   });
 
-  it('用户问题案例：每周周六重复，内容中不应包含"周六"', () => {
-    // 这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周周六 截止到2026-11-28
-    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周周六 截止到2026-11-28', 1);
+  it('用户问题案例：每周六重复，内容中不应包含"六"', () => {
+    // 这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周六 截止到2026-11-28
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周六 截止到2026-11-28', 1);
     expect(items).toHaveLength(1);
     expect(items[0].content).toBe('这是一个带时间的事项');
     expect(items[0].date).toBe('2026-03-28');

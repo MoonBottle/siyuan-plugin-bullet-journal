@@ -182,13 +182,13 @@ describe('recurringParser', () => {
       expect(result).toBe('Task @2026-03-17');
     });
 
-    it('应该完整移除每周指定周几标记（例如 🔁每周周六）', () => {
-      const result = stripRecurringMarkers('这是一个带时间的事项 @2026-03-28 🔁每周周六 截止到2026-11-28');
+    it('应该完整移除每周指定周几标记（例如 🔁每周六）', () => {
+      const result = stripRecurringMarkers('这是一个带时间的事项 @2026-03-28 🔁每周六 截止到2026-11-28');
       expect(result).toBe('这是一个带时间的事项 @2026-03-28');
     });
 
-    it('应该完整移除每周指定多天标记（例如 🔁每周周一、周三、周五）', () => {
-      const result = stripRecurringMarkers('会议 @2026-03-28 🔁每周周一、周三、周五');
+    it('应该完整移除每周指定多天标记（例如 🔁每周一三五）', () => {
+      const result = stripRecurringMarkers('会议 @2026-03-28 🔁每周一三五');
       expect(result).toBe('会议 @2026-03-28');
     });
   });
@@ -295,7 +295,7 @@ describe('recurringParser', () => {
 
     it('应该生成每周指定周几标记', () => {
       const rule: RepeatRule = { type: 'weekly', daysOfWeek: [1, 3, 5] };
-      expect(generateRepeatRuleMarker(rule)).toBe('🔁每周周一、周三、周五');
+      expect(generateRepeatRuleMarker(rule)).toBe('🔁每周一三五');
     });
   });
 

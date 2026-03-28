@@ -1,11 +1,11 @@
 # Git 提交技能
 
-使用 AI 模型分析代码变更，智能生成符合 [Conventional Commits](https://www.conventionalcommits.org/) 规范的 Git 提交记录。
+使用 AI 模型分析代码变更，智能生成符合 [Conventional Commits](https://www.conventionalcommits.org/) 规范的**详细** Git 提交记录。
 
 ## 功能特性
 
 - 🤖 **AI 智能分析**：AI 直接分析代码变更内容，理解修改意图
-- 📝 **规范提交**：自动生成 `type(scope): description` 格式的提交信息
+- 📝 **详细提交信息**：生成包含标题和正文的完整提交信息
 - 🎯 **交互确认**：生成后询问是否提交，支持修改后再提交
 - 🔍 **完整检测**：检测暂存区、未暂存和未跟踪的文件变更
 
@@ -25,9 +25,11 @@ git commit
 
 ### 工作流程
 
-1. **获取变更** - 自动执行 `git diff` 获取所有变更文件
+1. **获取变更** - 自动执行 `git diff` 获取所有变更文件和详细 diff 内容
 2. **AI 分析** - AI 分析变更内容，理解修改意图
-3. **生成提交信息** - 输出符合规范的提交信息
+3. **生成详细提交信息** - 输出包含以下内容的完整提交信息：
+   - 标题（符合 Conventional Commits 规范）
+   - 正文（详细变更说明，使用列表形式）
 4. **用户确认** - 提供三个选项：
    - ✅ 提交 - 直接执行 `git add -A && git commit`
    - 📝 修改 - 允许修改提交信息后提交
@@ -35,8 +37,32 @@ git commit
 
 ## 提交信息格式
 
+生成的提交信息包含两部分：
+
 ```
-<type>(<scope>): <description>
+<type>(<scope>): <简短描述>
+
+<详细变更说明>
+```
+
+### 示例输出
+
+```
+feat(parser): 添加日期解析功能
+
+- 支持 ISO 8601 格式日期解析
+- 添加日期范围解析功能
+- 优化解析性能，减少 30% 内存占用
+```
+
+或
+
+```
+refactor(components): 重构 TodoSidebar 组件，提取公共逻辑
+
+- 将日期格式化逻辑提取到 dateUtils，提高复用性
+- 优化列表渲染性能，使用虚拟滚动
+- 修复内存泄漏问题，组件卸载时正确清理事件监听
 ```
 
 ### 类型 (type)
@@ -72,22 +98,6 @@ git commit
 | styles | SCSS/CSS 样式 |
 | build | 构建配置 |
 
-### 示例输出
-
-```
-feat(parser): 添加日期解析功能
-
-fix(utils): 修复日期计算错误
-
-refactor(components): 重构 TodoSidebar 组件逻辑
-
-docs(readme): 更新项目使用说明
-
-test(stores): 添加 pomodoroStore 单元测试
-
-chore(deps): 更新 dayjs 依赖版本
-```
-
 ## 文件结构
 
 ```
@@ -100,5 +110,6 @@ chore(deps): 更新 dayjs 依赖版本
 
 - 技能会自动执行 `git add -A` 添加所有变更
 - 如果没有检测到变更，会提示错误
-- 提交前会显示生成的提交信息供确认
+- 提交前会显示生成的完整提交信息供确认
 - 支持破坏性变更标记（在类型后加 `!`）
+- 正文部分会详细列出每个主要变更点（使用列表形式）

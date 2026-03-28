@@ -28,7 +28,7 @@ const REPEAT_RULE_MAP: Record<string, RepeatRuleType> = {
   'workday': 'workday'
 };
 
-// 中文周几到数字的映射
+// 中文周几到数字的映射（紧凑格式）
 const CHINESE_WEEKDAY_MAP: Record<string, number> = {
   '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '日': 0, '天': 0
 };
@@ -53,30 +53,18 @@ export function parseRepeatRule(line: string): RepeatRule | undefined {
     return { type: 'monthly', dayOfMonth };
   }
 
-  // 中文: 🔁每周一三五（紧凑格式）或 🔁每周周一、周三、周五（扩展格式）
+  // 中文: 🔁每周一三五（紧凑格式）
   // 英文: 🔁weekly on Mon,Wed,Fri 或 🔁weekly on Mon Wed Fri
-  const weeklyWithDaysMatch = line.match(/🔁(?:每周((?:周[一二三四五六日天](?:、周[一二三四五六日天])*|[一二三四五六日天]+))|weekly\s+on\s+([MonTueWedThuFriSatSun,\s]+))/i);
+  const weeklyWithDaysMatch = line.match(/🔁(?:每周([一二三四五六日天]+)|weekly\s+on\s+([MonTueWedThuFriSatSun,\s]+))/i);
   if (weeklyWithDaysMatch) {
     let daysOfWeek: number[] = [];
 
     if (weeklyWithDaysMatch[1]) {
-      // 中文格式
-      const chinesePart = weeklyWithDaysMatch[1];
-      
-      if (chinesePart.includes('周')) {
-        // 扩展格式："周X、周Y" 或 "周X"
-        const chineseDaysStr = chinesePart.replace(/、/g, ' ');
-        const chineseDays = chineseDaysStr.match(/周[一二三四五六日天]/g) || [];
-        daysOfWeek = chineseDays
-          .map(d => CHINESE_WEEKDAY_MAP[d.charAt(1)]) // 取 "周X" 中的 X
-          .filter((d): d is number => d !== undefined);
-      } else {
-        // 紧凑格式："一三五"（没有"周"前缀，连续字符）
-        const chineseDays = chinesePart.split('');
-        daysOfWeek = chineseDays
-          .map(d => CHINESE_WEEKDAY_MAP[d])
-          .filter((d): d is number => d !== undefined);
-      }
+      // 中文紧凑格式："一三五"（连续字符）
+      const chineseDays = weeklyWithDaysMatch[1].split('');
+      daysOfWeek = chineseDays
+        .map(d => CHINESE_WEEKDAY_MAP[d])
+        .filter((d): d is number => d !== undefined);
     } else if (weeklyWithDaysMatch[2]) {
       // 英文格式
       const englishDays = weeklyWithDaysMatch[2]
@@ -153,19 +141,17 @@ export function hasRepeatRule(line: string): boolean {
  */
 export function stripRecurringMarkers(content: string): string {
   // 使用更宽松的匹配方式，先匹配完整的重复规则标记
-  // 中文格式：🔁每月3日, 🔁每周周一、周三、周五, 🔁每天, 🔁每周, 🔁每月, 🔁每年, 🔁工作日
+  // 中文格式：🔁每月3日, 🔁每周一三五, 🔁每天, 🔁每周, 🔁每月, 🔁每年, 🔁工作日
   // 英文格式：🔁monthly on day 3, 🔁weekly on Mon,Wed,Fri, 🔁daily, 🔁weekly, 🔁monthly, 🔁yearly, 🔁workday
   
   // 使用 🔁 的 unicode 转义 \u{1F501} 以确保正确匹配
   const repeatEmoji = '🔁';
   
   // 第一步：移除带参数的复杂格式
-  // 注意：必须先匹配更具体的模式（如 🔁每周周一、🔁每周一三五）再匹配通用的（如 🔁每周）
+  // 注意：必须先匹配更具体的模式（如 🔁每周一三五）再匹配通用的（如 🔁每周）
   content = content
     .replace(new RegExp(`${repeatEmoji}\\s*每月\\d+日`, 'gi'), '')
-    // 匹配扩展格式：🔁每周周X 或 🔁每周周X、周Y（支持顿号分隔的多个星期几）
-    .replace(new RegExp(`${repeatEmoji}\\s*每周(?:周[一二三四五六日天](?:、周[一二三四五六日天])*)`, 'gi'), '')
-    // 匹配紧凑格式：🔁每周一三五（连续星期几字符，没有顿号）
+    // 匹配紧凑格式：🔁每周一三五（连续星期几字符）
     .replace(new RegExp(`${repeatEmoji}\\s*每周[一二三四五六日天]+`, 'gi'), '')
     .replace(new RegExp(`${repeatEmoji}\\s*monthly\\s+on\\s+day\\s+\\d+`, 'gi'), '')
     .replace(new RegExp(`${repeatEmoji}\\s*weekly\\s+on\\s+[MonTueWedThuFriSatSun,\\s]+`, 'gi'), '');
@@ -310,18 +296,10 @@ export function generateRepeatRuleMarker(repeatRule: RepeatRule): string {
   }
 
   if (type === 'weekly' && daysOfWeek && daysOfWeek.length > 0) {
-    const weekDays = [
-      t('recurring.sunday'),
-      t('recurring.monday'),
-      t('recurring.tuesday'),
-      t('recurring.wednesday'),
-      t('recurring.thursday'),
-      t('recurring.friday'),
-      t('recurring.saturday')
-    ];
-    const dayNames = daysOfWeek.map(d => weekDays[d]).filter(Boolean);
-    const separator = t('recurring.parse.daysSeparator') || '、';
-    return `🔁${t('recurring.generate.weeklyOnDays', { days: dayNames.join(separator) })}`;
+    // 紧凑格式：使用单字（一、二、三...）连续排列
+    const weekDayChars = ['日', '一', '二', '三', '四', '五', '六'];
+    const dayChars = daysOfWeek.map(d => weekDayChars[d]).filter(Boolean);
+    return `🔁${t('recurring.parse.weeklyOnPrefix') || '每周'}${dayChars.join('')}`;
   }
 
   return `🔁${typeStr}`;
