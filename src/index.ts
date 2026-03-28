@@ -125,8 +125,10 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     console.log('[Task Assistant] Starting initial loadProjects...');
     const projectStore = useProjectStore(pinia);
-    projectStore.loadProjects(this, enabledDirs).then(() => {
+    projectStore.loadProjects(this, enabledDirs).then(async () => {
       console.log('[Task Assistant] Initial loadProjects completed');
+      // 初始加载完成后同步提醒
+      console.log('[ReminderService] Initial load completed');
     }).catch(err => {
       console.error('[Task Assistant] Failed to load projects on init:', err);
     });
@@ -157,28 +159,8 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册斜杠命令
     this.registerSlashCommands();
 
-    // 启动提醒服务
-    reminderService.start(this);
-
-    // 监听数据刷新，同步提醒和处理重复事项
-    eventBus.on(Events.DATA_REFRESH, async () => {
-      const pinia = getSharedPinia();
-      if (!pinia) return;
-      
-      const projectStore = useProjectStore(pinia);
-      
-      // 同步提醒
-      reminderService.syncRemindersFromProjects(this, projectStore.items);
-      
-      // 处理重复事项：检查刚完成的事项并创建下次
-      for (const item of projectStore.items) {
-        if (item.status === 'completed' && item.repeatRule && item.blockId) {
-          // 检查是否需要创建下次（避免重复创建）
-          // 这里简化处理，实际应该通过更可靠的方式判断
-          // 比如记录已处理过的 blockId
-        }
-      }
-    });
+    // 启动提醒服务（传入 projectStore，服务内部会定时读取 itemsNeedingReminder）
+    reminderService.start(this, projectStore);
   }
 
   /**

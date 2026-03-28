@@ -11,6 +11,7 @@ import { defaultPomodoroSettings } from '@/settings';
 import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { eventBus, Events } from '@/utils/eventBus';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
+import { calculateReminderTime } from '@/parser/reminderParser';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -127,6 +128,64 @@ export const useProjectStore = defineStore('project', {
     // 通过 blockId 快速查找 Item
     getItemByBlockId: (state) => (blockId: string): Item | undefined => {
       return (state as any).itemIndex.get(blockId);
+    },
+
+    // 需要提醒的事项列表（按提醒时间排序，只包含未来24小时内的）
+    itemsNeedingReminder: (state): Item[] => {
+      const items: Item[] = [];
+      const now = Date.now();
+      let checkedCount = 0;
+      let skippedStatus = 0;
+      let skippedNoReminder = 0;
+      let skippedTooLate = 0;
+      let skippedTooEarly = 0;
+      let addedCount = 0;
+      
+      for (const project of state.projects) {
+        for (const task of project.tasks) {
+          for (const item of task.items) {
+            checkedCount++;
+            
+            // 跳过已完成/放弃/无提醒的
+            if (item.status === 'completed' || item.status === 'abandoned') {
+              skippedStatus++;
+              continue;
+            }
+            if (!item.reminder?.enabled) {
+              skippedNoReminder++;
+              continue;
+            }
+            
+            // 计算提醒时间
+            const startTime = item.startDateTime?.split(' ')[1];
+            const endTime = item.endDateTime?.split(' ')[1];
+            const reminderTime = calculateReminderTime(
+              item.date,
+              startTime,
+              endTime,
+              item.reminder
+            );
+            
+            // 只收集未来24小时内需要提醒的（减少扫描量）
+            if (reminderTime > now && reminderTime < now + 24 * 60 * 60 * 1000) {
+              (item as any)._reminderTime = reminderTime; // 缓存计算结果
+              items.push(item);
+              addedCount++;
+            } else if (reminderTime <= now) {
+              skippedTooLate++;
+            } else {
+              skippedTooEarly++;
+            }
+          }
+        }
+      }
+      
+      if (checkedCount > 0) {
+        console.log(`[ProjectStore] itemsNeedingReminder: checked=${checkedCount}, added=${addedCount}, skipped(status=${skippedStatus}, noReminder=${skippedNoReminder}, tooLate=${skippedTooLate}, tooEarly=${skippedTooEarly})`);
+      }
+      
+      // 按提醒时间排序
+      return items.sort((a, b) => ((a as any)._reminderTime || 0) - ((b as any)._reminderTime || 0));
     },
 
     // 今日及以后的待办事项（排除已完成和已放弃）

@@ -105,12 +105,16 @@ export function calculateReminderTime(
   endTime: string | undefined,
   reminder: ReminderConfig
 ): number {
+  console.log(`[calculateReminderTime] itemDate=${itemDate}, startTime=${startTime}, endTime=${endTime}, reminder=`, reminder);
+  
   if (reminder.type === 'absolute' && reminder.time) {
     // 绝对时间：日期 + 时间
     const [hours, minutes] = reminder.time.split(':').map(Number);
     const date = new Date(itemDate);
     date.setHours(hours, minutes, 0, 0); // 秒数统一为 00
-    return date.getTime();
+    const result = date.getTime();
+    console.log(`[calculateReminderTime] Absolute: ${reminder.time} -> ${new Date(result).toLocaleString()}`);
+    return result;
   }
 
   if (reminder.type === 'relative' && reminder.offsetMinutes !== undefined) {
@@ -123,12 +127,16 @@ export function calculateReminderTime(
         const baseTime = parseTime(endTime);
         const date = new Date(itemDate);
         date.setHours(baseTime.hours, baseTime.minutes, 0, 0);
-        return date.getTime() - offsetMinutes * 60 * 1000;
+        const result = date.getTime() - offsetMinutes * 60 * 1000;
+        console.log(`[calculateReminderTime] Relative to end: ${endTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
+        return result;
       } else {
         // 无结束时间：基于 23:59:59 计算
         const date = new Date(itemDate);
         date.setHours(23, 59, 0, 0); // 秒数 00
-        return date.getTime() - offsetMinutes * 60 * 1000;
+        const result = date.getTime() - offsetMinutes * 60 * 1000;
+        console.log(`[calculateReminderTime] Relative to end (no endTime): 23:59 - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
+        return result;
       }
     } else {
       // 相对开始时间（默认）
@@ -137,16 +145,21 @@ export function calculateReminderTime(
         const baseTime = parseTime(startTime);
         const date = new Date(itemDate);
         date.setHours(baseTime.hours, baseTime.minutes, 0, 0);
-        return date.getTime() - offsetMinutes * 60 * 1000;
+        const result = date.getTime() - offsetMinutes * 60 * 1000;
+        console.log(`[calculateReminderTime] Relative to start: ${startTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
+        return result;
       } else {
         // 无开始时间：基于 00:00 计算
         const date = new Date(itemDate);
         date.setHours(0, 0, 0, 0);
-        return date.getTime() - offsetMinutes * 60 * 1000;
+        const result = date.getTime() - offsetMinutes * 60 * 1000;
+        console.log(`[calculateReminderTime] Relative to start (no startTime): 00:00 - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
+        return result;
       }
     }
   }
 
+  console.log(`[calculateReminderTime] Invalid reminder config, returning 0`);
   return 0;
 }
 
