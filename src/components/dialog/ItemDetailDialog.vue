@@ -146,7 +146,7 @@
           </span>
         </div>
 
-        <!-- 提醒设置 -->
+        <!-- 提醒和重复设置 -->
         <div class="item-actions-row">
           <button
             class="action-btn"
@@ -156,11 +156,9 @@
             <span class="action-icon">⏰</span>
             <span class="action-text">{{ reminderText }}</span>
           </button>
-        </div>
-
-        <!-- 重复设置 -->
-        <div v-if="canSetRecurring" class="item-actions-row">
+          
           <button
+            v-if="canSetRecurring"
             class="action-btn"
             :class="{ active: hasRecurring }"
             @click="handleSetRecurring"
@@ -286,7 +284,8 @@ const timeDisplay = computed(() => {
   }
   
   const optimized = optimizeDateTimeExpressions(allItems);
-  return optimized.replace(/^@/, '');
+  // 移除 @ 和 📅 前缀，因为模板中已有固定图标
+  return optimized.replace(/^(?:@|📅)/, '');
 });
 
 // 时间显示是否过长，需要 tooltip
@@ -690,7 +689,7 @@ function handleSkipOccurrence() {
 
 .item-actions-row {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
 }
@@ -714,9 +713,9 @@ function handleSkipOccurrence() {
   }
 
   &.active {
-    background: var(--b3-theme-primary-light);
+    background: var(--b3-theme-primary);
     border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
   }
 }
 
