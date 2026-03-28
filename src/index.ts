@@ -1036,6 +1036,7 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 检测并处理任务列表完成事件
    * 当用户通过思源的任务勾选按钮完成事项时触发
+   * 也支持检测直接添加完成标记（✅、#done、#已完成）的情况
    */
   private async handleTaskListCompletions(data: any) {
     console.log('[Task Assistant] handleTaskListCompletions called, data:', JSON.stringify(data).substring(0, 500));
@@ -1056,13 +1057,17 @@ export default class TaskAssistantPlugin extends Plugin {
       for (const op of transaction.doOperations) {
         console.log('[Task Assistant] Checking operation:', op.action, 'id:', op.id, 'data type:', typeof op.data);
         
-        // 只处理 update 操作，且数据包含 protyle-task--done 类名
+        // 只处理 update 操作
         if (op.action === 'update' && op.id && typeof op.data === 'string') {
+          // 检测方式1：任务列表勾选完成（protyle-task--done 类名）
           const hasDoneClass = op.data.includes('protyle-task--done');
-          console.log('[Task Assistant] Operation is update, has protyle-task--done:', hasDoneClass);
+          // 检测方式2：直接添加完成标记（✅、#done、#已完成）
+          const hasDoneMarker = op.data.includes('✅') || op.data.includes('#done') || op.data.includes('#已完成');
           
-          if (hasDoneClass) {
-            console.log('[Task Assistant] Found task completion operation:', op.id);
+          console.log('[Task Assistant] Operation is update, has protyle-task--done:', hasDoneClass, 'has done marker:', hasDoneMarker);
+          
+          if (hasDoneClass || hasDoneMarker) {
+            console.log('[Task Assistant] Found task completion operation:', op.id, hasDoneClass ? '(checkbox)' : '(marker)');
             await this.handleTaskListCompletion(op);
           }
         }
