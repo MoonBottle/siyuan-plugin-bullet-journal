@@ -555,6 +555,7 @@
     "times": "次",
     "setRecurring": "设置重复",
     "skipThis": "跳过本次",
+    "skipTooltip": "将日期改为 {date}",
     "withEndDate": "{rule}，截止到{date}",
     "withRemainingCount": "{rule}，剩余{count}次",
     "save": "保存",

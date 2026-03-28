@@ -173,7 +173,8 @@
           <!-- 跳过本次（仅过期事项显示） -->
           <button
             v-if="showSkipButton"
-            class="action-btn skip-btn"
+            class="action-btn skip-btn b3-tooltips b3-tooltips__n"
+            :aria-label="skipButtonTooltip"
             @click="handleSkipOccurrence"
           >
             <span class="action-text">{{ t('recurring.skipThis') }}</span>
@@ -216,6 +217,7 @@ import { t } from '@/i18n';
 import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { formatReminderDisplay, formatRepeatRuleDisplay } from '@/utils/displayUtils';
+import { getNextOccurrenceDate } from '@/parser/recurringParser';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
@@ -435,6 +437,13 @@ const recurringText = computed(() => {
 // 是否显示跳过按钮（有重复规则且已过期）
 const showSkipButton = computed(() => {
   return hasRecurring.value && itemStatus.value === 'expired';
+});
+
+// 跳过本次的 tooltip 文本
+const skipButtonTooltip = computed(() => {
+  if (!props.item.repeatRule) return '';
+  const nextDate = getNextOccurrenceDate(props.item.date, props.item.repeatRule);
+  return t('recurring.skipTooltip', { date: nextDate });
 });
 
 // 获取有效日期
