@@ -5,6 +5,8 @@
 import type { Task, Item, Link, ItemStatus, PomodoroRecord, PomodoroStatus } from '@/types/models';
 import { parseReminderFromLine, stripReminderMarker } from './reminderParser';
 import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
+import { processLineText } from '@/utils/stringUtils';
+import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /** 思源块引用正则：((blockId)) 或 ((blockId "alias")) 或 ((blockId 'alias')) */
 const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g;
@@ -174,6 +176,9 @@ export class LineParser {
     // 移除重复和结束条件标记（🔁🔚🔢 等）
     // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
     content = stripRecurringMarkers(content);
+
+    // 移除斜杠命令
+    content = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
 
     // 额外清理：移除任何残留的 Emoji 字符（补充平面字符）
     content = content.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
