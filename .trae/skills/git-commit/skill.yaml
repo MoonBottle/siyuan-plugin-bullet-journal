@@ -1,0 +1,111 @@
+name: git-commit
+description: 根据代码变更智能生成 Git 提交记录
+version: 1.0.0
+
+# 技能触发方式
+triggers:
+  - type: command
+    patterns:
+      - "/commit"
+      - "/提交"
+      - "git commit"
+  - type: intent
+    patterns:
+      - "提交代码"
+      - "生成提交信息"
+      - "commit 代码"
+
+# 执行步骤
+steps:
+  - id: get_diff
+    type: tool
+    tool: RunCommand
+    args:
+      command: "git diff --cached --name-only && echo '---UNSTAGED---' && git diff --name-only && echo '---UNTRACKED---' && git ls-files --others --exclude-standard"
+      blocking: true
+      requires_approval: false
+    
+  - id: analyze
+    type: llm
+    system_prompt: |
+      你是一个 Git 提交信息生成专家。请根据用户提供的代码变更，生成符合 Conventional Commits 规范的提交信息。
+      
+      ## 提交类型
+      - feat: 新功能
+      - fix: 修复问题
+      - docs: 文档更新
+      - style: 代码格式（不影响功能的空格、缩进等）
+      - refactor: 重构（既不修复 bug 也不添加功能）
+      - perf: 性能优化
+      - test: 测试相关
+      - chore: 构建过程、辅助工具、依赖更新
+      - revert: 回滚提交
+      
+      ## 作用域（根据项目结构）
+      - parser: 解析器相关
+      - components: Vue 组件
+      - stores: Pinia 状态管理
+      - services: 服务层
+      - utils: 工具函数
+      - mcp: MCP 服务器
+      - settings: 设置配置
+      - i18n: 国际化
+      - test: 测试文件
+      - types: 类型定义
+      - styles: SCSS/CSS 样式
+      - build: 构建配置
+      
+      ## 输出格式
+      只输出提交信息，格式为：
+      <type>(<scope>): <description>
+      
+      例如：
+      feat(parser): 添加日期解析功能
+      fix(utils): 修复日期计算错误
+      refactor(components): 重构 TodoSidebar 组件逻辑
+      
+      ## 规则
+      1. 描述使用中文，简洁明了（不超过 50 字）
+      2. 使用动词开头：添加、修复、重构、优化、更新等
+      3. 如果是破坏性变更，在类型后加 !：feat(parser)!: 移除旧版 API
+      4. 只输出一行提交信息，不要解释
+    
+  - id: confirm
+    type: ask
+    message: "生成的提交信息：\n\n${analyze.result}\n\n是否执行提交？"
+    options:
+      - label: "✅ 提交"
+        value: "commit"
+      - label: "📝 修改"
+        value: "edit"
+      - label: "❌ 取消"
+        value: "cancel"
+        
+  - id: commit
+    type: condition
+    condition: "${confirm.result} == 'commit'"
+    then:
+      - type: tool
+        tool: RunCommand
+        args:
+          command: "git add -A && git commit -m \"${analyze.result}\""
+          blocking: true
+          requires_approval: false
+      - type: message
+        content: "✅ 提交成功！"
+        
+  - id: edit
+    type: condition
+    condition: "${confirm.result} == 'edit'"
+    then:
+      - type: ask
+        message: "请输入修改后的提交信息："
+        default: "${analyze.result}"
+      - type: tool
+        tool: RunCommand
+        args:
+          command: "git add -A && git commit -m \"${edit.result}\""
+          blocking: true
+          requires_approval: false
+      - type: message
+        content: "✅ 提交成功！"

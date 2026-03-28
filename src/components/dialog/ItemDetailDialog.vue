@@ -147,10 +147,12 @@
         </div>
 
         <!-- 提醒和重复设置 -->
-        <div class="item-actions-row">
+        <div v-if="(!isCompletedOrAbandoned) || hasReminder || hasRecurring" class="item-actions-row">
           <button
+            v-if="!isCompletedOrAbandoned || hasReminder"
             class="action-btn"
-            :class="{ active: hasReminder }"
+            :class="{ active: hasReminder, readonly: isCompletedOrAbandoned }"
+            :disabled="isCompletedOrAbandoned"
             @click="handleSetReminder"
           >
             <span class="action-icon">⏰</span>
@@ -158,9 +160,10 @@
           </button>
           
           <button
-            v-if="canSetRecurring"
+            v-if="(!isCompletedOrAbandoned && canSetRecurring) || hasRecurring"
             class="action-btn"
-            :class="{ active: hasRecurring }"
+            :class="{ active: hasRecurring, readonly: isCompletedOrAbandoned }"
+            :disabled="isCompletedOrAbandoned"
             @click="handleSetRecurring"
           >
             <span class="action-icon">🔁</span>
@@ -407,6 +410,11 @@ const statusInfo = computed(() => {
   };
   return statusMap[itemStatus.value] || statusMap['pending'];
 });
+
+// 已完成或已放弃
+const isCompletedOrAbandoned = computed(() => 
+  itemStatus.value === 'completed' || itemStatus.value === 'abandoned'
+);
 
 // 提醒相关
 const hasReminder = computed(() => props.item.reminder?.enabled);
@@ -716,6 +724,20 @@ function handleSkipOccurrence() {
     background: var(--b3-theme-primary);
     border-color: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);
+  }
+
+  &.readonly {
+    cursor: default;
+    opacity: 0.8;
+
+    &:hover {
+      background: var(--b3-theme-primary);
+      border-color: var(--b3-theme-primary);
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
