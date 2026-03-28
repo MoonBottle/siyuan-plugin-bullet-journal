@@ -851,6 +851,14 @@ function openPomodoroDialogWithItem(blockId: string, openPomodoroDock: () => voi
     height: 'auto'
   });
 
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
   const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
   if (mountEl) {
     const app = createApp(PomodoroTimerDialog, {

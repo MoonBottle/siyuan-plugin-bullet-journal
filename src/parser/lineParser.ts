@@ -120,7 +120,10 @@ export class LineParser {
     const reminder = parseReminderFromLine(line);
 
     // 解析重复规则（多日期与重复互斥时优先多日期）
-    const hasMultipleDates = line.match(/(?:@|📅)\d{4}-\d{2}-\d{2}.*[,，]|(?:@|📅)\d{4}-\d{2}-\d{2}.*~/);
+    // 匹配多日期：
+    // 1. 逗号分隔：@日期, 或 📅日期, 或 @日期， 或 📅日期，
+    // 2. 日期范围：@日期~日期 或 📅日期~日期（波浪号后面必须是日期格式，避免误匹配时间范围 09:00:00~10:00:00）
+    const hasMultipleDates = line.match(/(?:@|📅)\d{4}-\d{2}-\d{2}[^\w]*[,，]|(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})/);
     const repeatRule = (!hasMultipleDates && hasRepeatRule(line)) ? parseRepeatRule(line) : undefined;
     const endCondition = repeatRule ? parseEndCondition(line) : undefined;
 

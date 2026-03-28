@@ -956,4 +956,16 @@ describe('parseItemLine - 重复规则解析', () => {
     expect(items[0].repeatRule).toEqual({ type: 'daily' });
     expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 5 });
   });
+
+  it('用户问题案例：带时间范围和每月指定日期的重复规则', () => {
+    // 用户提供的例子：这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月:3日🔚2026-05-31
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月:3日🔚2026-05-31', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个带时间的事项');
+    expect(items[0].date).toBe('2026-03-28');
+    expect(items[0].startDateTime).toBe('2026-03-28 09:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-28 10:00:00');
+    expect(items[0].repeatRule).toEqual({ type: 'monthly', dayOfMonth: 3 });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-05-31' });
+  });
 });
