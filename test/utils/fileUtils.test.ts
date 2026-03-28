@@ -765,4 +765,103 @@ describe('updateBlockContent', () => {
 
     expect(result).toBe(false);
   });
+
+  it('事项行检测失败走降级路径：应保留任务列表标记并更新为[x]', async () => {
+    // 模拟 kramdown 格式，事项行可能被识别失败的情况
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- [ ] shis 📅2026-03-28
+{: id="block-1" }`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    // 应该将 [ ] 改为 [x]，不添加 ✅ 标签
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] shis 📅2026-03-28\n{: id="block-1" }`,
+      'block-1'
+    );
+  });
+
+  it('父块解析：使用📅日期标记的任务列表应正确识别并更新为[x]', async () => {
+    // 模拟父块包含任务列表项的情况
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'parent-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="parent-block-1"}[ ] shis 📅2026-03-28
+  {: id="content-block-1"}`
+        });
+      }
+      // 内容子块的 kramdown（没有 [ ] 标记）
+      return Promise.resolve({
+        kramdown: 'shis 📅2026-03-28\n{: id="content-block-1" }'
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('content-block-1', '✅');
+
+    expect(result).toBe(true);
+    // 应该使用父块 kramdown 更新，将 [ ] 改为 [x]，不添加 ✅ 标签
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[x] shis 📅2026-03-28
+  {: id="content-block-1"}`,
+      'parent-block-1'
+    );
+  });
+
+  it('事项行检测失败走降级路径：带块属性的任务列表', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 测试任务 📅2026-03-28
+{: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    // 应该将 [ ] 改为 [x]，去除列表标记和块属性
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 测试任务 📅2026-03-28\n{: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('降级路径：非标准格式的任务列表项', async () => {
+    // 模拟一个没有找到事项行的情况（比如日期格式特殊）
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `[ ] 特殊事项 📅2026-03-28`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    // 降级路径应该正确处理任务列表格式
+    const callArg = mockUpdateBlock.mock.calls[0][1];
+    expect(callArg).toContain('[x]');
+    expect(callArg).not.toContain('✅');
+  });
+
+  it('降级路径：无日期前缀的任务列表项', async () => {
+    // 模拟一个没有日期前缀的情况，会走降级路径
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- [ ] 无日期事项
+{: id="block-1" }`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    // 降级路径应该正确处理任务列表格式
+    const callArg = mockUpdateBlock.mock.calls[0][1];
+    expect(callArg).toContain('[x]');
+    expect(callArg).not.toContain('✅');
+  });
 });

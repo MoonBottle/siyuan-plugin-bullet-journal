@@ -661,7 +661,7 @@ export async function updateBlockContent(
             const trimmed = line.trim();
             if (trimmed.startsWith('{:')) continue;
             if (trimmed.startsWith('🍅')) continue;
-            if (trimmed.includes('@') && /\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+            if ((trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed)) {
               if (isTaskListFormat(trimmed)) {
                 kramdown = itemBlock.raw;
                 usedParentKramdown = true;
@@ -682,10 +682,7 @@ export async function updateBlockContent(
       }
       kramdown = result.kramdown;
     }
-    console.log('[Task Assistant] updateBlockContent - kramdown 来源:', kramdown ? (block?.parent_id ? '父块解析' : '当前块') : '无', '| blockId:', blockId, '| parent_id:', block?.parent_id);
-    console.log('[Task Assistant] updateBlockContent - raw kramdown:', JSON.stringify(kramdown));
     const lines = kramdown.split('\n');
-    console.log('[Task Assistant] updateBlockContent - lines:', lines);
 
     // 找到事项行（包含 @日期 的行，且不是番茄钟行、不是块属性行）
     let itemLineIndex = -1;
@@ -704,6 +701,7 @@ export async function updateBlockContent(
 
     if (itemLineIndex >= 0) {
       // 只修改事项行，添加后缀
+      console.log('[Task Assistant] ====== 走主路径（找到事项行）======');
       let itemLine = lines[itemLineIndex];
 
       // 检测是否使用任务列表格式
@@ -714,16 +712,18 @@ export async function updateBlockContent(
       const isStatusTag = suffix === '#done' || suffix === '#abandoned' || suffix === '#已完成' || suffix === '#已放弃' || suffix === '✅' || suffix === '❌';
       console.log('[Task Assistant] updateBlockContent - suffix:', suffix, 'isStatusTag:', isStatusTag);
 
+      console.log('[Task Assistant] 主路径 - isTaskList:', isTaskList, 'isStatusTag:', isStatusTag);
       if (isTaskList && isStatusTag) {
+        console.log('[Task Assistant] 主路径 - 分支: 任务列表格式 + 状态标签');
         // 任务列表格式 + 状态标签
         // #已完成/#done：将 [ ] 改为 [x]，不添加标签
         // #已放弃/#abandoned：将 [x] 改为 [ ]，并添加 #已放弃 标签
         const taskListMatch = itemLine.match(/(\[\s*)([xX]?)(\s*\]\s*)/);
-        console.log('[Task Assistant] updateBlockContent - taskListMatch:', taskListMatch);
+        console.log('[Task Assistant] 主路径 - taskListMatch:', taskListMatch);
         if (taskListMatch) {
           const isAbandon = suffix === '#abandoned' || suffix === '#已放弃' || suffix === '❌';
           const newMarker = (suffix === '#done' || suffix === '#已完成' || suffix === '✅') ? '[x] ' : '[ ] ';
-          console.log('[Task Assistant] updateBlockContent - newMarker:', newMarker);
+          console.log('[Task Assistant] 主路径 - newMarker:', newMarker, 'isAbandon:', isAbandon);
           let newLine = itemLine.replace(taskListMatch[0], newMarker);
           if (isAbandon && !itemLine.includes('#已放弃') && !itemLine.includes('#abandoned')) {
             newLine = newLine.trimEnd() + ' ' + suffix;
@@ -742,18 +742,14 @@ export async function updateBlockContent(
               ? `${newMarker}${cleanedContent} ${suffix}`.trim()
               : `${newMarker}${cleanedContent}`.trim();
           }
-          console.log('[Task Assistant] updateBlockContent - new line:', lines[itemLineIndex]);
         } else {
           // 如果匹配失败，使用原来的方式
-          console.log('[Task Assistant] updateBlockContent - match failed, using fallback');
           let cleanedContent = stripListAndBlockAttr(itemLine);
           // 去除斜杠命令
           cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
         }
       } else if (isTaskList) {
-        // 任务列表格式 + 非状态标签（如日期）：保留 [x] 或 [ ] 标记
-        console.log('[Task Assistant] updateBlockContent - task list + non-status tag');
         // 提取任务列表标记
         const taskListMatch = itemLine.match(/(\[\s*[xX]?\s*\]\s*)/);
         if (taskListMatch) {
@@ -775,7 +771,6 @@ export async function updateBlockContent(
         }
       } else {
         // 非任务列表格式：使用原来的方式
-        console.log('[Task Assistant] updateBlockContent - non-task list format');
         // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
         let cleanedContent = stripListAndBlockAttr(itemLine);
         // 去除斜杠命令
@@ -793,11 +788,6 @@ export async function updateBlockContent(
         newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
         targetBlockId = block!.parent_id!;
       }
-      console.log('[Task Assistant] updateBlockContent - updateBlock 调用:', {
-        targetBlockId,
-        newContent: JSON.stringify(newContent),
-        newContentPreview: newContent.substring(0, 200) + (newContent.length > 200 ? '...' : '')
-      });
       await updateBlock('markdown', newContent, targetBlockId);
       return true;
     }
@@ -821,10 +811,28 @@ export async function updateBlockContent(
           newLine = newLine.trimEnd() + ' ' + suffix;
         }
         newContent = newLine;
+        console.log('[Task Assistant] 降级路径 - newContent:', JSON.stringify(newContent));
+      } else {
+        console.log('[Task Assistant] 降级路径 - taskListMatch 失败，使用 fallback');
+        // 如果匹配失败，尝试去除任务列表标记后添加后缀
+        let cleanedContent = stripListAndBlockAttr(content);
+        cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
+        newContent = `${cleanedContent} ${suffix}`.trim();
+      }
+    } else if (isTaskList) {
+      // 任务列表格式 + 非状态标签：保留任务列表标记
+      const taskListMatch = content.match(/(\[\s*[xX]?\s*\]\s*)/);
+      if (taskListMatch) {
+        const taskListMarker = taskListMatch[1];
+        const contentWithoutMarker = content.replace(taskListMarker, '');
+        let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+        cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
+        newContent = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
       } else {
         newContent = `${content} ${suffix}`;
       }
     } else {
+      // 非任务列表格式
       newContent = `${content} ${suffix}`;
     }
     
@@ -836,10 +844,6 @@ export async function updateBlockContent(
       newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
       targetBlockId = block!.parent_id!;
     }
-    console.log('[Task Assistant] updateBlockContent - updateBlock 调用(降级):', {
-      targetBlockId,
-      newContent: JSON.stringify(newContent)
-    });
     await updateBlock('markdown', newContent, targetBlockId);
 
     return true;
