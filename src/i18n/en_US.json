@@ -502,6 +502,7 @@
     "setRecurring": "Set Recurring"
   },
   "reminder": {
+    "setReminder": "Set Reminder",
     "settingTitle": "Set Reminder",
     "enableReminder": "Enable Reminder",
     "reminderType": "Reminder Type",
@@ -510,14 +511,11 @@
     "absoluteTime": "Absolute Time",
     "beforeStart": "Before Start",
     "beforeEnd": "Before End",
-    "setReminder": "Set Reminder",
     "minutes": "{n} min",
     "hour": "{n} hr",
     "custom": "Custom",
     "customTimeLabel": "Time",
     "relativeBase": "Relative Base",
-    "beforeStart": "Before Start",
-    "beforeEnd": "Before End",
     "offsetTime": "Offset Time",
     "unitMinutes": "minutes",
     "unitHours": "hours",

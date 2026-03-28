@@ -502,6 +502,7 @@
     "setRecurring": "设置重复"
   },
   "reminder": {
+    "setReminder": "设置提醒",
     "settingTitle": "设置提醒",
     "reminderTime": "提醒时间",
     "reminderMethod": "提醒方式",

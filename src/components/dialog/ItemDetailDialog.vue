@@ -415,15 +415,15 @@ const reminderText = computed(() => {
   if (!hasReminder.value) return t('reminder.setReminder');
   const reminder = props.item.reminder!;
   if (reminder.type === 'absolute' && reminder.time) {
-    return `⏰ ${reminder.time}`;
+    return reminder.time;
   }
   if (reminder.type === 'relative') {
     const prefix = reminder.relativeTo === 'end' ? 'e-' : '-';
     const offset = reminder.offsetMinutes || 0;
     if (offset % 60 === 0) {
-      return `⏰ ${prefix}${offset / 60}h`;
+      return `${prefix}${offset / 60}h`;
     }
-    return `⏰ ${prefix}${offset}m`;
+    return `${prefix}${offset}m`;
   }
   return t('reminder.setReminder');
 });
@@ -441,7 +441,8 @@ const recurringText = computed(() => {
     'yearly': t('recurring.yearly'),
     'workday': t('recurring.workday')
   };
-  let text = `🔁 ${typeMap[rule.type] || rule.type}`;
+  // 移除 🔁 前缀，因为按钮上已经有 action-icon 显示图标了
+  let text = typeMap[rule.type] || rule.type;
   if (rule.dayOfMonth) {
     text += `:${rule.dayOfMonth}日`;
   }
