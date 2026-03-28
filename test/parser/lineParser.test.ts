@@ -910,3 +910,50 @@ describe('parseItemLine - 事项内容保留逗号', () => {
     expect(items[0].content).toBe('，测试');
   });
 });
+
+describe('parseItemLine - 重复规则解析', () => {
+  it('🔁每月 应被正确识别并从内容中移除', () => {
+    const items = LineParser.parseItemLine('这是一个已完成的事项 📅2026-03-28 🔁每月', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个已完成的事项');
+    expect(items[0].date).toBe('2026-03-28');
+    expect(items[0].repeatRule).toEqual({ type: 'monthly' });
+  });
+
+  it('🔁每天 应被正确识别并从内容中移除', () => {
+    const items = LineParser.parseItemLine('每日任务 📅2026-03-28 🔁每天', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('每日任务');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+  });
+
+  it('🔁每周 应被正确识别并从内容中移除', () => {
+    const items = LineParser.parseItemLine('周会 📅2026-03-28 🔁每周', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('周会');
+    expect(items[0].repeatRule).toEqual({ type: 'weekly' });
+  });
+
+  it('🔁每月:15日 应被正确识别指定日期', () => {
+    const items = LineParser.parseItemLine('月会 📅2026-03-28 🔁每月:15日', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('月会');
+    expect(items[0].repeatRule).toEqual({ type: 'monthly', dayOfMonth: 15 });
+  });
+
+  it('带结束日期的重复规则', () => {
+    const items = LineParser.parseItemLine('临时任务 📅2026-03-28 🔁每天 🔚2026-04-30', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('临时任务');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-04-30' });
+  });
+
+  it('带次数限制的重复规则', () => {
+    const items = LineParser.parseItemLine('限时任务 📅2026-03-28 🔁每天 🔢5', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('限时任务');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+    expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 5 });
+  });
+});

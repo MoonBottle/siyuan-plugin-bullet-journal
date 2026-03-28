@@ -167,14 +167,16 @@ export class LineParser {
       .replace(/[✅❌📅📋]/gu, '')  // 移除 Emoji 标记
       .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
       .trim();
-    // 额外清理：移除任何残留的 Emoji 字符（补充平面字符）
-    content = content.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
 
     // 移除提醒标记
     content = stripReminderMarker(content);
 
-    // 移除重复和结束条件标记
+    // 移除重复和结束条件标记（🔁🔚🔢 等）
+    // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
     content = stripRecurringMarkers(content);
+
+    // 额外清理：移除任何残留的 Emoji 字符（补充平面字符）
+    content = content.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
 
     // 清理日期表达式之间残留的逗号分隔符
     // 匹配模式：空白 + 逗号（中英文）+ 空白/日期，这些是日期分隔符

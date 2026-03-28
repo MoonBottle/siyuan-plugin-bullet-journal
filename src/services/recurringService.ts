@@ -99,19 +99,30 @@ export async function createNextOccurrence(
  * 构建下次 occurrence 的 block 内容
  */
 function buildNextOccurrenceBlock(item: Item, nextDate: string): string {
-  const { content, reminder, repeatRule, endCondition } = item;
+  const { reminder, repeatRule, endCondition } = item;
+  
+  // 清理内容：移除原有的日期标记、重复规则标记、结束条件标记和状态标记
+  let content = item.content
+    .replace(/[@📅]\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')  // 日期和时间
+    .replace(/🔁(?:每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)(?::\d+日?)?/gi, '')  // 重复规则
+    .replace(/🔚\d{4}-\d{2}-\d{2}/g, '')  // 结束日期
+    .replace(/🔢\d+/g, '')  // 次数限制
+    .replace(/⏰[\d:-]+/g, '')  // 绝对提醒时间
+    .replace(/⏰e?-\d+[dhm]/gi, '')  // 相对提醒时间
+    .replace(/[✅❌✔️]/gu, '')  // 完成标记
+    .trim();
 
-  // 构建日期部分
-  let datePart = `@${nextDate}`;
+  // 构建日期部分（使用 📅 emoji）
+  let datePart = `📅${nextDate}`;
   
   // 如果有时间范围，保持时间
   if (item.startDateTime && item.endDateTime) {
     const startTime = item.startDateTime.split(' ')[1];
     const endTime = item.endDateTime.split(' ')[1];
-    datePart = `@${nextDate} ${startTime}~${endTime}`;
+    datePart = `📅${nextDate} ${startTime}~${endTime}`;
   } else if (item.startDateTime) {
     const startTime = item.startDateTime.split(' ')[1];
-    datePart = `@${nextDate} ${startTime}`;
+    datePart = `📅${nextDate} ${startTime}`;
   }
 
   // 构建提醒部分
