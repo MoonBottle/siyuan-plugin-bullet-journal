@@ -369,6 +369,7 @@
     "pending": ""
   },
   "taskTag": "📋",
+  "dateMarker": "📅",
   "common": {
     "more": "More",
     "loading": "Loading...",

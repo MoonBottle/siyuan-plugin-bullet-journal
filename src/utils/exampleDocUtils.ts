@@ -51,77 +51,54 @@ function generateExampleContent(): string {
   const taskTag = t('taskTag') || '#任务';
   const completedTag = t('statusTag').completed || '#已完成';
   const abandonedTag = t('statusTag').abandoned || '#已放弃';
+  const dateMarker = t('dateMarker') || '📅';
 
   if (isEn) {
     return `## Website Redesign Project
 
-> Company website overhaul to improve user experience
-
-[Design Mockup](https://figma.com/design/xxx)
-
----
-
 Homepage Redesign ${taskTag}
 
-[Requirements Doc](https://doc.example.com/homepage)
-
-Determine Design Style @${today}
+Determine Design Style ${dateMarker}${today}
 
 🍅${today} 10:00:00~10:25:00 Collecting materials
 
-[Reference Case](https://example.com/ref)
+Complete Homepage Prototype ${dateMarker}${yesterday} 10:00:00~12:00:00 ${completedTag}
 
-Complete Homepage Prototype @${yesterday} 10:00:00~12:00:00 ${completedTag}
+Review Meeting ${dateMarker}${yesterday} 14:00:00~15:00:00 ${abandonedTag}
 
-Review Meeting @${yesterday} 14:00:00~15:00:00 ${abandonedTag}
+Develop Homepage Components ${dateMarker}${tomorrow} 09:00:00~12:00:00
 
-Develop Homepage Components @${tomorrow} 09:00:00~12:00:00
-
-Responsive Adaptation @${tomorrow} 14:00:00~17:00:00
-
----
+Responsive Adaptation ${dateMarker}${tomorrow} 14:00:00~17:00:00
 
 Performance Optimization ${taskTag}
 
-Image Compression and Lazy Loading @${today}
+Image Compression and Lazy Loading ${dateMarker}${today}
 
-Code Splitting and Caching Strategy @${tomorrow}
+Code Splitting and Caching Strategy ${dateMarker}${tomorrow}
 `;
   }
 
   return `## 网站重构项目
 
-> 公司官网全面改版，提升用户体验
-
-[设计稿](https://figma.com/design/xxx)
-
----
-
 首页改版 ${taskTag}
 
-[需求文档](https://doc.example.com/homepage)
-
-确定设计风格 @${today}
+确定设计风格 ${dateMarker}${today}
 
 🍅${today} 10:00:00~10:25:00 收集素材
 
-[参考案例](https://example.com/ref)
+完成首页原型设计 ${dateMarker}${yesterday} 10:00:00~12:00:00 ${completedTag}
 
-完成首页原型设计 @${yesterday} 10:00:00~12:00:00 ${completedTag}
+评审会议 ${dateMarker}${yesterday} 14:00:00~15:00:00 ${abandonedTag}
 
-评审会议 @${yesterday} 14:00:00~15:00:00 ${abandonedTag}
+开发首页组件 ${dateMarker}${tomorrow} 09:00:00~12:00:00
 
-开发首页组件 @${tomorrow} 09:00:00~12:00:00
-
-响应式适配 @${tomorrow} 14:00:00~17:00:00
-
----
+响应式适配 ${dateMarker}${tomorrow} 14:00:00~17:00:00
 
 性能优化 ${taskTag}
 
-图片压缩和懒加载 @${today}
+图片压缩和懒加载 ${dateMarker}${today}
 
-代码分割和缓存策略 @${tomorrow}
+代码分割和缓存策略 ${dateMarker}${tomorrow}
 `;
 }
 

@@ -91,7 +91,7 @@
     "allDay": "全天",
     "noTodos": "暂无待办事项",
     "emptyGuideTitle": "开始使用任务助手",
-    "emptyGuideDesc": "在笔记中使用 #任务 和 @日期 标记来创建任务和事项",
+    "emptyGuideDesc": "在笔记中使用 #任务 和 📅日期 标记来创建任务和事项",
     "createExampleDoc": "创建示例文档",
     "exampleDocCreated": "示例文档已创建",
     "exampleDocFailed": "创建示例文档失败",
@@ -369,6 +369,7 @@
     "pending": ""
   },
   "taskTag": "📋",
+  "dateMarker": "📅",
   "common": {
     "more": "更多",
     "loading": "加载中...",
