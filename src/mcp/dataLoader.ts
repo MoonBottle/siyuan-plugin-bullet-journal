@@ -19,7 +19,7 @@ const SQL_GET_ALL_PROJECT_DOCS = `
   WHERE type = 'd'
   AND id IN (
     SELECT DISTINCT root_id FROM blocks
-    WHERE (content LIKE '%#任务%' OR content LIKE '%#task%')
+    WHERE (content LIKE '%#任务%' OR content LIKE '%#task%' OR content LIKE '%📋%')
     AND root_id IS NOT NULL AND root_id != ''
     AND type IN ('p', 'h', 'l', 'i')
   )
