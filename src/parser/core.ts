@@ -279,6 +279,11 @@ export function parseKramdown(
       // 收集事项下方的链接行：当前事项行之后到下一个事项/任务行之间的所有链接行
       // 非链接行（如说明文字）跳过不中断，仅在遇到下一事项/任务行时停止
       const itemLinks: Array<{ name: string; url: string }> = [];
+      
+      // 记录最后一个相关块的索引（初始为当前块）
+      const currentBlockIndex = blocks.indexOf(block);
+      let lastRelatedBlockIndex = currentBlockIndex;
+      
       const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
       for (let idx = 1; idx < blockLines.length; idx++) {
         const lineContent = blockLines[idx];
@@ -289,13 +294,16 @@ export function parseKramdown(
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
         }
       }
-      let nextBlockIndex = blocks.indexOf(block) + 1;
+      let nextBlockIndex = currentBlockIndex + 1;
 
       while (nextBlockIndex < blocks.length) {
         const nextBlock = blocks[nextBlockIndex];
         const nextContent = nextBlock.content.split('\n')[0].trim();
 
         if (isNextItemOrTaskLine(nextContent)) break;
+
+        // 每个块都是当前事项的相关内容，更新最后一个相关块索引
+        lastRelatedBlockIndex = nextBlockIndex;
 
         const strippedNextContent = stripListAndBlockAttr(nextContent);
         const linkMatch = strippedNextContent.match(/\[(.*?)\]\((.*?)\)/);
@@ -328,6 +336,7 @@ export function parseKramdown(
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
+        item.lastBlockId = blocks[lastRelatedBlockIndex].blockId; // 记录最后一个相关块ID
         item.pomodoros = sharedPomodoros;
 
         currentTask.items.push(item);

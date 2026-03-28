@@ -151,7 +151,8 @@ export interface Item {
   project?: Project;       // 所属项目
   lineNumber: number;      // 行号
   docId: string;           // 所属文档 ID
-  blockId?: string;        // 块 ID（用于精确定位）
+  blockId?: string;        // 块 ID（事项所在行，用于精确定位）
+  lastBlockId?: string;    // 事项及其相关内容的最后一个块 ID（用于插入下次重复事项）
   status: ItemStatus;      // 事项状态
   links?: Link[];          // 事项链接（支持多个）
   // 多日期支持：同一块中的其他日期时间信息
