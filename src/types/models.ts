@@ -170,6 +170,9 @@ export interface Item {
   reminder?: ReminderConfig;     // 提醒配置
   repeatRule?: RepeatRule;       // 重复规则
   endCondition?: EndCondition;   // 结束条件
+  // 任务列表格式标记
+  isTaskList?: boolean;          // 是否是任务列表格式（- [ ]）
+  listItemBlockId?: string;      // 任务列表项的块 ID（用于插入时保持平级）
 }
 
 // 分组

@@ -60,14 +60,19 @@ export async function createNextOccurrence(
     // 构建新的 block 内容
     const newBlockContent = buildNextOccurrenceBlock(item, nextDate);
 
-    // 使用 lastBlockId 作为插入点（事项及其相关内容的最后一个块）
-    // 如果没有 lastBlockId，则使用 blockId 兜底
-    const insertAfterId = item.lastBlockId || item.blockId;
+    // 确定插入点：
+    // 1. 对于任务列表事项，使用 listItemBlockId（在列表项后面插入，保持平级）
+    // 2. 其他情况使用 lastBlockId（在相关内容后面插入）
+    const insertAfterId = item.isTaskList 
+      ? (item.listItemBlockId || item.blockId)
+      : (item.lastBlockId || item.blockId);
     
     if (!insertAfterId) {
       console.error('[RecurringService] No insert point found');
       return false;
     }
+    
+    console.log(`[RecurringService] Inserting after block: ${insertAfterId}, isTaskList: ${item.isTaskList}`);
 
     // 在最后一个相关块后插入新事项
     const result = await siyuanAPI.insertBlock(
@@ -144,7 +149,14 @@ function buildNextOccurrenceBlock(item: Item, nextDate: string): string {
     }
   }
 
-  return `${content} ${datePart}${reminderPart}${repeatPart}${endConditionPart}`;
+  let result = `${content} ${datePart}${reminderPart}${repeatPart}${endConditionPart}`;
+  
+  // 如果是任务列表格式，添加任务列表标记（- [ ]）
+  if (item.isTaskList) {
+    result = `- [ ] ${result}`;
+  }
+  
+  return result;
 }
 
 /**

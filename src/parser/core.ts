@@ -158,13 +158,35 @@ export function parseKramdown(
   let hasSeenItemForCurrentTask = false;
   /** 上一个处理的块类型：'project' | 'task' | 'item' | null */
   let lastBlockType: 'project' | 'task' | 'item' | null = null;
+  /** 任务列表项块 ID 栈（处理嵌套列表） */
+  const listItemBlockIdStack: Array<{ id: string; level: number }> = [];
 
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
     lineNumber++;
-    const content = block.content.split('\n')[0].trim();
+    const rawFirstLine = block.content.split('\n')[0];
+    const content = rawFirstLine.trim();
 
     if (!content) continue;
+
+    // 获取当前块的缩进层级（前导空格数）
+    const indentLevel = rawFirstLine.length - rawFirstLine.trimStart().length;
+
+    // 检测是否是任务列表项（包含 - [ ] 或 - [x]）
+    // 思源格式: - {: id="list-item-id" ...}[ ] 内容
+    const taskListMatch = content.match(/^(\s*)-\s*\{\:\s*id="([^"]+)"/);
+    const taskListCheckboxMatch = content.match(/\[\s*([xX])?\s*\]/);
+    if (taskListMatch && taskListCheckboxMatch) {
+      // 从行内属性中提取列表项块 ID
+      const listItemBlockId = taskListMatch[2];
+      
+      // 弹出栈顶层级大于等于当前层级的项（处理同级或上级列表项）
+      while (listItemBlockIdStack.length > 0 && listItemBlockIdStack[listItemBlockIdStack.length - 1].level >= indentLevel) {
+        listItemBlockIdStack.pop();
+      }
+      // 将当前任务列表项压入栈（使用从行内提取的列表项 ID，而不是 block.blockId）
+      listItemBlockIdStack.push({ id: listItemBlockId, level: indentLevel });
+    }
 
     // 检查是否是番茄钟行
     if (isPomodoroLine(content)) {
@@ -258,6 +280,8 @@ export function parseKramdown(
       }
       currentItem = null;
       lastBlockType = 'task';
+      // 清空任务列表栈（新任务的作用域）
+      listItemBlockIdStack.length = 0;
       continue;
     }
 
@@ -332,12 +356,22 @@ export function parseKramdown(
         }
       }
 
+      // 检测是否是任务列表格式（包含 [ ] 或 [x] 标记）
+      const isTaskList = /\[\s*[xX]?\s*\]/.test(content);
+
+      // 从栈顶获取当前任务列表项块 ID（处理嵌套列表）
+      const listItemBlockId = isTaskList && listItemBlockIdStack.length > 0
+        ? listItemBlockIdStack[listItemBlockIdStack.length - 1].id
+        : undefined;
+
       // 所有拆分后的 items 共享同一个 pomodoros 数组
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
         item.lastBlockId = blocks[lastRelatedBlockIndex].blockId; // 记录最后一个相关块ID
         item.pomodoros = sharedPomodoros;
+        item.isTaskList = isTaskList; // 设置任务列表格式标记
+        item.listItemBlockId = listItemBlockId; // 设置列表项块 ID（如果有）
 
         currentTask.items.push(item);
         currentItem = item;
