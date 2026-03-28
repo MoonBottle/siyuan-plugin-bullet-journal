@@ -364,11 +364,11 @@
     "back": "返回"
   },
   "statusTag": {
-    "completed": "#已完成",
-    "abandoned": "#已放弃",
+    "completed": "✅",
+    "abandoned": "❌",
     "pending": ""
   },
-  "taskTag": "#任务",
+  "taskTag": "📋",
   "common": {
     "more": "更多",
     "loading": "加载中...",

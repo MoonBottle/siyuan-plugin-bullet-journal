@@ -106,14 +106,14 @@ function isTagInBackticks(content: string, tag: string): boolean {
 
 /**
  * 检查一行是否是下一事项行或任务行（用于停止收集事项链接）
- * 事项行：包含 @YYYY-MM-DD 且非任务标记
- * 任务行：包含 #任务 或 #task
+ * 事项行：包含 @YYYY-MM-DD 或 📅YYYY-MM-DD 且非任务标记
+ * 任务行：包含 #任务、#task 或 📋
  */
 function isNextItemOrTaskLine(content: string): boolean {
-  const hasTaskTag = content.includes('#任务') || content.includes('#task');
+  const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋');
   const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
   if (hasTaskTag && notInBackticks) return true;
-  if (content.match(/@\d{4}-\d{2}-\d{2}/) && !hasTaskTag) return true;
+  if ((content.match(/@\d{4}-\d{2}-\d{2}/) || content.match(/📅\d{4}-\d{2}-\d{2}/)) && !hasTaskTag) return true;
   return false;
 }
 
@@ -264,8 +264,8 @@ export function parseKramdown(
       }
     }
 
-    // 解析任务行（包含 #任务 或 #task，且不是反引号内的说明文字）
-    const hasTaskTag = content.includes('#任务') || content.includes('#task');
+    // 解析任务行（包含 #任务、#task 或 📋，且不是反引号内的说明文字）
+    const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋');
     const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
     if (hasTaskTag && notInBackticks) {
       if (currentTask) {
@@ -285,7 +285,7 @@ export function parseKramdown(
       continue;
     }
 
-    if (currentTask && content.includes('](') && !content.includes('@') && !hasSeenItemForCurrentTask) {
+    if (currentTask && content.includes('](') && !content.includes('@') && !content.includes('📅') && !hasSeenItemForCurrentTask) {
       const strippedContent = stripListAndBlockAttr(content);
       const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
       if (linkMatch) {
@@ -297,8 +297,8 @@ export function parseKramdown(
       }
     }
 
-    // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
-    if (currentTask && content.includes('@') && !hasTaskTag) {
+    // 解析工作事项（在当前任务下，包含 @ 或 📅 但不是任务标记）
+    if (currentTask && (content.includes('@') || content.includes('📅')) && !hasTaskTag) {
       hasSeenItemForCurrentTask = true;
       // 收集事项下方的链接行：当前事项行之后到下一个事项/任务行之间的所有链接行
       // 非链接行（如说明文字）跳过不中断，仅在遇到下一事项/任务行时停止

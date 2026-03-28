@@ -50,11 +50,11 @@ function buildDateTimeMark(
   timeKey?: string
 ): string {
   if (!timeKey) {
-    return `@${date}`;
+    return `📅${date}`;
   }
 
   // timeKey 格式: "09:00:00~10:00:00" 或 "09:00:00"
-  return `@${date} ${timeKey}`;
+  return `📅${date} ${timeKey}`;
 }
 
 /**
@@ -79,10 +79,10 @@ function buildDateRangeMark(
   }
 
   if (timeKey) {
-    return `@${datePart} ${timeKey}`;
+    return `📅${datePart} ${timeKey}`;
   }
 
-  return `@${datePart}`;
+  return `📅${datePart}`;
 }
 
 /**
@@ -260,10 +260,10 @@ export function optimizeDateTimeExpressions(
   // 4. 合并表达式，只保留第一个 @
   if (expressions.length === 0) return '';
 
-  // 第一个表达式保留 @
+  // 第一个表达式保留 📅
   const firstExpr = expressions[0];
-  // 后续表达式移除 @
-  const restExprs = expressions.slice(1).map(expr => expr.replace(/^@/, ''));
+  // 后续表达式移除 📅 或 @ 前缀
+  const restExprs = expressions.slice(1).map(expr => expr.replace(/^(?:@|📅)/, ''));
 
   return [firstExpr, ...restExprs].join(', ');
 }
@@ -296,8 +296,8 @@ function handleSingleLineUpdate(
   // 提取事项内容：先去除斜杠命令，再去除列表标记和块属性（支持父块 kramdown 格式），最后去除日期时间标记和状态标签
   let itemContent = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
   itemContent = stripListAndBlockAttr(itemContent)
-    .replace(/@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
-    .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
+    .replace(/(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+    .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
     // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
     .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
     .trim();
@@ -380,7 +380,7 @@ export async function updateBlockDateTime(
             const trimmed = line.trim();
             if (trimmed.startsWith('{:')) continue;
             if (trimmed.startsWith('🍅')) continue;
-            if (trimmed.includes('@') && /\d{4}-\d{2}-\d{2}/.test(trimmed) && isTaskListFormat(trimmed)) {
+            if ((trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed) && isTaskListFormat(trimmed)) {
               kramdown = parentResult.kramdown;
               targetBlockId = block.parent_id;
               break;
@@ -440,8 +440,8 @@ export async function updateBlockDateTime(
       if (line.trim().startsWith('{:')) continue;
       // 跳过番茄钟行（以 🍅 开头）
       if (line.trim().startsWith('🍅')) continue;
-      // 包含 @日期 的行是事项行
-      if (/@\d{4}-\d{2}-\d{2}/.test(line)) {
+      // 包含 @日期 或 📅日期 的行是事项行
+      if (/(?:@|📅)\d{4}-\d{2}-\d{2}/.test(line)) {
         itemLineIndex = i;
         break;
       }
@@ -478,8 +478,8 @@ export async function updateBlockDateTime(
     // 提取事项内容（去除日期时间标记和状态标签）
     // 先移除所有日期时间表达式（包括逗号分隔的多个日期）
     let itemContent = cleanedItemLine
-      .replace(/@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
-      .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
+      .replace(/(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+      .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
       // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
       .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
       .trim();
@@ -539,7 +539,7 @@ export async function updateBlockDateTime(
     if (targetBlockId !== blockId) {
       // 更新父块时保留完整列表项格式（- 和 {: id=... }），但需要用去除斜杠命令后的内容替换
       const dateExpr =
-        /@\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?(?:\s*[,\uFF0C]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?)*/g;
+        /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?(?:\s*[,，]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?)*/g;
       // 先去除斜杠命令，再替换日期
       const cleanedItemLine = processLineText(itemLine, ALL_SLASH_COMMAND_FILTERS);
       newItemLine = cleanedItemLine.replace(dateExpr, optimizedExpr);
@@ -695,8 +695,8 @@ export async function updateBlockContent(
       if (line.startsWith('{:')) continue;
       // 跳过番茄钟行
       if (line.startsWith('🍅')) continue;
-      // 找到包含 @日期 的事项行
-      if (line.includes('@') && /\d{4}-\d{2}-\d{2}/.test(line)) {
+      // 找到包含 @日期 或 📅日期 的事项行
+      if ((line.includes('@') || line.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(line)) {
         itemLineIndex = i;
         break;
       }
@@ -711,7 +711,7 @@ export async function updateBlockContent(
       console.log('[Task Assistant] updateBlockContent - isTaskList:', isTaskList, 'itemLine:', itemLine);
 
       // 检测后缀是否是状态标签
-      const isStatusTag = suffix === '#done' || suffix === '#abandoned' || suffix === '#已完成' || suffix === '#已放弃';
+      const isStatusTag = suffix === '#done' || suffix === '#abandoned' || suffix === '#已完成' || suffix === '#已放弃' || suffix === '✅' || suffix === '❌';
       console.log('[Task Assistant] updateBlockContent - suffix:', suffix, 'isStatusTag:', isStatusTag);
 
       if (isTaskList && isStatusTag) {
@@ -721,8 +721,8 @@ export async function updateBlockContent(
         const taskListMatch = itemLine.match(/(\[\s*)([xX]?)(\s*\]\s*)/);
         console.log('[Task Assistant] updateBlockContent - taskListMatch:', taskListMatch);
         if (taskListMatch) {
-          const isAbandon = suffix === '#abandoned' || suffix === '#已放弃';
-          const newMarker = (suffix === '#done' || suffix === '#已完成') ? '[x] ' : '[ ] ';
+          const isAbandon = suffix === '#abandoned' || suffix === '#已放弃' || suffix === '❌';
+          const newMarker = (suffix === '#done' || suffix === '#已完成' || suffix === '✅') ? '[x] ' : '[ ] ';
           console.log('[Task Assistant] updateBlockContent - newMarker:', newMarker);
           let newLine = itemLine.replace(taskListMatch[0], newMarker);
           if (isAbandon && !itemLine.includes('#已放弃') && !itemLine.includes('#abandoned')) {
@@ -786,6 +786,8 @@ export async function updateBlockContent(
 
       // 回写整个块（父块解析时更新父块，否则更新当前块）
       let newContent = lines.join('\n');
+      // 将日期标记从 @ 转换为 📅
+      newContent = newContent.replace(/@(\d{4}-\d{2}-\d{2})/g, '📅$1');
       let targetBlockId = blockId;
       if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
         newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
@@ -802,7 +804,33 @@ export async function updateBlockContent(
 
     // 降级：如果没有找到事项行，使用原来的方式
     let content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
-    let newContent = `${content} ${suffix}`;
+    
+    // 检测是否使用任务列表格式
+    const isTaskList = isTaskListFormat(content);
+    const isStatusTag = suffix === '#done' || suffix === '#abandoned' || suffix === '#已完成' || suffix === '#已放弃' || suffix === '✅' || suffix === '❌';
+    
+    let newContent: string;
+    if (isTaskList && isStatusTag) {
+      // 任务列表格式 + 状态标签：更新任务标记
+      const taskListMatch = content.match(/(\[\s*)([xX]?)(\s*\]\s*)/);
+      if (taskListMatch) {
+        const isAbandon = suffix === '#abandoned' || suffix === '#已放弃' || suffix === '❌';
+        const newMarker = (suffix === '#done' || suffix === '#已完成' || suffix === '✅') ? '[x] ' : '[ ] ';
+        let newLine = content.replace(taskListMatch[0], newMarker);
+        if (isAbandon) {
+          newLine = newLine.trimEnd() + ' ' + suffix;
+        }
+        newContent = newLine;
+      } else {
+        newContent = `${content} ${suffix}`;
+      }
+    } else {
+      newContent = `${content} ${suffix}`;
+    }
+    
+    // 将日期标记从 @ 转换为 📅
+    newContent = newContent.replace(/@(\d{4}-\d{2}-\d{2})/g, '📅$1');
+    
     let targetBlockId = blockId;
     if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
       newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);

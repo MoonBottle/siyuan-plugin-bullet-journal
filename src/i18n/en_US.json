@@ -364,11 +364,11 @@
     "back": "Back"
   },
   "statusTag": {
-    "completed": "#done",
-    "abandoned": "#abandoned",
+    "completed": "✅",
+    "abandoned": "❌",
     "pending": ""
   },
-  "taskTag": "#task",
+  "taskTag": "📋",
   "common": {
     "more": "More",
     "loading": "Loading...",
