@@ -157,7 +157,22 @@ const weekDays = computed(() => [
   { value: 6, label: t('recurring.saturday') },
   { value: 0, label: t('recurring.sunday') }
 ]);
-const selectedWeekDays = ref<number[]>(props.initialRepeatRule?.daysOfWeek ?? [1, 2, 3, 4, 5]); // 默认周一到周五
+// 根据事项日期获取默认周几（如果没有指定）
+function getDefaultWeekDays(): number[] {
+  if (props.initialRepeatRule?.daysOfWeek) {
+    return props.initialRepeatRule.daysOfWeek;
+  }
+  // 根据事项日期获取周几，如果没有则默认周一
+  const itemDate = item.value?.date;
+  if (itemDate) {
+    const date = new Date(itemDate);
+    const dayOfWeek = date.getDay(); // 0=周日, 1=周一...
+    return [dayOfWeek];
+  }
+  return [1]; // 默认周一
+}
+
+const selectedWeekDays = ref<number[]>(getDefaultWeekDays());
 
 function toggleWeekDay(day: number) {
   const index = selectedWeekDays.value.indexOf(day);
