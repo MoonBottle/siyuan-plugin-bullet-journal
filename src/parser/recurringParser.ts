@@ -32,7 +32,8 @@ const REPEAT_RULE_MAP: Record<string, RepeatRuleType> = {
 };
 
 // 重复规则正则
-const REPEAT_RULE_REGEX = /🔁(每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)(?::(\d+)日?)?/i;
+// 支持格式：🔁每周、🔁每周:1,3,5（周几，0=周日，1=周一...）
+const REPEAT_RULE_REGEX = /🔁(每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)(?::([\d,]+)日?)?/i;
 
 // 结束条件正则
 const END_DATE_REGEX = /🔚(\d{4}-\d{2}-\d{2})/;
@@ -48,15 +49,24 @@ export function parseRepeatRule(line: string): RepeatRule | undefined {
   if (!match) return undefined;
 
   const ruleKey = match[1].toLowerCase();
-  const dayOfMonth = match[2] ? parseInt(match[2], 10) : undefined;
+  const param = match[2]; // 可能是 "15"（每月15日）或 "1,3,5"（周一、周三、周五）
   
   const type = REPEAT_RULE_MAP[ruleKey];
   if (!type) return undefined;
 
-  return {
-    type,
-    dayOfMonth
-  };
+  const result: RepeatRule = { type };
+
+  if (param) {
+    if (type === 'monthly') {
+      // 每月指定日期
+      result.dayOfMonth = parseInt(param, 10);
+    } else if (type === 'weekly') {
+      // 每周指定周几
+      result.daysOfWeek = param.split(',').map(d => parseInt(d.trim(), 10)).filter(d => d >= 0 && d <= 6);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -125,9 +135,29 @@ export function getNextOccurrenceDate(
       date.setDate(date.getDate() + 1);
       break;
 
-    case 'weekly':
-      date.setDate(date.getDate() + 7);
+    case 'weekly': {
+      const daysOfWeek = repeatRule.daysOfWeek;
+      if (daysOfWeek && daysOfWeek.length > 0) {
+        // 指定周几：找下一个最近的指定周几
+        const currentDay = date.getDay(); // 0=周日, 1=周一, ..., 6=周六
+        // 排序确保正确查找
+        const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
+        
+        // 找下一个周几
+        let nextDay = sortedDays.find(d => d > currentDay);
+        if (nextDay === undefined) {
+          // 下周的第一个指定日
+          nextDay = sortedDays[0];
+          date.setDate(date.getDate() + (7 - currentDay + nextDay));
+        } else {
+          date.setDate(date.getDate() + (nextDay - currentDay));
+        }
+      } else {
+        // 普通每周：+7天
+        date.setDate(date.getDate() + 7);
+      }
       break;
+    }
 
     case 'monthly':
       if (dayOfMonth !== undefined) {
@@ -224,8 +254,12 @@ export function generateRepeatRuleMarker(repeatRule: RepeatRule): string {
 
   const typeStr = typeMap[type] || type;
   
-  if (type === 'monthly' && dayOfMonth !== undefined) {
-    return `🔁每月:${dayOfMonth}日`;
+  if (type === 'monthly' && repeatRule.dayOfMonth !== undefined) {
+    return `🔁每月:${repeatRule.dayOfMonth}日`;
+  }
+
+  if (type === 'weekly' && repeatRule.daysOfWeek && repeatRule.daysOfWeek.length > 0) {
+    return `🔁每周:${repeatRule.daysOfWeek.join(',')}`;
   }
 
   return `🔁${typeStr}`;

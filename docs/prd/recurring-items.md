@@ -35,6 +35,7 @@
 |------|------|------------|
 | `🔁每天` | 每天重复 | +1 天 |
 | `🔁每周` | 每周重复 | +7 天，保持星期几 |
+| `🔁每周:1,3,5` | 每周指定周几重复 | 下周一、三、五（0=周日，1-6=周一到周六）|
 | `🔁每月` | 每月重复（保持当前日号） | +1 月，保持日号（边界处理见 2.4） |
 | `🔁每月:15日` | 每月固定日期重复 | 每月 15 日（仅支持阿拉伯数字） |
 | `🔁每年` | 每年重复 | +1 年，保持月日 |
@@ -161,7 +162,7 @@ interface Item {
 // 重复规则类型
 type RepeatRule = 
   | { type: 'daily' }
-  | { type: 'weekly' }
+  | { type: 'weekly'; daysOfWeek?: number[] }  // daysOfWeek 指定周几（0=周日，1=周一...）
   | { type: 'monthly'; dayOfMonth?: number }  // dayOfMonth 指定每月几号
   | { type: 'yearly' }
   | { type: 'workday' };
@@ -180,6 +181,7 @@ interface EndCondition {
 |------|----------|
 | `🔁每月` | `repeatRule: { type: 'monthly' }` |
 | `🔁每月:15日` | `repeatRule: { type: 'monthly', dayOfMonth: 15 }` |
+| `🔁每周:1,3,5` | `repeatRule: { type: 'weekly', daysOfWeek: [1, 3, 5] }` | 每周一、三、五 |
 | `🔁每月🔚2026-12-31` | `repeatRule: { type: 'monthly' }`, `endCondition: { type: 'date', endDate: '2026-12-31' }` |
 | `🔁每周🔢52` | `repeatRule: { type: 'weekly' }`, `endCondition: { type: 'count', maxCount: 52 }` |
 
@@ -230,7 +232,9 @@ interface EndCondition {
 
 1. 根据 repeatRule 计算下一日期：
    - daily: date + 1 天
-   - weekly: date + 7 天
+   - weekly: 
+     * 有 daysOfWeek: 找下一个最近的指定周几
+     * 无 daysOfWeek: date + 7 天
    - monthly: 
      * 有 dayOfMonth: 下个月指定日期
      * 无 dayOfMonth: date + 1 月，边界处理见 2.4
@@ -407,6 +411,7 @@ function getNextWorkdayDate(date: string): string {
 - [ ] `🔁每月:15日` 从当前日期往后找下个指定日期
 - [ ] 月份边界处理正确（1月31日→2月28/29日）
 - [ ] 支持 `🔁每月:15日` 指定日期重复
+- [ ] 支持 `🔁每周:1,3,5` 指定周几重复（0=周日，1=周一...）
 - [ ] 新 block 继承 content、reminder、repeatRule
 - [ ] `🔢N` 创建下次时递减为 `🔢N-1`
 - [ ] `🔢0` 或 `🔢1`（创建后变为0）时隐藏「创建下次」按钮
@@ -462,6 +467,24 @@ function getNextWorkdayDate(date: string): string {
 
 # 继续标记 #done
 周会 @2026-05-15 🔁每月:15日
+```
+
+### 固定周几示例
+
+```markdown
+# 场景：每周一、三、五健身（今天是周二 3月18日）
+健身 @2026-03-18 🔁每周:1,3,5
+
+# 标记 #done → 自动创建（下个指定日是周三）
+健身 @2026-03-19 🔁每周:1,3,5
+
+# 继续标记 #done → 自动创建（周五）
+健身 @2026-03-21 🔁每周:1,3,5
+
+# 继续标记 #done → 自动创建（下周一）
+健身 @2026-03-24 🔁每周:1,3,5
+
+# 周几编号：0=周日，1=周一，2=周二，3=周三，4=周四，5=周五，6=周六
 ```
 
 **标记顺序约定**：

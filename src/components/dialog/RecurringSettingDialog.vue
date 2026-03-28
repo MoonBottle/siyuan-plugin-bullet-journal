@@ -20,6 +20,22 @@
         </button>
       </div>
 
+      <!-- 每周指定周几 -->
+      <div v-if="selectedRule === 'weekly'" class="custom-section">
+        <div class="weekday-label">{{ t('recurring.selectWeekDays') }}</div>
+        <div class="weekday-buttons">
+          <button
+            v-for="day in weekDays"
+            :key="day.value"
+            class="weekday-btn"
+            :class="{ active: selectedWeekDays.includes(day.value) }"
+            @click="toggleWeekDay(day.value)"
+          >
+            {{ day.label }}
+          </button>
+        </div>
+      </div>
+
       <!-- 每月指定日期 -->
       <div v-if="selectedRule === 'monthly'" class="custom-section">
         <label class="checkbox-row">
@@ -131,6 +147,29 @@ const selectedRule = ref(props.initialRepeatRule?.type ?? 'daily');
 const hasSpecificDay = ref(!!props.initialRepeatRule?.dayOfMonth);
 const specificDay = ref(props.initialRepeatRule?.dayOfMonth ?? 1);
 
+// 周几选择（0=周日, 1=周一, ..., 6=周六）
+const weekDays = computed(() => [
+  { value: 1, label: t('recurring.monday') },
+  { value: 2, label: t('recurring.tuesday') },
+  { value: 3, label: t('recurring.wednesday') },
+  { value: 4, label: t('recurring.thursday') },
+  { value: 5, label: t('recurring.friday') },
+  { value: 6, label: t('recurring.saturday') },
+  { value: 0, label: t('recurring.sunday') }
+]);
+const selectedWeekDays = ref<number[]>(props.initialRepeatRule?.daysOfWeek ?? [1, 2, 3, 4, 5]); // 默认周一到周五
+
+function toggleWeekDay(day: number) {
+  const index = selectedWeekDays.value.indexOf(day);
+  if (index > -1) {
+    selectedWeekDays.value.splice(index, 1);
+  } else {
+    selectedWeekDays.value.push(day);
+  }
+  // 保持排序
+  selectedWeekDays.value.sort((a, b) => a - b);
+}
+
 // 结束条件
 const endConditions = computed(() => [
   { value: 'never', label: t('recurring.never') },
@@ -151,6 +190,10 @@ function handleSave() {
   const repeatRule: RepeatRule = {
     type: selectedRule.value as RepeatRule['type']
   };
+
+  if (selectedRule.value === 'weekly' && selectedWeekDays.value.length > 0) {
+    repeatRule.daysOfWeek = [...selectedWeekDays.value];
+  }
 
   if (selectedRule.value === 'monthly' && hasSpecificDay.value) {
     repeatRule.dayOfMonth = Math.max(1, Math.min(31, specificDay.value));
@@ -324,6 +367,40 @@ function handleCancel() {
 .count-label {
   font-size: 13px;
   color: var(--b3-theme-on-surface);
+}
+
+.weekday-label {
+  font-size: 13px;
+  color: var(--b3-theme-on-surface);
+  margin-bottom: 10px;
+}
+
+.weekday-buttons {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.weekday-btn {
+  padding: 8px 4px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+
+  &:hover {
+    border-color: var(--b3-theme-primary);
+  }
+
+  &.active {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary, #fff);
+    border-color: var(--b3-theme-primary);
+  }
 }
 
 .action-section {

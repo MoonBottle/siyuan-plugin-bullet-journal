@@ -131,6 +131,7 @@ export type RepeatRuleType = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'workda
 export interface RepeatRule {
   type: RepeatRuleType;
   dayOfMonth?: number;  // 每月指定日期（如 15 表示每月15日）
+  daysOfWeek?: number[];  // 每周指定周几（0=周日, 1=周一, ..., 6=周六）
 }
 
 // 结束条件

@@ -535,12 +535,22 @@
     "workday": "Workday",
     "specificDay": "Specific Day",
     "dayOfMonth": "Day of Month",
+    "selectWeekDays": "Select Days",
+    "monday": "Mon",
+    "tuesday": "Tue",
+    "wednesday": "Wed",
+    "thursday": "Thu",
+    "friday": "Fri",
+    "saturday": "Sat",
+    "sunday": "Sun",
     "endCondition": "End Condition",
     "never": "Never",
     "endByDate": "End by Date",
     "endByCount": "End by Count",
     "times": "times",
     "setRecurring": "Set Recurring",
-    "skipThis": "Skip This"
+    "skipThis": "Skip This",
+    "save": "Save",
+    "cancel": "Cancel"
   }
 }
