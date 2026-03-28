@@ -29,7 +29,6 @@ import { t, getCurrentLocale } from '@/i18n';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
-import { createNextOccurrence } from '@/services/recurringService';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
 
@@ -262,11 +261,8 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       onComplete: async () => {
         if (!item.blockId) return;
         const tag = getStatusTag('completed');
-        const success = await updateBlockContent(item.blockId, tag);
-        // 如果有重复规则，自动创建下一次事项
-        if (success && item.repeatRule && plugin) {
-          await createNextOccurrence(plugin, item as Item);
-        }
+        await updateBlockContent(item.blockId, tag);
+        // 注意：重复事项的自动创建由 WebSocket 处理器处理
         // 操作成功，等待 ws-main 事件触发定向刷新
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),

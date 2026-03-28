@@ -19,7 +19,6 @@ import {
   findNearestDate,
   extractItemFromBlock
 } from '@/utils/slashCommandUtils';
-import { createNextOccurrence } from '@/services/recurringService';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
@@ -762,12 +761,8 @@ async function markAsDone(nodeElement: HTMLElement) {
   if (success) {
     showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
     
-    // 如果有重复规则，自动创建下一次事项
-    const item = await extractItemFromBlock(blockId);
-    const plugin = usePlugin();
-    if (item?.repeatRule && plugin) {
-      await createNextOccurrence(plugin, item);
-    }
+    // 注意：重复事项的自动创建由 WebSocket 处理器处理
+    // 避免重复调用 createNextOccurrence
     
     // 数据刷新会触发统一检测逻辑
   } else {

@@ -210,7 +210,6 @@ import { computed, onUnmounted, ref } from 'vue';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
-import { createNextOccurrence } from '@/services/recurringService';
 import type { Item } from '@/types/models';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
@@ -368,10 +367,7 @@ const handleDone = async () => {
     const tag = getStatusTag('completed');
     const success = await updateBlockContent(currentItem.value.blockId, tag);
 
-    // 如果有重复规则，自动创建下一次事项
-    if (success && currentItem.value?.repeatRule && plugin) {
-      await createNextOccurrence(plugin, currentItem.value);
-    }
+    // 注意：重复事项的自动创建由 WebSocket 处理器处理
 
     if (success && plugin) {
       // 刷新项目数据（会触发统一检测逻辑）
