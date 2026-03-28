@@ -54,51 +54,47 @@ function generateExampleContent(): string {
   const dateMarker = t('dateMarker') || '📅';
 
   if (isEn) {
-    return `## Website Redesign Project
+    return `## Task Assistant Tutorial
 
-Homepage Redesign ${taskTag}
+Quick Add with Slash Commands:
+Type /task then Enter → Mark as task ${taskTag}
+Type /today then Enter → Add today's item ${dateMarker}${today}
+Type /tomorrow then Enter → Add tomorrow's item ${dateMarker}${tomorrow}
+Type /done then Enter → Mark as completed ${completedTag}
+Type /focus then Enter → Start pomodoro 🍅
 
-Determine Design Style ${dateMarker}${today}
+This is a task ${taskTag}
 
-🍅${today} 10:00:00~10:25:00 Collecting materials
+This is an all-day item ${dateMarker}${today}
 
-Complete Homepage Prototype ${dateMarker}${yesterday} 10:00:00~12:00:00 ${completedTag}
+This is an item with time ${dateMarker}${today} 09:00:00~10:00:00
 
-Review Meeting ${dateMarker}${yesterday} 14:00:00~15:00:00 ${abandonedTag}
+This is a completed item ${dateMarker}${today} ${completedTag}
 
-Develop Homepage Components ${dateMarker}${tomorrow} 09:00:00~12:00:00
+This is an abandoned item ${dateMarker}${today} ${abandonedTag}
 
-Responsive Adaptation ${dateMarker}${tomorrow} 14:00:00~17:00:00
-
-Performance Optimization ${taskTag}
-
-Image Compression and Lazy Loading ${dateMarker}${today}
-
-Code Splitting and Caching Strategy ${dateMarker}${tomorrow}
+🍅${today} 10:00:00~10:25:00 This is a pomodoro record
 `;
   }
 
-  return `## 网站重构项目
+  return `这是一个任务 ${taskTag}
 
-首页改版 ${taskTag}
+这是一个全天事项 ${dateMarker}${today}
 
-确定设计风格 ${dateMarker}${today}
+这是一个带时间的事项 ${dateMarker}${today} 09:00:00~10:00:00
 
-🍅${today} 10:00:00~10:25:00 收集素材
+这是一个已完成的事项 ${dateMarker}${today} ${completedTag}
 
-完成首页原型设计 ${dateMarker}${yesterday} 10:00:00~12:00:00 ${completedTag}
+这是一个已放弃的事项 ${dateMarker}${today} ${abandonedTag}
 
-评审会议 ${dateMarker}${yesterday} 14:00:00~15:00:00 ${abandonedTag}
+🍅${today} 10:00:00~10:25:00 这是一个番茄钟记录
 
-开发首页组件 ${dateMarker}${tomorrow} 09:00:00~12:00:00
-
-响应式适配 ${dateMarker}${tomorrow} 14:00:00~17:00:00
-
-性能优化 ${taskTag}
-
-图片压缩和懒加载 ${dateMarker}${today}
-
-代码分割和缓存策略 ${dateMarker}${tomorrow}
+  > 📌 斜杠命令快速添加：
+输入 /rw 回车 → 标记为任务
+输入 /jt 回车 → 添加今日事项
+输入 /mt 回车 → 添加明日事项
+输入 /wc 回车 → 标记为完成
+输入 /zz 回车 → 开始番茄钟
 `;
 }
 
