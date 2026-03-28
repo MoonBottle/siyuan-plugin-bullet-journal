@@ -12,6 +12,7 @@ import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRan
 import { eventBus, Events } from '@/utils/eventBus';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
 import { calculateReminderTime } from '@/parser/reminderParser';
+import { getHPathByID } from '@/api';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -489,7 +490,17 @@ export const useProjectStore = defineStore('project', {
           // 从现有项目获取 groupId 和 path
           const existingProject = this.projects.find(p => p.id === docId);
           const groupId = existingProject?.groupId;
-          const path = existingProject?.path || '';
+          let path = existingProject?.path;
+          
+          // 如果没有 path，从思源查询
+          if (!path) {
+            try {
+              path = await getHPathByID(docId);
+            } catch (e) {
+              console.warn('[Task Assistant] Failed to get hpath for doc:', docId);
+              path = '';
+            }
+          }
 
           // 使用 parser 的复用方法：解析 + 番茄钟合并
           const project = await parser.parseAndProcessSingleDocument(
