@@ -159,7 +159,7 @@ export const listSkillsTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'list_skills',
-    description: '查询所有可用的 AI 技能清单。返回技能名称和描述列表。当用户需要执行特定任务（如生成日报、会议纪要等）时，先调用此工具查看有哪些技能可用。无参数。',
+    description: '查询所有可用的 AI 技能清单。返回技能名称和描述列表，用于了解有哪些技能可用。获取完整技能内容请使用 get_skill_detail。无参数。',
     parameters: {
       type: 'object',
       properties: {},
@@ -175,25 +175,16 @@ export const getSkillDetailTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'get_skill_detail',
-    description: '获取指定技能的详细内容。当确定要使用某个技能时，调用此工具获取技能的完整工作流程、格式要求等详细说明。根据技能来源选择参数：自定义技能(source=user)使用 docId，内置技能(source=builtin)使用 skillName。',
+    description: '根据技能名称获取技能的完整内容，包括工作流程、格式要求等详细说明。',
     parameters: {
       type: 'object',
       properties: {
-        docId: {
+        name: {
           type: 'string',
-          description: '自定义技能的文档 ID，来自 list_skills 返回的 docId（当 source=user 时必填）'
-        },
-        skillName: {
-          type: 'string',
-          description: '技能名称，来自 list_skills 返回的 name（当 source=builtin 时必填）'
-        },
-        source: {
-          type: 'string',
-          enum: ['builtin', 'user'],
-          description: '技能来源：builtin 表示内置技能，user 表示自定义技能'
+          description: '技能名称，来自 list_skills 返回的 name'
         }
       },
-      required: ['source']
+      required: ['name']
     }
   }
 };

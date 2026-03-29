@@ -237,7 +237,7 @@ export async function executeTool(
       return JSON.stringify(executeGetPomodoroRecords(context, args));
 
     case 'list_skills':
-      return JSON.stringify(executeListSkills());
+      return JSON.stringify(await executeListSkills());
 
     case 'get_skill_detail':
       return JSON.stringify(await executeGetSkillDetail(args));
@@ -249,59 +249,65 @@ export async function executeTool(
 
 /**
  * 执行 list_skills 工具
- * 返回所有可用技能的名称、描述、docId 和来源
+ * 预加载所有技能到内存，返回技能名称和描述列表
  */
-function executeListSkills(): Array<{ 
+async function executeListSkills(): Promise<Array<{ 
   name: string; 
-  description: string; 
-  docId: string;
-  source: 'builtin' | 'user' 
-}> {
+  description: string;
+}>> {
   const skillService = SkillService.getInstance();
-  const allSkills = skillService.getAllSkillsWithSource();
   
-  return allSkills
-    .filter(skill => skill.enabled)
-    .map(skill => ({
+  console.log('[executeListSkills] 开始加载技能...');
+  
+  // 预加载所有技能到内存缓存
+  await skillService.preloadAllSkills();
+  
+  // 返回缓存中的技能元数据
+  const skillNames = skillService.getCachedSkillNames();
+  const result = skillNames.map(name => {
+    const skill = skillService.getSkillFromCache(name)!;
+    return {
       name: skill.name,
-      description: skill.description,
-      docId: skill.docId,
-      source: skill.source
-    }));
+      description: skill.description
+    };
+  });
+  
+  console.log('[executeListSkills] 返回技能列表:', result.map(s => s.name));
+  return result;
 }
 
 /**
  * 执行 get_skill_detail 工具
- * 获取指定技能的详细内容
- * 参数：docId（自定义技能）、skillName（内置技能）、source（来源标识）
+ * 根据技能名称从内存缓存获取详细内容
+ * 参数：name（技能名称）
  */
 async function executeGetSkillDetail(args: { 
-  docId?: string; 
-  skillName?: string;
-  source?: 'builtin' | 'user';
+  name: string;
 }): Promise<{ 
   name: string; 
   description: string;
   content: string;
-  source: 'builtin' | 'user';
 } | { error: string }> {
   const skillService = SkillService.getInstance();
   
   try {
-    // 使用 source 参数明确指定查找方式
-    // source='user': 根据 docId 查找自定义技能
-    // source='builtin': 根据 skillName 查找内置技能
-    const result = await skillService.resolveSkillByIdOrName({
-      docId: args.docId,
-      skillName: args.skillName,
-      source: args.source
-    });
+    // 从内存缓存获取技能
+    let skill = skillService.getSkillFromCache(args.name);
+    
+    // 如果缓存未命中，重新加载所有技能
+    if (!skill) {
+      await skillService.preloadAllSkills();
+      skill = skillService.getSkillFromCache(args.name);
+    }
+    
+    if (!skill) {
+      return { error: `未找到技能: ${args.name}` };
+    }
     
     return {
-      name: result.skill.metadata.name,
-      description: result.skill.metadata.description,
-      content: result.skill.content,
-      source: result.source
+      name: skill.name,
+      description: skill.description,
+      content: skill.content
     };
   } catch (error) {
     return { 

@@ -10,14 +10,44 @@ import { getBlockKramdown, getBlockAttrs, createDocWithMd, sql, setBlockAttrs } 
 import { showMessage } from 'siyuan';
 
 /**
+ * 技能缓存项
+ */
+interface SkillCacheItem {
+  name: string;
+  description: string;
+  content: string;
+  source: 'builtin' | 'user';
+  docId?: string;
+}
+
+/**
+ * 技能缓存
+ */
+type SkillCache = Record<string, SkillCacheItem>;
+
+/**
  * 技能服务类
  */
 export class SkillService {
   private static instance: SkillService;
   private plugin: any;
+  private skillCache: SkillCache = {};
   
   private constructor(plugin: any) {
     this.plugin = plugin;
+    this.setupCacheInvalidation();
+  }
+  
+  /**
+   * 设置缓存失效监听
+   * 当技能列表变更时自动清除缓存
+   */
+  private setupCacheInvalidation(): void {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('skill-store-changed', () => {
+        this.clearSkillCache();
+      });
+    }
   }
   
   static getInstance(plugin?: any): SkillService {
@@ -215,16 +245,21 @@ export class SkillService {
    * 2. 从文档内容读取技能详情
    */
   private async parseSkillFromDoc(docId: string): Promise<ParsedSkill> {
+    console.log('[SkillService] parseSkillFromDoc - docId:', docId);
+    
     // 获取文档属性
     const attrs = await getBlockAttrs(docId);
+    console.log('[SkillService] parseSkillFromDoc - 获取到属性:', attrs);
     
     // 获取文档内容
     const response = await getBlockKramdown(docId);
-    if (!response?.data?.kramdown) {
+    console.log('[SkillService] parseSkillFromDoc - 获取到内容长度:', response?.kramdown?.length || 0);
+    
+    if (!response?.kramdown) {
       throw new Error('无法获取文档内容');
     }
     
-    return {
+    const result = {
       metadata: {
         name: attrs['custom-skill-name'] || '未命名',
         description: attrs['custom-skill-description'] || '',
@@ -232,10 +267,13 @@ export class SkillService {
         author: attrs['custom-skill-author'],
         tags: []
       },
-      content: response.data.kramdown,
+      content: response.kramdown,
       scripts: [],
       references: []
     };
+    
+    console.log('[SkillService] parseSkillFromDoc - 解析结果 name:', result.metadata.name);
+    return result;
   }
   
   /**
@@ -344,6 +382,87 @@ ${skillList}
       showMessage('创建技能失败', 3000, 'error');
       return null;
     }
+  }
+  
+  /**
+   * 预加载所有技能到内存缓存
+   * 并发加载用户技能和内置技能，用户技能优先覆盖
+   */
+  async preloadAllSkills(): Promise<void> {
+    const skillStore = useSkillStore();
+    const userSkills = skillStore.skills.filter(s => s.enabled);
+    const builtinSkills = getAllBuiltinSkills();
+    
+    console.log('[SkillService] preloadAllSkills - 用户技能数量:', userSkills.length);
+    console.log('[SkillService] preloadAllSkills - 用户技能列表:', userSkills.map(s => s.name));
+    console.log('[SkillService] preloadAllSkills - 内置技能数量:', builtinSkills.length);
+    
+    // 清空缓存
+    this.skillCache = {};
+    
+    // 先加载内置技能
+    for (const builtin of builtinSkills) {
+      this.skillCache[builtin.name] = {
+        name: builtin.name,
+        description: builtin.description,
+        content: builtin.content,
+        source: 'builtin'
+      };
+    }
+    
+    // 加载用户技能（覆盖同名内置技能）
+    const userSkillPromises = userSkills.map(async (skill) => {
+      try {
+        console.log('[SkillService] 正在加载用户技能:', skill.name, 'docId:', skill.docId);
+        const parsed = await this.parseSkillFromDoc(skill.docId);
+        console.log('[SkillService] 用户技能加载成功:', skill.name);
+        return {
+          name: skill.name,
+          description: skill.description,
+          content: parsed.content,
+          source: 'user' as const,
+          docId: skill.docId
+        };
+      } catch (error) {
+        console.error(`[SkillService] Failed to load user skill "${skill.name}":`, error);
+        return null;
+      }
+    });
+    
+    const loadedUserSkills = await Promise.all(userSkillPromises);
+    
+    for (const skill of loadedUserSkills) {
+      if (skill) {
+        this.skillCache[skill.name] = skill;
+      }
+    }
+    
+    console.log('[SkillService] Preloaded', Object.keys(this.skillCache).length, 'skills');
+    console.log('[SkillService] Cached skills:', Object.keys(this.skillCache));
+  }
+  
+  /**
+   * 从缓存获取技能
+   * @param name 技能名称
+   * @returns 技能缓存项，未找到返回 undefined
+   */
+  getSkillFromCache(name: string): SkillCacheItem | undefined {
+    return this.skillCache[name];
+  }
+  
+  /**
+   * 获取所有已缓存的技能名称列表
+   */
+  getCachedSkillNames(): string[] {
+    return Object.keys(this.skillCache);
+  }
+  
+  /**
+   * 清除技能缓存
+   */
+  clearSkillCache(): void {
+    this.skillCache = {};
+    console.log('[SkillService] Skill cache cleared');
   }
 }
 
