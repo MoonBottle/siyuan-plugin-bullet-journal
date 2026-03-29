@@ -536,6 +536,24 @@ export class ConversationStorageService {
   }
 
   /**
+   * 加载所有会话（用于 UI 列表展示）
+   */
+  async loadAllConversations(): Promise<ConversationData[]> {
+    const index = await this.loadIndex();
+    const conversations: ConversationData[] = [];
+
+    for (const item of index.conversations) {
+      const conv = await this.loadConversation(item.id);
+      if (conv) {
+        conversations.push(conv);
+      }
+    }
+
+    // 按更新时间倒序排列（最新的在前）
+    return conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  /**
    * 导出所有数据（用于备份）
    */
   async exportAllData(): Promise<{
