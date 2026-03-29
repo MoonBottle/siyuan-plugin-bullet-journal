@@ -1044,8 +1044,15 @@ export default class TaskAssistantPlugin extends Plugin {
     const data = event.detail;
     if (!data || !data.cmd) return;
 
+    // 处理文档删除事件 - 同步删除关联的技能
+    if (data.cmd === 'removeDoc') {
+      this.handleDocRemove(data);
+      this.scheduleRefresh();
+      return;
+    }
+
     // 全量刷新命令
-    const fullRefreshCmds = ['txerr', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
+    const fullRefreshCmds = ['txerr', 'refreshdoc', 'createdailynote', 'moveDoc'];
     if (fullRefreshCmds.includes(data.cmd)) {
       this.scheduleRefresh();
       return;
@@ -1068,6 +1075,53 @@ export default class TaskAssistantPlugin extends Plugin {
 
       // 检测任务列表完成（勾选 [ ] -> [x]）
       await this.handleTaskListCompletions(data);
+    }
+  }
+
+  /**
+   * 处理文档删除事件
+   * 当文档被删除时，同步删除关联的技能配置
+   */
+  private handleDocRemove(data: any) {
+    // 尝试从不同位置获取被删除的文档 ID
+    // 思源 removeDoc 事件通常包含 ids 数组或单条数据的 id
+    const ids: string[] = [];
+    
+    if (data.data?.ids && Array.isArray(data.data.ids)) {
+      // 批量删除的情况
+      ids.push(...data.data.ids);
+    } else if (data.data?.id) {
+      // 单条删除的情况
+      ids.push(data.data.id);
+    } else if (Array.isArray(data.data)) {
+      // 某些版本可能直接是数组
+      data.data.forEach((item: any) => {
+        if (item?.id) ids.push(item.id);
+      });
+    }
+    
+    if (ids.length === 0) {
+      console.log('[Task Assistant] removeDoc event: no doc IDs found');
+      return;
+    }
+    
+    console.log('[Task Assistant] Documents removed:', ids);
+    
+    // 检查并删除关联的技能
+    const skillStore = useSkillStore();
+    let removedCount = 0;
+    
+    for (const docId of ids) {
+      const skill = skillStore.getSkillByDocId(docId);
+      if (skill) {
+        skillStore.removeSkill(docId);
+        removedCount++;
+        console.log(`[Task Assistant] Removed skill "${skill.name}" for deleted doc: ${docId}`);
+      }
+    }
+    
+    if (removedCount > 0) {
+      console.log(`[Task Assistant] Total ${removedCount} skill(s) removed`);
     }
   }
 
