@@ -11,6 +11,7 @@ import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/d
 import { getBlockIdFromElement, getBlockIdFromRange } from '@/utils/itemBlockUtils';
 import { useProjectStore, usePomodoroStore, useSkillStore } from '@/stores';
 import { useConversationStorage } from '@/services/conversationStorageService';
+import { useSkillService } from '@/services/skillService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
@@ -172,8 +173,7 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private async initSkillStorage() {
     try {
-      // 初始化技能服务（必须先初始化，因为 skillStore 依赖它）
-      const { useSkillService } = await import('@/services/skillService');
+      // 初始化技能服务（必须先初始化，因为其他模块依赖它）
       useSkillService(this);
       
       // 初始化技能存储
