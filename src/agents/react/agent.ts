@@ -288,13 +288,8 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
       args
     });
 
-    // 如果有父消息ID，更新父消息的 toolCalls
-    if (parentMessageId) {
-      this.updateAssistantToolCalls(parentMessageId, [toolCall]);
-    } else {
-      // 否则添加新的 AI 消息（包含工具调用）
-      this.addAssistantMessage('', [toolCall]);
-    }
+    // 注意：不再在这里更新 toolCalls，因为完整的 toolCalls 已经在 think() 或 run() 中保存
+    // 这里只执行工具调用，不修改消息的 toolCalls 属性
 
     try {
       // 执行工具调用
