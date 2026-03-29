@@ -332,11 +332,7 @@ const autoSaveConfig = () => {
   saveTimeout = setTimeout(async () => {
     if (plugin?.saveAISettings) {
       try {
-        await plugin.saveAISettings({
-          providers: aiStore.providers,
-          activeProviderId: aiStore.activeProviderId,
-          showToolCalls: aiStore.showToolCalls
-        });
+        await plugin.saveAISettings(aiStore.getExportData());
       } catch (error) {
         console.error('[AI Chat] Auto save config failed:', error);
       }

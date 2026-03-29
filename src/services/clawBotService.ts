@@ -3,18 +3,19 @@
  * 封装微信 iLink API，处理登录、消息收发、媒体加解密
  */
 
-import type {
-  ClawBotConfig,
-  WeixinMessage,
-  GetUpdatesReq,
-  GetUpdatesResp,
-  QRCodeResponse,
-  QRStatusResponse,
-  SendMessageReq,
-  UploadedFileInfo,
-  MessageItem,
-  CDNMedia,
-  WeixinMessageItemType
+import {
+  WeixinMessageType,
+  WeixinMessageItemType,
+  type ClawBotConfig,
+  type WeixinMessage,
+  type GetUpdatesReq,
+  type GetUpdatesResp,
+  type QRCodeResponse,
+  type QRStatusResponse,
+  type SendMessageReq,
+  type UploadedFileInfo,
+  type MessageItem,
+  type CDNMedia
 } from '@/types/clawbot';
 import { aes128EcbEncrypt, aes128EcbDecrypt, generateAesKey, base64Encode, base64Decode, md5, bytesToHex } from '@/utils/crypto';
 
@@ -302,7 +303,13 @@ export class ClawBotService {
               item_list_length: msg.item_list?.length,
               item_list: msg.item_list
             });
-            await this.processInboundMessage(msg);
+            console.log('[ClawBot] 开始调用 processInboundMessage');
+            try {
+              await this.processInboundMessage(msg);
+              console.log('[ClawBot] processInboundMessage 完成');
+            } catch (err) {
+              console.error('[ClawBot] processInboundMessage 出错:', err);
+            }
           }
         }
 

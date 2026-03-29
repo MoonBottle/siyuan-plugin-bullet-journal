@@ -220,6 +220,11 @@ export const useAIStore = defineStore('ai', () => {
     }
     if (settings.clawbot) {
       clawBotConfig.value = { ...clawBotConfig.value, ...settings.clawbot };
+      console.log('[AIStore] loadSettings 恢复 ClawBot 配置:', {
+        hasToken: !!clawBotConfig.value.token,
+        hasAccountId: !!clawBotConfig.value.accountId,
+        loginStatus: clawBotConfig.value.loginStatus
+      });
     }
     
     const enabled = providers.value.filter(p => p.enabled);
@@ -426,7 +431,11 @@ export const useAIStore = defineStore('ai', () => {
         enabled: clawBotConfig.value.enabled,
         baseUrl: clawBotConfig.value.baseUrl,
         cdnBaseUrl: clawBotConfig.value.cdnBaseUrl,
-        // token 和敏感信息不导出
+        // 保存登录凭证以便重启后恢复
+        accountId: clawBotConfig.value.accountId,
+        token: clawBotConfig.value.token,
+        userId: clawBotConfig.value.userId,
+        loginStatus: clawBotConfig.value.loginStatus,
       }
     };
   }
@@ -508,13 +517,24 @@ async function initializeClawBot(plugin: any) {
     return;
   }
   
-  const clawBot = useClawBotService(store.clawBotConfig);
-  console.log('[AIStore] ClawBot 状态:', { isConnected: clawBot.isConnected() });
+  const config = store.clawBotConfig;
+  console.log('[AIStore] ClawBot 配置状态:', { 
+    hasToken: !!config.token, 
+    hasAccountId: !!config.accountId,
+    loginStatus: config.loginStatus 
+  });
   
-  // 如果之前已登录，恢复状态
-  if (clawBot.isConnected()) {
-    console.log('[AIStore] 恢复 ClawBot 连接');
-    clawBot.updateConfig({ loginStatus: 'connected' });
+  // 如果有保存的 token，恢复连接
+  if (config.token && config.accountId) {
+    console.log('[AIStore] 发现保存的凭证，恢复 ClawBot 连接');
+    
+    // 更新服务配置
+    const clawBot = useClawBotService(config);
+    clawBot.updateConfig({
+      ...config,
+      loginStatus: 'connected'
+    });
+    
     store.clawBotConfig.loginStatus = 'connected';
     store.clawBotStats.isConnected = true;
     
@@ -527,6 +547,10 @@ async function initializeClawBot(plugin: any) {
       console.log('[AIStore] 收到微信消息:', msg);
       handleWeixinMessage(msg);
     });
+    
+    console.log('[AIStore] ClawBot 恢复连接成功');
+  } else {
+    console.log('[AIStore] 无保存的凭证，需要重新登录');
   }
 }
 
@@ -572,7 +596,11 @@ async function pollClawBotLogin(): Promise<boolean> {
       console.log('[AIStore] 登录成功，启动监听和注册处理器');
       // 更新配置
       const config = clawBot.getConfig();
-      store.clawBotConfig = { ...store.clawBotConfig, ...config };
+      store.clawBotConfig = { 
+        ...store.clawBotConfig, 
+        ...config,
+        loginStatus: 'connected'
+      };
       store.clawBotStats.isConnected = true;
       
       // 启动消息监听
@@ -584,6 +612,9 @@ async function pollClawBotLogin(): Promise<boolean> {
         console.log('[AIStore] 收到微信消息:', msg);
         handleWeixinMessage(msg);
       });
+      
+      // 触发设置保存
+      console.log('[AIStore] 保存登录凭证');
       
       showMessage('微信连接成功！', 3000);
     }
