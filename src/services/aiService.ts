@@ -432,7 +432,7 @@ export async function callAIWithToolsStream(
   config: AIProviderConfig,
   messages: ChatMessage[],
   tools: ToolDefinition[],
-  onChunk?: (chunk: string, reasoning?: string, usage?: UsageInfo) => void
+  onChunk?: (chunk: string, reasoning?: string, usage?: UsageInfo, toolCalls?: ToolCall[]) => void
 ): Promise<AIResponseWithTools> {
   if (!config.apiKey) {
     throw new Error('API Key 未配置');
@@ -512,16 +512,7 @@ export async function callAIWithToolsStream(
               fullReasoning += delta.reasoning;
             }
 
-            // 处理内容增量
-            if (delta?.content) {
-              fullContent += delta.content;
-              onChunk?.(fullContent, fullReasoning, lastUsage);
-            } else if (delta?.reasoning || usage) {
-              // 即使没有 content，只要有 reasoning 或 usage 变化也触发回调
-              onChunk?.(fullContent, fullReasoning, lastUsage);
-            }
-
-            // 处理工具调用
+            // 处理工具调用（必须在内容处理之前，以便 toolCalls 能传递给回调）
             if (delta?.tool_calls) {
               for (const toolCallDelta of delta.tool_calls) {
                 const index = toolCallDelta.index;
@@ -543,6 +534,15 @@ export async function callAIWithToolsStream(
                   toolCalls[index].function.arguments += toolCallDelta.function.arguments;
                 }
               }
+            }
+
+            // 处理内容增量
+            if (delta?.content) {
+              fullContent += delta.content;
+              onChunk?.(fullContent, fullReasoning, lastUsage, toolCalls);
+            } else if (delta?.reasoning || usage || delta?.tool_calls) {
+              // 即使没有 content，只要有 reasoning、usage 或 tool_calls 变化也触发回调
+              onChunk?.(fullContent, fullReasoning, lastUsage, toolCalls);
             }
           } catch {
             // 忽略解析错误的行

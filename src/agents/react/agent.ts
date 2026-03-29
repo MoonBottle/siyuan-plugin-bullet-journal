@@ -177,17 +177,24 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
         this.context.provider,
         messages,
         this.context.tools,
-        (chunk, reasoning, usage) => {
+        (chunk, reasoning, usage, receivedToolCalls) => {
           fullContent = chunk;
           if (reasoning) fullReasoning = reasoning;
           if (usage) lastUsage = usage;
+          if (receivedToolCalls) toolCalls = receivedToolCalls;
 
           // 检查是否有工具调用
           if (!detectedToolCalls) {
-            // 流式过程中检查是否包含工具调用标记
-            if (chunk.includes('<tool_call>') || chunk.includes('function')) {
+            // 流式过程中检查是否包含工具调用
+            if (receivedToolCalls && receivedToolCalls.length > 0) {
               detectedToolCalls = true;
               // 有工具调用，更新为静态提示
+              this.updateAssistantMessage(aiMessageId, '思考中...', reasoning);
+              // 同时更新消息的 toolCalls，以便工具结果能正确关联
+              this.updateAssistantToolCalls(aiMessageId, receivedToolCalls);
+            } else if (chunk.includes('<tool_call>') || chunk.includes('function')) {
+              detectedToolCalls = true;
+              // 有工具调用（XML格式），更新为静态提示
               this.updateAssistantMessage(aiMessageId, '思考中...', reasoning);
             } else {
               // 无工具调用，流式显示内容

@@ -99,7 +99,8 @@ export interface ReActAgentEvents {
 export type StreamUpdateCallback = (
   content: string,
   reasoning?: string,
-  usage?: UsageInfo
+  usage?: UsageInfo,
+  toolCalls?: ToolCall[]
 ) => void;
 
 /**
