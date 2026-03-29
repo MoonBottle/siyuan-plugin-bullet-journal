@@ -14,7 +14,7 @@ import type { ReActStep } from '@/agents/react/types';
 import type { ToolExecutionContext } from '@/services/aiToolsExecutor';
 import { bulletJournalTools } from '@/services/aiTools';
 import { buildSystemPrompt } from '@/services/aiPromptService';
-import { useSkillStore } from '@/stores/skillStore';
+import { SkillService } from '@/services/skillService';
 
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
@@ -298,9 +298,10 @@ export const useAIStore = defineStore('ai', () => {
 
     const conversation = currentConversation.value!;
 
-    // 从 skillStore 获取技能列表（name + description）
-    const skillStore = useSkillStore();
-    const skills = skillStore.enabledSkills.map(skill => ({
+    // 从 SkillService 获取所有启用技能（包括内置和用户自定义）
+    const skillService = SkillService.getInstance();
+    const allSkills = skillService.getEnabledSkills();
+    const skills = allSkills.map(skill => ({
       name: skill.name,
       description: skill.description
     }));
