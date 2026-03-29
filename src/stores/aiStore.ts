@@ -14,6 +14,7 @@ import type { ReActStep } from '@/agents/react/types';
 import type { ToolExecutionContext } from '@/services/aiToolsExecutor';
 import { bulletJournalTools } from '@/services/aiTools';
 import { buildSystemPrompt } from '@/services/aiPromptService';
+import { useSkillStore } from '@/stores/skillStore';
 
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
@@ -297,8 +298,15 @@ export const useAIStore = defineStore('ai', () => {
 
     const conversation = currentConversation.value!;
 
-    // 构建系统提示词（不再自动检测技能，由 AI 通过工具自主决策）
-    const systemPrompt = buildSystemPrompt();
+    // 从 skillStore 获取技能列表（name + description）
+    const skillStore = useSkillStore();
+    const skills = skillStore.enabledSkills.map(skill => ({
+      name: skill.name,
+      description: skill.description
+    }));
+    
+    // 构建系统提示词（注入技能列表）
+    const systemPrompt = buildSystemPrompt(skills);
 
     // 设置状态
     isLoading.value = true;
