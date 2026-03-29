@@ -182,9 +182,17 @@ function toggleSkillEnabled(skillId: string, enabled: boolean) {
 
 // 创建覆盖技能
 async function createOverrideSkill(skill: { name: string; description: string }) {
+  // 获取第一个可用笔记本
+  const notebooks = await skillService.getNotebooks();
+  if (!notebooks || notebooks.length === 0) {
+    showMessage('没有可用的笔记本', 3000, 'error');
+    return;
+  }
+  
   const result = await skillService.createOverrideSkill(
     skill.name,
-    `AI技能/${skill.name}`
+    notebooks[0].id,
+    'AI技能'
   );
   
   if (result) {

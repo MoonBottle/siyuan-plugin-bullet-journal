@@ -6,7 +6,7 @@
 import type { SkillConfig, ParsedSkill, SkillResolutionResult, SkillExecutionContext, SkillExecutionResult } from '@/types/skill';
 import { getBuiltinSkill, isBuiltinSkill, getAllBuiltinSkills } from '@/utils/skillTemplates';
 import { useSkillStore } from '@/stores/skillStore';
-import { getBlockAttrs, createDocWithMd, sql, setBlockAttrs, exportMdContent } from '@/api';
+import { getBlockAttrs, createDocWithMd, sql, setBlockAttrs, exportMdContent, lsNotebooks } from '@/api';
 import { showMessage } from 'siyuan';
 
 /**
@@ -328,6 +328,20 @@ ${skillList}
   isSkillNameAvailable(name: string): boolean {
     const skillStore = useSkillStore();
     return !skillStore.skills.some(s => s.name === name);
+  }
+  
+  /**
+   * 获取笔记本列表
+   */
+  async getNotebooks(): Promise<Array<{ id: string; name: string }>> {
+    const response = await lsNotebooks();
+    if (!response?.notebooks) {
+      return [];
+    }
+    return response.notebooks.map((nb: any) => ({
+      id: nb.id,
+      name: nb.name
+    }));
   }
   
   /**

@@ -508,3 +508,14 @@ export async function version(): Promise<string> {
 export async function currentTime(): Promise<number> {
   return request("/api/system/currentTime", {});
 }
+
+// **************************************** Filetree ****************************************
+
+export async function openFileById(id: string, action?: string) {
+  let data = {
+    id: id,
+    action: action || 'cb-get-focus'
+  };
+  let url = "/api/filetree/openDoc";
+  return request(url, data);
+}
