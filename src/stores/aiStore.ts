@@ -14,41 +14,12 @@ import type { ReActStep } from '@/agents/react/types';
 import type { ToolExecutionContext } from '@/services/aiToolsExecutor';
 import { bulletJournalTools } from '@/services/aiTools';
 import { buildSystemPrompt } from '@/services/aiPromptService';
-import dayjs from '@/utils/dayjs';
-
-const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
   activeProviderId: string | null;
   showToolCalls?: boolean;
 }
-
-/**
- * 构建系统提示词
- */
-function buildSystemPrompt(): string {
-  const now = dayjs();
-  const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`;
-
-  return `你是一位任务助手 AI，可以帮助用户管理任务、项目和番茄钟。
-
-**时间基准**：当前时间是 ${currentTimeStr}，所有涉及"今天""昨天""当前""最近"的日期计算，以此时间为准，历史对话中提到的时间均为当时的表述，不代表当前时间。
-
-你可以使用以下工具来获取信息：
-- list_groups: 列出项目分组
-- list_projects: 列出所有项目
-- filter_items: 筛选任务事项
-- get_pomodoro_stats: 获取番茄钟统计
-- get_pomodoro_records: 获取番茄钟记录
-- list_skills: 列出可用技能
-- get_skill_detail: 获取技能详情`;
-}
-
-/**
- * 工具定义（从 aiTools.ts 导入）
- */
-const tools = bulletJournalTools;
 
 export const useAIStore = defineStore('ai', () => {
   // ==================== State ====================
