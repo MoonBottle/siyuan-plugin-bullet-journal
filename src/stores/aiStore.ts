@@ -33,6 +33,9 @@ export const useAIStore = defineStore('ai', () => {
   // 存储服务实例
   let storageService: ReturnType<typeof useConversationStorage> | null = null;
   
+  // 插件实例引用（用于调用插件方法保存登录状态）
+  let plugin: any = null;
+  
   // 防抖保存相关
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
   let pendingSave = false;
@@ -62,6 +65,8 @@ export const useAIStore = defineStore('ai', () => {
   });
 
   // ==================== ClawBot State ====================
+  // 防止重复处理登录成功
+  let isProcessingLoginSuccess = false;
   
   // ClawBot 配置
   const clawBotConfig = ref<ClawBotConfig>({
@@ -564,11 +569,34 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 初始化 ClawBot 服务
    */
-  async function initializeClawBot(plugin: any) {
+  async function initializeClawBot(pluginInstance: any) {
     console.log('[AIStore] initializeClawBot');
+    
+    // 保存 plugin 实例引用
+    plugin = pluginInstance;
+    
     if (!clawBotConfig.value.enabled) {
       console.log('[AIStore] ClawBot 未启用');
       return;
+    }
+    
+    // 从单独文件加载登录状态
+    let loginState = null;
+    if (plugin?.loadWechatLoginState) {
+      loginState = await plugin.loadWechatLoginState();
+      console.log('[AIStore] 从文件加载的登录状态:', { 
+        hasToken: !!loginState?.token,
+        hasAccountId: !!loginState?.accountId 
+      });
+    }
+    
+    // 如果有保存的登录状态，恢复到配置中
+    if (loginState?.token && loginState?.accountId) {
+      clawBotConfig.value.token = loginState.token;
+      clawBotConfig.value.accountId = loginState.accountId;
+      clawBotConfig.value.userId = loginState.userId;
+      clawBotConfig.value.loginStatus = loginState.loginStatus || 'connected';
+      console.log('[AIStore] 已恢复登录凭证到内存');
     }
     
     const config = clawBotConfig.value;
@@ -595,10 +623,11 @@ export const useAIStore = defineStore('ai', () => {
       // 启动消息监听
       await clawBot.startMonitoring();
       
-      // 注册消息处理器
-      console.log('[AIStore] 注册消息处理器');
+      // 注册消息处理器（先清空旧的，避免重复）
+      console.log('[AIStore] 清空旧处理器并注册新处理器');
+      clawBot.clearMessageHandlers();
       clawBot.onMessage((msg) => {
-        console.log('[AIStore] 收到微信消息:', msg);
+        console.log('[AIStore] 收到微信消息:', msg.from_user_id);
         handleWeixinMessage(msg);
       });
       
@@ -643,6 +672,13 @@ export const useAIStore = defineStore('ai', () => {
       const success = await clawBot.pollQRStatus(currentQRSessionKey);
       
       if (success) {
+        // 防止重复处理登录成功
+        if (isProcessingLoginSuccess) {
+          console.log('[AIStore] 登录成功已在处理中，跳过');
+          return true;
+        }
+        isProcessingLoginSuccess = true;
+        
         console.log('[AIStore] 登录成功，启动监听和注册处理器');
         // 更新配置
         const config = clawBot.getConfig();
@@ -656,15 +692,24 @@ export const useAIStore = defineStore('ai', () => {
         // 启动消息监听
         await clawBot.startMonitoring();
         
-        // 注册消息处理器
-        console.log('[AIStore] 登录成功后注册消息处理器');
+        // 注册消息处理器（先清空旧的，避免重复）
+        console.log('[AIStore] 登录成功后清空旧处理器并注册新处理器');
+        clawBot.clearMessageHandlers();
         clawBot.onMessage((msg) => {
-          console.log('[AIStore] 收到微信消息:', msg);
+          console.log('[AIStore] 收到微信消息:', msg.from_user_id);
           handleWeixinMessage(msg);
         });
         
-        // 触发设置保存
-        console.log('[AIStore] 保存登录凭证');
+        // 保存登录状态到单独文件
+        console.log('[AIStore] 保存登录凭证到单独文件');
+        if (plugin?.saveWechatLoginState) {
+          await plugin.saveWechatLoginState({
+            token: clawBotConfig.value.token!,
+            accountId: clawBotConfig.value.accountId!,
+            userId: clawBotConfig.value.userId,
+            loginStatus: 'connected'
+          });
+        }
         
         showMessage('微信连接成功！', 3000);
       }
@@ -693,6 +738,11 @@ export const useAIStore = defineStore('ai', () => {
     clawBotConfig.value.userId = undefined;
     clawBotStats.value.isConnected = false;
     clawBotStats.value.connectedUsers = 0;
+    
+    // 清除保存的登录状态
+    if (plugin?.clearWechatLoginState) {
+      await plugin.clearWechatLoginState();
+    }
     
     showMessage('已断开微信连接', 2000);
   }
@@ -765,10 +815,12 @@ export const useAIStore = defineStore('ai', () => {
     toUserId: string,
     contextToken?: string
   ) {
-    console.log('[AIStore] generateAIReply:', { conversationId, userContent, toUserId, hasContextToken: !!contextToken });
+    console.log('[AIStore] =======================================');
+    console.log('[AIStore] generateAIReply START');
+    console.log('[AIStore] 参数:', { conversationId, userContent, toUserId, hasContextToken: !!contextToken });
     
     if (!isAIEnabled.value) {
-      console.log('[AIStore] AI 未启用');
+      console.log('[AIStore] AI 未启用，直接返回');
       return;
     }
     if (!storageService) {
@@ -778,10 +830,17 @@ export const useAIStore = defineStore('ai', () => {
     
     // 先保存当前会话
     const originalConvId = currentConversationId.value;
+    console.log('[AIStore] 原始会话ID:', originalConvId);
     
     // 加载微信会话
+    console.log('[AIStore] 加载微信会话:', conversationId);
     const conversation = await storageService.loadConversation(conversationId);
-    if (!conversation) return;
+    if (!conversation) {
+      console.error('[AIStore] 会话不存在:', conversationId);
+      return;
+    }
+    console.log('[AIStore] 会话加载成功, 消息数:', conversation.messages.length);
+    console.log('[AIStore] 会话消息:', conversation.messages.map(m => ({ role: m.role, content: m.content?.slice(0, 50), hasToolCalls: !!m.toolCalls })));
     
     // 临时设置为当前会话
     currentConversation.value = conversation;
@@ -795,14 +854,20 @@ export const useAIStore = defineStore('ai', () => {
     }));
     
     const systemPrompt = buildSystemPrompt(skills);
+    console.log('[AIStore] SystemPrompt 长度:', systemPrompt.length);
     
     isLoading.value = true;
     error.value = null;
     
     try {
       const provider = activeProvider.value;
-      if (!provider) return;
+      if (!provider) {
+        console.error('[AIStore] 没有可用的 AI Provider');
+        return;
+      }
+      console.log('[AIStore] 使用 Provider:', provider.name, provider.provider);
       
+      console.log('[AIStore] 创建 ReActAgent...');
       const currentAgent = new ReActAgent({
         context: {
           conversationId,
@@ -811,43 +876,75 @@ export const useAIStore = defineStore('ai', () => {
           tools: bulletJournalTools,
           maxIterations: 5
         },
-        onStreamUpdate: () => {
-          if (currentConversation.value) {
-            currentConversation.value = { ...currentConversation.value };
-          }
+        onStreamUpdate: (content) => {
+          console.log('[AIStore] ReAct onStreamUpdate, content长度:', content?.length);
+        },
+        onStepComplete: (step) => {
+          console.log('[AIStore] ReAct onStepComplete:', step.type, step.tool || '');
         }
       });
       
+      console.log('[AIStore] 设置工具上下文...');
       currentAgent.setToolContext(toolContext.value);
       
       // 运行 Agent
+      console.log('[AIStore] 开始运行 ReActAgent.run()...');
       await currentAgent.run(userContent, conversation);
+      console.log('[AIStore] ReActAgent.run() 完成');
+      console.log('[AIStore] 运行后消息数:', conversation.messages.length);
+      console.log('[AIStore] 运行后消息:', conversation.messages.map(m => ({ role: m.role, content: m.content?.slice(0, 50), hasToolCalls: !!m.toolCalls, toolCallId: m.toolCallId })));
       
       // 保存会话
+      console.log('[AIStore] 保存会话...');
       await storageService.saveConversation(conversation);
+      console.log('[AIStore] 会话保存成功');
       
       // 获取最后一条 AI 消息
       const lastMessage = conversation.messages[conversation.messages.length - 1];
-      console.log('[AIStore] 最后一条消息:', { role: lastMessage?.role, contentLength: lastMessage?.content?.length });
+      console.log('[AIStore] 最后一条消息详情:', { 
+        role: lastMessage?.role, 
+        contentLength: lastMessage?.content?.length,
+        hasToolCalls: !!lastMessage?.toolCalls,
+        toolCallsCount: lastMessage?.toolCalls?.length,
+        toolCallId: lastMessage?.toolCallId,
+        content: lastMessage?.content?.slice(0, 100)
+      });
       
       if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
         // 发送到微信
-        console.log('[AIStore] 发送到微信:', { toUserId, contentLength: lastMessage.content.length });
+        console.log('[AIStore] 准备发送到微信, 内容长度:', lastMessage.content.length);
         await sendReplyToWeixin(toUserId, lastMessage.content, contextToken);
+        console.log('[AIStore] 发送到微信完成');
       } else {
         console.log('[AIStore] 没有可发送的 AI 消息');
       }
       
     } catch (err) {
       console.error('[AIStore] AI 回复失败:', err);
+      console.error('[AIStore] 错误详情:', err instanceof Error ? err.stack : String(err));
+      
+      // 打印当前会话状态以便调试
+      console.log('[AIStore] 错误时会话消息数:', conversation.messages.length);
+      console.log('[AIStore] 错误时会话消息:', conversation.messages.map(m => ({ 
+        role: m.role, 
+        content: m.content?.slice(0, 50), 
+        hasToolCalls: !!m.toolCalls,
+        toolCallId: m.toolCallId 
+      })));
+      
+      // 发送错误提示
+      await sendReplyToWeixin(toUserId, '抱歉，我暂时无法处理您的请求，请稍后再试。', contextToken);
     } finally {
+      console.log('[AIStore] generateAIReply FINALLY');
       isLoading.value = false;
       
       // 恢复原始会话
       if (originalConvId && originalConvId !== conversationId) {
+        console.log('[AIStore] 恢复原始会话:', originalConvId);
         const originalConv = await storageService.loadConversation(originalConvId);
         currentConversation.value = originalConv;
       }
+      console.log('[AIStore] =======================================');
     }
   }
 

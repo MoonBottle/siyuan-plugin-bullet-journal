@@ -460,15 +460,19 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
-   * 保存 AI 设置（供 AI Store 调用，只保存供应商配置）
+   * 保存 AI 设置（供 AI Store 调用，保存供应商配置和 ClawBot 配置）
    */
-  public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
+  public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean; clawbot?: Partial<ClawBotConfig> }) {
     if (!settings.ai) {
       settings.ai = { providers: [], activeProviderId: null, showToolCalls: true };
     }
     settings.ai.providers = aiData.providers;
     settings.ai.activeProviderId = aiData.activeProviderId;
     settings.ai.showToolCalls = aiData.showToolCalls;
+    // 保存 ClawBot 配置（包括登录凭证）
+    if (aiData.clawbot) {
+      settings.ai.clawbot = aiData.clawbot;
+    }
     try {
       await this.saveData('settings', settings);
     } catch (error) {
@@ -479,13 +483,14 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * 仅将 AI 配置写入文件（从磁盘读出完整配置，只替换 ai 后写回，不修改内存中其它区块，避免覆盖用户未保存的修改）
    */
-  public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
+  public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean; clawbot?: Partial<ClawBotConfig> }) {
     try {
       const data = await this.loadData('settings');
       const aiConfig = {
         providers: aiData.providers,
         activeProviderId: aiData.activeProviderId,
-        ...(aiData.showToolCalls !== undefined && { showToolCalls: aiData.showToolCalls })
+        ...(aiData.showToolCalls !== undefined && { showToolCalls: aiData.showToolCalls }),
+        ...(aiData.clawbot !== undefined && { clawbot: aiData.clawbot })
       };
       const merged: SettingsData = data
         ? { ...data, ai: aiConfig }
@@ -519,6 +524,55 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   public getAISkills(): { skills: any[] } {
     return { skills: [] };
+  }
+
+  // ========== WeChat Login State Persistence ==========
+
+  private readonly WECHAT_LOGIN_KEY = 'wechat-login-state';
+
+  /**
+   * 保存微信登录状态（单独文件，避免与 settings 冲突）
+   */
+  public async saveWechatLoginState(loginData: { token: string; accountId: string; userId?: string; loginStatus: string }) {
+    try {
+      await this.saveData(this.WECHAT_LOGIN_KEY, loginData);
+      console.log('[Task Assistant] WeChat login state saved');
+    } catch (error) {
+      console.error('[Task Assistant] Failed to save WeChat login state:', error);
+    }
+  }
+
+  /**
+   * 加载微信登录状态
+   */
+  public async loadWechatLoginState(): Promise<{ token: string; accountId: string; userId?: string; loginStatus: string } | null> {
+    try {
+      const data = await this.loadData(this.WECHAT_LOGIN_KEY);
+      if (data && data.token && data.accountId) {
+        console.log('[Task Assistant] WeChat login state loaded:', { 
+          hasToken: true, 
+          accountId: data.accountId,
+          loginStatus: data.loginStatus 
+        });
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('[Task Assistant] Failed to load WeChat login state:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 清除微信登录状态
+   */
+  public async clearWechatLoginState() {
+    try {
+      await this.saveData(this.WECHAT_LOGIN_KEY, null);
+      console.log('[Task Assistant] WeChat login state cleared');
+    } catch (error) {
+      console.error('[Task Assistant] Failed to clear WeChat login state:', error);
+    }
   }
 
   /**

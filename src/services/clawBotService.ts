@@ -706,6 +706,14 @@ export class ClawBotService {
     };
   }
 
+  /**
+   * 清空所有消息处理器
+   */
+  clearMessageHandlers(): void {
+    console.log('[ClawBot] 清空消息处理器，原数量:', this.messageHandlers.length);
+    this.messageHandlers = [];
+  }
+
   // ========== 工具方法 ==========
 
   private sleep(ms: number): Promise<void> {

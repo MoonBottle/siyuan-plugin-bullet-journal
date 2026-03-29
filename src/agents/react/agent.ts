@@ -62,11 +62,14 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
   private context: ReActContext;
   private toolContext: ToolExecutionContext;
   private onStreamUpdate?: StreamUpdateCallback;
+  private agentId: string;
+  private runId: number = 0;
 
   constructor(options: ReActAgentOptions) {
     super();
     this.context = options.context;
     this.onStreamUpdate = options.onStreamUpdate;
+    this.agentId = `agent-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     
     // 初始化状态
     this.state = {
@@ -83,6 +86,8 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
       projects: [],
       allItems: []
     };
+    
+    console.log(`[ReActAgent:${this.agentId}] 创建实例`);
   }
 
   /**
@@ -105,6 +110,26 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
    * @param conversation 当前会话
    */
   async run(userInput: string, conversation: ConversationData): Promise<void> {
+    this.runId++;
+    const currentRun = this.runId;
+    const logPrefix = `[ReActAgent:${this.agentId}:run${currentRun}]`;
+    
+    console.log(`${logPrefix} =======================================`);
+    console.log(`${logPrefix} RUN START`, {
+      userInput: userInput.substring(0, 50),
+      conversationId: conversation?.id,
+      initialMessageCount: conversation?.messages?.length || 0,
+      maxIterations: this.context.maxIterations
+    });
+    console.log(`${logPrefix} 初始消息:`, JSON.stringify(conversation?.messages?.map((m, i) => ({
+      index: i,
+      role: m.role,
+      contentLength: m.content?.length || 0,
+      hasToolCalls: !!m.toolCalls?.length,
+      toolCallId: m.toolCallId,
+      id: m.id?.substring(0, 20)
+    })) || []));
+    
     try {
       this.state.conversation = conversation;
       this.state.isLoading = true;
@@ -116,24 +141,44 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
 
       // ReAct 循环
       while (this.state.currentIteration < this.context.maxIterations) {
+        console.log(`${logPrefix} --- 迭代 ${this.state.currentIteration + 1} ---`);
+        
         // Step 1: Thought - 思考
+        console.log(`${logPrefix} 调用 think(), 消息数:`, this.state.conversation?.messages?.length);
         const thought = await this.think();
+        console.log(`${logPrefix} think() 返回:`, {
+          hasToolCalls: !!thought.toolCalls?.length,
+          toolCallsCount: thought.toolCalls?.length || 0,
+          contentLength: thought.content?.length || 0,
+          messageId: thought.messageId?.substring(0, 20)
+        });
         
         // Step 2: 检查是否需要工具调用
         if (!thought.toolCalls || thought.toolCalls.length === 0) {
           // 直接回答，结束循环
+          console.log(`${logPrefix} 无工具调用，直接回答`);
           this.finalize(thought.content, thought.messageId, thought.usage);
+          console.log(`${logPrefix} RUN END (直接回答)`);
           return;
         }
 
         // Step 3: Action - 执行工具
+        console.log(`${logPrefix} 执行 ${thought.toolCalls.length} 个工具调用:`, 
+          thought.toolCalls.map(tc => ({ id: tc.id, name: tc.function.name })));
+        
         // 先保存完整的 toolCalls 到消息，避免循环执行时被覆盖
         if (thought.messageId && thought.toolCalls) {
           this.updateAssistantToolCalls(thought.messageId, thought.toolCalls);
         }
         for (const toolCall of thought.toolCalls) {
+          console.log(`${logPrefix} 执行工具:`, { toolCallId: toolCall.id, name: toolCall.function.name });
           await this.executeAction(toolCall, thought.messageId);
+          console.log(`${logPrefix} 工具执行完成:`, { toolCallId: toolCall.id });
         }
+        
+        console.log(`${logPrefix} 迭代完成后消息数:`, this.state.conversation?.messages?.length);
+        // 打印当前消息历史状态
+        this.debugPrintMessages(`${logPrefix} 迭代后消息状态`);
 
         this.state.currentIteration++;
       }
@@ -144,6 +189,9 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.state.error = err.message;
+      console.error(`${logPrefix} RUN ERROR:`, err.message);
+      console.error(`${logPrefix} 错误时会话消息数:`, this.state.conversation?.messages?.length);
+      this.debugPrintMessages(`${logPrefix} 错误时消息状态`);
       this.emit('error', { error: err });
       throw err;
     } finally {
@@ -156,7 +204,22 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
    * @returns AI 响应和消息 ID
    */
   private async think(): Promise<AIResponse & { messageId: string }> {
+    const logPrefix = `[ReActAgent:${this.agentId}:think]`;
     const messages = this.buildMessages();
+    
+    // 验证消息格式，检查 tool_calls 是否被正确跟随
+    console.log(`${logPrefix} 构建消息列表，数量:`, messages.length);
+    this.validateToolCallMessages(messages, logPrefix);
+    
+    // 打印构建的消息（用于调试）
+    console.log(`${logPrefix} 发送给API的消息:`, messages.map((m, i) => ({
+      index: i,
+      role: m.role,
+      contentLength: m.content?.length || 0,
+      hasToolCalls: !!m.toolCalls?.length,
+      toolCallsInfo: m.toolCalls?.map(tc => ({ id: tc.id, name: tc.function.name })),
+      toolCallId: m.toolCallId
+    })));
 
     // 记录思考开始
     const thoughtStep: ReActStep = {
@@ -269,13 +332,18 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
    * 更新 AI 消息的 toolCalls
    */
   private updateAssistantToolCalls(id: string, toolCalls: ToolCall[]): void {
+    const logPrefix = `[ReActAgent:${this.agentId}:updateAssistantToolCalls]`;
     const messages = this.state.conversation?.messages;
     if (!messages) return;
 
     const message = messages.find(m => m.id === id);
     if (message && message.role === 'assistant') {
+      console.log(`${logPrefix} 更新消息 ${id.substring(0, 20)} 的 toolCalls:`, 
+        toolCalls.map(tc => ({ id: tc.id, name: tc.function.name })));
       message.toolCalls = toolCalls;
       this.emit('messageUpdate', { id, content: message.content, reasoning: message.reasoning });
+    } else {
+      console.warn(`${logPrefix} 警告: 未找到消息 ${id.substring(0, 20)}`);
     }
   }
 
@@ -283,6 +351,13 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
    * Action 步骤：执行工具
    */
   private async executeAction(toolCall: ToolCall, parentMessageId?: string): Promise<void> {
+    const logPrefix = `[ReActAgent:${this.agentId}:executeAction]`;
+    console.log(`${logPrefix} 开始执行工具:`, { 
+      toolCallId: toolCall.id, 
+      name: toolCall.function.name,
+      parentMessageId: parentMessageId?.substring(0, 20)
+    });
+    
     const args = JSON.parse(toolCall.function.arguments || '{}');
 
     // 记录 Action 步骤
@@ -351,6 +426,9 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
    * 完成对话
    */
   private finalize(answer: string, messageId?: string, usage?: UsageInfo): void {
+    const logPrefix = `[ReActAgent:${this.agentId}:finalize]`;
+    console.log(`${logPrefix} 完成回复, 内容长度:`, answer?.length, 'messageId:', messageId?.substring(0, 20));
+    
     // 记录 Answer 步骤
     const answerStep: ReActStep = {
       type: 'answer',
@@ -440,6 +518,7 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
    * 添加 AI 消息
    */
   private addAssistantMessage(content: string, toolCalls?: ToolCall[], loading = false): ChatMessage {
+    const logPrefix = `[ReActAgent:${this.agentId}:addAssistantMessage]`;
     const message: ChatMessage = {
       id: `msg-${Date.now()}-ai-${Math.random().toString(36).substr(2, 9)}`,
       role: 'assistant',
@@ -448,6 +527,14 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
       toolCalls,
       loading
     };
+    console.log(`${logPrefix} 添加assistant消息:`, {
+      messageId: message.id.substring(0, 20),
+      contentLength: content.length,
+      hasToolCalls: !!toolCalls?.length,
+      toolCallsInfo: toolCalls?.map(tc => ({ id: tc.id, name: tc.function.name })),
+      loading,
+      currentMessageCount: (this.state.conversation?.messages?.length || 0)
+    });
     this.state.conversation?.messages.push(message);
     if (this.state.conversation) {
       this.state.conversation.updatedAt = Date.now();
@@ -461,6 +548,7 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
    * 添加工具消息
    */
   private addToolMessage(content: string, toolCallId: string): void {
+    const logPrefix = `[ReActAgent:${this.agentId}:addToolMessage]`;
     const message: ChatMessage = {
       id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role: 'tool',
@@ -468,6 +556,12 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
       timestamp: Date.now(),
       toolCallId
     };
+    console.log(`${logPrefix} 添加tool消息:`, { 
+      toolCallId, 
+      messageId: message.id.substring(0, 20),
+      contentLength: content.length,
+      currentMessageCount: this.state.conversation?.messages?.length || 0
+    });
     this.state.conversation?.messages.push(message);
     if (this.state.conversation) {
       this.state.conversation.updatedAt = Date.now();
@@ -496,5 +590,57 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
     this.state.isLoading = false;
     this.state.error = null;
     this.state.currentIteration = 0;
+  }
+
+  /**
+   * 验证 tool_calls 消息格式
+   * Kimi API 要求：assistant message with 'tool_calls' must be followed by tool messages
+   */
+  private validateToolCallMessages(messages: ChatMessage[], logPrefix: string): void {
+    const pendingToolCallIds = new Set<string>();
+    
+    for (let i = 0; i < messages.length; i++) {
+      const m = messages[i];
+      
+      // 如果是 assistant 消息且有 tool_calls，记录所有 tool_call_id
+      if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
+        for (const tc of m.toolCalls) {
+          pendingToolCallIds.add(tc.id);
+          console.log(`${logPrefix} 检测到tool_call:`, { id: tc.id, name: tc.function.name, atIndex: i });
+        }
+      }
+      
+      // 如果是 tool 消息，移除对应的 tool_call_id
+      if (m.role === 'tool' && m.toolCallId) {
+        if (pendingToolCallIds.has(m.toolCallId)) {
+          pendingToolCallIds.delete(m.toolCallId);
+          console.log(`${logPrefix} 检测到tool结果:`, { toolCallId: m.toolCallId, atIndex: i, resolved: true });
+        } else {
+          console.warn(`${logPrefix} 警告: tool消息没有对应的tool_call:`, { toolCallId: m.toolCallId, atIndex: i });
+        }
+      }
+    }
+    
+    // 检查是否有未解决的 tool_call
+    if (pendingToolCallIds.size > 0) {
+      console.error(`${logPrefix} 错误: 有 ${pendingToolCallIds.size} 个 tool_call 没有对应的 tool 消息:`, 
+        Array.from(pendingToolCallIds));
+    }
+  }
+
+  /**
+   * 调试打印消息状态
+   */
+  private debugPrintMessages(label: string): void {
+    const messages = this.state.conversation?.messages || [];
+    console.log(`${label}:`, messages.map((m, i) => ({
+      index: i,
+      role: m.role,
+      contentPreview: m.content?.substring(0, 50) || '',
+      hasToolCalls: !!m.toolCalls?.length,
+      toolCallsInfo: m.toolCalls?.map(tc => ({ id: tc.id, name: tc.function.name })),
+      toolCallId: m.toolCallId,
+      id: m.id?.substring(0, 20)
+    })));
   }
 }
