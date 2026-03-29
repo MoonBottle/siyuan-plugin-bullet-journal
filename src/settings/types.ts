@@ -46,6 +46,11 @@ export interface SettingsData {
     providers: AIProviderConfig[];
     activeProviderId: string | null;
     showToolCalls?: boolean;
+    clawbot?: {
+      enabled: boolean;
+      baseUrl: string;
+      cdnBaseUrl: string;
+    };
   };
   pomodoro?: PomodoroSettings;
   customSlashCommands?: CustomSlashCommand[];

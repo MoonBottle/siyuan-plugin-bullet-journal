@@ -25,6 +25,7 @@
     "@fullcalendar/interaction": "^6.1.17",
     "@fullcalendar/list": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
+    "@tencent-weixin/openclaw-weixin": "^2.1.1",
     "chart.js": "^4.5.1",
     "dayjs": "^1.11.20",
     "dhtmlx-gantt": "^9.1.3",

@@ -4,7 +4,7 @@
  * 将会话历史从单文件改为多文件存储，每个会话一个文件
  */
 
-import type { ChatConversation, ChatMessage } from '@/types/ai';
+import type { ChatConversation, ChatMessage, MessageSource } from '@/types/ai';
 import type { SkillExecutionRecord } from '@/types/skill';
 
 // 存储路径常量
@@ -23,6 +23,9 @@ export interface ConversationIndexItem {
   messageCount: number;
   fileSize: number;
   hasSkillExecutions: boolean;
+  source?: MessageSource;
+  weixinUserId?: string;
+  weixinUserName?: string;
 }
 
 /**
@@ -39,6 +42,9 @@ export interface ConversationsIndex {
  */
 export interface ConversationData extends ChatConversation {
   skillExecutions?: SkillExecutionRecord[];
+  source?: MessageSource;
+  weixinUserId?: string;
+  weixinUserName?: string;
 }
 
 /**
@@ -513,7 +519,10 @@ export class ConversationStorageService {
       updatedAt: conversation.updatedAt,
       messageCount: conversation.messages?.length || 0,
       fileSize: JSON.stringify(conversation).length,
-      hasSkillExecutions: (conversation.skillExecutions?.length || 0) > 0
+      hasSkillExecutions: (conversation.skillExecutions?.length || 0) > 0,
+      source: conversation.source,
+      weixinUserId: conversation.weixinUserId,
+      weixinUserName: conversation.weixinUserName
     };
 
     if (existingIndex >= 0) {

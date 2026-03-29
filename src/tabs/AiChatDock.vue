@@ -39,6 +39,17 @@
         </svg>
       </span>
 
+      <!-- 微信连接按钮 -->
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw weixin-btn"
+        :class="{ 'is-active': isClawBotConnected, 'has-unread': hasUnreadWeixin }"
+        :aria-label="clawBotTooltip"
+        @click="handleWeixinClick"
+      >
+        <WeixinIcon :is-connected="isClawBotConnected" />
+        <span v-if="hasUnreadWeixin" class="unread-badge"></span>
+      </span>
+
       <!-- 更多操作按钮 -->
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
@@ -50,6 +61,13 @@
         </svg>
       </span>
     </div>
+
+    <!-- 微信登录弹窗 -->
+    <WeixinLoginDialog
+      v-if="showWeixinDialog"
+      @close="showWeixinDialog = false"
+      @switch-conversation="handleWeixinConversationSwitch"
+    />
 
     <!-- 聊天面板 -->
     <ChatPanel
@@ -74,6 +92,8 @@ import { useConversationStorage, type ConversationIndexItem } from '@/services/c
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
+import WeixinIcon from '@/components/icons/WeixinIcon.vue';
+import WeixinLoginDialog from '@/components/ai/WeixinLoginDialog.vue';
 import { t } from '@/i18n';
 import type { Item } from '@/types/models';
 import { createDialog } from '@/utils/dialog';
@@ -94,6 +114,9 @@ const conversationsList = ref<ConversationIndexItem[]>([]);
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const chatPanelRef = ref<InstanceType<typeof ChatPanel>>();
+
+// 微信登录弹窗状态
+const showWeixinDialog = ref(false);
 
 // 打开技能管理弹框
 const openSkillManager = () => {
@@ -135,6 +158,29 @@ const openSkillManager = () => {
     bodyEl.appendChild(container);
   }
 };
+
+// ClawBot 状态
+const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
+const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
+const clawBotTooltip = computed(() => {
+  if (isClawBotConnected.value) {
+    return '微信已连接';
+  }
+  return '连接微信';
+});
+
+// 微信按钮点击
+function handleWeixinClick(event: MouseEvent) {
+  event.stopPropagation();
+  event.preventDefault();
+  showWeixinDialog.value = true;
+}
+
+// 切换到微信会话
+async function handleWeixinConversationSwitch(conversationId: string) {
+  await aiStore.switchConversation(conversationId);
+  await refreshConversationsList();
+}
 
 // 获取所有事项
 const allItems = computed<Item[]>(() => {
@@ -312,6 +358,9 @@ onMounted(async () => {
     // createConversation 内部已刷新对话列表
   }
 
+  // 初始化 ClawBot（如果已启用）
+  await aiStore.initializeClawBot(plugin);
+
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -407,5 +456,37 @@ onUnmounted(() => {
 }
 
 // 技能管理弹框样式
+
+// 微信图标样式
+.weixin-btn {
+  position: relative;
+  
+  :deep(svg) {
+    width: 16px;
+    height: 16px;
+    fill: var(--b3-theme-on-surface-light);
+    transition: fill 0.2s;
+  }
+
+  &.is-active {
+    background: var(--b3-theme-success-lightest);
+    
+    :deep(svg) {
+      fill: #07c160; // 微信绿色
+    }
+  }
+
+  &.has-unread {
+    .unread-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--b3-theme-error);
+    }
+  }
+}
 
 </style>

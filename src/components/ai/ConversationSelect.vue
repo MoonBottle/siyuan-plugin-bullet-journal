@@ -26,9 +26,15 @@
             v-for="conversation in conversations"
             :key="conversation.id"
             class="conversation-select__item"
-            :class="{ 'is-active': conversation.id === currentConversationId }"
+            :class="{ 
+              'is-active': conversation.id === currentConversationId,
+              'is-weixin': conversation.source === 'weixin'
+            }"
             @click="selectConversation(conversation.id)"
           >
+            <span class="conversation-select__source-icon" v-if="conversation.source === 'weixin'">
+              📱
+            </span>
             <span class="conversation-select__item-title">{{ conversation.title }}</span>
             <button
               class="conversation-select__delete-btn"
@@ -52,6 +58,8 @@ import { t } from '@/i18n';
 interface ConversationListItem {
   id: string;
   title: string;
+  source?: 'local' | 'weixin';
+  weixinUserName?: string;
 }
 
 interface Props {
@@ -242,6 +250,17 @@ const vClickOutside = {
     text-overflow: ellipsis;
     white-space: nowrap;
     margin-right: 8px;
+  }
+
+  &__source-icon {
+    margin-right: 4px;
+    font-size: 12px;
+  }
+
+  &__item.is-weixin {
+    .conversation-select__item-title {
+      color: #07c160;
+    }
   }
 
   &__delete-btn {

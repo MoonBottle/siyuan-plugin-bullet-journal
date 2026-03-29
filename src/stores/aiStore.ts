@@ -4,7 +4,7 @@
  */
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
-import type { AIProviderConfig, ChatConversation } from '@/types/ai';
+import type { AIProviderConfig, ChatConversation, ChatMessage } from '@/types/ai';
 import type { Project, ProjectGroup, Item } from '@/types/models';
 
 import { useConversationStorage, type ConversationData, type ConversationIndexItem } from '@/services/conversationStorageService';
@@ -16,10 +16,15 @@ import { bulletJournalTools } from '@/services/aiTools';
 import { buildSystemPrompt } from '@/services/aiPromptService';
 import { SkillService } from '@/services/skillService';
 
+import { useClawBotService, resetClawBotService } from '@/services/clawBotService';
+import type { ClawBotConfig, WeixinMessage, WeixinConversationMap, ClawBotStats } from '@/types/clawbot';
+import { showMessage } from 'siyuan';
+
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
   activeProviderId: string | null;
   showToolCalls?: boolean;
+  clawbot?: Partial<ClawBotConfig>;
 }
 
 export const useAIStore = defineStore('ai', () => {
@@ -56,6 +61,31 @@ export const useAIStore = defineStore('ai', () => {
     allItems: []
   });
 
+  // ==================== ClawBot State ====================
+  
+  const clawBotConfig = ref<ClawBotConfig>({
+    enabled: false,
+    baseUrl: 'https://ilinkai.weixin.qq.com',
+    cdnBaseUrl: 'https://cdn.weixin.qq.com',
+    loginStatus: 'none'
+  });
+  
+  // 微信用户 → 会话映射 (使用普通对象而非 Map，避免 Vue 响应式问题)
+  const weixinConversationMap = ref<Record<string, WeixinConversationMap>>({});
+  
+  // ClawBot 统计
+  const clawBotStats = ref<ClawBotStats>({
+    isConnected: false,
+    unreadCount: 0,
+    connectedUsers: 0
+  });
+  
+  // 当前登录会话 Key
+  let currentQRSessionKey: string | null = null;
+  
+  // 未读消息计数（按用户）
+  const unreadWeixinMessages = ref<Record<string, number>>({});
+
   // ==================== Getters ====================
   
   const activeProvider = computed(() => {
@@ -80,6 +110,16 @@ export const useAIStore = defineStore('ai', () => {
   });
 
   const showToolCallsEnabled = computed(() => showToolCalls.value);
+
+  // ==================== ClawBot Getters ====================
+  
+  const isClawBotEnabled = computed(() => clawBotConfig.value.enabled);
+  const isClawBotConnected = computed(() => clawBotConfig.value.loginStatus === 'connected');
+  const clawBotLoginStatus = computed(() => clawBotConfig.value.loginStatus);
+  const hasUnreadWeixin = computed(() => {
+    const messages = unreadWeixinMessages.value || {};
+    return Object.values(messages).some(count => count > 0);
+  });
 
   // ==================== 存储管理 ====================
   
@@ -177,6 +217,9 @@ export const useAIStore = defineStore('ai', () => {
     }
     if (settings.showToolCalls !== undefined) {
       showToolCalls.value = settings.showToolCalls;
+    }
+    if (settings.clawbot) {
+      clawBotConfig.value = { ...clawBotConfig.value, ...settings.clawbot };
     }
     
     const enabled = providers.value.filter(p => p.enabled);
@@ -378,7 +421,13 @@ export const useAIStore = defineStore('ai', () => {
     return {
       providers: providers.value,
       activeProviderId: activeProviderId.value,
-      showToolCalls: showToolCalls.value
+      showToolCalls: showToolCalls.value,
+      clawbot: {
+        enabled: clawBotConfig.value.enabled,
+        baseUrl: clawBotConfig.value.baseUrl,
+        cdnBaseUrl: clawBotConfig.value.cdnBaseUrl,
+        // token 和敏感信息不导出
+      }
     };
   }
 
@@ -426,6 +475,374 @@ export const useAIStore = defineStore('ai', () => {
     sendMessage,
     setToolContext,
     getExportData,
-    getChatHistoryData
+    getChatHistoryData,
+    
+    // ClawBot
+    clawBotConfig,
+    clawBotStats,
+    isClawBotEnabled,
+    isClawBotConnected,
+    clawBotLoginStatus,
+    hasUnreadWeixin,
+    unreadWeixinMessages,
+    initializeClawBot,
+    startClawBotLogin,
+    pollClawBotLogin,
+    disconnectClawBot,
+    handleWeixinMessage,
+    getOrCreateWeixinConversation,
+    sendReplyToWeixin
   };
 });
+
+// ==================== ClawBot Actions ====================
+
+/**
+ * 初始化 ClawBot 服务
+ */
+async function initializeClawBot(plugin: any) {
+  const store = useAIStore();
+  if (!store.clawBotConfig.enabled) return;
+  
+  const clawBot = useClawBotService(store.clawBotConfig);
+  
+  // 如果之前已登录，恢复状态
+  if (clawBot.isConnected()) {
+    clawBot.updateConfig({ loginStatus: 'connected' });
+    store.clawBotConfig.loginStatus = 'connected';
+    store.clawBotStats.isConnected = true;
+    
+    // 启动消息监听
+    await clawBot.startMonitoring();
+    
+    // 注册消息处理器
+    clawBot.onMessage((msg) => {
+      handleWeixinMessage(msg);
+    });
+  }
+}
+
+/**
+ * 启动扫码登录
+ */
+async function startClawBotLogin(): Promise<{ qrcodeUrl: string; sessionKey: string } | null> {
+  const store = useAIStore();
+  const clawBot = useClawBotService(store.clawBotConfig);
+  
+  try {
+    const result = await clawBot.startLogin();
+    store.clawBotConfig.qrcodeUrl = result.qrcodeUrl;
+    store.clawBotConfig.loginStatus = 'pending';
+    
+    // 保存 sessionKey 用于后续轮询
+    const storeAny = store as any;
+    storeAny.currentQRSessionKey = result.sessionKey;
+    
+    return result;
+  } catch (error) {
+    console.error('[AIStore] ClawBot 登录失败:', error);
+    store.clawBotConfig.loginStatus = 'error';
+    store.clawBotConfig.errorMessage = error instanceof Error ? error.message : '登录失败';
+    return null;
+  }
+}
+
+/**
+ * 轮询登录状态
+ */
+async function pollClawBotLogin(): Promise<boolean> {
+  const store = useAIStore();
+  const clawBot = useClawBotService(store.clawBotConfig);
+  const storeAny = store as any;
+  
+  if (!storeAny.currentQRSessionKey) return false;
+  
+  try {
+    const success = await clawBot.pollQRStatus(storeAny.currentQRSessionKey);
+    
+    if (success) {
+      // 更新配置
+      const config = clawBot.getConfig();
+      store.clawBotConfig = { ...store.clawBotConfig, ...config };
+      store.clawBotStats.isConnected = true;
+      
+      // 启动消息监听
+      await clawBot.startMonitoring();
+      
+      // 注册消息处理器
+      clawBot.onMessage((msg) => {
+        handleWeixinMessage(msg);
+      });
+      
+      showMessage('微信连接成功！', 3000);
+    }
+    
+    return success;
+  } catch (error) {
+    console.error('[AIStore] 登录轮询失败:', error);
+    store.clawBotConfig.loginStatus = 'error';
+    store.clawBotConfig.errorMessage = error instanceof Error ? error.message : '登录失败';
+    return false;
+  }
+}
+
+/**
+ * 断开 ClawBot 连接
+ */
+async function disconnectClawBot() {
+  const store = useAIStore();
+  const clawBot = useClawBotService(store.clawBotConfig);
+  
+  clawBot.disconnect();
+  resetClawBotService();
+  
+  store.clawBotConfig.loginStatus = 'none';
+  store.clawBotConfig.token = undefined;
+  store.clawBotConfig.accountId = undefined;
+  store.clawBotConfig.userId = undefined;
+  store.clawBotStats.isConnected = false;
+  store.clawBotStats.connectedUsers = 0;
+  
+  showMessage('已断开微信连接', 2000);
+}
+
+/**
+ * 处理收到的微信消息
+ */
+async function handleWeixinMessage(msg: WeixinMessage) {
+  const store = useAIStore();
+  if (!store.storageService) return;
+  
+  const fromUserId = msg.from_user_id;
+  const contextToken = msg.context_token;
+  
+  if (!fromUserId) return;
+  
+  // 获取或创建会话
+  const conversationId = await getOrCreateWeixinConversation(fromUserId);
+  
+  // 保存 context_token
+  if (store.weixinConversationMap[fromUserId]) {
+    store.weixinConversationMap[fromUserId] = {
+      ...store.weixinConversationMap[fromUserId],
+      contextToken,
+      lastMessageAt: Date.now()
+    };
+  }
+  
+  // 提取消息内容
+  let content = '';
+  const itemList = msg.item_list || [];
+  
+  for (const item of itemList) {
+    if (item.type === 1 && item.text_item?.text) {
+      content = item.text_item.text;
+      break;
+    }
+    // 语音转文字
+    if (item.type === 3 && item.voice_item?.text) {
+      content = `[语音] ${item.voice_item.text}`;
+      break;
+    }
+  }
+  
+  if (!content) {
+    // 检查是否有媒体
+    const hasMedia = itemList.some(i => [2, 3, 4, 5].includes(i.type || 0));
+    if (hasMedia) {
+      content = '[媒体消息]';
+    }
+  }
+  
+  if (content) {
+    // 添加用户消息到会话
+    const userMessage: ChatMessage = {
+      id: `wx-${Date.now()}-user`,
+      role: 'user',
+      content,
+      timestamp: msg.create_time_ms || Date.now()
+    };
+    
+    const conversation = await store.storageService.loadConversation(conversationId);
+    if (conversation) {
+      conversation.messages.push(userMessage);
+      conversation.updatedAt = Date.now();
+      await store.storageService.saveConversation(conversation);
+      
+      // 更新未读计数
+      const current = store.unreadWeixinMessages[fromUserId] || 0;
+      store.unreadWeixinMessages[fromUserId] = current + 1;
+      store.clawBotStats.unreadCount = Object.values(store.unreadWeixinMessages)
+        .reduce((a, b) => a + b, 0);
+      
+      // 如果是当前会话，触发更新
+      if (store.currentConversationId === conversationId) {
+        store.currentConversation = conversation;
+      }
+      
+      // 刷新会话列表
+      await store.refreshConversationsList();
+      
+      // 调用 AI 回复（如果 AI 已启用）
+      if (store.isAIEnabled) {
+        await generateAIReply(conversationId, content, fromUserId, contextToken);
+      }
+    }
+  }
+}
+
+/**
+ * 获取或创建微信用户的会话
+ */
+async function getOrCreateWeixinConversation(
+  ilinkUserId: string,
+  userName?: string
+): Promise<string> {
+  const store = useAIStore();
+  if (!store.storageService) throw new Error('存储服务未初始化');
+  
+  // 检查是否已有映射
+  if (store.weixinConversationMap[ilinkUserId]) {
+    return store.weixinConversationMap[ilinkUserId].conversationId;
+  }
+  
+  // 查找现有的微信会话
+  const conversations = await store.storageService.loadConversationsList();
+  const existingConv = conversations.find(c => 
+    c.id.startsWith('wx-') && c.weixinUserId === ilinkUserId
+  );
+  
+  if (existingConv) {
+    store.weixinConversationMap[ilinkUserId] = {
+      ilinkUserId,
+      conversationId: existingConv.id,
+      lastMessageAt: Date.now(),
+      userName
+    };
+    return existingConv.id;
+  }
+  
+  // 创建新会话
+  const title = userName ? `微信: ${userName}` : `微信用户 ${ilinkUserId.slice(0, 8)}`;
+  const conversation = await store.storageService.createConversation(title);
+  
+  // 标记为微信会话
+  conversation.source = 'weixin';
+  conversation.weixinUserId = ilinkUserId;
+  conversation.weixinUserName = userName;
+  await store.storageService.saveConversation(conversation);
+  
+  // 保存映射
+  store.weixinConversationMap[ilinkUserId] = {
+    ilinkUserId,
+    conversationId: conversation.id,
+    lastMessageAt: Date.now(),
+    userName
+  };
+  
+  // 更新统计
+  store.clawBotStats.connectedUsers = Object.keys(store.weixinConversationMap).length;
+  
+  await store.refreshConversationsList();
+  
+  return conversation.id;
+}
+
+/**
+ * 生成 AI 回复
+ */
+async function generateAIReply(
+  conversationId: string,
+  userContent: string,
+  toUserId: string,
+  contextToken?: string
+) {
+  const store = useAIStore();
+  
+  if (!store.isAIEnabled || !store.storageService) return;
+  
+  // 先保存当前会话
+  const originalConvId = store.currentConversationId;
+  
+  // 加载微信会话
+  const conversation = await store.storageService.loadConversation(conversationId);
+  if (!conversation) return;
+  
+  // 临时设置为当前会话
+  store.currentConversation = conversation;
+  
+  // 获取技能
+  const skillService = SkillService.getInstance();
+  const allSkills = skillService.getEnabledSkills();
+  const skills = allSkills.map(skill => ({
+    name: skill.name,
+    description: skill.description
+  }));
+  
+  const systemPrompt = buildSystemPrompt(skills);
+  
+  store.isLoading = true;
+  store.error.value = null;
+  
+  try {
+    const provider = store.activeProvider;
+    if (!provider) return;
+    
+    const currentAgent = new ReActAgent({
+      context: {
+        conversationId,
+        provider,
+        systemPrompt,
+        tools: bulletJournalTools,
+        maxIterations: 5
+      },
+      onStreamUpdate: () => {
+        if (store.currentConversation) {
+          store.currentConversation = { ...store.currentConversation };
+        }
+      }
+    });
+    
+    currentAgent.setToolContext(store.toolContext);
+    
+    // 运行 Agent
+    await currentAgent.run(userContent, conversation);
+    
+    // 保存会话
+    await store.storageService.saveConversation(conversation);
+    
+    // 获取最后一条 AI 消息
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
+      // 发送到微信
+      await sendReplyToWeixin(toUserId, lastMessage.content, contextToken);
+    }
+    
+  } catch (err) {
+    console.error('[AIStore] AI 回复失败:', err);
+  } finally {
+    store.isLoading = false;
+    
+    // 恢复原始会话
+    if (originalConvId && originalConvId !== conversationId) {
+      const originalConv = await store.storageService.loadConversation(originalConvId);
+      store.currentConversation = originalConv;
+    }
+  }
+}
+
+/**
+ * 发送回复到微信
+ */
+async function sendReplyToWeixin(toUserId: string, content: string, contextToken?: string) {
+  const store = useAIStore();
+  const clawBot = useClawBotService(store.clawBotConfig);
+  
+  if (!clawBot.isConnected()) return;
+  
+  try {
+    await clawBot.sendTextMessage(toUserId, content, contextToken);
+  } catch (error) {
+    console.error('[AIStore] 发送微信消息失败:', error);
+  }
+}
