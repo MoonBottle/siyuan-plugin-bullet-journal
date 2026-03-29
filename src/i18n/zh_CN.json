@@ -530,6 +530,7 @@
     "hours": "{count}小时",
     "days": "{count}天",
     "nextReminder": "下次提醒：{time}",
+    "lastReminder": "上次提醒：{time}",
     "parse": {
       "before": "提前",
       "beforeEnd": "结束前",

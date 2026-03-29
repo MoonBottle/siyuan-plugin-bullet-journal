@@ -528,6 +528,7 @@
     "hours": "{count} hours",
     "days": "{count} days",
     "nextReminder": "Next reminder: {time}",
+    "lastReminder": "Last reminder: {time}",
     "parse": {
       "before": "before",
       "beforeEnd": "before end",

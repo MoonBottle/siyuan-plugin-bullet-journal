@@ -451,7 +451,7 @@ const skipButtonTooltip = computed(() => {
   return t('recurring.skipTooltip', { date: nextDate });
 });
 
-// 提醒按钮的 tooltip - 显示下一次提醒时间
+// 提醒按钮的 tooltip - 显示提醒时间（如果已过则显示"上次提醒"）
 const reminderButtonTooltip = computed(() => {
   if (!hasReminder.value || !props.item.reminder) return '';
   const reminderTime = calculateReminderTime(
@@ -464,6 +464,11 @@ const reminderButtonTooltip = computed(() => {
   );
   if (!reminderTime) return '';
   const formattedTime = dayjs(reminderTime).format('YYYY-MM-DD HH:mm');
+  // 判断提醒时间是否已过
+  const now = Date.now();
+  if (reminderTime < now) {
+    return t('reminder.lastReminder', { time: formattedTime });
+  }
   return t('reminder.nextReminder', { time: formattedTime });
 });
 
