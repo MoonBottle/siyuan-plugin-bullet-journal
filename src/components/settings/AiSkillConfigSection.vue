@@ -110,6 +110,7 @@ import { useSkillService } from '@/services/skillService';
 import { getAllBuiltinSkills } from '@/utils/skillTemplates';
 import { t } from '@/i18n';
 import { showMessage } from 'siyuan';
+import { showConfirmDialog } from '@/utils/dialog';
 import type { SkillConfig } from '@/types/skill';
 
 import SySettingsSection from './SySettingsSection.vue';
@@ -175,15 +176,15 @@ function editSkill(skill: SkillConfig) {
 
 // 删除技能
 function removeSkill(skill: SkillConfig) {
-  const confirmed = confirm(
+  showConfirmDialog(
+    t('common').confirmDelete,
     (t('settings').aiSkills?.confirmDeleteSkill ?? '确定要删除技能「{name}」吗？')
-      .replace('{name}', skill.name)
+      .replace('{name}', skill.name),
+    () => {
+      skillStore.removeSkill(skill.id);
+      showMessage('技能已删除', 2000, 'info');
+    }
   );
-  
-  if (confirmed) {
-    skillStore.removeSkill(skill.id);
-    showMessage('技能已删除', 2000, 'info');
-  }
 }
 
 // 切换启用状态

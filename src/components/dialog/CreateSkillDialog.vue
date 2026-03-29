@@ -53,6 +53,7 @@
 import { ref, reactive, computed } from 'vue';
 import { t } from '@/i18n';
 import { showMessage } from 'siyuan';
+import { showConfirmDialog } from '@/utils/dialog';
 import SyInput from '@/components/SiyuanTheme/SyInput.vue';
 import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
@@ -126,14 +127,22 @@ async function createSkill() {
   // 如果是内置技能，确认覆盖
   if (isBuiltin) {
     const builtin = getBuiltinSkill(skillName);
-    const confirmed = confirm(
+    showConfirmDialog(
+      t('common').confirmOverride,
       t('slash').overrideBuiltinSkill
         .replace('{name}', skillName)
-        .replace('{description}', builtin?.description || '')
+        .replace('{description}', builtin?.description || ''),
+      () => {
+        doCreateSkill(skillName, isBuiltin);
+      }
     );
-    if (!confirmed) return;
+    return;
   }
   
+  await doCreateSkill(skillName, isBuiltin);
+}
+
+async function doCreateSkill(skillName: string, isBuiltin: boolean) {
   isCreating.value = true;
   
   try {
