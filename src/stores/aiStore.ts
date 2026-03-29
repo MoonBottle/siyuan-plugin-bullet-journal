@@ -25,6 +25,11 @@ export interface AIStoreSettings {
 export const useAIStore = defineStore('ai', () => {
   // 存储服务实例
   let storageService: ReturnType<typeof useConversationStorage> | null = null;
+  
+  // 防抖保存相关
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  let pendingSave = false;
+  const SAVE_DEBOUNCE_MS = 2000; // 2秒防抖
 
   // State - AI 配置
   const providers = ref<AIProviderConfig[]>([]);
@@ -83,6 +88,55 @@ export const useAIStore = defineStore('ai', () => {
         index.currentConversationId
       );
     }
+  }
+
+  /**
+   * 防抖保存会话
+   * 用于流式响应期间减少文件操作
+   */
+  function debouncedSaveConversation(immediate = false) {
+    if (!storageService || !currentConversation.value) return;
+    
+    pendingSave = true;
+    
+    // 立即保存
+    if (immediate) {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+      storageService.saveConversation(currentConversation.value);
+      pendingSave = false;
+      return;
+    }
+    
+    // 防抖保存
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    
+    saveTimeout = setTimeout(() => {
+      if (pendingSave && currentConversation.value) {
+        storageService!.saveConversation(currentConversation.value);
+        pendingSave = false;
+      }
+      saveTimeout = null;
+    }, SAVE_DEBOUNCE_MS);
+  }
+  
+  /**
+   * 强制保存当前会话（用于关键节点）
+   */
+  async function forceSaveConversation() {
+    if (!storageService || !currentConversation.value) return;
+    
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+    
+    await storageService.saveConversation(currentConversation.value);
+    pendingSave = false;
   }
 
   /**
@@ -277,8 +331,8 @@ export const useAIStore = defineStore('ai', () => {
     conversation.messages.push(userMessage);
     conversation.updatedAt = Date.now();
 
-    // 保存用户消息
-    await storageService.saveConversation(conversation);
+    // 保存用户消息（防抖，延迟保存）
+    debouncedSaveConversation();
 
     isLoading.value = true;
     error.value = null;
@@ -368,6 +422,8 @@ export const useAIStore = defineStore('ai', () => {
           conversation.messages[messageIndex].loading = false;
         }
         conversation.updatedAt = Date.now();
+        // 防抖保存，减少文件操作
+        debouncedSaveConversation();
       });
 
       // 如果 AI 返回工具调用
@@ -428,6 +484,8 @@ export const useAIStore = defineStore('ai', () => {
             conversation.messages[messageIndex].loading = false;
           }
           conversation.updatedAt = Date.now();
+          // 防抖保存，减少文件操作
+          debouncedSaveConversation();
         });
 
         // 如果还有工具调用，继续执行（这里简化处理，最多两轮）
@@ -467,8 +525,8 @@ export const useAIStore = defineStore('ai', () => {
         }
       }
 
-      // 保存完整对话
-      await storageService.saveConversation(conversation);
+      // 保存完整对话（强制立即保存）
+      await forceSaveConversation();
       await refreshConversationsList();
 
     } catch (err) {
@@ -482,9 +540,9 @@ export const useAIStore = defineStore('ai', () => {
         skillExecution.output = error.value;
       }
 
-      // 保存到存储
+      // 保存到存储（强制立即保存）
       if (storageService && currentConversation.value) {
-        await storageService.saveConversation(currentConversation.value);
+        await forceSaveConversation();
       }
     } finally {
       isLoading.value = false;
