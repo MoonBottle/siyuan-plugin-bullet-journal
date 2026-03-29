@@ -29,6 +29,7 @@ export interface SkillConfig {
   updatedAt: number;      // 更新时间
   isBuiltin?: boolean;    // 是否为内置技能（仅用于展示，不存储）
   isOverride?: boolean;   // 是否覆盖了内置技能（仅用于展示，不存储）
+  isInline?: boolean;     // 是否为内联技能（直接嵌入在文档中，不单独创建文档）
 }
 
 /**

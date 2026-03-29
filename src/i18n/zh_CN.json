@@ -398,6 +398,8 @@
     "back": "返回",
     "confirm": "确认",
     "cancel": "取消",
+    "create": "创建",
+    "creating": "创建中...",
     "copy": "复制",
     "save": "保存",
     "saveSuccess": "保存成功",

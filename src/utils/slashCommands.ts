@@ -24,7 +24,7 @@ import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
 import type { Item, ProjectDirectory } from '@/types/models';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID } from '@/api';
+import { getHPathByID, getBlockByID } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 
 /**
@@ -975,43 +975,73 @@ import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
  * 从斜杠命令创建技能
  */
 async function createSkillFromSlash(nodeElement: HTMLElement) {
-  // 获取当前文档路径作为默认保存位置
   const blockId = nodeElement.getAttribute('data-node-id');
-  let defaultPath = 'AI技能/未命名技能';
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
   
-  if (blockId) {
+  // 获取当前文档 ID
+  // 从 nodeElement 向上查找文档根节点
+  let currentEl: HTMLElement | null = nodeElement;
+  let docId: string | null = null;
+  
+  while (currentEl) {
+    const nodeId = currentEl.getAttribute('data-node-id');
+    const nodeType = currentEl.getAttribute('data-type');
+    if (nodeId && nodeType === 'NodeDocument') {
+      docId = nodeId;
+      break;
+    }
+    currentEl = currentEl.parentElement;
+  }
+  
+  // 如果找不到文档 ID，使用块 ID 作为备选（通常块 ID 就是文档 ID 或者在文档中）
+  if (!docId) {
     try {
-      const hPath = await getHPathByID(blockId);
-      if (hPath) {
-        // 使用当前文档所在目录
-        const parts = hPath.split('/');
-        parts.pop(); // 移除文档名
-        defaultPath = parts.length > 0 
-          ? `${parts.join('/')}/新技能` 
-          : 'AI技能/新技能';
-      }
+      const block = await getBlockByID(blockId);
+      docId = block?.root_id || blockId;
     } catch {
-      // 忽略错误，使用默认路径
+      docId = blockId;
     }
   }
   
+  // 创建容器元素
+  const container = document.createElement('div');
+  
+  // 创建 Vue 应用
+  const app = createApp(CreateSkillDialog, {
+    docId,
+    blockId,
+    onClose: () => {
+      dialog.destroy();
+    },
+    onCreated: (skillId: string) => {
+      showMessage('技能创建成功！', 3000, 'info');
+    }
+  });
+  
+  app.use(getSharedPinia());
+  app.mount(container);
+  
   // 打开创建技能对话框
   const dialog = createDialog({
-    title: '',
-    content: '<div id="create-skill-dialog-mount"></div>',
-    width: '560px',
+    title: t('slash').createSkillTitle,
+    content: '',
+    width: '480px',
     height: 'auto'
   });
   
-  const mountEl = dialog.element.querySelector('#create-skill-dialog-mount');
-  if (mountEl) {
-    const app = createApp(CreateSkillDialog, {
-      defaultPath,
-      close: () => dialog.destroy(),
-      created: (skillId: string) => {
-        showMessage('技能创建成功！', 3000, 'info');
-      }
-    });
-    app.mount(mountEl);
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
   }
+  
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
 }
