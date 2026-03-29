@@ -110,7 +110,7 @@ import { useSkillService } from '@/services/skillService';
 import { getAllBuiltinSkills } from '@/utils/skillTemplates';
 import { t } from '@/i18n';
 import { showMessage } from 'siyuan';
-import { openFileById } from '@/api';
+import { openDocument } from '@/utils/fileUtils';
 import type { SkillConfig } from '@/types/skill';
 
 import SySettingsSection from './SySettingsSection.vue';
@@ -154,10 +154,8 @@ async function editSkill(skill: SkillConfig) {
     return;
   }
   
-  try {
-    await openFileById(skill.docId);
-  } catch (error) {
-    console.error('Failed to open skill document:', error);
+  const success = await openDocument(skill.docId);
+  if (!success) {
     showMessage('打开文档失败', 2000, 'error');
   }
 }
