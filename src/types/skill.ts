@@ -17,19 +17,15 @@ export interface SkillMetadata {
 
 /**
  * 技能配置（存储在插件设置中）
+ * docId 作为主键
  */
 export interface SkillConfig {
-  id: string;             // 技能 ID（使用文档路径或 ID）
-  docId: string;          // 思源文档 ID
-  docPath: string;        // 文档路径（便于展示）
-  name: string;           // 技能名称
-  description: string;    // 技能描述
+  docId: string;          // 思源文档 ID（主键）
+  name: string;           // 技能名称（冗余存储，便于列表展示）
+  description: string;    // 技能描述（冗余存储，便于列表展示）
   enabled: boolean;       // 是否启用
   createdAt: number;      // 创建时间
   updatedAt: number;      // 更新时间
-  isBuiltin?: boolean;    // 是否为内置技能（仅用于展示，不存储）
-  isOverride?: boolean;   // 是否覆盖了内置技能（仅用于展示，不存储）
-  isInline?: boolean;     // 是否为内联技能（直接嵌入在文档中，不单独创建文档）
 }
 
 /**

@@ -1,11 +1,11 @@
 /**
  * Skill Store
- * 管理技能配置状态
+ * 管理技能配置状态（简化版，docId 作为主键）
  */
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { SkillConfig, SkillExecutionRecord } from '@/types/skill';
+import type { SkillConfig } from '@/types/skill';
 
 // 存储键名
 const STORAGE_KEY = 'aiSkills';
@@ -21,40 +21,41 @@ export const useSkillStore = defineStore('skill', () => {
     skills.value.filter(s => s.enabled)
   );
   
-  const builtinOverridden = computed(() => {
-    // 检查哪些内置技能被覆盖了
-    const overriddenNames = new Set(
-      skills.value.filter(s => s.isOverride).map(s => s.name)
-    );
-    return overriddenNames;
-  });
-  
   /**
    * 检查技能名称是否已存在
    */
-  function isSkillNameExists(name: string, excludeId?: string): boolean {
+  function isSkillNameExists(name: string, excludeDocId?: string): boolean {
     return skills.value.some(
-      s => s.name === name && (!excludeId || s.id !== excludeId)
+      s => s.name === name && (!excludeDocId || s.docId !== excludeDocId)
     );
+  }
+  
+  /**
+   * 根据 docId 获取技能
+   */
+  function getSkillByDocId(docId: string): SkillConfig | undefined {
+    return skills.value.find(s => s.docId === docId);
+  }
+  
+  /**
+   * 根据名称获取技能
+   */
+  function getSkillByName(name: string): SkillConfig | undefined {
+    return skills.value.find(s => s.name === name);
   }
   
   /**
    * 加载技能列表
    */
   function loadSkills(savedSkills: SkillConfig[]) {
-    skills.value = savedSkills.map(skill => ({
-      ...skill,
-      isBuiltin: false,
-      isOverride: skill.isOverride || false
-    }));
+    skills.value = savedSkills;
   }
   
   /**
-   * 添加技能
+   * 添加或更新技能（docId 作为主键）
    */
   function addSkill(skill: SkillConfig) {
-    // 检查是否已存在同名技能
-    const existingIndex = skills.value.findIndex(s => s.name === skill.name);
+    const existingIndex = skills.value.findIndex(s => s.docId === skill.docId);
     if (existingIndex >= 0) {
       // 更新现有技能
       skills.value[existingIndex] = {
@@ -62,6 +63,7 @@ export const useSkillStore = defineStore('skill', () => {
         updatedAt: Date.now()
       };
     } else {
+      // 添加新技能
       skills.value.push(skill);
     }
     
@@ -70,10 +72,10 @@ export const useSkillStore = defineStore('skill', () => {
   }
   
   /**
-   * 更新技能
+   * 更新技能（使用 docId 作为标识）
    */
-  function updateSkill(skillId: string, updates: Partial<SkillConfig>) {
-    const index = skills.value.findIndex(s => s.id === skillId);
+  function updateSkill(docId: string, updates: Partial<SkillConfig>) {
+    const index = skills.value.findIndex(s => s.docId === docId);
     if (index >= 0) {
       skills.value[index] = {
         ...skills.value[index],
@@ -85,10 +87,10 @@ export const useSkillStore = defineStore('skill', () => {
   }
   
   /**
-   * 删除技能
+   * 删除技能（使用 docId 作为标识）
    */
-  function removeSkill(skillId: string) {
-    const index = skills.value.findIndex(s => s.id === skillId);
+  function removeSkill(docId: string) {
+    const index = skills.value.findIndex(s => s.docId === docId);
     if (index >= 0) {
       skills.value.splice(index, 1);
       saveToStorage();
@@ -96,10 +98,10 @@ export const useSkillStore = defineStore('skill', () => {
   }
   
   /**
-   * 切换技能启用状态
+   * 切换技能启用状态（使用 docId 作为标识）
    */
-  function toggleSkillEnabled(skillId: string, enabled?: boolean) {
-    const skill = skills.value.find(s => s.id === skillId);
+  function toggleSkillEnabled(docId: string, enabled?: boolean) {
+    const skill = skills.value.find(s => s.docId === docId);
     if (skill) {
       skill.enabled = enabled !== undefined ? enabled : !skill.enabled;
       skill.updatedAt = Date.now();
@@ -108,34 +110,18 @@ export const useSkillStore = defineStore('skill', () => {
   }
   
   /**
-   * 根据 ID 获取技能
-   */
-  function getSkillById(skillId: string): SkillConfig | undefined {
-    return skills.value.find(s => s.id === skillId);
-  }
-  
-  /**
-   * 根据名称获取技能
-   */
-  function getSkillByName(name: string): SkillConfig | undefined {
-    return skills.value.find(s => s.name === name);
-  }
-  
-  /**
    * 获取导出数据（用于保存）
+   * 简化结构：只存必要字段
    */
   function getExportData(): { skills: SkillConfig[] } {
     return {
       skills: skills.value.map(skill => ({
-        id: skill.id,
         docId: skill.docId,
-        docPath: skill.docPath,
         name: skill.name,
         description: skill.description,
         enabled: skill.enabled,
         createdAt: skill.createdAt,
-        updatedAt: skill.updatedAt,
-        isOverride: skill.isOverride
+        updatedAt: skill.updatedAt
       }))
     };
   }
@@ -192,16 +178,15 @@ export const useSkillStore = defineStore('skill', () => {
     error,
     // Getters
     enabledSkills,
-    builtinOverridden,
     // Actions
     isSkillNameExists,
+    getSkillByDocId,
+    getSkillByName,
     loadSkills,
     addSkill,
     updateSkill,
     removeSkill,
     toggleSkillEnabled,
-    getSkillById,
-    getSkillByName,
     getExportData,
     loadFromPlugin,
     saveToPlugin

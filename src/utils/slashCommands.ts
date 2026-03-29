@@ -973,6 +973,7 @@ import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
 
 /**
  * 从斜杠命令创建技能
+ * 将当前文档转换为技能文档
  */
 async function createSkillFromSlash(nodeElement: HTMLElement) {
   const blockId = nodeElement.getAttribute('data-node-id');
@@ -981,29 +982,26 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
     return;
   }
   
-  // 获取当前文档 ID
-  // 从 nodeElement 向上查找文档根节点
-  let currentEl: HTMLElement | null = nodeElement;
-  let docId: string | null = null;
+  // 获取当前文档信息
+  let docId: string;
+  let notebook: string;
+  let docPath: string;
   
-  while (currentEl) {
-    const nodeId = currentEl.getAttribute('data-node-id');
-    const nodeType = currentEl.getAttribute('data-type');
-    if (nodeId && nodeType === 'NodeDocument') {
-      docId = nodeId;
-      break;
+  try {
+    const block = await getBlockByID(blockId);
+    if (!block) {
+      showMessage('无法获取文档信息', 2000, 'error');
+      return;
     }
-    currentEl = currentEl.parentElement;
-  }
-  
-  // 如果找不到文档 ID，使用块 ID 作为备选（通常块 ID 就是文档 ID 或者在文档中）
-  if (!docId) {
-    try {
-      const block = await getBlockByID(blockId);
-      docId = block?.root_id || blockId;
-    } catch {
-      docId = blockId;
-    }
+    
+    // 获取文档根块
+    docId = block.root_id;
+    notebook = block.box;
+    docPath = block.hpath || '';
+  } catch (error) {
+    console.error('[SlashCommand] Failed to get document info:', error);
+    showMessage('无法获取文档信息', 2000, 'error');
+    return;
   }
   
   // 创建容器元素
@@ -1012,11 +1010,12 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
   // 创建 Vue 应用
   const app = createApp(CreateSkillDialog, {
     docId,
-    blockId,
+    notebook,
+    docPath,
     onClose: () => {
       dialog.destroy();
     },
-    onCreated: (skillId: string) => {
+    onCreated: (_docId: string) => {
       showMessage('技能创建成功！', 3000, 'info');
     }
   });

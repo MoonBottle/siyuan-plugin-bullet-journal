@@ -1,13 +1,12 @@
 /**
- * 技能服务
- * 负责技能的解析、管理和执行（支持用户自定义覆盖内置技能）
+ * 技能服务（简化版）
+ * 负责技能的管理和执行
  */
 
 import type { SkillConfig, ParsedSkill, SkillResolutionResult, SkillExecutionContext, SkillExecutionResult } from '@/types/skill';
 import { getBuiltinSkill, isBuiltinSkill, getAllBuiltinSkills } from '@/utils/skillTemplates';
-import { parseSkillDocument, parseSkillContent } from '@/utils/skillParser';
 import { useSkillStore } from '@/stores/skillStore';
-import { getBlockKramdown, createDocWithMd, sql } from '@/api';
+import { getBlockKramdown, getBlockAttrs, createDocWithMd, sql, setBlockAttrs } from '@/api';
 import { showMessage } from 'siyuan';
 
 /**
@@ -43,24 +42,14 @@ export class SkillService {
       const isOverridden = userSkills.some(s => s.name === builtin.name);
       
       return {
-        id: builtin.id,
-        docId: '',
-        docPath: '(内置)',
+        docId: builtin.id,
         name: builtin.name,
         description: builtin.description,
         enabled: !isOverridden, // 被覆盖的内置技能不显示为启用
         createdAt: 0,
-        updatedAt: 0,
-        isBuiltin: true,
-        isOverride: false
+        updatedAt: 0
       } as SkillConfig;
     });
-    
-    // 标记用户技能是否覆盖了内置技能
-    const userSkillsWithFlag = userSkills.map(skill => ({
-      ...skill,
-      isOverride: isBuiltinSkill(skill.name)
-    }));
     
     // 合并：用户技能 + 未被覆盖的内置技能
     const userSkillNames = new Set(userSkills.map(s => s.name));
@@ -68,7 +57,7 @@ export class SkillService {
       builtin => !userSkillNames.has(builtin.name)
     );
     
-    return [...userSkillsWithFlag, ...filteredBuiltinSkills];
+    return [...userSkills, ...filteredBuiltinSkills];
   }
   
   /**
@@ -79,7 +68,7 @@ export class SkillService {
   }
   
   /**
-   * 解析技能（支持用户覆盖内置技能）
+   * 解析技能（简化版：直接读取文档内容）
    */
   async resolveSkill(skillName: string): Promise<SkillResolutionResult> {
     const skillStore = useSkillStore();
@@ -88,8 +77,8 @@ export class SkillService {
     const userSkill = skillStore.skills.find(s => s.name === skillName);
     if (userSkill) {
       try {
-        // 从思源文档解析
-        const parsed = await this.parseSkillFromDocument(userSkill.docId);
+        // 从文档属性和内容获取技能信息
+        const parsed = await this.parseSkillFromDoc(userSkill.docId);
         return {
           source: 'user',
           skill: parsed,
@@ -104,32 +93,55 @@ export class SkillService {
     // 2. 查找内置技能
     const builtin = getBuiltinSkill(skillName);
     if (builtin) {
-      try {
-        const parsed = parseSkillContent(builtin.content);
-        return {
-          source: 'builtin',
-          skill: parsed,
-          isOverride: false
-        };
-      } catch (error) {
-        console.error('[SkillService] Failed to parse builtin skill:', error);
-        throw new Error(`解析内置技能失败: ${(error as Error).message}`);
-      }
+      // 内置技能直接返回内容
+      return {
+        source: 'builtin',
+        skill: {
+          metadata: {
+            name: builtin.name,
+            description: builtin.description,
+            version: builtin.version,
+            author: builtin.author,
+            tags: []
+          },
+          content: builtin.content,
+          scripts: [],
+          references: []
+        },
+        isOverride: false
+      };
     }
     
     throw new Error(`未找到技能: ${skillName}`);
   }
   
   /**
-   * 从思源文档解析技能
+   * 从文档获取技能信息（简化版）
+   * 1. 从文档属性读取 name、description
+   * 2. 从文档内容读取技能详情
    */
-  private async parseSkillFromDocument(docId: string): Promise<ParsedSkill> {
+  private async parseSkillFromDoc(docId: string): Promise<ParsedSkill> {
+    // 获取文档属性
+    const attrs = await getBlockAttrs(docId);
+    
+    // 获取文档内容
     const response = await getBlockKramdown(docId);
     if (!response?.data?.kramdown) {
       throw new Error('无法获取文档内容');
     }
     
-    return parseSkillDocument(response.data.kramdown);
+    return {
+      metadata: {
+        name: attrs['custom-skill-name'] || '未命名',
+        description: attrs['custom-skill-description'] || '',
+        version: attrs['custom-skill-version'],
+        author: attrs['custom-skill-author'],
+        tags: []
+      },
+      content: response.data.kramdown,
+      scripts: [],
+      references: []
+    };
   }
   
   /**
@@ -152,7 +164,7 @@ export class SkillService {
     }
     
     const skillList = enabledSkills.map(skill => {
-      const sourceTag = skill.isBuiltin ? '[内置]' : '[自定义]';
+      const sourceTag = this.isBuiltinSkill(skill.name) ? '[内置]' : '[自定义]';
       return `- ${skill.name} ${sourceTag}: ${skill.description}`;
     }).join('\n');
     
@@ -172,6 +184,13 @@ ${skillList}
   }
   
   /**
+   * 检查是否为内置技能
+   */
+  private isBuiltinSkill(name: string): boolean {
+    return isBuiltinSkill(name);
+  }
+  
+  /**
    * 检查技能名称是否可用
    */
   isSkillNameAvailable(name: string): boolean {
@@ -184,8 +203,9 @@ ${skillList}
    * 基于内置技能创建用户自定义版本
    */
   async createOverrideSkill(
-    builtinName: string, 
-    savePath: string
+    builtinName: string,
+    notebook: string,
+    parentPath: string
   ): Promise<SkillConfig | null> {
     const builtin = getBuiltinSkill(builtinName);
     if (!builtin) {
@@ -195,34 +215,35 @@ ${skillList}
     
     try {
       // 创建文档
-      const notebook = '';
+      const docPath = `${parentPath}/${builtinName}`;
+      const docId = await createDocWithMd(notebook, docPath, builtin.content);
       
-      const docPath = savePath.startsWith('/') ? savePath : `/${savePath}`;
-      const fullPath = `${notebook}${docPath}`;
+      if (!docId) {
+        throw new Error('创建文档失败');
+      }
       
-      await createDocWithMd(fullPath, builtin.content);
-      
-      // 获取创建的文档 ID
-      const sqlRes = await sql(`SELECT id FROM blocks WHERE path = '${docPath}.sy' LIMIT 1`);
-      const docId = sqlRes?.data?.[0]?.id || '';
+      // 设置文档属性
+      await setBlockAttrs(docId, {
+        'custom-skill-name': builtinName,
+        'custom-skill-description': builtin.description,
+        'custom-skill-version': builtin.version,
+        'custom-skill-author': 'User'
+      });
       
       // 添加到技能列表
       const skillStore = useSkillStore();
       const skillConfig: SkillConfig = {
-        id: `skill-${Date.now()}`,
         docId,
-        docPath: savePath,
-        name: builtin.name,
+        name: builtinName,
         description: builtin.description,
         enabled: true,
         createdAt: Date.now(),
-        updatedAt: Date.now(),
-        isOverride: true
+        updatedAt: Date.now()
       };
       
       skillStore.addSkill(skillConfig);
       
-      showMessage(`已创建 "${builtin.name}" 的自定义版本`, 3000, 'info');
+      showMessage(`已创建 "${builtinName}" 的自定义版本`, 3000, 'info');
       return skillConfig;
     } catch (error) {
       console.error('[SkillService] Failed to create override skill:', error);

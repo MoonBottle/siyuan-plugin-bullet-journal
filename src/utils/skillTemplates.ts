@@ -3,7 +3,7 @@
  * 包含内置技能定义和技能文档生成
  */
 
-import type { BuiltinSkill, ParsedSkill } from '@/types/skill';
+import type { BuiltinSkill } from '@/types/skill';
 
 // 导入内置技能文件内容（Vite 会处理 .md 导入）
 import dailyReportContent from '@/builtin-skills/daily-report.md?raw';
@@ -56,19 +56,10 @@ export function getAllBuiltinSkills(): BuiltinSkill[] {
 }
 
 /**
- * 默认技能文档模板
+ * 默认技能文档模板（简化版，无 YAML frontmatter）
+ * 技能内容直接作为文档内容
  */
-export const DEFAULT_SKILL_TEMPLATE = `---
-name: {{skillName}}
-description: {{description}}
-version: 1.0.0
-author: {{author}}
-tags: []
----
-
-# {{skillName}}
-
-## 概述
+export const DEFAULT_SKILL_TEMPLATE = `## 概述
 
 {{description}}
 
@@ -100,99 +91,28 @@ tags: []
 `;
 
 /**
- * 生成技能文档内容（空白模板）
+ * 生成技能文档内容（简化模板）
  */
 export function generateSkillDocument(
   skillName: string,
   description: string,
-  author: string
+  _author: string
 ): string {
   return DEFAULT_SKILL_TEMPLATE
     .replace(/{{skillName}}/g, skillName)
-    .replace(/{{description}}/g, description)
-    .replace(/{{author}}/g, author);
+    .replace(/{{description}}/g, description);
 }
 
 /**
  * 基于内置技能模板创建自定义版本
  */
 export function generateSkillDocumentFromTemplate(
-  skillName: string,
+  _skillName: string,
   description: string,
-  author: string,
+  _author: string,
   templateContent: string
 ): string {
-  // 提取模板的 YAML frontmatter
-  const frontmatterMatch = templateContent.match(/^---\n([\s\S]*?)\n---/);
-  
-  if (!frontmatterMatch) {
-    // 如果没有 frontmatter，使用默认模板
-    return generateSkillDocument(skillName, description, author);
-  }
-  
-  // 替换 frontmatter 中的字段
-  const newFrontmatter = frontmatterMatch[1]
-    .replace(/^name:.*$/m, `name: ${skillName}`)
-    .replace(/^description:.*$/m, `description: ${description}`)
-    .replace(/^author:.*$/m, `author: ${author}`);
-  
-  // 构建新文档
-  const body = templateContent.slice(frontmatterMatch[0].length);
-  return `---\n${newFrontmatter}\n---${body}`;
-}
-
-/**
- * 解析技能内容（简易版，完整版在 skillParser.ts）
- */
-export function parseSkillContent(content: string): ParsedSkill {
-  const lines = content.split('\n');
-  
-  // 查找 frontmatter
-  if (lines[0] !== '---') {
-    throw new Error('Invalid skill format: missing frontmatter');
-  }
-  
-  const endIndex = lines.findIndex((line, idx) => idx > 0 && line === '---');
-  if (endIndex === -1) {
-    throw new Error('Invalid skill format: unclosed frontmatter');
-  }
-  
-  // 解析 frontmatter
-  const frontmatterLines = lines.slice(1, endIndex);
-  const metadata: Record<string, string | string[]> = {};
-  
-  for (const line of frontmatterLines) {
-    const colonIndex = line.indexOf(':');
-    if (colonIndex === -1) continue;
-    
-    const key = line.slice(0, colonIndex).trim();
-    const value = line.slice(colonIndex + 1).trim();
-    
-    // 处理数组（如 tags: ['a', 'b']）
-    if (value.startsWith('[') && value.endsWith(']')) {
-      try {
-        metadata[key] = JSON.parse(value.replace(/'/g, '"'));
-      } catch {
-        metadata[key] = value;
-      }
-    } else {
-      metadata[key] = value;
-    }
-  }
-  
-  // 主体内容
-  const bodyContent = lines.slice(endIndex + 1).join('\n').trim();
-  
-  return {
-    metadata: {
-      name: metadata.name as string || '未命名',
-      description: metadata.description as string || '',
-      version: metadata.version as string,
-      author: metadata.author as string,
-      tags: metadata.tags as string[] || []
-    },
-    content: bodyContent,
-    scripts: [],
-    references: []
-  };
+  // 简化处理：直接使用内置技能内容，替换描述
+  return templateContent
+    .replace(/{{description}}/g, description);
 }

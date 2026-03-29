@@ -57,7 +57,7 @@ import SyInput from '@/components/SiyuanTheme/SyInput.vue';
 import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 import { useSkillStore } from '@/stores/skillStore';
-import { appendBlock } from '@/api';
+import { setBlockAttrs, prependBlock } from '@/api';
 import { 
   generateSkillDocument, 
   generateSkillDocumentFromTemplate,
@@ -68,12 +68,13 @@ import type { SkillConfig } from '@/types/skill';
 
 const props = defineProps<{
   docId: string;
-  blockId?: string;
+  notebook: string;
+  docPath: string;
 }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'created', skillId: string): void;
+  (e: 'created', docId: string): void;
 }>();
 
 const skillStore = useSkillStore();
@@ -136,7 +137,15 @@ async function createSkill() {
   isCreating.value = true;
   
   try {
-    // 1. 生成技能文档内容
+    // 1. 设置文档自定义属性（name、description）
+    await setBlockAttrs(props.docId, {
+      'custom-skill-name': skillName,
+      'custom-skill-description': form.description.trim(),
+      'custom-skill-version': '1.0.0',
+      'custom-skill-author': 'User'
+    });
+    
+    // 2. 生成技能文档内容并添加到文档开头
     let documentContent: string;
     if (isBuiltin) {
       const builtin = getBuiltinSkill(skillName);
@@ -154,23 +163,17 @@ async function createSkill() {
       );
     }
     
-    // 2. 直接追加到当前文档
-    // 在内容前添加技能标题
-    const contentToAppend = `## ${skillName}\n\n${documentContent}`;
-    await appendBlock('markdown', contentToAppend, props.docId);
+    // 在文档开头添加技能内容
+    await prependBlock('markdown', documentContent, props.docId);
     
-    // 3. 添加到技能列表（不关联具体文档，因为技能内容直接在当前文档中）
+    // 3. 添加到技能列表（docId 作为主键）
     const skillConfig: SkillConfig = {
-      id: `skill-${Date.now()}`,
       docId: props.docId,
-      docPath: '', // 不再使用文档路径
       name: skillName,
       description: form.description.trim(),
       enabled: form.autoEnable,
       createdAt: Date.now(),
-      updatedAt: Date.now(),
-      isOverride: isBuiltin,
-      isInline: true // 标记为内联技能（直接嵌入在当前文档中）
+      updatedAt: Date.now()
     };
     
     skillStore.addSkill(skillConfig);
@@ -186,7 +189,7 @@ async function createSkill() {
       showMessage(t('slash').createSkillSuccess, 3000, 'info');
     }
     
-    emit('created', skillConfig.id);
+    emit('created', props.docId);
     emit('close');
   } catch (error) {
     console.error('[CreateSkillDialog] Failed to create skill:', error);
