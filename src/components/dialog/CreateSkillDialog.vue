@@ -2,7 +2,7 @@
   <div class="create-skill-dialog">
     <div class="skill-form">
       <!-- 技能名称 -->
-      <div class="form-item">
+      <div class="form-item form-item-full">
         <label class="form-label">{{ t('slash').skillName }}</label>
         <SyInput 
           v-model="form.name" 
@@ -16,7 +16,7 @@
       </div>
       
       <!-- 技能描述 -->
-      <div class="form-item">
+      <div class="form-item form-item-full">
         <label class="form-label">{{ t('slash').skillDescription }}</label>
         <SyTextarea 
           v-model="form.description"
@@ -257,6 +257,15 @@ function close() {
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
+}
+
+.form-item-full {
+  width: 100%;
+  
+  input,
+  textarea {
+    width: 100%;
+  }
 }
 
 .form-item-inline {
