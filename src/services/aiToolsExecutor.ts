@@ -15,6 +15,8 @@ import {
   type PomodoroStatsOutput
 } from '@/utils/pomodoroUtils';
 import type { ToolName } from './aiTools';
+import { SkillService } from './skillService';
+import type { SkillConfig } from '@/types/skill';
 
 const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
@@ -225,10 +227,10 @@ function executeGetPomodoroRecords(
 /**
  * 执行工具调用
  */
-export function executeTool(
+export async function executeTool(
   toolCall: ToolCall,
   context: ToolExecutionContext
-): string {
+): Promise<string> {
   const args = JSON.parse(toolCall.function.arguments);
   const toolName = toolCall.function.name as ToolName;
 
@@ -251,20 +253,78 @@ export function executeTool(
     case 'get_pomodoro_records':
       return JSON.stringify(executeGetPomodoroRecords(context, args));
 
+    case 'list_skills':
+      return JSON.stringify(executeListSkills());
+
+    case 'get_skill_detail':
+      return JSON.stringify(await executeGetSkillDetail(args));
+
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
 }
 
 /**
+ * 执行 list_skills 工具
+ * 返回所有可用技能的名称和描述列表
+ */
+function executeListSkills(): Array<{ name: string; description: string; source: 'builtin' | 'user' }> {
+  const skillService = SkillService.getInstance();
+  const allSkills = skillService.getAllSkills();
+  
+  return allSkills
+    .filter(skill => skill.enabled)
+    .map(skill => ({
+      name: skill.name,
+      description: skill.description,
+      source: (skill as SkillConfig & { isBuiltin?: boolean }).isBuiltin ? 'builtin' : 'user'
+    }));
+}
+
+/**
+ * 执行 get_skill_detail 工具
+ * 获取指定技能的详细内容
+ */
+async function executeGetSkillDetail(args: { skillName: string }): Promise<{ 
+  name: string; 
+  description: string;
+  content: string;
+  source: 'builtin' | 'user';
+} | { error: string }> {
+  const skillService = SkillService.getInstance();
+  
+  try {
+    const result = await skillService.resolveSkill(args.skillName);
+    
+    return {
+      name: result.skill.metadata.name,
+      description: result.skill.metadata.description,
+      content: result.skill.content,
+      source: result.source
+    };
+  } catch (error) {
+    return { 
+      error: `获取技能详情失败: ${(error as Error).message}` 
+    };
+  }
+}
+
+/**
  * 批量执行多个工具调用
  */
-export function executeToolCalls(
+export async function executeToolCalls(
   toolCalls: ToolCall[],
   context: ToolExecutionContext
-): Array<{ toolCallId: string; result: string }> {
-  return toolCalls.map(toolCall => ({
-    toolCallId: toolCall.id,
-    result: executeTool(toolCall, context)
-  }));
+): Promise<Array<{ toolCallId: string; result: string }>> {
+  const results = [];
+  
+  for (const toolCall of toolCalls) {
+    const result = await executeTool(toolCall, context);
+    results.push({
+      toolCallId: toolCall.id,
+      result
+    });
+  }
+  
+  return results;
 }

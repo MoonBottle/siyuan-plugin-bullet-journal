@@ -169,6 +169,43 @@ export const getPomodoroRecordsTool: ToolDefinition = {
 };
 
 /**
+ * 查询技能列表工具
+ */
+export const listSkillsTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'list_skills',
+    description: '查询所有可用的 AI 技能清单。返回技能名称和描述列表。当用户需要执行特定任务（如生成日报、会议纪要等）时，先调用此工具查看有哪些技能可用。无参数。',
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
+  }
+};
+
+/**
+ * 获取技能详情工具
+ */
+export const getSkillDetailTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_skill_detail',
+    description: '获取指定技能的详细内容。当确定要使用某个技能时，调用此工具获取技能的完整工作流程、格式要求等详细说明。参数 skillName 为技能名称，来自 list_skills 返回的 name。',
+    parameters: {
+      type: 'object',
+      properties: {
+        skillName: {
+          type: 'string',
+          description: '技能名称，来自 list_skills 返回的 name'
+        }
+      },
+      required: ['skillName']
+    }
+  }
+};
+
+/**
  * 所有可用的工具列表
  */
 export const bulletJournalTools: ToolDefinition[] = [
@@ -177,7 +214,9 @@ export const bulletJournalTools: ToolDefinition[] = [
   listProjectsTool,
   filterItemsTool,
   getPomodoroStatsTool,
-  getPomodoroRecordsTool
+  getPomodoroRecordsTool,
+  listSkillsTool,
+  getSkillDetailTool
 ];
 
 /**
@@ -189,4 +228,6 @@ export type ToolName =
   | 'list_projects'
   | 'filter_items'
   | 'get_pomodoro_stats'
-  | 'get_pomodoro_records';
+  | 'get_pomodoro_records'
+  | 'list_skills'
+  | 'get_skill_detail';

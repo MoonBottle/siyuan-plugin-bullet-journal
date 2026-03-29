@@ -10,7 +10,7 @@
 
       <!-- 对话选择下拉框 -->
       <ConversationSelect
-        :conversations="aiStore.conversations"
+        :conversations="conversationsList"
         :current-conversation-id="aiStore.currentConversationId"
         @select="handleConversationSelect"
         @delete="handleConversationDelete"
@@ -59,6 +59,7 @@ import { Menu, showMessage } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, useAIStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { useConversationStorage } from '@/services/conversationStorageService';
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
@@ -69,6 +70,9 @@ const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const aiStore = useAIStore();
+
+// 对话列表（从存储服务获取）
+const conversationsList = ref<Array<{ id: string; title: string; updatedAt: number }>>([]);
 
 // 自动保存防抖定时器
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -92,7 +96,12 @@ const allItems = computed<Item[]>(() => {
   return items;
 });
 
-// 数据刷新处理函数（与 Todo 一致：有 payload 则用 payload 更新，保证设置页保存后分组/AI 配置即时生效）
+// 刷新对话列表
+async function refreshConversationsList() {
+  conversationsList.value = await aiStore.getConversationsList();
+}
+
+// 数据刷新处理函数
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
   const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'todoDock', 'ai'];
@@ -101,7 +110,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     const patch: Record<string, unknown> = {};
     storeKeys.forEach(k => { if (k !== 'ai' && payload[k] !== undefined) patch[k] = payload[k]; });
     if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
-    // 始终用 payload.ai 更新 AI 配置（与 Todo 用 payload.groups 更新分组名称一致）
     if (payload.ai && typeof payload.ai === 'object') {
       aiStore.loadSettings({
         providers: (payload.ai as any).providers || [],
@@ -125,24 +133,26 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 };
 
 // 新建对话
-const handleNewConversation = () => {
-  aiStore.createConversation();
+const handleNewConversation = async () => {
+  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
+  await refreshConversationsList();
   nextTick(() => {
     chatPanelRef.value?.focusInput();
   });
 };
 
 // 选择对话
-const handleConversationSelect = (conversationId: string) => {
-  aiStore.switchConversation(conversationId);
+const handleConversationSelect = async (conversationId: string) => {
+  await aiStore.switchConversation(conversationId);
   nextTick(() => {
     chatPanelRef.value?.focusInput();
   });
 };
 
 // 删除对话
-const handleConversationDelete = (conversationId: string) => {
-  aiStore.deleteConversation(conversationId);
+const handleConversationDelete = async (conversationId: string) => {
+  await aiStore.deleteConversation(conversationId);
+  await refreshConversationsList();
 };
 
 // 更多按钮点击事件
@@ -161,20 +171,21 @@ const handleMoreClick = (event: MouseEvent) => {
   menu.addItem({
     icon: 'iconTrashcan',
     label: t('aiChat').clearConversation,
-    click: () => {
-      aiStore.clearCurrentConversation();
+    click: async () => {
+      await aiStore.clearCurrentConversation();
       showMessage(t('aiChat').conversationCleared);
     }
   });
 
   // 删除当前对话
-  if (aiStore.conversations.length > 1) {
+  if (conversationsList.value.length > 1) {
     menu.addItem({
       icon: 'iconClose',
       label: t('aiChat').deleteConversation,
-      click: () => {
+      click: async () => {
         if (aiStore.currentConversationId) {
-          aiStore.deleteConversation(aiStore.currentConversationId);
+          await aiStore.deleteConversation(aiStore.currentConversationId);
+          await refreshConversationsList();
           showMessage(t('aiChat').conversationDeleted);
         }
       }
@@ -201,7 +212,6 @@ const handleMoreClick = (event: MouseEvent) => {
 
 // 打开设置
 const handleOpenSettings = () => {
-  // 触发思源打开插件设置
   if (plugin?.openSetting) {
     plugin.openSetting();
   }
@@ -228,56 +238,40 @@ const autoSaveConfig = () => {
         console.error('[AI Chat] Auto save config failed:', error);
       }
     }
-  }, 1000); // 1秒防抖
-};
-
-// 自动保存聊天记录（带防抖）
-let chatHistorySaveTimeout: ReturnType<typeof setTimeout> | null = null;
-const autoSaveChatHistory = () => {
-  if (chatHistorySaveTimeout) {
-    clearTimeout(chatHistorySaveTimeout);
-  }
-  chatHistorySaveTimeout = setTimeout(async () => {
-    if (plugin?.saveAIChatHistoryFromStore) {
-      try {
-        await plugin.saveAIChatHistoryFromStore(aiStore.getExportData());
-      } catch (error) {
-        console.error('[AI Chat] Auto save chat history failed:', error);
-      }
-    }
-  }, 1000); // 1秒防抖
+  }, 1000);
 };
 
 // 初始化数据
 onMounted(async () => {
+  // 初始化存储服务
+  await aiStore.initializeStorage(plugin);
+  
+  // 加载对话列表
+  await refreshConversationsList();
+
+  // 如果没有对话，创建一个默认对话
+  if (conversationsList.value.length === 0) {
+    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
+    await refreshConversationsList();
+  }
+
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
   // 从插件设置加载 AI 配置
-    const pluginSettings = plugin?.getSettings?.();
-    if (pluginSettings?.ai) {
-      aiStore.loadSettings({
-        providers: pluginSettings.ai.providers || [],
-        activeProviderId: pluginSettings.ai.activeProviderId || null,
-        showToolCalls: pluginSettings.ai.showToolCalls
-      });
-    }
-
-  // 从单独的聊天记录文件加载
-  const chatHistory = plugin?.getAIChatHistory?.();
-  if (chatHistory) {
-    aiStore.loadChatHistory(chatHistory);
+  const pluginSettings = plugin?.getSettings?.();
+  if (pluginSettings?.ai) {
+    aiStore.loadSettings({
+      providers: pluginSettings.ai.providers || [],
+      activeProviderId: pluginSettings.ai.activeProviderId || null,
+      showToolCalls: pluginSettings.ai.showToolCalls
+    });
   }
 
-  // 如果没有对话，创建一个默认对话
-  if (aiStore.conversations.length === 0) {
-    aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  }
-
-  // 监听数据刷新事件（同上下文）
+  // 监听数据刷新事件
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 
-  // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
+  // 跨上下文：Dock 可能在 iframe 中，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
     refreshChannel.onmessage = (e: MessageEvent) => {
@@ -291,22 +285,13 @@ onMounted(async () => {
     // 忽略
   }
 
-  // 监听配置变化，自动保存到 settings
+  // 监听配置变化，自动保存
   watch(() => aiStore.providers, () => {
     autoSaveConfig();
   }, { deep: true });
 
   watch(() => aiStore.activeProviderId, () => {
     autoSaveConfig();
-  });
-
-  // 监听对话变化，自动保存到 ai-chat-history
-  watch(() => aiStore.conversations, () => {
-    autoSaveChatHistory();
-  }, { deep: true });
-
-  watch(() => aiStore.currentConversationId, () => {
-    autoSaveChatHistory();
   });
 
   // 聚焦输入框
@@ -326,10 +311,6 @@ onUnmounted(() => {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
-  }
-  if (chatHistorySaveTimeout) {
-    clearTimeout(chatHistorySaveTimeout);
-    chatHistorySaveTimeout = null;
   }
 });
 </script>

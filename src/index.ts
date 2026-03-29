@@ -9,7 +9,8 @@ import { createPinia } from 'pinia';
 import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
 import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { getBlockIdFromElement, getBlockIdFromRange } from '@/utils/itemBlockUtils';
-import { useProjectStore, usePomodoroStore } from '@/stores';
+import { useProjectStore, usePomodoroStore, useSkillStore } from '@/stores';
+import { useConversationStorage } from '@/services/conversationStorageService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
@@ -161,6 +162,32 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 启动提醒服务（传入 projectStore，服务内部会定时读取 itemsNeedingReminder）
     reminderService.start(this, projectStore);
+
+    // 初始化技能存储服务
+    this.initSkillStorage();
+  }
+
+  /**
+   * 初始化技能存储服务
+   */
+  private async initSkillStorage() {
+    try {
+      // 初始化技能存储
+      const skillStore = useSkillStore();
+      await skillStore.loadFromPlugin(this);
+      
+      // 监听技能存储变化事件
+      window.addEventListener('skill-store-changed', async (event: any) => {
+        const data = event.detail;
+        if (data) {
+          await this.saveData('aiSkills', data);
+        }
+      });
+
+      console.log('[Task Assistant] Skill storage initialized');
+    } catch (error) {
+      console.error('[Task Assistant] Failed to initialize skill storage:', error);
+    }
   }
 
   /**
@@ -481,6 +508,13 @@ export default class TaskAssistantPlugin extends Plugin {
     } catch (error) {
       console.error('[Bullet Journal] Failed to save AI chat history:', error);
     }
+  }
+
+  /**
+   * 获取 AI 技能设置
+   */
+  public getAISkills(): { skills: any[] } {
+    return { skills: [] };
   }
 
   /**

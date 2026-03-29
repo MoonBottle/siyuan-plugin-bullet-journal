@@ -1,6 +1,6 @@
 /**
  * AI Store
- * 管理 AI 配置和对话状态
+ * 管理 AI 配置和对话状态（支持分会话存储和技能执行）
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
@@ -8,37 +8,43 @@ import type { AIProviderConfig, ChatConversation, ChatMessage, ToolCall } from '
 import { callAIWithToolsStream } from '@/services/aiService';
 import { bulletJournalTools } from '@/services/aiTools';
 import { executeToolCalls, type ToolExecutionContext } from '@/services/aiToolsExecutor';
+import { useSkillService } from '@/services/skillService';
 import type { Project, ProjectGroup, Item } from '@/types/models';
+import type { SkillExecutionRecord } from '@/types/skill';
+import { useConversationStorage, type ConversationData } from '@/services/conversationStorageService';
 
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
   activeProviderId: string | null;
-  conversations: ChatConversation[];
-  currentConversationId: string | null;
   showToolCalls?: boolean;
 }
 
 export const useAIStore = defineStore('ai', () => {
-  // State
+  // 存储服务实例
+  let storageService: ReturnType<typeof useConversationStorage> | null = null;
+
+  // State - AI 配置
   const providers = ref<AIProviderConfig[]>([]);
   const activeProviderId = ref<string | null>(null);
-  const conversations = ref<ChatConversation[]>([]);
-  const currentConversationId = ref<string | null>(null);
+  const showToolCalls = ref<boolean>(true);
+
+  // State - 当前会话数据（分会话存储）
+  const currentConversation = ref<ConversationData | null>(null);
+  const conversationsList = ref<ConversationData[]>([]);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
-  const showToolCalls = ref<boolean>(true); // 默认开启工具调用展示
 
   // Getters
   const activeProvider = computed(() => {
     return providers.value.find(p => p.id === activeProviderId.value) || null;
   });
 
-  const currentConversation = computed(() => {
-    return conversations.value.find(c => c.id === currentConversationId.value) || null;
-  });
-
   const currentMessages = computed(() => {
     return currentConversation.value?.messages || [];
+  });
+
+  const currentConversationId = computed(() => {
+    return currentConversation.value?.id || null;
   });
 
   const isAIEnabled = computed(() => {
@@ -52,6 +58,46 @@ export const useAIStore = defineStore('ai', () => {
 
   const showToolCallsEnabled = computed(() => showToolCalls.value);
 
+  /**
+   * 初始化存储服务
+   */
+  async function initializeStorage(plugin: any) {
+    storageService = useConversationStorage(plugin);
+
+    // 执行数据迁移
+    const migrationResult = await storageService.initialize();
+    if (migrationResult.migrated) {
+      console.log(`[AIStore] Migrated ${migrationResult.conversationCount} conversations`);
+    }
+
+    // 加载所有会话列表
+    await refreshConversationsList();
+
+    // 加载当前会话
+    const index = await storageService.getIndex();
+    if (index.currentConversationId) {
+      currentConversation.value = await storageService.loadConversation(
+        index.currentConversationId
+      );
+    }
+  }
+
+  /**
+   * 刷新会话列表
+   */
+  async function refreshConversationsList() {
+    if (!storageService) return;
+    conversationsList.value = await storageService.loadAllConversations();
+  }
+
+  /**
+   * 获取会话列表（供外部使用）
+   */
+  async function getConversationsList(): Promise<ConversationData[]> {
+    if (!storageService) return [];
+    return await storageService.loadAllConversations();
+  }
+
   // Actions
 
   /**
@@ -63,12 +109,6 @@ export const useAIStore = defineStore('ai', () => {
     }
     if (settings.activeProviderId !== undefined) {
       activeProviderId.value = settings.activeProviderId;
-    }
-    if (settings.conversations) {
-      conversations.value = settings.conversations;
-    }
-    if (settings.currentConversationId !== undefined) {
-      currentConversationId.value = settings.currentConversationId;
     }
     if (settings.showToolCalls !== undefined) {
       showToolCalls.value = settings.showToolCalls;
@@ -84,15 +124,11 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   /**
-   * 加载聊天记录
+   * 加载聊天记录（兼容旧格式）
    */
   function loadChatHistory(chatHistory: { conversations: ChatConversation[]; currentConversationId: string | null }) {
-    if (chatHistory.conversations) {
-      conversations.value = chatHistory.conversations;
-    }
-    if (chatHistory.currentConversationId) {
-      currentConversationId.value = chatHistory.currentConversationId;
-    }
+    // 分会话存储模式下，聊天记录通过 storageService 管理
+    console.log('[AIStore] loadChatHistory called (ignored in split storage mode)');
   }
 
   /**
@@ -103,14 +139,14 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   /**
-   * 设置当前激活的供应商
+   * 设置当前供应商
    */
   function setActiveProvider(providerId: string | null) {
     activeProviderId.value = providerId;
   }
 
   /**
-   * 设置是否展示工具调用
+   * 设置是否显示工具调用详情
    */
   function setShowToolCalls(value: boolean) {
     showToolCalls.value = value;
@@ -119,136 +155,91 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 创建新对话
    */
-  function createConversation(title = '新对话'): string {
-    const conversation: ChatConversation = {
-      id: `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title,
-      messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-    conversations.value.unshift(conversation);
-    currentConversationId.value = conversation.id;
+  async function createConversation(title = '新对话'): Promise<string> {
+    if (!storageService) {
+      throw new Error('存储服务未初始化');
+    }
+
+    const conversation = await storageService.createConversation(title);
+    currentConversation.value = conversation;
+    await refreshConversationsList();
     return conversation.id;
   }
 
   /**
    * 切换当前对话
    */
-  function switchConversation(conversationId: string) {
-    if (conversations.value.some(c => c.id === conversationId)) {
-      currentConversationId.value = conversationId;
+  async function switchConversation(conversationId: string) {
+    if (!storageService) return;
+
+    const conversation = await storageService.loadConversation(conversationId);
+    if (conversation) {
+      currentConversation.value = conversation;
+      await storageService.setCurrentConversation(conversationId);
     }
   }
 
   /**
    * 删除对话
    */
-  function deleteConversation(conversationId: string) {
-    const index = conversations.value.findIndex(c => c.id === conversationId);
-    if (index > -1) {
-      conversations.value.splice(index, 1);
-      if (currentConversationId.value === conversationId) {
-        currentConversationId.value = conversations.value[0]?.id || null;
-      }
+  async function deleteConversation(conversationId: string) {
+    if (!storageService) return;
+
+    await storageService.deleteConversation(conversationId);
+    await refreshConversationsList();
+
+    // 如果删除的是当前对话，清空当前会话
+    if (currentConversation.value?.id === conversationId) {
+      currentConversation.value = null;
     }
   }
 
   /**
    * 清空当前对话的消息
    */
-  function clearCurrentConversation() {
-    if (currentConversation.value) {
-      currentConversation.value.messages = [];
-      currentConversation.value.updatedAt = Date.now();
-    }
+  async function clearCurrentConversation() {
+    if (!storageService || !currentConversation.value) return;
+
+    currentConversation.value.messages = [];
+    currentConversation.value.updatedAt = Date.now();
+    await storageService.saveConversation(currentConversation.value);
   }
 
-  // 系统提示词（支持工具调用版本）
-  const SYSTEM_PROMPT_WITH_TOOLS = `你是一个任务助手，专门帮助用户管理和分析他们的任务数据。
+  /**
+   * 检测是否需要执行技能
+   */
+  async function detectSkillToExecute(
+    content: string,
+    skillService: ReturnType<typeof useSkillService>
+  ): Promise<{ name: string; content: string } | null> {
+    const enabledSkills = skillService.getEnabledSkills();
+    if (enabledSkills.length === 0) return null;
 
-## 你的能力
+    // 关键词匹配（简单实现）
+    const contentLower = content.toLowerCase();
+    for (const skill of enabledSkills) {
+      const keywords = skill.name.toLowerCase().split(/\s+/);
+      const nameMatch = keywords.some(kw => contentLower.includes(kw));
+      const descMatch = skill.description && contentLower.includes(skill.description.toLowerCase().slice(0, 10));
 
-你可以使用以下工具来查询用户的任务数据：
-
-1. **get_user_time** - 获取用户当前本地日期时间
-   - 用途：当用户询问「今天」「明天」「本周」等时间相关问题时，优先调用此工具获取准确日期
-   - 参数：无
-   - 返回：date（YYYY-MM-DD，供 filter_items 使用）、datetime、weekday
-
-2. **list_groups** - 查询所有分组
-   - 用途：获取分组列表，了解用户的项目分类
-   - 参数：无
-
-3. **list_projects** - 查询项目列表
-   - 用途：获取项目信息
-   - 参数：groupId（可选，来自 list_groups）
-
-4. **filter_items** - 筛选事项
-   - 用途：按条件查询具体的工作事项，每个 item 含 pomodoros 字段（该事项的番茄钟记录，精简格式）
-   - 参数：
-     - projectId / projectIds: 项目ID（来自 list_projects）
-     - groupId: 分组ID（来自 list_groups）
-     - startDate / endDate: 日期范围，格式 YYYY-MM-DD
-     - status: 状态筛选（pending=待办, completed=已完成, abandoned=已放弃）
-
-5. **get_pomodoro_stats** - 获取番茄钟统计数据
-   - 用途：查询今日或指定日期范围的番茄数、专注分钟数
-   - 参数：date（"today" 今日）、startDate/endDate（YYYY-MM-DD）、projectId（可选）
-   - 返回：todayCount、todayMinutes、totalCount、totalMinutes
-
-6. **get_pomodoro_records** - 获取番茄钟记录列表
-   - 用途：查询番茄钟记录明细（时间、事项、时长等）
-   - 参数：同上
-   - 返回：records 数组
-
-## 工作流程
-
-1. **分析用户问题** - 理解用户需要什么数据
-2. **涉及时间时先获取** - 若涉及「今天」「明天」「本周」等，**先调用 get_user_time** 获取用户当前日期
-3. **选择工具** - 决定调用哪些工具来获取数据
-4. **执行工具** - 系统会执行工具并返回结果
-5. **组织回复** - 基于工具返回的数据，用中文回答用户
-
-## 示例
-
-用户问：「今天有哪些任务？」
-→ 先调用 get_user_time，再用返回的 date 作为 startDate 和 endDate 调用 filter_items，status="pending"
-
-用户问：「项目A的进度如何？」
-→ 先调用 list_projects 找到项目A的ID，然后调用 filter_items 查询该项目的事项
-
-用户问：「今天专注了多少？」
-→ 先调用 get_user_time 获取今日日期，再调用 get_pomodoro_stats 并传入 date="today"
-
-## 注意事项
-
-- 始终使用工具查询数据，不要编造信息
-- 可以多次调用工具来获取不同维度的数据
-- 回答要简洁明了，突出重点
-
-## 表格格式（展示任务列表时必遵）
-
-当用表格展示 filter_items 结果时，必须使用标准 Markdown 表格格式：
-- 每列用竖线 | 分隔，行首行尾也要有 |
-- 表头下方必须有分隔行，如 |---|---|---|
-- 每行数据的每一列都要单独用 | 分隔，不能把多列内容写在同一单元格
-
-正确示例：
-| 状态 | 任务内容 | 所属项目 | 任务名称 |
-|------|----------|----------|----------|
-| 待办 | 事项A | 项目X | 任务1 |
-| 已完成 | 事项B | 项目Y | 任务2 |
-`;
+      if (nameMatch || descMatch) {
+        try {
+          const skillContent = await skillService.getSkillContent(skill.name);
+          return { name: skill.name, content: skillContent };
+        } catch (e) {
+          console.error('[AIStore] Failed to get skill content:', e);
+        }
+      }
+    }
+    return null;
+  }
 
   /**
-   * 发送消息（支持工具调用）
+   * 发送消息
    */
   async function sendMessage(
     content: string,
-    projects: Project[],
-    groups: ProjectGroup[],
-    items: Item[]
+    options?: { skillName?: string }
   ): Promise<void> {
     if (!isAIEnabled.value) {
       error.value = 'AI 服务未配置或未启用';
@@ -261,8 +252,14 @@ export const useAIStore = defineStore('ai', () => {
       return;
     }
 
+    if (!storageService) {
+      error.value = '存储服务未初始化';
+      return;
+    }
+
+    // 如果没有当前会话，创建新会话
     if (!currentConversation.value) {
-      createConversation();
+      await createConversation();
     }
 
     const conversation = currentConversation.value!;
@@ -277,40 +274,82 @@ export const useAIStore = defineStore('ai', () => {
     conversation.messages.push(userMessage);
     conversation.updatedAt = Date.now();
 
+    // 保存用户消息
+    await storageService.saveConversation(conversation);
+
     isLoading.value = true;
     error.value = null;
 
-    try {
-      // 构建工具执行上下文
-      const toolContext: ToolExecutionContext = {
-        groups,
-        projects,
-        allItems: items
+    // 自动检测是否需要执行技能
+    let skillToExecute: { name: string; content: string } | null = null;
+    if (!options?.skillName) {
+      // 如果没有指定技能，自动检测
+      const skillService = useSkillService();
+      skillToExecute = await detectSkillToExecute(content, skillService);
+    }
+
+    // 如果有技能执行，记录开始
+    let skillExecution: SkillExecutionRecord | null = null;
+    const executingSkillName = options?.skillName || skillToExecute?.name;
+    if (executingSkillName) {
+      skillExecution = {
+        id: `exec-${Date.now()}`,
+        skillId: executingSkillName,
+        skillName: executingSkillName,
+        conversationId: conversation.id,
+        messageId: userMessage.id,
+        input: content,
+        output: '',
+        status: 'running',
+        startedAt: Date.now()
       };
 
-      // 第一轮：让 AI 决定使用哪些工具（改为流式，无工具时也能逐字显示）
-      const messagesForAI: ChatMessage[] = [
+      if (!conversation.skillExecutions) {
+        conversation.skillExecutions = [];
+      }
+      conversation.skillExecutions.push(skillExecution);
+    }
+
+    try {
+      // 准备系统提示词
+      let systemPrompt = `你是一位任务助手 AI，可以帮助用户管理任务、项目和番茄钟。\n\n你可以使用以下工具来获取信息：\n- get_user_time: 获取当前时间\n- list_groups: 列出项目分组\n- list_projects: 列出所有项目\n- filter_items: 筛选任务事项\n- get_pomodoro_stats: 获取番茄钟统计\n- get_pomodoro_records: 获取番茄钟记录\n- list_skills: 列出可用技能\n- get_skill_detail: 获取技能详情`;
+
+      // 如果有技能执行，添加技能内容到系统提示词
+      if (executingSkillName && skillToExecute) {
+        systemPrompt += `\n\n当前正在执行技能 "${executingSkillName}"，请按照以下技能内容处理用户请求：\n\n${skillToExecute.content}`;
+      }
+
+      const messages: ChatMessage[] = [
         {
           id: 'system',
           role: 'system',
-          content: SYSTEM_PROMPT_WITH_TOOLS,
+          content: systemPrompt,
           timestamp: Date.now()
         },
         ...conversation.messages
       ];
 
-      // 先添加占位消息，用于流式更新
-      const firstAIMessage: ChatMessage = {
-        id: `msg-${Date.now()}-ai-first`,
+      // 创建 AI 回复消息占位
+      const aiMessage: ChatMessage = {
+        id: `msg-${Date.now()}-ai`,
         role: 'assistant',
         content: '',
         timestamp: Date.now(),
         loading: true
       };
-      conversation.messages.push(firstAIMessage);
+      conversation.messages.push(aiMessage);
+      let lastAIMessageId = aiMessage.id;
 
-      const firstResponse = await callAIWithToolsStream(provider, messagesForAI, bulletJournalTools, (chunk, reasoning, usage) => {
-        const messageIndex = conversation.messages.findIndex(m => m.id === firstAIMessage.id);
+      // 准备工具执行上下文
+      const toolContext: ToolExecutionContext = {
+        groups: [],
+        projects: [],
+        allItems: []
+      };
+
+      // 调用 AI
+      const firstResponse = await callAIWithToolsStream(provider, messages, bulletJournalTools, (chunk, reasoning, usage) => {
+        const messageIndex = conversation.messages.findIndex(m => m.id === lastAIMessageId);
         if (messageIndex !== -1) {
           conversation.messages[messageIndex].content = chunk;
           if (reasoning) {
@@ -319,67 +358,58 @@ export const useAIStore = defineStore('ai', () => {
           if (usage) {
             conversation.messages[messageIndex].usage = usage;
           }
+          conversation.messages[messageIndex].loading = false;
         }
         conversation.updatedAt = Date.now();
       });
 
-      // 处理工具调用
+      // 如果 AI 返回工具调用
       if (firstResponse.toolCalls && firstResponse.toolCalls.length > 0) {
-        // 用 tool_calls 消息替换占位消息（第一轮若返回工具调用，占位内容无效）
-        const placeholderIndex = conversation.messages.findIndex(m => m.id === firstAIMessage.id);
-        const toolCallMessage: ChatMessage = {
-          id: `msg-${Date.now()}-tool-calls`,
-          role: 'assistant',
-          content: firstResponse.content,
-          toolCalls: firstResponse.toolCalls,
-          reasoning: firstResponse.reasoning,
-          usage: firstResponse.usage,
-          timestamp: Date.now()
-        };
-        if (placeholderIndex !== -1) {
-          conversation.messages.splice(placeholderIndex, 1, toolCallMessage);
-        } else {
-          conversation.messages.push(toolCallMessage);
+        // 记录工具调用
+        const messageIndex = conversation.messages.findIndex(m => m.id === lastAIMessageId);
+        if (messageIndex !== -1) {
+          conversation.messages[messageIndex].toolCalls = firstResponse.toolCalls;
         }
 
         // 执行工具调用
-        const toolResults = executeToolCalls(firstResponse.toolCalls, toolContext);
+        const toolResults = await executeToolCalls(firstResponse.toolCalls, toolContext);
 
         // 添加工具结果消息
         for (const result of toolResults) {
           const toolResultMessage: ChatMessage = {
-            id: `tool-${result.toolCallId}`,
+            id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             role: 'tool',
             content: result.result,
-            toolCallId: result.toolCallId,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            toolCallId: result.toolCallId
           };
           conversation.messages.push(toolResultMessage);
         }
 
-        // 添加加载中的最终回复消息
-        const finalAIMessage: ChatMessage = {
-          id: `msg-${Date.now()}-ai-final`,
+        // 创建新的 AI 回复消息（用于下一轮）
+        const nextAIMessage: ChatMessage = {
+          id: `msg-${Date.now()}-ai-${Math.random().toString(36).substr(2, 9)}`,
           role: 'assistant',
           content: '',
           timestamp: Date.now(),
           loading: true
         };
-        conversation.messages.push(finalAIMessage);
+        conversation.messages.push(nextAIMessage);
+        lastAIMessageId = nextAIMessage.id;
 
-        // 第二轮：让 AI 基于工具结果生成回复（使用支持工具调用的流式函数）
-        const finalMessages: ChatMessage[] = [
+        // 继续下一轮调用，让 AI 基于工具结果生成回复
+        const nextMessages: ChatMessage[] = [
           {
             id: 'system',
             role: 'system',
-            content: SYSTEM_PROMPT_WITH_TOOLS,
+            content: systemPrompt,
             timestamp: Date.now()
           },
           ...conversation.messages
         ];
 
-        let finalResponse = await callAIWithToolsStream(provider, finalMessages, bulletJournalTools, (chunk, reasoning, usage) => {
-          const messageIndex = conversation.messages.findIndex(m => m.id === finalAIMessage.id);
+        const finalResponse = await callAIWithToolsStream(provider, nextMessages, bulletJournalTools, (chunk, reasoning, usage) => {
+          const messageIndex = conversation.messages.findIndex(m => m.id === lastAIMessageId);
           if (messageIndex !== -1) {
             conversation.messages[messageIndex].content = chunk;
             if (reasoning) {
@@ -388,154 +418,91 @@ export const useAIStore = defineStore('ai', () => {
             if (usage) {
               conversation.messages[messageIndex].usage = usage;
             }
+            conversation.messages[messageIndex].loading = false;
           }
           conversation.updatedAt = Date.now();
         });
 
-        // 标记是否进入了多轮循环
-        let hasEnteredLoop = false;
-        let lastAIMessageId = finalAIMessage.id;
-
-        // 处理多轮工具调用（第二轮及以后）
-        while (finalResponse.toolCalls && finalResponse.toolCalls.length > 0) {
-          hasEnteredLoop = true;
-
-          // 先保存当前 AI 的工具调用消息
+        // 如果还有工具调用，继续执行（这里简化处理，最多两轮）
+        if (finalResponse.toolCalls && finalResponse.toolCalls.length > 0) {
           const toolCallMessage: ChatMessage = {
-            id: `msg-${Date.now()}-tool-calls-${Math.random().toString(36).substr(2, 9)}`,
+            id: `msg-${Date.now()}-tool`,
             role: 'assistant',
-            content: finalResponse.content,
+            content: '',
             toolCalls: finalResponse.toolCalls,
-            reasoning: finalResponse.reasoning,
-            usage: finalResponse.usage,
             timestamp: Date.now()
           };
-          // 避免同一份 usage 在流式更新的消息和 toolCallMessage 上重复显示
-          const lastIdx = conversation.messages.length - 1;
-          if (lastIdx >= 0) {
-            delete conversation.messages[lastIdx].usage;
-          }
           conversation.messages.push(toolCallMessage);
 
           // 执行工具调用
-          const toolResults = executeToolCalls(finalResponse.toolCalls, toolContext);
+          const toolResults = await executeToolCalls(finalResponse.toolCalls, toolContext);
 
-          // 添加工具结果消息
           for (const result of toolResults) {
             const toolResultMessage: ChatMessage = {
-              id: `tool-${result.toolCallId}`,
+              id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               role: 'tool',
               content: result.result,
-              toolCallId: result.toolCallId,
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              toolCallId: result.toolCallId
             };
             conversation.messages.push(toolResultMessage);
           }
-
-          // 创建新的 AI 回复消息（用于下一轮）
-          const nextAIMessage: ChatMessage = {
-            id: `msg-${Date.now()}-ai-${Math.random().toString(36).substr(2, 9)}`,
-            role: 'assistant',
-            content: '',
-            timestamp: Date.now(),
-            loading: true
-          };
-          conversation.messages.push(nextAIMessage);
-          lastAIMessageId = nextAIMessage.id;
-
-          // 继续下一轮调用，让 AI 基于工具结果生成回复
-          const nextMessages: ChatMessage[] = [
-            {
-              id: 'system',
-              role: 'system',
-              content: SYSTEM_PROMPT_WITH_TOOLS,
-              timestamp: Date.now()
-            },
-            ...conversation.messages
-          ];
-
-          finalResponse = await callAIWithToolsStream(provider, nextMessages, bulletJournalTools, (chunk, reasoning, usage) => {
-            const messageIndex = conversation.messages.findIndex(m => m.id === nextAIMessage.id);
-            if (messageIndex !== -1) {
-              conversation.messages[messageIndex].content = chunk;
-              if (reasoning) {
-                conversation.messages[messageIndex].reasoning = reasoning;
-              }
-              if (usage) {
-                conversation.messages[messageIndex].usage = usage;
-              }
-            }
-            conversation.updatedAt = Date.now();
-          });
-
-          // 完成当前消息加载
-          const currentMessageIndex = conversation.messages.findIndex(m => m.id === nextAIMessage.id);
-          if (currentMessageIndex !== -1) {
-            conversation.messages[currentMessageIndex].loading = false;
-          }
-        }
-
-        // 完成加载，保存最终结果
-        // 如果进入了循环，更新最后创建的消息；否则更新最初的 finalAIMessage
-        const targetMessageId = hasEnteredLoop ? lastAIMessageId : finalAIMessage.id;
-        const finalMessageIndex = conversation.messages.findIndex(m => m.id === targetMessageId);
-        if (finalMessageIndex !== -1) {
-          conversation.messages[finalMessageIndex].content = finalResponse.content || '已完成';
-          conversation.messages[finalMessageIndex].reasoning = finalResponse.reasoning;
-          conversation.messages[finalMessageIndex].usage = finalResponse.usage;
-          conversation.messages[finalMessageIndex].loading = false;
-        }
-      } else {
-        // 没有工具调用：占位消息已通过流式更新了 content，只需结束 loading
-        const placeholderIndex = conversation.messages.findIndex(m => m.id === firstAIMessage.id);
-        if (placeholderIndex !== -1) {
-          conversation.messages[placeholderIndex].loading = false;
-          conversation.messages[placeholderIndex].reasoning = firstResponse.reasoning;
-          conversation.messages[placeholderIndex].usage = firstResponse.usage;
         }
       }
 
-      conversation.updatedAt = Date.now();
-
-      // 如果是第一条用户消息，自动设置对话标题
-      if (conversation.messages.filter(m => m.role === 'user').length === 1) {
-        conversation.title = content.slice(0, 20) + (content.length > 20 ? '...' : '');
+      // 更新技能执行记录
+      if (skillExecution) {
+        skillExecution.status = 'completed';
+        skillExecution.completedAt = Date.now();
+        const lastMessage = conversation.messages[conversation.messages.length - 1];
+        if (lastMessage && lastMessage.role === 'assistant') {
+          skillExecution.output = lastMessage.content;
+        }
       }
+
+      // 保存完整对话
+      await storageService.saveConversation(conversation);
+      await refreshConversationsList();
+
     } catch (err) {
-      // 查找最后一条 assistant 消息并标记错误
-      const lastAssistantMessage = conversation.messages
-        .filter(m => m.role === 'assistant')
-        .pop();
-      if (lastAssistantMessage) {
-        lastAssistantMessage.loading = false;
-        lastAssistantMessage.error = err instanceof Error ? err.message : '未知错误';
+      console.error('[AIStore] Send message error:', err);
+      error.value = err instanceof Error ? err.message : '发送消息失败';
+
+      // 更新技能执行记录为失败
+      if (skillExecution) {
+        skillExecution.status = 'failed';
+        skillExecution.completedAt = Date.now();
+        skillExecution.output = error.value;
       }
-      error.value = err instanceof Error ? err.message : '未知错误';
+
+      // 保存到存储
+      if (storageService && currentConversation.value) {
+        await storageService.saveConversation(currentConversation.value);
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
   /**
-   * 获取导出数据（用于保存到 settings）
+   * 获取导出数据（供插件保存设置）
    */
   function getExportData(): AIStoreSettings {
     return {
       providers: providers.value,
       activeProviderId: activeProviderId.value,
-      conversations: conversations.value,
-      currentConversationId: currentConversationId.value,
       showToolCalls: showToolCalls.value
     };
   }
 
   /**
-   * 获取聊天记录数据（用于保存到单独文件）
+   * 获取聊天记录数据（兼容旧格式）
    */
   function getChatHistoryData() {
+    // 分会话存储模式下，返回空数据（实际存储在独立文件中）
     return {
-      conversations: conversations.value,
-      currentConversationId: currentConversationId.value
+      conversations: [],
+      currentConversationId: null
     };
   }
 
@@ -543,8 +510,8 @@ export const useAIStore = defineStore('ai', () => {
     // State
     providers,
     activeProviderId,
-    conversations,
     currentConversationId,
+    conversationsList,
     isLoading,
     error,
     showToolCalls,
@@ -558,6 +525,9 @@ export const useAIStore = defineStore('ai', () => {
     // Actions
     loadSettings,
     loadChatHistory,
+    initializeStorage,
+    refreshConversationsList,
+    getConversationsList,
     setProviders,
     setActiveProvider,
     setShowToolCalls,

@@ -344,6 +344,15 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-set-recurring',
       callback: getActionHandler('setRecurring', config, SLASH_COMMAND_FILTERS.SET_RECURRING)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.CREATE_SKILL,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').createSkill}</span>
+          <span class="b3-list-item__meta">AI Skill</span>
+      </div>`,
+      id: 'bullet-journal-create-skill',
+      callback: getActionHandler('createSkill', config, SLASH_COMMAND_FILTERS.CREATE_SKILL)
     }
   ];
 
@@ -559,6 +568,11 @@ function getActionHandler(
         deleteSlashCommandContent(protyle, filter);
         setRecurringForBlock(nodeElement);
       };
+    case 'createSkill':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        createSkillFromSlash(nodeElement);
+      };
     default:
       return () => {};
   }
@@ -586,7 +600,8 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     markAsTask: 'Task',
     viewDetail: 'Detail',
     setReminder: 'Reminder',
-    setRecurring: 'Recurring'
+    setRecurring: 'Recurring',
+    createSkill: 'AI Skill'
   };
   return labels[action] || action;
 }
@@ -949,4 +964,54 @@ async function setRecurringForBlock(nodeElement: HTMLElement) {
 
   // 打开重复设置弹框
   showRecurringSettingDialog(item);
+}
+
+/**
+ * 导入 CreateSkillDialog 组件
+ */
+import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
+
+/**
+ * 从斜杠命令创建技能
+ */
+async function createSkillFromSlash(nodeElement: HTMLElement) {
+  // 获取当前文档路径作为默认保存位置
+  const blockId = nodeElement.getAttribute('data-node-id');
+  let defaultPath = 'AI技能/未命名技能';
+  
+  if (blockId) {
+    try {
+      const hPath = await getHPathByID(blockId);
+      if (hPath) {
+        // 使用当前文档所在目录
+        const parts = hPath.split('/');
+        parts.pop(); // 移除文档名
+        defaultPath = parts.length > 0 
+          ? `${parts.join('/')}/新技能` 
+          : 'AI技能/新技能';
+      }
+    } catch {
+      // 忽略错误，使用默认路径
+    }
+  }
+  
+  // 打开创建技能对话框
+  const dialog = createDialog({
+    title: '',
+    content: '<div id="create-skill-dialog-mount"></div>',
+    width: '560px',
+    height: 'auto'
+  });
+  
+  const mountEl = dialog.element.querySelector('#create-skill-dialog-mount');
+  if (mountEl) {
+    const app = createApp(CreateSkillDialog, {
+      defaultPath,
+      close: () => dialog.destroy(),
+      created: (skillId: string) => {
+        showMessage('技能创建成功！', 3000, 'info');
+      }
+    });
+    app.mount(mountEl);
+  }
 }
