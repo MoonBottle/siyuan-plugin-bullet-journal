@@ -456,8 +456,10 @@ const reminderButtonTooltip = computed(() => {
   if (!hasReminder.value || !props.item.reminder) return '';
   const reminderTime = calculateReminderTime(
     props.item.date,
-    props.item.startTime,
-    props.item.endTime,
+    props.item.startDateTime,
+    props.item.endDateTime,
+    undefined,
+    undefined,
     props.item.reminder
   );
   if (!reminderTime) return '';

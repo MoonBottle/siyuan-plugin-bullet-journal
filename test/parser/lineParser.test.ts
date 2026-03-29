@@ -978,4 +978,22 @@ describe('parseItemLine - 重复规则解析', () => {
     expect(items[0].repeatRule).toEqual({ type: 'weekly', daysOfWeek: [6] });
     expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-11-28' });
   });
+
+  it('带时间范围和结束前提醒的事项：应正确解析时间和提醒', () => {
+    // 这是一个带时间的事项 📅2026-03-31 09:00:00~10:00:00 🔁每周一三六 剩余10次 ⏰结束前30分钟
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-31 09:00:00~10:00:00 🔁每周一三六 剩余10次 ⏰结束前30分钟', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个带时间的事项');
+    expect(items[0].date).toBe('2026-03-31');
+    expect(items[0].startDateTime).toBe('2026-03-31 09:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-31 10:00:00');
+    expect(items[0].reminder).toEqual({
+      enabled: true,
+      type: 'relative',
+      relativeTo: 'end',
+      offsetMinutes: 30
+    });
+    expect(items[0].repeatRule).toEqual({ type: 'weekly', daysOfWeek: [1, 3, 6] });
+    expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 10 });
+  });
 });

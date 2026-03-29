@@ -103,60 +103,99 @@ describe('reminderParser', () => {
         type: 'absolute',
         time: '09:00'
       };
-      const time = calculateReminderTime('2026-03-17', undefined, undefined, config);
+      const time = calculateReminderTime('2026-03-17', undefined, undefined, undefined, undefined, config);
       const expected = new Date('2026-03-17T09:00:00').getTime();
       expect(time).toBe(expected);
     });
 
-    it('应该计算相对开始时间（有 startTime）', () => {
+    it('应该计算相对开始时间（有 startDateTime）', () => {
       const config: ReminderConfig = {
         enabled: true,
         type: 'relative',
         relativeTo: 'start',
         offsetMinutes: 10
       };
-      const time = calculateReminderTime('2026-03-17', '14:00:00', '16:00:00', config);
+      const time = calculateReminderTime('2026-03-17', '2026-03-17 14:00:00', undefined, undefined, undefined, config);
       // 14:00 - 10m = 13:50
       const expected = new Date('2026-03-17T13:50:00').getTime();
       expect(time).toBe(expected);
     });
 
-    it('应该计算相对开始时间（无 startTime，基于 00:00）', () => {
+    it('应该计算相对开始时间（无 startDateTime，使用 startTime）', () => {
       const config: ReminderConfig = {
         enabled: true,
         type: 'relative',
         relativeTo: 'start',
         offsetMinutes: 10
       };
-      const time = calculateReminderTime('2026-03-17', undefined, undefined, config);
+      const time = calculateReminderTime('2026-03-17', undefined, undefined, '14:00:00', undefined, config);
+      // 14:00 - 10m = 13:50
+      const expected = new Date('2026-03-17T13:50:00').getTime();
+      expect(time).toBe(expected);
+    });
+
+    it('应该计算相对开始时间（无时间，基于 00:00）', () => {
+      const config: ReminderConfig = {
+        enabled: true,
+        type: 'relative',
+        relativeTo: 'start',
+        offsetMinutes: 10
+      };
+      const time = calculateReminderTime('2026-03-17', undefined, undefined, undefined, undefined, config);
       // 00:00 - 10m = 前一天 23:50
       const expected = new Date('2026-03-16T23:50:00').getTime();
       expect(time).toBe(expected);
     });
 
-    it('应该计算相对结束时间（有 endTime）', () => {
+    it('应该计算相对结束时间（有 endDateTime）', () => {
       const config: ReminderConfig = {
         enabled: true,
         type: 'relative',
         relativeTo: 'end',
         offsetMinutes: 10
       };
-      const time = calculateReminderTime('2026-03-17', '14:00:00', '16:00:00', config);
+      const time = calculateReminderTime('2026-03-17', undefined, '2026-03-17 16:00:00', undefined, undefined, config);
       // 16:00 - 10m = 15:50
       const expected = new Date('2026-03-17T15:50:00').getTime();
       expect(time).toBe(expected);
     });
 
-    it('应该计算相对结束时间（无 endTime，基于 23:59:59）', () => {
+    it('应该计算相对结束时间（无 endDateTime，使用 endTime）', () => {
       const config: ReminderConfig = {
         enabled: true,
         type: 'relative',
         relativeTo: 'end',
         offsetMinutes: 10
       };
-      const time = calculateReminderTime('2026-03-17', undefined, undefined, config);
+      const time = calculateReminderTime('2026-03-17', undefined, undefined, undefined, '16:00:00', config);
+      // 16:00 - 10m = 15:50
+      const expected = new Date('2026-03-17T15:50:00').getTime();
+      expect(time).toBe(expected);
+    });
+
+    it('应该计算相对结束时间（无时间，基于 23:59:59）', () => {
+      const config: ReminderConfig = {
+        enabled: true,
+        type: 'relative',
+        relativeTo: 'end',
+        offsetMinutes: 10
+      };
+      const time = calculateReminderTime('2026-03-17', undefined, undefined, undefined, undefined, config);
       // 23:59:00 - 10m = 23:49:00
       const expected = new Date('2026-03-17T23:49:00').getTime();
+      expect(time).toBe(expected);
+    });
+
+    it('用户案例：结束前30分钟提醒，09:00~10:00的事项应提醒在09:30', () => {
+      const config: ReminderConfig = {
+        enabled: true,
+        type: 'relative',
+        relativeTo: 'end',
+        offsetMinutes: 30
+      };
+      // 事项时间 09:00:00 ~ 10:00:00，结束前30分钟 = 09:30:00
+      const time = calculateReminderTime('2026-03-31', undefined, '2026-03-31 10:00:00', undefined, undefined, config);
+      const expected = new Date('2026-03-31T09:30:00').getTime();
       expect(time).toBe(expected);
     });
   });

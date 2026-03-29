@@ -158,12 +158,12 @@ export const useProjectStore = defineStore('project', {
             }
             
             // 计算提醒时间
-            const startTime = item.startDateTime?.split(' ')[1];
-            const endTime = item.endDateTime?.split(' ')[1];
             const reminderTime = calculateReminderTime(
               item.date,
-              startTime,
-              endTime,
+              item.startDateTime,
+              item.endDateTime,
+              undefined,
+              undefined,
               item.reminder
             );
             

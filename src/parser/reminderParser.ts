@@ -122,18 +122,22 @@ function convertToMinutes(value: number, unit: string): number {
 /**
  * 计算实际提醒时间
  * @param itemDate 事项日期 YYYY-MM-DD
- * @param startTime 开始时间 HH:mm:ss（可选）
- * @param endTime 结束时间 HH:mm:ss（可选）
+ * @param startDateTime 开始日期时间 YYYY-MM-DD HH:mm:ss（可选，优先使用）
+ * @param endDateTime 结束日期时间 YYYY-MM-DD HH:mm:ss（可选，优先使用）
+ * @param startTime 开始时间 HH:mm:ss（可选，当 startDateTime 不存在时使用）
+ * @param endTime 结束时间 HH:mm:ss（可选，当 endDateTime 不存在时使用）
  * @param reminder 提醒配置
  * @returns 提醒时间戳（毫秒）
  */
 export function calculateReminderTime(
   itemDate: string,
+  startDateTime: string | undefined,
+  endDateTime: string | undefined,
   startTime: string | undefined,
   endTime: string | undefined,
   reminder: ReminderConfig
 ): number {
-  console.log(`[calculateReminderTime] itemDate=${itemDate}, startTime=${startTime}, endTime=${endTime}, reminder=`, reminder);
+  console.log(`[calculateReminderTime] itemDate=${itemDate}, startDateTime=${startDateTime}, endDateTime=${endDateTime}, reminder=`, reminder);
 
   if (reminder.type === 'absolute' && reminder.time) {
     // 绝对时间：日期 + 时间
@@ -149,13 +153,11 @@ export function calculateReminderTime(
     const { relativeTo, offsetMinutes } = reminder;
 
     if (relativeTo === 'end') {
-      // 相对结束时间
-      if (endTime) {
-        const baseTime = parseTime(endTime);
-        const date = new Date(itemDate);
-        date.setHours(baseTime.hours, baseTime.minutes, 0, 0);
-        const result = date.getTime() - offsetMinutes * 60 * 1000;
-        console.log(`[calculateReminderTime] Relative to end: ${endTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
+      // 相对结束时间：优先使用 endDateTime，否则用 itemDate + endTime
+      const baseDateTime = endDateTime || (endTime ? `${itemDate} ${endTime}` : undefined);
+      if (baseDateTime) {
+        const result = new Date(baseDateTime).getTime() - offsetMinutes * 60 * 1000;
+        console.log(`[calculateReminderTime] Relative to end: ${baseDateTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
         return result;
       } else {
         const date = new Date(itemDate);
@@ -165,13 +167,11 @@ export function calculateReminderTime(
         return result;
       }
     } else {
-      // 相对开始时间（默认）
-      if (startTime) {
-        const baseTime = parseTime(startTime);
-        const date = new Date(itemDate);
-        date.setHours(baseTime.hours, baseTime.minutes, 0, 0);
-        const result = date.getTime() - offsetMinutes * 60 * 1000;
-        console.log(`[calculateReminderTime] Relative to start: ${startTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
+      // 相对开始时间（默认）：优先使用 startDateTime，否则用 itemDate + startTime
+      const baseDateTime = startDateTime || (startTime ? `${itemDate} ${startTime}` : undefined);
+      if (baseDateTime) {
+        const result = new Date(baseDateTime).getTime() - offsetMinutes * 60 * 1000;
+        console.log(`[calculateReminderTime] Relative to start: ${baseDateTime} - ${offsetMinutes}min -> ${new Date(result).toLocaleString()}`);
         return result;
       } else {
         const date = new Date(itemDate);
