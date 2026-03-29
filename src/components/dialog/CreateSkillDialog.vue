@@ -259,10 +259,6 @@ function close() {
   gap: 6px;
 }
 
-.form-item > * {
-  width: 100%;
-}
-
 .form-item-inline {
   flex-direction: row;
   align-items: center;
