@@ -11,7 +11,7 @@ import type {
   ReActAgentOptions,
   StreamUpdateCallback
 } from './types';
-import type { ChatMessage, ToolCall } from '@/types/ai';
+import type { ChatMessage, ToolCall, UsageInfo } from '@/types/ai';
 import { callAIWithToolsStream } from '@/services/aiService';
 import { executeToolCalls, type ToolExecutionContext } from '@/services/aiToolsExecutor';
 import type { ConversationData } from '@/services/conversationStorageService';
@@ -122,7 +122,7 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
         // Step 2: 检查是否需要工具调用
         if (!thought.toolCalls || thought.toolCalls.length === 0) {
           // 直接回答，结束循环
-          this.finalize(thought.content, thought.messageId);
+          this.finalize(thought.content, thought.messageId, thought.usage);
           return;
         }
 
@@ -231,14 +231,26 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
           // 如果有工具调用，更新消息的 toolCalls 并清除 content（工具调用不需要显示内容）
           if (response.toolCalls && response.toolCalls.length > 0) {
             this.updateAssistantToolCalls(aiMessageId, response.toolCalls);
-            // 清除"思考中..."占位，只保留 toolCalls
+            // 清除"思考中..."占位，只保留 toolCalls，同时保存 usage
             this.clearAssistantMessageContent(aiMessageId);
+            // 保存 usage 到消息
+            if (lastUsage) {
+              const messages = this.state.conversation?.messages;
+              const message = messages?.find(m => m.id === aiMessageId);
+              if (message) message.usage = lastUsage;
+            }
           } else if (!fullContent.includes('<tool_call>')) {
             // 没有工具调用，更新为最终内容
-            this.updateAssistantMessage(aiMessageId, response.content || fullContent, fullReasoning);
+            this.updateAssistantMessage(aiMessageId, response.content || fullContent, fullReasoning, lastUsage);
           } else {
             // XML 格式的工具调用，也需要清除 content
             this.clearAssistantMessageContent(aiMessageId);
+            // 保存 usage 到消息
+            if (lastUsage) {
+              const messages = this.state.conversation?.messages;
+              const message = messages?.find(m => m.id === aiMessageId);
+              if (message) message.usage = lastUsage;
+            }
           }
 
           resolve({
@@ -338,7 +350,7 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
   /**
    * 完成对话
    */
-  private finalize(answer: string, messageId?: string): void {
+  private finalize(answer: string, messageId?: string, usage?: UsageInfo): void {
     // 记录 Answer 步骤
     const answerStep: ReActStep = {
       type: 'answer',
@@ -349,12 +361,13 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
 
     // 更新指定的 AI 消息或最后一条 AI 消息
     if (messageId) {
-      this.updateAssistantMessage(messageId, answer);
+      this.updateAssistantMessage(messageId, answer, undefined, usage);
     } else {
       const lastMessage = this.state.conversation?.messages[this.state.conversation.messages.length - 1];
       if (lastMessage && lastMessage.role === 'assistant') {
         lastMessage.content = answer;
         lastMessage.loading = false;
+        if (usage) lastMessage.usage = usage;
       }
     }
 
@@ -392,7 +405,7 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
   /**
    * 更新 AI 消息内容
    */
-  private updateAssistantMessage(id: string, content: string, reasoning?: string): void {
+  private updateAssistantMessage(id: string, content: string, reasoning?: string, usage?: UsageInfo): void {
     const messages = this.state.conversation?.messages;
     if (!messages) return;
 
@@ -401,8 +414,9 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
       message.content = content;
       message.reasoning = reasoning;
       message.loading = false;
+      if (usage) message.usage = usage;
       // 触发消息更新事件，通知外部刷新
-      this.emit('messageUpdate', { id, content, reasoning });
+      this.emit('messageUpdate', { id, content, reasoning, usage });
     }
   }
 
