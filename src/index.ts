@@ -172,6 +172,10 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private async initSkillStorage() {
     try {
+      // 初始化技能服务（必须先初始化，因为 skillStore 依赖它）
+      const { useSkillService } = await import('@/services/skillService');
+      useSkillService(this);
+      
       // 初始化技能存储
       const skillStore = useSkillStore();
       await skillStore.loadFromPlugin(this);

@@ -25,6 +25,9 @@ export class SkillService {
     if (!SkillService.instance && plugin) {
       SkillService.instance = new SkillService(plugin);
     }
+    if (!SkillService.instance) {
+      throw new Error('SkillService not initialized. Call with plugin instance first.');
+    }
     return SkillService.instance;
   }
   
