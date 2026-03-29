@@ -249,26 +249,37 @@ export async function executeTool(
 
 /**
  * 执行 list_skills 工具
- * 返回所有可用技能的名称和描述列表
+ * 返回所有可用技能的名称、描述、docId 和来源
  */
-function executeListSkills(): Array<{ name: string; description: string; source: 'builtin' | 'user' }> {
+function executeListSkills(): Array<{ 
+  name: string; 
+  description: string; 
+  docId: string;
+  source: 'builtin' | 'user' 
+}> {
   const skillService = SkillService.getInstance();
-  const allSkills = skillService.getAllSkills();
+  const allSkills = skillService.getAllSkillsWithSource();
   
   return allSkills
     .filter(skill => skill.enabled)
     .map(skill => ({
       name: skill.name,
       description: skill.description,
-      source: (skill as SkillConfig & { isBuiltin?: boolean }).isBuiltin ? 'builtin' : 'user'
+      docId: skill.docId,
+      source: skill.source
     }));
 }
 
 /**
  * 执行 get_skill_detail 工具
  * 获取指定技能的详细内容
+ * 参数：docId（自定义技能）、skillName（内置技能）、source（来源标识）
  */
-async function executeGetSkillDetail(args: { skillName: string }): Promise<{ 
+async function executeGetSkillDetail(args: { 
+  docId?: string; 
+  skillName?: string;
+  source?: 'builtin' | 'user';
+}): Promise<{ 
   name: string; 
   description: string;
   content: string;
@@ -277,7 +288,14 @@ async function executeGetSkillDetail(args: { skillName: string }): Promise<{
   const skillService = SkillService.getInstance();
   
   try {
-    const result = await skillService.resolveSkill(args.skillName);
+    // 使用 source 参数明确指定查找方式
+    // source='user': 根据 docId 查找自定义技能
+    // source='builtin': 根据 skillName 查找内置技能
+    const result = await skillService.resolveSkillByIdOrName({
+      docId: args.docId,
+      skillName: args.skillName,
+      source: args.source
+    });
     
     return {
       name: result.skill.metadata.name,

@@ -61,6 +61,43 @@ export class SkillService {
   }
   
   /**
+   * 获取所有可用技能（包含来源标识）
+   */
+  getAllSkillsWithSource(): Array<SkillConfig & { source: 'builtin' | 'user' }> {
+    const skillStore = useSkillStore();
+    const userSkills = skillStore.skills;
+    
+    // 用户技能标记为 'user'
+    const userSkillsWithSource = userSkills.map(skill => ({
+      ...skill,
+      source: 'user' as const
+    }));
+    
+    // 获取内置技能配置
+    const builtinSkills = getAllBuiltinSkills().map(builtin => {
+      const isOverridden = userSkills.some(s => s.name === builtin.name);
+      
+      return {
+        docId: builtin.id,
+        name: builtin.name,
+        description: builtin.description,
+        enabled: !isOverridden,
+        createdAt: 0,
+        updatedAt: 0,
+        source: 'builtin' as const
+      };
+    });
+    
+    // 合并：用户技能 + 未被覆盖的内置技能
+    const userSkillNames = new Set(userSkills.map(s => s.name));
+    const filteredBuiltinSkills = builtinSkills.filter(
+      builtin => !userSkillNames.has(builtin.name)
+    );
+    
+    return [...userSkillsWithSource, ...filteredBuiltinSkills];
+  }
+  
+  /**
    * 获取已启用的技能
    */
   getEnabledSkills(): SkillConfig[] {
@@ -71,48 +108,105 @@ export class SkillService {
    * 解析技能（简化版：直接读取文档内容）
    */
   async resolveSkill(skillName: string): Promise<SkillResolutionResult> {
-    const skillStore = useSkillStore();
+    return this.resolveSkillByIdOrName({ skillName });
+  }
+  
+  /**
+   * 根据 ID 或名称解析技能
+   * @param params.docId 自定义技能的 docId（source 为 'user' 时必填）
+   * @param params.skillName 技能名称（source 为 'builtin' 时必填）
+   * @param params.source 技能来源：'builtin' 内置技能，'user' 自定义技能
+   */
+  async resolveSkillByIdOrName(params: { 
+    docId?: string; 
+    skillName?: string;
+    source?: 'builtin' | 'user';
+  }): Promise<SkillResolutionResult> {
+    const { docId, skillName, source } = params;
     
-    // 1. 先查找用户自定义技能
-    const userSkill = skillStore.skills.find(s => s.name === skillName);
-    if (userSkill) {
-      try {
-        // 从文档属性和内容获取技能信息
-        const parsed = await this.parseSkillFromDoc(userSkill.docId);
-        return {
-          source: 'user',
-          skill: parsed,
-          isOverride: isBuiltinSkill(skillName)
-        };
-      } catch (error) {
-        console.error('[SkillService] Failed to parse user skill:', error);
-        throw new Error(`解析用户技能失败: ${(error as Error).message}`);
+    // 如果指定了 source，按 source 查找
+    if (source === 'user') {
+      if (!docId) {
+        throw new Error('获取自定义技能详情需要提供 docId');
+      }
+      return this.resolveUserSkillByDocId(docId);
+    }
+    
+    if (source === 'builtin') {
+      if (!skillName) {
+        throw new Error('获取内置技能详情需要提供 skillName');
+      }
+      return this.resolveBuiltinSkill(skillName);
+    }
+    
+    // 如果没有指定 source，尝试自动判断
+    // 优先根据 docId 查找自定义技能
+    if (docId) {
+      const skillStore = useSkillStore();
+      const userSkill = skillStore.skills.find(s => s.docId === docId);
+      if (userSkill) {
+        return this.resolveUserSkillByDocId(docId);
       }
     }
     
-    // 2. 查找内置技能
-    const builtin = getBuiltinSkill(skillName);
-    if (builtin) {
-      // 内置技能直接返回内容
-      return {
-        source: 'builtin',
-        skill: {
-          metadata: {
-            name: builtin.name,
-            description: builtin.description,
-            version: builtin.version,
-            author: builtin.author,
-            tags: []
-          },
-          content: builtin.content,
-          scripts: [],
-          references: []
-        },
-        isOverride: false
-      };
+    // 最后尝试根据 skillName 查找
+    if (skillName) {
+      // 先查自定义技能
+      const skillStore = useSkillStore();
+      const userSkill = skillStore.skills.find(s => s.name === skillName);
+      if (userSkill) {
+        return this.resolveUserSkillByDocId(userSkill.docId);
+      }
+      
+      // 再查内置技能
+      return this.resolveBuiltinSkill(skillName);
     }
     
-    throw new Error(`未找到技能: ${skillName}`);
+    throw new Error('获取技能详情需要提供 docId 或 skillName');
+  }
+  
+  /**
+   * 根据 docId 解析自定义技能
+   */
+  private async resolveUserSkillByDocId(docId: string): Promise<SkillResolutionResult> {
+    try {
+      const parsed = await this.parseSkillFromDoc(docId);
+      return {
+        source: 'user',
+        skill: parsed,
+        isOverride: isBuiltinSkill(parsed.metadata.name)
+      };
+    } catch (error) {
+      console.error('[SkillService] Failed to parse user skill:', error);
+      throw new Error(`解析用户技能失败: ${(error as Error).message}`);
+    }
+  }
+  
+  /**
+   * 根据名称解析内置技能
+   */
+  private resolveBuiltinSkill(skillName: string): Promise<SkillResolutionResult> {
+    const builtin = getBuiltinSkill(skillName);
+    if (!builtin) {
+      throw new Error(`未找到技能: ${skillName}`);
+    }
+    
+    return Promise.resolve({
+      source: 'builtin',
+      skill: {
+        metadata: {
+          name: builtin.name,
+          description: builtin.description,
+          version: builtin.version,
+          author: builtin.author,
+          tags: []
+        },
+        content: builtin.content,
+        scripts: [],
+        references: []
+      },
+      isOverride: false
+    });
   }
   
   /**
