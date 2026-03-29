@@ -212,12 +212,15 @@ export class ClawBotService {
    */
   async startMonitoring(): Promise<void> {
     if (this.isMonitoring || !this.isConnected()) {
+      console.log('[ClawBot] 监听未启动:', { isMonitoring: this.isMonitoring, isConnected: this.isConnected() });
       return;
     }
 
     this.isMonitoring = true;
     this.abortController = new AbortController();
 
+    console.log('[ClawBot] 开始消息监听...');
+    
     // 启动监听循环
     this.monitoringLoop();
   }
@@ -241,17 +244,26 @@ export class ClawBotService {
     const BACKOFF_DELAY_MS = 30000;
     const RETRY_DELAY_MS = 2000;
 
+    console.log('[ClawBot] 监听循环已启动');
+
     while (this.isMonitoring && this.config.token) {
       try {
+        console.log('[ClawBot] 等待消息...', { buf: this.getUpdatesBuf.slice(0, 20) + '...' });
+        
         const resp = await this.getUpdates({
           get_updates_buf: this.getUpdatesBuf,
           timeoutMs: 35000
         });
 
-        // 处理响应
-        if (resp.ret !== 0 && resp.errcode !== undefined && resp.errcode !== 0) {
+        console.log('[ClawBot] 收到响应:', { ret: resp.ret, errcode: resp.errcode, msgCount: resp.msgs?.length });
+
+        // 处理响应 (适配实际 API 返回的字段)
+        const ret = resp.ret ?? 0;
+        const errcode = resp.errcode ?? 0;
+        
+        if (ret !== 0 || errcode !== 0) {
           // 会话过期
-          if (resp.errcode === -14) {
+          if (errcode === -14) {
             this.config.loginStatus = 'expired';
             this.config.errorMessage = '会话已过期，请重新登录';
             break;
@@ -275,8 +287,21 @@ export class ClawBotService {
         }
 
         // 处理消息
-        if (resp.msgs && resp.msgs.length > 0) {
-          for (const msg of resp.msgs) {
+        const msgs = resp.msgs || (resp as any).Msgs || [];
+        if (msgs.length > 0) {
+          console.log(`[ClawBot] 收到 ${msgs.length} 条消息`);
+          for (const msg of msgs) {
+            // 完整打印消息结构
+            console.log('[ClawBot] 原始消息结构:', {
+              seq: msg.seq,
+              message_id: msg.message_id,
+              from: msg.from_user_id,
+              to: msg.to_user_id,
+              message_type: msg.message_type,
+              message_state: msg.message_state,
+              item_list_length: msg.item_list?.length,
+              item_list: msg.item_list
+            });
             await this.processInboundMessage(msg);
           }
         }
@@ -300,6 +325,7 @@ export class ClawBotService {
       }
     }
 
+    console.log('[ClawBot] 监听循环已结束');
     this.isMonitoring = false;
   }
 
@@ -325,7 +351,9 @@ export class ClawBotService {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log('[ClawBot] getUpdates 原始响应:', JSON.stringify(data).slice(0, 500));
+      return data;
     } catch (error) {
       // 超时是正常现象，返回空响应
       if (error instanceof Error && error.name === 'AbortError') {
@@ -339,13 +367,29 @@ export class ClawBotService {
    * 处理收到的消息
    */
   private async processInboundMessage(msg: WeixinMessage): Promise<void> {
+    // 适配字段名（下划线 vs 驼峰）
+    const messageType = msg.message_type ?? (msg as any).MessageType;
+    const fromUserId = msg.from_user_id ?? (msg as any).FromUserId;
+    const itemList = msg.item_list ?? (msg as any).ItemList ?? [];
+    const contextToken = msg.context_token ?? (msg as any).ContextToken;
+    
+    console.log('[ClawBot] processInboundMessage:', { 
+      messageType, 
+      fromUserId,
+      itemListLength: itemList.length,
+      itemList: JSON.stringify(itemList),
+      expectedType: WeixinMessageType.USER,
+      handlerCount: this.messageHandlers.length 
+    });
+    
     // 只处理用户发来的消息
-    if (msg.message_type !== WeixinMessageType.USER) {
+    if (messageType !== WeixinMessageType.USER) {
+      console.log('[ClawBot] 非用户消息，跳过');
       return;
     }
 
     // 下载媒体文件（如果有）
-    const mediaItem = this.findDownloadableMedia(msg.item_list);
+    const mediaItem = this.findDownloadableMedia(itemList);
     if (mediaItem) {
       try {
         const mediaBlob = await this.downloadMediaFromItem(mediaItem);
@@ -357,10 +401,20 @@ export class ClawBotService {
       }
     }
 
+    // 构建标准化的消息对象
+    const normalizedMsg: WeixinMessage = {
+      ...msg,
+      message_type: messageType,
+      from_user_id: fromUserId,
+      item_list: itemList,
+      context_token: contextToken
+    };
+
     // 触发消息处理器
+    console.log('[ClawBot] 触发消息处理器:', { handlerCount: this.messageHandlers.length });
     for (const handler of this.messageHandlers) {
       try {
-        handler(msg);
+        handler(normalizedMsg);
       } catch (error) {
         console.error('[ClawBot] 消息处理器错误:', error);
       }
@@ -453,6 +507,8 @@ export class ClawBotService {
    * 发送文本消息
    */
   async sendTextMessage(toUserId: string, text: string, contextToken?: string): Promise<void> {
+    console.log('[ClawBot] sendTextMessage:', { toUserId, textLength: text.length, hasContextToken: !!contextToken });
+    
     if (!this.config.token) {
       throw new Error('未登录');
     }
@@ -632,7 +688,9 @@ export class ClawBotService {
    * 添加消息处理器
    */
   onMessage(handler: (msg: WeixinMessage) => void): () => void {
+    console.log('[ClawBot] 添加消息处理器，当前数量:', this.messageHandlers.length);
     this.messageHandlers.push(handler);
+    console.log('[ClawBot] 添加后数量:', this.messageHandlers.length);
     return () => {
       const index = this.messageHandlers.indexOf(handler);
       if (index > -1) {

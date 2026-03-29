@@ -501,13 +501,19 @@ export const useAIStore = defineStore('ai', () => {
  * 初始化 ClawBot 服务
  */
 async function initializeClawBot(plugin: any) {
+  console.log('[AIStore] initializeClawBot');
   const store = useAIStore();
-  if (!store.clawBotConfig.enabled) return;
+  if (!store.clawBotConfig.enabled) {
+    console.log('[AIStore] ClawBot 未启用');
+    return;
+  }
   
   const clawBot = useClawBotService(store.clawBotConfig);
+  console.log('[AIStore] ClawBot 状态:', { isConnected: clawBot.isConnected() });
   
   // 如果之前已登录，恢复状态
   if (clawBot.isConnected()) {
+    console.log('[AIStore] 恢复 ClawBot 连接');
     clawBot.updateConfig({ loginStatus: 'connected' });
     store.clawBotConfig.loginStatus = 'connected';
     store.clawBotStats.isConnected = true;
@@ -516,7 +522,9 @@ async function initializeClawBot(plugin: any) {
     await clawBot.startMonitoring();
     
     // 注册消息处理器
+    console.log('[AIStore] 注册消息处理器');
     clawBot.onMessage((msg) => {
+      console.log('[AIStore] 收到微信消息:', msg);
       handleWeixinMessage(msg);
     });
   }
@@ -561,6 +569,7 @@ async function pollClawBotLogin(): Promise<boolean> {
     const success = await clawBot.pollQRStatus(storeAny.currentQRSessionKey);
     
     if (success) {
+      console.log('[AIStore] 登录成功，启动监听和注册处理器');
       // 更新配置
       const config = clawBot.getConfig();
       store.clawBotConfig = { ...store.clawBotConfig, ...config };
@@ -570,7 +579,9 @@ async function pollClawBotLogin(): Promise<boolean> {
       await clawBot.startMonitoring();
       
       // 注册消息处理器
+      console.log('[AIStore] 登录成功后注册消息处理器');
       clawBot.onMessage((msg) => {
+        console.log('[AIStore] 收到微信消息:', msg);
         handleWeixinMessage(msg);
       });
       
@@ -610,8 +621,19 @@ async function disconnectClawBot() {
  * 处理收到的微信消息
  */
 async function handleWeixinMessage(msg: WeixinMessage) {
+  console.log('[AIStore] =======================================');
+  console.log('[AIStore] 开始处理微信消息');
+  console.log('[AIStore] from_user_id:', msg.from_user_id);
+  console.log('[AIStore] message_type:', msg.message_type);
+  console.log('[AIStore] context_token:', msg.context_token);
+  console.log('[AIStore] item_list:', JSON.stringify(msg.item_list, null, 2));
+  console.log('[AIStore] =======================================');
+  
   const store = useAIStore();
-  if (!store.storageService) return;
+  if (!store.storageService) {
+    console.error('[AIStore] storageService 未初始化');
+    return;
+  }
   
   const fromUserId = msg.from_user_id;
   const contextToken = msg.context_token;
@@ -619,7 +641,9 @@ async function handleWeixinMessage(msg: WeixinMessage) {
   if (!fromUserId) return;
   
   // 获取或创建会话
+  console.log('[AIStore] 获取或创建会话:', fromUserId);
   const conversationId = await getOrCreateWeixinConversation(fromUserId);
+  console.log('[AIStore] 会话ID:', conversationId);
   
   // 保存 context_token
   if (store.weixinConversationMap[fromUserId]) {
@@ -633,22 +657,33 @@ async function handleWeixinMessage(msg: WeixinMessage) {
   // 提取消息内容
   let content = '';
   const itemList = msg.item_list || [];
+  console.log('[AIStore] 消息项列表长度:', itemList.length);
+  console.log('[AIStore] 消息项列表内容:', JSON.stringify(itemList, null, 2));
   
   for (const item of itemList) {
-    if (item.type === 1 && item.text_item?.text) {
-      content = item.text_item.text;
+    // 适配字段名（下划线 vs 驼峰）
+    const itemType = item.type ?? (item as any).Type;
+    const textItem = item.text_item ?? (item as any).TextItem;
+    const voiceItem = item.voice_item ?? (item as any).VoiceItem;
+    
+    console.log('[AIStore] 处理消息项:', { itemType, textItem, voiceItem });
+    
+    if (itemType === 1 && textItem?.text) {
+      content = textItem.text;
+      console.log('[AIStore] 提取到文本:', content);
       break;
     }
     // 语音转文字
-    if (item.type === 3 && item.voice_item?.text) {
-      content = `[语音] ${item.voice_item.text}`;
+    if (itemType === 3 && voiceItem?.text) {
+      content = `[语音] ${voiceItem.text}`;
+      console.log('[AIStore] 提取到语音:', content);
       break;
     }
   }
   
   if (!content) {
     // 检查是否有媒体
-    const hasMedia = itemList.some(i => [2, 3, 4, 5].includes(i.type || 0));
+    const hasMedia = itemList.some(i => [2, 3, 4, 5].includes((i.type ?? (i as any).Type) || 0));
     if (hasMedia) {
       content = '[媒体消息]';
     }
@@ -685,7 +720,10 @@ async function handleWeixinMessage(msg: WeixinMessage) {
       
       // 调用 AI 回复（如果 AI 已启用）
       if (store.isAIEnabled) {
+        console.log('[AIStore] AI 已启用，开始生成回复');
         await generateAIReply(conversationId, content, fromUserId, contextToken);
+      } else {
+        console.log('[AIStore] AI 未启用，跳过回复');
       }
     }
   }
@@ -698,11 +736,14 @@ async function getOrCreateWeixinConversation(
   ilinkUserId: string,
   userName?: string
 ): Promise<string> {
+  console.log('[AIStore] getOrCreateWeixinConversation:', { ilinkUserId, userName });
+  
   const store = useAIStore();
   if (!store.storageService) throw new Error('存储服务未初始化');
   
   // 检查是否已有映射
   if (store.weixinConversationMap[ilinkUserId]) {
+    console.log('[AIStore] 找到已有映射:', store.weixinConversationMap[ilinkUserId]);
     return store.weixinConversationMap[ilinkUserId].conversationId;
   }
   
@@ -757,9 +798,18 @@ async function generateAIReply(
   toUserId: string,
   contextToken?: string
 ) {
+  console.log('[AIStore] generateAIReply:', { conversationId, userContent, toUserId, hasContextToken: !!contextToken });
+  
   const store = useAIStore();
   
-  if (!store.isAIEnabled || !store.storageService) return;
+  if (!store.isAIEnabled) {
+    console.log('[AIStore] AI 未启用');
+    return;
+  }
+  if (!store.storageService) {
+    console.error('[AIStore] storageService 未初始化');
+    return;
+  }
   
   // 先保存当前会话
   const originalConvId = store.currentConversationId;
@@ -813,9 +863,14 @@ async function generateAIReply(
     
     // 获取最后一条 AI 消息
     const lastMessage = conversation.messages[conversation.messages.length - 1];
+    console.log('[AIStore] 最后一条消息:', { role: lastMessage?.role, contentLength: lastMessage?.content?.length });
+    
     if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
       // 发送到微信
+      console.log('[AIStore] 发送到微信:', { toUserId, contentLength: lastMessage.content.length });
       await sendReplyToWeixin(toUserId, lastMessage.content, contextToken);
+    } else {
+      console.log('[AIStore] 没有可发送的 AI 消息');
     }
     
   } catch (err) {
@@ -835,10 +890,15 @@ async function generateAIReply(
  * 发送回复到微信
  */
 async function sendReplyToWeixin(toUserId: string, content: string, contextToken?: string) {
+  console.log('[AIStore] sendReplyToWeixin:', { toUserId, contentLength: content.length, hasContextToken: !!contextToken });
+  
   const store = useAIStore();
   const clawBot = useClawBotService(store.clawBotConfig);
   
-  if (!clawBot.isConnected()) return;
+  if (!clawBot.isConnected()) {
+    console.error('[AIStore] ClawBot 未连接');
+    return;
+  }
   
   try {
     await clawBot.sendTextMessage(toUserId, content, contextToken);
