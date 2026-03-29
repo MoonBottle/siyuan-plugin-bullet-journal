@@ -15,7 +15,3 @@ export type {
   ReActAgentEvents,
   StreamUpdateCallback
 } from './react/types';
-
-// Hooks
-export { useAIAgent } from './hooks/useAIAgent';
-export type { UseAIAgentReturn } from './hooks/useAIAgent';
