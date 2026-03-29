@@ -59,35 +59,18 @@ export function getAllBuiltinSkills(): BuiltinSkill[] {
  * 默认技能文档模板（简化版，无 YAML frontmatter）
  * 技能内容直接作为文档内容
  */
-export const DEFAULT_SKILL_TEMPLATE = `## 概述
+export const DEFAULT_SKILL_TEMPLATE = `## 工作流程
 
-{{description}}
+1. **查询数据** - 描述如何查询数据
+2. **输出结果** - **严格按照如下格式**
 
-## 使用场景
+\`\`\`plaintext
+【项目名】
 
-- 场景1：...
-- 场景2：...
+任务：xx
 
-## 工作流程
-
-1. **分析需求** - 理解用户的具体要求
-2. **执行任务** - 按照技能规范执行
-3. **输出结果** - 返回执行结果
-
-## 示例
-
-### 示例1
-
-**输入：**
-用户输入内容...
-
-**输出：**
-技能执行结果...
-
-## 注意事项
-
-- 注意点1
-- 注意点2
+事项：xxx
+\`\`\`
 `;
 
 /**
