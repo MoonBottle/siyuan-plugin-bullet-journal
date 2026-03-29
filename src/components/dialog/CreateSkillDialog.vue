@@ -77,7 +77,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'created', docId: string): void;
+  (e: 'created', docId: string, skillName?: string): void;
 }>();
 
 const skillStore = useSkillStore();
@@ -224,7 +224,8 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
     }
     
     // 5. 打开创建的文档并关闭弹框
-    emit('created', targetDocId);
+    console.log('[CreateSkillDialog] Emitting created event:', { targetDocId, skillName });
+    emit('created', targetDocId, skillName);
     emit('close');
   } catch (error) {
     console.error('[CreateSkillDialog] Failed to create skill:', error);

@@ -161,7 +161,7 @@ function openCreateSkillDialog(prefilledName: string = '') {
     onClose: () => {
       dialog.destroy();
     },
-    onCreated: (docId: string) => {
+    onCreated: (docId: string, _skillName?: string) => {
       // 打开创建的文档
       emit('editSkill', docId);
       if (props.dialog) {

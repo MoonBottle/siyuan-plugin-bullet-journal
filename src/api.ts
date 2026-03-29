@@ -99,6 +99,18 @@ export async function renameDoc(
   return request(url, data);
 }
 
+export async function renameDocByID(
+  id: DocumentId,
+  title: string
+): Promise<null> {
+  let data = {
+    id: id,
+    title: title,
+  };
+  let url = "/api/filetree/renameDocByID";
+  return request(url, data);
+}
+
 export async function removeDoc(notebook: NotebookId, path: string) {
   let data = {
     notebook: notebook,

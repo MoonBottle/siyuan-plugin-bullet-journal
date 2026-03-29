@@ -24,7 +24,7 @@ import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
 import type { Item, ProjectDirectory } from '@/types/models';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID, getBlockByID } from '@/api';
+import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 
 /**
@@ -1016,8 +1016,26 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
     onClose: () => {
       dialog.destroy();
     },
-    onCreated: (_docId: string) => {
+    onCreated: async (_docId: string, skillName?: string) => {
+      console.log('[SlashCommand] onCreated called:', { _docId, skillName });
       showMessage('技能创建成功！', 3000, 'info');
+      // 使用 ID 重命名文档为技能名称
+      if (skillName && _docId) {
+        console.log('[SlashCommand] Renaming document by ID:', { docId: _docId, newName: skillName });
+        try {
+          const result = await renameDocByID(_docId, skillName);
+          console.log('[SlashCommand] renameDocByID result:', result);
+          if (result === null) {
+            console.log('[SlashCommand] Rename successful');
+          } else {
+            console.error('[SlashCommand] Rename failed: API returned unexpected result');
+          }
+        } catch (error) {
+          console.error('[SlashCommand] Failed to rename document:', error);
+        }
+      } else {
+        console.log('[SlashCommand] Skip rename: missing params', { skillName, docId: _docId });
+      }
     }
   });
   
