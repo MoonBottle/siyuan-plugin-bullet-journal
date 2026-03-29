@@ -6,9 +6,9 @@ import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import type { AIProviderConfig, ChatConversation } from '@/types/ai';
 import type { Project, ProjectGroup, Item } from '@/types/models';
-import type { SkillExecutionRecord } from '@/types/skill';
+
 import { useConversationStorage, type ConversationData, type ConversationIndexItem } from '@/services/conversationStorageService';
-import { useSkillService } from '@/services/skillService';
+
 import { ReActAgent } from '@/agents/react/agent';
 import type { ReActStep } from '@/agents/react/types';
 import type { ToolExecutionContext } from '@/services/aiToolsExecutor';
@@ -256,40 +256,13 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   /**
-   * 检测是否需要执行技能
-   */
-  async function detectSkillToExecute(content: string): Promise<{ name: string; content: string } | null> {
-    const skillService = useSkillService();
-    const enabledSkills = skillService.getEnabledSkills();
-    if (enabledSkills.length === 0) return null;
-
-    const contentLower = content.toLowerCase();
-    for (const skill of enabledSkills) {
-      const keywords = skill.name.toLowerCase().split(/\s+/);
-      const nameMatch = keywords.some(kw => contentLower.includes(kw));
-      const descMatch = skill.description && contentLower.includes(skill.description.toLowerCase().slice(0, 10));
-
-      if (nameMatch || descMatch) {
-        try {
-          const skillContent = await skillService.getSkillContent(skill.name);
-          return { name: skill.name, content: skillContent };
-        } catch (e) {
-          console.error('[AIStore] Failed to get skill content:', e);
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
    * 发送消息（基于 ReAct Agent）
    */
   async function sendMessage(
     content: string,
     projects?: Project[],
     groups?: ProjectGroup[],
-    items?: Item[],
-    options?: { skillName?: string }
+    items?: Item[]
   ): Promise<void> {
     // 前置检查
     if (!isAIEnabled.value) {
@@ -324,35 +297,8 @@ export const useAIStore = defineStore('ai', () => {
 
     const conversation = currentConversation.value!;
 
-    // 检测技能
-    let skillToExecute: { name: string; content: string } | null = null;
-    if (!options?.skillName) {
-      skillToExecute = await detectSkillToExecute(content);
-    }
-    const executingSkillName = options?.skillName || skillToExecute?.name;
-
-    // 构建系统提示词
-    const systemPrompt = buildSystemPrompt(executingSkillName, skillToExecute?.content);
-
-    // 准备技能执行记录
-    let skillExecution: SkillExecutionRecord | null = null;
-    if (executingSkillName) {
-      skillExecution = {
-        id: `exec-${Date.now()}`,
-        skillId: executingSkillName,
-        skillName: executingSkillName,
-        conversationId: conversation.id,
-        messageId: `msg-${Date.now()}-user`,
-        input: content,
-        output: '',
-        status: 'running',
-        startedAt: Date.now()
-      };
-      if (!conversation.skillExecutions) {
-        conversation.skillExecutions = [];
-      }
-      conversation.skillExecutions.push(skillExecution);
-    }
+    // 构建系统提示词（不再自动检测技能，由 AI 通过工具自主决策）
+    const systemPrompt = buildSystemPrompt();
 
     // 设置状态
     isLoading.value = true;
@@ -402,16 +348,6 @@ export const useAIStore = defineStore('ai', () => {
       // 运行 Agent
       await currentAgent.run(content, conversation);
 
-      // 更新技能执行记录
-      if (skillExecution) {
-        skillExecution.status = 'completed';
-        skillExecution.completedAt = Date.now();
-        const lastMessage = conversation.messages[conversation.messages.length - 1];
-        if (lastMessage && lastMessage.role === 'assistant') {
-          skillExecution.output = lastMessage.content;
-        }
-      }
-
       // 强制保存
       await forceSaveConversation();
       await refreshConversationsList();
@@ -419,13 +355,6 @@ export const useAIStore = defineStore('ai', () => {
     } catch (err) {
       console.error('[AIStore] Send message error:', err);
       error.value = err instanceof Error ? err.message : '发送消息失败';
-
-      // 更新技能执行记录为失败
-      if (skillExecution) {
-        skillExecution.status = 'failed';
-        skillExecution.completedAt = Date.now();
-        skillExecution.output = error.value;
-      }
 
       // 保存错误状态
       await forceSaveConversation();
