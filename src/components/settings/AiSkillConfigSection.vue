@@ -94,31 +94,23 @@
     />
   </SySettingsSection>
   
-  <!-- 添加技能对话框 -->
-  <CreateSkillDialog
-    v-if="showDialog"
-    mode="new"
-    :prefilled-name="prefilledSkillName"
-    @close="showDialog = false"
-    @created="onSkillCreated"
-  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, createApp } from 'vue';
 import { useSkillStore } from '@/stores/skillStore';
-import { useSkillService } from '@/services/skillService';
 import { getAllBuiltinSkills } from '@/utils/skillTemplates';
 import { t } from '@/i18n';
 import { showMessage } from 'siyuan';
-import { showConfirmDialog } from '@/utils/dialog';
+import { showConfirmDialog, createDialog } from '@/utils/dialog';
+import { getSharedPinia } from '@/utils/sharedPinia';
+import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
 import type { SkillConfig } from '@/types/skill';
 
 import SySettingsSection from './SySettingsSection.vue';
 import SySettingsActionButton from './SySettingsActionButton.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
-import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
 
 // 定义 props 和 emits
 const props = defineProps<{
@@ -131,9 +123,7 @@ const emit = defineEmits<{
 }>();
 
 const skillStore = useSkillStore();
-const skillService = useSkillService();
 
-const showDialog = ref(false);
 const prefilledSkillName = ref('');
 
 // 内置技能列表
@@ -152,10 +142,47 @@ const builtinSkills = computed(() => {
 // 用户自定义技能列表
 const userSkills = computed(() => skillStore.skills);
 
+// 打开创建技能弹框
+function openCreateSkillDialog(prefilledName: string = '') {
+  const container = document.createElement('div');
+  
+  const dialog = createDialog({
+    title: prefilledName ? `自定义「${prefilledName}」技能` : '添加技能文档',
+    content: '',
+    width: '480px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+  
+  const app = createApp(CreateSkillDialog, {
+    mode: 'new',
+    prefilledName,
+    onClose: () => {
+      dialog.destroy();
+    },
+    onCreated: (docId: string) => {
+      // 打开创建的文档
+      emit('editSkill', docId);
+      if (props.dialog) {
+        props.dialog.destroy();
+      }
+      emit('close');
+    }
+  });
+  
+  app.use(getSharedPinia());
+  app.mount(container);
+  
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+}
+
 // 显示添加技能对话框
 function showAddSkillDialog() {
-  prefilledSkillName.value = '';
-  showDialog.value = true;
+  openCreateSkillDialog('');
 }
 
 // 编辑技能（触发事件让父组件处理）
