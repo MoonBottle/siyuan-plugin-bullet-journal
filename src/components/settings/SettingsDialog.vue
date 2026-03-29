@@ -78,9 +78,6 @@
         <div id="section-ai" class="sy-settings-section-wrapper">
           <AiConfigSection v-show="sectionVisible('ai')" v-model:ai="local.ai" />
         </div>
-        <div id="section-ai-skills" class="sy-settings-section-wrapper">
-          <AiSkillConfigSection v-show="sectionVisible('aiSkills')" />
-        </div>
         <div id="section-mcp" class="sy-settings-section-wrapper">
           <McpConfigSection v-show="sectionVisible('mcp')" />
         </div>
@@ -109,7 +106,6 @@ import GroupConfigSection from './GroupConfigSection.vue';
 import PomodoroConfigSection from './PomodoroConfigSection.vue';
 import CalendarConfigSection from './CalendarConfigSection.vue';
 import AiConfigSection from './AiConfigSection.vue';
-import AiSkillConfigSection from './AiSkillConfigSection.vue';
 import McpConfigSection from './McpConfigSection.vue';
 import LunchBreakConfigSection from './LunchBreakConfigSection.vue';
 import SlashCommandConfigSection from './SlashCommandConfigSection.vue';
@@ -140,7 +136,6 @@ const menuItems = computed<MenuItem[]>(() => {
     { key: 'lunch', title: settings.lunchBreak?.title ?? '午休时间', icon: 'iconClock', sectionId: 'section-lunch' },
     { key: 'slash', title: settings.slashCommands?.title ?? '斜杠命令', icon: 'iconCode', sectionId: 'section-slash' },
     { key: 'ai', title: settings.ai?.title ?? 'AI 服务配置', icon: 'iconSparkles', sectionId: 'section-ai' },
-    { key: 'aiSkills', title: settings.aiSkills?.title ?? 'AI 技能配置', icon: 'iconMagic', sectionId: 'section-ai-skills' },
     { key: 'mcp', title: settings.mcp?.title ?? 'MCP 配置', icon: 'iconLink', sectionId: 'section-mcp' },
   ];
 });
@@ -202,7 +197,6 @@ const sectionKeywords: Record<string, string> = computed(() => {
     pomodoro: collectStrings(s.pomodoro).join(' '),
     calendar: collectStrings(s.calendar).join(' '),
     ai: collectStrings(s.ai).join(' '),
-    aiSkills: collectStrings(s.aiSkills).join(' '),
     mcp: collectStrings(s.mcp).join(' '),
     lunch: collectStrings(s.lunchBreak).join(' '),
     slash: collectStrings(s.slashCommands).join(' ')

@@ -178,7 +178,7 @@ async function createSkill() {
     
     skillStore.addSkill(skillConfig);
     
-    // 4. 显示成功提示
+      // 4. 显示成功提示
     if (isBuiltin) {
       showMessage(
         t('slash').overrideSuccess.replace('{name}', skillName), 
@@ -189,6 +189,7 @@ async function createSkill() {
       showMessage(t('slash').createSkillSuccess, 3000, 'info');
     }
     
+    // 5. 打开创建的文档并关闭弹框
     emit('created', props.docId);
     emit('close');
   } catch (error) {
@@ -220,7 +221,12 @@ function close() {
 .form-item {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
+}
+
+.form-item > * {
+  width: 100%;
 }
 
 .form-item-inline {

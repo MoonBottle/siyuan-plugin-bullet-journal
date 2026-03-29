@@ -110,7 +110,6 @@ import { useSkillService } from '@/services/skillService';
 import { getAllBuiltinSkills } from '@/utils/skillTemplates';
 import { t } from '@/i18n';
 import { showMessage } from 'siyuan';
-import { openDocument } from '@/utils/fileUtils';
 import type { SkillConfig } from '@/types/skill';
 
 import SySettingsSection from './SySettingsSection.vue';
@@ -118,6 +117,16 @@ import SySettingsActionButton from './SySettingsActionButton.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
+
+// 定义 props 和 emits
+const props = defineProps<{
+  dialog?: { destroy: () => void };
+}>();
+
+const emit = defineEmits<{
+  (e: 'editSkill', docId: string): void;
+  (e: 'close'): void;
+}>();
 
 const skillStore = useSkillStore();
 const skillService = useSkillService();
@@ -147,17 +156,21 @@ function showAddSkillDialog() {
   showDialog.value = true;
 }
 
-// 编辑技能（打开文档）
-async function editSkill(skill: SkillConfig) {
+// 编辑技能（触发事件让父组件处理）
+function editSkill(skill: SkillConfig) {
   if (!skill.docId) {
     showMessage('无法获取文档ID', 2000, 'error');
     return;
   }
   
-  const success = await openDocument(skill.docId);
-  if (!success) {
-    showMessage('打开文档失败', 2000, 'error');
+  // 触发事件，让父组件打开文档
+  emit('editSkill', skill.docId);
+  
+  // 关闭弹框
+  if (props.dialog) {
+    props.dialog.destroy();
   }
+  emit('close');
 }
 
 // 删除技能
@@ -199,8 +212,12 @@ async function createOverrideSkill(skill: { name: string; description: string })
 }
 
 // 技能创建成功回调
-function onSkillCreated(skillId: string) {
+async function onSkillCreated(skillId: string) {
   showDialog.value = false;
+  // 打开创建的文档
+  if (skillId) {
+    await openDocument(skillId);
+  }
 }
 </script>
 

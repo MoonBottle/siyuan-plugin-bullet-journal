@@ -28,6 +28,17 @@
         </svg>
       </span>
 
+      <!-- 技能管理按钮 -->
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="t('settings').aiSkills?.title ?? 'AI 技能配置'"
+        @click="openSkillManager"
+      >
+        <svg>
+          <use xlink:href="#iconSparkles"></use>
+        </svg>
+      </span>
+
       <!-- 更多操作按钮 -->
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
@@ -65,6 +76,11 @@ import ConversationSelect from '@/components/ai/ConversationSelect.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
 import { t } from '@/i18n';
 import type { Item } from '@/types/models';
+import { createDialog } from '@/utils/dialog';
+import { createApp } from 'vue';
+import { getSharedPinia } from '@/utils/sharedPinia';
+import AiSkillConfigSection from '@/components/settings/AiSkillConfigSection.vue';
+import { openTab } from 'siyuan';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -78,6 +94,47 @@ const conversationsList = ref<ConversationIndexItem[]>([]);
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const chatPanelRef = ref<InstanceType<typeof ChatPanel>>();
+
+// 打开技能管理弹框
+const openSkillManager = () => {
+  const container = document.createElement('div');
+  
+  const dialog = createDialog({
+    title: t('settings').aiSkills?.title ?? 'AI 技能配置',
+    content: '',
+    width: '600px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+  
+  const app = createApp(AiSkillConfigSection, {
+    dialog,
+    onEditSkill: (docId: string) => {
+      // 打开文档
+      const plugin = usePlugin() as any;
+      if (plugin?.app && docId) {
+        openTab({
+          app: plugin.app,
+          doc: { id: docId }
+        });
+      }
+      // 关闭弹框
+      dialog.destroy();
+    },
+    onClose: () => {
+      dialog.destroy();
+    }
+  });
+  
+  app.use(getSharedPinia());
+  app.mount(container);
+  
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+};
 
 // 获取所有事项
 const allItems = computed<Item[]>(() => {
@@ -348,4 +405,7 @@ onUnmounted(() => {
     opacity: 1;
   }
 }
+
+// 技能管理弹框样式
+
 </style>
