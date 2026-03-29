@@ -508,8 +508,10 @@ export async function callAIWithToolsStream(
             }
 
             // 处理 reasoning 字段（思考过程）
-            if (delta?.reasoning) {
-              fullReasoning += delta.reasoning;
+            // 支持多种字段名：reasoning (通用) / reasoning_content (Kimi)
+            const reasoningChunk = delta?.reasoning || delta?.reasoning_content;
+            if (reasoningChunk) {
+              fullReasoning += reasoningChunk;
             }
 
             // 处理工具调用（必须在内容处理之前，以便 toolCalls 能传递给回调）
@@ -540,7 +542,7 @@ export async function callAIWithToolsStream(
             if (delta?.content) {
               fullContent += delta.content;
               onChunk?.(fullContent, fullReasoning, lastUsage, toolCalls);
-            } else if (delta?.reasoning || usage || delta?.tool_calls) {
+            } else if (delta?.reasoning || delta?.reasoning_content || usage || delta?.tool_calls) {
               // 即使没有 content，只要有 reasoning、usage 或 tool_calls 变化也触发回调
               onChunk?.(fullContent, fullReasoning, lastUsage, toolCalls);
             }
