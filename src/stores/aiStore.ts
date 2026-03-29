@@ -409,7 +409,13 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 发送消息（基于 ReAct Agent）
    */
-  async function sendMessage(content: string, options?: { skillName?: string }): Promise<void> {
+  async function sendMessage(
+    content: string,
+    projects?: Project[],
+    groups?: ProjectGroup[],
+    items?: Item[],
+    options?: { skillName?: string }
+  ): Promise<void> {
     // 前置检查
     if (!isAIEnabled.value) {
       error.value = 'AI 服务未配置或未启用';
@@ -425,6 +431,15 @@ export const useAIStore = defineStore('ai', () => {
     if (!storageService) {
       error.value = '存储服务未初始化';
       return;
+    }
+
+    // 更新工具上下文（如果提供了数据）
+    if (projects || groups || items) {
+      toolContext.value = {
+        groups: groups || toolContext.value.groups,
+        projects: projects || toolContext.value.projects,
+        allItems: items || toolContext.value.allItems
+      };
     }
 
     // 确保有当前会话
