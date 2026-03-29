@@ -58,7 +58,7 @@ import SyInput from '@/components/SiyuanTheme/SyInput.vue';
 import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 import { useSkillStore } from '@/stores/skillStore';
-import { setBlockAttrs, prependBlock } from '@/api';
+import { setBlockAttrs, prependBlock, createDocWithMd, lsNotebooks } from '@/api';
 import { 
   generateSkillDocument, 
   generateSkillDocumentFromTemplate,
@@ -68,9 +68,11 @@ import {
 import type { SkillConfig } from '@/types/skill';
 
 const props = defineProps<{
-  docId: string;
-  notebook: string;
-  docPath: string;
+  mode: 'existing' | 'new';
+  docId?: string;
+  notebook?: string;
+  docPath?: string;
+  prefilledName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -81,7 +83,7 @@ const emit = defineEmits<{
 const skillStore = useSkillStore();
 
 const form = reactive({
-  name: '',
+  name: props.prefilledName || '',
   description: '',
   autoEnable: true
 });
@@ -142,12 +144,35 @@ async function createSkill() {
   await doCreateSkill(skillName, isBuiltin);
 }
 
+async function getFirstNotebook(): Promise<string> {
+  const response = await lsNotebooks();
+  if (!response?.notebooks?.length) {
+    throw new Error('没有可用的笔记本');
+  }
+  return response.notebooks[0].id;
+}
+
 async function doCreateSkill(skillName: string, isBuiltin: boolean) {
   isCreating.value = true;
   
   try {
+    let targetDocId: string;
+    
+    if (props.mode === 'new') {
+      // 新建模式：创建新文档
+      const notebook = props.notebook || await getFirstNotebook();
+      const docPath = `AI技能/${skillName}`;
+      targetDocId = await createDocWithMd(notebook, docPath, '');
+      if (!targetDocId) {
+        throw new Error('创建文档失败');
+      }
+    } else {
+      // 已有文档模式：使用传入的 docId
+      targetDocId = props.docId!;
+    }
+    
     // 1. 设置文档自定义属性（name、description）
-    await setBlockAttrs(props.docId, {
+    await setBlockAttrs(targetDocId, {
       'custom-skill-name': skillName,
       'custom-skill-description': form.description.trim(),
       'custom-skill-version': '1.0.0',
@@ -173,11 +198,11 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
     }
     
     // 在文档开头添加技能内容
-    await prependBlock('markdown', documentContent, props.docId);
+    await prependBlock('markdown', documentContent, targetDocId);
     
     // 3. 添加到技能列表（docId 作为主键）
     const skillConfig: SkillConfig = {
-      docId: props.docId,
+      docId: targetDocId,
       name: skillName,
       description: form.description.trim(),
       enabled: form.autoEnable,
@@ -187,7 +212,7 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
     
     skillStore.addSkill(skillConfig);
     
-      // 4. 显示成功提示
+    // 4. 显示成功提示
     if (isBuiltin) {
       showMessage(
         t('slash').overrideSuccess.replace('{name}', skillName), 
@@ -199,7 +224,7 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
     }
     
     // 5. 打开创建的文档并关闭弹框
-    emit('created', props.docId);
+    emit('created', targetDocId);
     emit('close');
   } catch (error) {
     console.error('[CreateSkillDialog] Failed to create skill:', error);

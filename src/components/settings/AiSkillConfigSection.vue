@@ -97,7 +97,8 @@
   <!-- 添加技能对话框 -->
   <CreateSkillDialog
     v-if="showDialog"
-    :default-path="defaultSavePath"
+    mode="new"
+    :prefilled-name="prefilledSkillName"
     @close="showDialog = false"
     @created="onSkillCreated"
   />
@@ -133,7 +134,7 @@ const skillStore = useSkillStore();
 const skillService = useSkillService();
 
 const showDialog = ref(false);
-const defaultSavePath = ref('AI技能/新技能');
+const prefilledSkillName = ref('');
 
 // 内置技能列表
 const builtinSkills = computed(() => {
@@ -153,7 +154,7 @@ const userSkills = computed(() => skillStore.skills);
 
 // 显示添加技能对话框
 function showAddSkillDialog() {
-  defaultSavePath.value = 'AI技能/新技能';
+  prefilledSkillName.value = '';
   showDialog.value = true;
 }
 

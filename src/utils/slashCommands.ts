@@ -1009,6 +1009,7 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
   
   // 创建 Vue 应用
   const app = createApp(CreateSkillDialog, {
+    mode: 'existing',
     docId,
     notebook,
     docPath,
