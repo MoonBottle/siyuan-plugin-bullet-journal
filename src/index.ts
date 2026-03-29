@@ -460,19 +460,17 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   /**
-   * 保存 AI 设置（供 AI Store 调用，保存供应商配置和 ClawBot 配置）
+   * 保存 AI 设置（供 AI Store 调用，只保存供应商配置）
+   * 注意：ClawBot 配置保存到单独文件
    */
-  public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean; clawbot?: Partial<ClawBotConfig> }) {
+  public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
     if (!settings.ai) {
       settings.ai = { providers: [], activeProviderId: null, showToolCalls: true };
     }
     settings.ai.providers = aiData.providers;
     settings.ai.activeProviderId = aiData.activeProviderId;
     settings.ai.showToolCalls = aiData.showToolCalls;
-    // 保存 ClawBot 配置（包括登录凭证）
-    if (aiData.clawbot) {
-      settings.ai.clawbot = aiData.clawbot;
-    }
+    // 注意：ClawBot 配置不保存在这里，保存到单独文件
     try {
       await this.saveData('settings', settings);
     } catch (error) {
@@ -482,15 +480,16 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 仅将 AI 配置写入文件（从磁盘读出完整配置，只替换 ai 后写回，不修改内存中其它区块，避免覆盖用户未保存的修改）
+   * 注意：ClawBot 配置保存到单独文件
    */
-  public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean; clawbot?: Partial<ClawBotConfig> }) {
+  public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
     try {
       const data = await this.loadData('settings');
       const aiConfig = {
         providers: aiData.providers,
         activeProviderId: aiData.activeProviderId,
-        ...(aiData.showToolCalls !== undefined && { showToolCalls: aiData.showToolCalls }),
-        ...(aiData.clawbot !== undefined && { clawbot: aiData.clawbot })
+        ...(aiData.showToolCalls !== undefined && { showToolCalls: aiData.showToolCalls })
+        // 注意：ClawBot 配置不保存在这里
       };
       const merged: SettingsData = data
         ? { ...data, ai: aiConfig }
@@ -531,26 +530,43 @@ export default class TaskAssistantPlugin extends Plugin {
   private readonly WECHAT_LOGIN_KEY = 'wechat-login-state';
 
   /**
-   * 保存微信登录状态（单独文件，避免与 settings 冲突）
+   * 保存微信配置和登录状态（单独文件，避免与 settings 冲突）
    */
-  public async saveWechatLoginState(loginData: { token: string; accountId: string; userId?: string; loginStatus: string }) {
+  public async saveWechatLoginState(loginData: { 
+    enabled: boolean;
+    token?: string; 
+    accountId?: string; 
+    userId?: string; 
+    loginStatus: string;
+    baseUrl?: string;
+    cdnBaseUrl?: string;
+  }) {
     try {
       await this.saveData(this.WECHAT_LOGIN_KEY, loginData);
-      console.log('[Task Assistant] WeChat login state saved');
+      console.log('[Task Assistant] WeChat state saved:', { enabled: loginData.enabled, loginStatus: loginData.loginStatus });
     } catch (error) {
-      console.error('[Task Assistant] Failed to save WeChat login state:', error);
+      console.error('[Task Assistant] Failed to save WeChat state:', error);
     }
   }
 
   /**
-   * 加载微信登录状态
+   * 加载微信配置和登录状态
    */
-  public async loadWechatLoginState(): Promise<{ token: string; accountId: string; userId?: string; loginStatus: string } | null> {
+  public async loadWechatLoginState(): Promise<{ 
+    enabled: boolean;
+    token?: string; 
+    accountId?: string; 
+    userId?: string; 
+    loginStatus: string;
+    baseUrl?: string;
+    cdnBaseUrl?: string;
+  } | null> {
     try {
       const data = await this.loadData(this.WECHAT_LOGIN_KEY);
-      if (data && data.token && data.accountId) {
-        console.log('[Task Assistant] WeChat login state loaded:', { 
-          hasToken: true, 
+      if (data) {
+        console.log('[Task Assistant] WeChat state loaded:', { 
+          enabled: data.enabled,
+          hasToken: !!data.token, 
           accountId: data.accountId,
           loginStatus: data.loginStatus 
         });
@@ -558,7 +574,7 @@ export default class TaskAssistantPlugin extends Plugin {
       }
       return null;
     } catch (error) {
-      console.error('[Task Assistant] Failed to load WeChat login state:', error);
+      console.error('[Task Assistant] Failed to load WeChat state:', error);
       return null;
     }
   }

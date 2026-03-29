@@ -224,14 +224,7 @@ export const useAIStore = defineStore('ai', () => {
     if (settings.showToolCalls !== undefined) {
       showToolCalls.value = settings.showToolCalls;
     }
-    if (settings.clawbot) {
-      clawBotConfig.value = { ...clawBotConfig.value, ...settings.clawbot };
-      console.log('[AIStore] loadSettings 恢复 ClawBot 配置:', {
-        hasToken: !!clawBotConfig.value.token,
-        hasAccountId: !!clawBotConfig.value.accountId,
-        loginStatus: clawBotConfig.value.loginStatus
-      });
-    }
+    // 注意：clawbot 配置现在从单独文件加载，不在 settings 中
     
     const enabled = providers.value.filter(p => p.enabled);
     if (activeProviderId.value) {
@@ -432,17 +425,8 @@ export const useAIStore = defineStore('ai', () => {
     return {
       providers: providers.value,
       activeProviderId: activeProviderId.value,
-      showToolCalls: showToolCalls.value,
-      clawbot: {
-        enabled: clawBotConfig.value.enabled,
-        baseUrl: clawBotConfig.value.baseUrl,
-        cdnBaseUrl: clawBotConfig.value.cdnBaseUrl,
-        // 保存登录凭证以便重启后恢复
-        accountId: clawBotConfig.value.accountId,
-        token: clawBotConfig.value.token,
-        userId: clawBotConfig.value.userId,
-        loginStatus: clawBotConfig.value.loginStatus,
-      }
+      showToolCalls: showToolCalls.value
+      // 注意：clawbot 配置保存到单独文件，不在 settings 中
     };
   }
 
@@ -575,32 +559,41 @@ export const useAIStore = defineStore('ai', () => {
     // 保存 plugin 实例引用
     plugin = pluginInstance;
     
-    if (!clawBotConfig.value.enabled) {
-      console.log('[AIStore] ClawBot 未启用');
-      return;
-    }
-    
-    // 从单独文件加载登录状态
+    // 从单独文件加载所有配置（包括 enabled）
     let loginState = null;
     if (plugin?.loadWechatLoginState) {
       loginState = await plugin.loadWechatLoginState();
-      console.log('[AIStore] 从文件加载的登录状态:', { 
+      console.log('[AIStore] 从文件加载的微信配置:', { 
+        enabled: loginState?.enabled,
         hasToken: !!loginState?.token,
         hasAccountId: !!loginState?.accountId 
       });
     }
     
-    // 如果有保存的登录状态，恢复到配置中
-    if (loginState?.token && loginState?.accountId) {
+    // 恢复所有配置到内存
+    if (loginState) {
+      clawBotConfig.value.enabled = loginState.enabled ?? false;
       clawBotConfig.value.token = loginState.token;
       clawBotConfig.value.accountId = loginState.accountId;
       clawBotConfig.value.userId = loginState.userId;
-      clawBotConfig.value.loginStatus = loginState.loginStatus || 'connected';
-      console.log('[AIStore] 已恢复登录凭证到内存');
+      clawBotConfig.value.loginStatus = loginState.loginStatus || 'none';
+      if (loginState.baseUrl) {
+        clawBotConfig.value.baseUrl = loginState.baseUrl;
+      }
+      if (loginState.cdnBaseUrl) {
+        clawBotConfig.value.cdnBaseUrl = loginState.cdnBaseUrl;
+      }
+    }
+    
+    // 检查是否启用
+    if (!clawBotConfig.value.enabled) {
+      console.log('[AIStore] ClawBot 未启用');
+      return;
     }
     
     const config = clawBotConfig.value;
     console.log('[AIStore] ClawBot 配置状态:', { 
+      enabled: config.enabled,
       hasToken: !!config.token, 
       hasAccountId: !!config.accountId,
       loginStatus: config.loginStatus 
@@ -700,14 +693,17 @@ export const useAIStore = defineStore('ai', () => {
           handleWeixinMessage(msg);
         });
         
-        // 保存登录状态到单独文件
-        console.log('[AIStore] 保存登录凭证到单独文件');
+        // 保存所有配置到单独文件
+        console.log('[AIStore] 保存微信配置到单独文件');
         if (plugin?.saveWechatLoginState) {
           await plugin.saveWechatLoginState({
+            enabled: clawBotConfig.value.enabled,
             token: clawBotConfig.value.token!,
             accountId: clawBotConfig.value.accountId!,
             userId: clawBotConfig.value.userId,
-            loginStatus: 'connected'
+            loginStatus: 'connected',
+            baseUrl: clawBotConfig.value.baseUrl,
+            cdnBaseUrl: clawBotConfig.value.cdnBaseUrl
           });
         }
         
@@ -739,9 +735,12 @@ export const useAIStore = defineStore('ai', () => {
     clawBotStats.value.isConnected = false;
     clawBotStats.value.connectedUsers = 0;
     
-    // 清除保存的登录状态
-    if (plugin?.clearWechatLoginState) {
-      await plugin.clearWechatLoginState();
+    // 保存状态（enabled 保持 true，但清除登录凭证）
+    if (plugin?.saveWechatLoginState) {
+      await plugin.saveWechatLoginState({
+        enabled: clawBotConfig.value.enabled,
+        loginStatus: 'none'
+      });
     }
     
     showMessage('已断开微信连接', 2000);
