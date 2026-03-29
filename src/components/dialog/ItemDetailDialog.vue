@@ -150,9 +150,10 @@
         <div v-if="(!isCompletedOrAbandoned) || hasReminder || hasRecurring" class="item-actions-row">
           <button
             v-if="!isCompletedOrAbandoned || hasReminder"
-            class="action-btn"
+            class="action-btn b3-tooltips b3-tooltips__n"
             :class="{ active: hasReminder, readonly: isCompletedOrAbandoned }"
             :disabled="isCompletedOrAbandoned"
+            :aria-label="reminderButtonTooltip || reminderText"
             @click="handleSetReminder"
           >
             <span class="action-icon">⏰</span>
@@ -161,9 +162,10 @@
           
           <button
             v-if="(!isCompletedOrAbandoned && canSetRecurring) || hasRecurring"
-            class="action-btn"
+            class="action-btn b3-tooltips b3-tooltips__n"
             :class="{ active: hasRecurring, readonly: isCompletedOrAbandoned }"
             :disabled="isCompletedOrAbandoned"
+            :aria-label="recurringButtonTooltip || recurringText"
             @click="handleSetRecurring"
           >
             <span class="action-icon" v-if="!hasRecurring">🔁</span>
@@ -218,6 +220,7 @@ import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dat
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { formatReminderDisplay } from '@/utils/displayUtils';
 import { getNextOccurrenceDate, generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
+import { calculateReminderTime } from '@/parser/reminderParser';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
@@ -446,6 +449,27 @@ const skipButtonTooltip = computed(() => {
   if (!props.item.repeatRule) return '';
   const nextDate = getNextOccurrenceDate(props.item.date, props.item.repeatRule);
   return t('recurring.skipTooltip', { date: nextDate });
+});
+
+// 提醒按钮的 tooltip - 显示下一次提醒时间
+const reminderButtonTooltip = computed(() => {
+  if (!hasReminder.value || !props.item.reminder) return '';
+  const reminderTime = calculateReminderTime(
+    props.item.date,
+    props.item.startTime,
+    props.item.endTime,
+    props.item.reminder
+  );
+  if (!reminderTime) return '';
+  const formattedTime = dayjs(reminderTime).format('YYYY-MM-DD HH:mm');
+  return t('reminder.nextReminder', { time: formattedTime });
+});
+
+// 重复按钮的 tooltip - 显示下一次重复日期
+const recurringButtonTooltip = computed(() => {
+  if (!hasRecurring.value || !props.item.repeatRule) return '';
+  const nextDate = getNextOccurrenceDate(props.item.date, props.item.repeatRule);
+  return t('recurring.nextOccurrence', { date: nextDate });
 });
 
 // 获取有效日期

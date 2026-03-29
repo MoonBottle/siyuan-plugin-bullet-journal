@@ -527,6 +527,7 @@
     "minutes": "{count} minutes",
     "hours": "{count} hours",
     "days": "{count} days",
+    "nextReminder": "Next reminder: {time}",
     "parse": {
       "before": "before",
       "beforeEnd": "before end",
@@ -587,6 +588,7 @@
       "withRemainingCount": "{count} times remaining",
       "monthlyOnDay": "monthly on day {day}",
       "weeklyOnDays": "weekly on {days}"
-    }
+    },
+    "nextOccurrence": "Next: {date}"
   }
 }

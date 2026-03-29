@@ -529,6 +529,7 @@
     "minutes": "{count}分钟",
     "hours": "{count}小时",
     "days": "{count}天",
+    "nextReminder": "下次提醒：{time}",
     "parse": {
       "before": "提前",
       "beforeEnd": "结束前",
@@ -589,6 +590,7 @@
       "withRemainingCount": "剩余{count}次",
       "monthlyOnDay": "每月{day}日",
       "weeklyOnDays": "每周{days}"
-    }
+    },
+    "nextOccurrence": "下次重复：{date}"
   }
 }
