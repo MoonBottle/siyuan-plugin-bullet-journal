@@ -127,6 +127,10 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
         }
 
         // Step 3: Action - 执行工具
+        // 先保存完整的 toolCalls 到消息，避免循环执行时被覆盖
+        if (thought.messageId && thought.toolCalls) {
+          this.updateAssistantToolCalls(thought.messageId, thought.toolCalls);
+        }
         for (const toolCall of thought.toolCalls) {
           await this.executeAction(toolCall, thought.messageId);
         }
