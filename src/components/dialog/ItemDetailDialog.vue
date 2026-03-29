@@ -166,7 +166,7 @@
             :disabled="isCompletedOrAbandoned"
             @click="handleSetRecurring"
           >
-            <span class="action-icon">🔁</span>
+            <span class="action-icon" v-if="!hasRecurring">🔁</span>
             <span class="action-text">{{ recurringText }}</span>
           </button>
           
@@ -216,8 +216,8 @@ import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
-import { formatReminderDisplay, formatRepeatRuleDisplay } from '@/utils/displayUtils';
-import { getNextOccurrenceDate } from '@/parser/recurringParser';
+import { formatReminderDisplay } from '@/utils/displayUtils';
+import { getNextOccurrenceDate, generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
@@ -431,7 +431,9 @@ const hasRecurring = computed(() => !!props.item.repeatRule);
 const canSetRecurring = computed(() => !props.item.siblingItems?.length); // 多日期事项不能设置重复
 const recurringText = computed(() => {
   if (!hasRecurring.value) return t('recurring.setRecurring');
-  return formatRepeatRuleDisplay(props.item.repeatRule, props.item.endCondition, t);
+  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule);
+  const endMarker = generateEndConditionMarker(props.item.endCondition);
+  return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker;
 });
 
 // 是否显示跳过按钮（有重复规则且已过期）
