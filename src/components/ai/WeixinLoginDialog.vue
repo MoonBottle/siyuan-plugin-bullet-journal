@@ -34,8 +34,25 @@
 
         <!-- 二维码区域 -->
         <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-login-dialog__qrcode">
-          <img :src="qrcodeUrl" alt="微信登录二维码" />
-          <p>请使用微信扫描二维码</p>
+          <div v-if="qrCodeLoadError" class="weixin-login-dialog__qrcode-fallback">
+            <p>二维码图片加载失败</p>
+            <a :href="qrcodeUrl" target="_blank" class="weixin-login-dialog__qrcode-link">
+              点击此处在新窗口打开二维码
+            </a>
+          </div>
+          <template v-else>
+            <img 
+              :src="qrcodeUrl" 
+              alt="微信登录二维码"
+              crossorigin="anonymous"
+              referrerpolicy="no-referrer"
+              @error="handleQRCodeError"
+            />
+            <p>请使用微信扫描二维码</p>
+            <p class="weixin-login-dialog__qrcode-hint">
+              如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
+            </p>
+          </template>
         </div>
 
         <!-- 已连接状态 -->
@@ -138,6 +155,7 @@ const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
 const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
 const errorMessage = computed(() => aiStore.clawBotConfig.errorMessage);
+const qrCodeLoadError = ref(false);
 const accountId = computed(() => aiStore.clawBotConfig.accountId);
 
 const statusText = computed(() => {
@@ -190,6 +208,7 @@ const connectedUsers = computed(() => {
 // 开始登录
 async function handleStartLogin() {
   isLoading.value = true;
+  qrCodeLoadError.value = false;
   try {
     const result = await aiStore.startClawBotLogin();
     if (result) {
@@ -203,6 +222,7 @@ async function handleStartLogin() {
 
 // 刷新二维码
 async function handleRefreshQR() {
+  qrCodeLoadError.value = false;
   stopPolling();
   await handleStartLogin();
 }
@@ -259,6 +279,12 @@ function stopPolling() {
     clearInterval(pollInterval.value);
     pollInterval.value = null;
   }
+}
+
+// 二维码加载失败
+function handleQRCodeError() {
+  console.error('[WeixinLoginDialog] 二维码图片加载失败，URL:', qrcodeUrl.value);
+  qrCodeLoadError.value = true;
 }
 
 onMounted(() => {
@@ -417,6 +443,46 @@ onUnmounted(() => {
       margin-top: 12px;
       font-size: 13px;
       color: var(--b3-theme-on-surface-light);
+    }
+  }
+
+  &__qrcode-fallback {
+    padding: 20px;
+    background: var(--b3-theme-surface);
+    border-radius: 8px;
+    border: 1px dashed var(--b3-theme-surface-lighter);
+
+    p {
+      margin: 0 0 12px;
+      color: var(--b3-theme-on-surface-light);
+    }
+  }
+
+  &__qrcode-link {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+
+    &:hover {
+      background: var(--b3-theme-primary-light);
+    }
+  }
+
+  &__qrcode-hint {
+    font-size: 12px !important;
+    color: var(--b3-theme-on-surface-lighter) !important;
+
+    a {
+      color: var(--b3-theme-primary);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 
