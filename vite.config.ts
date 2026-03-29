@@ -88,10 +88,11 @@ export default defineConfig(({
             src: "./plugin.json",
             dest: "./",
           },
-          // 开发模式：插件输出到 workspace，需复制 mcp-server.js；生产模式：mcp-server.js 已在 dist 中
-          ...(isWatch
-            ? [{ src: "./dist/mcp-server.js", dest: "./" }]
-            : []),
+          // 复制 mcp-server.js 到目标目录
+          {
+            src: "./dist/mcp-server.js",
+            dest: "./",
+          },
           {
             src: "./src/i18n/**",
             dest: "./i18n/",

@@ -25,12 +25,15 @@ export default defineConfig({
       formats: ['es']
     },
     rollupOptions: {
-      external: ['path', 'fs', 'process', 'node:process', 'node:stream'],
       output: {
         entryFileNames: 'mcp-server.js'
       }
     },
     target: 'node18',
     minify: false
+  },
+  // 强制打包所有 npm 依赖，不要作为 external
+  ssr: {
+    noExternal: /.*/
   }
 });
