@@ -76,6 +76,14 @@ export interface ReActAgentEvents {
   'toolResult': {
     result: ToolResult;
   };
+  'messageAdd': {
+    message: ChatMessage;
+  };
+  'messageUpdate': {
+    id: string;
+    content: string;
+    reasoning?: string;
+  };
   'error': {
     error: Error;
   };

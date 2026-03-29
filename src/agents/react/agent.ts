@@ -122,13 +122,13 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
         // Step 2: 检查是否需要工具调用
         if (!thought.toolCalls || thought.toolCalls.length === 0) {
           // 直接回答，结束循环
-          this.finalize(thought.content);
+          this.finalize(thought.content, thought.messageId);
           return;
         }
 
         // Step 3: Action - 执行工具
         for (const toolCall of thought.toolCalls) {
-          await this.executeAction(toolCall);
+          await this.executeAction(toolCall, thought.messageId);
         }
 
         this.state.currentIteration++;
@@ -149,8 +149,9 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
 
   /**
    * Thought 步骤：调用 AI 进行思考
+   * @returns AI 响应和消息 ID
    */
-  private async think(): Promise<AIResponse> {
+  private async think(): Promise<AIResponse & { messageId: string }> {
     const messages = this.buildMessages();
 
     // 记录思考开始
@@ -161,11 +162,16 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
     };
     this.addStep(thoughtStep);
 
+    // 添加 AI 消息占位（在流式开始前）
+    const aiMessage = this.addAssistantMessage('', undefined, true);
+    const aiMessageId = aiMessage.id;
+
     return new Promise((resolve, reject) => {
       let fullContent = '';
       let fullReasoning = '';
       let toolCalls: ToolCall[] | undefined;
       let lastUsage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | undefined;
+      let detectedToolCalls = false;
 
       callAIWithToolsStream(
         this.context.provider,
@@ -175,6 +181,19 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
           fullContent = chunk;
           if (reasoning) fullReasoning = reasoning;
           if (usage) lastUsage = usage;
+
+          // 检查是否有工具调用
+          if (!detectedToolCalls) {
+            // 流式过程中检查是否包含工具调用标记
+            if (chunk.includes('<tool_call>') || chunk.includes('function')) {
+              detectedToolCalls = true;
+              // 有工具调用，更新为静态提示
+              this.updateAssistantMessage(aiMessageId, '思考中...', reasoning);
+            } else {
+              // 无工具调用，流式显示内容
+              this.updateAssistantMessage(aiMessageId, chunk, reasoning);
+            }
+          }
 
           // 触发流式更新
           this.emit('streamUpdate', {
@@ -198,11 +217,20 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
             };
           }
 
+          // 如果有工具调用，更新消息的 toolCalls
+          if (response.toolCalls && response.toolCalls.length > 0) {
+            this.updateAssistantToolCalls(aiMessageId, response.toolCalls);
+          } else if (!fullContent.includes('<tool_call>')) {
+            // 没有工具调用，更新为最终内容
+            this.updateAssistantMessage(aiMessageId, response.content || fullContent, fullReasoning);
+          }
+
           resolve({
-            content: response.content,
+            content: response.content || fullContent,
             toolCalls: response.toolCalls,
             reasoning: fullReasoning || undefined,
-            usage: lastUsage
+            usage: lastUsage,
+            messageId: aiMessageId
           });
         })
         .catch(reject);
@@ -210,9 +238,23 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
   }
 
   /**
+   * 更新 AI 消息的 toolCalls
+   */
+  private updateAssistantToolCalls(id: string, toolCalls: ToolCall[]): void {
+    const messages = this.state.conversation?.messages;
+    if (!messages) return;
+
+    const message = messages.find(m => m.id === id);
+    if (message && message.role === 'assistant') {
+      message.toolCalls = toolCalls;
+      this.emit('messageUpdate', { id, content: message.content, reasoning: message.reasoning });
+    }
+  }
+
+  /**
    * Action 步骤：执行工具
    */
-  private async executeAction(toolCall: ToolCall): Promise<void> {
+  private async executeAction(toolCall: ToolCall, parentMessageId?: string): Promise<void> {
     const args = JSON.parse(toolCall.function.arguments || '{}');
 
     // 记录 Action 步骤
@@ -230,8 +272,13 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
       args
     });
 
-    // 添加 AI 消息（包含工具调用）
-    this.addAssistantMessage('', [toolCall]);
+    // 如果有父消息ID，更新父消息的 toolCalls
+    if (parentMessageId) {
+      this.updateAssistantToolCalls(parentMessageId, [toolCall]);
+    } else {
+      // 否则添加新的 AI 消息（包含工具调用）
+      this.addAssistantMessage('', [toolCall]);
+    }
 
     try {
       // 执行工具调用
@@ -280,7 +327,7 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
   /**
    * 完成对话
    */
-  private finalize(answer: string): void {
+  private finalize(answer: string, messageId?: string): void {
     // 记录 Answer 步骤
     const answerStep: ReActStep = {
       type: 'answer',
@@ -289,11 +336,15 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
     };
     this.addStep(answerStep);
 
-    // 更新最后一条 AI 消息
-    const lastMessage = this.state.conversation?.messages[this.state.conversation.messages.length - 1];
-    if (lastMessage && lastMessage.role === 'assistant') {
-      lastMessage.content = answer;
-      lastMessage.loading = false;
+    // 更新指定的 AI 消息或最后一条 AI 消息
+    if (messageId) {
+      this.updateAssistantMessage(messageId, answer);
+    } else {
+      const lastMessage = this.state.conversation?.messages[this.state.conversation.messages.length - 1];
+      if (lastMessage && lastMessage.role === 'assistant') {
+        lastMessage.content = answer;
+        lastMessage.loading = false;
+      }
     }
 
     // 触发完成事件
@@ -328,21 +379,41 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
   }
 
   /**
+   * 更新 AI 消息内容
+   */
+  private updateAssistantMessage(id: string, content: string, reasoning?: string): void {
+    const messages = this.state.conversation?.messages;
+    if (!messages) return;
+
+    const message = messages.find(m => m.id === id);
+    if (message && message.role === 'assistant') {
+      message.content = content;
+      message.reasoning = reasoning;
+      message.loading = false;
+      // 触发消息更新事件，通知外部刷新
+      this.emit('messageUpdate', { id, content, reasoning });
+    }
+  }
+
+  /**
    * 添加 AI 消息
    */
-  private addAssistantMessage(content: string, toolCalls?: ToolCall[]): void {
+  private addAssistantMessage(content: string, toolCalls?: ToolCall[], loading = false): ChatMessage {
     const message: ChatMessage = {
-      id: `msg-${Date.now()}-ai`,
+      id: `msg-${Date.now()}-ai-${Math.random().toString(36).substr(2, 9)}`,
       role: 'assistant',
       content,
       timestamp: Date.now(),
       toolCalls,
-      loading: !content
+      loading
     };
     this.state.conversation?.messages.push(message);
     if (this.state.conversation) {
       this.state.conversation.updatedAt = Date.now();
     }
+    // 触发消息添加事件
+    this.emit('messageAdd', { message });
+    return message;
   }
 
   /**

@@ -483,10 +483,29 @@ export const useAIStore = defineStore('ai', () => {
           maxIterations: 5
         },
         onStreamUpdate: (content) => {
+          // 强制触发 Vue 响应式更新
+          if (currentConversation.value) {
+            currentConversation.value = { ...currentConversation.value };
+          }
           debouncedSaveConversation();
         },
         onStepComplete: (step) => {
           reactSteps.value.push(step);
+        }
+      });
+
+      // 监听消息添加和更新事件
+      currentAgent.on('messageAdd', () => {
+        // 强制触发响应式更新
+        if (currentConversation.value) {
+          currentConversation.value = { ...currentConversation.value };
+        }
+      });
+
+      currentAgent.on('messageUpdate', () => {
+        // 强制触发响应式更新
+        if (currentConversation.value) {
+          currentConversation.value = { ...currentConversation.value };
         }
       });
 
