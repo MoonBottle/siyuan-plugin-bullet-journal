@@ -243,16 +243,16 @@ const autoSaveConfig = () => {
 
 // 初始化数据
 onMounted(async () => {
-  // 初始化存储服务
+  // 初始化存储服务（内部已加载对话列表）
   await aiStore.initializeStorage(plugin);
   
-  // 加载对话列表
+  // 加载对话列表（initializeStorage 已加载，但为保险起见再次刷新）
   await refreshConversationsList();
 
   // 如果没有对话，创建一个默认对话
   if (conversationsList.value.length === 0) {
     await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-    await refreshConversationsList();
+    // createConversation 内部已刷新对话列表
   }
 
   // 从插件加载设置

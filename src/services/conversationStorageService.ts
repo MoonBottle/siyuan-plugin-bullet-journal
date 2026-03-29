@@ -281,20 +281,11 @@ export class ConversationStorageService {
       updatedAt: now
     };
 
-    // 保存会话
+    // 保存会话（saveConversation 内部已更新索引）
     await this.saveConversation(conversation);
 
-    // 更新索引
+    // 设置当前会话 ID
     const index = await this.loadIndex();
-    index.conversations.unshift({
-      id: conversation.id,
-      title: conversation.title,
-      createdAt: conversation.createdAt,
-      updatedAt: conversation.updatedAt,
-      messageCount: 0,
-      fileSize: JSON.stringify(conversation).length,
-      hasSkillExecutions: false
-    });
     index.currentConversationId = conversation.id;
     await this.saveIndex(index);
 
@@ -332,21 +323,27 @@ export class ConversationStorageService {
   }
 
   /**
-   * 切换当前会话
+   * 设置当前会话（仅更新索引，不加载数据）
    */
-  async switchConversation(conversationId: string): Promise<ConversationData | null> {
+  async setCurrentConversation(conversationId: string): Promise<void> {
     const index = await this.loadIndex();
     
     // 检查会话是否存在
     const exists = index.conversations.some(c => c.id === conversationId);
     if (!exists) {
-      return null;
+      return;
     }
 
     // 更新当前会话ID
     index.currentConversationId = conversationId;
     await this.saveIndex(index);
+  }
 
+  /**
+   * 切换当前会话
+   */
+  async switchConversation(conversationId: string): Promise<ConversationData | null> {
+    await this.setCurrentConversation(conversationId);
     // 加载会话数据
     return this.loadConversation(conversationId);
   }
