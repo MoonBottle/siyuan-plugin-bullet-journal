@@ -59,7 +59,7 @@ import { Menu, showMessage } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, useAIStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { useConversationStorage } from '@/services/conversationStorageService';
+import { useConversationStorage, type ConversationIndexItem } from '@/services/conversationStorageService';
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
@@ -71,8 +71,8 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const aiStore = useAIStore();
 
-// 对话列表（从存储服务获取）
-const conversationsList = ref<Array<{ id: string; title: string; updatedAt: number }>>([]);
+// 对话列表（从存储服务获取，仅元数据）
+const conversationsList = ref<ConversationIndexItem[]>([]);
 
 // 自动保存防抖定时器
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;

@@ -1,17 +1,17 @@
 /**
  * AI Store
- * 管理 AI 配置和对话状态（支持分会话存储和技能执行）
+ * 管理 AI 配置和对话状态（基于 ReAct Agent 架构）
  */
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import type { AIProviderConfig, ChatConversation, ChatMessage, ToolCall } from '@/types/ai';
-import { callAIWithToolsStream } from '@/services/aiService';
-import { bulletJournalTools } from '@/services/aiTools';
-import { executeToolCalls, type ToolExecutionContext } from '@/services/aiToolsExecutor';
-import { useSkillService } from '@/services/skillService';
+import { ref, computed, watch } from 'vue';
+import type { AIProviderConfig, ChatConversation } from '@/types/ai';
 import type { Project, ProjectGroup, Item } from '@/types/models';
 import type { SkillExecutionRecord } from '@/types/skill';
-import { useConversationStorage, type ConversationData } from '@/services/conversationStorageService';
+import { useConversationStorage, type ConversationData, type ConversationIndexItem } from '@/services/conversationStorageService';
+import { useSkillService } from '@/services/skillService';
+import { ReActAgent } from '@/agents/react/agent';
+import type { ReActStep } from '@/agents/react/types';
+import type { ToolExecutionContext } from '@/services/aiToolsExecutor';
 import dayjs from '@/utils/dayjs';
 
 const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -22,27 +22,166 @@ export interface AIStoreSettings {
   showToolCalls?: boolean;
 }
 
+/**
+ * 构建系统提示词
+ */
+function buildSystemPrompt(): string {
+  const now = dayjs();
+  const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`;
+
+  return `你是一位任务助手 AI，可以帮助用户管理任务、项目和番茄钟。
+
+**时间基准**：当前时间是 ${currentTimeStr}，所有涉及"今天""昨天""当前""最近"的日期计算，以此时间为准，历史对话中提到的时间均为当时的表述，不代表当前时间。
+
+你可以使用以下工具来获取信息：
+- list_groups: 列出项目分组
+- list_projects: 列出所有项目
+- filter_items: 筛选任务事项
+- get_pomodoro_stats: 获取番茄钟统计
+- get_pomodoro_records: 获取番茄钟记录
+- list_skills: 列出可用技能
+- get_skill_detail: 获取技能详情`;
+}
+
+/**
+ * 工具定义
+ */
+const tools = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'list_groups',
+      description: '查询任务助手中配置的所有分组。返回分组列表，每项含 id、name。id 可用于 filter_items 的 groupId 或 list_projects 的 groupId 参数进行过滤。无参数。',
+      parameters: { type: 'object' as const, properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'list_projects',
+      description: '查询任务助手中的所有项目。返回项目列表，每项含 id、name、description、path、groupId、taskCount。id 可用于 filter_items 的 projectId 或 projectIds 参数。可选 groupId 过滤，值来自 list_groups 返回的 id。',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          groupId: { type: 'string', description: '分组 ID，来自 list_groups 返回的 id，不传则返回全部项目' }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'filter_items',
+      description: '按项目、时间范围、分组、状态筛选任务事项。参数均为可选，可组合使用。projectId 与 projectIds 二选一；groupId 来自 list_groups；startDate/endDate 格式 YYYY-MM-DD；status 枚举：pending=待办、completed=已完成、abandoned=已放弃。返回的每个 item 含 pomodoros 字段（该事项的番茄钟记录，精简格式）。',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          projectId: { type: 'string', description: '项目文档 ID，来自 list_projects 返回的 id' },
+          projectIds: { type: 'array', items: { type: 'string' }, description: '项目 ID 数组，多选时使用' },
+          groupId: { type: 'string', description: '分组 ID，来自 list_groups 返回的 id' },
+          startDate: { type: 'string', description: '起始日期，格式 YYYY-MM-DD' },
+          endDate: { type: 'string', description: '结束日期，格式 YYYY-MM-DD' },
+          status: { type: 'string', enum: ['pending', 'completed', 'abandoned'], description: 'pending=待办, completed=已完成, abandoned=已放弃' }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_pomodoro_stats',
+      description: '获取番茄钟统计数据。参数：date（"today" 表示今日）、startDate/endDate（YYYY-MM-DD 日期范围）、projectId（可选，来自 list_projects）。返回今日/指定范围的番茄数、专注分钟数。',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          date: { type: 'string', enum: ['today'], description: '设为 "today" 时查询今日统计' },
+          startDate: { type: 'string', description: '起始日期，格式 YYYY-MM-DD' },
+          endDate: { type: 'string', description: '结束日期，格式 YYYY-MM-DD' },
+          projectId: { type: 'string', description: '项目 ID，来自 list_projects 返回的 id' }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_pomodoro_records',
+      description: '获取番茄钟记录列表。参数同 get_pomodoro_stats。返回番茄钟记录列表（时间、事项、时长等）。',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          date: { type: 'string', enum: ['today'], description: '设为 "today" 时查询今日记录' },
+          startDate: { type: 'string', description: '起始日期，格式 YYYY-MM-DD' },
+          endDate: { type: 'string', description: '结束日期，格式 YYYY-MM-DD' },
+          projectId: { type: 'string', description: '项目 ID，来自 list_projects 返回的 id' }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'list_skills',
+      description: '查询所有可用的 AI 技能清单。返回技能名称和描述列表。当用户需要执行特定任务（如生成日报、会议纪要等）时，先调用此工具查看有哪些技能可用。无参数。',
+      parameters: { type: 'object' as const, properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_skill_detail',
+      description: '获取指定技能的详细内容。当确定要使用某个技能时，调用此工具获取技能的完整工作流程、格式要求等详细说明。参数 skillName 为技能名称，来自 list_skills 返回的 name。',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          skillName: { type: 'string', description: '技能名称，来自 list_skills 返回的 name' }
+        },
+        required: ['skillName']
+      }
+    }
+  }
+];
+
 export const useAIStore = defineStore('ai', () => {
+  // ==================== State ====================
+  
   // 存储服务实例
   let storageService: ReturnType<typeof useConversationStorage> | null = null;
   
   // 防抖保存相关
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
   let pendingSave = false;
-  const SAVE_DEBOUNCE_MS = 2000; // 2秒防抖
+  const SAVE_DEBOUNCE_MS = 2000;
 
-  // State - AI 配置
+  // AI 配置
   const providers = ref<AIProviderConfig[]>([]);
   const activeProviderId = ref<string | null>(null);
   const showToolCalls = ref<boolean>(true);
 
-  // State - 当前会话数据（分会话存储）
+  // 会话状态
   const currentConversation = ref<ConversationData | null>(null);
-  const conversationsList = ref<ConversationData[]>([]);
+  // 会话列表（仅元数据，用于 UI 展示）
+  const conversationsList = ref<ConversationIndexItem[]>([]);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  
+  // ReAct Agent 相关
+  const reactSteps = ref<ReActStep[]>([]);
+  let currentAgent: ReActAgent | null = null;
 
-  // Getters
+  // 工具上下文
+  const toolContext = ref<ToolExecutionContext>({
+    groups: [],
+    projects: [],
+    allItems: []
+  });
+
+  // ==================== Getters ====================
+  
   const activeProvider = computed(() => {
     return providers.value.find(p => p.id === activeProviderId.value) || null;
   });
@@ -66,22 +205,21 @@ export const useAIStore = defineStore('ai', () => {
 
   const showToolCallsEnabled = computed(() => showToolCalls.value);
 
+  // ==================== 存储管理 ====================
+  
   /**
    * 初始化存储服务
    */
   async function initializeStorage(plugin: any) {
     storageService = useConversationStorage(plugin);
 
-    // 执行数据迁移
     const migrationResult = await storageService.initialize();
     if (migrationResult.migrated) {
       console.log(`[AIStore] Migrated ${migrationResult.conversationCount} conversations`);
     }
 
-    // 加载所有会话列表
     await refreshConversationsList();
 
-    // 加载当前会话
     const index = await storageService.getIndex();
     if (index.currentConversationId) {
       currentConversation.value = await storageService.loadConversation(
@@ -92,14 +230,12 @@ export const useAIStore = defineStore('ai', () => {
 
   /**
    * 防抖保存会话
-   * 用于流式响应期间减少文件操作
    */
   function debouncedSaveConversation(immediate = false) {
     if (!storageService || !currentConversation.value) return;
     
     pendingSave = true;
     
-    // 立即保存
     if (immediate) {
       if (saveTimeout) {
         clearTimeout(saveTimeout);
@@ -110,7 +246,6 @@ export const useAIStore = defineStore('ai', () => {
       return;
     }
     
-    // 防抖保存
     if (saveTimeout) {
       clearTimeout(saveTimeout);
     }
@@ -125,7 +260,7 @@ export const useAIStore = defineStore('ai', () => {
   }
   
   /**
-   * 强制保存当前会话（用于关键节点）
+   * 强制保存当前会话
    */
   async function forceSaveConversation() {
     if (!storageService || !currentConversation.value) return;
@@ -140,26 +275,23 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   /**
-   * 刷新会话列表
+   * 刷新会话列表（仅加载元数据，不加载完整会话）
    */
   async function refreshConversationsList() {
     if (!storageService) return;
-    conversationsList.value = await storageService.loadAllConversations();
+    conversationsList.value = await storageService.loadConversationsList();
   }
 
   /**
-   * 获取会话列表（供外部使用）
+   * 获取会话列表（仅元数据）
    */
-  async function getConversationsList(): Promise<ConversationData[]> {
+  async function getConversationsList(): Promise<ConversationIndexItem[]> {
     if (!storageService) return [];
-    return await storageService.loadAllConversations();
+    return await storageService.loadConversationsList();
   }
 
-  // Actions
-
-  /**
-   * 从插件设置加载 AI 配置
-   */
+  // ==================== 配置管理 ====================
+  
   function loadSettings(settings: Partial<AIStoreSettings>) {
     if (settings.providers) {
       providers.value = settings.providers;
@@ -170,7 +302,7 @@ export const useAIStore = defineStore('ai', () => {
     if (settings.showToolCalls !== undefined) {
       showToolCalls.value = settings.showToolCalls;
     }
-    // 若当前选中的供应商已被禁用，则切换到第一个已启用的供应商
+    
     const enabled = providers.value.filter(p => p.enabled);
     if (activeProviderId.value) {
       const isActiveEnabled = enabled.some(p => p.id === activeProviderId.value);
@@ -180,38 +312,24 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
-  /**
-   * 加载聊天记录（兼容旧格式）
-   */
   function loadChatHistory(chatHistory: { conversations: ChatConversation[]; currentConversationId: string | null }) {
-    // 分会话存储模式下，聊天记录通过 storageService 管理
     console.log('[AIStore] loadChatHistory called (ignored in split storage mode)');
   }
 
-  /**
-   * 设置供应商列表
-   */
   function setProviders(newProviders: AIProviderConfig[]) {
     providers.value = newProviders;
   }
 
-  /**
-   * 设置当前供应商
-   */
   function setActiveProvider(providerId: string | null) {
     activeProviderId.value = providerId;
   }
 
-  /**
-   * 设置是否显示工具调用详情
-   */
   function setShowToolCalls(value: boolean) {
     showToolCalls.value = value;
   }
 
-  /**
-   * 创建新对话
-   */
+  // ==================== 会话管理 ====================
+  
   async function createConversation(title = '新对话'): Promise<string> {
     if (!storageService) {
       throw new Error('存储服务未初始化');
@@ -223,9 +341,6 @@ export const useAIStore = defineStore('ai', () => {
     return conversation.id;
   }
 
-  /**
-   * 切换当前对话
-   */
   async function switchConversation(conversationId: string) {
     if (!storageService) return;
 
@@ -236,24 +351,17 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
-  /**
-   * 删除对话
-   */
   async function deleteConversation(conversationId: string) {
     if (!storageService) return;
 
     await storageService.deleteConversation(conversationId);
     await refreshConversationsList();
 
-    // 如果删除的是当前对话，清空当前会话
     if (currentConversation.value?.id === conversationId) {
       currentConversation.value = null;
     }
   }
 
-  /**
-   * 清空当前对话的消息
-   */
   async function clearCurrentConversation() {
     if (!storageService || !currentConversation.value) return;
 
@@ -262,17 +370,24 @@ export const useAIStore = defineStore('ai', () => {
     await storageService.saveConversation(currentConversation.value);
   }
 
+  // ==================== ReAct Agent 核心 ====================
+  
+  /**
+   * 设置工具执行上下文
+   */
+  function setToolContext(groups: ProjectGroup[], projects: Project[], allItems: Item[]) {
+    toolContext.value = { groups, projects, allItems };
+    currentAgent?.setToolContext(toolContext.value);
+  }
+
   /**
    * 检测是否需要执行技能
    */
-  async function detectSkillToExecute(
-    content: string,
-    skillService: ReturnType<typeof useSkillService>
-  ): Promise<{ name: string; content: string } | null> {
+  async function detectSkillToExecute(content: string): Promise<{ name: string; content: string } | null> {
+    const skillService = useSkillService();
     const enabledSkills = skillService.getEnabledSkills();
     if (enabledSkills.length === 0) return null;
 
-    // 关键词匹配（简单实现）
     const contentLower = content.toLowerCase();
     for (const skill of enabledSkills) {
       const keywords = skill.name.toLowerCase().split(/\s+/);
@@ -292,12 +407,10 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   /**
-   * 发送消息
+   * 发送消息（基于 ReAct Agent）
    */
-  async function sendMessage(
-    content: string,
-    options?: { skillName?: string }
-  ): Promise<void> {
+  async function sendMessage(content: string, options?: { skillName?: string }): Promise<void> {
+    // 前置检查
     if (!isAIEnabled.value) {
       error.value = 'AI 服务未配置或未启用';
       return;
@@ -314,206 +427,74 @@ export const useAIStore = defineStore('ai', () => {
       return;
     }
 
-    // 如果没有当前会话，创建新会话
+    // 确保有当前会话
     if (!currentConversation.value) {
       await createConversation();
     }
 
     const conversation = currentConversation.value!;
 
-    // 添加用户消息
-    const userMessage: ChatMessage = {
-      id: `msg-${Date.now()}-user`,
-      role: 'user',
-      content,
-      timestamp: Date.now()
-    };
-    conversation.messages.push(userMessage);
-    conversation.updatedAt = Date.now();
-
-    // 保存用户消息（防抖，延迟保存）
-    debouncedSaveConversation();
-
-    isLoading.value = true;
-    error.value = null;
-
-    // 自动检测是否需要执行技能
+    // 检测技能
     let skillToExecute: { name: string; content: string } | null = null;
     if (!options?.skillName) {
-      // 如果没有指定技能，自动检测
-      const skillService = useSkillService();
-      skillToExecute = await detectSkillToExecute(content, skillService);
+      skillToExecute = await detectSkillToExecute(content);
+    }
+    const executingSkillName = options?.skillName || skillToExecute?.name;
+
+    // 构建系统提示词
+    let systemPrompt = buildSystemPrompt();
+    if (executingSkillName && skillToExecute) {
+      systemPrompt += `\n\n当前正在执行技能 "${executingSkillName}"，请按照以下技能内容处理用户请求：\n\n${skillToExecute.content}`;
     }
 
-    // 如果有技能执行，记录开始
+    // 准备技能执行记录
     let skillExecution: SkillExecutionRecord | null = null;
-    const executingSkillName = options?.skillName || skillToExecute?.name;
     if (executingSkillName) {
       skillExecution = {
         id: `exec-${Date.now()}`,
         skillId: executingSkillName,
         skillName: executingSkillName,
         conversationId: conversation.id,
-        messageId: userMessage.id,
+        messageId: `msg-${Date.now()}-user`,
         input: content,
         output: '',
         status: 'running',
         startedAt: Date.now()
       };
-
       if (!conversation.skillExecutions) {
         conversation.skillExecutions = [];
       }
       conversation.skillExecutions.push(skillExecution);
     }
 
+    // 设置状态
+    isLoading.value = true;
+    error.value = null;
+    reactSteps.value = [];
+
     try {
-      // 获取当前时间
-      const now = dayjs();
-      const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`;
-
-      // 准备系统提示词
-      let systemPrompt = `你是一位任务助手 AI，可以帮助用户管理任务、项目和番茄钟。\n\n**时间基准**：当前时间是 ${currentTimeStr}，所有涉及"今天""昨天""当前""最近"的日期计算，以此时间为准，历史对话中提到的时间均为当时的表述，不代表当前时间。\n\n你可以使用以下工具来获取信息：\n- list_groups: 列出项目分组\n- list_projects: 列出所有项目\n- filter_items: 筛选任务事项\n- get_pomodoro_stats: 获取番茄钟统计\n- get_pomodoro_records: 获取番茄钟记录\n- list_skills: 列出可用技能\n- get_skill_detail: 获取技能详情`;
-
-      // 如果有技能执行，添加技能内容到系统提示词
-      if (executingSkillName && skillToExecute) {
-        systemPrompt += `\n\n当前正在执行技能 "${executingSkillName}"，请按照以下技能内容处理用户请求：\n\n${skillToExecute.content}`;
-      }
-
-      const messages: ChatMessage[] = [
-        {
-          id: 'system',
-          role: 'system',
-          content: systemPrompt,
-          timestamp: Date.now()
+      // 创建 ReAct Agent
+      currentAgent = new ReActAgent({
+        context: {
+          conversationId: conversation.id,
+          provider,
+          systemPrompt,
+          tools,
+          maxIterations: 5
         },
-        ...conversation.messages
-      ];
-
-      // 创建 AI 回复消息占位
-      const aiMessage: ChatMessage = {
-        id: `msg-${Date.now()}-ai`,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        loading: true
-      };
-      conversation.messages.push(aiMessage);
-      let lastAIMessageId = aiMessage.id;
-
-      // 准备工具执行上下文
-      const toolContext: ToolExecutionContext = {
-        groups: [],
-        projects: [],
-        allItems: []
-      };
-
-      // 调用 AI
-      const firstResponse = await callAIWithToolsStream(provider, messages, bulletJournalTools, (chunk, reasoning, usage) => {
-        const messageIndex = conversation.messages.findIndex(m => m.id === lastAIMessageId);
-        if (messageIndex !== -1) {
-          conversation.messages[messageIndex].content = chunk;
-          if (reasoning) {
-            conversation.messages[messageIndex].reasoning = reasoning;
-          }
-          if (usage) {
-            conversation.messages[messageIndex].usage = usage;
-          }
-          conversation.messages[messageIndex].loading = false;
+        onStreamUpdate: (content) => {
+          debouncedSaveConversation();
+        },
+        onStepComplete: (step) => {
+          reactSteps.value.push(step);
         }
-        conversation.updatedAt = Date.now();
-        // 防抖保存，减少文件操作
-        debouncedSaveConversation();
       });
 
-      // 如果 AI 返回工具调用
-      if (firstResponse.toolCalls && firstResponse.toolCalls.length > 0) {
-        // 记录工具调用
-        const messageIndex = conversation.messages.findIndex(m => m.id === lastAIMessageId);
-        if (messageIndex !== -1) {
-          conversation.messages[messageIndex].toolCalls = firstResponse.toolCalls;
-        }
+      // 设置工具上下文
+      currentAgent.setToolContext(toolContext.value);
 
-        // 执行工具调用
-        const toolResults = await executeToolCalls(firstResponse.toolCalls, toolContext);
-
-        // 添加工具结果消息
-        for (const result of toolResults) {
-          const toolResultMessage: ChatMessage = {
-            id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            role: 'tool',
-            content: result.result,
-            timestamp: Date.now(),
-            toolCallId: result.toolCallId
-          };
-          conversation.messages.push(toolResultMessage);
-        }
-
-        // 创建新的 AI 回复消息（用于下一轮）
-        const nextAIMessage: ChatMessage = {
-          id: `msg-${Date.now()}-ai-${Math.random().toString(36).substr(2, 9)}`,
-          role: 'assistant',
-          content: '',
-          timestamp: Date.now(),
-          loading: true
-        };
-        conversation.messages.push(nextAIMessage);
-        lastAIMessageId = nextAIMessage.id;
-
-        // 继续下一轮调用，让 AI 基于工具结果生成回复
-        const nextMessages: ChatMessage[] = [
-          {
-            id: 'system',
-            role: 'system',
-            content: systemPrompt,
-            timestamp: Date.now()
-          },
-          ...conversation.messages
-        ];
-
-        const finalResponse = await callAIWithToolsStream(provider, nextMessages, bulletJournalTools, (chunk, reasoning, usage) => {
-          const messageIndex = conversation.messages.findIndex(m => m.id === lastAIMessageId);
-          if (messageIndex !== -1) {
-            conversation.messages[messageIndex].content = chunk;
-            if (reasoning) {
-              conversation.messages[messageIndex].reasoning = reasoning;
-            }
-            if (usage) {
-              conversation.messages[messageIndex].usage = usage;
-            }
-            conversation.messages[messageIndex].loading = false;
-          }
-          conversation.updatedAt = Date.now();
-          // 防抖保存，减少文件操作
-          debouncedSaveConversation();
-        });
-
-        // 如果还有工具调用，继续执行（这里简化处理，最多两轮）
-        if (finalResponse.toolCalls && finalResponse.toolCalls.length > 0) {
-          const toolCallMessage: ChatMessage = {
-            id: `msg-${Date.now()}-tool`,
-            role: 'assistant',
-            content: '',
-            toolCalls: finalResponse.toolCalls,
-            timestamp: Date.now()
-          };
-          conversation.messages.push(toolCallMessage);
-
-          // 执行工具调用
-          const toolResults = await executeToolCalls(finalResponse.toolCalls, toolContext);
-
-          for (const result of toolResults) {
-            const toolResultMessage: ChatMessage = {
-              id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              role: 'tool',
-              content: result.result,
-              timestamp: Date.now(),
-              toolCallId: result.toolCallId
-            };
-            conversation.messages.push(toolResultMessage);
-          }
-        }
-      }
+      // 运行 Agent
+      await currentAgent.run(content, conversation);
 
       // 更新技能执行记录
       if (skillExecution) {
@@ -525,7 +506,7 @@ export const useAIStore = defineStore('ai', () => {
         }
       }
 
-      // 保存完整对话（强制立即保存）
+      // 强制保存
       await forceSaveConversation();
       await refreshConversationsList();
 
@@ -540,18 +521,15 @@ export const useAIStore = defineStore('ai', () => {
         skillExecution.output = error.value;
       }
 
-      // 保存到存储（强制立即保存）
-      if (storageService && currentConversation.value) {
-        await forceSaveConversation();
-      }
+      // 保存错误状态
+      await forceSaveConversation();
     } finally {
       isLoading.value = false;
     }
   }
 
-  /**
-   * 获取导出数据（供插件保存设置）
-   */
+  // ==================== 导出数据 ====================
+  
   function getExportData(): AIStoreSettings {
     return {
       providers: providers.value,
@@ -560,17 +538,15 @@ export const useAIStore = defineStore('ai', () => {
     };
   }
 
-  /**
-   * 获取聊天记录数据（兼容旧格式）
-   */
   function getChatHistoryData() {
-    // 分会话存储模式下，返回空数据（实际存储在独立文件中）
     return {
       conversations: [],
       currentConversationId: null
     };
   }
 
+  // ==================== Return ====================
+  
   return {
     // State
     providers,
@@ -580,6 +556,8 @@ export const useAIStore = defineStore('ai', () => {
     isLoading,
     error,
     showToolCalls,
+    reactSteps,
+    
     // Getters
     activeProvider,
     currentConversation,
@@ -587,6 +565,7 @@ export const useAIStore = defineStore('ai', () => {
     isAIEnabled,
     enabledProviders,
     showToolCallsEnabled,
+    
     // Actions
     loadSettings,
     loadChatHistory,
@@ -601,6 +580,7 @@ export const useAIStore = defineStore('ai', () => {
     deleteConversation,
     clearCurrentConversation,
     sendMessage,
+    setToolContext,
     getExportData,
     getChatHistoryData
   };

@@ -222,8 +222,8 @@ export class ConversationStorageService {
       const data = await this.plugin.loadData(filePath);
       
       if (data) {
-        // 更新索引中的访问统计
-        this.updateConversationStats(conversationId, data);
+        // 更新内存缓存
+        this.memoryCache.set(conversationId, data);
         return data;
       }
     } catch (error) {
@@ -536,7 +536,18 @@ export class ConversationStorageService {
   }
 
   /**
+   * 加载会话列表（仅元数据，不加载完整会话内容）
+   * 用于 UI 列表展示，避免页面加载时大量文件读取
+   */
+  async loadConversationsList(): Promise<ConversationIndexItem[]> {
+    const index = await this.loadIndex();
+    // 直接返回索引中的元数据，不读取完整会话文件
+    return [...index.conversations].sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  /**
    * 加载所有会话（用于 UI 列表展示）
+   * @deprecated 使用 loadConversationsList 获取轻量级列表，需要时再 loadConversation 加载完整数据
    */
   async loadAllConversations(): Promise<ConversationData[]> {
     const index = await this.loadIndex();

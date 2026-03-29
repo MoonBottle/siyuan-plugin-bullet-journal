@@ -48,10 +48,14 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
 import { t } from '@/i18n';
-import type { ChatConversation } from '@/types/ai';
+
+interface ConversationListItem {
+  id: string;
+  title: string;
+}
 
 interface Props {
-  conversations: ChatConversation[];
+  conversations: ConversationListItem[];
   currentConversationId: string | null;
 }
 
