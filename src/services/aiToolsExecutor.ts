@@ -18,8 +18,6 @@ import type { ToolName } from './aiTools';
 import { SkillService } from './skillService';
 import type { SkillConfig } from '@/types/skill';
 
-const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-
 /**
  * 筛选事项参数
  */
@@ -67,18 +65,6 @@ export interface ToolExecutionContext {
   groups: ProjectGroup[];
   projects: Project[];
   allItems: Item[];
-}
-
-/**
- * 执行 get_user_time 工具
- */
-function executeGetUserTime(): { date: string; datetime: string; weekday: string } {
-  const now = dayjs();
-  return {
-    date: now.format('YYYY-MM-DD'),
-    datetime: now.format('YYYY-MM-DD HH:mm:ss'),
-    weekday: WEEKDAY_ZH[now.day()]
-  };
 }
 
 /**
@@ -235,9 +221,6 @@ export async function executeTool(
   const toolName = toolCall.function.name as ToolName;
 
   switch (toolName) {
-    case 'get_user_time':
-      return JSON.stringify(executeGetUserTime());
-
     case 'list_groups':
       return JSON.stringify(executeListGroups(context));
 

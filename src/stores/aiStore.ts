@@ -12,6 +12,9 @@ import { useSkillService } from '@/services/skillService';
 import type { Project, ProjectGroup, Item } from '@/types/models';
 import type { SkillExecutionRecord } from '@/types/skill';
 import { useConversationStorage, type ConversationData } from '@/services/conversationStorageService';
+import dayjs from '@/utils/dayjs';
+
+const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
@@ -311,8 +314,12 @@ export const useAIStore = defineStore('ai', () => {
     }
 
     try {
+      // 获取当前时间
+      const now = dayjs();
+      const currentTimeStr = `${now.format('YYYY-MM-DD HH:mm:ss')} ${WEEKDAY_ZH[now.day()]}`;
+
       // 准备系统提示词
-      let systemPrompt = `你是一位任务助手 AI，可以帮助用户管理任务、项目和番茄钟。\n\n你可以使用以下工具来获取信息：\n- get_user_time: 获取当前时间\n- list_groups: 列出项目分组\n- list_projects: 列出所有项目\n- filter_items: 筛选任务事项\n- get_pomodoro_stats: 获取番茄钟统计\n- get_pomodoro_records: 获取番茄钟记录\n- list_skills: 列出可用技能\n- get_skill_detail: 获取技能详情`;
+      let systemPrompt = `你是一位任务助手 AI，可以帮助用户管理任务、项目和番茄钟。\n\n**时间基准**：当前时间是 ${currentTimeStr}，所有涉及"今天""昨天""当前""最近"的日期计算，以此时间为准，历史对话中提到的时间均为当时的表述，不代表当前时间。\n\n你可以使用以下工具来获取信息：\n- list_groups: 列出项目分组\n- list_projects: 列出所有项目\n- filter_items: 筛选任务事项\n- get_pomodoro_stats: 获取番茄钟统计\n- get_pomodoro_records: 获取番茄钟记录\n- list_skills: 列出可用技能\n- get_skill_detail: 获取技能详情`;
 
       // 如果有技能执行，添加技能内容到系统提示词
       if (executingSkillName && skillToExecute) {

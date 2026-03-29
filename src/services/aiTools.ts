@@ -5,22 +5,6 @@
 import type { ToolDefinition } from '@/types/ai';
 
 /**
- * 获取用户当前时间工具
- */
-export const getUserTimeTool: ToolDefinition = {
-  type: 'function',
-  function: {
-    name: 'get_user_time',
-    description: '获取用户当前的本地日期和时间。当用户询问「今天」「明天」「本周」等时间相关问题时，应优先调用此工具获取准确日期，再使用 filter_items 等工具查询数据。无参数。',
-    parameters: {
-      type: 'object',
-      properties: {},
-      required: []
-    }
-  }
-};
-
-/**
  * 查询分组列表工具
  */
 export const listGroupsTool: ToolDefinition = {
@@ -209,7 +193,6 @@ export const getSkillDetailTool: ToolDefinition = {
  * 所有可用的工具列表
  */
 export const bulletJournalTools: ToolDefinition[] = [
-  getUserTimeTool,
   listGroupsTool,
   listProjectsTool,
   filterItemsTool,
@@ -223,7 +206,6 @@ export const bulletJournalTools: ToolDefinition[] = [
  * 工具名称类型
  */
 export type ToolName =
-  | 'get_user_time'
   | 'list_groups'
   | 'list_projects'
   | 'filter_items'
