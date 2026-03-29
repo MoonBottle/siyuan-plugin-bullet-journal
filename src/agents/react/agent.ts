@@ -224,12 +224,17 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
             };
           }
 
-          // 如果有工具调用，更新消息的 toolCalls
+          // 如果有工具调用，更新消息的 toolCalls 并清除 content（工具调用不需要显示内容）
           if (response.toolCalls && response.toolCalls.length > 0) {
             this.updateAssistantToolCalls(aiMessageId, response.toolCalls);
+            // 清除"思考中..."占位，只保留 toolCalls
+            this.clearAssistantMessageContent(aiMessageId);
           } else if (!fullContent.includes('<tool_call>')) {
             // 没有工具调用，更新为最终内容
             this.updateAssistantMessage(aiMessageId, response.content || fullContent, fullReasoning);
+          } else {
+            // XML 格式的工具调用，也需要清除 content
+            this.clearAssistantMessageContent(aiMessageId);
           }
 
           resolve({
@@ -399,6 +404,22 @@ export class ReActAgent extends EventEmitter<AgentEvents> {
       message.loading = false;
       // 触发消息更新事件，通知外部刷新
       this.emit('messageUpdate', { id, content, reasoning });
+    }
+  }
+
+  /**
+   * 清除 AI 消息内容（用于工具调用后清除"思考中..."占位）
+   */
+  private clearAssistantMessageContent(id: string): void {
+    const messages = this.state.conversation?.messages;
+    if (!messages) return;
+
+    const message = messages.find(m => m.id === id);
+    if (message && message.role === 'assistant') {
+      message.content = '';
+      message.loading = false;
+      // 触发消息更新事件，通知外部刷新
+      this.emit('messageUpdate', { id, content: '', reasoning: message.reasoning });
     }
   }
 
