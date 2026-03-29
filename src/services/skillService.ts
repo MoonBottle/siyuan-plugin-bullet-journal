@@ -6,7 +6,7 @@
 import type { SkillConfig, ParsedSkill, SkillResolutionResult, SkillExecutionContext, SkillExecutionResult } from '@/types/skill';
 import { getBuiltinSkill, isBuiltinSkill, getAllBuiltinSkills } from '@/utils/skillTemplates';
 import { useSkillStore } from '@/stores/skillStore';
-import { getBlockKramdown, getBlockAttrs, createDocWithMd, sql, setBlockAttrs } from '@/api';
+import { getBlockAttrs, createDocWithMd, sql, setBlockAttrs, exportMdContent } from '@/api';
 import { showMessage } from 'siyuan';
 
 /**
@@ -242,7 +242,7 @@ export class SkillService {
   /**
    * 从文档获取技能信息（简化版）
    * 1. 从文档属性读取 name、description
-   * 2. 从文档内容读取技能详情
+   * 2. 从文档内容读取技能详情（使用 Markdown 格式）
    */
   private async parseSkillFromDoc(docId: string): Promise<ParsedSkill> {
     console.log('[SkillService] parseSkillFromDoc - docId:', docId);
@@ -251,11 +251,11 @@ export class SkillService {
     const attrs = await getBlockAttrs(docId);
     console.log('[SkillService] parseSkillFromDoc - 获取到属性:', attrs);
     
-    // 获取文档内容
-    const response = await getBlockKramdown(docId);
-    console.log('[SkillService] parseSkillFromDoc - 获取到内容长度:', response?.kramdown?.length || 0);
+    // 获取文档内容（使用 Markdown 格式导出）
+    const response = await exportMdContent(docId);
+    console.log('[SkillService] parseSkillFromDoc - 获取到内容长度:', response?.content?.length || 0);
     
-    if (!response?.kramdown) {
+    if (!response?.content) {
       throw new Error('无法获取文档内容');
     }
     
@@ -267,7 +267,7 @@ export class SkillService {
         author: attrs['custom-skill-author'],
         tags: []
       },
-      content: response.kramdown,
+      content: response.content,
       scripts: [],
       references: []
     };
