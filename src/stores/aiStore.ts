@@ -808,10 +808,6 @@ export const useAIStore = defineStore('ai', () => {
       return;
     }
     
-    // 先保存当前会话
-    const originalConvId = currentConversationId.value;
-    console.log('[AIStore] 原始会话ID:', originalConvId);
-    
     // 加载微信会话
     console.log('[AIStore] 加载微信会话:', conversationId);
     const conversation = await storageService.loadConversation(conversationId);
@@ -879,6 +875,10 @@ export const useAIStore = defineStore('ai', () => {
       await storageService.saveConversation(conversation);
       console.log('[AIStore] 会话保存成功');
       
+      // 更新当前会话为微信会话（直接切换，不恢复）
+      currentConversationId.value = conversationId;
+      currentConversation.value = conversation;
+      
       // 获取最后一条 AI 消息
       const lastMessage = conversation.messages[conversation.messages.length - 1];
       console.log('[AIStore] 最后一条消息详情:', { 
@@ -917,13 +917,6 @@ export const useAIStore = defineStore('ai', () => {
     } finally {
       console.log('[AIStore] generateAIReply FINALLY');
       isLoading.value = false;
-      
-      // 恢复原始会话
-      if (originalConvId && originalConvId !== conversationId) {
-        console.log('[AIStore] 恢复原始会话:', originalConvId);
-        const originalConv = await storageService.loadConversation(originalConvId);
-        currentConversation.value = originalConv;
-      }
       console.log('[AIStore] =======================================');
     }
   }
