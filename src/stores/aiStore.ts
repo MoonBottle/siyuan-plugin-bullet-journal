@@ -747,7 +747,7 @@ export const useAIStore = defineStore('ai', () => {
     // 查找现有的微信会话
     const conversations = await storageService.loadConversationsList();
     const existingConv = conversations.find(c => 
-      c.id.startsWith('wx-') && c.weixinUserId === ilinkUserId
+      c.source === 'weixin' && c.weixinUserId === ilinkUserId
     );
     
     if (existingConv) {
