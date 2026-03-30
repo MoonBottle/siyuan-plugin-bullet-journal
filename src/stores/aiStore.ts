@@ -511,41 +511,21 @@ export const useAIStore = defineStore('ai', () => {
     }
     
     if (content) {
-      // 添加用户消息到会话
-      const userMessage: ChatMessage = {
-        id: `wx-${Date.now()}-user`,
-        role: 'user',
-        content,
-        timestamp: msg.create_time_ms || Date.now()
-      };
+      // 更新未读计数
+      const current = unreadWeixinMessages.value[fromUserId] || 0;
+      unreadWeixinMessages.value[fromUserId] = current + 1;
+      clawBotStats.value.unreadCount = Object.values(unreadWeixinMessages.value)
+        .reduce((a, b) => a + b, 0);
       
-      const conversation = await storageService.loadConversation(conversationId);
-      if (conversation) {
-        conversation.messages.push(userMessage);
-        conversation.updatedAt = Date.now();
-        await storageService.saveConversation(conversation);
-        
-        // 更新未读计数
-        const current = unreadWeixinMessages.value[fromUserId] || 0;
-        unreadWeixinMessages.value[fromUserId] = current + 1;
-        clawBotStats.value.unreadCount = Object.values(unreadWeixinMessages.value)
-          .reduce((a, b) => a + b, 0);
-        
-        // 如果是当前会话，触发更新
-        if (currentConversationId.value === conversationId) {
-          currentConversation.value = conversation;
-        }
-        
-        // 刷新会话列表
-        await refreshConversationsList();
-        
-        // 调用 AI 回复（如果 AI 已启用）
-        if (isAIEnabled.value) {
-          console.log('[AIStore] AI 已启用，开始生成回复');
-          await generateAIReply(conversationId, content, fromUserId, contextToken);
-        } else {
-          console.log('[AIStore] AI 未启用，跳过回复');
-        }
+      // 刷新会话列表
+      await refreshConversationsList();
+      
+      // 调用 AI 回复（消息添加由 ReActAgent 统一处理）
+      if (isAIEnabled.value) {
+        console.log('[AIStore] AI 已启用，开始生成回复');
+        await generateAIReply(conversationId, content, fromUserId, contextToken);
+      } else {
+        console.log('[AIStore] AI 未启用，跳过回复');
       }
     }
   }
@@ -693,11 +673,12 @@ export const useAIStore = defineStore('ai', () => {
           handleWeixinMessage(msg);
         });
         
-        // 保存所有配置到单独文件
+        // 启用并保存所有配置到单独文件
         console.log('[AIStore] 保存微信配置到单独文件');
+        clawBotConfig.value.enabled = true; // 登录成功后自动启用
         if (plugin?.saveWechatLoginState) {
           await plugin.saveWechatLoginState({
-            enabled: clawBotConfig.value.enabled,
+            enabled: true,
             token: clawBotConfig.value.token!,
             accountId: clawBotConfig.value.accountId!,
             userId: clawBotConfig.value.userId,
