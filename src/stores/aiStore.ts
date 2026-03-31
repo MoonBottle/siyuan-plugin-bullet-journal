@@ -823,9 +823,6 @@ export const useAIStore = defineStore('ai', () => {
     console.log('[AIStore] 会话加载成功, 消息数:', conversation.messages.length);
     console.log('[AIStore] 会话消息:', conversation.messages.map(m => ({ role: m.role, content: m.content?.slice(0, 50), hasToolCalls: !!m.toolCalls })));
     
-    // 临时设置为当前会话
-    currentConversation.value = conversation;
-    
     // 从 Store 获取数据并更新工具上下文
     try {
       const projectStore = useProjectStore();
@@ -898,14 +895,36 @@ export const useAIStore = defineStore('ai', () => {
       console.log('[AIStore] 运行后消息数:', conversation.messages.length);
       console.log('[AIStore] 运行后消息:', conversation.messages.map(m => ({ role: m.role, content: m.content?.slice(0, 50), hasToolCalls: !!m.toolCalls, toolCallId: m.toolCallId })));
       
-      // 保存会话
-      console.log('[AIStore] 保存会话...');
+      // 保存会话前检查消息
+      console.log('[AIStore] 保存会话前，消息数:', conversation.messages.length);
+      console.log('[AIStore] 消息列表:', conversation.messages.map(m => ({ role: m.role, id: m.id?.slice(0,10), content: m.content?.slice(0,20) })));
+      
       await storageService.saveConversation(conversation);
       console.log('[AIStore] 会话保存成功');
       
-      // 更新当前会话为微信会话（直接切换，不恢复）
-      currentConversationId.value = conversationId;
-      currentConversation.value = conversation;
+      // 如果用户当前正在查看该微信会话，则更新 UI
+      console.log('[AIStore] 检查是否需要更新 UI:', { 
+        currentConversationId: currentConversationId.value, 
+        conversationId,
+        isMatch: currentConversationId.value === conversationId 
+      });
+      if (currentConversationId.value === conversationId) {
+        console.log('[AIStore] 用户正在查看当前微信会话，强制刷新 UI');
+        // 强制触发响应式更新：先设为 null，再设为刷新后的会话
+        const refreshedConv = await storageService!.loadConversation(conversationId);
+        if (refreshedConv) {
+          console.log('[AIStore] 强制触发响应式更新，消息数:', refreshedConv.messages.length);
+          currentConversation.value = null as any;
+          await new Promise(r => setTimeout(r, 10));
+          currentConversation.value = refreshedConv;
+          console.log('[AIStore] currentConversation 已强制更新');
+        }
+      } else {
+        console.log('[AIStore] 用户未查看当前微信会话，跳过 UI 更新');
+      }
+      
+      // 刷新会话列表
+      await refreshConversationsList();
       
       // 获取最后一条 AI 消息
       const lastMessage = conversation.messages[conversation.messages.length - 1];
