@@ -45,6 +45,9 @@
           <p class="weixin-login-dialog__qrcode-hint">
             如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
           </p>
+          <!-- <div class="weixin-login-dialog__qrcode-fallback">
+            <a :href="qrcodeUrl" target="_blank" class="weixin-login-dialog__qrcode-link">在新窗口打开二维码</a>
+          </div> -->
         </div>
 
         <!-- 已连接状态 -->
@@ -129,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAIStore } from '@/stores';
 
 const emit = defineEmits<{
@@ -147,56 +150,7 @@ const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
 const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
 const errorMessage = computed(() => aiStore.clawBotConfig.errorMessage);
-const qrCodeLoadError = ref(false);
 const accountId = computed(() => aiStore.clawBotConfig.accountId);
-
-// 用于显示二维码的 blob URL（解决跨域问题）
-const qrcodeBlobUrl = ref('');
-
-// 加载二维码图片为 blob URL
-async function loadQRCodeImage(url: string) {
-  if (!url) {
-    qrcodeBlobUrl.value = '';
-    return;
-  }
-  try {
-    console.log('[WeixinLoginDialog] 加载二维码图片:', url);
-    qrCodeLoadError.value = false;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'image/*,*/*'
-      }
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    qrcodeBlobUrl.value = blobUrl;
-    console.log('[WeixinLoginDialog] 二维码 blob URL 创建成功');
-  } catch (error) {
-    console.error('[WeixinLoginDialog] 加载二维码图片失败:', error);
-    qrCodeLoadError.value = true;
-    qrcodeBlobUrl.value = '';
-  }
-}
-
-// 监听二维码 URL 变化
-watch(qrcodeUrl, (newUrl) => {
-  if (newUrl) {
-    loadQRCodeImage(newUrl);
-  } else {
-    qrcodeBlobUrl.value = '';
-  }
-}, { immediate: true });
-
-// 清理 blob URL
-onUnmounted(() => {
-  if (qrcodeBlobUrl.value) {
-    URL.revokeObjectURL(qrcodeBlobUrl.value);
-  }
-});
 
 const statusText = computed(() => {
   switch (loginStatus.value) {
@@ -248,7 +202,6 @@ const connectedUsers = computed(() => {
 // 开始登录
 async function handleStartLogin() {
   isLoading.value = true;
-  qrCodeLoadError.value = false;
   try {
     const result = await aiStore.startClawBotLogin();
     if (result) {
@@ -262,10 +215,11 @@ async function handleStartLogin() {
 
 // 刷新二维码
 async function handleRefreshQR() {
-  qrCodeLoadError.value = false;
   stopPolling();
   await handleStartLogin();
 }
+
+
 
 // 检查状态（手动触发）
 async function handleCheckStatus() {
@@ -319,12 +273,6 @@ function stopPolling() {
     clearInterval(pollInterval.value);
     pollInterval.value = null;
   }
-}
-
-// 二维码加载失败
-function handleQRCodeError() {
-  console.error('[WeixinLoginDialog] 二维码图片加载失败，URL:', qrcodeUrl.value);
-  qrCodeLoadError.value = true;
 }
 
 onMounted(() => {
@@ -472,13 +420,6 @@ onUnmounted(() => {
     text-align: center;
     margin-bottom: 20px;
 
-    img {
-      width: 200px;
-      height: 200px;
-      border: 1px solid var(--b3-theme-surface-lighter);
-      border-radius: 8px;
-    }
-
     &-wrapper {
       width: 250px;
       height: 250px;
@@ -504,31 +445,26 @@ onUnmounted(() => {
       font-size: 13px;
       color: var(--b3-theme-on-surface-light);
     }
-  }
 
-  &__qrcode-fallback {
-    padding: 20px;
-    background: var(--b3-theme-surface);
-    border-radius: 8px;
-    border: 1px dashed var(--b3-theme-surface-lighter);
-
-    p {
-      margin: 0 0 12px;
-      color: var(--b3-theme-on-surface-light);
+    &-fallback {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--b3-theme-surface);
+      border-radius: 6px;
     }
-  }
 
-  &__qrcode-link {
-    display: inline-block;
-    padding: 8px 16px;
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 13px;
+    &-link {
+      display: inline-block;
+      padding: 8px 16px;
+      background: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
 
-    &:hover {
-      background: var(--b3-theme-primary-light);
+      &:hover {
+        background: var(--b3-theme-primary-light);
+      }
     }
   }
 
