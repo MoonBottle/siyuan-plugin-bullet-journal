@@ -34,25 +34,17 @@
 
         <!-- 二维码区域 -->
         <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-login-dialog__qrcode">
-          <div v-if="qrCodeLoadError" class="weixin-login-dialog__qrcode-fallback">
-            <p>二维码图片加载失败</p>
-            <a :href="qrcodeUrl" target="_blank" class="weixin-login-dialog__qrcode-link">
-              点击此处在新窗口打开二维码
-            </a>
-          </div>
-          <template v-else>
-            <img 
+          <div class="weixin-login-dialog__qrcode-wrapper">
+            <iframe 
               :src="qrcodeUrl" 
-              alt="微信登录二维码"
-              crossorigin="anonymous"
-              referrerpolicy="no-referrer"
-              @error="handleQRCodeError"
-            />
-            <p>请使用微信扫描二维码</p>
-            <p class="weixin-login-dialog__qrcode-hint">
-              如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
-            </p>
-          </template>
+              sandbox="allow-same-origin allow-scripts"
+              scrolling="no"
+            ></iframe>
+          </div>
+          <p>请使用微信扫描上方二维码</p>
+          <p class="weixin-login-dialog__qrcode-hint">
+            如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
+          </p>
         </div>
 
         <!-- 已连接状态 -->
@@ -137,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAIStore } from '@/stores';
 
 const emit = defineEmits<{
@@ -157,6 +149,54 @@ const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
 const errorMessage = computed(() => aiStore.clawBotConfig.errorMessage);
 const qrCodeLoadError = ref(false);
 const accountId = computed(() => aiStore.clawBotConfig.accountId);
+
+// 用于显示二维码的 blob URL（解决跨域问题）
+const qrcodeBlobUrl = ref('');
+
+// 加载二维码图片为 blob URL
+async function loadQRCodeImage(url: string) {
+  if (!url) {
+    qrcodeBlobUrl.value = '';
+    return;
+  }
+  try {
+    console.log('[WeixinLoginDialog] 加载二维码图片:', url);
+    qrCodeLoadError.value = false;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'image/*,*/*'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    qrcodeBlobUrl.value = blobUrl;
+    console.log('[WeixinLoginDialog] 二维码 blob URL 创建成功');
+  } catch (error) {
+    console.error('[WeixinLoginDialog] 加载二维码图片失败:', error);
+    qrCodeLoadError.value = true;
+    qrcodeBlobUrl.value = '';
+  }
+}
+
+// 监听二维码 URL 变化
+watch(qrcodeUrl, (newUrl) => {
+  if (newUrl) {
+    loadQRCodeImage(newUrl);
+  } else {
+    qrcodeBlobUrl.value = '';
+  }
+}, { immediate: true });
+
+// 清理 blob URL
+onUnmounted(() => {
+  if (qrcodeBlobUrl.value) {
+    URL.revokeObjectURL(qrcodeBlobUrl.value);
+  }
+});
 
 const statusText = computed(() => {
   switch (loginStatus.value) {
@@ -437,6 +477,26 @@ onUnmounted(() => {
       height: 200px;
       border: 1px solid var(--b3-theme-surface-lighter);
       border-radius: 8px;
+    }
+
+    &-wrapper {
+      width: 250px;
+      height: 250px;
+      overflow: hidden;
+      border: 1px solid var(--b3-theme-surface-lighter);
+      border-radius: 8px;
+      background: #fff;
+      position: relative;
+      margin: 0 auto;
+      
+      iframe {
+        position: absolute;
+        top: -263px;
+        left: -15px;
+        width: 280px;
+        height: 600px;
+        border: none;
+      }
     }
 
     p {
