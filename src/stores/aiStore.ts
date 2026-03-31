@@ -19,6 +19,8 @@ import { SkillService } from '@/services/skillService';
 import { useClawBotService, resetClawBotService } from '@/services/clawBotService';
 import type { ClawBotConfig, WeixinMessage, WeixinConversationMap, ClawBotStats } from '@/types/clawbot';
 import { showMessage } from 'siyuan';
+import { useProjectStore } from './projectStore';
+import { useSettingsStore } from './settingsStore';
 
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
@@ -306,12 +308,7 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 发送消息（基于 ReAct Agent）
    */
-  async function sendMessage(
-    content: string,
-    projects?: Project[],
-    groups?: ProjectGroup[],
-    items?: Item[]
-  ): Promise<void> {
+  async function sendMessage(content: string): Promise<void> {
     // 前置检查
     if (!isAIEnabled.value) {
       error.value = 'AI 服务未配置或未启用';
@@ -329,13 +326,21 @@ export const useAIStore = defineStore('ai', () => {
       return;
     }
 
-    // 更新工具上下文（如果提供了数据）
-    if (projects || groups || items) {
-      toolContext.value = {
-        groups: groups || toolContext.value.groups,
-        projects: projects || toolContext.value.projects,
-        allItems: items || toolContext.value.allItems
-      };
+    // 从 Store 获取最新数据
+    try {
+      const projectStore = useProjectStore();
+      const settingsStore = useSettingsStore();
+      
+      const projects = projectStore.projects || [];
+      const groups = settingsStore.groups || [];
+      const allItems = projectStore.items || [];
+      
+      if (projects.length > 0 || groups.length > 0) {
+        console.log('[AIStore] 更新工具上下文:', { projects: projects.length, groups: groups.length, items: allItems.length });
+        toolContext.value = { groups, projects, allItems };
+      }
+    } catch (err) {
+      console.error('[AIStore] 获取 Store 数据失败:', err);
     }
 
     // 确保有当前会话
@@ -820,6 +825,29 @@ export const useAIStore = defineStore('ai', () => {
     
     // 临时设置为当前会话
     currentConversation.value = conversation;
+    
+    // 从 Store 获取数据并更新工具上下文
+    try {
+      const projectStore = useProjectStore();
+      const settingsStore = useSettingsStore();
+      
+      const projects = projectStore.projects || [];
+      const groups = settingsStore.groups || [];
+      const allItems = projectStore.items || [];
+      
+      if (projects.length > 0 || groups.length > 0) {
+        console.log('[AIStore] 更新工具上下文:', { 
+          projects: projects.length, 
+          groups: groups.length, 
+          items: allItems.length 
+        });
+        toolContext.value = { groups, projects, allItems };
+      } else {
+        console.warn('[AIStore] Store 数据为空，工具上下文未更新');
+      }
+    } catch (err) {
+      console.error('[AIStore] 获取 Store 数据失败:', err);
+    }
     
     // 获取技能
     const skillService = SkillService.getInstance();

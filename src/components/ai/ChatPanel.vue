@@ -454,7 +454,7 @@ async function handleSend(content?: string | Event) {
   if (!messageContent || isLoading.value || !isAIEnabled.value) return;
 
   inputContent.value = '';
-  await aiStore.sendMessage(messageContent, props.projects, props.groups, props.items);
+  await aiStore.sendMessage(messageContent);
 }
 
 function handleExampleClick(example: string) {
