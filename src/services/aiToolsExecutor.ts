@@ -3,7 +3,7 @@
  * 执行 AI 请求的工具调用
  */
 import type { ToolCall } from '@/types/ai';
-import type { Item, Project, ProjectGroup } from '@/types/models';
+import type { Item, ItemStatus, Project, ProjectGroup } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import {
   aggregatePomodorosFromProjects,
@@ -17,6 +17,8 @@ import {
 import type { ToolName } from './aiTools';
 import { SkillService } from './skillService';
 import type { SkillConfig } from '@/types/skill';
+import * as siyuanAPI from '@/api';
+import { updateBlockContent } from '@/utils/fileUtils';
 
 /**
  * 筛选事项参数
@@ -211,6 +213,142 @@ function executeGetPomodoroRecords(
 }
 
 /**
+ * 执行 update_item_status 工具
+ * 修改事项状态（完成/放弃/恢复待办）
+ */
+async function executeUpdateItemStatus(
+  context: ToolExecutionContext,
+  args: { itemId: string; status: 'completed' | 'abandoned' | 'pending' }
+): Promise<{ success: boolean; message: string }> {
+  const item = context.allItems.find(i => i.id === args.itemId);
+  if (!item) {
+    return { success: false, message: `未找到事项 ID: ${args.itemId}。请先用 filter_items 查询获取正确的 itemId。` };
+  }
+  if (!item.blockId) {
+    return { success: false, message: `事项"${item.content}"没有关联的块 ID，无法修改。` };
+  }
+
+  const targetStatus = args.status as ItemStatus;
+
+  try {
+    if (targetStatus === 'pending') {
+      // 恢复待办：读取块 kramdown，清除状态标记
+      const kramdownResult = await siyuanAPI.getBlockKramdown(item.blockId);
+      if (!kramdownResult?.kramdown) {
+        return { success: false, message: '无法读取事项内容' };
+      }
+      let content = kramdownResult.kramdown
+        .replace(/#已完成|#已放弃|#done|#abandoned|[✅❌]/g, '');
+      content = content.replace(/\[[xX]\]/g, '[ ]');
+      await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+    } else {
+      // 完成/放弃：使用 fileUtils 的 updateBlockContent 添加状态标记
+      const suffix = targetStatus === 'completed' ? '#已完成' : '#已放弃';
+      const success = await updateBlockContent(item.blockId, suffix);
+      if (!success) {
+        return { success: false, message: `更新事项"${item.content}"状态失败` };
+      }
+    }
+
+    const statusText = targetStatus === 'completed'
+      ? '标记为已完成'
+      : targetStatus === 'abandoned'
+        ? '标记为已放弃'
+        : '恢复为待办';
+
+    return {
+      success: true,
+      message: `已将"${item.content}"${statusText}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `更新状态失败: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * 构建 AI 创建事项的 Markdown 内容
+ */
+function buildCreateItemContent(
+  content: string,
+  date: string,
+  startTime?: string,
+  endTime?: string
+): string {
+  let datePart = `📅${date}`;
+  if (startTime && endTime) {
+    datePart = `📅${date} ${startTime}~${endTime}`;
+  } else if (startTime) {
+    datePart = `📅${date} ${startTime}`;
+  }
+  return `${content} ${datePart}`;
+}
+
+/**
+ * 执行 create_item 工具
+ * 在指定项目下创建新事项
+ */
+async function executeCreateItem(
+  context: ToolExecutionContext,
+  args: {
+    projectId: string;
+    content: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+  }
+): Promise<{ success: boolean; message: string; itemId?: string }> {
+  // 查找项目
+  const project = context.projects.find(p => p.id === args.projectId);
+  if (!project) {
+    return { success: false, message: `未找到项目 ID: ${args.projectId}。请先用 list_projects 查询获取正确的 projectId。` };
+  }
+
+  // 找到最后一个任务的 blockId 作为插入锚点
+  const lastTask = project.tasks[project.tasks.length - 1];
+  if (!lastTask?.blockId) {
+    return { success: false, message: `项目"${project.name}"中没有可用的任务块，请先创建任务。` };
+  }
+
+  // 构建事项 Markdown
+  const itemContent = buildCreateItemContent(
+    args.content,
+    args.date,
+    args.startTime,
+    args.endTime
+  );
+
+  try {
+    // 在任务块后追加事项（previousID = lastTask.blockId 表示在其后插入）
+    const result = await siyuanAPI.insertBlock(
+      'markdown',
+      itemContent,
+      undefined,
+      lastTask.blockId,
+      undefined
+    );
+
+    if (result && result[0]) {
+      const newBlockId = (result[0] as any).doOperations?.[0]?.id;
+      return {
+        success: true,
+        message: `已在项目"${project.name}"的任务"${lastTask.name}"下创建事项"${args.content}"（${args.date}${args.startTime ? ` ${args.startTime}` : ''}）`,
+        itemId: newBlockId
+      };
+    }
+
+    return { success: false, message: '创建事项失败：SiYuan API 未返回结果' };
+  } catch (error) {
+    return {
+      success: false,
+      message: `创建事项失败: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
  * 执行工具调用
  */
 export async function executeTool(
@@ -241,6 +379,12 @@ export async function executeTool(
 
     case 'get_skill_detail':
       return JSON.stringify(await executeGetSkillDetail(args));
+
+    case 'update_item_status':
+      return JSON.stringify(await executeUpdateItemStatus(context, args));
+
+    case 'create_item':
+      return JSON.stringify(await executeCreateItem(context, args));
 
     default:
       throw new Error(`Unknown tool: ${toolName}`);

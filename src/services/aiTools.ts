@@ -190,6 +190,69 @@ export const getSkillDetailTool: ToolDefinition = {
 };
 
 /**
+ * 修改事项状态工具
+ */
+export const updateItemStatusTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'update_item_status',
+    description: '修改指定事项的状态。将事项标记为已完成、已放弃或恢复为待办。itemId 来自 filter_items 返回的 id。',
+    parameters: {
+      type: 'object',
+      properties: {
+        itemId: {
+          type: 'string',
+          description: '事项 ID，来自 filter_items 返回的 id'
+        },
+        status: {
+          type: 'string',
+          enum: ['completed', 'abandoned', 'pending'],
+          description: '目标状态：completed=已完成, abandoned=已放弃, pending=恢复待办'
+        }
+      },
+      required: ['itemId', 'status']
+    }
+  }
+};
+
+/**
+ * 创建事项工具
+ */
+export const createItemTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'create_item',
+    description: '在指定项目下创建新事项。projectId 来自 list_projects 返回的 id；content 为事项内容；date 为日期（YYYY-MM-DD）；可选 startTime/endTime（HH:mm:ss）设置时间范围。',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id'
+        },
+        content: {
+          type: 'string',
+          description: '事项内容'
+        },
+        date: {
+          type: 'string',
+          description: '日期，格式 YYYY-MM-DD'
+        },
+        startTime: {
+          type: 'string',
+          description: '开始时间，格式 HH:mm:ss（可选）'
+        },
+        endTime: {
+          type: 'string',
+          description: '结束时间，格式 HH:mm:ss（可选）'
+        }
+      },
+      required: ['projectId', 'content', 'date']
+    }
+  }
+};
+
+/**
  * 所有可用的工具列表
  */
 export const bulletJournalTools: ToolDefinition[] = [
@@ -199,7 +262,9 @@ export const bulletJournalTools: ToolDefinition[] = [
   getPomodoroStatsTool,
   getPomodoroRecordsTool,
   listSkillsTool,
-  getSkillDetailTool
+  getSkillDetailTool,
+  updateItemStatusTool,
+  createItemTool
 ];
 
 /**
@@ -212,4 +277,6 @@ export type ToolName =
   | 'get_pomodoro_stats'
   | 'get_pomodoro_records'
   | 'list_skills'
-  | 'get_skill_detail';
+  | 'get_skill_detail'
+  | 'update_item_status'
+  | 'create_item';
