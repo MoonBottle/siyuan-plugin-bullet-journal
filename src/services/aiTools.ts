@@ -253,6 +253,123 @@ export const createItemTool: ToolDefinition = {
 };
 
 /**
+ * 修改事项工具
+ */
+export const updateItemTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'update_item',
+    description: '修改指定事项的日期、时间或内容。itemId 来自 filter_items 返回的 id。只传需要修改的字段，未传的字段保持不变。',
+    parameters: {
+      type: 'object',
+      properties: {
+        itemId: {
+          type: 'string',
+          description: '事项 ID，来自 filter_items 返回的 id'
+        },
+        content: {
+          type: 'string',
+          description: '新的事项内容（可选，不传则不修改内容）'
+        },
+        date: {
+          type: 'string',
+          description: '新日期，格式 YYYY-MM-DD（可选）'
+        },
+        startTime: {
+          type: 'string',
+          description: '新的开始时间，格式 HH:mm:ss（可选，传空字符串清除时间）'
+        },
+        endTime: {
+          type: 'string',
+          description: '新的结束时间，格式 HH:mm:ss（可选，传空字符串清除时间）'
+        }
+      },
+      required: ['itemId']
+    }
+  }
+};
+
+/**
+ * 删除事项工具
+ */
+export const deleteItemTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'delete_item',
+    description: '删除指定事项。itemId 来自 filter_items 返回的 id。此操作不可撤销，请谨慎使用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        itemId: {
+          type: 'string',
+          description: '事项 ID，来自 filter_items 返回的 id'
+        }
+      },
+      required: ['itemId']
+    }
+  }
+};
+
+/**
+ * 创建任务工具
+ */
+export const createTaskTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'create_task',
+    description: '在指定项目下创建新任务。projectId 来自 list_projects 返回的 id；name 为任务名称；level 为任务层级（L1/L2/L3，默认 L1）。',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id'
+        },
+        name: {
+          type: 'string',
+          description: '任务名称'
+        },
+        level: {
+          type: 'string',
+          enum: ['L1', 'L2', 'L3'],
+          description: '任务层级，默认 L1'
+        }
+      },
+      required: ['projectId', 'name']
+    }
+  }
+};
+
+/**
+ * 创建项目工具
+ */
+export const createProjectTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'create_project',
+    description: '创建新项目（新建一个思源笔记文档）。name 为项目名称；description 为项目描述（可选）。如果用户配置了项目目录，需要传 directoryId（来自配置的目录列表）；如果未配置目录，directoryId 可不传，程序会自动选择笔记本。',
+    parameters: {
+      type: 'object',
+      properties: {
+        directoryId: {
+          type: 'string',
+          description: '目录 ID（来自配置的目录列表，确定文档创建位置）。如果未配置项目目录则不需要传。'
+        },
+        name: {
+          type: 'string',
+          description: '项目名称'
+        },
+        description: {
+          type: 'string',
+          description: '项目描述（可选）'
+        }
+      },
+      required: ['name']
+    }
+  }
+};
+
+/**
  * 所有可用的工具列表
  */
 export const bulletJournalTools: ToolDefinition[] = [
@@ -264,7 +381,11 @@ export const bulletJournalTools: ToolDefinition[] = [
   listSkillsTool,
   getSkillDetailTool,
   updateItemStatusTool,
-  createItemTool
+  createItemTool,
+  updateItemTool,
+  deleteItemTool,
+  createTaskTool,
+  createProjectTool
 ];
 
 /**
@@ -279,4 +400,8 @@ export type ToolName =
   | 'list_skills'
   | 'get_skill_detail'
   | 'update_item_status'
-  | 'create_item';
+  | 'create_item'
+  | 'update_item'
+  | 'delete_item'
+  | 'create_task'
+  | 'create_project';

@@ -300,8 +300,8 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 设置工具执行上下文
    */
-  function setToolContext(groups: ProjectGroup[], projects: Project[], allItems: Item[]) {
-    toolContext.value = { groups, projects, allItems };
+  function setToolContext(groups: ProjectGroup[], projects: Project[], allItems: Item[], directories?: import('@/types/models').ProjectDirectory[]) {
+    toolContext.value = { groups, projects, allItems, directories };
     currentAgent?.setToolContext(toolContext.value);
   }
 
@@ -334,10 +334,11 @@ export const useAIStore = defineStore('ai', () => {
       const projects = projectStore.projects || [];
       const groups = settingsStore.groups || [];
       const allItems = projectStore.items || [];
-      
+      const directories = settingsStore.directories || [];
+
       if (projects.length > 0 || groups.length > 0) {
         console.log('[AIStore] 更新工具上下文:', { projects: projects.length, groups: groups.length, items: allItems.length });
-        toolContext.value = { groups, projects, allItems };
+        toolContext.value = { groups, projects, allItems, directories };
       }
     } catch (err) {
       console.error('[AIStore] 获取 Store 数据失败:', err);
@@ -831,14 +832,15 @@ export const useAIStore = defineStore('ai', () => {
       const projects = projectStore.projects || [];
       const groups = settingsStore.groups || [];
       const allItems = projectStore.items || [];
-      
+      const directories = settingsStore.directories || [];
+
       if (projects.length > 0 || groups.length > 0) {
-        console.log('[AIStore] 更新工具上下文:', { 
-          projects: projects.length, 
-          groups: groups.length, 
-          items: allItems.length 
+        console.log('[AIStore] 更新工具上下文:', {
+          projects: projects.length,
+          groups: groups.length,
+          items: allItems.length
         });
-        toolContext.value = { groups, projects, allItems };
+        toolContext.value = { groups, projects, allItems, directories };
       } else {
         console.warn('[AIStore] Store 数据为空，工具上下文未更新');
       }
