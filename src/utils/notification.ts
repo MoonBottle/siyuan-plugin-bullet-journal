@@ -5,6 +5,8 @@
 
 import { showMessage } from './dialog';
 import { t } from '@/i18n';
+import { useAIStore } from '@/stores/aiStore';
+import { getSharedPinia } from '@/utils/sharedPinia';
 
 /**
  * 检查浏览器是否支持 Notification API
@@ -42,13 +44,23 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 /**
- * 显示系统级通知
- * @param title 通知标题
- * @param body 通知内容
- * @param options 其他选项
- * @returns 通知实例或 null
+ * 发送微信通知（fire-and-forget，不阻塞主流程）
  */
-export function showSystemNotification(
+function sendWechatNotification(title: string, body: string): void {
+  try {
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+    const aiStore = useAIStore(pinia);
+    aiStore.sendWechatNotification(`${title}\n${body}`);
+  } catch (err) {
+    console.error('[Notification] WeChat notification error:', err);
+  }
+}
+
+/**
+ * 显示系统级通知（内部实现）
+ */
+function _showSystemNotificationInner(
   title: string,
   body: string,
   options?: {
@@ -104,6 +116,31 @@ export function showSystemNotification(
     showMessage(`${title}: ${body}`);
     return null;
   }
+}
+
+/**
+ * 显示系统级通知
+ * @param title 通知标题
+ * @param body 通知内容
+ * @param options 其他选项
+ * @returns 通知实例或 null
+ */
+export function showSystemNotification(
+  title: string,
+  body: string,
+  options?: {
+    icon?: string;
+    tag?: string;
+    onClick?: () => void;
+    onClose?: () => void;
+  }
+): Notification | null {
+  const result = _showSystemNotificationInner(title, body, options);
+
+  // 同时发送微信通知
+  sendWechatNotification(title, body);
+
+  return result;
 }
 
 /**

@@ -990,8 +990,66 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
+  /**
+   * 发送微信通知给所有已连接的微信用户
+   * 用于提醒和番茄钟完成等通知场景
+   */
+  async function sendWechatNotification(text: string): Promise<void> {
+    try {
+      if (!isClawBotConnected.value) {
+        return;
+      }
+
+      let userIds = Object.keys(weixinConversationMap.value);
+
+      // 如果内存 map 为空，从持久化的会话列表恢复微信用户映射
+      if (userIds.length === 0 && storageService) {
+        try {
+          const conversations = await storageService.loadConversationsList();
+          const weixinConvos = conversations.filter(
+            (c: any) => c.source === 'weixin' && c.weixinUserId
+          );
+          for (const c of weixinConvos) {
+            if (!weixinConversationMap.value[c.weixinUserId]) {
+              weixinConversationMap.value[c.weixinUserId] = {
+                ilinkUserId: c.weixinUserId,
+                conversationId: c.id,
+                contextToken: undefined,
+                lastMessageAt: c.updatedAt || 0,
+                userName: c.weixinUserName
+              };
+            }
+          }
+          userIds = Object.keys(weixinConversationMap.value);
+        } catch (err) {
+          console.error('[AIStore] 恢复微信会话映射失败:', err);
+        }
+      }
+
+      if (userIds.length === 0) {
+        return;
+      }
+
+      const clawBot = useClawBotService(clawBotConfig.value);
+      if (!clawBot.isConnected()) {
+        return;
+      }
+
+      for (const ilinkUserId of userIds) {
+        try {
+          const contextToken = weixinConversationMap.value[ilinkUserId]?.contextToken;
+          await clawBot.sendTextMessage(ilinkUserId, text, contextToken);
+        } catch (err) {
+          console.error(`[AIStore] 微信通知发送失败 (${ilinkUserId}):`, err);
+        }
+      }
+    } catch (err) {
+      console.error('[AIStore] sendWechatNotification error:', err);
+    }
+  }
+
   // ==================== Return ====================
-  
+
   return {
     // State
     providers,
@@ -1043,6 +1101,7 @@ export const useAIStore = defineStore('ai', () => {
     disconnectClawBot,
     handleWeixinMessage,
     getOrCreateWeixinConversation,
-    sendReplyToWeixin
+    sendReplyToWeixin,
+    sendWechatNotification
   };
 });
