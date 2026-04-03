@@ -390,7 +390,9 @@
     "minutes": "min",
     "hours": "h",
     "uncategorized": "Uncategorized",
-    "help": "Help"
+    "help": "Help",
+    "notebookName": "Task Assistant",
+    "notebookCreateFailed": "Failed to create notebook"
   },
   "helpMenu": {
     "title": "Help",

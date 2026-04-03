@@ -58,6 +58,7 @@ import SyInput from '@/components/SiyuanTheme/SyInput.vue';
 import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 import { useSkillStore } from '@/stores/skillStore';
+import { useSkillService } from '@/services/skillService';
 import { setBlockAttrs, prependBlock, createDocWithMd, lsNotebooks } from '@/api';
 import { 
   generateSkillDocument, 
@@ -144,12 +145,13 @@ async function createSkill() {
   await doCreateSkill(skillName, isBuiltin);
 }
 
-async function getFirstNotebook(): Promise<string> {
-  const response = await lsNotebooks();
-  if (!response?.notebooks?.length) {
+async function getTaskAssistantNotebook(): Promise<string> {
+  const skillService = useSkillService();
+  const notebook = await skillService.getOrCreateTaskAssistantNotebook();
+  if (!notebook) {
     throw new Error('没有可用的笔记本');
   }
-  return response.notebooks[0].id;
+  return notebook.id;
 }
 
 async function doCreateSkill(skillName: string, isBuiltin: boolean) {
@@ -160,7 +162,7 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
     
     if (props.mode === 'new') {
       // 新建模式：创建新文档
-      const notebook = props.notebook || await getFirstNotebook();
+      const notebook = props.notebook || await getTaskAssistantNotebook();
       const docPath = `AI技能/${skillName}`;
       targetDocId = await createDocWithMd(notebook, docPath, '');
       if (!targetDocId) {

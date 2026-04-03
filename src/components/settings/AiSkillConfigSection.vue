@@ -222,19 +222,19 @@ function toggleSkillEnabled(skillId: string, enabled: boolean) {
 
 // 创建覆盖技能
 async function createOverrideSkill(skill: { name: string; description: string }) {
-  // 获取第一个可用笔记本
-  const notebooks = await skillService.getNotebooks();
-  if (!notebooks || notebooks.length === 0) {
+  // 获取或创建任务助手笔记本
+  const notebook = await skillService.getOrCreateTaskAssistantNotebook();
+  if (!notebook) {
     showMessage('没有可用的笔记本', 3000, 'error');
     return;
   }
-  
+
   const result = await skillService.createOverrideSkill(
     skill.name,
-    notebooks[0].id,
+    notebook.id,
     'AI技能'
   );
-  
+
   if (result) {
     showMessage(`已创建「${skill.name}」的自定义版本`, 3000, 'info');
   }
