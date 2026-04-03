@@ -111,6 +111,7 @@ import SySettingsSection from './SySettingsSection.vue';
 import SySettingsActionButton from './SySettingsActionButton.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
+import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
 
 // 定义 props 和 emits
 const props = defineProps<{
@@ -223,7 +224,7 @@ function toggleSkillEnabled(skillId: string, enabled: boolean) {
 // 创建覆盖技能
 async function createOverrideSkill(skill: { name: string; description: string }) {
   // 获取或创建任务助手笔记本
-  const notebook = await skillService.getOrCreateTaskAssistantNotebook();
+  const notebook = await getOrCreateTaskAssistantNotebook();
   if (!notebook) {
     showMessage('没有可用的笔记本', 3000, 'error');
     return;

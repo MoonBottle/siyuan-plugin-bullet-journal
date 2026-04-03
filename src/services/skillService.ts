@@ -7,7 +7,6 @@ import type { SkillConfig, ParsedSkill, SkillResolutionResult, SkillExecutionCon
 import { getBuiltinSkill, isBuiltinSkill, getAllBuiltinSkills } from '@/utils/skillTemplates';
 import { useSkillStore } from '@/stores/skillStore';
 import { getBlockAttrs, createDocWithMd, sql, setBlockAttrs, exportMdContent, lsNotebooks, createNotebook } from '@/api';
-import { getCurrentLocale } from '@/i18n';
 import { showMessage } from 'siyuan';
 
 /**
@@ -345,48 +344,6 @@ ${skillList}
     }));
   }
 
-  /**
-   * 获取或创建任务助手笔记本
-   * @returns 笔记本信息或 null
-   */
-  async getOrCreateTaskAssistantNotebook(): Promise<{ id: string; name: string } | null> {
-    const response = await lsNotebooks();
-    if (!response?.notebooks) {
-      console.error('[SkillService] Failed to query notebooks: API returned null');
-      return null;
-    }
-
-    // 根据当前语言获取目标名称
-    const lang = getCurrentLocale();
-    const isEn = lang.startsWith('en');
-    const targetName = isEn ? 'Task Assistant' : '任务助手';
-
-    // 查找已存在的笔记本（不区分大小写，只找未关闭的）
-    const availableNotebooks = response.notebooks.filter((nb: any) => !nb.closed);
-    const existingNotebook = availableNotebooks.find(
-      (nb: any) => nb.name.toLowerCase() === targetName.toLowerCase()
-    );
-
-    if (existingNotebook) {
-      console.log('[SkillService] Found existing notebook:', existingNotebook.name, 'id:', existingNotebook.id);
-      return { id: existingNotebook.id, name: existingNotebook.name };
-    }
-
-    // 创建新笔记本
-    console.log('[SkillService] Creating new notebook:', targetName);
-    try {
-      const newNotebook = await createNotebook(targetName);
-      if (newNotebook && newNotebook.id) {
-        console.log('[SkillService] Created new notebook:', newNotebook.name, 'id:', newNotebook.id);
-        return { id: newNotebook.id, name: newNotebook.name };
-      }
-    } catch (error) {
-      console.error('[SkillService] Failed to create notebook:', error);
-    }
-
-    return null;
-  }
-  
   /**
    * 创建技能覆盖
    * 基于内置技能创建用户自定义版本

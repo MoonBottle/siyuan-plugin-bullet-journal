@@ -58,7 +58,7 @@ import SyInput from '@/components/SiyuanTheme/SyInput.vue';
 import SyTextarea from '@/components/SiyuanTheme/SyTextarea.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 import { useSkillStore } from '@/stores/skillStore';
-import { useSkillService } from '@/services/skillService';
+import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
 import { setBlockAttrs, prependBlock, createDocWithMd, lsNotebooks } from '@/api';
 import { 
   generateSkillDocument, 
@@ -146,8 +146,7 @@ async function createSkill() {
 }
 
 async function getTaskAssistantNotebook(): Promise<string> {
-  const skillService = useSkillService();
-  const notebook = await skillService.getOrCreateTaskAssistantNotebook();
+  const notebook = await getOrCreateTaskAssistantNotebook();
   if (!notebook) {
     throw new Error('没有可用的笔记本');
   }

@@ -1,11 +1,12 @@
 /**
  * 示例文档创建工具函数
  */
-import { createDocWithMd, lsNotebooks, pushMsg, createNotebook } from '@/api';
+import { createDocWithMd, pushMsg } from '@/api';
 import { openDocument } from '@/utils/fileUtils';
 import { t, getCurrentLocale } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 import { expandDocTree } from 'siyuan';
+import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
 
 /**
  * 获取今天的日期字符串
@@ -35,55 +36,6 @@ function getExampleDocName(): string {
   const lang = getCurrentLocale();
   console.log('[Task Assistant] getExampleDocName - current locale:', lang);
   return lang.startsWith('en') ? 'Task Assistant Example' : '任务助手示例文档';
-}
-
-/**
- * 获取任务助手笔记本名称（根据当前语言）
- */
-function getTaskAssistantNotebookName(): string {
-  const lang = getCurrentLocale();
-  return lang.startsWith('en') ? 'Task Assistant' : '任务助手';
-}
-
-/**
- * 获取或创建任务助手笔记本
- * @returns 笔记本信息或 null
- */
-async function getOrCreateTaskAssistantNotebook(): Promise<{ id: string; name: string } | null> {
-  try {
-    const result = await lsNotebooks();
-    if (!result) {
-      console.error('[Task Assistant] Failed to query notebooks: API returned null');
-      return null;
-    }
-
-    const targetName = getTaskAssistantNotebookName();
-
-    // 查找已存在的笔记本（不区分大小写，只找未关闭的）
-    const availableNotebooks = result.notebooks?.filter(nb => !nb.closed) || [];
-    const existingNotebook = availableNotebooks.find(
-      nb => nb.name.toLowerCase() === targetName.toLowerCase()
-    );
-
-    if (existingNotebook) {
-      console.log('[Task Assistant] Found existing notebook:', existingNotebook.name, 'id:', existingNotebook.id);
-      return { id: existingNotebook.id, name: existingNotebook.name };
-    }
-
-    // 创建新笔记本
-    console.log('[Task Assistant] Creating new notebook:', targetName);
-    const newNotebook = await createNotebook(targetName);
-    if (newNotebook && newNotebook.id) {
-      console.log('[Task Assistant] Created new notebook:', newNotebook.name, 'id:', newNotebook.id);
-      return { id: newNotebook.id, name: newNotebook.name };
-    }
-
-    console.error('[Task Assistant] createNotebook returned invalid result:', newNotebook);
-    return null;
-  } catch (error) {
-    console.error('[Task Assistant] Failed to get or create notebook:', error);
-    return null;
-  }
 }
 
 /**
