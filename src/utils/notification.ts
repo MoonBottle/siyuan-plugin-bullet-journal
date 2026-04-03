@@ -47,11 +47,20 @@ export async function requestNotificationPermission(): Promise<boolean> {
  * 发送微信通知（fire-and-forget，不阻塞主流程）
  */
 function sendWechatNotification(title: string, body: string): void {
+  console.log('[Notification] sendWechatNotification called, title:', title);
   try {
     const pinia = getSharedPinia();
-    if (!pinia) return;
+    if (!pinia) {
+      console.warn('[Notification] getSharedPinia() returned null');
+      return;
+    }
     const aiStore = useAIStore(pinia);
-    aiStore.sendWechatNotification(`${title}\n${body}`);
+    console.log('[Notification] got aiStore, calling sendWechatNotification...');
+    aiStore.sendWechatNotification(`${title}\n${body}`).then(() => {
+      console.log('[Notification] sendWechatNotification completed');
+    }).catch((err: unknown) => {
+      console.error('[Notification] sendWechatNotification promise rejected:', err);
+    });
   } catch (err) {
     console.error('[Notification] WeChat notification error:', err);
   }

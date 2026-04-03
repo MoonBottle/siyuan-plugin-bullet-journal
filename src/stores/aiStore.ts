@@ -995,20 +995,27 @@ export const useAIStore = defineStore('ai', () => {
    * 用于提醒和番茄钟完成等通知场景
    */
   async function sendWechatNotification(text: string): Promise<void> {
+    console.log('[AIStore] sendWechatNotification called, text length:', text?.length);
     try {
+      console.log('[AIStore] isClawBotConnected:', isClawBotConnected.value, 'clawBotConfig:', JSON.stringify(clawBotConfig.value?.loginStatus));
       if (!isClawBotConnected.value) {
+        console.log('[AIStore] sendWechatNotification: ClawBot 未连接，跳过');
         return;
       }
 
       let userIds = Object.keys(weixinConversationMap.value);
+      console.log('[AIStore] weixinConversationMap keys from memory:', userIds);
 
       // 如果内存 map 为空，从持久化的会话列表恢复微信用户映射
       if (userIds.length === 0 && storageService) {
+        console.log('[AIStore] 内存 map 为空，尝试从持久化恢复...');
         try {
           const conversations = await storageService.loadConversationsList();
+          console.log('[AIStore] 加载到会话列表:', conversations.length, '条');
           const weixinConvos = conversations.filter(
             (c: any) => c.source === 'weixin' && c.weixinUserId
           );
+          console.log('[AIStore] 微信会话:', weixinConvos.length, '条', weixinConvos.map((c: any) => ({ id: c.id, source: c.source, weixinUserId: c.weixinUserId })));
           for (const c of weixinConvos) {
             if (!weixinConversationMap.value[c.weixinUserId]) {
               weixinConversationMap.value[c.weixinUserId] = {
@@ -1021,24 +1028,31 @@ export const useAIStore = defineStore('ai', () => {
             }
           }
           userIds = Object.keys(weixinConversationMap.value);
+          console.log('[AIStore] 恢复后 userIds:', userIds);
         } catch (err) {
           console.error('[AIStore] 恢复微信会话映射失败:', err);
         }
       }
 
       if (userIds.length === 0) {
+        console.log('[AIStore] sendWechatNotification: 无微信用户，跳过');
         return;
       }
 
       const clawBot = useClawBotService(clawBotConfig.value);
+      console.log('[AIStore] clawBot.isConnected():', clawBot.isConnected());
       if (!clawBot.isConnected()) {
+        console.log('[AIStore] sendWechatNotification: ClawBot service 未连接，跳过');
         return;
       }
 
+      console.log('[AIStore] 开始发送微信通知给', userIds.length, '个用户');
       for (const ilinkUserId of userIds) {
         try {
           const contextToken = weixinConversationMap.value[ilinkUserId]?.contextToken;
+          console.log('[AIStore] 发送微信通知给:', ilinkUserId, 'hasContextToken:', !!contextToken);
           await clawBot.sendTextMessage(ilinkUserId, text, contextToken);
+          console.log('[AIStore] 微信通知发送成功:', ilinkUserId);
         } catch (err) {
           console.error(`[AIStore] 微信通知发送失败 (${ilinkUserId}):`, err);
         }

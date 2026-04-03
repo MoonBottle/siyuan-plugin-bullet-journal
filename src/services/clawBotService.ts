@@ -540,8 +540,11 @@ export class ClawBotService {
       body
     });
 
+    const responseText = await response.text();
+    console.log('[ClawBot] sendTextMessage response:', { status: response.status, body: responseText.substring(0, 500) });
+
     if (!response.ok) {
-      throw new Error(`发送消息失败: ${response.status}`);
+      throw new Error(`发送消息失败: ${response.status} ${responseText}`);
     }
   }
 
