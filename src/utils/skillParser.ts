@@ -77,12 +77,7 @@ function parseFrontmatter(lines: string[]): SkillMetadata {
       case 'description':
         metadata.description = value as string;
         break;
-      case 'version':
-        metadata.version = value as string;
-        break;
-      case 'author':
-        metadata.author = value as string;
-        break;
+
       case 'tags':
         metadata.tags = Array.isArray(value) ? value : [value];
         break;

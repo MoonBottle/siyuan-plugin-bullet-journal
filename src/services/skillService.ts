@@ -227,8 +227,6 @@ export class SkillService {
         metadata: {
           name: builtin.name,
           description: builtin.description,
-          version: builtin.version,
-          author: builtin.author,
           tags: []
         },
         content: builtin.content,
@@ -261,10 +259,8 @@ export class SkillService {
     
     const result = {
       metadata: {
-        name: attrs['custom-skill-name'] || '未命名',
-        description: attrs['custom-skill-description'] || '',
-        version: attrs['custom-skill-version'],
-        author: attrs['custom-skill-author'],
+        name: attrs['custom-name'] || '未命名',
+        description: attrs['custom-description'] || '',
         tags: []
       },
       content: response.content,
@@ -370,10 +366,8 @@ ${skillList}
       
       // 设置文档属性
       await setBlockAttrs(docId, {
-        'custom-skill-name': builtinName,
-        'custom-skill-description': builtin.description,
-        'custom-skill-version': builtin.version,
-        'custom-skill-author': 'User'
+        'custom-name': builtinName,
+        'custom-description': builtin.description
       });
       
       // 添加到技能列表

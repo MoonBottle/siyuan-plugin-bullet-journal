@@ -174,10 +174,8 @@ async function doCreateSkill(skillName: string, isBuiltin: boolean) {
     
     // 1. 设置文档自定义属性（name、description）
     await setBlockAttrs(targetDocId, {
-      'custom-skill-name': skillName,
-      'custom-skill-description': form.description.trim(),
-      'custom-skill-version': '1.0.0',
-      'custom-skill-author': 'User'
+      'custom-name': skillName,
+      'custom-description': form.description.trim()
     });
     
     // 2. 生成技能文档内容并添加到文档开头

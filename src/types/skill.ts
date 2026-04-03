@@ -10,8 +10,6 @@
 export interface SkillMetadata {
   name: string;           // 技能名称（唯一标识）
   description: string;    // 技能描述（用于 AI 选择技能）
-  version?: string;       // 版本号
-  author?: string;        // 作者
   tags?: string[];        // 标签
 }
 

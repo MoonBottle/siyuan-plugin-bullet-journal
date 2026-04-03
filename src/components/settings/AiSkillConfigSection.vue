@@ -30,6 +30,7 @@
               <SyButton 
                 icon="iconCopy" 
                 :text="t('settings').aiSkills?.customize ?? '自定义'"
+                :aria-label="t('settings').aiSkills?.customize ?? '自定义'"
                 @click="createOverrideSkill(skill)"
               />
             </div>
@@ -106,6 +107,7 @@ import { showConfirmDialog, createDialog } from '@/utils/dialog';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
 import type { SkillConfig } from '@/types/skill';
+import { useSkillService } from '@/services/skillService';
 
 import SySettingsSection from './SySettingsSection.vue';
 import SySettingsActionButton from './SySettingsActionButton.vue';
@@ -223,6 +225,8 @@ function toggleSkillEnabled(skillId: string, enabled: boolean) {
 
 // 创建覆盖技能
 async function createOverrideSkill(skill: { name: string; description: string }) {
+  const skillService = useSkillService();
+  
   // 获取或创建任务助手笔记本
   const notebook = await getOrCreateTaskAssistantNotebook();
   if (!notebook) {
