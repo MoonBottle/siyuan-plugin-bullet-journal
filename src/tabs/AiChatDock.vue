@@ -34,9 +34,7 @@
         :aria-label="t('settings').aiSkills?.title ?? 'AI 技能配置'"
         @click="openSkillManager"
       >
-        <svg>
-          <use xlink:href="#iconSparkles"></use>
-        </svg>
+        <SkillIcon />
       </span>
 
       <!-- 微信连接按钮 -->
@@ -92,6 +90,7 @@ import { useConversationStorage, type ConversationIndexItem } from '@/services/c
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
+import SkillIcon from '@/components/icons/SkillIcon.vue';
 import WeixinIcon from '@/components/icons/WeixinIcon.vue';
 import WeixinLoginDialog from '@/components/ai/WeixinLoginDialog.vue';
 import { t } from '@/i18n';

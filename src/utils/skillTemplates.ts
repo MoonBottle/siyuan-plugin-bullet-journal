@@ -88,6 +88,7 @@ export function generateSkillDocument(
 
 /**
  * 基于内置技能模板创建自定义版本
+ * 移除 frontmatter，只保留主体内容
  */
 export function generateSkillDocumentFromTemplate(
   _skillName: string,
@@ -95,7 +96,9 @@ export function generateSkillDocumentFromTemplate(
   _author: string,
   templateContent: string
 ): string {
-  // 简化处理：直接使用内置技能内容，替换描述
-  return templateContent
-    .replace(/{{description}}/g, description);
+  // 移除 frontmatter (---...---)
+  const contentWithoutFrontmatter = templateContent.replace(/^---\s*\n[\s\S]*?\n---\s*\n*/, '');
+  
+  // 替换描述占位符
+  return contentWithoutFrontmatter.replace(/{{description}}/g, description);
 }

@@ -1,9 +1,19 @@
 <template>
   <SySettingsSection
-    icon="iconSparkles"
     :title="t('settings').aiSkills?.title ?? 'AI 技能配置'"
     :description="t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务'"
   >
+    <template #header>
+      <div class="sy-settings-section__header">
+        <div class="sy-settings-section__header-left">
+          <div class="sy-settings-section__title-row fn__flex">
+            <SkillIcon class="sy-settings-section__icon" />
+            <span class="sy-settings-section__title">{{ t('settings').aiSkills?.title ?? 'AI 技能配置' }}</span>
+          </div>
+          <div class="sy-settings-section__description">{{ t('settings').aiSkills?.description ?? '配置 AI 技能文档，让 AI 能够执行特定任务' }}</div>
+        </div>
+      </div>
+    </template>
     <!-- 内置技能列表 -->
     <div v-if="builtinSkills.length > 0" class="skill-section">
       <h4 class="skill-section-title">
@@ -114,6 +124,7 @@ import SySettingsActionButton from './SySettingsActionButton.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
+import SkillIcon from '@/components/icons/SkillIcon.vue';
 
 // 定义 props 和 emits
 const props = defineProps<{
