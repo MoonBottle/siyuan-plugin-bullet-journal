@@ -864,4 +864,189 @@ describe('updateBlockContent', () => {
     expect(callArg).toContain('[x]');
     expect(callArg).not.toContain('✅');
   });
+
+  // ===== 提醒 + 重复标记测试 =====
+
+  it('提醒标记保留：绝对时间 ⏰HH:mm', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 周会 📅2026-03-17 ⏰09:00
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 周会 📅2026-03-17 ⏰09:00
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('提醒标记保留：中文相对开始时间 ⏰提前N分钟', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 周会 📅2026-03-06 14:00:00~16:00:00 ⏰提前10分钟
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 周会 📅2026-03-06 14:00:00~16:00:00 ⏰提前10分钟
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('提醒标记保留：英文相对结束时间 ⏰N minutes before end', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] meeting 📅2026-03-06 14:00:00~16:00:00 ⏰30 minutes before end
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] meeting 📅2026-03-06 14:00:00~16:00:00 ⏰30 minutes before end
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('重复标记保留：🔁每周', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 周会 📅2026-03-17 🔁每周
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 周会 📅2026-03-17 🔁每周
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('提醒+重复+结束条件组合保留', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 月度汇报 📅2026-03-17 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 月度汇报 📅2026-03-17 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('提醒+重复+次数递减标记保留', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 背单词 📅2026-03-17 ⏰08:00 🔁每天 剩余30次
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 背单词 📅2026-03-17 ⏰08:00 🔁每天 剩余30次
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('非任务列表格式+提醒+重复：追加状态标签到末尾', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `周会 📅2026-03-17 ⏰09:00 🔁每周
+{: id="block-1" }`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `周会 📅2026-03-17 ⏰09:00 🔁每周 ✅
+{: id="block-1" }`,
+      'block-1'
+    );
+  });
+
+  it('已完成事项+提醒+重复：放弃时改回[ ]并追加❌', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[x] 周会 📅2026-03-17 ⏰09:00 🔁每周
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '❌');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 周会 📅2026-03-17 ⏰09:00 🔁每周 ❌
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('多行内容：提醒+重复标记与番茄钟共存', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 周会 @2026-03-17 ⏰09:00 🔁每周
+  🍅2026-03-17 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    // @ 日期应转为 📅，提醒和重复标记保留，番茄钟行不变
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 周会 📅2026-03-17 ⏰09:00 🔁每周
+  🍅2026-03-17 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('英文重复标记 🔁daily 保留', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] daily task 📅2026-03-17 ⏰08:00 🔁daily
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] daily task 📅2026-03-17 ⏰08:00 🔁daily
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
 });
