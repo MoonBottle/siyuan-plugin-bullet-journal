@@ -50,8 +50,14 @@ function getEditorRange(element: Element): Range | null {
  * @param protyle Protyle 编辑器实例
  * @param filters 可能的斜杠命令前缀数组
  * @param suffix 可选的要追加的标记（如 '#任务'），在删除斜杠命令后追加
+ * @param additionalTransform 可选的额外文本转换函数，用于同时处理其他修改（如添加状态标记）
  */
-export function deleteSlashCommandContent(protyle: any, filters: string[], suffix?: string): void {
+export function deleteSlashCommandContent(
+  protyle: any, 
+  filters: string[], 
+  suffix?: string,
+  additionalTransform?: (text: string) => string
+): void {
   // 获取编辑器元素
   const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
   if (!wysiwygElement) return;
@@ -95,6 +101,11 @@ export function deleteSlashCommandContent(protyle: any, filters: string[], suffi
     if (!newLineText.includes(suffix)) {
       newLineText = newLineText.trimEnd() + ' ' + suffix;
     }
+  }
+
+  // 应用额外的文本转换
+  if (additionalTransform) {
+    newLineText = additionalTransform(newLineText);
   }
 
   // 如果有修改，更新文本并提交事务
@@ -486,13 +497,41 @@ function getActionHandler(
       return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement, filter);
     case 'done':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setTimeout(() => markAsDone(nodeElement), 300);
+        const completedTag = getStatusTag('completed');
+        const blockContent = nodeElement.textContent || '';
+        // 检查是否已完成
+        if (completedTag && blockContent.includes(completedTag)) {
+          deleteSlashCommandContent(protyle, filter);
+          showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
+          return;
+        }
+        // 同时删除斜杠命令并添加完成标记（一次事务）
+        deleteSlashCommandContent(protyle, filter, undefined, (text) => {
+          if (!text.includes(completedTag)) {
+            return text.trimEnd() + ' ' + completedTag;
+          }
+          return text;
+        });
+        showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
       };
     case 'abandon':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setTimeout(() => markAsAbandoned(nodeElement), 300);
+        const abandonedTag = getStatusTag('abandoned');
+        const blockContent = nodeElement.textContent || '';
+        // 检查是否已放弃
+        if (abandonedTag && blockContent.includes(abandonedTag)) {
+          deleteSlashCommandContent(protyle, filter);
+          showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
+          return;
+        }
+        // 同时删除斜杠命令并添加放弃标记（一次事务）
+        deleteSlashCommandContent(protyle, filter, undefined, (text) => {
+          if (!text.includes(abandonedTag)) {
+            return text.trimEnd() + ' ' + abandonedTag;
+          }
+          return text;
+        });
+        showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
       };
     case 'calendar':
       return (protyle, nodeElement) => {
