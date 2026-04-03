@@ -49,7 +49,7 @@
       <div v-else class="custom-list">
         <div 
           v-for="skill in userSkills" 
-          :key="skill.id" 
+          :key="skill.docId" 
           :class="['custom-item', { 'is-override': skill.isOverride }]"
         >
           <div class="custom-item-header">
@@ -78,7 +78,7 @@
               />
               <SySwitch
                 :model-value="skill.enabled"
-                @update:model-value="toggleSkillEnabled(skill.id, $event)"
+                @update:model-value="toggleSkillEnabled(skill.docId, $event)"
               />
             </div>
           </div>
@@ -210,7 +210,7 @@ function removeSkill(skill: SkillConfig) {
     (t('settings').aiSkills?.confirmDeleteSkill ?? '确定要删除技能「{name}」吗？')
       .replace('{name}', skill.name),
     () => {
-      skillStore.removeSkill(skill.id);
+      skillStore.removeSkill(skill.docId);
       showMessage('技能已删除', 2000, 'info');
     }
   );
