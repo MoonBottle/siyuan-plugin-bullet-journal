@@ -123,7 +123,7 @@ const openSkillManager = () => {
   const container = document.createElement('div');
   
   const dialog = createDialog({
-    title: t('settings').aiSkills?.title ?? 'AI 技能配置',
+    title: '',
     content: '',
     width: '600px',
     destroyCallback: () => {
