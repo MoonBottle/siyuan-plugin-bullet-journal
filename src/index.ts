@@ -9,7 +9,7 @@ import { createPinia } from 'pinia';
 import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
 import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { getBlockIdFromElement, getBlockIdFromRange } from '@/utils/itemBlockUtils';
-import { useProjectStore, usePomodoroStore, useSkillStore } from '@/stores';
+import { useProjectStore, usePomodoroStore, useSkillStore, useAIStore } from '@/stores';
 import { useConversationStorage } from '@/services/conversationStorageService';
 import { useSkillService } from '@/services/skillService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
@@ -166,6 +166,9 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 初始化技能存储服务
     this.initSkillStorage();
+
+    // 初始化微信 ClawBot（不依赖 AI Dock 是否打开，确保通知能正常发送）
+    this.initClawBot(pinia);
   }
 
   /**
@@ -191,6 +194,20 @@ export default class TaskAssistantPlugin extends Plugin {
       console.log('[Task Assistant] Skill storage initialized');
     } catch (error) {
       console.error('[Task Assistant] Failed to initialize skill storage:', error);
+    }
+  }
+
+  /**
+   * 初始化微信 ClawBot（插件启动时自动初始化，不依赖 AI Dock 是否打开）
+   */
+  private async initClawBot(pinia: any) {
+    try {
+      const aiStore = useAIStore(pinia);
+      await aiStore.initializeStorage(this);
+      await aiStore.initializeClawBot(this);
+      console.log('[Task Assistant] ClawBot initialized from plugin onload');
+    } catch (error) {
+      console.error('[Task Assistant] Failed to initialize ClawBot:', error);
     }
   }
 
