@@ -13,7 +13,6 @@ import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
-import { eventBus, Events } from '@/utils/eventBus';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
 import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
@@ -595,18 +594,6 @@ export function showPomodoroCompleteDialog(
       dialogApp.mount(mountEl);
     }
   }, 0);
-
-  // 监听自动延迟事件，关闭弹窗
-  const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
-    closeDialog();
-  });
-
-  // 覆盖 destroy 以同时清理事件监听
-  const originalDestroy = dialog.destroy.bind(dialog);
-  dialog.destroy = () => {
-    unsubscribeAutoExtend();
-    originalDestroy();
-  };
 
   return dialog;
 }
