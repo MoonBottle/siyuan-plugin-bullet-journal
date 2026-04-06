@@ -62,9 +62,7 @@
     <div class="b3-dialog__container">
       <div class="b3-dialog__header">
         <div class="b3-dialog__title">{{ isEditing ? ((t('settings') as any).ai?.editProvider ?? '编辑供应商') : ((t('settings') as any).ai?.addProvider ?? '添加供应商') }}</div>
-        <button class="b3-dialog__close" @click="closeDialog">
-          <svg><use xlink:href="#iconClose"></use></svg>
-        </button>
+        <svg class="b3-dialog__close" @click="closeDialog"><use xlink:href="#iconCloseRound"></use></svg>
       </div>
       <div class="b3-dialog__content">
         <AiProviderEditForm
@@ -282,6 +280,10 @@ function handleShowToolCallsChange(checked: boolean) {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.b3-dialog {
+  z-index: 100;
 }
 
 .b3-dialog__container {
