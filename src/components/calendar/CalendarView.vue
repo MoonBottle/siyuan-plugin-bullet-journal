@@ -434,18 +434,25 @@ onMounted(async () => {
           el.style.backgroundColor = 'var(--fc-event-bg-color)';
           el.style.borderLeft = '3px solid var(--fc-event-border-color)';
           const duration = info.event.extendedProps?.pomodoroDurationMinutes;
+          const startTime = info.event.startStr?.split('T')[1]?.substring(0, 5);
+          const endTime = info.event.endStr?.split('T')[1]?.substring(0, 5);
           if (duration) {
             const label = document.createElement('span');
             label.className = 'pomodoro-block-label';
-            label.textContent = `🍅 ${duration} ${t('common').minutes}`;
+            const timeStr = startTime && endTime ? `${startTime} ~ ${endTime}` : '';
+            label.textContent = `🍅 ${duration}${t('common').minutes} ${timeStr}`;
             label.style.fontSize = '11px';
             label.style.fontWeight = '600';
             label.style.color = 'var(--fc-event-text-color)';
-            label.style.whiteSpace = 'nowrap';
+            label.style.whiteSpace = 'pre-line';
             label.style.pointerEvents = 'none';
             el.appendChild(label);
           }
           return;
+        }
+        // 显示番茄钟块时，事项块缩窄为90%给番茄块留位
+        if (settingsStore.showPomodoroBlocks) {
+          info.el.style.width = '90%';
         }
         info.el.addEventListener('contextmenu', (e: MouseEvent) => {
           e.preventDefault();
@@ -680,11 +687,6 @@ defineExpose({
 
   .fc-event {
     cursor: pointer;
-
-    /* 事项块宽度90%（排除番茄钟背景块） */
-    &:not(.fc-bg-event) {
-      width: 90%;
-    }
 
     .fc-event-title {
       color: var(--b3-theme-on-primary);
