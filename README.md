@@ -37,44 +37,36 @@ For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugi
 Create a new document and enter the following content:
 
 ```markdown
-## Website Redesign Project (Project Name)
+## 2026 Weight Loss Challenge (Project Name)
 
-> Company website overhaul to improve user experience (Project Description)
+Lose 10 Pounds (Task Name) 📋
 
-Project-related links, multiple supported, one per line
+Chest + Triceps + Cardio (Item Content) 📅2026-03-09 ✅
 
-[Design Mockups](https://figma.com/design/xxx)
+Back + Triceps + Cardio 📅2026-03-11 ❌
 
-Homepage Redesign (Task Name) #task @L1 
+Got dragged to drink, gave up, will try another day (Notes related to the item)
 
-Task-related links, multiple supported, one per line
-
-[Requirements Doc](https://doc.example.com/homepage)
-
-Define Design Style (Item Content) @2026-03-09
-
-🍅2026-03-09 10:00:00~10:25:00 Collect reference materials
-
-🍅15,2026-03-09 14:00:00~14:30:00 Define design style (15min actual focus, with pause)
-
-Item-related links, multiple supported, one per line
-
-[Reference Cases](https://example.com/ref)
-
-Complete Homepage Prototype (Completed Item) @2026-03-09 10:00:00~12:00:00 #done
-
-🍅2026-03-09 14:00:00~14:25:00 Complete homepage prototype
-
-Review Meeting (Abandoned Item) @2026-03-08 14:00:00~15:00:00 #abandoned
+Back + Triceps + Cardio 📅2026-03-10 08:00:00~10:00:00
 ```
 
 **Marker Reference:**
 - `Project Name` - The first H1 or H2 heading in the document is recognized as the project name; if no heading, defaults to the document filename
-- `#task` - Marks a line as a task
-- `@L1/@L2/@L3` - Task hierarchy levels, optional, default is L1
-- `@YYYY-MM-DD` / `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period
-- `#done` / `#completed` / `#abandoned` - Item status (optional), marks item as completed or abandoned
-- `🍅[N,]YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Pomodoro record (optional), written below the item; N is actual focus minutes (excluding pause time), optional
+- `📋` - Marks a line as a task
+- `📅YYYY-MM-DD` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period
+- `✅` / `❌` - Item status (optional), marks item as completed or abandoned
+
+📌 Use slash commands to quickly add markers:
+
+| Command | Function |
+|---------|----------|
+| `/task` | Mark as task |
+| `/today` | Add today's item |
+| `/tomorrow` | Add tomorrow's item |
+| `/done` | Mark as completed |
+| `/calendar` | Open calendar view |
+| `/todo` | Open todo dock |
+| `/focus` | Start focus session |
 
 ### 👀 2. View in Visual Interfaces
 
