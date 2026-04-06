@@ -412,7 +412,8 @@ const examples = [
 // 自动滚动到底部
 watch(
   () => messages.value.length,
-  async () => {
+  async (newLen, oldLen) => {
+    console.log('[ChatPanel] messages.length 变化:', { oldLen, newLen });
     await nextTick();
     scrollToBottom();
   }
@@ -421,7 +422,8 @@ watch(
 // 监听消息内容变化（用于流式响应）
 watch(
   () => messages.value.map(m => m.content),
-  async () => {
+  async (newContents, oldContents) => {
+    console.log('[ChatPanel] messages.content 变化:', { count: newContents.length });
     await nextTick();
     scrollToBottom();
   },
@@ -454,7 +456,7 @@ async function handleSend(content?: string | Event) {
   if (!messageContent || isLoading.value || !isAIEnabled.value) return;
 
   inputContent.value = '';
-  await aiStore.sendMessage(messageContent, props.projects, props.groups, props.items);
+  await aiStore.sendMessage(messageContent);
 }
 
 function handleExampleClick(example: string) {

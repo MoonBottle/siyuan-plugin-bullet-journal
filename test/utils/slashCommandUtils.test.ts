@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mock 依赖
 const mockGetSharedPinia = vi.fn();
 const mockUseProjectStore = vi.fn();
-const mockFindItemByBlockId = vi.fn();
+
 
 vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: () => mockGetSharedPinia()
@@ -16,9 +16,7 @@ vi.mock('@/stores', () => ({
   useProjectStore: (pinia: any) => mockUseProjectStore(pinia)
 }));
 
-vi.mock('@/utils/itemBlockUtils', () => ({
-  findItemByBlockId: (blockId: string, items: any[]) => mockFindItemByBlockId(blockId, items)
-}));
+
 
 import {
   generateSlashPatterns,
@@ -227,6 +225,26 @@ describe('processLineText', () => {
     expect(result).toBe('路径/到/文件');
   });
 
+  it('删除 /tx 提醒命令', () => {
+    const result = processLineText('/tx 待办内容', ['/tx', '/reminder']);
+    expect(result).toBe(' 待办内容');
+  });
+
+  it('删除 /tx 命令及其子集 /t', () => {
+    const result = processLineText('/t提醒内容', ['/tx', '/reminder']);
+    expect(result).toBe('提醒内容');
+  });
+
+  it('删除 /cf 重复命令', () => {
+    const result = processLineText('/cf 待办内容', ['/cf', '/recurring']);
+    expect(result).toBe(' 待办内容');
+  });
+
+  it('删除 /cf 命令及其子集 /c', () => {
+    const result = processLineText('/c重复内容', ['/cf', '/recurring']);
+    expect(result).toBe('重复内容');
+  });
+
   it('处理超长 filter', () => {
     const result = processLineText('/verylongcommand内容', ['/verylongcommand']);
     expect(result).toBe('内容');
@@ -390,19 +408,19 @@ describe('extractDatesFromBlock', () => {
 
   it('提取单个日期时间信息', async () => {
     const mockPinia = {};
-    const mockStore = {
-      items: [{
-        id: 'item-1',
-        date: '2024-01-01',
-        startDateTime: '2024-01-01 09:00:00',
-        endDateTime: '2024-01-01 10:00:00'
-      }]
+    const mockItem = {
+      id: 'item-1',
+      date: '2024-01-01',
+      startDateTime: '2024-01-01 09:00:00',
+      endDateTime: '2024-01-01 10:00:00'
     };
-    const mockItem = mockStore.items[0];
+    const mockStore = {
+      items: [mockItem],
+      getItemByBlockId: vi.fn(() => mockItem)
+    };
 
     mockGetSharedPinia.mockReturnValue(mockPinia);
     mockUseProjectStore.mockReturnValue(mockStore);
-    mockFindItemByBlockId.mockReturnValue(mockItem);
 
     const result = await extractDatesFromBlock('block-1');
 
@@ -413,23 +431,23 @@ describe('extractDatesFromBlock', () => {
 
   it('提取包含 siblingItems 的完整日期时间信息', async () => {
     const mockPinia = {};
-    const mockStore = {
-      items: [{
-        id: 'item-1',
-        date: '2024-01-01',
-        startDateTime: undefined,
-        endDateTime: undefined,
-        siblingItems: [
-          { date: '2024-01-02', startDateTime: '2024-01-02 08:00:00', endDateTime: '2024-01-02 09:00:00' },
-          { date: '2024-01-03', startDateTime: undefined, endDateTime: undefined }
-        ]
-      }]
+    const mockItem = {
+      id: 'item-1',
+      date: '2024-01-01',
+      startDateTime: undefined,
+      endDateTime: undefined,
+      siblingItems: [
+        { date: '2024-01-02', startDateTime: '2024-01-02 08:00:00', endDateTime: '2024-01-02 09:00:00' },
+        { date: '2024-01-03', startDateTime: undefined, endDateTime: undefined }
+      ]
     };
-    const mockItem = mockStore.items[0];
+    const mockStore = {
+      items: [mockItem],
+      getItemByBlockId: vi.fn(() => mockItem)
+    };
 
     mockGetSharedPinia.mockReturnValue(mockPinia);
     mockUseProjectStore.mockReturnValue(mockStore);
-    mockFindItemByBlockId.mockReturnValue(mockItem);
 
     const result = await extractDatesFromBlock('block-1');
 
@@ -442,11 +460,13 @@ describe('extractDatesFromBlock', () => {
 
   it('未找到事项返回空数组', async () => {
     const mockPinia = {};
-    const mockStore = { items: [] };
+    const mockStore = {
+      items: [],
+      getItemByBlockId: vi.fn(() => undefined)
+    };
 
     mockGetSharedPinia.mockReturnValue(mockPinia);
     mockUseProjectStore.mockReturnValue(mockStore);
-    mockFindItemByBlockId.mockReturnValue(null);
 
     const result = await extractDatesFromBlock('block-1');
 
@@ -456,26 +476,26 @@ describe('extractDatesFromBlock', () => {
   it('不应覆盖已有时间信息 - 核心测试（用户报告场景）', async () => {
     // 模拟用户报告的场景：测试时间段 @2026-03-13, 2026-03-16 08:45:00~09:45:00
     const mockPinia = {};
-    const mockStore = {
-      items: [{
-        id: 'item-1',
-        date: '2026-03-13',
-        startDateTime: undefined,
-        endDateTime: undefined,
-        siblingItems: [
-          {
-            date: '2026-03-16',
-            startDateTime: '2026-03-16 08:45:00',
-            endDateTime: '2026-03-16 09:45:00'
-          }
-        ]
-      }]
+    const mockItem = {
+      id: 'item-1',
+      date: '2026-03-13',
+      startDateTime: undefined,
+      endDateTime: undefined,
+      siblingItems: [
+        {
+          date: '2026-03-16',
+          startDateTime: '2026-03-16 08:45:00',
+          endDateTime: '2026-03-16 09:45:00'
+        }
+      ]
     };
-    const mockItem = mockStore.items[0];
+    const mockStore = {
+      items: [mockItem],
+      getItemByBlockId: vi.fn(() => mockItem)
+    };
 
     mockGetSharedPinia.mockReturnValue(mockPinia);
     mockUseProjectStore.mockReturnValue(mockStore);
-    mockFindItemByBlockId.mockReturnValue(mockItem);
 
     const result = await extractDatesFromBlock('block-1');
 
@@ -570,11 +590,13 @@ describe('extractItemFromBlock', () => {
       date: '2024-01-01',
       content: '测试事项'
     };
-    const mockStore = { items: [mockItem] };
+    const mockStore = {
+      items: [mockItem],
+      getItemByBlockId: vi.fn(() => mockItem)
+    };
 
     mockGetSharedPinia.mockReturnValue(mockPinia);
     mockUseProjectStore.mockReturnValue(mockStore);
-    mockFindItemByBlockId.mockReturnValue(mockItem);
 
     const result = await extractItemFromBlock('block-1');
 
@@ -583,11 +605,13 @@ describe('extractItemFromBlock', () => {
 
   it('未找到事项返回 null', async () => {
     const mockPinia = {};
-    const mockStore = { items: [] };
+    const mockStore = {
+      items: [],
+      getItemByBlockId: vi.fn(() => undefined)
+    };
 
     mockGetSharedPinia.mockReturnValue(mockPinia);
     mockUseProjectStore.mockReturnValue(mockStore);
-    mockFindItemByBlockId.mockReturnValue(null);
 
     const result = await extractItemFromBlock('block-1');
 

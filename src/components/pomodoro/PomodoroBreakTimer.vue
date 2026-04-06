@@ -67,13 +67,13 @@ const totalBreakSeconds = computed(() => {
   return pomodoroStore.breakTotalSeconds || 5 * 60;
 });
 
-// 进度环：已休息比例
+// 进度环：休息倒计时，从满到空（shrink）
 const strokeDashoffset = computed(() => {
   const remaining = pomodoroStore.breakRemainingSeconds;
   const total = totalBreakSeconds.value;
   const elapsed = Math.max(0, total - remaining);
   const progress = total > 0 ? elapsed / total : 0;
-  return circumference * (1 - progress);
+  return circumference * progress;
 });
 
 // 格式化的剩余时间 MM:SS

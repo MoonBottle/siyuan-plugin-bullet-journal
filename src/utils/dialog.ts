@@ -4,12 +4,14 @@
  */
 import { Dialog } from 'siyuan';
 import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
 import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
 import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
+import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
+import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
@@ -19,6 +21,10 @@ import { useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
 import dayjs from './dayjs';
+import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
+import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMarkers } from '@/parser/recurringParser';
+import { skipCurrentOccurrence } from '@/services/recurringService';
+import * as siyuanAPI from '@/api';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -289,6 +295,18 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
         (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date });
       }
       dialog.destroy();
+    },
+    onSetReminder: () => {
+      dialog.destroy();
+      showReminderSettingDialog(item);
+    },
+    onSetRecurring: () => {
+      dialog.destroy();
+      showRecurringSettingDialog(item);
+    },
+    onSkipOccurrence: () => {
+      dialog.destroy();
+      void skipCurrentOccurrence(plugin, item);
     }
   });
 
@@ -436,6 +454,9 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     siblingItems: props.siblingItems,
     dateRangeStart: props.dateRangeStart,
     dateRangeEnd: props.dateRangeEnd,
+    reminder: props.reminder,
+    repeatRule: props.repeatRule,
+    endCondition: props.endCondition,
   };
 
   // 创建 Vue 应用
@@ -453,7 +474,19 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
         (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
       }
       dialog.destroy();
-    }
+    },
+    onSetReminder: () => {
+      dialog.destroy();
+      showReminderSettingDialog(item);
+    },
+    onSetRecurring: () => {
+      dialog.destroy();
+      showRecurringSettingDialog(item);
+    },
+    onSkipOccurrence: () => {
+      dialog.destroy();
+      void skipCurrentOccurrence(plugin, item);
+    },
   });
 
   // 挂载应用
@@ -826,3 +859,162 @@ export function showDatePickerDialog(
   
   return dialog;
 }
+
+
+/**
+ * 显示提醒设置弹框
+ */
+export function showReminderSettingDialog(item: Item): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(ReminderSettingDialog, {
+    blockId: item.blockId!,
+    initialConfig: item.reminder,
+    onSave: async (config: ReminderConfig) => {
+      await updateItemWithReminder(item, config);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    }
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('reminder').settingTitle,
+    content: '',
+    width: '380px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
+}
+
+/**
+ * 显示重复设置弹框
+ */
+export function showRecurringSettingDialog(item: Item): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(RecurringSettingDialog, {
+    blockId: item.blockId!,
+    initialRepeatRule: item.repeatRule,
+    initialEndCondition: item.endCondition,
+    onSave: async (repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) => {
+      await updateItemWithRecurring(item, repeatRule, endCondition);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    }
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('recurring').settingTitle,
+    content: '',
+    width: '380px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
+}
+
+/**
+ * 更新事项的提醒设置
+ */
+async function updateItemWithReminder(item: Item, config: ReminderConfig): Promise<void> {
+  if (!item.blockId) return;
+
+  // 获取当前 block 内容
+  const block = await siyuanAPI.getBlockByID(item.blockId);
+  if (!block) return;
+
+  // 构建新的内容
+  let content = block.content || block.markdown || '';
+  
+  // 移除旧的提醒标记
+  content = stripReminderMarker(content);
+  
+  // 添加新的提醒标记
+  if (config.enabled) {
+    const marker = generateReminderMarker(config);
+    if (marker) {
+      content += ` ${marker}`;
+    }
+  }
+
+  // 更新 block
+  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+}
+
+/**
+ * 更新事项的重复设置
+ */
+async function updateItemWithRecurring(
+  item: Item, 
+  repeatRule: RepeatRule | undefined, 
+  endCondition: EndCondition | undefined
+): Promise<void> {
+  if (!item.blockId) return;
+
+  // 获取当前 block 内容
+  const block = await siyuanAPI.getBlockByID(item.blockId);
+  if (!block) return;
+
+  // 构建新的内容
+  let content = block.content || block.markdown || '';
+  
+  // 移除旧的重复和结束条件标记（支持新旧格式）
+  content = stripRecurringMarkers(content);
+  
+  // 添加新的标记
+  if (repeatRule) {
+    content += ` ${generateRepeatRuleMarker(repeatRule)}`;
+    
+    if (endCondition) {
+      const endMarker = generateEndConditionMarker(endCondition);
+      if (endMarker) {
+        content += ` ${endMarker}`;
+      }
+    }
+  }
+
+  // 更新 block
+  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+}
+

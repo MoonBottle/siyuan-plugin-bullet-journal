@@ -141,6 +141,7 @@ import { ref, onBeforeUnmount, computed } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { t } from '@/i18n';
+import { eventBus, Events } from '@/utils/eventBus';
 import type { PendingPomodoroCompletion } from '@/types/models';
 import Card from '@/components/common/Card.vue';
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
@@ -159,6 +160,13 @@ const plugin = usePlugin() as any;
 const description = ref('');
 const saved = ref(false);
 const discarded = ref(false);
+const skipAutoSave = ref(false);
+
+// 监听自动延迟事件，关闭弹窗并跳过自动保存
+const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
+  skipAutoSave.value = true;
+  props.closeDialog();
+});
 
 // 最小专注时间（分钟）
 const minFocusMinutes = computed(() => {
@@ -223,6 +231,13 @@ async function handleDiscard() {
 }
 
 onBeforeUnmount(async () => {
+  // 清理自动延迟事件监听
+  unsubscribeAutoExtend();
+
+  // 自动延迟关闭时不保存
+  if (skipAutoSave.value) {
+    return;
+  }
   // 如果用户选择不记录，则不保存
   if (discarded.value) {
     return;
@@ -235,7 +250,6 @@ onBeforeUnmount(async () => {
       description.value
     );
   }
-  // 如果时长过短且未保存也未丢弃，则不自动保存（让用户决定）
 });
 </script>
 

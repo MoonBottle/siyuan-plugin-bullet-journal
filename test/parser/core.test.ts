@@ -758,3 +758,286 @@ describe('parseKramdown 番茄钟解析', () => {
     expect(project!.pomodoros![0].description).toBe('描述1\n描述2');
   });
 });
+
+
+describe('parseKramdown lastBlockId 解析', () => {
+  it('事项无相关内容：lastBlockId 等于 blockId', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }工作事项 @2026-03-10
+{: id="after-i1" }
+- {: id="next-task" }下一个任务 #任务#
+{: id="after-next-task" }
+  - {: id="next-item" }下一个事项 @2026-03-11
+{: id="after-next" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(2);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].blockId).toBe('after-i1');
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('after-i1');
+  });
+
+  it('事项有一个相关链接：lastBlockId 为链接块的 ID', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务B #任务#
+{: id="after-t" }
+  - {: id="i1" }多链接事项 @2026-03-15
+{: id="after-i1" }
+  - {: id="link1" }[需求文档](https://example.com/requirements)
+{: id="after-link1" }
+- {: id="next-task" }下一个任务 #任务#
+{: id="after-next-task" }
+  - {: id="next-item" }下一个事项 @2026-03-16
+{: id="after-next" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(2);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].blockId).toBe('after-i1');
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('after-link1');
+  });
+
+  it('事项有普通文本内容：lastBlockId 为最后一个内容块', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务C #任务#
+{: id="after-t" }
+  - {: id="i1" }事项 @2026-03-20
+{: id="after-i1" }
+- 事项相关内容1
+{: id="content1" }
+- 事项相关内容2
+{: id="content2" }
+- {: id="next-task" }下一个任务 #任务#
+{: id="after-next-task" }
+  - {: id="next-item" }下一个事项 @2026-03-21
+{: id="after-next" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(2);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].blockId).toBe('after-i1');
+    // lastBlockId 应该是最后一个内容块的 ID（content2）
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('content2');
+  });
+
+  it('事项有链接和普通内容混合：lastBlockId 为最后一块', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务D #任务#
+{: id="after-t" }
+  - {: id="i1" }事项 @2026-03-25
+{: id="after-i1" }
+  - {: id="link1" }[链接1](https://example.com/1)
+{: id="after-link1" }
+- 普通说明文字
+{: id="note-block" }
+  - {: id="link2" }[链接2](https://example.com/2)
+{: id="after-link2" }
+- 更多内容
+{: id="more-content" }
+- {: id="next-task" }下一个任务 #任务#
+{: id="after-next-task" }
+  - {: id="next-item" }下一个事项 @2026-03-26
+{: id="after-next" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(2);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].blockId).toBe('after-i1');
+    // lastBlockId 应该是最后一个块的 ID
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('more-content');
+  });
+
+  it('多日期事项共享 lastBlockId', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务E #任务#
+{: id="after-t" }
+  - {: id="i1" }多日期事项 @2026-03-06, 2026-03-10
+{: id="after-i1" }
+- 相关内容
+{: id="related" }
+  - {: id="link1" }[GitHub](https://github.com)
+{: id="after-link1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(2);
+    // 所有展开的 Item 应该有相同的 lastBlockId
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('after-link1');
+    expect(project!.tasks[0].items[1].lastBlockId).toBe('after-link1');
+  });
+
+  it('事项是文档最后一个：lastBlockId 正确记录', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务F #任务#
+{: id="after-t" }
+  - {: id="i1" }最后一个事项 @2026-03-30
+{: id="after-i1" }
+- 相关内容1
+{: id="content1" }
+- 相关内容2
+{: id="content2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].blockId).toBe('after-i1');
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('content2');
+  });
+
+  it('事项和事项相关内容都是文本块：lastBlockId 正确记录', () => {
+    // 场景：事项本身是普通文本块（不是列表项），事项相关内容也是普通文本块
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务G #任务#
+{: id="after-t" }
+完成首页原型设计 @2026-03-26 10:00:00~12:00:00
+{: id="item-block" }
+事项内容1
+{: id="content1" }
+事项内容2
+{: id="content2" }
+评审会议 @2026-03-26 14:00:00~15:00:00 #已放弃
+{: id="next-item" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    // 应该解析出2个事项（完成首页原型设计、评审会议）
+    expect(project!.tasks[0].items).toHaveLength(2);
+    
+    // 第一个事项（完成首页原型设计）
+    expect(project!.tasks[0].items[0].content).toBe('完成首页原型设计');
+    expect(project!.tasks[0].items[0].blockId).toBe('item-block');
+    // lastBlockId 应该指向事项内容2（content2）
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('content2');
+    
+    // 第二个事项（评审会议）
+    expect(project!.tasks[0].items[1].content).toBe('评审会议');
+    expect(project!.tasks[0].items[1].blockId).toBe('next-item');
+    // 没有相关内容，lastBlockId 等于 blockId
+    expect(project!.tasks[0].items[1].lastBlockId).toBe('next-item');
+  });
+});
+
+describe('parseKramdown Emoji 标记解析', () => {
+  it('📋 Emoji 任务标记：正确解析任务', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" updated="123"}任务 📋
+{: id="after-t" }
+  - {: id="i1" }事项内容 📅2026-03-10
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    // 验证任务名（去除📋标记）
+    expect(project!.tasks[0].name.trim()).toBe('任务');
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].content.trim()).toContain('事项内容');
+    expect(project!.tasks[0].items[0].date).toBe('2026-03-10');
+  });
+
+  it('📅 Emoji 日期标记：正确解析日期', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" updated="123"}任务 📋
+{: id="after-t" }
+  - {: id="i1" updated="456"}Emoji日期事项 📅2026-04-01
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].date).toBe('2026-04-01');
+  });
+
+  it('✅ Emoji 完成标记：正确解析已完成状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" updated="123"}任务 📋
+{: id="after-t" }
+  - {: id="i1" updated="456"}已完成事项 📅2026-04-02 ✅
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].status).toBe('completed');
+  });
+
+  it('❌ Emoji 放弃标记：正确解析已放弃状态', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" updated="123"}任务 📋
+{: id="after-t" }
+  - {: id="i1" updated="456"}已放弃事项 📅2026-04-03 ❌
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].status).toBe('abandoned');
+  });
+
+  it('混合使用 Emoji 和文字标记：向后兼容', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" updated="123"}混合任务 #任务
+{: id="after-t" }
+  - {: id="i1" updated="456"}混合事项 @2026-04-04 #done
+{: id="after-i1" }
+  - {: id="i2" updated="789"}Emoji事项 📅2026-04-05 ✅
+{: id="after-i2" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(2);
+    expect(project!.tasks[0].items[0].status).toBe('completed');
+    expect(project!.tasks[0].items[1].status).toBe('completed');
+  });
+
+  it('多日期 Emoji 标记：正确解析多日期', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" updated="123"}任务 📋
+{: id="after-t" }
+  - {: id="i1" updated="456"}多日期事项 📅2026-05-01, 2026-05-02, 2026-05-03
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items).toHaveLength(3);
+    expect(project!.tasks[0].items[0].date).toBe('2026-05-01');
+    expect(project!.tasks[0].items[1].date).toBe('2026-05-02');
+    expect(project!.tasks[0].items[2].date).toBe('2026-05-03');
+  });
+
+  it('日期范围 Emoji 标记：正确解析日期范围', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" updated="123"}任务 📋
+{: id="after-t" }
+  - {: id="i1" updated="456"}出差事项 📅2026-06-01~2026-06-03
+{: id="after-i" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items).toHaveLength(3);
+    expect(project!.tasks[0].items[0].date).toBe('2026-06-01');
+    expect(project!.tasks[0].items[1].date).toBe('2026-06-02');
+    expect(project!.tasks[0].items[2].date).toBe('2026-06-03');
+  });
+});

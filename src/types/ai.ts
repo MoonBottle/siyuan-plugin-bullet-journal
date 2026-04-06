@@ -129,6 +129,9 @@ export interface ChatMessage {
   usage?: UsageInfo;
 }
 
+// 消息来源类型
+export type MessageSource = 'local' | 'weixin';
+
 // 对话会话
 export interface ChatConversation {
   id: string;
@@ -136,6 +139,11 @@ export interface ChatConversation {
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
+  
+  // ClawBot 新增字段
+  source?: MessageSource;
+  weixinUserId?: string;
+  weixinUserName?: string;
 }
 
 // AI 请求体（OpenAI 格式）

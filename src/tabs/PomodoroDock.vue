@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, h, createApp } from 'vue';
-import { getSharedPinia } from '@/index';
+import { getSharedPinia } from '@/utils/sharedPinia';
 import { Dialog } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
@@ -191,11 +191,6 @@ const handlePomodoroRestore = async (data: any) => {
 onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
-
-  // 加载项目数据
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-  }
 
   // 恢复专注状态（如果插件启动时没有恢复）
   await restorePomodoroState();

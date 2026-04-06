@@ -1,44 +1,111 @@
 /**
  * AI Store
- * 管理 AI 配置和对话状态
+ * 管理 AI 配置和对话状态（基于 ReAct Agent 架构）
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { AIProviderConfig, ChatConversation, ChatMessage, ToolCall } from '@/types/ai';
-import { callAIWithToolsStream } from '@/services/aiService';
-import { bulletJournalTools } from '@/services/aiTools';
-import { executeToolCalls, type ToolExecutionContext } from '@/services/aiToolsExecutor';
+import type { AIProviderConfig, ChatConversation, ChatMessage } from '@/types/ai';
 import type { Project, ProjectGroup, Item } from '@/types/models';
+
+import { useConversationStorage, type ConversationData, type ConversationIndexItem } from '@/services/conversationStorageService';
+
+import { ReActAgent } from '@/agents/react/agent';
+import type { ReActStep } from '@/agents/react/types';
+import type { ToolExecutionContext } from '@/services/aiToolsExecutor';
+import { bulletJournalTools } from '@/services/aiTools';
+import { buildSystemPrompt } from '@/services/aiPromptService';
+import { SkillService } from '@/services/skillService';
+
+import { useClawBotService, resetClawBotService } from '@/services/clawBotService';
+import type { ClawBotConfig, WeixinMessage, WeixinConversationMap, ClawBotStats } from '@/types/clawbot';
+import { showMessage } from 'siyuan';
+import { useProjectStore } from './projectStore';
+import { useSettingsStore } from './settingsStore';
 
 export interface AIStoreSettings {
   providers: AIProviderConfig[];
   activeProviderId: string | null;
-  conversations: ChatConversation[];
-  currentConversationId: string | null;
   showToolCalls?: boolean;
+  clawbot?: Partial<ClawBotConfig>;
 }
 
 export const useAIStore = defineStore('ai', () => {
-  // State
+  // ==================== State ====================
+  
+  // 存储服务实例
+  let storageService: ReturnType<typeof useConversationStorage> | null = null;
+  
+  // 插件实例引用（用于调用插件方法保存登录状态）
+  let plugin: any = null;
+  
+  // 防抖保存相关
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  let pendingSave = false;
+  const SAVE_DEBOUNCE_MS = 2000;
+
+  // AI 配置
   const providers = ref<AIProviderConfig[]>([]);
   const activeProviderId = ref<string | null>(null);
-  const conversations = ref<ChatConversation[]>([]);
-  const currentConversationId = ref<string | null>(null);
+  const showToolCalls = ref<boolean>(true);
+
+  // 会话状态
+  const currentConversation = ref<ConversationData | null>(null);
+  // 会话列表（仅元数据，用于 UI 展示）
+  const conversationsList = ref<ConversationIndexItem[]>([]);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
-  const showToolCalls = ref<boolean>(true); // 默认开启工具调用展示
+  
+  // ReAct Agent 相关
+  const reactSteps = ref<ReActStep[]>([]);
+  let currentAgent: ReActAgent | null = null;
 
-  // Getters
+  // 工具上下文
+  const toolContext = ref<ToolExecutionContext>({
+    groups: [],
+    projects: [],
+    allItems: []
+  });
+
+  // ==================== ClawBot State ====================
+  // 防止重复处理登录成功
+  let isProcessingLoginSuccess = false;
+  
+  // ClawBot 配置
+  const clawBotConfig = ref<ClawBotConfig>({
+    enabled: false,
+    baseUrl: 'https://ilinkai.weixin.qq.com',
+    cdnBaseUrl: 'https://cdn.weixin.qq.com',
+    loginStatus: 'none'
+  });
+  
+  // 微信用户 → 会话映射 (使用普通对象而非 Map，避免 Vue 响应式问题)
+  const weixinConversationMap = ref<Record<string, WeixinConversationMap>>({});
+  
+  // ClawBot 统计
+  const clawBotStats = ref<ClawBotStats>({
+    isConnected: false,
+    unreadCount: 0,
+    connectedUsers: 0
+  });
+  
+  // 当前登录会话 Key
+  let currentQRSessionKey: string | null = null;
+  
+  // 未读消息计数（按用户）
+  const unreadWeixinMessages = ref<Record<string, number>>({});
+
+  // ==================== Getters ====================
+  
   const activeProvider = computed(() => {
     return providers.value.find(p => p.id === activeProviderId.value) || null;
   });
 
-  const currentConversation = computed(() => {
-    return conversations.value.find(c => c.id === currentConversationId.value) || null;
-  });
-
   const currentMessages = computed(() => {
     return currentConversation.value?.messages || [];
+  });
+
+  const currentConversationId = computed(() => {
+    return currentConversation.value?.id || null;
   });
 
   const isAIEnabled = computed(() => {
@@ -52,11 +119,103 @@ export const useAIStore = defineStore('ai', () => {
 
   const showToolCallsEnabled = computed(() => showToolCalls.value);
 
-  // Actions
+  // ==================== ClawBot Getters ====================
+  
+  const isClawBotEnabled = computed(() => clawBotConfig.value.enabled);
+  const isClawBotConnected = computed(() => clawBotConfig.value.loginStatus === 'connected');
+  const clawBotLoginStatus = computed(() => clawBotConfig.value.loginStatus);
+  const hasUnreadWeixin = computed(() => {
+    const messages = unreadWeixinMessages.value || {};
+    return Object.values(messages).some(count => count > 0);
+  });
+
+  // ==================== Storage Management ====================
+  
+  /**
+   * 初始化存储服务
+   */
+  async function initializeStorage(plugin: any) {
+    storageService = useConversationStorage(plugin);
+
+    const migrationResult = await storageService.initialize();
+    if (migrationResult.migrated) {
+      console.log(`[AIStore] Migrated ${migrationResult.conversationCount} conversations`);
+    }
+
+    await refreshConversationsList();
+
+    const index = await storageService.getIndex();
+    if (index.currentConversationId) {
+      currentConversation.value = await storageService.loadConversation(
+        index.currentConversationId
+      );
+    }
+  }
 
   /**
-   * 从插件设置加载 AI 配置
+   * 防抖保存会话
    */
+  function debouncedSaveConversation(immediate = false) {
+    if (!storageService || !currentConversation.value) return;
+    
+    pendingSave = true;
+    
+    if (immediate) {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+      storageService.saveConversation(currentConversation.value);
+      pendingSave = false;
+      return;
+    }
+    
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    
+    saveTimeout = setTimeout(() => {
+      if (pendingSave && currentConversation.value) {
+        storageService!.saveConversation(currentConversation.value);
+        pendingSave = false;
+      }
+      saveTimeout = null;
+    }, SAVE_DEBOUNCE_MS);
+  }
+  
+  /**
+   * 强制保存当前会话
+   */
+  async function forceSaveConversation() {
+    if (!storageService || !currentConversation.value) return;
+    
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+    
+    await storageService.saveConversation(currentConversation.value);
+    pendingSave = false;
+  }
+
+  /**
+   * 刷新会话列表（仅加载元数据，不加载完整会话）
+   */
+  async function refreshConversationsList() {
+    if (!storageService) return;
+    conversationsList.value = await storageService.loadConversationsList();
+  }
+
+  /**
+   * 获取会话列表（仅元数据）
+   */
+  async function getConversationsList(): Promise<ConversationIndexItem[]> {
+    if (!storageService) return [];
+    return await storageService.loadConversationsList();
+  }
+
+  // ==================== Configuration Management ====================
+  
   function loadSettings(settings: Partial<AIStoreSettings>) {
     if (settings.providers) {
       providers.value = settings.providers;
@@ -64,16 +223,11 @@ export const useAIStore = defineStore('ai', () => {
     if (settings.activeProviderId !== undefined) {
       activeProviderId.value = settings.activeProviderId;
     }
-    if (settings.conversations) {
-      conversations.value = settings.conversations;
-    }
-    if (settings.currentConversationId !== undefined) {
-      currentConversationId.value = settings.currentConversationId;
-    }
     if (settings.showToolCalls !== undefined) {
       showToolCalls.value = settings.showToolCalls;
     }
-    // 若当前选中的供应商已被禁用，则切换到第一个已启用的供应商
+    // 注意：clawbot 配置现在从单独文件加载，不在 settings 中
+    
     const enabled = providers.value.filter(p => p.enabled);
     if (activeProviderId.value) {
       const isActiveEnabled = enabled.some(p => p.id === activeProviderId.value);
@@ -83,173 +237,79 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
-  /**
-   * 加载聊天记录
-   */
   function loadChatHistory(chatHistory: { conversations: ChatConversation[]; currentConversationId: string | null }) {
-    if (chatHistory.conversations) {
-      conversations.value = chatHistory.conversations;
-    }
-    if (chatHistory.currentConversationId) {
-      currentConversationId.value = chatHistory.currentConversationId;
-    }
+    console.log('[AIStore] loadChatHistory called (ignored in split storage mode)');
   }
 
-  /**
-   * 设置供应商列表
-   */
   function setProviders(newProviders: AIProviderConfig[]) {
     providers.value = newProviders;
   }
 
-  /**
-   * 设置当前激活的供应商
-   */
   function setActiveProvider(providerId: string | null) {
     activeProviderId.value = providerId;
   }
 
-  /**
-   * 设置是否展示工具调用
-   */
   function setShowToolCalls(value: boolean) {
     showToolCalls.value = value;
   }
 
-  /**
-   * 创建新对话
-   */
-  function createConversation(title = '新对话'): string {
-    const conversation: ChatConversation = {
-      id: `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title,
-      messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-    conversations.value.unshift(conversation);
-    currentConversationId.value = conversation.id;
+  // ==================== Session Management ====================
+  
+  async function createConversation(title = '新对话'): Promise<string> {
+    if (!storageService) {
+      throw new Error('存储服务未初始化');
+    }
+
+    const conversation = await storageService.createConversation(title);
+    currentConversation.value = conversation;
+    await refreshConversationsList();
     return conversation.id;
   }
 
-  /**
-   * 切换当前对话
-   */
-  function switchConversation(conversationId: string) {
-    if (conversations.value.some(c => c.id === conversationId)) {
-      currentConversationId.value = conversationId;
+  async function switchConversation(conversationId: string) {
+    if (!storageService) return;
+
+    const conversation = await storageService.loadConversation(conversationId);
+    if (conversation) {
+      currentConversation.value = conversation;
+      await storageService.setCurrentConversation(conversationId);
     }
   }
 
-  /**
-   * 删除对话
-   */
-  function deleteConversation(conversationId: string) {
-    const index = conversations.value.findIndex(c => c.id === conversationId);
-    if (index > -1) {
-      conversations.value.splice(index, 1);
-      if (currentConversationId.value === conversationId) {
-        currentConversationId.value = conversations.value[0]?.id || null;
-      }
+  async function deleteConversation(conversationId: string) {
+    if (!storageService) return;
+
+    await storageService.deleteConversation(conversationId);
+    await refreshConversationsList();
+
+    if (currentConversation.value?.id === conversationId) {
+      currentConversation.value = null;
     }
   }
 
-  /**
-   * 清空当前对话的消息
-   */
-  function clearCurrentConversation() {
-    if (currentConversation.value) {
-      currentConversation.value.messages = [];
-      currentConversation.value.updatedAt = Date.now();
-    }
+  async function clearCurrentConversation() {
+    if (!storageService || !currentConversation.value) return;
+
+    currentConversation.value.messages = [];
+    currentConversation.value.updatedAt = Date.now();
+    await storageService.saveConversation(currentConversation.value);
   }
 
-  // 系统提示词（支持工具调用版本）
-  const SYSTEM_PROMPT_WITH_TOOLS = `你是一个任务助手，专门帮助用户管理和分析他们的任务数据。
-
-## 你的能力
-
-你可以使用以下工具来查询用户的任务数据：
-
-1. **get_user_time** - 获取用户当前本地日期时间
-   - 用途：当用户询问「今天」「明天」「本周」等时间相关问题时，优先调用此工具获取准确日期
-   - 参数：无
-   - 返回：date（YYYY-MM-DD，供 filter_items 使用）、datetime、weekday
-
-2. **list_groups** - 查询所有分组
-   - 用途：获取分组列表，了解用户的项目分类
-   - 参数：无
-
-3. **list_projects** - 查询项目列表
-   - 用途：获取项目信息
-   - 参数：groupId（可选，来自 list_groups）
-
-4. **filter_items** - 筛选事项
-   - 用途：按条件查询具体的工作事项，每个 item 含 pomodoros 字段（该事项的番茄钟记录，精简格式）
-   - 参数：
-     - projectId / projectIds: 项目ID（来自 list_projects）
-     - groupId: 分组ID（来自 list_groups）
-     - startDate / endDate: 日期范围，格式 YYYY-MM-DD
-     - status: 状态筛选（pending=待办, completed=已完成, abandoned=已放弃）
-
-5. **get_pomodoro_stats** - 获取番茄钟统计数据
-   - 用途：查询今日或指定日期范围的番茄数、专注分钟数
-   - 参数：date（"today" 今日）、startDate/endDate（YYYY-MM-DD）、projectId（可选）
-   - 返回：todayCount、todayMinutes、totalCount、totalMinutes
-
-6. **get_pomodoro_records** - 获取番茄钟记录列表
-   - 用途：查询番茄钟记录明细（时间、事项、时长等）
-   - 参数：同上
-   - 返回：records 数组
-
-## 工作流程
-
-1. **分析用户问题** - 理解用户需要什么数据
-2. **涉及时间时先获取** - 若涉及「今天」「明天」「本周」等，**先调用 get_user_time** 获取用户当前日期
-3. **选择工具** - 决定调用哪些工具来获取数据
-4. **执行工具** - 系统会执行工具并返回结果
-5. **组织回复** - 基于工具返回的数据，用中文回答用户
-
-## 示例
-
-用户问：「今天有哪些任务？」
-→ 先调用 get_user_time，再用返回的 date 作为 startDate 和 endDate 调用 filter_items，status="pending"
-
-用户问：「项目A的进度如何？」
-→ 先调用 list_projects 找到项目A的ID，然后调用 filter_items 查询该项目的事项
-
-用户问：「今天专注了多少？」
-→ 先调用 get_user_time 获取今日日期，再调用 get_pomodoro_stats 并传入 date="today"
-
-## 注意事项
-
-- 始终使用工具查询数据，不要编造信息
-- 可以多次调用工具来获取不同维度的数据
-- 回答要简洁明了，突出重点
-
-## 表格格式（展示任务列表时必遵）
-
-当用表格展示 filter_items 结果时，必须使用标准 Markdown 表格格式：
-- 每列用竖线 | 分隔，行首行尾也要有 |
-- 表头下方必须有分隔行，如 |---|---|---|
-- 每行数据的每一列都要单独用 | 分隔，不能把多列内容写在同一单元格
-
-正确示例：
-| 状态 | 任务内容 | 所属项目 | 任务名称 |
-|------|----------|----------|----------|
-| 待办 | 事项A | 项目X | 任务1 |
-| 已完成 | 事项B | 项目Y | 任务2 |
-`;
+  // ==================== ReAct Agent Core ====================
+  
+  /**
+   * 设置工具执行上下文
+   */
+  function setToolContext(groups: ProjectGroup[], projects: Project[], allItems: Item[], directories?: import('@/types/models').ProjectDirectory[]) {
+    toolContext.value = { groups, projects, allItems, directories };
+    currentAgent?.setToolContext(toolContext.value);
+  }
 
   /**
-   * 发送消息（支持工具调用）
+   * 发送消息（基于 ReAct Agent）
    */
-  async function sendMessage(
-    content: string,
-    projects: Project[],
-    groups: ProjectGroup[],
-    items: Item[]
-  ): Promise<void> {
+  async function sendMessage(content: string): Promise<void> {
+    // 前置检查
     if (!isAIEnabled.value) {
       error.value = 'AI 服务未配置或未启用';
       return;
@@ -261,293 +321,760 @@ export const useAIStore = defineStore('ai', () => {
       return;
     }
 
+    if (!storageService) {
+      error.value = '存储服务未初始化';
+      return;
+    }
+
+    // 从 Store 获取最新数据
+    try {
+      const projectStore = useProjectStore();
+      const settingsStore = useSettingsStore();
+      
+      const projects = projectStore.projects || [];
+      const groups = settingsStore.groups || [];
+      const allItems = projectStore.items || [];
+      const directories = settingsStore.directories || [];
+
+      if (projects.length > 0 || groups.length > 0) {
+        console.log('[AIStore] 更新工具上下文:', { projects: projects.length, groups: groups.length, items: allItems.length });
+        toolContext.value = { groups, projects, allItems, directories };
+      }
+    } catch (err) {
+      console.error('[AIStore] 获取 Store 数据失败:', err);
+    }
+
+    // 确保有当前会话
     if (!currentConversation.value) {
-      createConversation();
+      await createConversation();
     }
 
     const conversation = currentConversation.value!;
 
-    // 添加用户消息
-    const userMessage: ChatMessage = {
-      id: `msg-${Date.now()}-user`,
-      role: 'user',
-      content,
-      timestamp: Date.now()
-    };
-    conversation.messages.push(userMessage);
-    conversation.updatedAt = Date.now();
+    // 从 SkillService 获取所有启用技能（包括内置和用户自定义）
+    const skillService = SkillService.getInstance();
+    const allSkills = skillService.getEnabledSkills();
+    const skills = allSkills.map(skill => ({
+      name: skill.name,
+      description: skill.description
+    }));
+    
+    // 构建系统提示词（注入技能列表）
+    const systemPrompt = buildSystemPrompt(skills);
 
+    // 设置状态
     isLoading.value = true;
     error.value = null;
+    reactSteps.value = [];
 
     try {
-      // 构建工具执行上下文
-      const toolContext: ToolExecutionContext = {
-        groups,
-        projects,
-        allItems: items
-      };
-
-      // 第一轮：让 AI 决定使用哪些工具（改为流式，无工具时也能逐字显示）
-      const messagesForAI: ChatMessage[] = [
-        {
-          id: 'system',
-          role: 'system',
-          content: SYSTEM_PROMPT_WITH_TOOLS,
-          timestamp: Date.now()
+      // 创建 ReAct Agent
+      currentAgent = new ReActAgent({
+        context: {
+          conversationId: conversation.id,
+          provider,
+          systemPrompt,
+          tools: bulletJournalTools,
+          maxIterations: 5
         },
-        ...conversation.messages
-      ];
-
-      // 先添加占位消息，用于流式更新
-      const firstAIMessage: ChatMessage = {
-        id: `msg-${Date.now()}-ai-first`,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        loading: true
-      };
-      conversation.messages.push(firstAIMessage);
-
-      const firstResponse = await callAIWithToolsStream(provider, messagesForAI, bulletJournalTools, (chunk, reasoning, usage) => {
-        const messageIndex = conversation.messages.findIndex(m => m.id === firstAIMessage.id);
-        if (messageIndex !== -1) {
-          conversation.messages[messageIndex].content = chunk;
-          if (reasoning) {
-            conversation.messages[messageIndex].reasoning = reasoning;
+        onStreamUpdate: (content) => {
+          // 强制触发 Vue 响应式更新
+          if (currentConversation.value) {
+            currentConversation.value = { ...currentConversation.value };
           }
-          if (usage) {
-            conversation.messages[messageIndex].usage = usage;
-          }
+          debouncedSaveConversation();
+        },
+        onStepComplete: (step) => {
+          reactSteps.value.push(step);
         }
-        conversation.updatedAt = Date.now();
       });
 
-      // 处理工具调用
-      if (firstResponse.toolCalls && firstResponse.toolCalls.length > 0) {
-        // 用 tool_calls 消息替换占位消息（第一轮若返回工具调用，占位内容无效）
-        const placeholderIndex = conversation.messages.findIndex(m => m.id === firstAIMessage.id);
-        const toolCallMessage: ChatMessage = {
-          id: `msg-${Date.now()}-tool-calls`,
-          role: 'assistant',
-          content: firstResponse.content,
-          toolCalls: firstResponse.toolCalls,
-          reasoning: firstResponse.reasoning,
-          usage: firstResponse.usage,
-          timestamp: Date.now()
-        };
-        if (placeholderIndex !== -1) {
-          conversation.messages.splice(placeholderIndex, 1, toolCallMessage);
-        } else {
-          conversation.messages.push(toolCallMessage);
+      // 监听消息添加和更新事件
+      currentAgent.on('messageAdd', () => {
+        // 强制触发响应式更新
+        if (currentConversation.value) {
+          currentConversation.value = { ...currentConversation.value };
         }
+      });
 
-        // 执行工具调用
-        const toolResults = executeToolCalls(firstResponse.toolCalls, toolContext);
-
-        // 添加工具结果消息
-        for (const result of toolResults) {
-          const toolResultMessage: ChatMessage = {
-            id: `tool-${result.toolCallId}`,
-            role: 'tool',
-            content: result.result,
-            toolCallId: result.toolCallId,
-            timestamp: Date.now()
-          };
-          conversation.messages.push(toolResultMessage);
+      currentAgent.on('messageUpdate', () => {
+        // 强制触发响应式更新
+        if (currentConversation.value) {
+          currentConversation.value = { ...currentConversation.value };
         }
+      });
 
-        // 添加加载中的最终回复消息
-        const finalAIMessage: ChatMessage = {
-          id: `msg-${Date.now()}-ai-final`,
-          role: 'assistant',
-          content: '',
-          timestamp: Date.now(),
-          loading: true
-        };
-        conversation.messages.push(finalAIMessage);
+      // 设置工具上下文
+      currentAgent.setToolContext(toolContext.value);
 
-        // 第二轮：让 AI 基于工具结果生成回复（使用支持工具调用的流式函数）
-        const finalMessages: ChatMessage[] = [
-          {
-            id: 'system',
-            role: 'system',
-            content: SYSTEM_PROMPT_WITH_TOOLS,
-            timestamp: Date.now()
-          },
-          ...conversation.messages
-        ];
+      // 运行 Agent
+      await currentAgent.run(content, conversation);
 
-        let finalResponse = await callAIWithToolsStream(provider, finalMessages, bulletJournalTools, (chunk, reasoning, usage) => {
-          const messageIndex = conversation.messages.findIndex(m => m.id === finalAIMessage.id);
-          if (messageIndex !== -1) {
-            conversation.messages[messageIndex].content = chunk;
-            if (reasoning) {
-              conversation.messages[messageIndex].reasoning = reasoning;
-            }
-            if (usage) {
-              conversation.messages[messageIndex].usage = usage;
-            }
-          }
-          conversation.updatedAt = Date.now();
-        });
+      // 强制保存
+      await forceSaveConversation();
+      await refreshConversationsList();
 
-        // 标记是否进入了多轮循环
-        let hasEnteredLoop = false;
-        let lastAIMessageId = finalAIMessage.id;
-
-        // 处理多轮工具调用（第二轮及以后）
-        while (finalResponse.toolCalls && finalResponse.toolCalls.length > 0) {
-          hasEnteredLoop = true;
-
-          // 先保存当前 AI 的工具调用消息
-          const toolCallMessage: ChatMessage = {
-            id: `msg-${Date.now()}-tool-calls-${Math.random().toString(36).substr(2, 9)}`,
-            role: 'assistant',
-            content: finalResponse.content,
-            toolCalls: finalResponse.toolCalls,
-            reasoning: finalResponse.reasoning,
-            usage: finalResponse.usage,
-            timestamp: Date.now()
-          };
-          // 避免同一份 usage 在流式更新的消息和 toolCallMessage 上重复显示
-          const lastIdx = conversation.messages.length - 1;
-          if (lastIdx >= 0) {
-            delete conversation.messages[lastIdx].usage;
-          }
-          conversation.messages.push(toolCallMessage);
-
-          // 执行工具调用
-          const toolResults = executeToolCalls(finalResponse.toolCalls, toolContext);
-
-          // 添加工具结果消息
-          for (const result of toolResults) {
-            const toolResultMessage: ChatMessage = {
-              id: `tool-${result.toolCallId}`,
-              role: 'tool',
-              content: result.result,
-              toolCallId: result.toolCallId,
-              timestamp: Date.now()
-            };
-            conversation.messages.push(toolResultMessage);
-          }
-
-          // 创建新的 AI 回复消息（用于下一轮）
-          const nextAIMessage: ChatMessage = {
-            id: `msg-${Date.now()}-ai-${Math.random().toString(36).substr(2, 9)}`,
-            role: 'assistant',
-            content: '',
-            timestamp: Date.now(),
-            loading: true
-          };
-          conversation.messages.push(nextAIMessage);
-          lastAIMessageId = nextAIMessage.id;
-
-          // 继续下一轮调用，让 AI 基于工具结果生成回复
-          const nextMessages: ChatMessage[] = [
-            {
-              id: 'system',
-              role: 'system',
-              content: SYSTEM_PROMPT_WITH_TOOLS,
-              timestamp: Date.now()
-            },
-            ...conversation.messages
-          ];
-
-          finalResponse = await callAIWithToolsStream(provider, nextMessages, bulletJournalTools, (chunk, reasoning, usage) => {
-            const messageIndex = conversation.messages.findIndex(m => m.id === nextAIMessage.id);
-            if (messageIndex !== -1) {
-              conversation.messages[messageIndex].content = chunk;
-              if (reasoning) {
-                conversation.messages[messageIndex].reasoning = reasoning;
-              }
-              if (usage) {
-                conversation.messages[messageIndex].usage = usage;
-              }
-            }
-            conversation.updatedAt = Date.now();
-          });
-
-          // 完成当前消息加载
-          const currentMessageIndex = conversation.messages.findIndex(m => m.id === nextAIMessage.id);
-          if (currentMessageIndex !== -1) {
-            conversation.messages[currentMessageIndex].loading = false;
-          }
-        }
-
-        // 完成加载，保存最终结果
-        // 如果进入了循环，更新最后创建的消息；否则更新最初的 finalAIMessage
-        const targetMessageId = hasEnteredLoop ? lastAIMessageId : finalAIMessage.id;
-        const finalMessageIndex = conversation.messages.findIndex(m => m.id === targetMessageId);
-        if (finalMessageIndex !== -1) {
-          conversation.messages[finalMessageIndex].content = finalResponse.content || '已完成';
-          conversation.messages[finalMessageIndex].reasoning = finalResponse.reasoning;
-          conversation.messages[finalMessageIndex].usage = finalResponse.usage;
-          conversation.messages[finalMessageIndex].loading = false;
-        }
-      } else {
-        // 没有工具调用：占位消息已通过流式更新了 content，只需结束 loading
-        const placeholderIndex = conversation.messages.findIndex(m => m.id === firstAIMessage.id);
-        if (placeholderIndex !== -1) {
-          conversation.messages[placeholderIndex].loading = false;
-          conversation.messages[placeholderIndex].reasoning = firstResponse.reasoning;
-          conversation.messages[placeholderIndex].usage = firstResponse.usage;
-        }
-      }
-
-      conversation.updatedAt = Date.now();
-
-      // 如果是第一条用户消息，自动设置对话标题
-      if (conversation.messages.filter(m => m.role === 'user').length === 1) {
-        conversation.title = content.slice(0, 20) + (content.length > 20 ? '...' : '');
-      }
     } catch (err) {
-      // 查找最后一条 assistant 消息并标记错误
-      const lastAssistantMessage = conversation.messages
-        .filter(m => m.role === 'assistant')
-        .pop();
-      if (lastAssistantMessage) {
-        lastAssistantMessage.loading = false;
-        lastAssistantMessage.error = err instanceof Error ? err.message : '未知错误';
-      }
-      error.value = err instanceof Error ? err.message : '未知错误';
+      console.error('[AIStore] Send message error:', err);
+      error.value = err instanceof Error ? err.message : '发送消息失败';
+
+      // 保存错误状态
+      await forceSaveConversation();
     } finally {
       isLoading.value = false;
     }
   }
 
-  /**
-   * 获取导出数据（用于保存到 settings）
-   */
+  // ==================== Export Data ====================
+  
   function getExportData(): AIStoreSettings {
     return {
       providers: providers.value,
       activeProviderId: activeProviderId.value,
-      conversations: conversations.value,
-      currentConversationId: currentConversationId.value,
       showToolCalls: showToolCalls.value
+      // 注意：clawbot 配置保存到单独文件，不在 settings 中
     };
   }
 
-  /**
-   * 获取聊天记录数据（用于保存到单独文件）
-   */
   function getChatHistoryData() {
     return {
-      conversations: conversations.value,
-      currentConversationId: currentConversationId.value
+      conversations: [],
+      currentConversationId: null
     };
   }
+
+  // ==================== ClawBot Actions ====================
+
+  /**
+   * 处理收到的微信消息
+   */
+  async function handleWeixinMessage(msg: WeixinMessage) {
+    console.log('[AIStore] =======================================');
+    console.log('[AIStore] 开始处理微信消息');
+    console.log('[AIStore] from_user_id:', msg.from_user_id);
+    console.log('[AIStore] message_type:', msg.message_type);
+    console.log('[AIStore] context_token:', msg.context_token);
+    console.log('[AIStore] item_list:', JSON.stringify(msg.item_list, null, 2));
+    console.log('[AIStore] =======================================');
+    
+    if (!storageService) {
+      console.error('[AIStore] storageService 未初始化');
+      return;
+    }
+    
+    const fromUserId = msg.from_user_id;
+    const contextToken = msg.context_token;
+    
+    if (!fromUserId) return;
+    
+    // 获取或创建会话
+    console.log('[AIStore] 获取或创建会话:', fromUserId);
+    const conversationId = await getOrCreateWeixinConversation(fromUserId);
+    console.log('[AIStore] 会话ID:', conversationId);
+    
+    // 保存 context_token
+    if (weixinConversationMap.value[fromUserId]) {
+      weixinConversationMap.value[fromUserId] = {
+        ...weixinConversationMap.value[fromUserId],
+        contextToken,
+        lastMessageAt: Date.now()
+      };
+    }
+    
+    // 提取消息内容
+    let content = '';
+    const itemList = msg.item_list || [];
+    console.log('[AIStore] 消息项列表长度:', itemList.length);
+    console.log('[AIStore] 消息项列表内容:', JSON.stringify(itemList, null, 2));
+    
+    for (const item of itemList) {
+      // 适配字段名（下划线 vs 驼峰）
+      const itemType = item.type ?? (item as any).Type;
+      const textItem = item.text_item ?? (item as any).TextItem;
+      const voiceItem = item.voice_item ?? (item as any).VoiceItem;
+      
+      console.log('[AIStore] 处理消息项:', { itemType, textItem, voiceItem });
+      
+      if (itemType === 1 && textItem?.text) {
+        content = textItem.text;
+        console.log('[AIStore] 提取到文本:', content);
+        break;
+      }
+      // 语音转文字
+      if (itemType === 3 && voiceItem?.text) {
+        content = `[语音] ${voiceItem.text}`;
+        console.log('[AIStore] 提取到语音:', content);
+        break;
+      }
+    }
+    
+    if (!content) {
+      // 检查是否有媒体
+      const hasMedia = itemList.some(i => [2, 3, 4, 5].includes((i.type ?? (i as any).Type) || 0));
+      if (hasMedia) {
+        content = '[媒体消息]';
+      }
+    }
+    
+    if (content) {
+      // 更新未读计数
+      const current = unreadWeixinMessages.value[fromUserId] || 0;
+      unreadWeixinMessages.value[fromUserId] = current + 1;
+      clawBotStats.value.unreadCount = Object.values(unreadWeixinMessages.value)
+        .reduce((a, b) => a + b, 0);
+      
+      // 刷新会话列表
+      await refreshConversationsList();
+      
+      // 调用 AI 回复（消息添加由 ReActAgent 统一处理）
+      if (isAIEnabled.value) {
+        console.log('[AIStore] AI 已启用，开始生成回复');
+        await generateAIReply(conversationId, content, fromUserId, contextToken);
+      } else {
+        console.log('[AIStore] AI 未启用，跳过回复');
+      }
+    }
+  }
+  
+  /**
+   * 初始化 ClawBot 服务
+   */
+  async function initializeClawBot(pluginInstance: any) {
+    console.log('[AIStore] initializeClawBot');
+    
+    // 保存 plugin 实例引用
+    plugin = pluginInstance;
+    
+    // 从单独文件加载所有配置（包括 enabled）
+    let loginState = null;
+    if (plugin?.loadWechatLoginState) {
+      loginState = await plugin.loadWechatLoginState();
+      console.log('[AIStore] 从文件加载的微信配置:', { 
+        enabled: loginState?.enabled,
+        hasToken: !!loginState?.token,
+        hasAccountId: !!loginState?.accountId 
+      });
+    }
+    
+    // 恢复所有配置到内存
+    if (loginState) {
+      clawBotConfig.value.enabled = loginState.enabled ?? false;
+      clawBotConfig.value.token = loginState.token;
+      clawBotConfig.value.accountId = loginState.accountId;
+      clawBotConfig.value.userId = loginState.userId;
+      clawBotConfig.value.loginStatus = loginState.loginStatus || 'none';
+      if (loginState.baseUrl) {
+        clawBotConfig.value.baseUrl = loginState.baseUrl;
+      }
+      if (loginState.cdnBaseUrl) {
+        clawBotConfig.value.cdnBaseUrl = loginState.cdnBaseUrl;
+      }
+    }
+    
+    // 检查是否启用
+    if (!clawBotConfig.value.enabled) {
+      console.log('[AIStore] ClawBot 未启用');
+      return;
+    }
+    
+    const config = clawBotConfig.value;
+    console.log('[AIStore] ClawBot 配置状态:', { 
+      enabled: config.enabled,
+      hasToken: !!config.token, 
+      hasAccountId: !!config.accountId,
+      loginStatus: config.loginStatus 
+    });
+    
+    // 如果有保存的 token，恢复连接
+    if (config.token && config.accountId) {
+      console.log('[AIStore] 发现保存的凭证，恢复 ClawBot 连接');
+      
+      // 更新服务配置
+      const clawBot = useClawBotService(config);
+      clawBot.updateConfig({
+        ...config,
+        loginStatus: 'connected'
+      });
+      
+      clawBotConfig.value.loginStatus = 'connected';
+      clawBotStats.value.isConnected = true;
+      
+      // 启动消息监听
+      await clawBot.startMonitoring();
+      
+      // 注册消息处理器（先清空旧的，避免重复）
+      console.log('[AIStore] 清空旧处理器并注册新处理器');
+      clawBot.clearMessageHandlers();
+      clawBot.onMessage((msg) => {
+        console.log('[AIStore] 收到微信消息:', msg.from_user_id);
+        handleWeixinMessage(msg);
+      });
+      
+      console.log('[AIStore] ClawBot 恢复连接成功');
+    } else {
+      console.log('[AIStore] 无保存的凭证，需要重新登录');
+    }
+  }
+
+  /**
+   * 启动扫码登录
+   */
+  async function startClawBotLogin(): Promise<{ qrcodeUrl: string; sessionKey: string } | null> {
+    const clawBot = useClawBotService(clawBotConfig.value);
+    
+    try {
+      const result = await clawBot.startLogin();
+      clawBotConfig.value.qrcodeUrl = result.qrcodeUrl;
+      clawBotConfig.value.loginStatus = 'pending';
+      
+      // 保存 sessionKey 用于后续轮询
+      currentQRSessionKey = result.sessionKey;
+      
+      return result;
+    } catch (error) {
+      console.error('[AIStore] ClawBot 登录失败:', error);
+      clawBotConfig.value.loginStatus = 'error';
+      clawBotConfig.value.errorMessage = error instanceof Error ? error.message : '登录失败';
+      return null;
+    }
+  }
+
+  /**
+   * 轮询登录状态
+   */
+  async function pollClawBotLogin(): Promise<boolean> {
+    const clawBot = useClawBotService(clawBotConfig.value);
+    
+    if (!currentQRSessionKey) return false;
+    
+    try {
+      const success = await clawBot.pollQRStatus(currentQRSessionKey);
+      
+      if (success) {
+        // 防止重复处理登录成功
+        if (isProcessingLoginSuccess) {
+          console.log('[AIStore] 登录成功已在处理中，跳过');
+          return true;
+        }
+        isProcessingLoginSuccess = true;
+        
+        console.log('[AIStore] 登录成功，启动监听和注册处理器');
+        // 更新配置
+        const config = clawBot.getConfig();
+        clawBotConfig.value = { 
+          ...clawBotConfig.value, 
+          ...config,
+          loginStatus: 'connected'
+        };
+        clawBotStats.value.isConnected = true;
+        
+        // 启动消息监听
+        await clawBot.startMonitoring();
+        
+        // 注册消息处理器（先清空旧的，避免重复）
+        console.log('[AIStore] 登录成功后清空旧处理器并注册新处理器');
+        clawBot.clearMessageHandlers();
+        clawBot.onMessage((msg) => {
+          console.log('[AIStore] 收到微信消息:', msg.from_user_id);
+          handleWeixinMessage(msg);
+        });
+        
+        // 启用并保存所有配置到单独文件
+        console.log('[AIStore] 保存微信配置到单独文件');
+        clawBotConfig.value.enabled = true; // 登录成功后自动启用
+        if (plugin?.saveWechatLoginState) {
+          await plugin.saveWechatLoginState({
+            enabled: true,
+            token: clawBotConfig.value.token!,
+            accountId: clawBotConfig.value.accountId!,
+            userId: clawBotConfig.value.userId,
+            loginStatus: 'connected',
+            baseUrl: clawBotConfig.value.baseUrl,
+            cdnBaseUrl: clawBotConfig.value.cdnBaseUrl
+          });
+        }
+        
+        showMessage('微信连接成功！', 3000);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('[AIStore] 登录轮询失败:', error);
+      clawBotConfig.value.loginStatus = 'error';
+      clawBotConfig.value.errorMessage = error instanceof Error ? error.message : '登录失败';
+      return false;
+    }
+  }
+
+  /**
+   * 断开 ClawBot 连接
+   */
+  async function disconnectClawBot() {
+    const clawBot = useClawBotService(clawBotConfig.value);
+    
+    clawBot.disconnect();
+    resetClawBotService();
+    
+    clawBotConfig.value.loginStatus = 'none';
+    clawBotConfig.value.token = undefined;
+    clawBotConfig.value.accountId = undefined;
+    clawBotConfig.value.userId = undefined;
+    clawBotStats.value.isConnected = false;
+    clawBotStats.value.connectedUsers = 0;
+    
+    // 保存状态（enabled 保持 true，但清除登录凭证）
+    if (plugin?.saveWechatLoginState) {
+      await plugin.saveWechatLoginState({
+        enabled: clawBotConfig.value.enabled,
+        loginStatus: 'none'
+      });
+    }
+    
+    showMessage('已断开微信连接', 2000);
+  }
+
+  /**
+   * 获取或创建微信用户的会话
+   */
+  async function getOrCreateWeixinConversation(
+    ilinkUserId: string,
+    userName?: string
+  ): Promise<string> {
+    console.log('[AIStore] getOrCreateWeixinConversation:', { ilinkUserId, userName });
+    
+    if (!storageService) throw new Error('存储服务未初始化');
+    
+    // 检查是否已有映射
+    if (weixinConversationMap.value[ilinkUserId]) {
+      console.log('[AIStore] 找到已有映射:', weixinConversationMap.value[ilinkUserId]);
+      return weixinConversationMap.value[ilinkUserId].conversationId;
+    }
+    
+    // 查找现有的微信会话
+    const conversations = await storageService.loadConversationsList();
+    const existingConv = conversations.find(c => 
+      c.source === 'weixin' && c.weixinUserId === ilinkUserId
+    );
+    
+    if (existingConv) {
+      weixinConversationMap.value[ilinkUserId] = {
+        ilinkUserId,
+        conversationId: existingConv.id,
+        lastMessageAt: Date.now(),
+        userName
+      };
+      return existingConv.id;
+    }
+    
+    // 创建新会话
+    const title = userName ? `微信: ${userName}` : `微信用户 ${ilinkUserId.slice(0, 8)}`;
+    const conversation = await storageService.createConversation(title);
+    
+    // 标记为微信会话
+    conversation.source = 'weixin';
+    conversation.weixinUserId = ilinkUserId;
+    conversation.weixinUserName = userName;
+    await storageService.saveConversation(conversation);
+    
+    // 保存映射
+    weixinConversationMap.value[ilinkUserId] = {
+      ilinkUserId,
+      conversationId: conversation.id,
+      lastMessageAt: Date.now(),
+      userName
+    };
+    
+    // 更新统计
+    clawBotStats.value.connectedUsers = Object.keys(weixinConversationMap.value).length;
+    
+    await refreshConversationsList();
+    
+    return conversation.id;
+  }
+
+  /**
+   * 生成 AI 回复
+   */
+  async function generateAIReply(
+    conversationId: string,
+    userContent: string,
+    toUserId: string,
+    contextToken?: string
+  ) {
+    console.log('[AIStore] =======================================');
+    console.log('[AIStore] generateAIReply START');
+    console.log('[AIStore] 参数:', { conversationId, userContent, toUserId, hasContextToken: !!contextToken });
+    
+    if (!isAIEnabled.value) {
+      console.log('[AIStore] AI 未启用，直接返回');
+      return;
+    }
+    if (!storageService) {
+      console.error('[AIStore] storageService 未初始化');
+      return;
+    }
+    
+    // 加载微信会话
+    console.log('[AIStore] 加载微信会话:', conversationId);
+    const conversation = await storageService.loadConversation(conversationId);
+    if (!conversation) {
+      console.error('[AIStore] 会话不存在:', conversationId);
+      return;
+    }
+    console.log('[AIStore] 会话加载成功, 消息数:', conversation.messages.length);
+    console.log('[AIStore] 会话消息:', conversation.messages.map(m => ({ role: m.role, content: m.content?.slice(0, 50), hasToolCalls: !!m.toolCalls })));
+    
+    // 从 Store 获取数据并更新工具上下文
+    try {
+      const projectStore = useProjectStore();
+      const settingsStore = useSettingsStore();
+      
+      const projects = projectStore.projects || [];
+      const groups = settingsStore.groups || [];
+      const allItems = projectStore.items || [];
+      const directories = settingsStore.directories || [];
+
+      if (projects.length > 0 || groups.length > 0) {
+        console.log('[AIStore] 更新工具上下文:', {
+          projects: projects.length,
+          groups: groups.length,
+          items: allItems.length
+        });
+        toolContext.value = { groups, projects, allItems, directories };
+      } else {
+        console.warn('[AIStore] Store 数据为空，工具上下文未更新');
+      }
+    } catch (err) {
+      console.error('[AIStore] 获取 Store 数据失败:', err);
+    }
+    
+    // 获取技能
+    const skillService = SkillService.getInstance();
+    const allSkills = skillService.getEnabledSkills();
+    const skills = allSkills.map(skill => ({
+      name: skill.name,
+      description: skill.description
+    }));
+    
+    const systemPrompt = buildSystemPrompt(skills);
+    console.log('[AIStore] SystemPrompt 长度:', systemPrompt.length);
+    
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const provider = activeProvider.value;
+      if (!provider) {
+        console.error('[AIStore] 没有可用的 AI Provider');
+        return;
+      }
+      console.log('[AIStore] 使用 Provider:', provider.name, provider.provider);
+      
+      console.log('[AIStore] 创建 ReActAgent...');
+      const currentAgent = new ReActAgent({
+        context: {
+          conversationId,
+          provider,
+          systemPrompt,
+          tools: bulletJournalTools,
+          maxIterations: 5
+        },
+        onStreamUpdate: (content) => {
+          console.log('[AIStore] ReAct onStreamUpdate, content长度:', content?.length);
+        },
+        onStepComplete: (step) => {
+          console.log('[AIStore] ReAct onStepComplete:', step.type, step.tool || '');
+        }
+      });
+      
+      console.log('[AIStore] 设置工具上下文...');
+      currentAgent.setToolContext(toolContext.value);
+      
+      // 运行 Agent
+      console.log('[AIStore] 开始运行 ReActAgent.run()...');
+      await currentAgent.run(userContent, conversation);
+      console.log('[AIStore] ReActAgent.run() 完成');
+      console.log('[AIStore] 运行后消息数:', conversation.messages.length);
+      console.log('[AIStore] 运行后消息:', conversation.messages.map(m => ({ role: m.role, content: m.content?.slice(0, 50), hasToolCalls: !!m.toolCalls, toolCallId: m.toolCallId })));
+      
+      // 保存会话前检查消息
+      console.log('[AIStore] 保存会话前，消息数:', conversation.messages.length);
+      console.log('[AIStore] 消息列表:', conversation.messages.map(m => ({ role: m.role, id: m.id?.slice(0,10), content: m.content?.slice(0,20) })));
+      
+      await storageService.saveConversation(conversation);
+      console.log('[AIStore] 会话保存成功');
+      
+      // 如果用户当前正在查看该微信会话，则更新 UI
+      console.log('[AIStore] 检查是否需要更新 UI:', { 
+        currentConversationId: currentConversationId.value, 
+        conversationId,
+        isMatch: currentConversationId.value === conversationId 
+      });
+      if (currentConversationId.value === conversationId) {
+        console.log('[AIStore] 用户正在查看当前微信会话，强制刷新 UI');
+        // 强制触发响应式更新：先设为 null，再设为刷新后的会话
+        const refreshedConv = await storageService!.loadConversation(conversationId);
+        if (refreshedConv) {
+          console.log('[AIStore] 强制触发响应式更新，消息数:', refreshedConv.messages.length);
+          currentConversation.value = null as any;
+          await new Promise(r => setTimeout(r, 10));
+          currentConversation.value = refreshedConv;
+          console.log('[AIStore] currentConversation 已强制更新');
+        }
+      } else {
+        console.log('[AIStore] 用户未查看当前微信会话，跳过 UI 更新');
+      }
+      
+      // 刷新会话列表
+      await refreshConversationsList();
+      
+      // 获取最后一条 AI 消息
+      const lastMessage = conversation.messages[conversation.messages.length - 1];
+      console.log('[AIStore] 最后一条消息详情:', { 
+        role: lastMessage?.role, 
+        contentLength: lastMessage?.content?.length,
+        hasToolCalls: !!lastMessage?.toolCalls,
+        toolCallsCount: lastMessage?.toolCalls?.length,
+        toolCallId: lastMessage?.toolCallId,
+        content: lastMessage?.content?.slice(0, 100)
+      });
+      
+      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
+        // 发送到微信
+        console.log('[AIStore] 准备发送到微信, 内容长度:', lastMessage.content.length);
+        await sendReplyToWeixin(toUserId, lastMessage.content, contextToken);
+        console.log('[AIStore] 发送到微信完成');
+      } else {
+        console.log('[AIStore] 没有可发送的 AI 消息');
+      }
+      
+    } catch (err) {
+      console.error('[AIStore] AI 回复失败:', err);
+      console.error('[AIStore] 错误详情:', err instanceof Error ? err.stack : String(err));
+      
+      // 打印当前会话状态以便调试
+      console.log('[AIStore] 错误时会话消息数:', conversation.messages.length);
+      console.log('[AIStore] 错误时会话消息:', conversation.messages.map(m => ({ 
+        role: m.role, 
+        content: m.content?.slice(0, 50), 
+        hasToolCalls: !!m.toolCalls,
+        toolCallId: m.toolCallId 
+      })));
+      
+      // 发送错误提示
+      await sendReplyToWeixin(toUserId, '抱歉，我暂时无法处理您的请求，请稍后再试。', contextToken);
+    } finally {
+      console.log('[AIStore] generateAIReply FINALLY');
+      isLoading.value = false;
+      console.log('[AIStore] =======================================');
+    }
+  }
+
+  /**
+   * 发送回复到微信
+   */
+  async function sendReplyToWeixin(toUserId: string, content: string, contextToken?: string) {
+    console.log('[AIStore] sendReplyToWeixin:', { toUserId, contentLength: content.length, hasContextToken: !!contextToken });
+    
+    const clawBot = useClawBotService(clawBotConfig.value);
+    
+    if (!clawBot.isConnected()) {
+      console.error('[AIStore] ClawBot 未连接');
+      return;
+    }
+    
+    try {
+      await clawBot.sendTextMessage(toUserId, content, contextToken);
+    } catch (error) {
+      console.error('[AIStore] 发送微信消息失败:', error);
+    }
+  }
+
+  /**
+   * 发送微信通知给所有已连接的微信用户
+   * 用于提醒和番茄钟完成等通知场景
+   */
+  async function sendWechatNotification(text: string): Promise<void> {
+    console.log('[AIStore] sendWechatNotification called, text length:', text?.length);
+    try {
+      console.log('[AIStore] isClawBotConnected:', isClawBotConnected.value, 'clawBotConfig:', JSON.stringify(clawBotConfig.value?.loginStatus));
+      if (!isClawBotConnected.value) {
+        console.log('[AIStore] sendWechatNotification: ClawBot 未连接，跳过');
+        return;
+      }
+
+      let userIds = Object.keys(weixinConversationMap.value);
+      console.log('[AIStore] weixinConversationMap keys from memory:', userIds);
+
+      // 如果内存 map 为空，从持久化的会话列表恢复微信用户映射
+      if (userIds.length === 0 && storageService) {
+        console.log('[AIStore] 内存 map 为空，尝试从持久化恢复...');
+        try {
+          const conversations = await storageService.loadConversationsList();
+          console.log('[AIStore] 加载到会话列表:', conversations.length, '条');
+          const weixinConvos = conversations.filter(
+            (c: any) => c.source === 'weixin' && c.weixinUserId
+          );
+          console.log('[AIStore] 微信会话:', weixinConvos.length, '条', weixinConvos.map((c: any) => ({ id: c.id, source: c.source, weixinUserId: c.weixinUserId })));
+          for (const c of weixinConvos) {
+            if (!weixinConversationMap.value[c.weixinUserId]) {
+              weixinConversationMap.value[c.weixinUserId] = {
+                ilinkUserId: c.weixinUserId,
+                conversationId: c.id,
+                contextToken: undefined,
+                lastMessageAt: c.updatedAt || 0,
+                userName: c.weixinUserName
+              };
+            }
+          }
+          userIds = Object.keys(weixinConversationMap.value);
+          console.log('[AIStore] 恢复后 userIds:', userIds);
+        } catch (err) {
+          console.error('[AIStore] 恢复微信会话映射失败:', err);
+        }
+      }
+
+      if (userIds.length === 0) {
+        console.log('[AIStore] sendWechatNotification: 无微信用户，跳过');
+        return;
+      }
+
+      const clawBot = useClawBotService(clawBotConfig.value);
+      console.log('[AIStore] clawBot.isConnected():', clawBot.isConnected());
+      if (!clawBot.isConnected()) {
+        console.log('[AIStore] sendWechatNotification: ClawBot service 未连接，跳过');
+        return;
+      }
+
+      console.log('[AIStore] 开始发送微信通知给', userIds.length, '个用户');
+      for (const ilinkUserId of userIds) {
+        try {
+          const contextToken = weixinConversationMap.value[ilinkUserId]?.contextToken;
+          console.log('[AIStore] 发送微信通知给:', ilinkUserId, 'hasContextToken:', !!contextToken);
+          await clawBot.sendTextMessage(ilinkUserId, text, contextToken);
+          console.log('[AIStore] 微信通知发送成功:', ilinkUserId);
+        } catch (err) {
+          console.error(`[AIStore] 微信通知发送失败 (${ilinkUserId}):`, err);
+        }
+      }
+    } catch (err) {
+      console.error('[AIStore] sendWechatNotification error:', err);
+    }
+  }
+
+  // ==================== Return ====================
 
   return {
     // State
     providers,
     activeProviderId,
-    conversations,
     currentConversationId,
+    conversationsList,
     isLoading,
     error,
     showToolCalls,
+    reactSteps,
+    
     // Getters
     activeProvider,
     currentConversation,
@@ -555,9 +1082,13 @@ export const useAIStore = defineStore('ai', () => {
     isAIEnabled,
     enabledProviders,
     showToolCallsEnabled,
+    
     // Actions
     loadSettings,
     loadChatHistory,
+    initializeStorage,
+    refreshConversationsList,
+    getConversationsList,
     setProviders,
     setActiveProvider,
     setShowToolCalls,
@@ -566,7 +1097,25 @@ export const useAIStore = defineStore('ai', () => {
     deleteConversation,
     clearCurrentConversation,
     sendMessage,
+    setToolContext,
     getExportData,
-    getChatHistoryData
+    getChatHistoryData,
+    
+    // ClawBot
+    clawBotConfig,
+    clawBotStats,
+    isClawBotEnabled,
+    isClawBotConnected,
+    clawBotLoginStatus,
+    hasUnreadWeixin,
+    unreadWeixinMessages,
+    initializeClawBot,
+    startClawBotLogin,
+    pollClawBotLogin,
+    disconnectClawBot,
+    handleWeixinMessage,
+    getOrCreateWeixinConversation,
+    sendReplyToWeixin,
+    sendWechatNotification
   };
 });

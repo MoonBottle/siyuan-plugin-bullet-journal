@@ -3,6 +3,10 @@
  * 从 obsidian-hk-work-plugin 移植
  */
 import type { Task, Item, Link, ItemStatus, PomodoroRecord, PomodoroStatus } from '@/types/models';
+import { parseReminderFromLine, stripReminderMarker } from './reminderParser';
+import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
+import { processLineText } from '@/utils/stringUtils';
+import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /** 思源块引用正则：((blockId)) 或 ((blockId "alias")) 或 ((blockId 'alias')) */
 const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g;
@@ -36,8 +40,8 @@ export class LineParser {
     const levelMatch = line.match(/@L([123])/);
     const level = levelMatch ? `L${levelMatch[1]}` as 'L1' | 'L2' | 'L3' : 'L1';
 
-    // 解析日期 @YYYY-MM-DD
-    const dateMatch = line.match(/@(\d{4}-\d{2}-\d{2})/);
+    // 解析日期 @YYYY-MM-DD 或 📅YYYY-MM-DD
+    const dateMatch = line.match(/@(\d{4}-\d{2}-\d{2})/) || line.match(/📅(\d{4}-\d{2}-\d{2})/);
     const date = dateMatch ? dateMatch[1] : undefined;
 
     // 解析时间范围 @YYYY-MM-DD HH:mm:ss~HH:mm:ss
@@ -63,8 +67,10 @@ export class LineParser {
     let name = line
       .replace(/#任务#?/g, '')
       .replace(/#task#?/gi, '')
+      .replace(/📋/g, '')
       .replace(/@L[123]/g, '')
       .replace(/@\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(~\d{2}:\d{2}:\d{2})?)?/g, '')
+      .replace(/📅\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(~\d{2}:\d{2}:\d{2})?)?/g, '')
       .replace(/https?:\/\/[^\s]+/g, '')
       .trim();
 
@@ -97,15 +103,29 @@ export class LineParser {
    * 格式: 事项内容 @2024-01-01 10:00:00~11:00:00, 2024-01-03 14:00:00~15:00:00 #done
    * 支持: @2024-01-01, @2024-01-01~2024-01-05, @2024-01-01~01-05（简写）
    * 支持中英文逗号分隔
+   * 支持提醒: ⏰HH:mm, ⏰-Xm, ⏰e-Xm
+   * 支持重复: 🔁每天, 🔁每周, 🔁每月, 🔁每年, 🔁工作日
+   * 支持结束条件: 🔚YYYY-MM-DD, 🔢N
    * @param line 事项行内容
    * @param lineNumber 行号
    * @param links 关联的链接列表（可选，由上层解析器提供）
    */
   public static parseItemLine(line: string, lineNumber: number, links?: Link[]): Item[] {
-    // 必须包含日期标记
-    if (!line.match(/@\d{4}-\d{2}-\d{2}/)) {
+    // 必须包含日期标记（支持 @ 或 📅 前缀）
+    if (!line.match(/@\d{4}-\d{2}-\d{2}/) && !line.match(/📅\d{4}-\d{2}-\d{2}/)) {
       return [];
     }
+
+    // 解析提醒配置
+    const reminder = parseReminderFromLine(line);
+
+    // 解析重复规则（多日期与重复互斥时优先多日期）
+    // 匹配多日期：
+    // 1. 逗号分隔：@日期, 或 📅日期, 或 @日期， 或 📅日期，
+    // 2. 日期范围：@日期~日期 或 📅日期~日期（波浪号后面必须是日期格式，避免误匹配时间范围 09:00:00~10:00:00）
+    const hasMultipleDates = line.match(/(?:@|📅)\d{4}-\d{2}-\d{2}[^\w]*[,，]|(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})/);
+    const repeatRule = (!hasMultipleDates && hasRepeatRule(line)) ? parseRepeatRule(line) : undefined;
+    const endCondition = repeatRule ? parseEndCondition(line) : undefined;
 
     // 解析任务列表标记 [ ] [x] [X]（在去除块属性后解析）
     let taskListStatus: ItemStatus | null = null;
@@ -119,11 +139,11 @@ export class LineParser {
       }
     }
 
-    // 解析状态标签（中英文兼容）- 优先级高于任务列表标记
+    // 解析状态标签（中英文 + Emoji 兼容）- 优先级高于任务列表标记
     let status: ItemStatus = 'pending';
-    if (line.includes('#done') || line.includes('#已完成')) {
+    if (line.includes('#done') || line.includes('#已完成') || line.includes('✅')) {
       status = 'completed';
-    } else if (line.includes('#abandoned') || line.includes('#已放弃')) {
+    } else if (line.includes('#abandoned') || line.includes('#已放弃') || line.includes('❌')) {
       status = 'abandoned';
     } else if (taskListStatus) {
       // 没有状态标签时，使用任务列表状态
@@ -139,25 +159,43 @@ export class LineParser {
     const dateTimeExpressions = this.extractDateTimeExpressions(normalizedLineForDates);
     if (dateTimeExpressions.length === 0) return [];
 
-    // 提取内容（在原始 line 上移除所有日期时间表达式、状态标签和任务列表标记）
-    // 使用原始 line 以保留中文逗号等内容
-    let content = line;
+    // 提取内容（在规范化 line 上移除所有日期时间表达式、状态标签和任务列表标记）
+    // 使用规范化 line 以确保 fullMatch 能正确匹配（中文逗号已转为英文逗号）
+    let content = normalizedLineForDates;
     for (const expr of dateTimeExpressions) {
-      // 在原始行中匹配时，需要考虑中英文逗号的差异
-      const fullMatchWithChineseComma = expr.fullMatch.replace(/,/g, '[,，]');
-      const regex = new RegExp(fullMatchWithChineseComma.replace(/\[/g, '[').replace(/\]/g, ']'));
-      content = content.replace(regex, '').replace(expr.fullMatch, '');
+      // 直接移除 fullMatch（使用字符串替换，避免正则特殊字符问题）
+      content = content.split(expr.fullMatch).join('');
     }
+    // 移除所有标记（使用规范化字符串处理 Emoji）
     content = content
       .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
+      .replace(/[✅❌📅📋]/gu, '')  // 移除 Emoji 标记
       .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
       .trim();
+
+    // 移除提醒标记
+    content = stripReminderMarker(content);
+
+    // 移除重复和结束条件标记（🔁🔚🔢 等）
+    // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
+    content = stripRecurringMarkers(content);
+
+    // 移除斜杠命令
+    content = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
+
+    // 额外清理：移除任何残留的 Emoji 字符（补充平面字符）
+    content = content.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
 
     // 清理日期表达式之间残留的逗号分隔符
     // 匹配模式：空白 + 逗号（中英文）+ 空白/日期，这些是日期分隔符
     content = content.replace(/\s*[,，]\s*(?=\d{4}-\d{2}-\d{2})/g, ' ').trim();
     // 清理行尾的逗号当它是独立的（前面是空白字符）
     content = content.replace(/\s+[，,]$/g, '').trim();
+
+    // 如果原始行包含中文逗号，将内容中的英文逗号转换回中文逗号
+    if (line.includes('，')) {
+      content = content.replace(/,/g, '，');
+    }
 
     // 解析块引用：strip 显示内容，提取到 links
     const { stripped: contentStripped, links: blockRefLinks } = parseBlockRefs(content);
@@ -226,7 +264,10 @@ export class LineParser {
         links: mergedLinks.length > 0 ? mergedLinks : undefined,  // 块引用 + 事项下方链接
         siblingItems: siblingItems.length > 0 ? siblingItems : undefined,
         dateRangeStart,
-        dateRangeEnd
+        dateRangeEnd,
+        reminder,
+        repeatRule,
+        endCondition
       });
     }
 
@@ -244,9 +285,9 @@ export class LineParser {
   }> {
     const expressions: Array<{ fullMatch: string; datePart: string; timePart: string | null }> = [];
 
-    // 首先找到所有以 @ 开头的日期时间块
-    // 匹配 @日期 或 @日期 时间 或 @日期 时间~时间，以及后续逗号分隔的日期
-    const mainRegex = /@(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/g;
+    // 首先找到所有以 @ 或 📅 开头的日期时间块
+    // 匹配 @日期 或 📅日期 或 @日期 时间 或 @日期 时间~时间，以及后续逗号分隔的日期
+    const mainRegex = /(?:@|📅)(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/g;
 
     let mainMatch;
     while ((mainMatch = mainRegex.exec(line)) !== null) {

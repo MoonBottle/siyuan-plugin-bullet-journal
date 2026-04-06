@@ -511,7 +511,7 @@
     border-radius: 3px;
     color: var(--b3-theme-primary);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.3s;
 
     &:hover {
       background: var(--b3-theme-primary-light);
@@ -520,6 +520,36 @@
     svg {
       width: 14px;
       height: 14px;
+    }
+
+    // 专注状态：红色脉冲动画
+    &.is-focusing {
+      color: #e74c3c;
+      animation: tomato-pulse 2s ease-in-out infinite;
+
+      &:hover {
+        background: rgba(231, 76, 60, 0.1);
+      }
+    }
+
+    // 休息状态：绿色
+    &.is-breaking {
+      color: #27ae60;
+
+      &:hover {
+        background: rgba(39, 174, 96, 0.1);
+      }
+    }
+  }
+
+  @keyframes tomato-pulse {
+    0%, 100% {
+      color: #e74c3c;
+      opacity: 1;
+    }
+    50% {
+      color: #ff6b6b;
+      opacity: 0.7;
     }
   }
 

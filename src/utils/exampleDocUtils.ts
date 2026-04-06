@@ -1,11 +1,12 @@
 /**
  * 示例文档创建工具函数
  */
-import { createDocWithMd, lsNotebooks, pushMsg } from '@/api';
+import { createDocWithMd, pushMsg } from '@/api';
 import { openDocument } from '@/utils/fileUtils';
 import { t, getCurrentLocale } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 import { expandDocTree } from 'siyuan';
+import { getOrCreateTaskAssistantNotebook } from '@/utils/notebookUtils';
 
 /**
  * 获取今天的日期字符串
@@ -51,77 +52,52 @@ function generateExampleContent(): string {
   const taskTag = t('taskTag') || '#任务';
   const completedTag = t('statusTag').completed || '#已完成';
   const abandonedTag = t('statusTag').abandoned || '#已放弃';
+  const dateMarker = t('dateMarker') || '📅';
 
   if (isEn) {
-    return `## Website Redesign Project
+    return `This is a task ${taskTag}
 
-> Company website overhaul to improve user experience
+This is an all-day item ${dateMarker}${today}
 
-[Design Mockup](https://figma.com/design/xxx)
+This is an item with time ${dateMarker}${today} 09:00:00~10:00:00
 
----
+This is a completed item ${dateMarker}${today} ${completedTag}
 
-Homepage Redesign ${taskTag}
+This is an abandoned item ${dateMarker}${today} ${abandonedTag}
 
-[Requirements Doc](https://doc.example.com/homepage)
+🍅${today} 10:00:00~10:25:00 This is a pomodoro record
 
-Determine Design Style @${today}
-
-🍅${today} 10:00:00~10:25:00 Collecting materials
-
-[Reference Case](https://example.com/ref)
-
-Complete Homepage Prototype @${yesterday} 10:00:00~12:00:00 ${completedTag}
-
-Review Meeting @${yesterday} 14:00:00~15:00:00 ${abandonedTag}
-
-Develop Homepage Components @${tomorrow} 09:00:00~12:00:00
-
-Responsive Adaptation @${tomorrow} 14:00:00~17:00:00
-
----
-
-Performance Optimization ${taskTag}
-
-Image Compression and Lazy Loading @${today}
-
-Code Splitting and Caching Strategy @${tomorrow}
+  > 📌 Quick Add with Slash Commands:
+Type /task then Enter → Mark as task
+Type /today then Enter → Add today's item
+Type /tomorrow then Enter → Add tomorrow's item
+Type /done then Enter → Mark as completed
+Type /cal then Enter → View calendar view
+Type /todo then Enter → View todo items
+Type /focus then Enter → Start pomodoro
 `;
   }
 
-  return `## 网站重构项目
+  return `这是一个任务 ${taskTag}
 
-> 公司官网全面改版，提升用户体验
+这是一个全天事项 ${dateMarker}${today}
 
-[设计稿](https://figma.com/design/xxx)
+这是一个带时间的事项 ${dateMarker}${today} 09:00:00~10:00:00
 
----
+这是一个已完成的事项 ${dateMarker}${today} ${completedTag}
 
-首页改版 ${taskTag}
+这是一个已放弃的事项 ${dateMarker}${today} ${abandonedTag}
 
-[需求文档](https://doc.example.com/homepage)
+🍅${today} 10:00:00~10:25:00 这是一个番茄钟记录
 
-确定设计风格 @${today}
-
-🍅${today} 10:00:00~10:25:00 收集素材
-
-[参考案例](https://example.com/ref)
-
-完成首页原型设计 @${yesterday} 10:00:00~12:00:00 ${completedTag}
-
-评审会议 @${yesterday} 14:00:00~15:00:00 ${abandonedTag}
-
-开发首页组件 @${tomorrow} 09:00:00~12:00:00
-
-响应式适配 @${tomorrow} 14:00:00~17:00:00
-
----
-
-性能优化 ${taskTag}
-
-图片压缩和懒加载 @${today}
-
-代码分割和缓存策略 @${tomorrow}
+  > 📌 斜杠命令快速添加：
+输入 /rw 回车 → 标记为任务
+输入 /jt 回车 → 添加今日事项
+输入 /mt 回车 → 添加明日事项
+输入 /wc 回车 → 标记为完成
+输入 /rl 回车 → 查看日历视图
+输入 /todo 回车 → 查看待办事项
+输入 /zz 回车 → 开始番茄钟
 `;
 }
 
@@ -136,25 +112,17 @@ export async function createExampleDocument(
   path?: string
 ): Promise<string | null> {
   try {
-    // 如果没有提供 notebookId，获取第一个未关闭的笔记本
+    // 如果没有提供 notebookId，获取或创建任务助手笔记本
     let targetNotebookId = notebookId;
     if (!targetNotebookId) {
-      const result = await lsNotebooks();
-      console.log('[Task Assistant] lsNotebooks result:', result);
-      if (!result) {
-        console.error('[Task Assistant] Failed to query notebooks: API returned null');
-        await pushMsg(t('todo').exampleDocFailed + ': 查询笔记本失败', 3000);
+      const notebook = await getOrCreateTaskAssistantNotebook();
+      if (!notebook) {
+        console.error('[Task Assistant] Failed to get or create task assistant notebook');
+        await pushMsg(t('todo').exampleDocFailed + ': ' + t('common.notebookCreateFailed'), 3000);
         return null;
       }
-      // 过滤掉已关闭的笔记本
-      const availableNotebooks = result.notebooks?.filter(nb => !nb.closed) || [];
-      if (availableNotebooks.length === 0) {
-        console.error('[Task Assistant] No available notebooks found (all closed)');
-        await pushMsg(t('todo').exampleDocFailed + ': 没有可用的笔记本（请打开一个笔记本）', 3000);
-        return null;
-      }
-      targetNotebookId = availableNotebooks[0].id;
-      console.log('[Task Assistant] Using notebook:', availableNotebooks[0].name, 'id:', targetNotebookId);
+      targetNotebookId = notebook.id;
+      console.log('[Task Assistant] Using notebook:', notebook.name, 'id:', targetNotebookId);
     }
 
     // 生成文档路径

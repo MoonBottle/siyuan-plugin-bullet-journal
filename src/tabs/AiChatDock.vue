@@ -10,7 +10,7 @@
 
       <!-- 对话选择下拉框 -->
       <ConversationSelect
-        :conversations="aiStore.conversations"
+        :conversations="conversationsList"
         :current-conversation-id="aiStore.currentConversationId"
         @select="handleConversationSelect"
         @delete="handleConversationDelete"
@@ -28,6 +28,26 @@
         </svg>
       </span>
 
+      <!-- 技能管理按钮 -->
+      <!-- <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="t('settings').aiSkills?.title ?? 'AI 技能配置'"
+        @click="openSkillManager"
+      >
+        <SkillIcon />
+      </span> -->
+
+      <!-- 微信连接按钮 -->
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw weixin-btn"
+        :class="{ 'is-active': isClawBotConnected, 'has-unread': hasUnreadWeixin }"
+        :aria-label="clawBotTooltip"
+        @click="handleWeixinClick"
+      >
+        <WeixinIcon :is-connected="isClawBotConnected" />
+        <span v-if="hasUnreadWeixin" class="unread-badge"></span>
+      </span>
+
       <!-- 更多操作按钮 -->
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
@@ -39,6 +59,13 @@
         </svg>
       </span>
     </div>
+
+    <!-- 微信登录弹窗 -->
+    <WeixinLoginDialog
+      v-if="showWeixinDialog"
+      @close="showWeixinDialog = false"
+      @switch-conversation="handleWeixinConversationSwitch"
+    />
 
     <!-- 聊天面板 -->
     <ChatPanel
@@ -59,21 +86,100 @@ import { Menu, showMessage } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, useAIStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { useConversationStorage, type ConversationIndexItem } from '@/services/conversationStorageService';
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
 import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
+import SkillIcon from '@/components/icons/SkillIcon.vue';
+import WeixinIcon from '@/components/icons/WeixinIcon.vue';
+import WeixinLoginDialog from '@/components/ai/WeixinLoginDialog.vue';
 import { t } from '@/i18n';
 import type { Item } from '@/types/models';
+import { createDialog } from '@/utils/dialog';
+import { createApp } from 'vue';
+import { getSharedPinia } from '@/utils/sharedPinia';
+import AiSkillConfigSection from '@/components/settings/AiSkillConfigSection.vue';
+import { openTab } from 'siyuan';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const aiStore = useAIStore();
 
+// 对话列表（从存储服务获取，仅元数据）
+const conversationsList = ref<ConversationIndexItem[]>([]);
+
 // 自动保存防抖定时器
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const chatPanelRef = ref<InstanceType<typeof ChatPanel>>();
+
+// 微信登录弹窗状态
+const showWeixinDialog = ref(false);
+
+// 打开技能管理弹框
+const openSkillManager = () => {
+  const container = document.createElement('div');
+  
+  const dialog = createDialog({
+    title: '',
+    content: '',
+    width: '600px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+  
+  const app = createApp(AiSkillConfigSection, {
+    dialog,
+    onEditSkill: (docId: string) => {
+      // 打开文档
+      const plugin = usePlugin() as any;
+      if (plugin?.app && docId) {
+        openTab({
+          app: plugin.app,
+          doc: { id: docId }
+        });
+      }
+      // 关闭弹框
+      dialog.destroy();
+    },
+    onClose: () => {
+      dialog.destroy();
+    }
+  });
+  
+  app.use(getSharedPinia());
+  app.mount(container);
+  
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+};
+
+// ClawBot 状态
+const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
+const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
+const clawBotTooltip = computed(() => {
+  if (isClawBotConnected.value) {
+    return '微信已连接';
+  }
+  return '连接微信';
+});
+
+// 微信按钮点击
+function handleWeixinClick(event: MouseEvent) {
+  event.stopPropagation();
+  event.preventDefault();
+  showWeixinDialog.value = true;
+}
+
+// 切换到微信会话
+async function handleWeixinConversationSwitch(conversationId: string) {
+  await aiStore.switchConversation(conversationId);
+  await refreshConversationsList();
+}
 
 // 获取所有事项
 const allItems = computed<Item[]>(() => {
@@ -92,16 +198,20 @@ const allItems = computed<Item[]>(() => {
   return items;
 });
 
-// 数据刷新处理函数（与 Todo 一致：有 payload 则用 payload 更新，保证设置页保存后分组/AI 配置即时生效）
+// 刷新对话列表
+async function refreshConversationsList() {
+  conversationsList.value = await aiStore.getConversationsList();
+}
+
+// 数据刷新处理函数
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'todoDock', 'ai'];
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'ai'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {};
     storeKeys.forEach(k => { if (k !== 'ai' && payload[k] !== undefined) patch[k] = payload[k]; });
     if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
-    // 始终用 payload.ai 更新 AI 配置（与 Todo 用 payload.groups 更新分组名称一致）
     if (payload.ai && typeof payload.ai === 'object') {
       aiStore.loadSettings({
         providers: (payload.ai as any).providers || [],
@@ -125,24 +235,26 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 };
 
 // 新建对话
-const handleNewConversation = () => {
-  aiStore.createConversation();
+const handleNewConversation = async () => {
+  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
+  await refreshConversationsList();
   nextTick(() => {
     chatPanelRef.value?.focusInput();
   });
 };
 
 // 选择对话
-const handleConversationSelect = (conversationId: string) => {
-  aiStore.switchConversation(conversationId);
+const handleConversationSelect = async (conversationId: string) => {
+  await aiStore.switchConversation(conversationId);
   nextTick(() => {
     chatPanelRef.value?.focusInput();
   });
 };
 
 // 删除对话
-const handleConversationDelete = (conversationId: string) => {
-  aiStore.deleteConversation(conversationId);
+const handleConversationDelete = async (conversationId: string) => {
+  await aiStore.deleteConversation(conversationId);
+  await refreshConversationsList();
 };
 
 // 更多按钮点击事件
@@ -161,20 +273,21 @@ const handleMoreClick = (event: MouseEvent) => {
   menu.addItem({
     icon: 'iconTrashcan',
     label: t('aiChat').clearConversation,
-    click: () => {
-      aiStore.clearCurrentConversation();
+    click: async () => {
+      await aiStore.clearCurrentConversation();
       showMessage(t('aiChat').conversationCleared);
     }
   });
 
   // 删除当前对话
-  if (aiStore.conversations.length > 1) {
+  if (conversationsList.value.length > 1) {
     menu.addItem({
       icon: 'iconClose',
       label: t('aiChat').deleteConversation,
-      click: () => {
+      click: async () => {
         if (aiStore.currentConversationId) {
-          aiStore.deleteConversation(aiStore.currentConversationId);
+          await aiStore.deleteConversation(aiStore.currentConversationId);
+          await refreshConversationsList();
           showMessage(t('aiChat').conversationDeleted);
         }
       }
@@ -201,7 +314,6 @@ const handleMoreClick = (event: MouseEvent) => {
 
 // 打开设置
 const handleOpenSettings = () => {
-  // 触发思源打开插件设置
   if (plugin?.openSetting) {
     plugin.openSetting();
   }
@@ -219,70 +331,48 @@ const autoSaveConfig = () => {
   saveTimeout = setTimeout(async () => {
     if (plugin?.saveAISettings) {
       try {
-        await plugin.saveAISettings({
-          providers: aiStore.providers,
-          activeProviderId: aiStore.activeProviderId,
-          showToolCalls: aiStore.showToolCalls
-        });
+        await plugin.saveAISettings(aiStore.getExportData());
       } catch (error) {
         console.error('[AI Chat] Auto save config failed:', error);
       }
     }
-  }, 1000); // 1秒防抖
-};
-
-// 自动保存聊天记录（带防抖）
-let chatHistorySaveTimeout: ReturnType<typeof setTimeout> | null = null;
-const autoSaveChatHistory = () => {
-  if (chatHistorySaveTimeout) {
-    clearTimeout(chatHistorySaveTimeout);
-  }
-  chatHistorySaveTimeout = setTimeout(async () => {
-    if (plugin?.saveAIChatHistoryFromStore) {
-      try {
-        await plugin.saveAIChatHistoryFromStore(aiStore.getExportData());
-      } catch (error) {
-        console.error('[AI Chat] Auto save chat history failed:', error);
-      }
-    }
-  }, 1000); // 1秒防抖
+  }, 1000);
 };
 
 // 初始化数据
 onMounted(async () => {
+  // 初始化存储服务（内部已加载对话列表）
+  await aiStore.initializeStorage(plugin);
+  
+  // 加载对话列表（initializeStorage 已加载，但为保险起见再次刷新）
+  await refreshConversationsList();
+
+  // 如果没有对话，创建一个默认对话
+  if (conversationsList.value.length === 0) {
+    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
+    // createConversation 内部已刷新对话列表
+  }
+
+  // 初始化 ClawBot（如果已启用）
+  await aiStore.initializeClawBot(plugin);
+
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
   // 从插件设置加载 AI 配置
-    const pluginSettings = plugin?.getSettings?.();
-    if (pluginSettings?.ai) {
-      aiStore.loadSettings({
-        providers: pluginSettings.ai.providers || [],
-        activeProviderId: pluginSettings.ai.activeProviderId || null,
-        showToolCalls: pluginSettings.ai.showToolCalls
-      });
-    }
-
-  // 从单独的聊天记录文件加载
-  const chatHistory = plugin?.getAIChatHistory?.();
-  if (chatHistory) {
-    aiStore.loadChatHistory(chatHistory);
+  const pluginSettings = plugin?.getSettings?.();
+  if (pluginSettings?.ai) {
+    aiStore.loadSettings({
+      providers: pluginSettings.ai.providers || [],
+      activeProviderId: pluginSettings.ai.activeProviderId || null,
+      showToolCalls: pluginSettings.ai.showToolCalls
+    });
   }
 
-  // 如果没有对话，创建一个默认对话
-  if (aiStore.conversations.length === 0) {
-    aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  }
-
-  // 加载项目数据
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-  }
-
-  // 监听数据刷新事件（同上下文）
+  // 监听数据刷新事件
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 
-  // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
+  // 跨上下文：Dock 可能在 iframe 中，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
     refreshChannel.onmessage = (e: MessageEvent) => {
@@ -296,22 +386,13 @@ onMounted(async () => {
     // 忽略
   }
 
-  // 监听配置变化，自动保存到 settings
+  // 监听配置变化，自动保存
   watch(() => aiStore.providers, () => {
     autoSaveConfig();
   }, { deep: true });
 
   watch(() => aiStore.activeProviderId, () => {
     autoSaveConfig();
-  });
-
-  // 监听对话变化，自动保存到 ai-chat-history
-  watch(() => aiStore.conversations, () => {
-    autoSaveChatHistory();
-  }, { deep: true });
-
-  watch(() => aiStore.currentConversationId, () => {
-    autoSaveChatHistory();
   });
 
   // 聚焦输入框
@@ -331,10 +412,6 @@ onUnmounted(() => {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
-  }
-  if (chatHistorySaveTimeout) {
-    clearTimeout(chatHistorySaveTimeout);
-    chatHistorySaveTimeout = null;
   }
 });
 </script>
@@ -372,4 +449,39 @@ onUnmounted(() => {
     opacity: 1;
   }
 }
+
+// 技能管理弹框样式
+
+// 微信图标样式
+.weixin-btn {
+  position: relative;
+  
+  :deep(svg) {
+    width: 16px;
+    height: 16px;
+    fill: var(--b3-theme-on-surface-light);
+    transition: fill 0.2s;
+  }
+
+  &.is-active {
+    background: var(--b3-theme-success-lightest);
+    
+    :deep(svg) {
+      fill: #07c160; // 微信绿色
+    }
+  }
+
+  &.has-unread {
+    .unread-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--b3-theme-error);
+    }
+  }
+}
+
 </style>

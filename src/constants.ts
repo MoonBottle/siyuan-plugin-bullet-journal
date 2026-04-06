@@ -34,7 +34,10 @@ export const SLASH_COMMAND_FILTERS = {
   TODO: ['/db', '/todo'],
   SET_PROJECT_DIR: ['/ml', '/projectdir'],
   MARK_AS_TASK: ['/rw', '/task'],
-  VIEW_DETAIL: ['/xq', '/detail']
+  VIEW_DETAIL: ['/xq', '/detail'],
+  SET_REMINDER: ['/tx', '/reminder'],
+  SET_RECURRING: ['/cf', '/recurring'],
+  CREATE_SKILL: ['/cjskill', '/create-skill', '/skill']
 };
 
 // 所有斜杠命令 filters 的集合（用于去除斜杠命令）
@@ -54,5 +57,8 @@ export const ALL_SLASH_COMMAND_FILTERS = [
   ...SLASH_COMMAND_FILTERS.TODO,
   ...SLASH_COMMAND_FILTERS.SET_PROJECT_DIR,
   ...SLASH_COMMAND_FILTERS.MARK_AS_TASK,
-  ...SLASH_COMMAND_FILTERS.VIEW_DETAIL
+  ...SLASH_COMMAND_FILTERS.VIEW_DETAIL,
+  ...SLASH_COMMAND_FILTERS.SET_REMINDER,
+  ...SLASH_COMMAND_FILTERS.SET_RECURRING,
+  ...SLASH_COMMAND_FILTERS.CREATE_SKILL
 ];

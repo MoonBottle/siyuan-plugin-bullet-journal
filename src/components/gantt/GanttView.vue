@@ -251,6 +251,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         if (!item.blockId) return;
         const tag = getStatusTag('completed');
         const success = await updateBlockContent(item.blockId, tag);
+        // 注意：重复事项的自动创建由 WebSocket 处理器处理
         if (success && plugin) {
           await projectStore.refresh(plugin, settingsStore.enabledDirectories);
         }
@@ -707,17 +708,17 @@ const updateGantt = () => {
     opacity: 1;
   }
 
-  :deep(.sy-dialog-content) {
+  .sy-dialog-content {
     padding: 0 !important;
   }
 
-  :deep(.sy-dialog-cards) {
+  .sy-dialog-cards {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  :deep(.sy-dialog-card) {
+  .sy-dialog-card {
     font-size: 12px;
     padding: 10px 14px;
     border-radius: 4px;

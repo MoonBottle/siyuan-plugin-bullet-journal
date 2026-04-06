@@ -6,11 +6,13 @@ import { defineStore } from 'pinia';
 import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord } from '@/types/models';
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
-import { getBlockAttrs } from '@/api';
-import { LineParser } from '@/parser/lineParser';
+
 import { defaultPomodoroSettings } from '@/settings';
 import { filterDateRangeRepresentative, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { eventBus, Events } from '@/utils/eventBus';
+import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
+import { calculateReminderTime } from '@/parser/reminderParser';
+import { getHPathByID } from '@/api';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -25,14 +27,8 @@ import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
 
 interface ProjectState {
-  // 项目列表
+  // 项目列表（唯一数据源）
   projects: Project[];
-
-  // 所有事项
-  items: Item[];
-
-  // 日历事件
-  calendarEvents: CalendarEvent[];
 
   // 是否首次加载中（用于显示加载动画）
   loading: boolean;
@@ -56,8 +52,6 @@ interface ProjectState {
 export const useProjectStore = defineStore('project', {
   state: (): ProjectState => ({
     projects: [],
-    items: [],
-    calendarEvents: [],
     loading: false,
     refreshing: false,
     refreshKey: 0,
@@ -67,6 +61,42 @@ export const useProjectStore = defineStore('project', {
   }),
 
   getters: {
+    // 从 projects 计算所有事项（自动缓存）
+    items: (state): Item[] => {
+      const items: Item[] = [];
+      for (const project of state.projects) {
+        for (const task of project.tasks) {
+          for (const item of task.items) {
+            // 设置反向引用
+            item.project = project;
+            item.task = task;
+            items.push(item);
+          }
+        }
+      }
+      return items;
+    },
+
+    // 从 projects 计算日历事件（自动缓存）
+    calendarEvents: (state): CalendarEvent[] => {
+      return DataConverter.projectsToCalendarEvents(state.projects);
+    },
+
+    // blockId -> Item 索引（用于快速查找）
+    itemIndex: (state): Map<string, Item> => {
+      const index = new Map<string, Item>();
+      for (const project of state.projects) {
+        for (const task of project.tasks) {
+          for (const item of task.items) {
+            if (item.blockId) {
+              index.set(item.blockId, item);
+            }
+          }
+        }
+      }
+      return index;
+    },
+
     // 按分组过滤的项目（groupId 为空表示全部分组）
     getFilteredProjects: (state) => (groupId: string) => {
       if (!groupId) return state.projects;
@@ -75,26 +105,93 @@ export const useProjectStore = defineStore('project', {
 
     // 按分组过滤的事项
     getFilteredItems: (state) => (groupId: string) => {
-      if (!groupId) return state.items;
-      return state.items.filter(i => i.project?.groupId === groupId);
+      const items = (state as any).items as Item[];
+      if (!groupId) return items;
+      return items.filter(i => i.project?.groupId === groupId);
     },
 
     // 多日期事项仅保留代表项，供待办/过期/完成/放弃分组使用
-    getDisplayItems: (state) => (groupId: string) =>
-      computeDisplayItems(state.items, state.currentDate, groupId),
+    getDisplayItems: (state) => (groupId: string) => {
+      const items = (state as any).items as Item[];
+      return computeDisplayItems(items, state.currentDate, groupId);
+    },
 
     // 按分组过滤的日历事件
     getFilteredCalendarEvents: (state) => (groupId: string) => {
-      if (!groupId) return state.calendarEvents;
-      return state.calendarEvents.filter(e => {
+      const events = (state as any).calendarEvents as CalendarEvent[];
+      if (!groupId) return events;
+      return events.filter(e => {
         const project = state.projects.find(p => p.id === e.extendedProps.docId);
         return project?.groupId === groupId;
       });
     },
 
+    // 通过 blockId 快速查找 Item
+    getItemByBlockId: (state) => (blockId: string): Item | undefined => {
+      return (state as any).itemIndex.get(blockId);
+    },
+
+    // 需要提醒的事项列表（按提醒时间排序，只包含未来24小时内的）
+    itemsNeedingReminder: (state): Item[] => {
+      const items: Item[] = [];
+      const now = Date.now();
+      let checkedCount = 0;
+      let skippedStatus = 0;
+      let skippedNoReminder = 0;
+      let skippedTooLate = 0;
+      let skippedTooEarly = 0;
+      let addedCount = 0;
+      
+      for (const project of state.projects) {
+        for (const task of project.tasks) {
+          for (const item of task.items) {
+            checkedCount++;
+            
+            // 跳过已完成/放弃/无提醒的
+            if (item.status === 'completed' || item.status === 'abandoned') {
+              skippedStatus++;
+              continue;
+            }
+            if (!item.reminder?.enabled) {
+              skippedNoReminder++;
+              continue;
+            }
+            
+            // 计算提醒时间
+            const reminderTime = calculateReminderTime(
+              item.date,
+              item.startDateTime,
+              item.endDateTime,
+              undefined,
+              undefined,
+              item.reminder
+            );
+            
+            // 只收集未来24小时内需要提醒的（减少扫描量）
+            if (reminderTime > now && reminderTime < now + 24 * 60 * 60 * 1000) {
+              (item as any)._reminderTime = reminderTime; // 缓存计算结果
+              items.push(item);
+              addedCount++;
+            } else if (reminderTime <= now) {
+              skippedTooLate++;
+            } else {
+              skippedTooEarly++;
+            }
+          }
+        }
+      }
+      
+      if (checkedCount > 0) {
+        console.log(`[ProjectStore] itemsNeedingReminder: checked=${checkedCount}, added=${addedCount}, skipped(status=${skippedStatus}, noReminder=${skippedNoReminder}, tooLate=${skippedTooLate}, tooEarly=${skippedTooEarly})`);
+      }
+      
+      // 按提醒时间排序
+      return items.sort((a, b) => ((a as any)._reminderTime || 0) - ((b as any)._reminderTime || 0));
+    },
+
     // 今日及以后的待办事项（排除已完成和已放弃）
     getFutureItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
       return items.filter(item => {
         const effectiveDate = getEffectiveDate(item);
         return (
@@ -107,19 +204,19 @@ export const useProjectStore = defineStore('project', {
 
     // 已完成的事项
     getCompletedItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
       return items.filter(item => item.status === 'completed');
     },
 
     // 已放弃的事项
     getAbandonedItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
       return items.filter(item => item.status === 'abandoned');
     },
 
     // 过期的事项（时间过了但未完成未放弃）
     getExpiredItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
       return items.filter(item => {
         const effectiveDate = getEffectiveDate(item);
         return (
@@ -132,7 +229,7 @@ export const useProjectStore = defineStore('project', {
 
     // 按日期分组的待办（避免 getters 未就绪时出错，直接使用 state 计算）
     getGroupedFutureItems: (state) => (groupId: string) => {
-      const items = computeDisplayItems(state.items, state.currentDate, groupId);
+      const items = computeDisplayItems((state as any).items, state.currentDate, groupId);
       const futureItems = items.filter(item => {
         const effectiveDate = getEffectiveDate(item);
         return (
@@ -284,74 +381,11 @@ export const useProjectStore = defineStore('project', {
      */
     clearData() {
       this.projects = [];
-      this.items = [];
-      this.calendarEvents = [];
-    },
-
-    /**
-     * 合并块属性中的番茄钟记录（attr 模式）
-     * 从 getBlockAttrs 获取 custom-pomodoro-* 属性，解析后合并到 item/task.pomodoros
-     */
-    async mergePomodoroAttrs(projects: Project[], plugin: any) {
-      const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
-      const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
-
-      for (const project of projects) {
-        for (const task of project.tasks) {
-          if (task.blockId) {
-            let attrs: Record<string, string> = {};
-            try {
-              attrs = await getBlockAttrs(task.blockId);
-            } catch {
-              // 获取失败时跳过该 task，不影响其他
-            }
-            const attrRecords = LineParser.parsePomodoroAttrs(attrs, task.blockId, attrPrefix);
-            if (attrRecords.length > 0) {
-              for (const r of attrRecords) {
-                r.taskId = task.id;
-                r.projectId = project.id;
-              }
-              // 确保 pomodoros 数组已初始化
-              if (!task.pomodoros) {
-                task.pomodoros = [];
-              }
-              task.pomodoros.push(...attrRecords);
-            }
-          }
-
-          // 按 blockId 对 items 去重，避免重复获取属性
-          const seenBlockIds = new Set<string>();
-          const uniqueItems = task.items.filter(item => {
-            if (!item.blockId) return false;
-            if (seenBlockIds.has(item.blockId)) return false;
-            seenBlockIds.add(item.blockId);
-            return true;
-          });
-
-          for (const item of uniqueItems) {
-            let attrs: Record<string, string> = {};
-            try {
-              attrs = await getBlockAttrs(item.blockId);
-            } catch {
-              // 获取失败时跳过该 item，不影响其他
-            }
-            const attrRecords = LineParser.parsePomodoroAttrs(attrs, item.blockId, attrPrefix);
-            if (attrRecords.length > 0) {
-              for (const r of attrRecords) {
-                r.itemId = item.id;
-                r.taskId = task.id;
-                r.projectId = project.id;
-              }
-              // parser 已确保同 blockId 的 items 共享同一 pomodoros 引用，push 即可
-              item.pomodoros!.push(...attrRecords);
-            }
-          }
-        }
-      }
     },
 
     /**
      * 加载项目数据（首次加载，显示加载状态）
+     * 流式更新：每解析完一个项目就立即显示
      */
     async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
       if (this.loading) return;
@@ -359,22 +393,22 @@ export const useProjectStore = defineStore('project', {
       this.loading = true;
 
       try {
+        // 清空现有数据，避免重复
+        this.projects = [];
+        
         const parser = new MarkdownParser(directories);
-        const projects = await parser.parseAllProjects();
-        await this.mergePomodoroAttrs(projects, _plugin);
-        console.log('[Task Assistant] Parsed projects:', projects?.length || 0);
-        const items = parser.getAllItemsFromProjects(projects);
-        console.log('[Task Assistant] Parsed items:', items?.length || 0);
-        const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
-        console.log('[Task Assistant] Converted events:', calendarEvents?.length || 0);
 
-        this.projects = projects;
-        this.items = items;
-        this.calendarEvents = calendarEvents;
+        // 流式解析：每解析完一个项目就立即添加到 store
+        await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+          this.projects.push(project);
+          console.log('[Task Assistant] Project loaded:', project.name);
+        });
+
         this.currentDate = dayjs().format('YYYY-MM-DD');
+        console.log('[Task Assistant] Total projects loaded:', this.projects.length);
 
         // 触发数据刷新完成事件，供其他模块监听处理
-        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items });
+        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
       } catch (error) {
         console.error('[Task Assistant] Failed to load projects:', error);
       } finally {
@@ -384,6 +418,7 @@ export const useProjectStore = defineStore('project', {
 
     /**
      * 刷新数据（后台刷新，不显示加载状态）
+     * 支持定向刷新：只更新变更的项目，避免全量替换导致的 Vue 重渲染
      */
     async refresh(_plugin: any, directories: ProjectDirectory[]) {
       // 如果正在刷新，跳过
@@ -393,28 +428,116 @@ export const useProjectStore = defineStore('project', {
       this.refreshKey++;
 
       const newDate = dayjs().format('YYYY-MM-DD');
-      console.log('[Task Assistant] Refresh started, old date:', this.currentDate, 'new date:', newDate);
+      console.log('[Task Assistant] Refresh started, date:', newDate);
 
       try {
-        const parser = new MarkdownParser(directories);
-        const projects = await parser.parseAllProjects();
-        await this.mergePomodoroAttrs(projects, _plugin);
-        const items = parser.getAllItemsFromProjects(projects);
-        const calendarEvents = DataConverter.projectsToCalendarEvents(projects);
+        const dirtyDocIds = dirtyDocTracker.getDirtyDocs();
 
-        this.projects = projects;
-        this.items = items;
-        this.calendarEvents = calendarEvents;
+        if (dirtyDocIds.length > 0) {
+          // 定向刷新：只更新指定文档
+          await this.refreshDirtyDocs(_plugin, directories, dirtyDocIds);
+        } else {
+          // 全量刷新
+          await this.refreshFull(_plugin, directories);
+        }
+
         this.currentDate = newDate;
-        console.log('[Task Assistant] Refresh completed, currentDate updated to:', this.currentDate);
-
-        // 触发数据刷新完成事件，供其他模块监听处理
-        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items });
+        eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
       } catch (error) {
-        console.error('[Task Assistant] Failed to refresh projects:', error);
+        console.error('[Task Assistant] Refresh failed:', error);
+        // 出错时回退到全量刷新
+        await this.refreshFull(_plugin, directories);
       } finally {
         this.refreshing = false;
       }
+    },
+
+    /**
+     * 全量刷新（使用流式解析）
+     */
+    async refreshFull(_plugin: any, directories: ProjectDirectory[]): Promise<void> {
+      console.log('[Task Assistant] Full refresh');
+
+      const parser = new MarkdownParser(directories);
+
+      // 清空现有数据
+      this.projects = [];
+
+      // 流式解析（已使用 SQL 批量查询番茄钟）
+      await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+        this.projects.push(project);
+      });
+
+      dirtyDocTracker.clearAll();
+    },
+
+    /**
+     * 定向刷新脏文档
+     * 只解析指定的脏文档，而不是整个目录
+     */
+    async refreshDirtyDocs(
+      _plugin: any,
+      directories: ProjectDirectory[],
+      dirtyDocIds: string[]
+    ): Promise<void> {
+      console.log('[Task Assistant] Refreshing dirty docs:', dirtyDocIds);
+
+      const parser = new MarkdownParser(directories);
+
+      // 只解析脏文档，而不是整个目录
+      for (const docId of dirtyDocIds) {
+        try {
+          // 从现有项目获取 groupId 和 path
+          const existingProject = this.projects.find(p => p.id === docId);
+          const groupId = existingProject?.groupId;
+          let path = existingProject?.path;
+          
+          // 如果没有 path，从思源查询
+          if (!path) {
+            try {
+              path = await getHPathByID(docId);
+            } catch (e) {
+              console.warn('[Task Assistant] Failed to get hpath for doc:', docId);
+              path = '';
+            }
+          }
+
+          // 使用 parser 的复用方法：解析 + 番茄钟合并
+          const project = await parser.parseAndProcessSingleDocument(
+            docId, '', groupId, path, _plugin
+          );
+
+          if (project) {
+            this.updateProjectsIncrementally([project]);
+            console.log('[Task Assistant] Project refreshed:', project.name);
+          }
+        } catch (error) {
+          console.error(`[Task Assistant] Failed to refresh doc ${docId}:`, error);
+        }
+      }
+
+      // 清除脏标记
+      dirtyDocTracker.clearDirty(dirtyDocIds);
+
+      console.log('[Task Assistant] Dirty docs refreshed:', dirtyDocIds.length);
+    },
+
+    /**
+     * 精细化更新 projects 数组
+     * 保持数组引用，只替换变更的项目
+     */
+    updateProjectsIncrementally(updatedProjects: Project[]): void {
+      for (const newProject of updatedProjects) {
+        const index = this.projects.findIndex(p => p.id === newProject.id);
+        if (index >= 0) {
+          // 替换现有项目 - Vue 会检测到该索引的变化
+          this.projects[index] = newProject;
+        } else {
+          // 新增项目
+          this.projects.push(newProject);
+        }
+      }
+      // 注意：删除项目暂不处理，需额外逻辑
     },
 
     /**

@@ -13,6 +13,7 @@ import {
   loadActivePomodoro,
   removeActivePomodoro,
   savePendingCompletion,
+  loadPendingCompletion,
   removePendingCompletion,
   saveActiveBreak,
   removeActiveBreak
@@ -36,6 +37,9 @@ interface PomodoroState {
   breakInterval: number | null;
   // 休息弹窗状态
   isBreakOverlayVisible: boolean;
+  // 自动延迟状态（不持久化）
+  autoExtendCount: number;
+  autoExtendTimeoutId: ReturnType<typeof setTimeout> | null;
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
@@ -48,7 +52,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
     breakRemainingSeconds: 0,
     breakTotalSeconds: 0,
     breakInterval: null,
-    isBreakOverlayVisible: false
+    isBreakOverlayVisible: false,
+    autoExtendCount: 0,
+    autoExtendTimeoutId: null,
   }),
 
   getters: {
@@ -81,6 +87,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
       timerMode: 'countdown' | 'stopwatch' = 'countdown'
     ): Promise<boolean> {
       try {
+        // 重置自动延迟计数
+        this.autoExtendCount = 0;
+        this.cancelAutoExtend();
+
         const now = dayjs();
         const startTimestamp = now.valueOf();
 
@@ -467,6 +477,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 6. 触发弹窗（由监听器显示完成弹窗）
         eventBus.emit(Events.POMODORO_PENDING_COMPLETION, pending);
 
+        // 启动自动延迟倒计时（如果开启）
+        this.scheduleAutoExtend(pluginToUse);
+
         return true;
       } catch (error) {
         console.error('[Pomodoro] 完成专注失败:', error);
@@ -487,6 +500,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
       description: string
     ): Promise<boolean> {
       try {
+        // 用户确认保存，取消自动延迟
+        this.cancelAutoExtend();
+
         const pomodoro = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
         const recordMode = pomodoro.recordMode ?? 'block';
         const attrPrefix = pomodoro.attrPrefix ?? 'custom-pomodoro';
@@ -587,6 +603,106 @@ export const usePomodoroStore = defineStore('pomodoro', {
         showMessage('取消专注失败', 'error');
         return false;
       }
+    },
+
+    /**
+     * 启动自动延迟倒计时
+     */
+    scheduleAutoExtend(plugin: any) {
+      // 只清除定时器，不清零 autoExtendCount（保留跨周期的延迟计数）
+      if (this.autoExtendTimeoutId) {
+        clearTimeout(this.autoExtendTimeoutId);
+        this.autoExtendTimeoutId = null;
+      }
+
+      const settings = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
+      if (!settings.autoExtendEnabled) return;
+      if (this.autoExtendCount >= (settings.autoExtendMaxCount ?? 3)) return;
+
+      const waitSeconds = settings.autoExtendWaitSeconds ?? 30;
+      this.autoExtendTimeoutId = setTimeout(() => {
+        this.autoExtendTimeoutId = null;
+        this.autoExtendPomodoro(plugin);
+      }, waitSeconds * 1000);
+    },
+
+    /**
+     * 自动延迟番茄钟：从 pending 恢复并延长倒计时
+     */
+    async autoExtendPomodoro(plugin: any) {
+      try {
+        const pending = await loadPendingCompletion(plugin);
+        if (!pending) {
+          console.log('[Pomodoro] 自动延迟：无待完成记录，跳过');
+          return;
+        }
+
+        // 删除 pending 文件
+        await removePendingCompletion(plugin);
+
+        const settings = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
+        const extendMinutes = settings.autoExtendMinutes ?? 5;
+        const newTargetMinutes = Math.ceil(pending.accumulatedSeconds / 60) + extendMinutes;
+
+        // 基于 pending 数据创建新的 active pomodoro
+        const pomodoroData: ActivePomodoroData = {
+          blockId: pending.blockId,
+          itemId: pending.itemId,
+          itemContent: pending.itemContent,
+          startTime: pending.startTime,
+          targetDurationMinutes: newTargetMinutes,
+          accumulatedSeconds: pending.accumulatedSeconds,
+          isPaused: false,
+          pauseCount: 0,
+          totalPausedSeconds: 0,
+          projectId: pending.projectId,
+          projectName: pending.projectName,
+          projectLinks: pending.projectLinks,
+          taskId: pending.taskId,
+          taskName: pending.taskName,
+          taskLevel: pending.taskLevel,
+          taskLinks: pending.taskLinks,
+          itemStatus: pending.itemStatus,
+          itemLinks: pending.itemLinks,
+          timerMode: 'countdown'
+        };
+
+        const saved = await saveActivePomodoro(plugin, pomodoroData);
+        if (!saved) {
+          console.error('[Pomodoro] 自动延迟：保存失败');
+          return;
+        }
+
+        const remainingSeconds = newTargetMinutes * 60 - pending.accumulatedSeconds;
+        this.activePomodoro = {
+          ...pomodoroData,
+          remainingSeconds
+        };
+
+        this.startTimer();
+
+        this.autoExtendCount++;
+
+        // 通知弹窗关闭
+        eventBus.emit(Events.POMODORO_AUTO_EXTENDED);
+
+        const msg = `🔄 已自动延迟 ${extendMinutes} 分钟（第 ${this.autoExtendCount} 次）`;
+        showMessage(msg);
+        console.log(`[Pomodoro] 自动延迟：第 ${this.autoExtendCount} 次，延长 ${extendMinutes} 分钟`);
+      } catch (error) {
+        console.error('[Pomodoro] 自动延迟失败:', error);
+      }
+    },
+
+    /**
+     * 取消自动延迟
+     */
+    cancelAutoExtend() {
+      if (this.autoExtendTimeoutId) {
+        clearTimeout(this.autoExtendTimeoutId);
+        this.autoExtendTimeoutId = null;
+      }
+      this.autoExtendCount = 0;
     },
 
     /**

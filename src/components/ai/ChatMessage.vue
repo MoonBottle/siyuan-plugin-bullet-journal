@@ -43,7 +43,7 @@
 
         <!-- 思考过程：展示已完成的 reasoning 内容 -->
         <ReasoningDisplay
-          v-if="message.reasoning && !(message.toolCalls && message.toolCalls.length)"
+          v-if="message.reasoning"
           :content="message.reasoning"
           :default-collapsed="true"
         />
@@ -163,14 +163,16 @@ const hasContent = computed(() => {
   const m = props.message;
   // 思考中状态
   if (m.loading && !m.reasoning && !m.content) return true;
-  // 思考过程
-  if (m.reasoning && !(m.toolCalls && m.toolCalls.length)) return true;
+  // 思考过程（包括有工具调用的情况）
+  if (m.reasoning) return true;
   // 错误消息
   if (m.error) return true;
   // 工具消息
   if (m.role === 'tool') return true;
   // 文本内容
   if (m.content && m.role !== 'tool') return true;
+  // 工具调用消息（即使没有 reasoning 或 content）
+  if (m.toolCalls && m.toolCalls.length > 0) return true;
   // 头部或底部
   if (props.showHeader) return true;
   if (props.showFooter && (m.usage || props.showInsertBtn)) return true;

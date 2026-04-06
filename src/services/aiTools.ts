@@ -5,22 +5,6 @@
 import type { ToolDefinition } from '@/types/ai';
 
 /**
- * 获取用户当前时间工具
- */
-export const getUserTimeTool: ToolDefinition = {
-  type: 'function',
-  function: {
-    name: 'get_user_time',
-    description: '获取用户当前的本地日期和时间。当用户询问「今天」「明天」「本周」等时间相关问题时，应优先调用此工具获取准确日期，再使用 filter_items 等工具查询数据。无参数。',
-    parameters: {
-      type: 'object',
-      properties: {},
-      required: []
-    }
-  }
-};
-
-/**
  * 查询分组列表工具
  */
 export const listGroupsTool: ToolDefinition = {
@@ -169,24 +153,255 @@ export const getPomodoroRecordsTool: ToolDefinition = {
 };
 
 /**
+ * 查询技能列表工具
+ */
+export const listSkillsTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'list_skills',
+    description: '查询所有可用的 AI 技能清单。返回技能名称和描述列表，用于了解有哪些技能可用。获取完整技能内容请使用 get_skill_detail。无参数。',
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
+  }
+};
+
+/**
+ * 获取技能详情工具
+ */
+export const getSkillDetailTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_skill_detail',
+    description: '根据技能名称获取技能的完整内容，包括工作流程、格式要求等详细说明。',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: '技能名称，来自 list_skills 返回的 name'
+        }
+      },
+      required: ['name']
+    }
+  }
+};
+
+/**
+ * 修改事项状态工具
+ */
+export const updateItemStatusTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'update_item_status',
+    description: '修改指定事项的状态。将事项标记为已完成、已放弃或恢复为待办。itemId 来自 filter_items 返回的 id。',
+    parameters: {
+      type: 'object',
+      properties: {
+        itemId: {
+          type: 'string',
+          description: '事项 ID，来自 filter_items 返回的 id'
+        },
+        status: {
+          type: 'string',
+          enum: ['completed', 'abandoned', 'pending'],
+          description: '目标状态：completed=已完成, abandoned=已放弃, pending=恢复待办'
+        }
+      },
+      required: ['itemId', 'status']
+    }
+  }
+};
+
+/**
+ * 创建事项工具
+ */
+export const createItemTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'create_item',
+    description: '在指定项目下创建新事项。projectId 来自 list_projects 返回的 id；content 为事项内容；date 为日期（YYYY-MM-DD）；可选 startTime/endTime（HH:mm:ss）设置时间范围。',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id'
+        },
+        content: {
+          type: 'string',
+          description: '事项内容'
+        },
+        date: {
+          type: 'string',
+          description: '日期，格式 YYYY-MM-DD'
+        },
+        startTime: {
+          type: 'string',
+          description: '开始时间，格式 HH:mm:ss（可选）'
+        },
+        endTime: {
+          type: 'string',
+          description: '结束时间，格式 HH:mm:ss（可选）'
+        }
+      },
+      required: ['projectId', 'content', 'date']
+    }
+  }
+};
+
+/**
+ * 修改事项工具
+ */
+export const updateItemTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'update_item',
+    description: '修改指定事项的日期、时间或内容。itemId 来自 filter_items 返回的 id。只传需要修改的字段，未传的字段保持不变。',
+    parameters: {
+      type: 'object',
+      properties: {
+        itemId: {
+          type: 'string',
+          description: '事项 ID，来自 filter_items 返回的 id'
+        },
+        content: {
+          type: 'string',
+          description: '新的事项内容（可选，不传则不修改内容）'
+        },
+        date: {
+          type: 'string',
+          description: '新日期，格式 YYYY-MM-DD（可选）'
+        },
+        startTime: {
+          type: 'string',
+          description: '新的开始时间，格式 HH:mm:ss（可选，传空字符串清除时间）'
+        },
+        endTime: {
+          type: 'string',
+          description: '新的结束时间，格式 HH:mm:ss（可选，传空字符串清除时间）'
+        }
+      },
+      required: ['itemId']
+    }
+  }
+};
+
+/**
+ * 删除事项工具
+ */
+export const deleteItemTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'delete_item',
+    description: '删除指定事项。itemId 来自 filter_items 返回的 id。此操作不可撤销，请谨慎使用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        itemId: {
+          type: 'string',
+          description: '事项 ID，来自 filter_items 返回的 id'
+        }
+      },
+      required: ['itemId']
+    }
+  }
+};
+
+/**
+ * 创建任务工具
+ */
+export const createTaskTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'create_task',
+    description: '在指定项目下创建新任务。projectId 来自 list_projects 返回的 id；name 为任务名称；level 为任务层级（L1/L2/L3，默认 L1）。',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: '项目 ID，来自 list_projects 返回的 id'
+        },
+        name: {
+          type: 'string',
+          description: '任务名称'
+        },
+        level: {
+          type: 'string',
+          enum: ['L1', 'L2', 'L3'],
+          description: '任务层级，默认 L1'
+        }
+      },
+      required: ['projectId', 'name']
+    }
+  }
+};
+
+/**
+ * 创建项目工具
+ */
+export const createProjectTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'create_project',
+    description: '创建新项目（新建一个思源笔记文档）。name 为项目名称；description 为项目描述（可选）。如果用户配置了项目目录，需要传 directoryId（来自配置的目录列表）；如果未配置目录，directoryId 可不传，程序会自动选择笔记本。',
+    parameters: {
+      type: 'object',
+      properties: {
+        directoryId: {
+          type: 'string',
+          description: '目录 ID（来自配置的目录列表，确定文档创建位置）。如果未配置项目目录则不需要传。'
+        },
+        name: {
+          type: 'string',
+          description: '项目名称'
+        },
+        description: {
+          type: 'string',
+          description: '项目描述（可选）'
+        }
+      },
+      required: ['name']
+    }
+  }
+};
+
+/**
  * 所有可用的工具列表
  */
 export const bulletJournalTools: ToolDefinition[] = [
-  getUserTimeTool,
   listGroupsTool,
   listProjectsTool,
   filterItemsTool,
   getPomodoroStatsTool,
-  getPomodoroRecordsTool
+  getPomodoroRecordsTool,
+  // listSkillsTool,
+  // getSkillDetailTool,
+  // updateItemStatusTool,
+  // createItemTool,
+  // updateItemTool,
+  // deleteItemTool,
+  // createTaskTool,
+  // createProjectTool
 ];
 
 /**
  * 工具名称类型
  */
 export type ToolName =
-  | 'get_user_time'
   | 'list_groups'
   | 'list_projects'
   | 'filter_items'
   | 'get_pomodoro_stats'
-  | 'get_pomodoro_records';
+  | 'get_pomodoro_records'
+  | 'list_skills'
+  | 'get_skill_detail'
+  | 'update_item_status'
+  | 'create_item'
+  | 'update_item'
+  | 'delete_item'
+  | 'create_task'
+  | 'create_project';

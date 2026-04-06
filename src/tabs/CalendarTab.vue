@@ -41,7 +41,7 @@
       <CalendarView
         v-if="isSettingsLoaded"
         ref="calendarRef"
-        :events="filteredCalendarEvents"
+        :events="calendarEvents"
         :initial-view="currentView"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
@@ -56,6 +56,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import type { PomodoroRecord } from '@/types/models';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine, updateBlockDateTime } from '@/utils/fileUtils';
@@ -63,7 +64,9 @@ import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
+import { DataConverter } from '@/utils/dataConverter';
 import { t } from '@/i18n';
+import dayjs from '@/utils/dayjs';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -86,6 +89,40 @@ const filteredCalendarEvents = computed(() => {
   return events;
 });
 
+// 当前日历显示的日期（YYYY-MM-DD）
+const currentDateStr = ref(dayjs().format('YYYY-MM-DD'));
+
+// 是否显示番茄钟时间块（仅日视图 + 设置开启）
+const showPomodoroPanel = computed(() => {
+  return currentView.value === 'timeGridDay' && settingsStore.showPomodoroBlocks;
+});
+
+// 番茄钟背景时间块事件（右对齐，仅日视图）
+const pomodoroBlockEvents = computed(() => {
+  if (!showPomodoroPanel.value) return [];
+  const targetDate = currentDateStr.value;
+  const events = filteredCalendarEvents.value;
+  const pomodoros: PomodoroRecord[] = [];
+  const seenIds = new Set<string>();
+  for (const event of events) {
+    const pList = event.extendedProps?.pomodoros;
+    if (pList) {
+      for (const p of pList) {
+        if (!seenIds.has(p.id) && p.date === targetDate) {
+          seenIds.add(p.id);
+          pomodoros.push(p);
+        }
+      }
+    }
+  }
+  return DataConverter.pomodoroBlocksToEvents(pomodoros);
+});
+
+// 合并日历事件 + 番茄钟背景时间块
+const calendarEvents = computed(() => {
+  return [...filteredCalendarEvents.value, ...pomodoroBlockEvents.value];
+});
+
 // 视图选项
 const viewOptions = [
   { value: 'dayGridMonth', label: t('calendar').month },
@@ -106,7 +143,7 @@ const groupOptions = computed(() => {
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'todoDock'];
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {};
@@ -175,13 +212,6 @@ onMounted(async () => {
     selectedGroup.value = settingsStore.defaultGroup;
   }
 
-  // 加载项目数据
-  console.log('[Task Assistant] Plugin:', !!plugin, 'Directories:', settingsStore.enabledDirectories?.length || 0);
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-    console.log('[Task Assistant] Projects loaded:', projectStore.projects?.length || 0, 'Events:', projectStore.calendarEvents?.length || 0);
-  }
-
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -198,7 +228,9 @@ onMounted(async () => {
 
   // 等待日历初始化后更新标题
   await nextTick();
-  setTimeout(() => updateTitle(), 100);
+  setTimeout(() => {
+    updateTitle();
+  }, 100);
 });
 
 onUnmounted(() => {
@@ -264,6 +296,11 @@ const handleBack = () => {
 const updateTitle = () => {
   if (calendarRef.value) {
     currentTitle.value = calendarRef.value.getTitle() || '';
+    // 同步更新当前日期
+    const d = calendarRef.value.getDate?.();
+    if (d) {
+      currentDateStr.value = dayjs(d).format('YYYY-MM-DD');
+    }
   }
 };
 
@@ -356,8 +393,7 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
 
   if (success) {
     showMessage(action === 'move' ? t('common').moveSuccess : t('common').resizeSuccess);
-    // 刷新数据
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    // 操作成功，等待 ws-main 事件触发定向刷新
   } else {
     showMessage(t('common').actionFailed, 'error');
   }
@@ -412,5 +448,7 @@ watch(currentView, (newView) => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+
 }
 </style>

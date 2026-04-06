@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal, createDialog } from '@/utils/dialog';
+import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import {
@@ -24,7 +24,7 @@ import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
 import type { Item, ProjectDirectory } from '@/types/models';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID } from '@/api';
+import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 
 /**
@@ -50,8 +50,14 @@ function getEditorRange(element: Element): Range | null {
  * @param protyle Protyle 编辑器实例
  * @param filters 可能的斜杠命令前缀数组
  * @param suffix 可选的要追加的标记（如 '#任务'），在删除斜杠命令后追加
+ * @param additionalTransform 可选的额外文本转换函数，用于同时处理其他修改（如添加状态标记）
  */
-export function deleteSlashCommandContent(protyle: any, filters: string[], suffix?: string): void {
+export function deleteSlashCommandContent(
+  protyle: any, 
+  filters: string[], 
+  suffix?: string,
+  additionalTransform?: (text: string) => string
+): void {
   // 获取编辑器元素
   const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
   if (!wysiwygElement) return;
@@ -95,6 +101,11 @@ export function deleteSlashCommandContent(protyle: any, filters: string[], suffi
     if (!newLineText.includes(suffix)) {
       newLineText = newLineText.trimEnd() + ' ' + suffix;
     }
+  }
+
+  // 应用额外的文本转换
+  if (additionalTransform) {
+    newLineText = additionalTransform(newLineText);
   }
 
   // 如果有修改，更新文本并提交事务
@@ -326,6 +337,33 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-view-detail',
       callback: getActionHandler('viewDetail', config, SLASH_COMMAND_FILTERS.VIEW_DETAIL)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.SET_REMINDER,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setReminder}</span>
+          <span class="b3-list-item__meta">⏰</span>
+      </div>`,
+      id: 'bullet-journal-set-reminder',
+      callback: getActionHandler('setReminder', config, SLASH_COMMAND_FILTERS.SET_REMINDER)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.SET_RECURRING,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setRecurring}</span>
+          <span class="b3-list-item__meta">🔁</span>
+      </div>`,
+      id: 'bullet-journal-set-recurring',
+      callback: getActionHandler('setRecurring', config, SLASH_COMMAND_FILTERS.SET_RECURRING)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.CREATE_SKILL,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').createSkill}</span>
+          <span class="b3-list-item__meta">AI Skill</span>
+      </div>`,
+      id: 'bullet-journal-create-skill',
+      callback: getActionHandler('createSkill', config, SLASH_COMMAND_FILTERS.CREATE_SKILL)
     }
   ];
 
@@ -459,13 +497,41 @@ function getActionHandler(
       return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement, filter);
     case 'done':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setTimeout(() => markAsDone(nodeElement), 300);
+        const completedTag = getStatusTag('completed');
+        const blockContent = nodeElement.textContent || '';
+        // 检查是否已完成
+        if (completedTag && blockContent.includes(completedTag)) {
+          deleteSlashCommandContent(protyle, filter);
+          showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
+          return;
+        }
+        // 同时删除斜杠命令并添加完成标记（一次事务）
+        deleteSlashCommandContent(protyle, filter, undefined, (text) => {
+          if (!text.includes(completedTag)) {
+            return text.trimEnd() + ' ' + completedTag;
+          }
+          return text;
+        });
+        showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
       };
     case 'abandon':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setTimeout(() => markAsAbandoned(nodeElement), 300);
+        const abandonedTag = getStatusTag('abandoned');
+        const blockContent = nodeElement.textContent || '';
+        // 检查是否已放弃
+        if (abandonedTag && blockContent.includes(abandonedTag)) {
+          deleteSlashCommandContent(protyle, filter);
+          showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
+          return;
+        }
+        // 同时删除斜杠命令并添加放弃标记（一次事务）
+        deleteSlashCommandContent(protyle, filter, undefined, (text) => {
+          if (!text.includes(abandonedTag)) {
+            return text.trimEnd() + ' ' + abandonedTag;
+          }
+          return text;
+        });
+        showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
       };
     case 'calendar':
       return (protyle, nodeElement) => {
@@ -531,6 +597,21 @@ function getActionHandler(
         deleteSlashCommandContent(protyle, filter);
         viewDetail(nodeElement);
       };
+    case 'setReminder':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setReminderForBlock(nodeElement);
+      };
+    case 'setRecurring':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setRecurringForBlock(nodeElement);
+      };
+    case 'createSkill':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        createSkillFromSlash(nodeElement);
+      };
     default:
       return () => {};
   }
@@ -556,7 +637,10 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     todo: 'Todo',
     setProjectDir: 'Project Dir',
     markAsTask: 'Task',
-    viewDetail: 'Detail'
+    viewDetail: 'Detail',
+    setReminder: 'Reminder',
+    setRecurring: 'Recurring',
+    createSkill: 'AI Skill'
   };
   return labels[action] || action;
 }
@@ -730,6 +814,10 @@ async function markAsDone(nodeElement: HTMLElement) {
 
   if (success) {
     showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+    
+    // 注意：重复事项的自动创建由 WebSocket 处理器处理
+    // 避免重复调用 createNextOccurrence
+    
     // 数据刷新会触发统一检测逻辑
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -817,6 +905,14 @@ function openPomodoroDialogWithItem(blockId: string, openPomodoroDock: () => voi
     height: 'auto'
   });
 
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
   const mountEl = dialog.element.querySelector('#pomodoro-timer-dialog-mount');
   if (mountEl) {
     const app = createApp(PomodoroTimerDialog, {
@@ -864,4 +960,145 @@ async function startFocusFromSlash(
   // 打开预选弹框（无左侧列表），传递 blockId 而非 item 引用
   // 这样弹框内部可以实时从 store 获取最新的 item 数据
   openPomodoroDialogWithItem(blockId, openPomodoroDock);
+}
+
+
+/**
+ * 为块设置提醒
+ */
+async function setReminderForBlock(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  // 从块内容提取事项信息
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  // 打开提醒设置弹框
+  showReminderSettingDialog(item);
+}
+
+/**
+ * 为块设置重复
+ */
+async function setRecurringForBlock(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  // 从块内容提取事项信息
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  // 打开重复设置弹框
+  showRecurringSettingDialog(item);
+}
+
+/**
+ * 导入 CreateSkillDialog 组件
+ */
+import CreateSkillDialog from '@/components/dialog/CreateSkillDialog.vue';
+
+/**
+ * 从斜杠命令创建技能
+ * 将当前文档转换为技能文档
+ */
+async function createSkillFromSlash(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+  
+  // 获取当前文档信息
+  let docId: string;
+  let notebook: string;
+  let docPath: string;
+  
+  try {
+    const block = await getBlockByID(blockId);
+    if (!block) {
+      showMessage('无法获取文档信息', 2000, 'error');
+      return;
+    }
+    
+    // 获取文档根块
+    docId = block.root_id;
+    notebook = block.box;
+    docPath = block.hpath || '';
+  } catch (error) {
+    console.error('[SlashCommand] Failed to get document info:', error);
+    showMessage('无法获取文档信息', 2000, 'error');
+    return;
+  }
+  
+  // 创建容器元素
+  const container = document.createElement('div');
+  
+  // 创建 Vue 应用
+  const app = createApp(CreateSkillDialog, {
+    mode: 'existing',
+    docId,
+    notebook,
+    docPath,
+    onClose: () => {
+      dialog.destroy();
+    },
+    onCreated: async (_docId: string, skillName?: string) => {
+      console.log('[SlashCommand] onCreated called:', { _docId, skillName });
+      showMessage('技能创建成功！', 3000, 'info');
+      // 使用 ID 重命名文档为技能名称
+      if (skillName && _docId) {
+        console.log('[SlashCommand] Renaming document by ID:', { docId: _docId, newName: skillName });
+        try {
+          const result = await renameDocByID(_docId, skillName);
+          console.log('[SlashCommand] renameDocByID result:', result);
+          if (result === null) {
+            console.log('[SlashCommand] Rename successful');
+          } else {
+            console.error('[SlashCommand] Rename failed: API returned unexpected result');
+          }
+        } catch (error) {
+          console.error('[SlashCommand] Failed to rename document:', error);
+        }
+      } else {
+        console.log('[SlashCommand] Skip rename: missing params', { skillName, docId: _docId });
+      }
+    }
+  });
+  
+  app.use(getSharedPinia());
+  app.mount(container);
+  
+  // 打开创建技能对话框
+  const dialog = createDialog({
+    title: t('slash').createSkillTitle,
+    content: '',
+    width: '480px',
+    height: 'auto'
+  });
+  
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+  
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
 }

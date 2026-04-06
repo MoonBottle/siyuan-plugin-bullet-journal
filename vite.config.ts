@@ -38,7 +38,7 @@ export default defineConfig(({
 
   const args = minimist(process.argv.slice(2))
   const isWatch = args.watch || args.w || false
-  const distDir = isWatch ? devDistDir : "./dist"
+  const distDir = siyuanWorkspacePath ? devDistDir : "./dist"
 
   console.log()
   console.log("isWatch=>", isWatch)
@@ -49,6 +49,23 @@ export default defineConfig(({
       alias: {
         "@": resolve(__dirname, "src"),
       },
+    },
+
+    // 依赖预构建优化
+    optimizeDeps: {
+      include: [
+        "vue",
+        "pinia",
+        "dayjs",
+        "chart.js",
+        "@fullcalendar/core",
+        "@fullcalendar/daygrid",
+        "@fullcalendar/timegrid",
+        "@fullcalendar/list",
+        "@fullcalendar/interaction",
+        "dhtmlx-gantt",
+      ],
+      exclude: ["siyuan"],
     },
 
     plugins: [
@@ -71,10 +88,11 @@ export default defineConfig(({
             src: "./plugin.json",
             dest: "./",
           },
-          // 开发模式：插件输出到 workspace，需复制 mcp-server.js；生产模式：mcp-server.js 已在 dist 中
-          ...(isWatch
-            ? [{ src: "./dist/mcp-server.js", dest: "./" }]
-            : []),
+          // 复制 mcp-server.js 到目标目录
+          {
+            src: "./dist/mcp-server.js",
+            dest: "./",
+          },
           {
             src: "./src/i18n/**",
             dest: "./i18n/",
@@ -110,6 +128,20 @@ export default defineConfig(({
       // boolean | 'terser' | 'esbuild'
       // 不压缩，用于调试
       minify: !isWatch,
+
+      // CSS 代码分割
+      cssCodeSplit: true,
+
+      // 模块预加载配置
+      modulePreload: {
+        polyfill: true,
+      },
+
+      // 资源内联阈值
+      assetsInlineLimit: 4096,
+
+      // 报告 gzip 压缩后大小
+      reportCompressedSize: true,
 
       lib: {
         // Could also be a dictionary or array of multiple entry points
@@ -154,11 +186,13 @@ export default defineConfig(({
 
         output: {
           entryFileNames: "[name].js",
+          // chunk 文件命名优化
+          chunkFileNames: "assets/[name]-[hash].js",
           assetFileNames: (assetInfo) => {
             if (assetInfo.name === "style.css") {
               return "index.css"
             }
-            return assetInfo.name
+            return assetInfo.name || "assets/[name]-[hash][extname]"
           },
         },
       },

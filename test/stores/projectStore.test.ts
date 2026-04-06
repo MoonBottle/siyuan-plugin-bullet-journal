@@ -25,11 +25,21 @@ const mkItem = (
     ...overrides
   }) as Item;
 
-const mockProject: Project = {
-  id: 'proj-1',
-  name: '测试项目',
-  path: '/test',
-  tasks: []
+// 创建包含 items 的 mock project
+const createMockProject = (items: Item[]): Project => {
+  const task: Task = {
+    id: 'task-1',
+    name: '测试任务',
+    level: 'L1',
+    items,
+    lineNumber: 1
+  };
+  return {
+    id: 'proj-1',
+    name: '测试项目',
+    path: '/test',
+    tasks: [task]
+  };
 };
 
 describe('projectStore 多日期事项', () => {
@@ -43,8 +53,11 @@ describe('projectStore 多日期事项', () => {
       mkItem('2026-03-07', 'b1'),
       mkItem('2026-03-08', 'b1'),
       mkItem('2026-03-09', 'b1')
-    ].map(i => ({ ...i, project: mockProject }));
-    store.$patch({ items, currentDate: '2026-03-10' });
+    ];
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-03-10'
+    });
 
     const result = store.getExpiredItems('');
 
@@ -58,8 +71,11 @@ describe('projectStore 多日期事项', () => {
       mkItem('2026-03-07', 'b1'),
       mkItem('2026-03-08', 'b1'),
       mkItem('2026-03-09', 'b1')
-    ].map(i => ({ ...i, project: mockProject }));
-    store.$patch({ items, currentDate: '2026-03-08' });
+    ];
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-03-08'
+    });
 
     const result = store.getFutureItems('');
 
@@ -72,8 +88,11 @@ describe('projectStore 多日期事项', () => {
     const items = [
       mkItem('2026-03-07', 'b1', { dateRangeStart: '2026-03-07', dateRangeEnd: '2026-03-11' }),
       mkItem('2026-03-11', 'b1', { dateRangeStart: '2026-03-07', dateRangeEnd: '2026-03-11' })
-    ].map(i => ({ ...i, project: mockProject }));
-    store.$patch({ items, currentDate: '2026-03-10' });
+    ];
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-03-10'
+    });
 
     const result = store.getFutureItems('');
 
@@ -87,8 +106,11 @@ describe('projectStore 多日期事项', () => {
       mkItem('2026-03-07', 'b1', { status: 'completed' }),
       mkItem('2026-03-08', 'b1', { status: 'completed' }),
       mkItem('2026-03-09', 'b1', { status: 'completed' })
-    ].map(i => ({ ...i, project: mockProject }));
-    store.$patch({ items, currentDate: '2026-03-10' });
+    ];
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-03-10'
+    });
 
     const result = store.getCompletedItems('');
 
@@ -127,7 +149,9 @@ describe('projectStore 专注时长统计', () => {
       ]
     };
     const project: Project = {
-      ...mockProject,
+      id: 'proj-1',
+      name: '测试项目',
+      path: '/test',
       tasks: [task]
     };
     store.$patch({ projects: [project] });
@@ -158,7 +182,9 @@ describe('projectStore 专注时长统计', () => {
       ]
     };
     const project: Project = {
-      ...mockProject,
+      id: 'proj-1',
+      name: '测试项目',
+      path: '/test',
       tasks: [task]
     };
     store.$patch({ projects: [project] });
@@ -183,7 +209,9 @@ describe('projectStore 专注时长统计', () => {
       ]
     };
     const project: Project = {
-      ...mockProject,
+      id: 'proj-1',
+      name: '测试项目',
+      path: '/test',
       tasks: [task]
     };
     store.$patch({ projects: [project] });
@@ -206,7 +234,9 @@ describe('projectStore 专注时长统计', () => {
       ]
     };
     const project: Project = {
-      ...mockProject,
+      id: 'proj-1',
+      name: '测试项目',
+      path: '/test',
       tasks: [task]
     };
     store.$patch({ projects: [project] });

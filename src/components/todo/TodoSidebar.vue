@@ -579,12 +579,13 @@ const handleDone = async (item: Item) => {
   try {
     // 标记事项完成
     const tag = getStatusTag('completed');
-    const success = await updateBlockContent(item.blockId, tag);
+    await updateBlockContent(item.blockId, tag);
 
-    if (success && plugin) {
-      // 刷新项目数据（会触发统一检测逻辑）
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    }
+    // 注意：重复事项的自动创建由 WebSocket 处理器处理
+    // 避免重复调用 createNextOccurrence
+
+    // 操作成功，等待 ws-main 事件触发定向刷新
+    // 无需手动调用 refresh
   } finally {
     isProcessing.value = false;
   }
@@ -622,9 +623,7 @@ const handleMigrate = async (item: Item) => {
       item.status
     );
 
-    if (success && plugin) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    }
+    // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
     isProcessing.value = false;
   }
@@ -660,9 +659,7 @@ const handleMigrateToday = async (item: Item) => {
       item.status
     );
 
-    if (success && plugin) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    }
+    // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
     isProcessing.value = false;
   }
@@ -698,9 +695,7 @@ const handleMigrateCustom = (item: Item) => {
         item.status
       );
 
-      if (success && plugin) {
-        await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-      }
+      // 操作成功，等待 ws-main 事件触发定向刷新
     } finally {
       isProcessing.value = false;
     }
@@ -716,9 +711,7 @@ const handleAbandon = async (item: Item) => {
   try {
     const tag = getStatusTag('abandoned');
     const success = await updateBlockContent(item.blockId, tag);
-    if (success && plugin) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    }
+    // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
     isProcessing.value = false;
   }
@@ -836,10 +829,7 @@ const handleCreateExample = async () => {
   isProcessing.value = true;
   try {
     const docId = await createExampleDocument();
-    if (docId && plugin) {
-      // 刷新项目数据
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-    }
+    // 新文档创建成功，等待 ws-main 事件触发刷新
   } finally {
     isProcessing.value = false;
   }

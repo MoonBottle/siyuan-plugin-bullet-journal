@@ -53,7 +53,7 @@ const groupOptions = computed(() => {
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'todoDock'];
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {};
@@ -142,11 +142,6 @@ onMounted(async () => {
   // 同步 todoDock 设置到 projectStore
   projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
   projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
-
-  // 加载项目数据
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-  }
 
   // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);

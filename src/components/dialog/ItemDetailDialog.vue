@@ -146,6 +146,43 @@
           </span>
         </div>
 
+        <!-- 提醒和重复设置 -->
+        <div v-if="(!isCompletedOrAbandoned) || hasReminder || hasRecurring" class="item-actions-row">
+          <button
+            v-if="!isCompletedOrAbandoned || hasReminder"
+            class="action-btn b3-tooltips b3-tooltips__n"
+            :class="{ active: hasReminder, readonly: isCompletedOrAbandoned }"
+            :disabled="isCompletedOrAbandoned"
+            :aria-label="reminderButtonTooltip || reminderText"
+            @click="handleSetReminder"
+          >
+            <span class="action-icon">⏰</span>
+            <span class="action-text">{{ reminderText }}</span>
+          </button>
+          
+          <button
+            v-if="(!isCompletedOrAbandoned && canSetRecurring) || hasRecurring"
+            class="action-btn b3-tooltips b3-tooltips__n"
+            :class="{ active: hasRecurring, readonly: isCompletedOrAbandoned }"
+            :disabled="isCompletedOrAbandoned"
+            :aria-label="recurringButtonTooltip || recurringText"
+            @click="handleSetRecurring"
+          >
+            <span class="action-icon" v-if="!hasRecurring">🔁</span>
+            <span class="action-text">{{ recurringText }}</span>
+          </button>
+          
+          <!-- 跳过本次（仅过期事项显示） -->
+          <button
+            v-if="showSkipButton"
+            class="action-btn skip-btn b3-tooltips b3-tooltips__n"
+            :aria-label="skipButtonTooltip"
+            @click="handleSkipOccurrence"
+          >
+            <span class="action-text">{{ t('recurring.skipThis') }}</span>
+          </button>
+        </div>
+
         <template #footer>
           <SyButton
             v-for="link in itemLinks"
@@ -181,6 +218,9 @@ import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
+import { formatReminderDisplay } from '@/utils/displayUtils';
+import { getNextOccurrenceDate, generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
+import { calculateReminderTime } from '@/parser/reminderParser';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
@@ -205,6 +245,9 @@ const emit = defineEmits<{
   close: [];
   openDoc: [];
   openCalendar: [date: string];
+  setReminder: [];
+  setRecurring: [];
+  skipOccurrence: [];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -250,7 +293,8 @@ const timeDisplay = computed(() => {
   }
   
   const optimized = optimizeDateTimeExpressions(allItems);
-  return optimized.replace(/^@/, '');
+  // 移除 @ 和 📅 前缀，因为模板中已有固定图标
+  return optimized.replace(/^(?:@|📅)/, '');
 });
 
 // 时间显示是否过长，需要 tooltip
@@ -373,6 +417,68 @@ const statusInfo = computed(() => {
   return statusMap[itemStatus.value] || statusMap['pending'];
 });
 
+// 已完成或已放弃
+const isCompletedOrAbandoned = computed(() => 
+  itemStatus.value === 'completed' || itemStatus.value === 'abandoned'
+);
+
+// 提醒相关
+const hasReminder = computed(() => props.item.reminder?.enabled);
+const reminderText = computed(() => {
+  if (!hasReminder.value) return t('reminder.setReminder');
+  return formatReminderDisplay(props.item.reminder, t);
+});
+
+// 重复相关
+const hasRecurring = computed(() => !!props.item.repeatRule);
+const canSetRecurring = computed(() => !props.item.siblingItems?.length); // 多日期事项不能设置重复
+const recurringText = computed(() => {
+  if (!hasRecurring.value) return t('recurring.setRecurring');
+  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule);
+  const endMarker = generateEndConditionMarker(props.item.endCondition);
+  return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker;
+});
+
+// 是否显示跳过按钮（有重复规则且已过期）
+const showSkipButton = computed(() => {
+  return hasRecurring.value && itemStatus.value === 'expired';
+});
+
+// 跳过本次的 tooltip 文本
+const skipButtonTooltip = computed(() => {
+  if (!props.item.repeatRule) return '';
+  const nextDate = getNextOccurrenceDate(props.item.date, props.item.repeatRule);
+  return t('recurring.skipTooltip', { date: nextDate });
+});
+
+// 提醒按钮的 tooltip - 显示提醒时间（如果已过则显示"上次提醒"）
+const reminderButtonTooltip = computed(() => {
+  if (!hasReminder.value || !props.item.reminder) return '';
+  const reminderTime = calculateReminderTime(
+    props.item.date,
+    props.item.startDateTime,
+    props.item.endDateTime,
+    undefined,
+    undefined,
+    props.item.reminder
+  );
+  if (!reminderTime) return '';
+  const formattedTime = dayjs(reminderTime).format('YYYY-MM-DD HH:mm');
+  // 判断提醒时间是否已过
+  const now = Date.now();
+  if (reminderTime < now) {
+    return t('reminder.lastReminder', { time: formattedTime });
+  }
+  return t('reminder.nextReminder', { time: formattedTime });
+});
+
+// 重复按钮的 tooltip - 显示下一次重复日期
+const recurringButtonTooltip = computed(() => {
+  if (!hasRecurring.value || !props.item.repeatRule) return '';
+  const nextDate = getNextOccurrenceDate(props.item.date, props.item.repeatRule);
+  return t('recurring.nextOccurrence', { date: nextDate });
+});
+
 // 获取有效日期
 function getEffectiveDate(item: Item): string {
   if (item.dateRangeEnd) {
@@ -417,6 +523,21 @@ function handleLinkClick(url: string) {
     console.log('[ItemDetailDialog] siyuan link detected, closing dialog');
     handleClose();
   }
+}
+
+// 设置提醒
+function handleSetReminder() {
+  emit('setReminder');
+}
+
+// 设置重复
+function handleSetRecurring() {
+  emit('setRecurring');
+}
+
+// 跳过本次
+function handleSkipOccurrence() {
+  emit('skipOccurrence');
 }
 </script>
 
@@ -590,5 +711,67 @@ function handleLinkClick(url: string) {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--b3-border-color);
+}
+
+.item-actions-row {
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--b3-border-color);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--b3-theme-surface-light);
+    border-color: var(--b3-theme-primary);
+  }
+
+  &.active {
+    background: var(--b3-theme-surface);
+    border-color: var(--b3-theme-primary);
+    color: var(--b3-theme-primary);
+  }
+
+  &.readonly {
+    cursor: default;
+    opacity: 0.8;
+
+    &:hover {
+      background: var(--b3-theme-surface);
+      border-color: var(--b3-theme-primary);
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.action-icon {
+  font-size: 12px;
+}
+
+.skip-btn {
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface);
+  border-color: var(--b3-border-color);
+
+  &:hover {
+    background: var(--b3-theme-surface);
+    border-color: var(--b3-theme-primary);
+    color: var(--b3-theme-primary);
+  }
 }
 </style>

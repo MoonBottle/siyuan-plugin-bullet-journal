@@ -8,8 +8,10 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
 import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
-import { getBlockIdFromElement, getBlockIdFromRange, findItemByBlockId } from '@/utils/itemBlockUtils';
-import { useProjectStore, usePomodoroStore } from '@/stores';
+import { getBlockIdFromElement, getBlockIdFromRange } from '@/utils/itemBlockUtils';
+import { useProjectStore, usePomodoroStore, useSkillStore, useAIStore } from '@/stores';
+import { useConversationStorage } from '@/services/conversationStorageService';
+import { useSkillService } from '@/services/skillService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
@@ -26,6 +28,9 @@ import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiv
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
+import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
+import { reminderService } from '@/services/reminderService';
+import { createNextOccurrence, shouldCreateNextOccurrence } from '@/services/recurringService';
 
 let PluginInfo = {
   version: '',
@@ -45,7 +50,6 @@ const { version } = PluginInfo;
  * 同上下文下所有视图共享同一份 settings/project store。若某视图跑在另一上下文（如 iframe），
  * 该处 sharedPinia 为 null，会 fallback 到 createPinia()，此时仍依赖 BroadcastChannel 同步数据。
  */
-export { getSharedPinia } from '@/utils/sharedPinia';
 
 // 全局设置
 let settings: SettingsData = { ...defaultSettings };
@@ -75,6 +79,10 @@ export default class TaskAssistantPlugin extends Plugin {
   private statusBarTimerEl: HTMLElement | null = null;
   /** 番茄钟 Dock model */
   private pomodoroDockModel: any = null;
+  /** 已处理过的任务列表完成事件，用于去重 */
+  private processedTaskCompletions = new Set<string>();
+  /** 正在处理的任务列表完成，防止并发重复 */
+  private processingTaskCompletions = new Map<string, Promise<void>>();
 
   async onload() {
     const frontEnd = getFrontend();
@@ -100,13 +108,32 @@ export default class TaskAssistantPlugin extends Plugin {
     await this.loadSettings();
 
     // 创建唯一 Pinia 实例，供所有 Tab/Dock 复用，避免多实例导致 store 不同步
-    setSharedPinia(createPinia());
+    const pinia = createPinia();
+    setSharedPinia(pinia);
 
     // 注册自定义 Tab
     this.registerTabs();
 
     // 注册 Dock
     this.registerDocks();
+
+    // 首次加载项目数据（所有 Tab/Dock 共享这份数据）
+    const settings = this.getSettings();
+    const enabledDirs = settings.directories.filter(d => d.enabled);
+    console.log('[Task Assistant] Init loadProjects check:', {
+      directoriesCount: settings.directories.length,
+      enabledDirsCount: enabledDirs.length,
+      enabledDirs: enabledDirs.map(d => d.path)
+    });
+    console.log('[Task Assistant] Starting initial loadProjects...');
+    const projectStore = useProjectStore(pinia);
+    projectStore.loadProjects(this, enabledDirs).then(async () => {
+      console.log('[Task Assistant] Initial loadProjects completed');
+      // 初始加载完成后同步提醒
+      console.log('[ReminderService] Initial load completed');
+    }).catch(err => {
+      console.error('[Task Assistant] Failed to load projects on init:', err);
+    });
 
     // 注册顶栏按钮
     this.registerTopBar();
@@ -133,6 +160,55 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 注册斜杠命令
     this.registerSlashCommands();
+
+    // 启动提醒服务（传入 projectStore，服务内部会定时读取 itemsNeedingReminder）
+    reminderService.start(this, projectStore);
+
+    // 初始化技能存储服务
+    this.initSkillStorage();
+
+    // 初始化微信 ClawBot（不依赖 AI Dock 是否打开，确保通知能正常发送）
+    this.initClawBot(pinia);
+  }
+
+  /**
+   * 初始化技能存储服务
+   */
+  private async initSkillStorage() {
+    try {
+      // 初始化技能服务（必须先初始化，因为其他模块依赖它）
+      useSkillService(this);
+      
+      // 初始化技能存储
+      const skillStore = useSkillStore();
+      await skillStore.loadFromPlugin(this);
+      
+      // 监听技能存储变化事件
+      window.addEventListener('skill-store-changed', async (event: any) => {
+        const data = event.detail;
+        if (data) {
+          await this.saveData('aiSkills', data);
+        }
+      });
+
+      console.log('[Task Assistant] Skill storage initialized');
+    } catch (error) {
+      console.error('[Task Assistant] Failed to initialize skill storage:', error);
+    }
+  }
+
+  /**
+   * 初始化微信 ClawBot（插件启动时自动初始化，不依赖 AI Dock 是否打开）
+   */
+  private async initClawBot(pinia: any) {
+    try {
+      const aiStore = useAIStore(pinia);
+      await aiStore.initializeStorage(this);
+      await aiStore.initializeClawBot(this);
+      console.log('[Task Assistant] ClawBot initialized from plugin onload');
+    } catch (error) {
+      console.error('[Task Assistant] Failed to initialize ClawBot:', error);
+    }
   }
 
   /**
@@ -273,6 +349,8 @@ export default class TaskAssistantPlugin extends Plugin {
     destroy();
     // 清理悬浮番茄按钮
     this.hideFloatingTomatoButton();
+    // 停止提醒服务
+    reminderService.stop();
   }
 
   /**
@@ -311,6 +389,8 @@ export default class TaskAssistantPlugin extends Plugin {
           calendarDefaultView: data.calendarDefaultView || 'timeGridDay',
           lunchBreakStart: data.lunchBreakStart || '12:00',
           lunchBreakEnd: data.lunchBreakEnd || '13:00',
+          showPomodoroBlocks: data.showPomodoroBlocks ?? true,
+          showPomodoroTotal: data.showPomodoroTotal ?? true,
           todoDock: {
             hideCompleted: data.todoDock?.hideCompleted ?? false,
             hideAbandoned: data.todoDock?.hideAbandoned ?? false
@@ -400,6 +480,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 保存 AI 设置（供 AI Store 调用，只保存供应商配置）
+   * 注意：ClawBot 配置保存到单独文件
    */
   public async saveAISettings(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
     if (!settings.ai) {
@@ -408,6 +489,7 @@ export default class TaskAssistantPlugin extends Plugin {
     settings.ai.providers = aiData.providers;
     settings.ai.activeProviderId = aiData.activeProviderId;
     settings.ai.showToolCalls = aiData.showToolCalls;
+    // 注意：ClawBot 配置不保存在这里，保存到单独文件
     try {
       await this.saveData('settings', settings);
     } catch (error) {
@@ -417,6 +499,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 仅将 AI 配置写入文件（从磁盘读出完整配置，只替换 ai 后写回，不修改内存中其它区块，避免覆盖用户未保存的修改）
+   * 注意：ClawBot 配置保存到单独文件
    */
   public async saveAISettingsOnly(aiData: { providers: AIProviderConfig[]; activeProviderId: string | null; showToolCalls?: boolean }) {
     try {
@@ -425,6 +508,7 @@ export default class TaskAssistantPlugin extends Plugin {
         providers: aiData.providers,
         activeProviderId: aiData.activeProviderId,
         ...(aiData.showToolCalls !== undefined && { showToolCalls: aiData.showToolCalls })
+        // 注意：ClawBot 配置不保存在这里
       };
       const merged: SettingsData = data
         ? { ...data, ai: aiConfig }
@@ -450,6 +534,79 @@ export default class TaskAssistantPlugin extends Plugin {
       await this.saveData('ai-chat-history', chatHistory);
     } catch (error) {
       console.error('[Bullet Journal] Failed to save AI chat history:', error);
+    }
+  }
+
+  /**
+   * 获取 AI 技能设置
+   */
+  public getAISkills(): { skills: any[] } {
+    return { skills: [] };
+  }
+
+  // ========== WeChat Login State Persistence ==========
+
+  private readonly WECHAT_LOGIN_KEY = 'wechat-login-state';
+
+  /**
+   * 保存微信配置和登录状态（单独文件，避免与 settings 冲突）
+   */
+  public async saveWechatLoginState(loginData: { 
+    enabled: boolean;
+    token?: string; 
+    accountId?: string; 
+    userId?: string; 
+    loginStatus: string;
+    baseUrl?: string;
+    cdnBaseUrl?: string;
+  }) {
+    try {
+      await this.saveData(this.WECHAT_LOGIN_KEY, loginData);
+      console.log('[Task Assistant] WeChat state saved:', { enabled: loginData.enabled, loginStatus: loginData.loginStatus });
+    } catch (error) {
+      console.error('[Task Assistant] Failed to save WeChat state:', error);
+    }
+  }
+
+  /**
+   * 加载微信配置和登录状态
+   */
+  public async loadWechatLoginState(): Promise<{ 
+    enabled: boolean;
+    token?: string; 
+    accountId?: string; 
+    userId?: string; 
+    loginStatus: string;
+    baseUrl?: string;
+    cdnBaseUrl?: string;
+  } | null> {
+    try {
+      const data = await this.loadData(this.WECHAT_LOGIN_KEY);
+      if (data) {
+        console.log('[Task Assistant] WeChat state loaded:', { 
+          enabled: data.enabled,
+          hasToken: !!data.token, 
+          accountId: data.accountId,
+          loginStatus: data.loginStatus 
+        });
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('[Task Assistant] Failed to load WeChat state:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 清除微信登录状态
+   */
+  public async clearWechatLoginState() {
+    try {
+      await this.saveData(this.WECHAT_LOGIN_KEY, null);
+      console.log('[Task Assistant] WeChat login state cleared');
+    } catch (error) {
+      console.error('[Task Assistant] Failed to clear WeChat login state:', error);
     }
   }
 
@@ -540,7 +697,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const pinia = getSharedPinia();
     if (!pinia) return;
     const projectStore = useProjectStore(pinia);
-    const item = findItemByBlockId(blockId, projectStore.items);
+    const item = projectStore.getItemByBlockId(blockId);
     if (!item) return;
     detail.menu.addItem({
       icon: 'iconInfo',
@@ -564,7 +721,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const pinia = getSharedPinia();
     if (!pinia) return;
     const projectStore = useProjectStore(pinia);
-    const item = findItemByBlockId(blockId, projectStore.items);
+    const item = projectStore.getItemByBlockId(blockId);
     if (!item) return;
     detail.event.preventDefault();
     detail.event.stopPropagation();
@@ -970,31 +1127,295 @@ export default class TaskAssistantPlugin extends Plugin {
   /**
    * WebSocket 消息处理
    */
-  private onWsMain(event: any) {
-    console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
+  private async onWsMain(event: any) {
+    // console.log('[Task Assistant] ws-main event:', event, 'detail:', event?.detail);
     // 检测数据变化相关的事件
     const data = event.detail;
-    if (data && data.cmd) {
-      // 这些命令表示数据可能发生变化（savedoc：文档保存；setBlockAttrs 可能不触发 ws-main，专注记录保存后由 pomodoroStore 主动 emit DATA_REFRESH）
-      const refreshCmds = ['txerr', 'savedoc', 'refreshdoc', 'createdailynote', 'moveDoc', 'removeDoc'];
-      if (refreshCmds.includes(data.cmd)) {
-        this.scheduleRefresh();
-        return;
+    if (!data || !data.cmd) return;
+
+    // 处理文档删除事件 - 同步删除关联的技能
+    if (data.cmd === 'removeDoc') {
+      this.handleDocRemove(data);
+      this.scheduleRefresh();
+      return;
+    }
+
+    // 全量刷新命令
+    const fullRefreshCmds = ['txerr', 'refreshdoc', 'createdailynote', 'moveDoc'];
+    if (fullRefreshCmds.includes(data.cmd)) {
+      this.scheduleRefresh();
+      return;
+    }
+
+    // 保存文档 - 定向刷新
+    if (data.cmd === 'savedoc') {
+      this.handleDirectedRefresh(data);
+      return;
+    }
+
+    // 属性变更（含属性面板手动删除）会广播 transactions
+    if (data.cmd === 'transactions' && Array.isArray(data.data)) {
+      const hasAttrChange = data.data.some(
+        (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
+      );
+      if (hasAttrChange) {
+        this.handleDirectedRefresh(data);
       }
-      // 属性变更（含属性面板手动删除）会广播 transactions，需刷新专注记录
-      // if (event.cmd === 'setBlockAttrs') {
-      //   this.scheduleRefresh();
-      //   return;
-      // }
-      if (data.cmd === 'transactions' && Array.isArray(data.data)) {
-        const hasAttrChange = data.data.some(
-          (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
-        );
-        if (hasAttrChange) {
-          this.scheduleRefresh();
+
+      // 检测任务列表完成（勾选 [ ] -> [x]）
+      await this.handleTaskListCompletions(data);
+    }
+  }
+
+  /**
+   * 处理文档删除事件
+   * 当文档被删除时，同步删除关联的技能配置
+   */
+  private handleDocRemove(data: any) {
+    // 尝试从不同位置获取被删除的文档 ID
+    // 思源 removeDoc 事件通常包含 ids 数组或单条数据的 id
+    const ids: string[] = [];
+    
+    if (data.data?.ids && Array.isArray(data.data.ids)) {
+      // 批量删除的情况
+      ids.push(...data.data.ids);
+    } else if (data.data?.id) {
+      // 单条删除的情况
+      ids.push(data.data.id);
+    } else if (Array.isArray(data.data)) {
+      // 某些版本可能直接是数组
+      data.data.forEach((item: any) => {
+        if (item?.id) ids.push(item.id);
+      });
+    }
+    
+    if (ids.length === 0) {
+      console.log('[Task Assistant] removeDoc event: no doc IDs found');
+      return;
+    }
+    
+    console.log('[Task Assistant] Documents removed:', ids);
+    
+    // 检查并删除关联的技能
+    const skillStore = useSkillStore();
+    let removedCount = 0;
+    
+    for (const docId of ids) {
+      const skill = skillStore.getSkillByDocId(docId);
+      if (skill) {
+        skillStore.removeSkill(docId);
+        removedCount++;
+        console.log(`[Task Assistant] Removed skill "${skill.name}" for deleted doc: ${docId}`);
+      }
+    }
+    
+    if (removedCount > 0) {
+      console.log(`[Task Assistant] Total ${removedCount} skill(s) removed`);
+    }
+  }
+
+  /**
+   * 检测并处理任务列表完成事件
+   * 当用户通过思源的任务勾选按钮完成事项时触发
+   * 也支持检测直接添加完成标记（✅、#done、#已完成）的情况
+   * 
+   * 关键逻辑：比较 doOperations 和 undoOperations
+   * - 只有当 undoOperations 中没有完成标记，而 doOperations 中有完成标记时，才是真正的新完成动作
+   * - 如果 undoOperations 中已有完成标记，说明这只是对已有完成事项的编辑，不应触发重复创建
+   */
+  private async handleTaskListCompletions(data: any) {
+    console.log('[Task Assistant] handleTaskListCompletions called, data:', JSON.stringify(data).substring(0, 500));
+    
+    if (!Array.isArray(data.data)) {
+      console.log('[Task Assistant] data.data is not an array:', typeof data.data);
+      return;
+    }
+    
+    for (const transaction of data.data) {
+      if (!transaction.doOperations) {
+        console.log('[Task Assistant] transaction has no doOperations');
+        continue;
+      }
+
+      console.log('[Task Assistant] Processing transaction with', transaction.doOperations.length, 'operations');
+      
+      for (const op of transaction.doOperations) {
+        console.log('[Task Assistant] Checking operation:', op.action, 'id:', op.id, 'data type:', typeof op.data);
+        
+        // 只处理 update 操作
+        if (op.action === 'update' && op.id && typeof op.data === 'string') {
+          // 检测方式1：任务列表勾选完成（protyle-task--done 类名）
+          const hasDoneClass = op.data.includes('protyle-task--done');
+          // 检测方式2：直接添加完成标记（✅、#done、#已完成）
+          const hasDoneMarker = op.data.includes('✅') || op.data.includes('#done') || op.data.includes('#已完成');
+          
+          // 关键：检查 undoOperations 中是否已经有完成标记
+          // 如果 undoOperations 中已有，说明这不是新的完成动作
+          const undoOp = transaction.undoOperations?.find((u: any) => u.id === op.id && u.action === 'update');
+          const hadDoneClass = undoOp?.data?.includes('protyle-task--done');
+          const hadDoneMarker = undoOp?.data?.includes('✅') || undoOp?.data?.includes('#done') || undoOp?.data?.includes('#已完成');
+          
+          // 新完成动作：do 有完成标记，且 undo 没有完成标记
+          const isNewCompletion = (hasDoneClass && !hadDoneClass) || (hasDoneMarker && !hadDoneMarker);
+          
+          console.log('[Task Assistant] Operation is update, has protyle-task--done:', hasDoneClass, 'had:', hadDoneClass, 
+                      'has done marker:', hasDoneMarker, 'had:', hadDoneMarker, 'isNewCompletion:', isNewCompletion);
+          
+          if (isNewCompletion) {
+            console.log('[Task Assistant] Found task completion operation:', op.id, hasDoneClass ? '(checkbox)' : '(marker)');
+            await this.handleTaskListCompletion(op);
+          }
         }
       }
     }
+  }
+
+  /**
+   * 处理单个任务列表完成
+   * 检查是否是重复事项，如果是则自动创建下一次
+   */
+  private async handleTaskListCompletion(op: any) {
+    const listItemBlockId = op.id;
+    if (!listItemBlockId) {
+      console.log('[Task Assistant] No blockId in operation');
+      return;
+    }
+
+    console.log('[Task Assistant] Processing task completion for list item:', listItemBlockId);
+
+    // 从 HTML 中提取第二个 data-node-id（内容块 ID）
+    // 格式：<div data-node-id="列表项块ID">...<div data-node-id="内容块ID">...
+    let contentBlockId = listItemBlockId;
+    const dataNodeIdMatches = op.data.match(/data-node-id="([^"]+)"/g);
+    if (dataNodeIdMatches && dataNodeIdMatches.length >= 2) {
+      // 第二个 data-node-id 是内容块的 ID
+      const secondMatch = dataNodeIdMatches[1];
+      const idMatch = secondMatch.match(/data-node-id="([^"]+)"/);
+      if (idMatch) {
+        contentBlockId = idMatch[1];
+        console.log('[Task Assistant] Extracted content block ID:', contentBlockId);
+      }
+    }
+
+    // 去重：如果最近已经处理过，则跳过（使用内容块 ID 去重）
+    if (this.processedTaskCompletions.has(contentBlockId)) {
+      console.log('[Task Assistant] Already processed task completion:', contentBlockId);
+      return;
+    }
+
+    // 检查是否正在处理中（防止并发重复）
+    if (this.processingTaskCompletions.has(contentBlockId)) {
+      console.log('[Task Assistant] Task completion already in progress:', contentBlockId);
+      await this.processingTaskCompletions.get(contentBlockId);
+      return;
+    }
+
+    // 添加到处理集合
+    this.processedTaskCompletions.add(contentBlockId);
+    setTimeout(() => {
+      this.processedTaskCompletions.delete(contentBlockId);
+    }, 5000);
+
+    // 创建处理 Promise
+    const processPromise = this.doHandleTaskListCompletion(listItemBlockId, contentBlockId, op);
+    this.processingTaskCompletions.set(contentBlockId, processPromise);
+    
+    try {
+      await processPromise;
+    } finally {
+      this.processingTaskCompletions.delete(contentBlockId);
+    }
+  }
+
+  /**
+   * 实际处理任务列表完成
+   */
+  private async doHandleTaskListCompletion(listItemBlockId: string, contentBlockId: string, op: any) {
+
+    // 从 projectStore 获取该 block 对应的事项
+    const pinia = getSharedPinia();
+    if (!pinia) {
+      console.log('[Task Assistant] No shared pinia available');
+      return;
+    }
+
+    const projectStore = useProjectStore(pinia);
+    
+    const item = projectStore.getItemByBlockId(contentBlockId);
+    
+    if (!item) {
+      console.log('[Task Assistant] No item found for content block:', contentBlockId);
+      console.log('[Task Assistant] List item block was:', listItemBlockId);
+      return;
+    }
+
+    console.log('[Task Assistant] Found item:', item.content, 'repeatRule:', item.repeatRule);
+
+    if (!item.repeatRule) {
+      console.log('[Task Assistant] Task completed but no repeat rule:', item.content);
+      return;
+    }
+
+    // 检查是否允许创建下一次（检查结束条件）
+    if (!shouldCreateNextOccurrence({ ...item, status: 'completed' })) {
+      console.log('[Task Assistant] Cannot create next occurrence for:', item.content);
+      return;
+    }
+
+    // 创建下一次事项
+    console.log('[Task Assistant] Task list item completed, creating next occurrence:', item.content);
+    const success = await createNextOccurrence(this, item);
+    
+    if (success) {
+      console.log('[Task Assistant] Next occurrence created successfully');
+      // 触发数据刷新
+      eventBus.emit(Events.DATA_REFRESH);
+      broadcastDataRefresh();
+    } else {
+      console.log('[Task Assistant] Failed to create next occurrence');
+    }
+  }
+
+  /**
+   * 处理定向刷新
+   * 从 ws-main 事件数据中提取 rootIDs，标记脏文档，触发定向刷新
+   * 
+   * 支持三种 rootID 位置（不会同时出现，按优先级依次检查）：
+   * 1. data.context.rootIDs - transactions 命令
+   * 2. data.data.rootID - savedoc 命令
+   * 3. data.data[].doOperations[].rootID - transactions 命令（备选）
+   */
+  private handleDirectedRefresh(data: any) {
+    let rootIDs: string[] = [];
+
+    // 1. transactions 命令：context.rootIDs
+    if (data?.context?.rootIDs && Array.isArray(data.context.rootIDs)) {
+      rootIDs = data.context.rootIDs;
+    }
+    // 2. savedoc 命令：data.rootID
+    else if (data?.data?.rootID && typeof data.data.rootID === 'string') {
+      rootIDs = [data.data.rootID];
+    }
+    // 3. transactions 命令（备选）：doOperations[].rootID
+    else if (Array.isArray(data?.data)) {
+      const ids: string[] = [];
+      for (const tx of data.data) {
+        if (Array.isArray(tx?.doOperations)) {
+          for (const op of tx.doOperations) {
+            if (op?.rootID && typeof op.rootID === 'string') {
+              ids.push(op.rootID);
+            }
+          }
+        }
+      }
+      rootIDs = ids;
+    }
+
+    if (rootIDs.length > 0) {
+      dirtyDocTracker.markDirty(rootIDs);
+      console.log('[Task Assistant] ws-main directed refresh for docs:', rootIDs);
+    }
+    this.scheduleRefresh();
   }
 
   /**
@@ -1008,7 +1429,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.refreshTimeout = setTimeout(() => {
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
-    }, 1000);
+    }, 150);
   }
 
   // ============================================
@@ -1230,8 +1651,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarEl.style.cssText = 'position:fixed;bottom:0;left:0;height:4px;background:var(--b3-theme-surface-lighter);z-index:9999;width:100%;';
     const fill = document.createElement('div');
     fill.className = 'status-bar-fill';
-    const direction = pomodoro.statusBarDirection ?? 'extend';
-    const initialWidth = direction === 'shrink' ? '100%' : '0%';
+    const initialWidth = '0%';
     fill.style.cssText = `height:100%;background:var(--b3-theme-primary);transition:width 0.3s;width:${initialWidth};`;
     this.statusBarEl.appendChild(fill);
     document.body.appendChild(this.statusBarEl);
@@ -1491,8 +1911,8 @@ export default class TaskAssistantPlugin extends Plugin {
           if (fill) {
             const elapsed = Math.max(0, totalSeconds - d.remainingSeconds);
             const progress = totalSeconds > 0 ? Math.min(1, elapsed / totalSeconds) : 0;
-            const direction = pomodoro.statusBarDirection ?? 'extend';
-            const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
+            // 休息固定为 shrink 方向
+            const displayProgress = 1 - progress;
             fill.style.width = `${displayProgress * 100}%`;
           }
         }
@@ -1531,7 +1951,7 @@ export default class TaskAssistantPlugin extends Plugin {
         if (fill) {
           const refSeconds = isStopwatch ? 25 * 60 : targetSeconds;
           const progress = Math.min(1, accumulatedSeconds / refSeconds);
-          const direction = pomodoro.statusBarDirection ?? 'extend';
+          const direction = isStopwatch ? 'extend' as const : 'shrink' as const;
           const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
           fill.style.width = `${displayProgress * 100}%`;
         }
@@ -1566,7 +1986,18 @@ export default class TaskAssistantPlugin extends Plugin {
     const hasActiveTimer = timeStr && timeStr !== '--:--';
 
     // 更新图标：休息时咖啡，专注时番茄，无倒计时时也显示番茄；tooltip 随状态更新
+    // 同时更新图标颜色状态：专注红色脉冲、休息绿色、空闲主题色
     if (iconEl) {
+      // 移除旧的状态 class
+      iconEl.classList.remove('is-focusing', 'is-breaking');
+      // 设置新的状态 class
+      if (hasActiveTimer && !isBreak) {
+        iconEl.classList.add('is-focusing');
+      } else if (isBreak) {
+        iconEl.classList.add('is-breaking');
+      }
+      // 空闲时不添加任何状态 class，保持主题色
+
       iconEl.dataset.tooltip = isBreak ? t('settings').pomodoro.breakLabel : t('pomodoro').dockTitle;
       if (isBreak) {
         // 咖啡图标

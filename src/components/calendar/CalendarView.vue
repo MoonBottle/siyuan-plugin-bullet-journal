@@ -44,6 +44,8 @@ const formatEventTime = (startStr: string, allDay: boolean): string => {
 
 // 自定义事件内容渲染
 const renderEventContent = (arg: any) => {
+  // 番茄钟背景事件：跳过自定义内容渲染
+  if (arg.event.extendedProps?.isPomodoroBlock) return;
   const startTime = formatEventTime(arg.event.startStr, arg.event.allDay);
   const title = arg.event.title;
   const taskName = arg.event.extendedProps?.task;
@@ -124,6 +126,24 @@ const renderEventContent = (arg: any) => {
   titleEl.className = 'fc-event-title-text';
   titleEl.textContent = statusEmoji + title;
   line2.appendChild(titleEl);
+
+  // 专注总时长（仅事项级事件 + 有番茄钟记录 + 设置开启）
+  if (isItem && settingsStore.showPomodoroTotal) {
+    const pomodoros = arg.event.extendedProps?.pomodoros;
+    if (pomodoros && pomodoros.length > 0) {
+      const totalMinutes = pomodoros.reduce(
+        (sum: number, p: any) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0
+      );
+      if (totalMinutes > 0) {
+        const totalEl = document.createElement('span');
+        totalEl.className = 'fc-event-pomodoro-total';
+        const label = (t('settings').calendar as any).pomodoroTotalLabel ?? '{minutes}min';
+        totalEl.textContent = ' ' + label.replace('{minutes}', String(totalMinutes));
+        line2.appendChild(totalEl);
+      }
+    }
+  }
+
   container.appendChild(line2);
 
   return { domNodes: [container] };
@@ -261,10 +281,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       onComplete: async () => {
         if (!item.blockId) return;
         const tag = getStatusTag('completed');
-        const success = await updateBlockContent(item.blockId, tag);
-        if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
+        await updateBlockContent(item.blockId, tag);
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),
       onMigrateToday: async () => {
@@ -280,9 +297,6 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           completeSiblingItems,
           item.status
         );
-        if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
       },
       onMigrateTomorrow: async () => {
         if (!item.blockId) return;
@@ -297,9 +311,6 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           completeSiblingItems,
           item.status
         );
-        if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
       },
       onMigrateCustom: async () => {
         if (!item.blockId) return;
@@ -314,18 +325,12 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
             completeSiblingItems,
             item.status
           );
-          if (plugin) {
-            await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-          }
         });
       },
       onAbandon: async () => {
         if (!item.blockId) return;
         const tag = getStatusTag('abandoned');
-        const success = await updateBlockContent(item.blockId, tag);
-        if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
-        }
+        await updateBlockContent(item.blockId, tag);
       },
       onOpenDoc: () => {
         if (item.docId && item.lineNumber) {
@@ -364,8 +369,8 @@ onMounted(async () => {
     calendarInstance = new Calendar(calendarEl.value, {
       plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
       initialView: props.initialView || 'timeGridDay',
-      headerToolbar: false, // 禁用默认工具栏，使用自定义工具栏
-      eventContent: renderEventContent, // 自定义事件渲染
+      headerToolbar: false,
+      eventContent: renderEventContent,
       locale: getCurrentLocale().startsWith('zh') ? 'zh-cn' : 'en',
       allDayText: t('todo').allDay,
       firstDay: 1,
@@ -378,7 +383,6 @@ onMounted(async () => {
       navLinks: true,
       navLinkHint: (dateText: string, date: Date) => {
         const template = (t('calendar') as any).navLinkHint ?? 'Go to $0';
-        // FullCalendar 的 dateText 对周数固定为英文 "Week N"，需用 locale 的周数格式替换
         const weekMatch = /week\s+(\d+)/i.exec(dateText);
         const displayText = weekMatch
           ? ((t('calendar') as any).weekNumber ?? 'W{num}').replace('{num}', weekMatch[1])
@@ -396,6 +400,10 @@ onMounted(async () => {
       },
       height: '100%',
       eventDisplay: 'block',
+      eventAllow: (dropInfo: any, event: any) => {
+        if (event.extendedProps?.isPomodoroBlock) return false;
+        return true;
+      },
       editable: true,
       eventResizableFromStart: true,
       nowIndicator: true,
@@ -403,8 +411,8 @@ onMounted(async () => {
       eventStartEditable: true,
       snapDuration: '00:15:00',
 
-      // 点击事件 - 使用思源原生弹框
       eventClick: (info) => {
+        if (info.event.extendedProps?.isPomodoroBlock) return;
         const eventData: CalendarEvent = {
           id: info.event.id,
           title: info.event.title,
@@ -416,8 +424,36 @@ onMounted(async () => {
         showEventDetailModal(eventData);
       },
 
-      // 右键菜单、悬浮预览 - 通过 eventDidMount 绑定
       eventDidMount: (info) => {
+        // 番茄钟背景时间块：显示标签，不绑定右键菜单和悬浮提示
+        if (info.event.extendedProps?.isPomodoroBlock) {
+          const el = info.el;
+          el.style.opacity = '1';
+          el.style.width = '10%';
+          el.style.left = '90%';
+          el.style.backgroundColor = 'var(--fc-event-bg-color)';
+          el.style.borderLeft = '3px solid var(--fc-event-border-color)';
+          const duration = info.event.extendedProps?.pomodoroDurationMinutes;
+          const startTime = info.event.startStr?.split('T')[1]?.substring(0, 5);
+          const endTime = info.event.endStr?.split('T')[1]?.substring(0, 5);
+          if (duration) {
+            const label = document.createElement('span');
+            label.className = 'pomodoro-block-label';
+            const timeStr = startTime && endTime ? `${startTime} ~ ${endTime}` : '';
+            label.textContent = `🍅 ${duration}${t('common').minutes} ${timeStr}`;
+            label.style.fontSize = '11px';
+            label.style.fontWeight = '600';
+            label.style.color = 'var(--fc-event-text-color)';
+            label.style.whiteSpace = 'pre-line';
+            label.style.pointerEvents = 'none';
+            el.appendChild(label);
+          }
+          return;
+        }
+        // 显示番茄钟块时，事项块缩窄为90%给番茄块留位
+        if (settingsStore.showPomodoroBlocks) {
+          info.el.style.width = '90%';
+        }
         info.el.addEventListener('contextmenu', (e: MouseEvent) => {
           e.preventDefault();
           e.stopPropagation();
@@ -427,17 +463,14 @@ onMounted(async () => {
         info.el.addEventListener('mouseleave', () => hideEventTooltip());
       },
 
-      // 拖拽事件
       eventDrop: (info) => {
         handleEventChange(info, 'drop');
       },
 
-      // 调整大小
       eventResize: (info) => {
         handleEventChange(info, 'resize');
       },
 
-      // 点击日期
       dateClick: (info) => {
         if (calendarInstance) {
           const previousView = calendarInstance.view.type;
@@ -481,7 +514,6 @@ const restorePomodoroState = async () => {
   const restored = await pomodoroStore.restorePomodoro(plugin);
   if (restored) {
     console.log('[CalendarView] 番茄钟状态已恢复');
-    // 刷新日历以更新 emoji
     updateEvents();
   }
 };
@@ -490,10 +522,7 @@ const restorePomodoroState = async () => {
 let unsubscribePomodoroRestore: (() => void) | null = null;
 
 onMounted(async () => {
-  // 恢复番茄钟状态
   await restorePomodoroState();
-
-  // 监听番茄钟恢复事件
   unsubscribePomodoroRestore = eventBus.on(Events.POMODORO_RESTORE, async () => {
     if (!pomodoroStore.isFocusing && plugin) {
       await pomodoroStore.restorePomodoro(plugin);
@@ -503,9 +532,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  if (unsubscribePomodoroRestore) {
-    unsubscribePomodoroRestore();
-  }
+  if (unsubscribePomodoroRestore) unsubscribePomodoroRestore();
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
@@ -521,21 +548,16 @@ watch(() => props.events, () => {
 }, { deep: true });
 
 const updateEvents = () => {
-  if (!calendarInstance) {
-    console.log('[Task Assistant] Calendar instance not ready');
-    return;
-  }
-  console.log('[Task Assistant] Updating events:', props.events?.length || 0);
+  if (!calendarInstance) return;
   calendarInstance.removeAllEvents();
   calendarInstance.addEventSource(props.events);
   calendarInstance.updateSize();
 };
 
-// 处理事件变化（拖拽或调整大小）
+// 处理事件变化（拖拽或调整大小)
 const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
   const event = info.event;
   const extendedProps = event.extendedProps;
-
   const emitData = {
     id: event.id,
     title: event.title,
@@ -545,40 +567,35 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
     docId: extendedProps?.docId,
     lineNumber: extendedProps?.lineNumber,
     blockId: extendedProps?.blockId,
-    // 多日期事项支持
     date: extendedProps?.date,
     originalStartDateTime: extendedProps?.originalStartDateTime,
     originalEndDateTime: extendedProps?.originalEndDateTime,
     siblingItems: extendedProps?.siblingItems,
     status: extendedProps?.itemStatus
   };
-
   emit(changeType === 'drop' ? 'event-drop' : 'event-resize', emitData);
 };
 
 defineExpose({
   getCalendarInstance: () => calendarInstance,
-  // 导航方法
   prev: () => calendarInstance?.prev(),
   next: () => calendarInstance?.next(),
   today: () => calendarInstance?.today(),
   gotoDate: (date: string) => {
     if (calendarInstance) {
-      console.warn('[Task Assistant] CalendarView.gotoDate immediate', date);
       calendarInstance.gotoDate(date);
     } else if (date) {
-      console.warn('[Task Assistant] CalendarView.gotoDate pending', date);
       pendingNavigateDate = date;
     }
   },
   changeView: (view: string) => calendarInstance?.changeView(view),
-  // 获取当前状态
   getView: () => calendarInstance?.view?.type,
   getDate: () => calendarInstance?.getDate(),
-  // 获取标题
   getTitle: () => calendarInstance?.view?.title
 });
 </script>
+
+>
 
 <style lang="scss" scoped>
 .calendar-view {
@@ -702,7 +719,6 @@ defineExpose({
       min-width: 0;
     }
 
-    /* 时间始终完整展示，不截断 */
     .fc-event-time {
       font-size: 11px;
       opacity: 0.9;
@@ -718,7 +734,6 @@ defineExpose({
       white-space: nowrap;
     }
 
-    /* 任务名空间不足时可省略号截断 */
     .fc-event-task {
       font-size: 10px;
       color: var(--b3-theme-on-background);
@@ -765,6 +780,16 @@ defineExpose({
     color: var(--b3-theme-on-background);
     background: var(--b3-theme-surface);
     border-color: var(--b3-border-color);
+  }
+
+  /* 事项条专注总时长 */
+  .fc-event-pomodoro-total {
+    font-size: 10px;
+    opacity: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: auto;
+    color: var(--fc-event-text-color);
   }
 }
 </style>

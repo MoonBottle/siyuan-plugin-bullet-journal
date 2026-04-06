@@ -65,10 +65,6 @@ let refreshChannel: BroadcastChannel | null = null;
 onMounted(async () => {
   settingsStore.loadFromPlugin();
 
-  if (plugin) {
-    await projectStore.loadProjects(plugin, settingsStore.enabledDirectories);
-  }
-
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 
   try {

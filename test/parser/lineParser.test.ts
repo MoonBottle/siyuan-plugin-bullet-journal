@@ -910,3 +910,164 @@ describe('parseItemLine - 事项内容保留逗号', () => {
     expect(items[0].content).toBe('，测试');
   });
 });
+
+describe('parseItemLine - 重复规则解析', () => {
+  it('🔁每月 应被正确识别并从内容中移除', () => {
+    const items = LineParser.parseItemLine('这是一个已完成的事项 📅2026-03-28 🔁每月', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个已完成的事项');
+    expect(items[0].date).toBe('2026-03-28');
+    expect(items[0].repeatRule).toEqual({ type: 'monthly' });
+  });
+
+  it('🔁每天 应被正确识别并从内容中移除', () => {
+    const items = LineParser.parseItemLine('每日任务 📅2026-03-28 🔁每天', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('每日任务');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+  });
+
+  it('🔁每周 应被正确识别并从内容中移除', () => {
+    const items = LineParser.parseItemLine('周会 📅2026-03-28 🔁每周', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('周会');
+    expect(items[0].repeatRule).toEqual({ type: 'weekly' });
+  });
+
+  it('🔁每月15日 应被正确识别指定日期', () => {
+    const items = LineParser.parseItemLine('月会 📅2026-03-28 🔁每月15日', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('月会');
+    expect(items[0].repeatRule).toEqual({ type: 'monthly', dayOfMonth: 15 });
+  });
+
+  it('带结束日期的重复规则', () => {
+    const items = LineParser.parseItemLine('临时任务 📅2026-03-28 🔁每天 截止到2026-04-30', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('临时任务');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-04-30' });
+  });
+
+  it('带次数限制的重复规则', () => {
+    const items = LineParser.parseItemLine('限时任务 📅2026-03-28 🔁每天 剩余5次', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('限时任务');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+    expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 5 });
+  });
+
+  it('用户问题案例：带时间范围和每月指定日期的重复规则', () => {
+    // 新格式：这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月3日 截止到2026-05-31
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 🔁每月3日 截止到2026-05-31', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个带时间的事项');
+    expect(items[0].date).toBe('2026-03-28');
+    expect(items[0].startDateTime).toBe('2026-03-28 09:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-28 10:00:00');
+    expect(items[0].repeatRule).toEqual({ type: 'monthly', dayOfMonth: 3 });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-05-31' });
+  });
+
+  it('用户问题案例：每周六重复，内容中不应包含"六"', () => {
+    // 这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周六 截止到2026-11-28
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-28 09:00:00~10:00:00 ⏰提前15分钟 🔁每周六 截止到2026-11-28', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个带时间的事项');
+    expect(items[0].date).toBe('2026-03-28');
+    expect(items[0].repeatRule).toEqual({ type: 'weekly', daysOfWeek: [6] });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-11-28' });
+  });
+
+  it('带时间范围和结束前提醒的事项：应正确解析时间和提醒', () => {
+    // 这是一个带时间的事项 📅2026-03-31 09:00:00~10:00:00 🔁每周一三六 剩余10次 ⏰结束前30分钟
+    const items = LineParser.parseItemLine('这是一个带时间的事项 📅2026-03-31 09:00:00~10:00:00 🔁每周一三六 剩余10次 ⏰结束前30分钟', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个带时间的事项');
+    expect(items[0].date).toBe('2026-03-31');
+    expect(items[0].startDateTime).toBe('2026-03-31 09:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-31 10:00:00');
+    expect(items[0].reminder).toEqual({
+      enabled: true,
+      type: 'relative',
+      relativeTo: 'end',
+      offsetMinutes: 30
+    });
+    expect(items[0].repeatRule).toEqual({ type: 'weekly', daysOfWeek: [1, 3, 6] });
+    expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 10 });
+  });
+
+  // ==================== P1: 多日期与重复规则互斥 ====================
+
+  it('多日期 + 重复规则：应忽略重复规则', () => {
+    const items = LineParser.parseItemLine('多日期任务 📅2026-03-17, 2026-03-19 🔁每周', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].date).toBe('2026-03-17');
+    expect(items[1].date).toBe('2026-03-19');
+    // 重复规则应被忽略
+    expect(items[0].repeatRule).toBeUndefined();
+    expect(items[1].repeatRule).toBeUndefined();
+  });
+
+  it('日期范围 + 重复规则：应忽略重复规则', () => {
+    const items = LineParser.parseItemLine('出差 📅2026-03-10~2026-03-12 🔁每天', 1);
+    expect(items).toHaveLength(3);
+    expect(items[0].date).toBe('2026-03-10');
+    expect(items[1].date).toBe('2026-03-11');
+    expect(items[2].date).toBe('2026-03-12');
+    // 重复规则应被忽略
+    expect(items[0].repeatRule).toBeUndefined();
+  });
+
+  // ==================== P1: 日期范围 + 提醒 ====================
+
+  it('日期范围 + 提醒：每个展开的 Item 都应携带提醒配置', () => {
+    const items = LineParser.parseItemLine('出差 📅2026-03-10~2026-03-12 ⏰08:00', 1);
+    expect(items).toHaveLength(3);
+    // 每个 Item 都应有提醒配置
+    items.forEach((item) => {
+      expect(item.reminder).toBeDefined();
+      expect(item.reminder?.enabled).toBe(true);
+      expect(item.reminder?.type).toBe('absolute');
+      expect(item.reminder?.time).toBe('08:00');
+    });
+  });
+
+  // ==================== P1: 完整组合测试 ====================
+
+  it('任务列表 + 日期 + 时间 + 提醒 + 重复 + 结束条件', () => {
+    const items = LineParser.parseItemLine(
+      '[ ] 月度汇报 📅2026-03-17 14:00:00~16:00:00 ⏰提前10分钟 🔁每月 截止到2026-12-31',
+      1
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('月度汇报');
+    expect(items[0].date).toBe('2026-03-17');
+    expect(items[0].startDateTime).toBe('2026-03-17 14:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-17 16:00:00');
+    expect(items[0].status).toBe('pending');
+    expect(items[0].reminder).toEqual({
+      enabled: true,
+      type: 'relative',
+      relativeTo: 'start',
+      offsetMinutes: 10,
+    });
+    expect(items[0].repeatRule).toEqual({ type: 'monthly' });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-12-31' });
+  });
+
+  it('任务列表 [x] + 日期 + 时间 + 提醒 + 重复 + 次数结束', () => {
+    const items = LineParser.parseItemLine(
+      '[x] 背单词 📅2026-03-17 08:00:00 ⏰07:50 🔁每天 剩余5次',
+      1
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('背单词');
+    expect(items[0].status).toBe('completed');
+    expect(items[0].reminder?.enabled).toBe(true);
+    expect(items[0].reminder?.type).toBe('absolute');
+    expect(items[0].reminder?.time).toBe('07:50');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+    expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 5 });
+  });
+});

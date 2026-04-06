@@ -106,14 +106,14 @@ function isTagInBackticks(content: string, tag: string): boolean {
 
 /**
  * 检查一行是否是下一事项行或任务行（用于停止收集事项链接）
- * 事项行：包含 @YYYY-MM-DD 且非任务标记
- * 任务行：包含 #任务 或 #task
+ * 事项行：包含 @YYYY-MM-DD 或 📅YYYY-MM-DD 且非任务标记
+ * 任务行：包含 #任务、#task 或 📋
  */
 function isNextItemOrTaskLine(content: string): boolean {
-  const hasTaskTag = content.includes('#任务') || content.includes('#task');
+  const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋');
   const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
   if (hasTaskTag && notInBackticks) return true;
-  if (content.match(/@\d{4}-\d{2}-\d{2}/) && !hasTaskTag) return true;
+  if ((content.match(/@\d{4}-\d{2}-\d{2}/) || content.match(/📅\d{4}-\d{2}-\d{2}/)) && !hasTaskTag) return true;
   return false;
 }
 
@@ -158,13 +158,35 @@ export function parseKramdown(
   let hasSeenItemForCurrentTask = false;
   /** 上一个处理的块类型：'project' | 'task' | 'item' | null */
   let lastBlockType: 'project' | 'task' | 'item' | null = null;
+  /** 任务列表项块 ID 栈（处理嵌套列表） */
+  const listItemBlockIdStack: Array<{ id: string; level: number }> = [];
 
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
     lineNumber++;
-    const content = block.content.split('\n')[0].trim();
+    const rawFirstLine = block.content.split('\n')[0];
+    const content = rawFirstLine.trim();
 
     if (!content) continue;
+
+    // 获取当前块的缩进层级（前导空格数）
+    const indentLevel = rawFirstLine.length - rawFirstLine.trimStart().length;
+
+    // 检测是否是任务列表项（包含 - [ ] 或 - [x]）
+    // 思源格式: - {: id="list-item-id" ...}[ ] 内容
+    const taskListMatch = content.match(/^(\s*)-\s*\{\:\s*id="([^"]+)"/);
+    const taskListCheckboxMatch = content.match(/\[\s*([xX])?\s*\]/);
+    if (taskListMatch && taskListCheckboxMatch) {
+      // 从行内属性中提取列表项块 ID
+      const listItemBlockId = taskListMatch[2];
+      
+      // 弹出栈顶层级大于等于当前层级的项（处理同级或上级列表项）
+      while (listItemBlockIdStack.length > 0 && listItemBlockIdStack[listItemBlockIdStack.length - 1].level >= indentLevel) {
+        listItemBlockIdStack.pop();
+      }
+      // 将当前任务列表项压入栈（使用从行内提取的列表项 ID，而不是 block.blockId）
+      listItemBlockIdStack.push({ id: listItemBlockId, level: indentLevel });
+    }
 
     // 检查是否是番茄钟行
     if (isPomodoroLine(content)) {
@@ -242,8 +264,8 @@ export function parseKramdown(
       }
     }
 
-    // 解析任务行（包含 #任务 或 #task，且不是反引号内的说明文字）
-    const hasTaskTag = content.includes('#任务') || content.includes('#task');
+    // 解析任务行（包含 #任务、#task 或 📋，且不是反引号内的说明文字）
+    const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋');
     const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
     if (hasTaskTag && notInBackticks) {
       if (currentTask) {
@@ -258,10 +280,12 @@ export function parseKramdown(
       }
       currentItem = null;
       lastBlockType = 'task';
+      // 清空任务列表栈（新任务的作用域）
+      listItemBlockIdStack.length = 0;
       continue;
     }
 
-    if (currentTask && content.includes('](') && !content.includes('@') && !hasSeenItemForCurrentTask) {
+    if (currentTask && content.includes('](') && !content.includes('@') && !content.includes('📅') && !hasSeenItemForCurrentTask) {
       const strippedContent = stripListAndBlockAttr(content);
       const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
       if (linkMatch) {
@@ -273,12 +297,17 @@ export function parseKramdown(
       }
     }
 
-    // 解析工作事项（在当前任务下，包含 @ 但不是任务标记）
-    if (currentTask && content.includes('@') && !hasTaskTag) {
+    // 解析工作事项（在当前任务下，包含 @ 或 📅 但不是任务标记）
+    if (currentTask && (content.includes('@') || content.includes('📅')) && !hasTaskTag) {
       hasSeenItemForCurrentTask = true;
       // 收集事项下方的链接行：当前事项行之后到下一个事项/任务行之间的所有链接行
       // 非链接行（如说明文字）跳过不中断，仅在遇到下一事项/任务行时停止
       const itemLinks: Array<{ name: string; url: string }> = [];
+      
+      // 记录最后一个相关块的索引（初始为当前块）
+      const currentBlockIndex = blocks.indexOf(block);
+      let lastRelatedBlockIndex = currentBlockIndex;
+      
       const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
       for (let idx = 1; idx < blockLines.length; idx++) {
         const lineContent = blockLines[idx];
@@ -289,13 +318,16 @@ export function parseKramdown(
           itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
         }
       }
-      let nextBlockIndex = blocks.indexOf(block) + 1;
+      let nextBlockIndex = currentBlockIndex + 1;
 
       while (nextBlockIndex < blocks.length) {
         const nextBlock = blocks[nextBlockIndex];
         const nextContent = nextBlock.content.split('\n')[0].trim();
 
         if (isNextItemOrTaskLine(nextContent)) break;
+
+        // 每个块都是当前事项的相关内容，更新最后一个相关块索引
+        lastRelatedBlockIndex = nextBlockIndex;
 
         const strippedNextContent = stripListAndBlockAttr(nextContent);
         const linkMatch = strippedNextContent.match(/\[(.*?)\]\((.*?)\)/);
@@ -324,11 +356,22 @@ export function parseKramdown(
         }
       }
 
+      // 检测是否是任务列表格式（包含 [ ] 或 [x] 标记）
+      const isTaskList = /\[\s*[xX]?\s*\]/.test(content);
+
+      // 从栈顶获取当前任务列表项块 ID（处理嵌套列表）
+      const listItemBlockId = isTaskList && listItemBlockIdStack.length > 0
+        ? listItemBlockIdStack[listItemBlockIdStack.length - 1].id
+        : undefined;
+
       // 所有拆分后的 items 共享同一个 pomodoros 数组
       for (const item of items) {
         item.docId = docId;
         item.blockId = block.blockId;
+        item.lastBlockId = blocks[lastRelatedBlockIndex].blockId; // 记录最后一个相关块ID
         item.pomodoros = sharedPomodoros;
+        item.isTaskList = isTaskList; // 设置任务列表格式标记
+        item.listItemBlockId = listItemBlockId; // 设置列表项块 ID（如果有）
 
         currentTask.items.push(item);
         currentItem = item;
@@ -345,7 +388,7 @@ export function parseKramdown(
   if (!project.name) {
     if (docPath) {
       const pathParts = docPath.split('/');
-      project.name = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || '';
+      project.name = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || docPath;
     }
     if (!project.name) {
       project.name = `项目 ${docId.substring(0, 6)}`;

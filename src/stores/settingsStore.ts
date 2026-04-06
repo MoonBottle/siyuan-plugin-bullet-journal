@@ -14,6 +14,8 @@ export const useSettingsStore = defineStore('settings', {
     calendarDefaultView: 'timeGridDay',
     lunchBreakStart: '12:00',
     lunchBreakEnd: '13:00',
+    showPomodoroBlocks: true,
+    showPomodoroTotal: true,
     todoDock: {
       hideCompleted: false,
       hideAbandoned: false
@@ -64,6 +66,8 @@ export const useSettingsStore = defineStore('settings', {
         this.calendarDefaultView = settings.calendarDefaultView || 'timeGridDay';
         this.lunchBreakStart = settings.lunchBreakStart || '12:00';
         this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
+        this.showPomodoroBlocks = settings.showPomodoroBlocks ?? true;
+        this.showPomodoroTotal = settings.showPomodoroTotal ?? true;
         this.todoDock = settings.todoDock || { hideCompleted: false, hideAbandoned: false };
         this.loaded = true;
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
@@ -83,6 +87,8 @@ export const useSettingsStore = defineStore('settings', {
           calendarDefaultView: this.calendarDefaultView,
           lunchBreakStart: this.lunchBreakStart,
           lunchBreakEnd: this.lunchBreakEnd,
+          showPomodoroBlocks: this.showPomodoroBlocks,
+          showPomodoroTotal: this.showPomodoroTotal,
           todoDock: this.todoDock
         });
       }
