@@ -389,6 +389,8 @@ export default class TaskAssistantPlugin extends Plugin {
           calendarDefaultView: data.calendarDefaultView || 'timeGridDay',
           lunchBreakStart: data.lunchBreakStart || '12:00',
           lunchBreakEnd: data.lunchBreakEnd || '13:00',
+          showPomodoroBlocks: data.showPomodoroBlocks ?? true,
+          showPomodoroTotal: data.showPomodoroTotal ?? true,
           todoDock: {
             hideCompleted: data.todoDock?.hideCompleted ?? false,
             hideAbandoned: data.todoDock?.hideAbandoned ?? false

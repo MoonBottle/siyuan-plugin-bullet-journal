@@ -437,7 +437,7 @@ onMounted(async () => {
           if (duration) {
             const label = document.createElement('span');
             label.className = 'pomodoro-block-label';
-            label.textContent = `🍅${duration}${t('common').minutes}`;
+            label.textContent = `🍅 ${duration} ${t('common').minutes}`;
             label.style.fontSize = '11px';
             label.style.fontWeight = '600';
             label.style.color = 'var(--fc-event-text-color)';
