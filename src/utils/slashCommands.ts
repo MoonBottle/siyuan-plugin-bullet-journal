@@ -490,11 +490,23 @@ function getActionHandler(
 ): (protyle: any, nodeElement: HTMLElement) => void {
   switch (action) {
     case 'today':
-      return (protyle, nodeElement) => markAsTodayItem(protyle, nodeElement, filter);
+      return (protyle, nodeElement) => {
+        const blockId = nodeElement.getAttribute('data-node-id');
+        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
+        markAsTodayItem(protyle, nodeElement, filter, writer);
+      };
     case 'tomorrow':
-      return (protyle, nodeElement) => markAsTomorrowItem(protyle, nodeElement, filter);
+      return (protyle, nodeElement) => {
+        const blockId = nodeElement.getAttribute('data-node-id');
+        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
+        markAsTomorrowItem(protyle, nodeElement, filter, writer);
+      };
     case 'date':
-      return (protyle, nodeElement) => markAsDateItem(protyle, nodeElement, filter);
+      return (protyle, nodeElement) => {
+        const blockId = nodeElement.getAttribute('data-node-id');
+        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
+        markAsDateItem(protyle, nodeElement, filter, writer);
+      };
     case 'done':
       return (protyle, nodeElement) => {
         const completedTag = getStatusTag('completed');
@@ -653,7 +665,8 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
 async function markAsTodayItem(
   protyle: any,
   nodeElement: HTMLElement,
-  filter: string[] = SLASH_COMMAND_FILTERS.TODAY
+  filter: string[] = SLASH_COMMAND_FILTERS.TODAY,
+  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
@@ -681,7 +694,8 @@ async function markAsTodayItem(
     true,      // allDay
     undefined, // originalDate - undefined 表示添加新日期
     existingItems.length > 0 ? existingItems : undefined,
-    undefined  // status
+    undefined, // status
+    writer
   );
 
   if (success) {
@@ -699,7 +713,8 @@ async function markAsTodayItem(
 async function markAsTomorrowItem(
   protyle: any,
   nodeElement: HTMLElement,
-  filter: string[] = SLASH_COMMAND_FILTERS.TOMORROW
+  filter: string[] = SLASH_COMMAND_FILTERS.TOMORROW,
+  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
@@ -726,7 +741,8 @@ async function markAsTomorrowItem(
     true,      // allDay
     undefined, // originalDate - undefined 表示添加新日期
     existingItems.length > 0 ? existingItems : undefined,
-    undefined  // status
+    undefined, // status
+    writer
   );
 
   if (success) {
@@ -744,7 +760,8 @@ async function markAsTomorrowItem(
 async function markAsDateItem(
   protyle: any,
   nodeElement: HTMLElement,
-  filter: string[] = SLASH_COMMAND_FILTERS.DATE
+  filter: string[] = SLASH_COMMAND_FILTERS.DATE,
+  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
@@ -774,7 +791,8 @@ async function markAsDateItem(
         true,      // allDay
         undefined, // originalDate - undefined 表示添加新日期
         existingItems.length > 0 ? existingItems : undefined,
-        undefined  // status
+        undefined, // status
+        writer
       );
 
       if (success) {
