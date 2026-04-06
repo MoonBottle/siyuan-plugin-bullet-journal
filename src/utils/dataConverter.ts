@@ -132,7 +132,6 @@ export class DataConverter {
         end: endDateTime,
         allDay: false,
         display: 'background',
-        backgroundColor: 'rgba(231, 76, 60, 0.45)',
         extendedProps: {
           isPomodoroBlock: true,
           pomodoroDurationMinutes: durationMinutes,

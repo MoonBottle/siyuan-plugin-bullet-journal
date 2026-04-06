@@ -431,6 +431,8 @@ onMounted(async () => {
           el.style.opacity = '1';
           el.style.width = '10%';
           el.style.left = '90%';
+          el.style.backgroundColor = 'var(--fc-event-bg-color)';
+          el.style.borderLeft = '3px solid var(--fc-event-border-color)';
           const duration = info.event.extendedProps?.pomodoroDurationMinutes;
           if (duration) {
             const label = document.createElement('span');
