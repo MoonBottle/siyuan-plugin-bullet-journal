@@ -865,10 +865,15 @@ function createProtyleWriter(
 
   return async (content: string, targetBlockId: string): Promise<boolean> => {
     try {
+      console.log(`[Task Assistant] Writer called with content: "${content}", targetBlockId: ${targetBlockId}`);
+      
+      // 去掉块属性行 {: id="..." }，再判断是否单行
       const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
 
       const isSameBlock = targetBlockId === currentBlockId;
-      const isSingleLine = !content.includes('\n');
+      const isSingleLine = !textContent.includes('\n');
+
+      console.log(`[Task Assistant] Writer called for block ${currentBlockId}. Same block: ${isSameBlock}, Single line: ${isSingleLine}`);
 
       if (isSameBlock && isSingleLine) {
         const textNode = findFirstTextNode(nodeElement);
