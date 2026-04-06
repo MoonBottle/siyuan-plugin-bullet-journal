@@ -88,11 +88,11 @@ export default defineConfig(({
             src: "./plugin.json",
             dest: "./",
           },
-          // 复制 mcp-server.js 到目标目录
-          {
+          // 复制 mcp-server.js 到目标目录（仅当输出到非 dist 目录时需要）
+          ...(distDir !== './dist' ? [{
             src: "./dist/mcp-server.js",
             dest: "./",
-          },
+          }] : []),
           {
             src: "./src/i18n/**",
             dest: "./i18n/",
