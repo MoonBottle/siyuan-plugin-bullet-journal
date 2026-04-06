@@ -364,7 +364,8 @@ export async function updateBlockDateTime(
   allDay: boolean = false,
   originalDate?: string,
   siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
-  status?: ItemStatus
+  status?: ItemStatus,
+  writer?: BlockWriter
 ): Promise<boolean> {
   if (!blockId) return false;
 
@@ -437,7 +438,11 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
+      const singleLineResult = newContent + attrSuffix;
+      if (writer) {
+        return await writer(singleLineResult, targetBlockId);
+      }
+      await updateBlock('markdown', singleLineResult, targetBlockId);
       return true;
     }
 
@@ -476,7 +481,11 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
+      const fallbackResult = newContent + attrSuffix;
+      if (writer) {
+        return await writer(fallbackResult, targetBlockId);
+      }
+      await updateBlock('markdown', fallbackResult, targetBlockId);
       return true;
     }
 
@@ -564,6 +573,9 @@ export async function updateBlockDateTime(
 
     // 更新块（使用 targetBlockId：父块解析时更新父块）
     // 多行逻辑中 lines 已包含属性行 {: ...}，updateBlock 的 kramdown 会保留属性
+    if (writer) {
+      return await writer(newContent, targetBlockId);
+    }
     await updateBlock('markdown', newContent, targetBlockId);
 
     return true;
