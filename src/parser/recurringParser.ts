@@ -207,11 +207,20 @@ export function getNextOccurrenceDate(
 
     case 'monthly':
       if (dayOfMonth !== undefined) {
+        // 先将日期设为 1 号避免 setMonth 时月末溢出问题
+        date.setDate(1);
         date.setMonth(date.getMonth() + 1);
         date.setDate(dayOfMonth);
+        // 月末对齐：如果 dayOfMonth 超过目标月份最大天数，
+        // setDate 会溢出到下月，需要回退到目标月份的最后一天
+        if (date.getDate() !== dayOfMonth) {
+          date.setDate(0);
+        }
       } else {
         const currentDay = date.getDate();
+        date.setDate(1);
         date.setMonth(date.getMonth() + 1);
+        date.setDate(currentDay);
         if (date.getDate() !== currentDay) {
           date.setDate(0);
         }

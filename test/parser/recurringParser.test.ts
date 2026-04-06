@@ -237,6 +237,100 @@ describe('recurringParser', () => {
       // 下周一 3月23日
       expect(result).toBe('2026-03-23');
     });
+
+    // ==================== P1: 指定周几边界测试 ====================
+
+    it('每周指定周几：周一到周三（同周内）', () => {
+      const rule: RepeatRule = { type: 'weekly', daysOfWeek: [1, 3, 5] };
+      // 2026-03-16 是周一
+      const result = getNextOccurrenceDate('2026-03-16', rule);
+      // 应跳到周三 03-18
+      expect(result).toBe('2026-03-18');
+    });
+
+    it('每周指定周几：周三到周五（同周内）', () => {
+      const rule: RepeatRule = { type: 'weekly', daysOfWeek: [1, 3, 5] };
+      // 2026-03-18 是周三
+      const result = getNextOccurrenceDate('2026-03-18', rule);
+      // 应跳到周五 03-20
+      expect(result).toBe('2026-03-20');
+    });
+
+    it('每周指定周几：周五到下周一（跨周）', () => {
+      const rule: RepeatRule = { type: 'weekly', daysOfWeek: [1, 3, 5] };
+      // 2026-03-20 是周五
+      const result = getNextOccurrenceDate('2026-03-20', rule);
+      // 应跳到下周一 03-23
+      expect(result).toBe('2026-03-23');
+    });
+
+    it('每周指定周几：周日到周三（跨周）', () => {
+      const rule: RepeatRule = { type: 'weekly', daysOfWeek: [3, 5] };
+      // 2026-03-22 是周日
+      const result = getNextOccurrenceDate('2026-03-22', rule);
+      // 应跳到周三 03-25
+      expect(result).toBe('2026-03-25');
+    });
+
+    it('每周指定单个周几：周三到下周三', () => {
+      const rule: RepeatRule = { type: 'weekly', daysOfWeek: [3] };
+      // 2026-03-18 是周三
+      const result = getNextOccurrenceDate('2026-03-18', rule);
+      // 应跳到下周三 03-25
+      expect(result).toBe('2026-03-25');
+    });
+
+    // ==================== P1: 每月指定日期月末边界 ====================
+
+    it('每月指定31日在4月应变为30日', () => {
+      const rule: RepeatRule = { type: 'monthly', dayOfMonth: 31 };
+      const result = getNextOccurrenceDate('2026-03-31', rule);
+      // 4月没有31日，应取月末30日
+      expect(result).toBe('2026-04-30');
+    });
+
+    it('每月指定31日在2月应变为28日（非闰年）', () => {
+      const rule: RepeatRule = { type: 'monthly', dayOfMonth: 31 };
+      const result = getNextOccurrenceDate('2027-01-31', rule);
+      // 2027年2月没有31日，应取月末28日
+      expect(result).toBe('2027-02-28');
+    });
+
+    it('每月指定30日在2月应变为28日（非闰年）', () => {
+      const rule: RepeatRule = { type: 'monthly', dayOfMonth: 30 };
+      const result = getNextOccurrenceDate('2027-01-30', rule);
+      // 2027年2月没有30日，应取月末28日
+      expect(result).toBe('2027-02-28');
+    });
+
+    it('每月指定29日在闰年2月应正常', () => {
+      const rule: RepeatRule = { type: 'monthly', dayOfMonth: 29 };
+      // 2028年是闰年
+      const result = getNextOccurrenceDate('2028-01-29', rule);
+      // 闰年2月有29日
+      expect(result).toBe('2028-02-29');
+    });
+
+    it('每月指定29日在非闰年2月应变为28日', () => {
+      const rule: RepeatRule = { type: 'monthly', dayOfMonth: 29 };
+      const result = getNextOccurrenceDate('2027-01-29', rule);
+      // 2027年2月没有29日，应取月末28日
+      expect(result).toBe('2027-02-28');
+    });
+
+    // ==================== P1: 组合结束条件 ====================
+
+    it('结束条件为 date：下次日期等于结束日期应允许创建', () => {
+      const endCondition: EndCondition = { type: 'date', endDate: '2026-04-17' };
+      const result = checkEndCondition('2026-04-17', endCondition);
+      expect(result.canCreate).toBe(true);
+    });
+
+    it('结束条件为 date：下次日期超过结束日期一天应禁止', () => {
+      const endCondition: EndCondition = { type: 'date', endDate: '2026-04-16' };
+      const result = checkEndCondition('2026-04-17', endCondition);
+      expect(result.canCreate).toBe(false);
+    });
   });
 
   describe('checkEndCondition', () => {

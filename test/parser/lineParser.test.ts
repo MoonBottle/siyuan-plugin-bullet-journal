@@ -996,4 +996,78 @@ describe('parseItemLine - 重复规则解析', () => {
     expect(items[0].repeatRule).toEqual({ type: 'weekly', daysOfWeek: [1, 3, 6] });
     expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 10 });
   });
+
+  // ==================== P1: 多日期与重复规则互斥 ====================
+
+  it('多日期 + 重复规则：应忽略重复规则', () => {
+    const items = LineParser.parseItemLine('多日期任务 📅2026-03-17, 2026-03-19 🔁每周', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].date).toBe('2026-03-17');
+    expect(items[1].date).toBe('2026-03-19');
+    // 重复规则应被忽略
+    expect(items[0].repeatRule).toBeUndefined();
+    expect(items[1].repeatRule).toBeUndefined();
+  });
+
+  it('日期范围 + 重复规则：应忽略重复规则', () => {
+    const items = LineParser.parseItemLine('出差 📅2026-03-10~2026-03-12 🔁每天', 1);
+    expect(items).toHaveLength(3);
+    expect(items[0].date).toBe('2026-03-10');
+    expect(items[1].date).toBe('2026-03-11');
+    expect(items[2].date).toBe('2026-03-12');
+    // 重复规则应被忽略
+    expect(items[0].repeatRule).toBeUndefined();
+  });
+
+  // ==================== P1: 日期范围 + 提醒 ====================
+
+  it('日期范围 + 提醒：每个展开的 Item 都应携带提醒配置', () => {
+    const items = LineParser.parseItemLine('出差 📅2026-03-10~2026-03-12 ⏰08:00', 1);
+    expect(items).toHaveLength(3);
+    // 每个 Item 都应有提醒配置
+    items.forEach((item) => {
+      expect(item.reminder).toBeDefined();
+      expect(item.reminder?.enabled).toBe(true);
+      expect(item.reminder?.type).toBe('absolute');
+      expect(item.reminder?.time).toBe('08:00');
+    });
+  });
+
+  // ==================== P1: 完整组合测试 ====================
+
+  it('任务列表 + 日期 + 时间 + 提醒 + 重复 + 结束条件', () => {
+    const items = LineParser.parseItemLine(
+      '[ ] 月度汇报 📅2026-03-17 14:00:00~16:00:00 ⏰提前10分钟 🔁每月 截止到2026-12-31',
+      1
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('月度汇报');
+    expect(items[0].date).toBe('2026-03-17');
+    expect(items[0].startDateTime).toBe('2026-03-17 14:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-17 16:00:00');
+    expect(items[0].status).toBe('pending');
+    expect(items[0].reminder).toEqual({
+      enabled: true,
+      type: 'relative',
+      relativeTo: 'start',
+      offsetMinutes: 10,
+    });
+    expect(items[0].repeatRule).toEqual({ type: 'monthly' });
+    expect(items[0].endCondition).toEqual({ type: 'date', endDate: '2026-12-31' });
+  });
+
+  it('任务列表 [x] + 日期 + 时间 + 提醒 + 重复 + 次数结束', () => {
+    const items = LineParser.parseItemLine(
+      '[x] 背单词 📅2026-03-17 08:00:00 ⏰07:50 🔁每天 剩余5次',
+      1
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('背单词');
+    expect(items[0].status).toBe('completed');
+    expect(items[0].reminder?.enabled).toBe(true);
+    expect(items[0].reminder?.type).toBe('absolute');
+    expect(items[0].reminder?.time).toBe('07:50');
+    expect(items[0].repeatRule).toEqual({ type: 'daily' });
+    expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 5 });
+  });
 });
