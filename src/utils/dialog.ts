@@ -454,6 +454,9 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     siblingItems: props.siblingItems,
     dateRangeStart: props.dateRangeStart,
     dateRangeEnd: props.dateRangeEnd,
+    reminder: props.reminder,
+    repeatRule: props.repeatRule,
+    endCondition: props.endCondition,
   };
 
   // 创建 Vue 应用
@@ -471,7 +474,19 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
         (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
       }
       dialog.destroy();
-    }
+    },
+    onSetReminder: () => {
+      dialog.destroy();
+      showReminderSettingDialog(item);
+    },
+    onSetRecurring: () => {
+      dialog.destroy();
+      showRecurringSettingDialog(item);
+    },
+    onSkipOccurrence: () => {
+      dialog.destroy();
+      void skipCurrentOccurrence(plugin, item);
+    },
   });
 
   // 挂载应用

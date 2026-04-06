@@ -95,7 +95,10 @@ export class DataConverter {
         siblingItems: item.siblingItems,
         dateRangeStart: item.dateRangeStart,
         dateRangeEnd: item.dateRangeEnd,
-        pomodoros: item.pomodoros
+        pomodoros: item.pomodoros,
+        reminder: item.reminder,
+        repeatRule: item.repeatRule,
+        endCondition: item.endCondition,
       }
     };
   }
