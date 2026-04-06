@@ -1984,7 +1984,18 @@ export default class TaskAssistantPlugin extends Plugin {
     const hasActiveTimer = timeStr && timeStr !== '--:--';
 
     // 更新图标：休息时咖啡，专注时番茄，无倒计时时也显示番茄；tooltip 随状态更新
+    // 同时更新图标颜色状态：专注红色脉冲、休息绿色、空闲主题色
     if (iconEl) {
+      // 移除旧的状态 class
+      iconEl.classList.remove('is-focusing', 'is-breaking');
+      // 设置新的状态 class
+      if (hasActiveTimer && !isBreak) {
+        iconEl.classList.add('is-focusing');
+      } else if (isBreak) {
+        iconEl.classList.add('is-breaking');
+      }
+      // 空闲时不添加任何状态 class，保持主题色
+
       iconEl.dataset.tooltip = isBreak ? t('settings').pomodoro.breakLabel : t('pomodoro').dockTitle;
       if (isBreak) {
         // 咖啡图标
