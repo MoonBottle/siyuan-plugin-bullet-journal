@@ -22,6 +22,10 @@ export interface PomodoroSettings {
   attrPrefix?: string;
   autoCompleteOnItemDone?: boolean; // 事项完成时自动结束番茄钟，默认 true
   minFocusMinutes?: number; // 最小专注时间（分钟），默认 5
+  autoExtendEnabled?: boolean; // 是否开启自动延迟，默认 false
+  autoExtendWaitSeconds?: number; // 弹窗等待时间（秒），默认 30
+  autoExtendMinutes?: number; // 每次延长分钟数，默认 5
+  autoExtendMaxCount?: number; // 最大延迟次数，默认 3
 }
 
 // 自定义斜杠命令配置
@@ -63,6 +67,10 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   attrPrefix: 'custom-pomodoro',
   autoCompleteOnItemDone: true,
   minFocusMinutes: 5,
+  autoExtendEnabled: false,
+  autoExtendWaitSeconds: 30,
+  autoExtendMinutes: 5,
+  autoExtendMaxCount: 3,
 };
 
 export const defaultSettings: SettingsData = {

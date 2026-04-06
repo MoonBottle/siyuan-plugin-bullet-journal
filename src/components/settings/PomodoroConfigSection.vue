@@ -48,6 +48,53 @@
           max="60"
         />
       </SySettingItem>
+      <SySettingItem
+        :label="t('settings').pomodoro.autoExtendEnabled"
+        :description="t('settings').pomodoro.autoExtendEnabledDesc"
+      >
+        <SySwitch v-model="pomodoro.autoExtendEnabled" />
+      </SySettingItem>
+      <template v-if="pomodoro.autoExtendEnabled">
+        <SySettingItem
+          :label="t('settings').pomodoro.autoExtendWaitSeconds"
+          :description="t('settings').pomodoro.autoExtendWaitSecondsDesc"
+        >
+          <input
+            type="number"
+            class="b3-text-field fn__flex-center fn__size200"
+            :value="pomodoro.autoExtendWaitSeconds ?? 30"
+            @input="pomodoro.autoExtendWaitSeconds = parseInt(($event.target as HTMLInputElement).value)"
+            min="10"
+            max="300"
+          />
+        </SySettingItem>
+        <SySettingItem
+          :label="t('settings').pomodoro.autoExtendMinutes"
+          :description="t('settings').pomodoro.autoExtendMinutesDesc"
+        >
+          <input
+            type="number"
+            class="b3-text-field fn__flex-center fn__size200"
+            :value="pomodoro.autoExtendMinutes ?? 5"
+            @input="pomodoro.autoExtendMinutes = parseInt(($event.target as HTMLInputElement).value)"
+            min="1"
+            max="60"
+          />
+        </SySettingItem>
+        <SySettingItem
+          :label="t('settings').pomodoro.autoExtendMaxCount"
+          :description="t('settings').pomodoro.autoExtendMaxCountDesc"
+        >
+          <input
+            type="number"
+            class="b3-text-field fn__flex-center fn__size200"
+            :value="pomodoro.autoExtendMaxCount ?? 3"
+            @input="pomodoro.autoExtendMaxCount = parseInt(($event.target as HTMLInputElement).value)"
+            min="1"
+            max="10"
+          />
+        </SySettingItem>
+      </template>
     </SySettingItemList>
   </SySettingsSection>
 </template>

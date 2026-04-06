@@ -87,5 +87,6 @@ export const Events = {
   POMODORO_TICK: 'pomodoro:tick', // 专注每秒更新
   BREAK_TICK: 'break:tick', // 休息每秒更新
   BREAK_STARTED: 'break:started',
-  BREAK_ENDED: 'break:ended'
+  BREAK_ENDED: 'break:ended',
+  POMODORO_AUTO_EXTENDED: 'pomodoro:auto-extended', // 自动延迟番茄钟，通知弹窗关闭
 };
