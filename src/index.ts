@@ -29,6 +29,7 @@ import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog,
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
+import { getProgressDirection } from '@/utils/progressDirection';
 import { reminderService } from '@/services/reminderService';
 import { createNextOccurrence, shouldCreateNextOccurrence } from '@/services/recurringService';
 
@@ -1649,8 +1650,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.statusBarEl.style.cssText = 'position:fixed;bottom:0;left:0;height:4px;background:var(--b3-theme-surface-lighter);z-index:9999;width:100%;';
     const fill = document.createElement('div');
     fill.className = 'status-bar-fill';
-    const direction = pomodoro.statusBarDirection ?? 'extend';
-    const initialWidth = direction === 'shrink' ? '100%' : '0%';
+    const initialWidth = '0%';
     fill.style.cssText = `height:100%;background:var(--b3-theme-primary);transition:width 0.3s;width:${initialWidth};`;
     this.statusBarEl.appendChild(fill);
     document.body.appendChild(this.statusBarEl);
@@ -1910,8 +1910,8 @@ export default class TaskAssistantPlugin extends Plugin {
           if (fill) {
             const elapsed = Math.max(0, totalSeconds - d.remainingSeconds);
             const progress = totalSeconds > 0 ? Math.min(1, elapsed / totalSeconds) : 0;
-            const direction = pomodoro.statusBarDirection ?? 'extend';
-            const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
+            // 休息固定为 shrink 方向
+            const displayProgress = 1 - progress;
             fill.style.width = `${displayProgress * 100}%`;
           }
         }
@@ -1950,7 +1950,7 @@ export default class TaskAssistantPlugin extends Plugin {
         if (fill) {
           const refSeconds = isStopwatch ? 25 * 60 : targetSeconds;
           const progress = Math.min(1, accumulatedSeconds / refSeconds);
-          const direction = pomodoro.statusBarDirection ?? 'extend';
+          const direction = getProgressDirection(d.timerMode);
           const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
           fill.style.width = `${displayProgress * 100}%`;
         }
