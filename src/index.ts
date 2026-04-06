@@ -29,7 +29,6 @@ import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog,
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
-import { getProgressDirection } from '@/utils/progressDirection';
 import { reminderService } from '@/services/reminderService';
 import { createNextOccurrence, shouldCreateNextOccurrence } from '@/services/recurringService';
 
@@ -1950,7 +1949,7 @@ export default class TaskAssistantPlugin extends Plugin {
         if (fill) {
           const refSeconds = isStopwatch ? 25 * 60 : targetSeconds;
           const progress = Math.min(1, accumulatedSeconds / refSeconds);
-          const direction = getProgressDirection(d.timerMode);
+          const direction = isStopwatch ? 'extend' as const : 'shrink' as const;
           const displayProgress = direction === 'shrink' ? (1 - progress) : progress;
           fill.style.width = `${displayProgress * 100}%`;
         }
