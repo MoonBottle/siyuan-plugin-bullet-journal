@@ -41,7 +41,7 @@
       <CalendarView
         v-if="isSettingsLoaded"
         ref="calendarRef"
-        :events="allCalendarEvents"
+        :events="calendarEvents"
         :initial-view="currentView"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
@@ -66,6 +66,7 @@ import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import { DataConverter } from '@/utils/dataConverter';
 import { t } from '@/i18n';
+import dayjs from '@/utils/dayjs';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -88,28 +89,37 @@ const filteredCalendarEvents = computed(() => {
   return events;
 });
 
-// 番茄钟背景时间块事件
+// 当前日历显示的日期（YYYY-MM-DD）
+const currentDateStr = ref(dayjs().format('YYYY-MM-DD'));
+
+// 是否显示番茄钟时间块（仅日视图 + 设置开启）
+const showPomodoroPanel = computed(() => {
+  return currentView.value === 'timeGridDay' && settingsStore.showPomodoroBlocks;
+});
+
+// 番茄钟背景时间块事件（右对齐，仅日视图）
 const pomodoroBlockEvents = computed(() => {
-  if (!settingsStore.showPomodoroBlocks) return [];
+  if (!showPomodoroPanel.value) return [];
+  const targetDate = currentDateStr.value;
   const events = filteredCalendarEvents.value;
-  const allPomodoros: PomodoroRecord[] = [];
+  const pomodoros: PomodoroRecord[] = [];
   const seenIds = new Set<string>();
   for (const event of events) {
-    const pomodoros = event.extendedProps?.pomodoros;
-    if (pomodoros) {
-      for (const p of pomodoros) {
-        if (!seenIds.has(p.id)) {
+    const pList = event.extendedProps?.pomodoros;
+    if (pList) {
+      for (const p of pList) {
+        if (!seenIds.has(p.id) && p.date === targetDate) {
           seenIds.add(p.id);
-          allPomodoros.push(p);
+          pomodoros.push(p);
         }
       }
     }
   }
-  return DataConverter.pomodoroBlocksToEvents(allPomodoros);
+  return DataConverter.pomodoroBlocksToEvents(pomodoros);
 });
 
 // 合并日历事件 + 番茄钟背景时间块
-const allCalendarEvents = computed(() => {
+const calendarEvents = computed(() => {
   return [...filteredCalendarEvents.value, ...pomodoroBlockEvents.value];
 });
 
@@ -218,7 +228,9 @@ onMounted(async () => {
 
   // 等待日历初始化后更新标题
   await nextTick();
-  setTimeout(() => updateTitle(), 100);
+  setTimeout(() => {
+    updateTitle();
+  }, 100);
 });
 
 onUnmounted(() => {
@@ -284,6 +296,11 @@ const handleBack = () => {
 const updateTitle = () => {
   if (calendarRef.value) {
     currentTitle.value = calendarRef.value.getTitle() || '';
+    // 同步更新当前日期
+    const d = calendarRef.value.getDate?.();
+    if (d) {
+      currentDateStr.value = dayjs(d).format('YYYY-MM-DD');
+    }
   }
 };
 
@@ -431,5 +448,7 @@ watch(currentView, (newView) => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+
 }
 </style>

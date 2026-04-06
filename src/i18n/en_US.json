@@ -141,7 +141,10 @@
       "showPomodoroBlocksDesc": "Display pomodoro focus periods on the calendar day view timeline",
       "showPomodoroTotal": "Show Total Focus Time",
       "showPomodoroTotalDesc": "Display total focus time on the right side of event bars",
-      "pomodoroTotalLabel": "{minutes}min total"
+      "pomodoroTotalLabel": "{minutes}min total",
+      "pomodoroTimelineTitle": "Focus",
+      "pomodoroCountLabel": "{count} sessions",
+      "pomodoroNoFocus": "No focus records"
     },
     "lunchBreak": {
       "title": "Lunch Break",

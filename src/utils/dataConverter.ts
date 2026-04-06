@@ -3,6 +3,7 @@
  * 将项目数据转换为日历和甘特图所需格式
  */
 import type { Project, Task, Item, CalendarEvent, GanttTask, PomodoroRecord } from '@/types/models';
+import { t } from '@/i18n';
 
 export class DataConverter {
   /**
@@ -126,12 +127,12 @@ export class DataConverter {
 
       events.push({
         id: `pomodoro-block-${record.id}`,
-        title: '',
+        title: `🍅${durationMinutes}${t('common').minutes}`,
         start: startDateTime,
         end: endDateTime,
         allDay: false,
         display: 'background',
-        backgroundColor: 'rgba(231, 76, 60, 0.15)',
+        backgroundColor: 'rgba(231, 76, 60, 0.45)',
         extendedProps: {
           isPomodoroBlock: true,
           pomodoroDurationMinutes: durationMinutes,
