@@ -93,6 +93,7 @@ const openTimerDialog = () => {
 // 打开专注完成弹窗（补填说明）
 let completeDialog: Dialog | null = null;
 let completeDialogApp: any = null;
+let unsubscribeAutoExtendCompleteDialog: (() => void) | null = null;
 
 const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
   if (completeDialog) {
@@ -105,6 +106,10 @@ const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
   }
 
   const closeCompleteDialog = () => {
+    if (unsubscribeAutoExtendCompleteDialog) {
+      unsubscribeAutoExtendCompleteDialog();
+      unsubscribeAutoExtendCompleteDialog = null;
+    }
     if (completeDialog) {
       completeDialog.destroy();
       completeDialog = null;
@@ -126,6 +131,11 @@ const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
       }
       completeDialog = null;
     }
+  });
+
+  // 监听自动延迟事件
+  unsubscribeAutoExtendCompleteDialog = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
+    closeCompleteDialog();
   });
 
   setTimeout(() => {
