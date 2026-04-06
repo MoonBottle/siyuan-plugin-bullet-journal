@@ -11,6 +11,15 @@ import { processLineText } from '@/utils/slashCommandUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /**
+ * 写入钩子 - 用于斜杠命令中替换 updateBlock API
+ * 通过 protyle.transaction() 提交，避免和 protyle 的防抖事务竞争
+ */
+export type BlockWriter = (
+  content: string,
+  targetBlockId: string
+) => Promise<boolean>;
+
+/**
  * 时间加一小时
  */
 function addOneHour(timeStr: string): string {
