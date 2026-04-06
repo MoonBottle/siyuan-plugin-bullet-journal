@@ -378,14 +378,14 @@ export const bulletJournalTools: ToolDefinition[] = [
   filterItemsTool,
   getPomodoroStatsTool,
   getPomodoroRecordsTool,
-  listSkillsTool,
-  getSkillDetailTool,
-  updateItemStatusTool,
-  createItemTool,
-  updateItemTool,
-  deleteItemTool,
-  createTaskTool,
-  createProjectTool
+  // listSkillsTool,
+  // getSkillDetailTool,
+  // updateItemStatusTool,
+  // createItemTool,
+  // updateItemTool,
+  // deleteItemTool,
+  // createTaskTool,
+  // createProjectTool
 ];
 
 /**

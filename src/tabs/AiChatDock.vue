@@ -29,13 +29,13 @@
       </span>
 
       <!-- 技能管理按钮 -->
-      <span
+      <!-- <span
         class="block__icon b3-tooltips b3-tooltips__sw"
         :aria-label="t('settings').aiSkills?.title ?? 'AI 技能配置'"
         @click="openSkillManager"
       >
         <SkillIcon />
-      </span>
+      </span> -->
 
       <!-- 微信连接按钮 -->
       <span
