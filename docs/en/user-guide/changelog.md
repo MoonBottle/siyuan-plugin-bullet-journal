@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.12.0] - 2026-04-06
+
+### Features
+
+- **AI Chat Enhancement**:
+  - Integrated ClawBot conversation service
+- **Recurring Items**:
+  - Support setting recurring items, automatically create next occurrence when completing recurring items
+- **Reminder Function**:
+  - New reminder setting dialog
+  - Display next reminder time
+  - Integrated WeChat notification
+- **Pomodoro Enhancement**:
+  - Support auto-extend pomodoro settings
+  - Calendar day view displays pomodoro time blocks
+  - Status bar progress bar direction adapts to timer mode
+  - Integrated WeChat notification
+- **Emoji Status Markers**: Replace status labels with emoji, support emoji markers
+- **Task Marker**: Added 📋 as task marker recognition
+- **Performance Optimization**:
+  - Streaming project parsing
+  - SQL batch query optimization for pomodoro attribute retrieval
+  - Incremental refresh mechanism optimizes data storage structure
+
+### Refactors
+
+- Refactored AI conversation configuration storage
+
+### Fixes
+
+- Fixed issue where slash commands couldn't complete items
+
+### Styles
+
 ## [0.11.2] - 2026-03-20
 
 ### Features

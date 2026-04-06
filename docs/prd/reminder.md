@@ -89,11 +89,13 @@
 
 ### 3.3 日期范围 + 提醒
 
-**限制**：日期范围事项只支持一个提醒时间，应用于范围内的每一天。如需不同日期不同提醒时间，请拆分为多个事项块。
+**限制**：日期范围事项只支持一个提醒时间，且**仅提醒范围第一天**。如需每天提醒，请拆分为多个独立事项块。
 
 ```markdown
-出差 @2026-03-10~03-12 ⏰08:00   // 每天 08:00 提醒
+出差 @2026-03-10~03-12 ⏰08:00   // 仅在第一天（03-10）08:00 提醒
 ```
+
+> **设计原因**：日期范围在 Pinia store 中展开为多个 Item，但提醒服务（`itemsNeedingReminder` getter）只对每个 Item 计算一次提醒时间。当前架构下无法为范围内每天单独触发通知。
 
 ---
 
@@ -136,10 +138,14 @@ interface Item {
 interface ReminderConfig {
   enabled: boolean;
   type: 'absolute' | 'relative';
-  time?: string;                   // HH:mm（type='absolute'）
-  alertMode?: ReminderAlertMode;   // 提醒方式（type='absolute'）
-  relativeTo?: 'start' | 'end';    // 相对开始/结束时间
-  offsetMinutes?: number;          // 偏移分钟数
+  time?: string;                   // HH:mm（type='absolute' 时使用）
+  alertMode?: {                    // 提醒方式（type='absolute' 时使用）
+    type: 'ontime' | 'before' | 'custom';
+    minutes?: number;         // 自定义分钟数
+  };
+  // 相对提醒专用字段
+  relativeTo?: 'start' | 'end';    // 相对开始时间还是结束时间
+  offsetMinutes?: number;          // 偏移分钟数（正数表示提前）
 }
 ```
 
@@ -182,6 +188,27 @@ reminderService (10s 轮询) → itemsNeedingReminder getter → 重新计算提
 | 持久化存储 | **无**（无 pending.json、无 checksums.json） |
 | 事项完成/放弃 | Pinia store 中 item 状态变更，getter 自动排除，无需手动删除 |
 | 服务生命周期 | `start(plugin, projectStore)` → `stop()` |
+
+### 6.2.1 相对提醒降级行为
+
+当事项设置了相对提醒（`⏰提前N分钟` / `⏰结束前N分钟`）但**没有时间范围**时，使用以下默认时间：
+
+| 相对类型 | 默认基准时间 | 示例 |
+|----------|-------------|------|
+| `relativeTo: 'start'` | 当天 `00:00` | `⏰提前10分钟` + 纯日期 → 前一天 23:50 提醒 |
+| `relativeTo: 'end'` | 当天 `23:59` | `⏰结束前10分钟` + 纯日期 → 当天 23:49 提醒 |
+
+> **建议**：对于没有时间范围的事项，优先使用绝对时间提醒（`⏰09:00`）以避免混淆。
+
+### 6.2.2 启动补偿检查
+
+插件启动（或重启）时，`ReminderService.start()` 会执行一次**补偿检查**：
+
+- 扫描过去 **5 分钟内**到期的提醒
+- 对这些"刚刚错过"的提醒补发通知
+- 使用与正常检查相同的去重机制（`notifiedKeys`）防止重复
+
+**场景**：用户设了 `⏰14:00` 提醒，13:55 时插件崩溃/思源重启。14:00 的提醒因 getter 已过期被跳过。启动补偿检查会在 14:05 重启时发现这个"刚错过"的提醒并补发。
 
 ### 6.3 核心模块 API
 
