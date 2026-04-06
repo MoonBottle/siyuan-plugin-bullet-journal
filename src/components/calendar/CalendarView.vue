@@ -429,8 +429,8 @@ onMounted(async () => {
         if (info.event.extendedProps?.isPomodoroBlock) {
           const el = info.el;
           el.style.opacity = '1';
-          el.style.width = '10%';
-          el.style.left = '90%';
+          el.style.width = '15%';
+          el.style.left = '85%';
           el.style.backgroundColor = 'var(--fc-event-bg-color)';
           el.style.borderLeft = '3px solid var(--fc-event-border-color)';
           const duration = info.event.extendedProps?.pomodoroDurationMinutes;
@@ -450,9 +450,9 @@ onMounted(async () => {
           }
           return;
         }
-        // 显示番茄钟块时，事项块缩窄为90%给番茄块留位
+        // 显示番茄钟块时，事项块缩窄为85%给番茄块留位
         if (settingsStore.showPomodoroBlocks) {
-          info.el.style.width = '90%';
+          info.el.style.width = '85%';
         }
         info.el.addEventListener('contextmenu', (e: MouseEvent) => {
           e.preventDefault();

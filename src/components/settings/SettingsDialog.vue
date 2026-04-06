@@ -400,7 +400,7 @@ function handleCancel() {
 .sy-settings-search {
   flex: 1;
   min-width: 0;
-  padding: 0;
+  padding: 0 0 0 5px;
   font-size: 13px;
   background: transparent;
   border: none;
