@@ -609,7 +609,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
      * 启动自动延迟倒计时
      */
     scheduleAutoExtend(plugin: any) {
-      this.cancelAutoExtend();
+      // 只清除定时器，不清零 autoExtendCount（保留跨周期的延迟计数）
+      if (this.autoExtendTimeoutId) {
+        clearTimeout(this.autoExtendTimeoutId);
+        this.autoExtendTimeoutId = null;
+      }
 
       const settings = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
       if (!settings.autoExtendEnabled) return;
