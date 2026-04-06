@@ -10,7 +10,7 @@ import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
-import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
+import { updateBlockContent, updateBlockDateTime, type BlockWriter } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
   processLineText,
@@ -24,7 +24,7 @@ import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
 import type { Item, ProjectDirectory } from '@/types/models';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
+import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 
 /**
@@ -791,6 +791,96 @@ async function markAsDateItem(
  */
 function getStatusTag(status: 'completed' | 'abandoned'): string {
   return t('statusTag')[status] || '';
+}
+
+/**
+ * 格式化 updated 属性值
+ */
+function formatUpdatedAttr(date: Date): string {
+  const y = date.getFullYear();
+  const mo = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const mi = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${y}${mo}${d}${h}${mi}${s}`;
+}
+
+/**
+ * 查找块元素内的第一个文本节点
+ */
+function findFirstTextNode(element: HTMLElement): Text | null {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      if ((node.parentElement as HTMLElement)?.classList?.contains('protyle-attr')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return node.textContent ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    },
+  });
+  return walker.nextNode() as Text | null;
+}
+
+/**
+ * 等待 protyle 事务队列清空
+ */
+async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
+  const start = Date.now();
+  const siyuanWin = window as any;
+  while (siyuanWin.siyuan?.transactions?.length > 0 && Date.now() - start < timeout) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+  await new Promise(r => setTimeout(r, 200));
+}
+
+/**
+ * 创建 protyle writer 工厂函数
+ * 将 updateBlock API 调用替换为 DOM 更新 + protyle.transaction()
+ * 利用思源事务队列的防抖合并机制，自动替换 protyle 的旧 doOperations
+ */
+function createProtyleWriter(
+  protyle: any,
+  nodeElement: HTMLElement,
+  currentBlockId: string,
+): BlockWriter {
+  const oldHTML = nodeElement.outerHTML;
+
+  return async (content: string, targetBlockId: string): Promise<boolean> => {
+    try {
+      const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
+
+      const isSameBlock = targetBlockId === currentBlockId;
+      const isSingleLine = !content.includes('\n');
+
+      if (isSameBlock && isSingleLine) {
+        const textNode = findFirstTextNode(nodeElement);
+        if (textNode) {
+          textNode.textContent = textContent;
+        }
+
+        nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()));
+
+        const newHTML = nodeElement.outerHTML;
+        if (newHTML !== oldHTML) {
+          protyle.transaction(
+            [{ id: targetBlockId, data: newHTML, action: 'update' }],
+            [{ id: targetBlockId, data: oldHTML, action: 'update' }],
+          );
+        }
+        return true;
+      }
+
+      // Complex case: wait for queue to flush, then API
+      await waitForProtyleTransactionsFlush();
+      await updateBlock('markdown', content, targetBlockId);
+      return true;
+    }
+    catch (error) {
+      console.error('[Task Assistant] ProtyleWriter error:', error);
+      await updateBlock('markdown', content, targetBlockId);
+      return true;
+    }
+  };
 }
 
 /**
