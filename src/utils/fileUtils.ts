@@ -660,7 +660,8 @@ export async function openDocumentAtLine(
  */
 export async function updateBlockContent(
   blockId: string,
-  suffix: string
+  suffix: string,
+  writer?: BlockWriter
 ): Promise<boolean> {
   if (!blockId) return false;
 
@@ -809,6 +810,9 @@ export async function updateBlockContent(
         newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
         targetBlockId = block!.parent_id!;
       }
+      if (writer) {
+        return await writer(newContent, targetBlockId);
+      }
       await updateBlock('markdown', newContent, targetBlockId);
       return true;
     }
@@ -864,6 +868,9 @@ export async function updateBlockContent(
     if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
       newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
       targetBlockId = block!.parent_id!;
+    }
+    if (writer) {
+      return await writer(newContent, targetBlockId);
     }
     await updateBlock('markdown', newContent, targetBlockId);
 
