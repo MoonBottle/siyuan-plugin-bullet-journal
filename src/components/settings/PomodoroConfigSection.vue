@@ -20,16 +20,6 @@
         <SySwitch v-model="pomodoro.enableStatusBar" />
       </SySettingItem>
       <SySettingItem
-        :label="t('settings').pomodoro.statusBarDirection"
-        :description="t('settings').pomodoro.statusBarDirectionDesc"
-      >
-        <SySelect
-          :model-value="pomodoro.statusBarDirection || 'extend'"
-          :options="statusBarDirectionOptions"
-          @update:model-value="pomodoro.statusBarDirection = $event as 'extend' | 'shrink'"
-        />
-      </SySettingItem>
-      <SySettingItem
         :label="t('settings').pomodoro.recordMode"
         :description="t('settings').pomodoro.recordModeDesc"
       >
@@ -80,9 +70,5 @@ const recordModeOptions = [
   { value: 'attr', label: t('settings').pomodoro.recordModeAttr }
 ];
 
-const statusBarDirectionOptions = [
-  { value: 'extend', label: t('settings').pomodoro.statusBarDirectionExtend },
-  { value: 'shrink', label: t('settings').pomodoro.statusBarDirectionShrink }
-];
 </script>
 

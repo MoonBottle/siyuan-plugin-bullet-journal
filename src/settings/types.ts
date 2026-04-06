@@ -20,7 +20,6 @@ export interface PomodoroSettings {
   enableFloatingButton?: boolean;
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
-  statusBarDirection?: 'extend' | 'shrink';
   autoCompleteOnItemDone?: boolean; // 事项完成时自动结束番茄钟，默认 true
   minFocusMinutes?: number; // 最小专注时间（分钟），默认 5
 }
@@ -62,7 +61,6 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   enableFloatingButton: true,
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',
-  statusBarDirection: 'extend',
   autoCompleteOnItemDone: true,
   minFocusMinutes: 5,
 };
