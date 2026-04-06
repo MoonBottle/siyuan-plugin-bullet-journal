@@ -41,7 +41,7 @@
       <CalendarView
         v-if="isSettingsLoaded"
         ref="calendarRef"
-        :events="filteredCalendarEvents"
+        :events="allCalendarEvents"
         :initial-view="currentView"
         @event-click="handleEventClick"
         @event-drop="handleEventDrop"
@@ -56,6 +56,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import type { PomodoroRecord } from '@/types/models';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine, updateBlockDateTime } from '@/utils/fileUtils';
@@ -63,6 +64,7 @@ import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
+import { DataConverter } from '@/utils/dataConverter';
 import { t } from '@/i18n';
 
 const plugin = usePlugin() as any;
@@ -84,6 +86,31 @@ const filteredCalendarEvents = computed(() => {
   const events = projectStore.getFilteredCalendarEvents(selectedGroup.value);
   console.log('[Task Assistant] Filtered calendar events:', events?.length || 0, 'group:', selectedGroup.value);
   return events;
+});
+
+// 番茄钟背景时间块事件
+const pomodoroBlockEvents = computed(() => {
+  if (!settingsStore.showPomodoroBlocks) return [];
+  const events = filteredCalendarEvents.value;
+  const allPomodoros: PomodoroRecord[] = [];
+  const seenIds = new Set<string>();
+  for (const event of events) {
+    const pomodoros = event.extendedProps?.pomodoros;
+    if (pomodoros) {
+      for (const p of pomodoros) {
+        if (!seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          allPomodoros.push(p);
+        }
+      }
+    }
+  }
+  return DataConverter.pomodoroBlocksToEvents(allPomodoros);
+});
+
+// 合并日历事件 + 番茄钟背景时间块
+const allCalendarEvents = computed(() => {
+  return [...filteredCalendarEvents.value, ...pomodoroBlockEvents.value];
 });
 
 // 视图选项

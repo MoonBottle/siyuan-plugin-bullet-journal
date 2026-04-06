@@ -136,7 +136,12 @@
     "calendar": {
       "title": "Calendar",
       "defaultView": "Default View",
-      "defaultViewDesc": "Default view when opening the calendar"
+      "defaultViewDesc": "Default view when opening the calendar",
+      "showPomodoroBlocks": "Show Pomodoro Blocks",
+      "showPomodoroBlocksDesc": "Display pomodoro focus periods on the calendar day view timeline",
+      "showPomodoroTotal": "Show Total Focus Time",
+      "showPomodoroTotalDesc": "Display total focus time on the right side of event bars",
+      "pomodoroTotalLabel": "{minutes}min total"
     },
     "lunchBreak": {
       "title": "Lunch Break",

@@ -44,6 +44,8 @@ export interface SettingsData {
   calendarDefaultView: string;
   lunchBreakStart: string;
   lunchBreakEnd: string;
+  showPomodoroBlocks?: boolean;     // 日历日视图是否显示番茄钟时间块，默认 true
+  showPomodoroTotal?: boolean;      // 事项条是否显示专注总时长，默认 true
   todoDock: TodoDockSettings;
   ai?: {
     providers: AIProviderConfig[];
@@ -80,6 +82,8 @@ export const defaultSettings: SettingsData = {
   calendarDefaultView: 'timeGridDay',
   lunchBreakStart: '12:00',
   lunchBreakEnd: '13:00',
+  showPomodoroBlocks: true,
+  showPomodoroTotal: true,
   todoDock: {
     hideCompleted: false,
     hideAbandoned: false

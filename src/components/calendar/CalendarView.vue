@@ -124,6 +124,24 @@ const renderEventContent = (arg: any) => {
   titleEl.className = 'fc-event-title-text';
   titleEl.textContent = statusEmoji + title;
   line2.appendChild(titleEl);
+
+  // 专注总时长（仅事项级事件 + 有番茄钟记录 + 设置开启）
+  if (isItem && settingsStore.showPomodoroTotal) {
+    const pomodoros = arg.event.extendedProps?.pomodoros;
+    if (pomodoros && pomodoros.length > 0) {
+      const totalMinutes = pomodoros.reduce(
+        (sum: number, p: any) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0
+      );
+      if (totalMinutes > 0) {
+        const totalEl = document.createElement('span');
+        totalEl.className = 'fc-event-pomodoro-total';
+        const label = (t('settings').calendar as any).pomodoroTotalLabel ?? '{minutes}min';
+        totalEl.textContent = ' ' + label.replace('{minutes}', String(totalMinutes));
+        line2.appendChild(totalEl);
+      }
+    }
+  }
+
   container.appendChild(line2);
 
   return { domNodes: [container] };
@@ -409,6 +427,19 @@ onMounted(async () => {
 
       // 右键菜单、悬浮预览 - 通过 eventDidMount 绑定
       eventDidMount: (info) => {
+        // 番茄钟背景时间块：注入时长文字
+        if (info.event.extendedProps?.isPomodoroBlock) {
+          const duration = info.event.extendedProps.pomodoroDurationMinutes;
+          if (duration && info.el) {
+            const label = document.createElement('span');
+            label.className = 'pomodoro-block-label';
+            label.textContent = `${duration}min`;
+            info.el.style.position = 'relative';
+            info.el.appendChild(label);
+          }
+          return; // 背景事件不绑定右键菜单和悬浮预览
+        }
+
         info.el.addEventListener('contextmenu', (e: MouseEvent) => {
           e.preventDefault();
           e.stopPropagation();
@@ -756,6 +787,35 @@ defineExpose({
     color: var(--b3-theme-on-background);
     background: var(--b3-theme-surface);
     border-color: var(--b3-border-color);
+  }
+
+  /* 番茄钟背景时间块 */
+  .fc-bg-event {
+    &.fc-event {
+      cursor: default;
+      opacity: 1;
+    }
+
+    .pomodoro-block-label {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 10px;
+      color: rgba(231, 76, 60, 0.7);
+      white-space: nowrap;
+      pointer-events: none;
+      font-weight: 500;
+    }
+  }
+
+  /* 事项条专注总时长 */
+  .fc-event-pomodoro-total {
+    font-size: 10px;
+    opacity: 0.75;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: auto;
+    color: var(--b3-theme-on-primary);
   }
 }
 </style>

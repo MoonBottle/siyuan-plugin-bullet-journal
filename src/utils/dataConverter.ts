@@ -2,7 +2,7 @@
  * 数据转换器
  * 将项目数据转换为日历和甘特图所需格式
  */
-import type { Project, Task, Item, CalendarEvent, GanttTask } from '@/types/models';
+import type { Project, Task, Item, CalendarEvent, GanttTask, PomodoroRecord } from '@/types/models';
 
 export class DataConverter {
   /**
@@ -97,6 +97,50 @@ export class DataConverter {
         pomodoros: item.pomodoros
       }
     };
+  }
+
+  /**
+   * 将番茄钟记录转换为日历背景事件
+   * 只为有 startTime 且有 endTime 的记录生成时间块
+   * @param pomodoros 番茄钟记录数组
+   * @param visibleDate 可选的可见日期，用于过滤只显示当天的记录
+   */
+  public static pomodoroBlocksToEvents(
+    pomodoros: PomodoroRecord[] | undefined,
+    visibleDate?: string
+  ): CalendarEvent[] {
+    if (!pomodoros || pomodoros.length === 0) return [];
+
+    const events: CalendarEvent[] = [];
+
+    for (const record of pomodoros) {
+      // 必须有 startTime 和 endTime 才能定位到时间轴
+      if (!record.startTime || !record.endTime) continue;
+
+      // 如果指定了可见日期，只显示该日期的记录
+      if (visibleDate && record.date !== visibleDate) continue;
+
+      const durationMinutes = record.actualDurationMinutes ?? record.durationMinutes;
+      const startDateTime = `${record.date}T${record.startTime}`;
+      const endDateTime = `${record.date}T${record.endTime}`;
+
+      events.push({
+        id: `pomodoro-block-${record.id}`,
+        title: '',
+        start: startDateTime,
+        end: endDateTime,
+        allDay: false,
+        display: 'background',
+        backgroundColor: 'rgba(231, 76, 60, 0.15)',
+        extendedProps: {
+          isPomodoroBlock: true,
+          pomodoroDurationMinutes: durationMinutes,
+          pomodoroDescription: record.description,
+        }
+      });
+    }
+
+    return events;
   }
 
   /**

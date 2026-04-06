@@ -60,6 +60,8 @@
           <CalendarConfigSection
             v-show="sectionVisible('calendar')"
             v-model:calendar-default-view="local.calendarDefaultView"
+            v-model:show-pomodoro-blocks="local.showPomodoroBlocks"
+            v-model:show-pomodoro-total="local.showPomodoroTotal"
           />
         </div>
         <div id="section-lunch" class="sy-settings-section-wrapper">

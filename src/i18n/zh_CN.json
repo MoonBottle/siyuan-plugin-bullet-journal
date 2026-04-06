@@ -136,7 +136,12 @@
     "calendar": {
       "title": "日历",
       "defaultView": "默认视图",
-      "defaultViewDesc": "打开日历时默认显示的视图"
+      "defaultViewDesc": "打开日历时默认显示的视图",
+      "showPomodoroBlocks": "显示番茄钟时间块",
+      "showPomodoroBlocksDesc": "在日历日视图的时间轴上显示番茄钟专注时段",
+      "showPomodoroTotal": "显示专注总时长",
+      "showPomodoroTotalDesc": "在事项条右侧显示该事项的专注总时长",
+      "pomodoroTotalLabel": "共专注{minutes}分钟"
     },
     "lunchBreak": {
       "title": "午休时间",

@@ -213,6 +213,9 @@ export interface CalendarEvent {
     dateRangeStart?: string;
     dateRangeEnd?: string;
     pomodoros?: PomodoroRecord[];
+    isPomodoroBlock?: boolean;
+    pomodoroDurationMinutes?: number;
+    pomodoroDescription?: string;
   };
 }
 
