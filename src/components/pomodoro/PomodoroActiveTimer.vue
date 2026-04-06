@@ -220,6 +220,7 @@ import { showConfirmDialog, hideLinkTooltip, showItemDetailModal } from '@/utils
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
+import { getProgressDirection } from '@/utils/progressDirection';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -252,6 +253,9 @@ const isPaused = computed(() => {
 
 // 是否正计时模式
 const isStopwatch = computed(() => pomodoroStore.isStopwatch);
+
+// 进度条方向：正计时延长，倒计时缩短
+const progressDirection = computed(() => getProgressDirection(pomodoroStore.activePomodoro?.timerMode));
 
 // 已专注分钟数
 const accumulatedMinutes = computed(() => {
@@ -298,19 +302,22 @@ const formattedEndTime = computed(() => {
 // 正计时参考时长（25分钟），用于进度显示
 const stopwatchReferenceSeconds = 25 * 60;
 
-// 时间线进度（0-100）：倒计时用已用/目标，正计时用已用/参考25分钟
+// 时间线进度（0-100）：根据方向决定显示效果
 const timelineProgress = computed(() => {
   if (!pomodoroStore.activePomodoro) return 0;
   const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
   const totalSeconds = isStopwatch.value
     ? stopwatchReferenceSeconds
     : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
-  return Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
+  const progress = Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
+  return progressDirection.value === 'shrink' ? 100 - progress : progress;
 });
 
-// 进度环偏移量：倒计时显示剩余，正计时显示已用（环随已用时间增长）
+// 进度环偏移量：根据方向决定填充效果
 const strokeDashoffset = computed(() => {
-  if (!pomodoroStore.activePomodoro) return circumference;
+  if (!pomodoroStore.activePomodoro) {
+    return progressDirection.value === 'shrink' ? 0 : circumference;
+  }
 
   const elapsedSeconds = pomodoroStore.activePomodoro.accumulatedSeconds;
   const totalSeconds = isStopwatch.value
@@ -318,7 +325,9 @@ const strokeDashoffset = computed(() => {
     : pomodoroStore.activePomodoro.targetDurationMinutes * 60;
   const progress = Math.min(1, elapsedSeconds / totalSeconds);
 
-  return circumference * (1 - progress);
+  return progressDirection.value === 'shrink'
+    ? circumference * progress
+    : circumference * (1 - progress);
 });
 
 // 暂停专注
