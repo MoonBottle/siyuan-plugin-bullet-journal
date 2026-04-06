@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.12.1] - 2026-04-06
+
+### Features
+
+- **Slash Command Enhancement**:
+  - Added transaction-safe update mechanism to resolve race condition issues
+  - Enhanced task completion marker to support task list format (`- [ ]`)
+
+### Styles
+
+- **UI Style Optimization**:
+  - Fine-tuned settings search box padding
+  - Unified dialog close button style and adjusted z-index
+
+### Docs
+
+- **README Update**: Updated example content and command table in Chinese documentation
+
 ## [0.12.0] - 2026-04-06
 
 ### Features

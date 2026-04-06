@@ -67,9 +67,7 @@
       <div class="b3-dialog__container">
         <div class="b3-dialog__header">
           <div class="b3-dialog__title">{{ isEditing ? t('settings').slashCommands.dialogTitleEdit : t('settings').slashCommands.dialogTitleAdd }}</div>
-          <button class="b3-dialog__close" @click="closeDialog">
-            <svg><use xlink:href="#iconClose"></use></svg>
-          </button>
+          <svg class="b3-dialog__close" @click="closeDialog"><use xlink:href="#iconCloseRound"></use></svg>
         </div>
         <div class="b3-dialog__content">
           <div class="form-item">
@@ -407,9 +405,12 @@ function deleteCommand(id: string) {
   margin-left: 3px;
 }
 
+.b3-dialog {
+  z-index: 100;
+}
+
 .b3-dialog__container {
   width: 400px;
 }
-
 
 </style>

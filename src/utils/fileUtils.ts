@@ -11,6 +11,15 @@ import { processLineText } from '@/utils/slashCommandUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /**
+ * 写入钩子 - 用于斜杠命令中替换 updateBlock API
+ * 通过 protyle.transaction() 提交，避免和 protyle 的防抖事务竞争
+ */
+export type BlockWriter = (
+  content: string,
+  targetBlockId: string
+) => Promise<boolean>;
+
+/**
  * 时间加一小时
  */
 function addOneHour(timeStr: string): string {
@@ -355,7 +364,8 @@ export async function updateBlockDateTime(
   allDay: boolean = false,
   originalDate?: string,
   siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
-  status?: ItemStatus
+  status?: ItemStatus,
+  writer?: BlockWriter
 ): Promise<boolean> {
   if (!blockId) return false;
 
@@ -428,7 +438,11 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
+      const singleLineResult = newContent + attrSuffix;
+      if (writer) {
+        return await writer(singleLineResult, targetBlockId);
+      }
+      await updateBlock('markdown', singleLineResult, targetBlockId);
       return true;
     }
 
@@ -467,7 +481,11 @@ export async function updateBlockDateTime(
         status
       );
 
-      await updateBlock('markdown', newContent + attrSuffix, targetBlockId);
+      const fallbackResult = newContent + attrSuffix;
+      if (writer) {
+        return await writer(fallbackResult, targetBlockId);
+      }
+      await updateBlock('markdown', fallbackResult, targetBlockId);
       return true;
     }
 
@@ -555,6 +573,9 @@ export async function updateBlockDateTime(
 
     // 更新块（使用 targetBlockId：父块解析时更新父块）
     // 多行逻辑中 lines 已包含属性行 {: ...}，updateBlock 的 kramdown 会保留属性
+    if (writer) {
+      return await writer(newContent, targetBlockId);
+    }
     await updateBlock('markdown', newContent, targetBlockId);
 
     return true;
@@ -639,7 +660,8 @@ export async function openDocumentAtLine(
  */
 export async function updateBlockContent(
   blockId: string,
-  suffix: string
+  suffix: string,
+  writer?: BlockWriter
 ): Promise<boolean> {
   if (!blockId) return false;
 
@@ -788,6 +810,9 @@ export async function updateBlockContent(
         newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
         targetBlockId = block!.parent_id!;
       }
+      if (writer) {
+        return await writer(newContent, targetBlockId);
+      }
       await updateBlock('markdown', newContent, targetBlockId);
       return true;
     }
@@ -843,6 +868,9 @@ export async function updateBlockContent(
     if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
       newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
       targetBlockId = block!.parent_id!;
+    }
+    if (writer) {
+      return await writer(newContent, targetBlockId);
     }
     await updateBlock('markdown', newContent, targetBlockId);
 
