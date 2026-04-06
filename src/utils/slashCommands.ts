@@ -511,19 +511,17 @@ function getActionHandler(
       return (protyle, nodeElement) => {
         const completedTag = getStatusTag('completed');
         const blockContent = nodeElement.textContent || '';
-        // 检查是否已完成
-        if (completedTag && blockContent.includes(completedTag)) {
+        // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
+        const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent);
+        if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
           deleteSlashCommandContent(protyle, filter);
           showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
           return;
         }
-        // 同时删除斜杠命令并添加完成标记（一次事务）
-        deleteSlashCommandContent(protyle, filter, undefined, (text) => {
-          if (!text.includes(completedTag)) {
-            return text.trimEnd() + ' ' + completedTag;
-          }
-          return text;
-        });
+        // 通过 updateBlockContent 处理：支持任务列表 [ ]→[x] 和普通标签两种格式
+        const blockId = nodeElement.getAttribute('data-node-id');
+        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
+        updateBlockContent(blockId!, completedTag, writer);
         showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
       };
     case 'abandon':
