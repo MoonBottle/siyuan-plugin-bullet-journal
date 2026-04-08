@@ -838,7 +838,8 @@ const handleCreateExample = async () => {
 
 <style lang="scss" scoped>
 .todo-sidebar {
-  min-height: 100%;
+  max-height: 100%;
+  overflow: auto;
 }
 
 .todo-content {

@@ -1,5 +1,5 @@
 <template>
-  <div class="fn__flex-1 fn__flex-column">
+  <div class="fn__flex-1 fn__flex-column todo-dock-container">
     <div class="block__icons">
       <div class="block__logo">
         <svg class="block__logoicon"><use xlink:href="#iconList"></use></svg>
@@ -10,7 +10,7 @@
         <svg><use xlink:href="#iconMore"></use></svg>
       </span>
     </div>
-    <div class="fn__flex-1 fn__flex-column todo-dock-body">
+    <div ref="dockBodyRef" class="fn__flex-1 fn__flex-column todo-dock-body">
       <div class="todo-filter-card">
         <SySelect
           v-model="selectedGroup"
@@ -18,7 +18,7 @@
           :placeholder="t('settings').projectGroups.allGroups"
         />
       </div>
-      <div class="fn__flex-1 todo-dock-content">
+      <div ref="dockContentRef" class="fn__flex-1 todo-dock-content">
         <TodoSidebar :group-id="selectedGroup" />
       </div>
     </div>
@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { Menu } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
@@ -41,6 +41,24 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const selectedGroup = ref('');
+const dockContentRef = ref<HTMLElement | null>(null);
+const dockBodyRef = ref<HTMLElement | null>(null);
+
+// 动态计算内容区域高度
+const updateContentHeight = () => {
+  if (dockBodyRef.value && dockContentRef.value) {
+    const bodyHeight = dockBodyRef.value.clientHeight;
+    const filterCard = dockBodyRef.value.querySelector('.todo-filter-card') as HTMLElement;
+    const filterHeight = filterCard?.offsetHeight || 50;
+    const gap = 8;
+    const padding = 16; // 8px * 2
+    const availableHeight = bodyHeight - filterHeight - gap - padding;
+    dockContentRef.value.style.maxHeight = `${Math.max(availableHeight, 100)}px`;
+  }
+};
+
+// 监听窗口大小变化
+let resizeObserver: ResizeObserver | null = null;
 
 const groupOptions = computed(() => {
   const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
@@ -131,6 +149,18 @@ let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据
 onMounted(async () => {
+  // 设置 ResizeObserver 监听高度变化
+  if (dockBodyRef.value && window.ResizeObserver) {
+    resizeObserver = new ResizeObserver(() => {
+      updateContentHeight();
+    });
+    resizeObserver.observe(dockBodyRef.value);
+    // 初始计算
+    nextTick(updateContentHeight);
+  }
+
+  // 监听窗口大小变化（备用方案）
+  window.addEventListener('resize', updateContentHeight);
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -169,10 +199,19 @@ onUnmounted(() => {
     refreshChannel.close();
     refreshChannel = null;
   }
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  window.removeEventListener('resize', updateContentHeight);
 });
 </script>
 
 <style lang="scss" scoped>
+.todo-dock-container {
+  overflow: hidden;
+}
+
 .block__icons {
   .block__icon {
     opacity: 1;
@@ -180,9 +219,12 @@ onUnmounted(() => {
 }
 
 .todo-dock-body {
+  display: flex;
+  flex-direction: column;
   padding: 8px;
   gap: 8px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .todo-filter-card {
@@ -203,6 +245,5 @@ onUnmounted(() => {
   border-radius: var(--b3-border-radius);
   flex: 1;
   min-height: 0;
-  max-height: calc(100vh - 160px);
 }
 </style>
