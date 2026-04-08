@@ -831,6 +831,8 @@ export default class TaskAssistantPlugin extends Plugin {
       init() {
         this.element.style.height = '100%';
         this.element.style.overflow = 'hidden';
+        this.element.style.display = 'flex';
+        this.element.style.flexDirection = 'column';
         const pinia = getSharedPinia() ?? createPinia();
         const app = createApp(TodoDock);
         app.use(pinia);
