@@ -588,9 +588,12 @@ const tomorrowItems = computed(() => {
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return filteredItems.value.filter(item => 
-    item.date !== todayStr && item.date !== tomorrowStr
-  );
+  return filteredItems.value.filter(item => {
+    // 排除今天、明天和已过期的事项
+    if (item.date === todayStr || item.date === tomorrowStr) return false;
+    const effectiveDate = getEffectiveDate(item);
+    return effectiveDate >= todayStr;
+  });
 });
 
 // 过期事项
