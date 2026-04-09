@@ -395,7 +395,7 @@ onUnmounted(() => {
         background: transparent;
         cursor: pointer;
         font-size: 14px;
-        opacity: 0.35;
+        opacity: 0.6;
         transition: all 0.2s;
         padding: 0;
 
