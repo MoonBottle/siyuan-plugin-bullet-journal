@@ -49,23 +49,19 @@
             </button>
           </div>
 
-          <div class="date-filter">
-            <button 
-              class="date-filter-btn"
-              :class="{ active: showDateFilter }"
-              @click="showDateFilter = !showDateFilter"
-            >
-              <svg class="date-icon"><use xlink:href="#iconCalendar"></use></svg>
-              <span class="date-label">{{ showDateFilter ? '自定义' : '全部' }}</span>
-            </button>
-          </div>
+          <SySelect
+            v-model="dateFilterType"
+            :options="dateFilterOptions"
+            class="date-filter-select"
+            @change="onDateFilterChange"
+          />
         </div>
 
-        <div v-if="showDateFilter" class="date-range-row">
+        <!-- 自定义日期范围选择器 -->
+        <div v-if="dateFilterType === 'custom'" class="date-range-row">
           <input v-model="startDate" type="date" class="date-input" />
           <span>至</span>
           <input v-model="endDate" type="date" class="date-input" />
-          <button class="clear-date-btn" @click="clearDateFilter">清除</button>
         </div>
       </div>
       <div class="fn__flex-1 todo-dock-content">
@@ -103,7 +99,10 @@ const selectedGroup = ref('');
 // 搜索和筛选状态
 const searchQuery = ref('');
 const selectedPriorities = ref<PriorityLevel[]>([]);
-const showDateFilter = ref(false);
+
+// 日期筛选类型：today | week | all | custom
+type DateFilterType = 'today' | 'week' | 'all' | 'custom';
+const dateFilterType = ref<DateFilterType>('today');
 const startDate = ref(dayjs().format('YYYY-MM-DD'));
 const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
 
@@ -113,9 +112,30 @@ const priorityOptions = [
   { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji },
 ];
 
+const dateFilterOptions = [
+  { value: 'today', label: '今天' },
+  { value: 'week', label: '近7天' },
+  { value: 'all', label: '全部' },
+  { value: 'custom', label: '自定义' },
+];
+
 const dateRange = computed(() => {
-  if (!showDateFilter.value) return null;
+  if (dateFilterType.value === 'all') return null;
+  if (dateFilterType.value === 'today') {
+    const today = dayjs().format('YYYY-MM-DD');
+    return { start: today, end: today };
+  }
+  if (dateFilterType.value === 'week') {
+    const today = dayjs().format('YYYY-MM-DD');
+    const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
+    return { start: today, end: nextWeek };
+  }
+  // custom
   return { start: startDate.value, end: endDate.value };
+});
+
+const dateFilterLabel = computed(() => {
+  return dateFilterOptions.find(o => o.value === dateFilterType.value)?.label || '今天';
 });
 
 function togglePriority(priority: PriorityLevel) {
@@ -127,10 +147,13 @@ function togglePriority(priority: PriorityLevel) {
   }
 }
 
-function clearDateFilter() {
-  showDateFilter.value = false;
-  startDate.value = dayjs().format('YYYY-MM-DD');
-  endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD');
+function onDateFilterChange(type: DateFilterType) {
+  dateFilterType.value = type;
+  if (type === 'custom') {
+    // 默认设置为今天到一周后
+    startDate.value = dayjs().format('YYYY-MM-DD');
+    endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD');
+  }
 }
 
 const groupOptions = computed(() => {
@@ -383,28 +406,14 @@ onUnmounted(() => {
       }
     }
 
-    .date-filter-btn {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      height: 28px;
-      padding: 0 8px;
-      border: 1px solid var(--b3-border-color);
-      border-radius: 6px;
-      background: var(--b3-theme-background);
-      cursor: pointer;
-      font-size: 12px;
-      color: var(--b3-theme-on-surface);
+    .date-filter-select {
+      width: auto !important;
+      min-width: 80px;
 
-      &.active {
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
-      }
-
-      .date-icon {
-        width: 14px;
-        height: 14px;
-        fill: currentColor;
+      :deep(.b3-select) {
+        height: 28px;
+        font-size: 12px;
+        padding: 0 24px 0 8px;
       }
     }
   }
@@ -426,18 +435,7 @@ onUnmounted(() => {
       color: var(--b3-theme-on-background);
     }
 
-    .clear-date-btn {
-      padding: 4px 8px;
-      border: none;
-      background: transparent;
-      color: var(--b3-theme-primary);
-      cursor: pointer;
-      font-size: 12px;
 
-      &:hover {
-        text-decoration: underline;
-      }
-    }
   }
 }
 </style>
