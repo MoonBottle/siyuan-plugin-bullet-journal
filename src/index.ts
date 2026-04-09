@@ -24,7 +24,7 @@ import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
 import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
-import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak } from '@/utils/pomodoroStorage';
+import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak, removeActivePomodoro, removePendingCompletion } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
@@ -299,7 +299,7 @@ export default class TaskAssistantPlugin extends Plugin {
         if (pending) {
           console.log('[Task Assistant] 发现待完成番茄钟记录，弹出补填弹窗');
           const pinia = getSharedPinia();
-          showPomodoroCompleteDialog(pending, pinia ?? undefined);
+          await showPomodoroCompleteDialog(pending, pinia ?? undefined);
         } else {
           // 检查是否有进行中的休息需要恢复
           const breakData = await loadActiveBreak(this);
@@ -1171,9 +1171,9 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /**
    * 处理文档删除事件
-   * 当文档被删除时，同步删除关联的技能配置
+   * 当文档被删除时，同步删除关联的技能配置，并清理关联的番茄钟
    */
-  private handleDocRemove(data: any) {
+  private async handleDocRemove(data: any) {
     // 尝试从不同位置获取被删除的文档 ID
     // 思源 removeDoc 事件通常包含 ids 数组或单条数据的 id
     const ids: string[] = [];
@@ -1200,19 +1200,58 @@ export default class TaskAssistantPlugin extends Plugin {
     
     // 检查并删除关联的技能
     const skillStore = useSkillStore();
-    let removedCount = 0;
+    let removedSkillCount = 0;
     
     for (const docId of ids) {
       const skill = skillStore.getSkillByDocId(docId);
       if (skill) {
         skillStore.removeSkill(docId);
-        removedCount++;
+        removedSkillCount++;
         console.log(`[Task Assistant] Removed skill "${skill.name}" for deleted doc: ${docId}`);
       }
     }
     
-    if (removedCount > 0) {
-      console.log(`[Task Assistant] Total ${removedCount} skill(s) removed`);
+    if (removedSkillCount > 0) {
+      console.log(`[Task Assistant] Total ${removedSkillCount} skill(s) removed`);
+    }
+
+    // 检查并清理关联的番茄钟（静默处理，不弹框）
+    await this.cleanupPomodoroForDeletedDocs(ids);
+  }
+
+  /**
+   * 清理被删除文档关联的番茄钟
+   * 文档删除时静默停止关联的番茄钟，不保存记录、不弹框
+   */
+  private async cleanupPomodoroForDeletedDocs(docIds: string[]) {
+    try {
+      const docIdSet = new Set(docIds);
+
+      // 1. 检查进行中的番茄钟
+      const activePomodoro = await loadActivePomodoro(this);
+      if (activePomodoro?.rootId && docIdSet.has(activePomodoro.rootId)) {
+        // 静默停止番茄钟
+        const pinia = getSharedPinia();
+        if (pinia) {
+          const pomodoroStore = usePomodoroStore(pinia);
+          await pomodoroStore.cancelPomodoro(this);
+          console.log(`[Task Assistant] Pomodoro cancelled for deleted doc: ${activePomodoro.rootId}`);
+        } else {
+          // 直接删除文件
+          await removeActivePomodoro(this);
+          console.log(`[Task Assistant] Active pomodoro file removed for deleted doc: ${activePomodoro.rootId}`);
+        }
+      }
+
+      // 2. 检查待完成记录
+      const pendingCompletion = await loadPendingCompletion(this);
+      if (pendingCompletion?.rootId && docIdSet.has(pendingCompletion.rootId)) {
+        // 静默删除待完成记录
+        await removePendingCompletion(this);
+        console.log(`[Task Assistant] Pending completion removed for deleted doc: ${pendingCompletion.rootId}`);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to cleanup pomodoro for deleted docs:', error);
     }
   }
 

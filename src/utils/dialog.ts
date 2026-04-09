@@ -25,6 +25,7 @@ import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderPa
 import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMarkers } from '@/parser/recurringParser';
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
+import { removePendingCompletion } from '@/utils/pomodoroStorage';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -574,11 +575,36 @@ export function showMessage(text: string, type: 'info' | 'error' = 'info'): void
  * 用于启动恢复或从非 Dock 上下文触发时
  * @param pending 待完成记录
  * @param pinia 可选的 Pinia 实例，用于 store；若不传则组件内 useStore 可能不可用
+ * @returns Dialog 实例或 null（如果关联的块已不存在）
  */
-export function showPomodoroCompleteDialog(
+export async function showPomodoroCompleteDialog(
   pending: PendingPomodoroCompletion,
   pinia?: ReturnType<typeof import('pinia').createPinia>
-): Dialog {
+): Promise<Dialog | null> {
+  // 校验 block 有效性：如果关联的块已不存在（文档被删除），静默清理不弹框
+  try {
+    const block = await siyuanAPI.getBlockByID(pending.blockId);
+    if (!block) {
+      console.log(`[Dialog] Block ${pending.blockId} not found, skipping pomodoro complete dialog`);
+      // 删除待完成记录并提示用户
+      const plugin = usePlugin();
+      if (plugin) {
+        await removePendingCompletion(plugin);
+      }
+      showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
+      return null;
+    }
+  } catch (error) {
+    // API 调用失败，假设块不存在
+    console.log(`[Dialog] Failed to check block ${pending.blockId}, skipping dialog`);
+    const plugin = usePlugin();
+    if (plugin) {
+      await removePendingCompletion(plugin);
+    }
+    showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
+    return null;
+  }
+
   let dialogApp: any = null;
   const dialog = new Dialog({
     title: t('settings').pomodoro.completeTitle,

@@ -100,6 +100,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 构建番茄钟数据
         const pomodoroData: ActivePomodoroData = {
           blockId: parentBlockId,
+          rootId: item.docId,           // 保存文档ID，用于检测文档删除
           itemId: item.id,
           itemContent: item.content,
           startTime: startTimestamp,
@@ -425,6 +426,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 1. 构建并持久化待完成记录
         const pending: PendingPomodoroCompletion = {
           blockId: ap.blockId,
+          rootId: ap.rootId,            // 传递文档ID
           itemId: ap.itemId,
           itemContent: ap.itemContent,
           startTime: ap.startTime,

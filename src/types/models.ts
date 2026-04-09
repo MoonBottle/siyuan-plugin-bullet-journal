@@ -32,6 +32,7 @@ export interface PomodoroRecord {
 // 进行中的番茄钟数据（用于文件存储）
 export interface ActivePomodoroData {
   blockId: string;              // 事项块ID（完成时在此块下添加番茄钟）
+  rootId?: string;              // 所属文档ID（用于检测文档删除时自动停止番茄钟）
   itemId: string;               // 事项ID
   itemContent: string;          // 事项内容
   startTime: number;            // 开始时间戳（毫秒）
@@ -56,6 +57,7 @@ export interface ActivePomodoroData {
 // 待完成番茄钟记录（弹窗补填说明前持久化）
 export interface PendingPomodoroCompletion {
   blockId: string;
+  rootId?: string;              // 所属文档ID（用于检测文档删除时自动停止番茄钟）
   itemId: string;
   itemContent: string;
   startTime: number;

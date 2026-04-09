@@ -54,6 +54,8 @@ import PomodoroBreakOverlay from '@/components/pomodoro/PomodoroBreakOverlay.vue
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import type { PendingPomodoroCompletion } from '@/types/models';
 import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
+import { getBlockByID } from '@/api';
+import { removePendingCompletion } from '@/utils/pomodoroStorage';
 import { requestNotificationPermission } from '@/utils/notification';
 import { TAB_TYPES } from '@/constants';
 import { t } from '@/i18n';
@@ -94,7 +96,29 @@ const openTimerDialog = () => {
 let completeDialog: Dialog | null = null;
 let completeDialogApp: any = null;
 
-const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
+const openCompleteDialog = async (pending: PendingPomodoroCompletion) => {
+  // 校验 block 有效性：如果关联的块已不存在（文档被删除），静默清理不弹框
+  try {
+    const block = await getBlockByID(pending.blockId);
+    if (!block) {
+      console.log(`[PomodoroDock] Block ${pending.blockId} not found, skipping complete dialog`);
+      // 删除待完成记录并提示用户
+      if (plugin) {
+        await removePendingCompletion(plugin);
+      }
+      showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
+      return;
+    }
+  } catch (error) {
+    // API 调用失败，假设块不存在
+    console.log(`[PomodoroDock] Failed to check block ${pending.blockId}, skipping dialog`);
+    if (plugin) {
+      await removePendingCompletion(plugin);
+    }
+    showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
+    return;
+  }
+
   if (completeDialog) {
     completeDialog.destroy();
     completeDialog = null;
@@ -143,8 +167,8 @@ const openCompleteDialog = (pending: PendingPomodoroCompletion) => {
 };
 
 // 处理待完成记录（专注结束后需补填说明）
-const handlePendingCompletion = (pending: PendingPomodoroCompletion) => {
-  openCompleteDialog(pending);
+const handlePendingCompletion = async (pending: PendingPomodoroCompletion) => {
+  await openCompleteDialog(pending);
 };
 
 // 处理休息弹窗关闭
