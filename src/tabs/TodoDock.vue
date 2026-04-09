@@ -395,12 +395,10 @@ onUnmounted(() => {
         background: transparent;
         cursor: pointer;
         font-size: 14px;
-        opacity: 0.6;
         transition: all 0.2s;
         padding: 0;
 
         &:hover, &.active {
-          opacity: 1;
           background: var(--b3-theme-primary-lightest);
         }
       }
