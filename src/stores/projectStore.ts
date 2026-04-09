@@ -283,6 +283,114 @@ export const useProjectStore = defineStore('project', {
       return items;
     },
 
+    // 按分组获取过滤和排序后的已完成事项（支持搜索、日期筛选、优先级筛选）
+    getFilteredCompletedItems: (state) => (params: {
+      groupId: string;
+      searchQuery?: string;
+      dateRange?: { start: string; end: string } | null;
+      priorities?: PriorityLevel[];
+    }) => {
+      // 1. 获取基础事项列表（多日期去重）
+      let items = computeDisplayItems(
+        (state as any).items as Item[],
+        state.currentDate,
+        params.groupId
+      );
+
+      // 2. 只保留已完成的事项
+      items = items.filter(item => item.status === 'completed');
+
+      // 3. 应用搜索过滤
+      if (params.searchQuery?.trim()) {
+        const query = params.searchQuery.toLowerCase().trim();
+        items = items.filter(item => 
+          item.content.toLowerCase().includes(query) ||
+          item.project?.name.toLowerCase().includes(query) ||
+          item.task?.name.toLowerCase().includes(query)
+        );
+      }
+
+      // 4. 应用日期筛选
+      if (params.dateRange) {
+        items = items.filter(item => 
+          item.date >= params.dateRange!.start && 
+          item.date <= params.dateRange!.end
+        );
+      }
+
+      // 5. 应用优先级筛选
+      if (params.priorities && params.priorities.length > 0) {
+        items = items.filter(item => 
+          item.priority && params.priorities!.includes(item.priority)
+        );
+      }
+
+      // 6. 按优先级和时间排序
+      items.sort((a, b) => {
+        const priorityDiff = comparePriority(a.priority, b.priority);
+        if (priorityDiff !== 0) return priorityDiff;
+        const timeA = a.startDateTime || a.date;
+        const timeB = b.startDateTime || b.date;
+        return timeA.localeCompare(timeB);
+      });
+
+      return items;
+    },
+
+    // 按分组获取过滤和排序后的已放弃事项（支持搜索、日期筛选、优先级筛选）
+    getFilteredAbandonedItems: (state) => (params: {
+      groupId: string;
+      searchQuery?: string;
+      dateRange?: { start: string; end: string } | null;
+      priorities?: PriorityLevel[];
+    }) => {
+      // 1. 获取基础事项列表（多日期去重）
+      let items = computeDisplayItems(
+        (state as any).items as Item[],
+        state.currentDate,
+        params.groupId
+      );
+
+      // 2. 只保留已放弃的事项
+      items = items.filter(item => item.status === 'abandoned');
+
+      // 3. 应用搜索过滤
+      if (params.searchQuery?.trim()) {
+        const query = params.searchQuery.toLowerCase().trim();
+        items = items.filter(item => 
+          item.content.toLowerCase().includes(query) ||
+          item.project?.name.toLowerCase().includes(query) ||
+          item.task?.name.toLowerCase().includes(query)
+        );
+      }
+
+      // 4. 应用日期筛选
+      if (params.dateRange) {
+        items = items.filter(item => 
+          item.date >= params.dateRange!.start && 
+          item.date <= params.dateRange!.end
+        );
+      }
+
+      // 5. 应用优先级筛选
+      if (params.priorities && params.priorities.length > 0) {
+        items = items.filter(item => 
+          item.priority && params.priorities!.includes(item.priority)
+        );
+      }
+
+      // 6. 按优先级和时间排序
+      items.sort((a, b) => {
+        const priorityDiff = comparePriority(a.priority, b.priority);
+        if (priorityDiff !== 0) return priorityDiff;
+        const timeA = a.startDateTime || a.date;
+        const timeB = b.startDateTime || b.date;
+        return timeA.localeCompare(timeB);
+      });
+
+      return items;
+    },
+
     // 按日期分组的待办（避免 getters 未就绪时出错，直接使用 state 计算）
     getGroupedFutureItems: (state) => (groupId: string) => {
       const items = computeDisplayItems((state as any).items, state.currentDate, groupId);

@@ -511,17 +511,31 @@ const getTomorrowStr = (): string => {
   return dayjs(currentDate.value).add(1, 'day').format('YYYY-MM-DD');
 };
 
-// 已完成事项
-const completedItems = computed(() => projectStore.getCompletedItems(props.groupId));
-
 // 是否隐藏已完成事项
 const hideCompleted = computed(() => projectStore.hideCompleted);
 
-// 已放弃事项
-const abandonedItems = computed(() => projectStore.getAbandonedItems(props.groupId));
-
 // 是否隐藏已放弃事项
 const hideAbandoned = computed(() => projectStore.hideAbandoned);
+
+// 已完成事项（支持筛选）
+const completedItems = computed(() => {
+  return projectStore.getFilteredCompletedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    dateRange: props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+  });
+});
+
+// 已放弃事项（支持筛选）
+const abandonedItems = computed(() => {
+  return projectStore.getFilteredAbandonedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    dateRange: props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+  });
+});
 
 // 获取所有过滤后的事项
 const filteredItems = computed(() => {
