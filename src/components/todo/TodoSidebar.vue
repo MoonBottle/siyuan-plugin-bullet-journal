@@ -444,7 +444,7 @@ const getStatusEmoji = (item: Item): string => {
   let priorityEmoji = '';
   if (item.priority === 'high') priorityEmoji = '🔥 ';
   else if (item.priority === 'medium') priorityEmoji = '🌿 ';
-  else if (item.priority === 'low') priorityEmoji = '☁️ ';
+  else if (item.priority === 'low') priorityEmoji = '🍃 ';
   
   // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {

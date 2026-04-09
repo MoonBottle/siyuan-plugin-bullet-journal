@@ -6,7 +6,7 @@
 
 1. **搜索功能** - 按关键字实时过滤事项内容、项目名称、任务名称
 2. **日期筛选** - 选择日期范围查看特定时间段的任务
-3. **优先级系统** - 使用 emoji 标记优先级（🔥高/🌿中/☁️低），支持按优先级排序和筛选
+3. **优先级系统** - 使用 emoji 标记优先级（🔥高/🌿中/🍃低），支持按优先级排序和筛选
 
 ### 1.1 核心理念
 
@@ -27,14 +27,14 @@
 |--------|-------|------|---------|------|
 | 高 | 🔥 | `🔥` | 0 | 紧急重要事项，置顶显示 |
 | 中 | 🌿 | `🌿` | 1 | 普通优先级 |
-| 低 | ☁️ | `☁️` | 2 | 低优先级，可延后处理 |
+| 低 | 🍃 | `🍃` | 2 | 低优先级，可延后处理 |
 | 无 | - | - | 3 | 未设置优先级的事项排最后 |
 
 **语法示例：**
 ```markdown
 完成项目报告 @2026-04-09 🔥      # 高优先级
 整理文档资料 @2026-04-09 🌿      # 中优先级
-备份旧数据 @2026-04-09 ☁️        # 低优先级
+备份旧数据 @2026-04-09 🍃        # 低优先级
 日常检查 @2026-04-09            # 无优先级
 ```
 
@@ -61,7 +61,7 @@ priority: "high"
 弹框选项：
 - 🔥 高优先级
 - 🌿 中优先级  
-- ☁️ 低优先级
+- 🍃 低优先级
 - ⚪ 清除优先级
 
 ### 3.2 右键菜单
@@ -71,7 +71,7 @@ priority: "high"
 设置优先级
 ├── 🔥 高优先级
 ├── 🌿 中优先级
-├── ☁️ 低优先级
+├── 🍃 低优先级
 └── ⚪ 清除优先级
 ```
 
@@ -86,7 +86,7 @@ priority: "high"
 ┌─────────────────────────────────────────┐
 │ 🔍 搜索事项...                         │  <- 搜索框（第一行）
 ├─────────────────────────────────────────┤
-│ 👤 所有分组 ▼  🔥 🌿 ☁️  📅 近7天 ▼    │  <- 筛选器（第二行）
+│ 👤 所有分组 ▼  🔥 🌿 🍃  📅 近7天 ▼    │  <- 筛选器（第二行）
 └─────────────────────────────────────────┘
 ```
 
@@ -125,7 +125,7 @@ export const PRIORITY_CONFIG: Record<PriorityLevel, {
 }> = {
   high:   { emoji: '🔥', label: '高优先级', sortOrder: 0 },
   medium: { emoji: '🌿', label: '中优先级', sortOrder: 1 },
-  low:    { emoji: '☁️', label: '低优先级', sortOrder: 2 },
+  low:    { emoji: '🍃', label: '低优先级', sortOrder: 2 },
 };
 ```
 
@@ -213,7 +213,7 @@ src/
 export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
   if (line.includes('🔥')) return 'high';
   if (line.includes('🌿')) return 'medium';
-  if (line.includes('☁️')) return 'low';
+  if (line.includes('🍃')) return 'low';
   return undefined;
 }
 
@@ -221,7 +221,7 @@ export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
  * 移除优先级标记
  */
 export function stripPriorityMarker(content: string): string {
-  return content.replace(/[🔥🌿☁️]/gu, '').trim();
+  return content.replace(/[🔥🌿🍃]/gu, '').trim();
 }
 
 /**
@@ -231,7 +231,7 @@ export function generatePriorityMarker(priority: PriorityLevel): string {
   const emojiMap: Record<PriorityLevel, string> = {
     high: '🔥',
     medium: '🌿',
-    low: '☁️',
+    low: '🍃',
   };
   return emojiMap[priority] || '';
 }
@@ -450,7 +450,7 @@ getFilteredAndSortedItems: (state) => (params: {
 
 ### 9.1 优先级标记
 
-- [ ] 可以使用 `🔥/🌿/☁️` emoji 标记事项优先级
+- [ ] 可以使用 `🔥/🌿/🍃` emoji 标记事项优先级
 - [ ] 斜杠命令 `/priority` 或 `/yxj` 可唤起优先级选择弹框
 - [ ] 右键菜单可设置/清除优先级
 - [ ] 事项详情弹框显示并支持修改优先级
@@ -471,7 +471,7 @@ getFilteredAndSortedItems: (state) => (params: {
 
 ### 9.4 排序逻辑
 
-- [ ] 事项按优先级排序：高(🔥) → 中(🌿) → 低(☁️) → 无
+- [ ] 事项按优先级排序：高(🔥) → 中(🌿) → 低(🍃) → 无
 - [ ] 同优先级内按时间排序（开始时间或日期）
 - [ ] 已过期/今日/明日/未来各分组内独立排序
 - [ ] 优先级 emoji 显示在事项卡片内容前
@@ -486,7 +486,7 @@ getFilteredAndSortedItems: (state) => (params: {
 
 ## 十、注意事项
 
-1. **Emoji 兼容性**: 使用标准 Unicode emoji（🔥🌿☁️），确保在各平台正常显示
+1. **Emoji 兼容性**: 使用标准 Unicode emoji（🔥🌿🍃），确保在各平台正常显示
 2. **性能考虑**: 搜索和筛选在 client 端完成，利用 computed 缓存避免重复计算
 3. **状态持久化**: 考虑将筛选状态（搜索词、日期范围、选中优先级）保存到 settings，下次打开恢复
 4. **移动端适配**: Dock 可能在窄屏显示，筛选栏需要支持横向滚动或折叠

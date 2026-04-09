@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为任务助手插件的待办列表增加搜索功能、日期筛选功能和基于 emoji（🔥🌿☁️）的优先级系统
+**Goal:** 为任务助手插件的待办列表增加搜索功能、日期筛选功能和基于 emoji（🔥🌿🍃）的优先级系统
 
 **Architecture:** 采用分层架构，新增 `priorityParser.ts` 处理优先级解析，扩展 `projectStore.ts` 支持筛选排序，改造 `TodoDock.vue` 添加搜索和筛选 UI，通过 props 传递筛选参数给 `TodoSidebar.vue`
 
@@ -93,7 +93,7 @@ export const PRIORITY_CONFIG: Record<PriorityLevel, {
 }> = {
   high:   { emoji: '🔥', label: '高优先级', sortOrder: 0 },
   medium: { emoji: '🌿', label: '中优先级', sortOrder: 1 },
-  low:    { emoji: '☁️', label: '低优先级', sortOrder: 2 },
+  low:    { emoji: '🍃', label: '低优先级', sortOrder: 2 },
 };
 
 /**
@@ -104,7 +104,7 @@ export const PRIORITY_CONFIG: Record<PriorityLevel, {
 export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
   if (line.includes('🔥')) return 'high';
   if (line.includes('🌿')) return 'medium';
-  if (line.includes('☁️')) return 'low';
+  if (line.includes('🍃')) return 'low';
   return undefined;
 }
 
@@ -112,7 +112,7 @@ export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
  * 移除优先级标记
  */
 export function stripPriorityMarker(content: string): string {
-  return content.replace(/[🔥🌿☁️]/gu, '').trim();
+  return content.replace(/[🔥🌿🍃]/gu, '').trim();
 }
 
 /**
@@ -122,7 +122,7 @@ export function generatePriorityMarker(priority: PriorityLevel): string {
   const emojiMap: Record<PriorityLevel, string> = {
     high: '🔥',
     medium: '🌿',
-    low: '☁️',
+    low: '🍃',
   };
   return emojiMap[priority] || '';
 }
@@ -768,7 +768,7 @@ import type { PriorityLevel } from '@/types/models';
   filter: SLASH_COMMAND_FILTERS.SET_PRIORITY,
   html: `<div class="b3-list-item__first">
       <span class="b3-list-item__text">${t('slash').setPriority}</span>
-      <span class="b3-list-item__meta">🔥🌿☁️</span>
+      <span class="b3-list-item__meta">🔥🌿🍃</span>
   </div>`,
   id: 'bullet-journal-set-priority',
   callback: getActionHandler('setPriority', config, SLASH_COMMAND_FILTERS.SET_PRIORITY)
@@ -1178,7 +1178,7 @@ const getStatusEmoji = (item: Item): string => {
   let priorityEmoji = '';
   if (item.priority === 'high') priorityEmoji = '🔥 ';
   else if (item.priority === 'medium') priorityEmoji = '🌿 ';
-  else if (item.priority === 'low') priorityEmoji = '☁️ ';
+  else if (item.priority === 'low') priorityEmoji = '🍃 ';
   
   // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
@@ -1293,7 +1293,7 @@ git commit -m "feat(ItemDetailDialog): 显示和编辑优先级"
 
 ## 验证清单
 
-- [ ] 可以使用 `🔥/🌿/☁️` emoji 标记事项优先级
+- [ ] 可以使用 `🔥/🌿/🍃` emoji 标记事项优先级
 - [ ] 斜杠命令 `/priority` 或 `/yxj` 可唤起优先级选择弹框
 - [ ] 右键菜单可设置/清除优先级
 - [ ] 事项详情弹框显示并支持修改优先级
@@ -1302,6 +1302,6 @@ git commit -m "feat(ItemDetailDialog): 显示和编辑优先级"
 - [ ] 搜索范围包括事项内容、项目名称、任务名称
 - [ ] 支持日期范围筛选
 - [ ] 支持优先级筛选（可多选）
-- [ ] 事项按优先级排序：高(🔥) → 中(🌿) → 低(☁️) → 无
+- [ ] 事项按优先级排序：高(🔥) → 中(🌿) → 低(🍃) → 无
 - [ ] 优先级 emoji 显示在事项卡片内容前
 - [ ] 无优先级的事项正常显示，排在最后
