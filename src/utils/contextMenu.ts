@@ -1,6 +1,8 @@
 import { IMenu, Menu } from 'siyuan';
 import { t } from '@/i18n';
 import { getTodayISO, getTomorrowISO } from '@/utils/dayjs';
+import { PRIORITY_CONFIG } from '@/parser/priorityParser';
+import type { PriorityLevel } from '@/types/models';
 
 export interface MenuOptions {
   x: number;
@@ -80,6 +82,7 @@ export function createItemMenu(
     onShowDetail?: () => void;
     onShowCalendar?: () => void;
     onStartPomodoro?: () => void;
+    onSetPriority?: (priority: PriorityLevel | undefined) => void;
   },
   options: {
     showCalendarMenu?: boolean;
@@ -140,6 +143,34 @@ export function createItemMenu(
       label: t('todo').abandon,
       icon: 'iconCloseRound',
       click: handlers.onAbandon
+    });
+
+    items.push({
+      label: t('todo').priority.setPriority,
+      icon: 'iconFlag',
+      submenu: [
+        {
+          label: `${PRIORITY_CONFIG.high.emoji} ${t('todo').priority.high}`,
+          icon: '',
+          click: () => handlers.onSetPriority?.('high'),
+        },
+        {
+          label: `${PRIORITY_CONFIG.medium.emoji} ${t('todo').priority.medium}`,
+          icon: '',
+          click: () => handlers.onSetPriority?.('medium'),
+        },
+        {
+          label: `${PRIORITY_CONFIG.low.emoji} ${t('todo').priority.low}`,
+          icon: '',
+          click: () => handlers.onSetPriority?.('low'),
+        },
+        { type: 'separator' },
+        {
+          label: `⚪ ${t('todo').priority.clear}`,
+          icon: '',
+          click: () => handlers.onSetPriority?.(undefined),
+        },
+      ],
     });
 
     items.push({ type: 'separator' });
