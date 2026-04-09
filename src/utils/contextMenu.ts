@@ -150,23 +150,23 @@ export function createItemMenu(
       icon: 'iconMark',
       submenu: [
         {
-          icon: '🔥',
+          iconHTML: '🔥',
           label: t('todo').priority.high,
           click: () => handlers.onSetPriority?.('high'),
         },
         {
-          icon: '🌿',
+          iconHTML: '🌿',
           label: t('todo').priority.medium,
           click: () => handlers.onSetPriority?.('medium'),
         },
         {
-          icon: '☁️',
+          iconHTML: '☁️',
           label: t('todo').priority.low,
           click: () => handlers.onSetPriority?.('low'),
         },
         { type: 'separator' },
         {
-          icon: '⚪',
+          iconHTML: '⚪',
           label: t('todo').priority.clear,
           click: () => handlers.onSetPriority?.(undefined),
         },
