@@ -184,6 +184,9 @@ export interface ProjectGroup {
   name: string;
 }
 
+// 扫描模式
+export type ScanMode = 'full' | 'directories';
+
 // 日历事件
 export interface CalendarEvent {
   id: string;
