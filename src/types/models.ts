@@ -112,6 +112,9 @@ export interface Task {
 // 事项状态
 export type ItemStatus = 'pending' | 'completed' | 'abandoned';
 
+// 优先级类型
+export type PriorityLevel = 'high' | 'medium' | 'low';
+
 // 提醒配置
 export interface ReminderConfig {
   enabled: boolean;
@@ -173,6 +176,8 @@ export interface Item {
   reminder?: ReminderConfig;     // 提醒配置
   repeatRule?: RepeatRule;       // 重复规则
   endCondition?: EndCondition;   // 结束条件
+  // 优先级
+  priority?: PriorityLevel;      // 优先级（可选）
   // 任务列表格式标记
   isTaskList?: boolean;          // 是否是任务列表格式（- [ ]）
   listItemBlockId?: string;      // 任务列表项的块 ID（用于插入时保持平级）
