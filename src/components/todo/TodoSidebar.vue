@@ -601,14 +601,27 @@ const expiredItems = computed(() => {
   });
 });
 
-// 按日期分组的未来待办事项
-const groupedFutureItems = computed(() => projectStore.getGroupedFutureItems(props.groupId));
+// 按日期分组的未来待办事项（基于筛选后的数据）
+const groupedFutureItems = computed(() => {
+  const grouped = new Map<string, Item[]>();
+  futureItems.value.forEach(item => {
+    const list = grouped.get(item.date);
+    if (list) {
+      list.push(item);
+    } else {
+      grouped.set(item.date, [item]);
+    }
+  });
+  // 每个日期内按时间排序
+  grouped.forEach(list => {
+    list.sort((a, b) => (a.startDateTime || a.date).localeCompare(b.startDateTime || b.date));
+  });
+  return grouped;
+});
 
-// 排序后的未来日期（排除今天、明天，仅用于「未来」区块）
+// 排序后的未来日期（基于筛选后的数据）
 const futureDates = computed(() => {
-  const todayStr = getTodayStr();
-  const tomorrowStr = getTomorrowStr();
-  return Array.from(groupedFutureItems.value.keys()).filter(d => d !== todayStr && d !== tomorrowStr).sort();
+  return Array.from(groupedFutureItems.value.keys()).sort();
 });
 
 // 格式化日期标签
