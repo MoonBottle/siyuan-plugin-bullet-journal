@@ -127,7 +127,7 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     console.log('[Task Assistant] Starting initial loadProjects...');
     const projectStore = useProjectStore(pinia);
-    projectStore.loadProjects(this, enabledDirs).then(async () => {
+    projectStore.loadProjects(this, settings.scanMode, enabledDirs).then(async () => {
       console.log('[Task Assistant] Initial loadProjects completed');
       // 初始加载完成后同步提醒
       console.log('[ReminderService] Initial load completed');
@@ -383,6 +383,7 @@ export default class TaskAssistantPlugin extends Plugin {
       const data = await this.loadData('settings');
       if (data) {
         settings = {
+          scanMode: data.scanMode || 'full',
           directories: data.directories || [],
           groups: data.groups || [],
           defaultGroup: data.defaultGroup || '',
@@ -959,7 +960,7 @@ export default class TaskAssistantPlugin extends Plugin {
               const pinia = getSharedPinia();
               if (pinia) {
                 const projectStore = useProjectStore(pinia);
-                await projectStore.refresh(this, this.getEnabledDirectories());
+                await projectStore.refresh(this, settings.scanMode, this.getEnabledDirectories());
               }
             }
           }

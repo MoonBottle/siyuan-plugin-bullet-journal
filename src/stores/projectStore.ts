@@ -3,7 +3,8 @@
  * 分组筛选按视图独立：getters 接受 groupId 参数，各 Tab/Dock 维护本地 selectedGroup。
  */
 import { defineStore } from 'pinia';
-import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord } from '@/types/models';
+import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode } from '@/types/models';
+import { matchGroupId } from '@/utils/directoryUtils';
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
 
@@ -387,27 +388,29 @@ export const useProjectStore = defineStore('project', {
      * 加载项目数据（首次加载，显示加载状态）
      * 流式更新：每解析完一个项目就立即显示
      */
-    async loadProjects(_plugin: any, directories: ProjectDirectory[]) {
+    async loadProjects(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]) {
       if (this.loading) return;
-      console.log('[Task Assistant] Loading projects, directories:', directories?.length || 0);
+      
+      const enabledDirs = directories.filter(d => d.enabled);
+      console.log('[Task Assistant] Loading projects, scanMode:', scanMode, 'enabledDirs:', enabledDirs.length);
+      
       this.loading = true;
-
+      this.projects = [];
+      
       try {
-        // 清空现有数据，避免重复
-        this.projects = [];
-        
-        const parser = new MarkdownParser(directories);
+        const parser = new MarkdownParser(enabledDirs, scanMode);
 
-        // 流式解析：每解析完一个项目就立即添加到 store
         await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+          // 全扫描模式下，需要根据路径匹配确定分组
+          if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
+            project.groupId = matchGroupId(project.path, enabledDirs);
+          }
           this.projects.push(project);
-          console.log('[Task Assistant] Project loaded:', project.name);
         });
 
         this.currentDate = dayjs().format('YYYY-MM-DD');
         console.log('[Task Assistant] Total projects loaded:', this.projects.length);
 
-        // 触发数据刷新完成事件，供其他模块监听处理
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
       } catch (error) {
         console.error('[Task Assistant] Failed to load projects:', error);
@@ -420,7 +423,7 @@ export const useProjectStore = defineStore('project', {
      * 刷新数据（后台刷新，不显示加载状态）
      * 支持定向刷新：只更新变更的项目，避免全量替换导致的 Vue 重渲染
      */
-    async refresh(_plugin: any, directories: ProjectDirectory[]) {
+    async refresh(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]) {
       // 如果正在刷新，跳过
       if (this.refreshing) return;
 
@@ -435,10 +438,10 @@ export const useProjectStore = defineStore('project', {
 
         if (dirtyDocIds.length > 0) {
           // 定向刷新：只更新指定文档
-          await this.refreshDirtyDocs(_plugin, directories, dirtyDocIds);
+          await this.refreshDirtyDocs(_plugin, scanMode, directories, dirtyDocIds);
         } else {
           // 全量刷新
-          await this.refreshFull(_plugin, directories);
+          await this.refreshFull(_plugin, scanMode, directories);
         }
 
         this.currentDate = newDate;
@@ -446,7 +449,7 @@ export const useProjectStore = defineStore('project', {
       } catch (error) {
         console.error('[Task Assistant] Refresh failed:', error);
         // 出错时回退到全量刷新
-        await this.refreshFull(_plugin, directories);
+        await this.refreshFull(_plugin, scanMode, directories);
       } finally {
         this.refreshing = false;
       }
@@ -455,16 +458,21 @@ export const useProjectStore = defineStore('project', {
     /**
      * 全量刷新（使用流式解析）
      */
-    async refreshFull(_plugin: any, directories: ProjectDirectory[]): Promise<void> {
-      console.log('[Task Assistant] Full refresh');
+    async refreshFull(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]): Promise<void> {
+      console.log('[Task Assistant] Full refresh, scanMode:', scanMode);
 
-      const parser = new MarkdownParser(directories);
+      const enabledDirs = directories.filter(d => d.enabled);
+      const parser = new MarkdownParser(enabledDirs, scanMode);
 
       // 清空现有数据
       this.projects = [];
 
       // 流式解析（已使用 SQL 批量查询番茄钟）
       await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+        // 全扫描模式下，需要根据路径匹配确定分组
+        if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
+          project.groupId = matchGroupId(project.path, enabledDirs);
+        }
         this.projects.push(project);
       });
 
@@ -477,12 +485,14 @@ export const useProjectStore = defineStore('project', {
      */
     async refreshDirtyDocs(
       _plugin: any,
+      scanMode: ScanMode,
       directories: ProjectDirectory[],
       dirtyDocIds: string[]
     ): Promise<void> {
       console.log('[Task Assistant] Refreshing dirty docs:', dirtyDocIds);
 
-      const parser = new MarkdownParser(directories);
+      const enabledDirs = directories.filter(d => d.enabled);
+      const parser = new MarkdownParser(enabledDirs, scanMode);
 
       // 只解析脏文档，而不是整个目录
       for (const docId of dirtyDocIds) {
@@ -502,9 +512,15 @@ export const useProjectStore = defineStore('project', {
             }
           }
 
+          // 全扫描模式下重新匹配分组
+          let finalGroupId = groupId;
+          if (scanMode === 'full' && enabledDirs.length > 0 && path) {
+            finalGroupId = matchGroupId(path, enabledDirs);
+          }
+
           // 使用 parser 的复用方法：解析 + 番茄钟合并
           const project = await parser.parseAndProcessSingleDocument(
-            docId, '', groupId, path, _plugin
+            docId, '', finalGroupId, path, _plugin
           );
 
           if (project) {
