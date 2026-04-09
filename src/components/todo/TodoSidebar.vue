@@ -557,9 +557,9 @@ const filteredItems = computed(() => {
   });
 });
 
-// 是否有任何原始数据（不考虑筛选，用于判断空状态）
+// 是否有任何原始数据（全局，不考虑筛选和分组，用于判断真正的空状态）
 const hasAnyItemsRaw = computed(() => {
-  const items = projectStore.getDisplayItems(props.groupId);
+  const items = projectStore.getDisplayItems(''); // 空字符串表示所有分组
   return items.length > 0;
 });
 
