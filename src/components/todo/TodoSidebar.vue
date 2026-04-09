@@ -563,9 +563,10 @@ const hasAnyItemsRaw = computed(() => {
   return items.length > 0;
 });
 
-// 是否有激活的筛选条件
+// 是否有激活的筛选条件（包括分组、搜索、日期、优先级）
 const hasActiveFilters = computed(() => {
-  return props.searchQuery?.trim() || 
+  return props.groupId || // 选择了特定分组
+         props.searchQuery?.trim() || 
          props.dateRange || 
          props.priorities.length > 0;
 });
