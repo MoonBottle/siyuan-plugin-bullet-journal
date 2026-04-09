@@ -176,6 +176,18 @@
       "title": "Directory Config",
       "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as task assistant directory\" to add quickly."
     },
+    "scanMode": {
+      "label": "Scan Scope",
+      "full": {
+        "label": "Scan entire workspace",
+        "description": "All documents containing task markers will be scanned and displayed"
+      },
+      "directories": {
+        "label": "Scan configured directories only",
+        "description": "Only scan documents in the configured directories below, suitable for large workspaces"
+      },
+      "fullWithDirectoriesHint": "Currently in global scan mode, directory configuration is only used for grouping"
+    },
     "mcp": {
       "title": "MCP Config",
       "description": "Expose task data to AI assistants like Cursor and Claude. Add the config below to Cursor Settings → MCP, and replace SIYUAN_TOKEN with the API Token from SiYuan Settings → About.",
