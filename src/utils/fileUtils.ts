@@ -4,11 +4,12 @@
 import { openTab } from 'siyuan';
 import { usePlugin } from '@/main';
 import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
-import type { ItemStatus } from '@/types/models';
+import type { ItemStatus, PriorityLevel } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
 import { processLineText } from '@/utils/slashCommandUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
+import { generatePriorityMarker, stripPriorityMarker } from '@/parser/priorityParser';
 
 /**
  * 写入钩子 - 用于斜杠命令中替换 updateBlock API
@@ -877,6 +878,43 @@ export async function updateBlockContent(
     return true;
   } catch (error) {
     console.error('[Task Assistant] Failed to update block content:', error);
+    return false;
+  }
+}
+
+/**
+ * 更新块的优先级
+ * @param blockId 块 ID
+ * @param priority 优先级（undefined 表示清除）
+ * @returns 是否成功
+ */
+export async function updateBlockPriority(
+  blockId: string,
+  priority: PriorityLevel | undefined
+): Promise<boolean> {
+  try {
+    const block = await getBlockByID(blockId);
+    if (!block) {
+      console.error('[Task Assistant] Block not found:', blockId);
+      return false;
+    }
+
+    let content = block.content || block.markdown || '';
+
+    // 移除现有优先级标记
+    content = stripPriorityMarker(content);
+
+    // 添加新优先级标记
+    if (priority) {
+      const marker = generatePriorityMarker(priority);
+      content = content.trimEnd() + ' ' + marker;
+    }
+
+    // 更新块内容
+    const success = await updateBlock('markdown', content, blockId);
+    return success;
+  } catch (error) {
+    console.error('[Task Assistant] Failed to update priority:', error);
     return false;
   }
 }
