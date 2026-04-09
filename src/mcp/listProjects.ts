@@ -3,7 +3,7 @@
  */
 import { SiYuanClient } from './siyuan-client';
 import { loadProjectsAndItems } from './dataLoader';
-import type { Project, ProjectDirectory } from '@/types/models';
+import type { Project, ProjectDirectory, ScanMode } from '@/types/models';
 
 export interface ListProjectsArgs {
   groupId?: string;
@@ -46,8 +46,9 @@ export function buildListProjectsResult(
 export async function executeListProjects(
   client: SiYuanClient,
   directories: ProjectDirectory[],
-  args: ListProjectsArgs
+  args: ListProjectsArgs,
+  scanMode: ScanMode = 'directories'
 ): Promise<{ projects: ListProjectOutput[] }> {
-  const { projects } = await loadProjectsAndItems(client, directories);
+  const { projects } = await loadProjectsAndItems(client, directories, scanMode);
   return { projects: buildListProjectsResult(projects, args) };
 }

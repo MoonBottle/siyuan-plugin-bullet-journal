@@ -2,13 +2,14 @@
  * MCP 配置加载与类型定义
  */
 import { SiYuanClient } from './siyuan-client';
-import type { ProjectGroup, ProjectDirectory } from '@/types/models';
+import type { ProjectGroup, ProjectDirectory, ScanMode } from '@/types/models';
 
 export const PLUGIN_NAME = 'siyuan-plugin-bullet-journal';
 
 export interface PluginSettings {
   directories?: ProjectDirectory[];
   groups?: ProjectGroup[];
+  scanMode?: ScanMode;
 }
 
 /**
@@ -23,18 +24,19 @@ export async function loadPluginSettingsFromSiYuan(
   const raw = await client.getFile(path);
   if (raw == null || raw === '') {
     console.error('[Task Assistant MCP] Failed to load settings from SiYuan API (path:', path, ')');
-    return { directories: [], groups: [] };
+    return { directories: [], groups: [], scanMode: 'full' };
   }
   try {
     const parsed = JSON.parse(raw) as PluginSettings;
     const result = {
       directories: Array.isArray(parsed.directories) ? parsed.directories : [],
-      groups: Array.isArray(parsed.groups) ? parsed.groups : []
+      groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+      scanMode: parsed.scanMode === 'directories' ? 'directories' : 'full'  // 默认全扫描
     };
     console.error('[Task Assistant MCP] 配置已加载:', JSON.stringify(result, null, 2));
     return result;
   } catch (e) {
     console.error('[Task Assistant MCP] Failed to parse settings JSON:', e);
-    return { directories: [], groups: [] };
+    return { directories: [], groups: [], scanMode: 'full' };
   }
 }

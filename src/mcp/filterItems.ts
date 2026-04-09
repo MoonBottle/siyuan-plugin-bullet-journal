@@ -3,7 +3,7 @@
  */
 import { SiYuanClient } from './siyuan-client';
 import { loadProjectsAndItems } from './dataLoader';
-import type { Item, ProjectDirectory } from '@/types/models';
+import type { Item, ProjectDirectory, ScanMode } from '@/types/models';
 import { toPomodoroRecordCompact, type PomodoroRecordCompact } from '@/utils/pomodoroUtils';
 
 export interface FilterItemsArgs {
@@ -63,9 +63,10 @@ export interface FilterItemOutput {
 export async function executeFilterItems(
   client: SiYuanClient,
   directories: ProjectDirectory[],
-  args: FilterItemsArgs
+  args: FilterItemsArgs,
+  scanMode: ScanMode = 'directories'
 ): Promise<{ items: FilterItemOutput[] }> {
-  const { items } = await loadProjectsAndItems(client, directories);
+  const { items } = await loadProjectsAndItems(client, directories, scanMode);
   const filtered = filterItems(items, args);
   const output: FilterItemOutput[] = filtered.map(i => ({
     id: i.id,
