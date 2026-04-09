@@ -424,7 +424,8 @@ import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import Card from '@/components/common/Card.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog, showPrioritySettingDialog } from '@/utils/dialog';
+import { updateBlockPriority } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import { usePlugin } from '@/main';
@@ -862,7 +863,15 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       },
       onOpenDoc: () => openItem(item),
       onShowDetail: () => openDetail(item),
-      onShowCalendar: () => openCalendar(item)
+      onShowCalendar: () => openCalendar(item),
+      onSetPriority: (priority: PriorityLevel | undefined) => {
+        if (!item.blockId) return;
+        updateBlockPriority(item.blockId, priority).then(success => {
+          if (success) {
+            item.priority = priority;
+          }
+        });
+      }
     },
     { showCalendarMenu: true, isFocusing: pomodoroStore.isFocusing }
   );
