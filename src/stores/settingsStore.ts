@@ -3,11 +3,14 @@
  * 从插件实例获取设置数据
  */
 import { defineStore } from 'pinia';
-import type { ProjectGroup, ProjectDirectory } from '@/types/models';
+import type { ProjectGroup, ProjectDirectory, ScanMode } from '@/types/models';
 import { usePlugin } from '@/main';
 
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
+    // 新增：扫描模式，默认全空间扫描
+    scanMode: 'full' as ScanMode,
+
     directories: [] as ProjectDirectory[],
     groups: [] as ProjectGroup[],
     defaultGroup: '',
@@ -24,6 +27,9 @@ export const useSettingsStore = defineStore('settings', {
   }),
 
   getters: {
+    // 新增：判断当前是否为目录扫描模式
+    isDirectoryScanMode: (state) => state.scanMode === 'directories',
+
     // 获取启用的目录
     enabledDirectories: (state) => {
       const result = state.directories.filter(d => d.enabled);
@@ -60,6 +66,9 @@ export const useSettingsStore = defineStore('settings', {
         const settings = plugin.getSettings();
         console.log('[Bullet Journal] getSettings returned:', settings);
         console.log('[Bullet Journal] settings.directories:', settings.directories);
+        // 新增：scanMode（默认 'full'）
+        this.scanMode = settings.scanMode || 'full';
+
         this.directories = settings.directories || [];
         this.groups = settings.groups || [];
         this.defaultGroup = settings.defaultGroup || '';
@@ -81,6 +90,9 @@ export const useSettingsStore = defineStore('settings', {
       const plugin = usePlugin() as any;
       if (plugin && plugin.updateSettings) {
         plugin.updateSettings({
+          // 新增：保存 scanMode
+          scanMode: this.scanMode,
+
           directories: this.directories,
           groups: this.groups,
           defaultGroup: this.defaultGroup,
