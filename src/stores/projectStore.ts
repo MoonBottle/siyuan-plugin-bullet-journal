@@ -3,7 +3,8 @@
  * 分组筛选按视图独立：getters 接受 groupId 参数，各 Tab/Dock 维护本地 selectedGroup。
  */
 import { defineStore } from 'pinia';
-import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode } from '@/types/models';
+import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode, PriorityLevel } from '@/types/models';
+import { comparePriority } from '@/parser/priorityParser';
 import { matchGroupId } from '@/utils/directoryUtils';
 import { MarkdownParser } from '@/parser/markdownParser';
 import { DataConverter } from '@/utils/dataConverter';
@@ -226,6 +227,60 @@ export const useProjectStore = defineStore('project', {
           item.status !== 'abandoned'
         );
       });
+    },
+
+    // 按分组获取过滤和排序后的事项（支持搜索、日期筛选、优先级筛选）
+    getFilteredAndSortedItems: (state) => (params: {
+      groupId: string;
+      searchQuery?: string;
+      dateRange?: { start: string; end: string } | null;
+      priorities?: PriorityLevel[];
+    }) => {
+      // 1. 获取基础事项列表（多日期去重）
+      let items = computeDisplayItems(
+        (state as any).items as Item[],
+        state.currentDate,
+        params.groupId
+      );
+
+      // 2. 应用搜索过滤
+      if (params.searchQuery?.trim()) {
+        const query = params.searchQuery.toLowerCase().trim();
+        items = items.filter(item => 
+          item.content.toLowerCase().includes(query) ||
+          item.project?.name.toLowerCase().includes(query) ||
+          item.task?.name.toLowerCase().includes(query)
+        );
+      }
+
+      // 3. 应用日期筛选
+      if (params.dateRange) {
+        items = items.filter(item => 
+          item.date >= params.dateRange!.start && 
+          item.date <= params.dateRange!.end
+        );
+      }
+
+      // 4. 应用优先级筛选
+      if (params.priorities && params.priorities.length > 0) {
+        items = items.filter(item => 
+          item.priority && params.priorities!.includes(item.priority)
+        );
+      }
+
+      // 5. 按优先级和时间排序
+      items.sort((a, b) => {
+        // 先按优先级排序（高→中→低→无）
+        const priorityDiff = comparePriority(a.priority, b.priority);
+        if (priorityDiff !== 0) return priorityDiff;
+
+        // 同优先级按时间排序（开始时间或日期）
+        const timeA = a.startDateTime || a.date;
+        const timeB = b.startDateTime || b.date;
+        return timeA.localeCompare(timeB);
+      });
+
+      return items;
     },
 
     // 按日期分组的待办（避免 getters 未就绪时出错，直接使用 state 计算）
