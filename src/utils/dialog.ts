@@ -4,7 +4,7 @@
  */
 import { Dialog } from 'siyuan';
 import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
@@ -12,6 +12,7 @@ import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
 import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
+import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
@@ -1006,6 +1007,54 @@ async function updateItemWithReminder(item: Item, config: ReminderConfig): Promi
 
   // 更新 block
   await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+}
+
+/**
+ * 显示优先级设置弹框
+ */
+export function showPrioritySettingDialog(
+  initialPriority: PriorityLevel | undefined,
+  onConfirm: (priority: PriorityLevel | undefined) => void
+): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(PrioritySettingDialog, {
+    initialPriority,
+    onConfirm: (priority: PriorityLevel | undefined) => {
+      onConfirm(priority);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('todo').priority.setPriority,
+    content: '',
+    width: '280px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
 }
 
 /**
