@@ -419,36 +419,53 @@ import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
-import type { Item } from '@/types/models';
+import type { Item, PriorityLevel } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
-import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
+import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
+  // 优先级 emoji
+  let priorityEmoji = '';
+  if (item.priority === 'high') priorityEmoji = '🔥 ';
+  else if (item.priority === 'medium') priorityEmoji = '🌿 ';
+  else if (item.priority === 'low') priorityEmoji = '☁️ ';
+  
+  // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    return '🍅 ';
+    return priorityEmoji + '🍅 ';
   }
-  if (item.status === 'completed') return '✅ ';
-  if (item.status === 'abandoned') return '❌ ';
+  if (item.status === 'completed') return priorityEmoji + '✅ ';
+  if (item.status === 'abandoned') return priorityEmoji + '❌ ';
   const todayStr = dayjs().format('YYYY-MM-DD');
   if (item.dateRangeStart && item.dateRangeEnd) {
     const rangeStatus = getDateRangeStatus(item, todayStr);
-    if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
+    if (rangeStatus) return priorityEmoji + dateRangeStatusToEmoji(rangeStatus);
   }
   if (!item.dateRangeStart && !item.dateRangeEnd && item.date) {
     const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
-    if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
+    if (timeStatus) return priorityEmoji + dateRangeStatusToEmoji(timeStatus);
   }
   const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
-  if (isExpired) return '⚠️ ';
-  return '⏳ ';
+  if (isExpired) return priorityEmoji + '⚠️ ';
+  return priorityEmoji + '⏳ ';
 };
 
-const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
+const props = withDefaults(defineProps<{
+  groupId?: string;
+  searchQuery?: string;
+  dateRange?: { start: string; end: string } | null;
+  priorities?: PriorityLevel[];
+}>(), {
+  groupId: '',
+  searchQuery: '',
+  dateRange: null,
+  priorities: () => [],
+});
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
 const settingsStore = useSettingsStore();
@@ -506,29 +523,44 @@ const abandonedItems = computed(() => projectStore.getAbandonedItems(props.group
 // 是否隐藏已放弃事项
 const hideAbandoned = computed(() => projectStore.hideAbandoned);
 
-// 过期事项
-const expiredItems = computed(() => projectStore.getExpiredItems(props.groupId));
+// 获取所有过滤后的事项
+const filteredItems = computed(() => {
+  return projectStore.getFilteredAndSortedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    dateRange: props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+  });
+});
 
-// 当前分组下的未来待办（今日及以后，未完成未放弃）
-const futureItemsForGroup = computed(() => projectStore.getFutureItems(props.groupId));
-
-// 今日待办事项（仅代表项日期为今天的事项；多日期事项若代表项为 11 号则归入明天）
+// 今日待办事项
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
-  return futureItemsForGroup.value.filter(item => item.date === todayStr);
+  return filteredItems.value.filter(item => item.date === todayStr);
 });
 
 // 明日待办事项
 const tomorrowItems = computed(() => {
   const tomorrowStr = getTomorrowStr();
-  return futureItemsForGroup.value.filter(item => item.date === tomorrowStr);
+  return filteredItems.value.filter(item => item.date === tomorrowStr);
 });
 
-// 未来待办事项（不包括今天和明天；分组仅按代表项 date）
+// 未来待办事项
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return futureItemsForGroup.value.filter(item => item.date !== todayStr && item.date !== tomorrowStr);
+  return filteredItems.value.filter(item => 
+    item.date !== todayStr && item.date !== tomorrowStr
+  );
+});
+
+// 过期事项
+const expiredItems = computed(() => {
+  const todayStr = getTodayStr();
+  return filteredItems.value.filter(item => {
+    const effectiveDate = getEffectiveDate(item);
+    return effectiveDate < todayStr;
+  });
 });
 
 // 按日期分组的未来待办事项
