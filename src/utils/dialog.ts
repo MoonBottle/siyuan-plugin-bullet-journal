@@ -4,7 +4,7 @@
  */
 import { Dialog } from 'siyuan';
 import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
@@ -12,6 +12,7 @@ import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
 import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
+import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
@@ -25,6 +26,7 @@ import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderPa
 import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMarkers } from '@/parser/recurringParser';
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
+import { removePendingCompletion } from '@/utils/pomodoroStorage';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -442,6 +444,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     content: props.item || '',
     date: rawDate,
     status: props.itemStatus || 'pending',
+    priority: props.priority,
     docId: props.docId,
     lineNumber: props.lineNumber,
     blockId: props.blockId,
@@ -574,11 +577,36 @@ export function showMessage(text: string, type: 'info' | 'error' = 'info'): void
  * 用于启动恢复或从非 Dock 上下文触发时
  * @param pending 待完成记录
  * @param pinia 可选的 Pinia 实例，用于 store；若不传则组件内 useStore 可能不可用
+ * @returns Dialog 实例或 null（如果关联的块已不存在）
  */
-export function showPomodoroCompleteDialog(
+export async function showPomodoroCompleteDialog(
   pending: PendingPomodoroCompletion,
   pinia?: ReturnType<typeof import('pinia').createPinia>
-): Dialog {
+): Promise<Dialog | null> {
+  // 校验 block 有效性：如果关联的块已不存在（文档被删除），静默清理不弹框
+  try {
+    const block = await siyuanAPI.getBlockByID(pending.blockId);
+    if (!block) {
+      console.log(`[Dialog] Block ${pending.blockId} not found, skipping pomodoro complete dialog`);
+      // 删除待完成记录并提示用户
+      const plugin = usePlugin();
+      if (plugin) {
+        await removePendingCompletion(plugin);
+      }
+      showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
+      return null;
+    }
+  } catch (error) {
+    // API 调用失败，假设块不存在
+    console.log(`[Dialog] Failed to check block ${pending.blockId}, skipping dialog`);
+    const plugin = usePlugin();
+    if (plugin) {
+      await removePendingCompletion(plugin);
+    }
+    showMessage('关联事项已不存在，番茄钟记录已清理', 'info');
+    return null;
+  }
+
   let dialogApp: any = null;
   const dialog = new Dialog({
     title: t('settings').pomodoro.completeTitle,
@@ -980,6 +1008,54 @@ async function updateItemWithReminder(item: Item, config: ReminderConfig): Promi
 
   // 更新 block
   await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
+}
+
+/**
+ * 显示优先级设置弹框
+ */
+export function showPrioritySettingDialog(
+  initialPriority: PriorityLevel | undefined,
+  onConfirm: (priority: PriorityLevel | undefined) => void
+): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(PrioritySettingDialog, {
+    initialPriority,
+    onConfirm: (priority: PriorityLevel | undefined) => {
+      onConfirm(priority);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('todo').priority.setPriority,
+    content: '',
+    width: '280px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  // 自动聚焦到弹框内，使 ESC 键立即生效
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
 }
 
 /**

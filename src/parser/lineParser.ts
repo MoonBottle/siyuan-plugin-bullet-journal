@@ -4,6 +4,7 @@
  */
 import type { Task, Item, Link, ItemStatus, PomodoroRecord, PomodoroStatus } from '@/types/models';
 import { parseReminderFromLine, stripReminderMarker } from './reminderParser';
+import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser';
 import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
 import { processLineText } from '@/utils/stringUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
@@ -119,6 +120,9 @@ export class LineParser {
     // 解析提醒配置
     const reminder = parseReminderFromLine(line);
 
+    // 解析优先级
+    const priority = parsePriorityFromLine(line);
+
     // 解析重复规则（多日期与重复互斥时优先多日期）
     // 匹配多日期：
     // 1. 逗号分隔：@日期, 或 📅日期, 或 @日期， 或 📅日期，
@@ -175,6 +179,9 @@ export class LineParser {
 
     // 移除提醒标记
     content = stripReminderMarker(content);
+
+    // 移除优先级标记
+    content = stripPriorityMarker(content);
 
     // 移除重复和结束条件标记（🔁🔚🔢 等）
     // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
@@ -267,7 +274,8 @@ export class LineParser {
         dateRangeEnd,
         reminder,
         repeatRule,
-        endCondition
+        endCondition,
+        priority
       });
     }
 

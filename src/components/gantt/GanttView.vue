@@ -253,7 +253,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         const success = await updateBlockContent(item.blockId, tag);
         // 注意：重复事项的自动创建由 WebSocket 处理器处理
         if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
         }
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),
@@ -271,7 +271,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
           item.status
         );
         if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
         }
       },
       onMigrateTomorrow: async () => {
@@ -288,7 +288,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
           item.status
         );
         if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
         }
       },
       onMigrateCustom: async () => {
@@ -305,7 +305,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
             item.status
           );
           if (plugin) {
-            await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+            await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
           }
         });
       },
@@ -314,7 +314,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         const tag = getStatusTag('abandoned');
         const success = await updateBlockContent(item.blockId, tag);
         if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
         }
       },
       onOpenDoc: () => {

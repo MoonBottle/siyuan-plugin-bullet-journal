@@ -99,6 +99,7 @@ export class DataConverter {
         reminder: item.reminder,
         repeatRule: item.repeatRule,
         endCondition: item.endCondition,
+        priority: item.priority,
       }
     };
   }

@@ -3,7 +3,17 @@
     <div class="todo-content">
       <SyLoading v-if="loading" :text="t('common').loading" />
 
-      <div v-else-if="todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty-guide">
+      <!-- 空状态：有筛选条件但无结果 -->
+      <div v-else-if="hasActiveFilters && todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty-guide">
+        <div class="empty-guide-icon">
+          <svg><use xlink:href="#iconSearch"></use></svg>
+        </div>
+        <div class="empty-guide-title">{{ t('todo').noFilterResults || '没有找到符合条件的事项' }}</div>
+        <div class="empty-guide-desc">{{ t('todo').adjustFilters || '请尝试调整筛选条件' }}</div>
+      </div>
+
+      <!-- 空状态：真的没有任何数据 -->
+      <div v-else-if="!hasAnyItemsRaw" class="empty-guide">
         <div class="empty-guide-icon">
           <svg><use xlink:href="#iconTask"></use></svg>
         </div>
@@ -414,41 +424,59 @@ import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import Card from '@/components/common/Card.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog, showPrioritySettingDialog } from '@/utils/dialog';
+import { updateBlockPriority } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
-import type { Item } from '@/types/models';
+import type { Item, PriorityLevel } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
-import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
+import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
+  // 优先级 emoji
+  let priorityEmoji = '';
+  if (item.priority === 'high') priorityEmoji = '🔥 ';
+  else if (item.priority === 'medium') priorityEmoji = '🌿 ';
+  else if (item.priority === 'low') priorityEmoji = '🍃 ';
+  
+  // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    return '🍅 ';
+    return priorityEmoji + '🍅 ';
   }
-  if (item.status === 'completed') return '✅ ';
-  if (item.status === 'abandoned') return '❌ ';
+  if (item.status === 'completed') return priorityEmoji + '✅ ';
+  if (item.status === 'abandoned') return priorityEmoji + '❌ ';
   const todayStr = dayjs().format('YYYY-MM-DD');
   if (item.dateRangeStart && item.dateRangeEnd) {
     const rangeStatus = getDateRangeStatus(item, todayStr);
-    if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
+    if (rangeStatus) return priorityEmoji + dateRangeStatusToEmoji(rangeStatus);
   }
   if (!item.dateRangeStart && !item.dateRangeEnd && item.date) {
     const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
-    if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
+    if (timeStatus) return priorityEmoji + dateRangeStatusToEmoji(timeStatus);
   }
   const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
-  if (isExpired) return '⚠️ ';
-  return '⏳ ';
+  if (isExpired) return priorityEmoji + '⚠️ ';
+  return priorityEmoji + '⏳ ';
 };
 
-const props = withDefaults(defineProps<{ groupId?: string }>(), { groupId: '' });
+const props = withDefaults(defineProps<{
+  groupId?: string;
+  searchQuery?: string;
+  dateRange?: { start: string; end: string } | null;
+  priorities?: PriorityLevel[];
+}>(), {
+  groupId: '',
+  searchQuery: '',
+  dateRange: null,
+  priorities: () => [],
+});
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
 const settingsStore = useSettingsStore();
@@ -494,51 +522,107 @@ const getTomorrowStr = (): string => {
   return dayjs(currentDate.value).add(1, 'day').format('YYYY-MM-DD');
 };
 
-// 已完成事项
-const completedItems = computed(() => projectStore.getCompletedItems(props.groupId));
-
 // 是否隐藏已完成事项
 const hideCompleted = computed(() => projectStore.hideCompleted);
-
-// 已放弃事项
-const abandonedItems = computed(() => projectStore.getAbandonedItems(props.groupId));
 
 // 是否隐藏已放弃事项
 const hideAbandoned = computed(() => projectStore.hideAbandoned);
 
-// 过期事项
-const expiredItems = computed(() => projectStore.getExpiredItems(props.groupId));
+// 已完成事项（支持筛选）
+const completedItems = computed(() => {
+  return projectStore.getFilteredCompletedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    dateRange: props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+  });
+});
 
-// 当前分组下的未来待办（今日及以后，未完成未放弃）
-const futureItemsForGroup = computed(() => projectStore.getFutureItems(props.groupId));
+// 已放弃事项（支持筛选）
+const abandonedItems = computed(() => {
+  return projectStore.getFilteredAbandonedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    dateRange: props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+  });
+});
 
-// 今日待办事项（仅代表项日期为今天的事项；多日期事项若代表项为 11 号则归入明天）
+// 获取所有过滤后的事项
+const filteredItems = computed(() => {
+  return projectStore.getFilteredAndSortedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    dateRange: props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+  });
+});
+
+// 是否有任何原始数据（全局，不考虑筛选和分组，用于判断真正的空状态）
+const hasAnyItemsRaw = computed(() => {
+  const items = projectStore.getDisplayItems(''); // 空字符串表示所有分组
+  return items.length > 0;
+});
+
+// 是否有激活的筛选条件（包括分组、搜索、日期、优先级）
+const hasActiveFilters = computed(() => {
+  return props.groupId || // 选择了特定分组
+         props.searchQuery?.trim() || 
+         props.dateRange || 
+         props.priorities.length > 0;
+});
+
+// 今日待办事项
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
-  return futureItemsForGroup.value.filter(item => item.date === todayStr);
+  return filteredItems.value.filter(item => item.date === todayStr);
 });
 
 // 明日待办事项
 const tomorrowItems = computed(() => {
   const tomorrowStr = getTomorrowStr();
-  return futureItemsForGroup.value.filter(item => item.date === tomorrowStr);
+  return filteredItems.value.filter(item => item.date === tomorrowStr);
 });
 
-// 未来待办事项（不包括今天和明天；分组仅按代表项 date）
+// 未来待办事项
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return futureItemsForGroup.value.filter(item => item.date !== todayStr && item.date !== tomorrowStr);
+  return filteredItems.value.filter(item => 
+    item.date !== todayStr && item.date !== tomorrowStr
+  );
 });
 
-// 按日期分组的未来待办事项
-const groupedFutureItems = computed(() => projectStore.getGroupedFutureItems(props.groupId));
-
-// 排序后的未来日期（排除今天、明天，仅用于「未来」区块）
-const futureDates = computed(() => {
+// 过期事项
+const expiredItems = computed(() => {
   const todayStr = getTodayStr();
-  const tomorrowStr = getTomorrowStr();
-  return Array.from(groupedFutureItems.value.keys()).filter(d => d !== todayStr && d !== tomorrowStr).sort();
+  return filteredItems.value.filter(item => {
+    const effectiveDate = getEffectiveDate(item);
+    return effectiveDate < todayStr;
+  });
+});
+
+// 按日期分组的未来待办事项（基于筛选后的数据）
+const groupedFutureItems = computed(() => {
+  const grouped = new Map<string, Item[]>();
+  futureItems.value.forEach(item => {
+    const list = grouped.get(item.date);
+    if (list) {
+      list.push(item);
+    } else {
+      grouped.set(item.date, [item]);
+    }
+  });
+  // 每个日期内按时间排序
+  grouped.forEach(list => {
+    list.sort((a, b) => (a.startDateTime || a.date).localeCompare(b.startDateTime || b.date));
+  });
+  return grouped;
+});
+
+// 排序后的未来日期（基于筛选后的数据）
+const futureDates = computed(() => {
+  return Array.from(groupedFutureItems.value.keys()).sort();
 });
 
 // 格式化日期标签
@@ -779,7 +863,15 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       },
       onOpenDoc: () => openItem(item),
       onShowDetail: () => openDetail(item),
-      onShowCalendar: () => openCalendar(item)
+      onShowCalendar: () => openCalendar(item),
+      onSetPriority: (priority: PriorityLevel | undefined) => {
+        if (!item.blockId) return;
+        updateBlockPriority(item.blockId, priority).then(success => {
+          if (success) {
+            item.priority = priority;
+          }
+        });
+      }
     },
     { showCalendarMenu: true, isFocusing: pomodoroStore.isFocusing }
   );
@@ -838,7 +930,7 @@ const handleCreateExample = async () => {
 
 <style lang="scss" scoped>
 .todo-sidebar {
-  min-height: 100%;
+  height: 100%;
 }
 
 .todo-content {

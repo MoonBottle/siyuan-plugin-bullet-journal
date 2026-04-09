@@ -128,7 +128,25 @@
     "hideCompleted": "隐藏已完成",
     "showAbandoned": "显示已放弃",
     "hideAbandoned": "隐藏已放弃",
-    "startFocusAria": "开始专注"
+    "startFocusAria": "开始专注",
+    "searchPlaceholder": "搜索事项...",
+    "priority": {
+      "title": "优先级",
+      "high": "高优先级",
+      "medium": "中优先级",
+      "low": "低优先级",
+      "clear": "清除优先级",
+      "setPriority": "设置优先级"
+    },
+    "dateFilter": {
+      "title": "日期筛选",
+      "today": "今天",
+      "tomorrow": "明天",
+      "thisWeek": "近7天",
+      "thisMonth": "本月",
+      "all": "全部",
+      "custom": "自定义"
+    }
   },
   "settings": {
     "title": "设置",
@@ -175,6 +193,18 @@
     "dirConfig": {
       "title": "目录配置",
       "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为任务助手目录」快速添加。"
+    },
+    "scanMode": {
+      "label": "扫描范围",
+      "full": {
+        "label": "扫描整个工作空间",
+        "description": "所有包含任务标记的文档都会被扫描和展示"
+      },
+      "directories": {
+        "label": "仅扫描配置目录",
+        "description": "只扫描下方配置的目录中的文档，适合大型工作空间"
+      },
+      "fullWithDirectoriesHint": "当前为全局扫描模式，目录配置仅用于分组归类"
     },
     "mcp": {
       "title": "MCP 配置",
@@ -551,7 +581,8 @@
     "createSkillFailed": "技能创建失败",
     "overrideBuiltinSkill": "「{name}」是内置技能，功能：{description}\n\n创建同名技能将覆盖内置版本，确定吗？",
     "overrideSuccess": "已覆盖内置技能「{name}」",
-    "willOverrideBuiltin": "将覆盖内置技能"
+    "willOverrideBuiltin": "将覆盖内置技能",
+    "setPriority": "设置优先级"
   },
   "reminder": {
     "setReminder": "设置提醒",

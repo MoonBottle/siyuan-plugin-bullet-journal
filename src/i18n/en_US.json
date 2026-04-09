@@ -128,7 +128,25 @@
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
     "hideAbandoned": "Hide abandoned",
-    "startFocusAria": "Start Focus"
+    "startFocusAria": "Start Focus",
+    "searchPlaceholder": "Search items...",
+    "priority": {
+      "title": "Priority",
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority",
+      "clear": "Clear Priority",
+      "setPriority": "Set Priority"
+    },
+    "dateFilter": {
+      "title": "Date Filter",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "thisWeek": "Next 7 Days",
+      "thisMonth": "This Month",
+      "all": "All",
+      "custom": "Custom"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -175,6 +193,18 @@
     "dirConfig": {
       "title": "Directory Config",
       "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as task assistant directory\" to add quickly."
+    },
+    "scanMode": {
+      "label": "Scan Scope",
+      "full": {
+        "label": "Scan entire workspace",
+        "description": "All documents containing task markers will be scanned and displayed"
+      },
+      "directories": {
+        "label": "Scan configured directories only",
+        "description": "Only scan documents in the configured directories below, suitable for large workspaces"
+      },
+      "fullWithDirectoriesHint": "Currently in global scan mode, directory configuration is only used for grouping"
     },
     "mcp": {
       "title": "MCP Config",
@@ -513,7 +543,8 @@
     "markTaskSuccess": "Marked as task",
     "alreadyMarkedTask": "Already marked as task",
     "setReminder": "Set Reminder",
-    "setRecurring": "Set Recurring"
+    "setRecurring": "Set Recurring",
+    "setPriority": "Set Priority"
   },
   "reminder": {
     "setReminder": "Set Reminder",

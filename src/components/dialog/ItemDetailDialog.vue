@@ -79,6 +79,9 @@
       >
         <template #header>
           <span class="card-label">{{ t('todo').item }}</span>
+          <span v-if="props.item.priority" class="priority-badge-header">
+            {{ PRIORITY_CONFIG[props.item.priority].emoji }} {{ PRIORITY_CONFIG[props.item.priority].label }}
+          </span>
           <span class="status-tag" :class="statusInfo.class">{{ statusInfo.text }}</span>
         </template>
 
@@ -130,6 +133,7 @@
                 <svg v-else><use xlink:href="#iconCopy"></use></svg>
               </span>
             </span>
+
           </div>
         </div>
 
@@ -226,6 +230,7 @@ import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
 import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
 import { useProjectStore } from '@/stores';
+import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
 
 interface Props {
@@ -539,6 +544,7 @@ function handleSetRecurring() {
 function handleSkipOccurrence() {
   emit('skipOccurrence');
 }
+
 </script>
 
 <style lang="scss" scoped>
@@ -774,4 +780,29 @@ function handleSkipOccurrence() {
     color: var(--b3-theme-primary);
   }
 }
+
+.priority-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: var(--b3-theme-surface);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.priority-badge-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--b3-theme-surface);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: auto;
+  margin-right: 4px;
+}
+
 </style>

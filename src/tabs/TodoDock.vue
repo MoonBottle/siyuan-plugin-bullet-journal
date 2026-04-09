@@ -1,5 +1,5 @@
 <template>
-  <div class="fn__flex-1 fn__flex-column">
+  <div class="fn__flex-1 fn__flex-column todo-dock-container">
     <div class="block__icons">
       <div class="block__logo">
         <svg class="block__logoicon"><use xlink:href="#iconList"></use></svg>
@@ -12,14 +12,65 @@
     </div>
     <div class="fn__flex-1 fn__flex-column todo-dock-body">
       <div class="todo-filter-card">
-        <SySelect
-          v-model="selectedGroup"
-          :options="groupOptions"
-          :placeholder="t('settings').projectGroups.allGroups"
-        />
+        <!-- 第一行：搜索框 -->
+        <div class="search-row">
+          <div class="search-box">
+            <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              :placeholder="t('todo').searchPlaceholder"
+              class="search-input"
+            />
+            <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">
+              <svg><use xlink:href="#iconClose"></use></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 第二行：分组 + 日期 + 优先级 -->
+        <div class="filter-row">
+          <SySelect
+            v-model="selectedGroup"
+            :options="groupOptions"
+            :placeholder="t('settings').projectGroups.allGroups"
+            class="group-select"
+          />
+          
+          <SySelect
+            v-model="dateFilterType"
+            :options="dateFilterOptions"
+            class="date-filter-select"
+            @change="onDateFilterChange"
+          />
+
+          <div class="priority-filter">
+            <button 
+              v-for="p in priorityOptions" 
+              :key="p.value"
+              :class="['priority-btn', 'b3-tooltips', 'b3-tooltips__n', { active: selectedPriorities.includes(p.value) }]"
+              :aria-label="PRIORITY_CONFIG[p.value].label"
+              @click="togglePriority(p.value)"
+            >
+              {{ p.emoji }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 自定义日期范围选择器 -->
+        <div v-if="dateFilterType === 'custom'" class="date-range-row">
+          <input v-model="startDate" type="date" class="date-input" />
+          <span>至</span>
+          <input v-model="endDate" type="date" class="date-input" />
+        </div>
       </div>
       <div class="fn__flex-1 todo-dock-content">
-        <TodoSidebar :group-id="selectedGroup" />
+        <TodoSidebar 
+          :group-id="selectedGroup"
+          :search-query="searchQuery"
+          :date-range="dateRange"
+          :priorities="selectedPriorities"
+        />
       </div>
     </div>
   </div>
@@ -27,6 +78,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import dayjs from 'dayjs';
 import { Menu } from 'siyuan';
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
@@ -35,12 +87,75 @@ import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
+import type { PriorityLevel } from '@/types/models';
+import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const selectedGroup = ref('');
+
+// 搜索和筛选状态
+const searchQuery = ref('');
+const selectedPriorities = ref<PriorityLevel[]>([]);
+
+// 日期筛选类型：today | week | all | custom
+type DateFilterType = 'today' | 'week' | 'all' | 'custom';
+const dateFilterType = ref<DateFilterType>('today');
+const startDate = ref(dayjs().format('YYYY-MM-DD'));
+const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
+
+const priorityOptions = [
+  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
+  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji },
+  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji },
+];
+
+const dateFilterOptions = [
+  { value: 'today', label: '今天' },
+  { value: 'week', label: '近7天' },
+  { value: 'all', label: '全部' },
+  { value: 'custom', label: '自定义' },
+];
+
+const dateRange = computed(() => {
+  if (dateFilterType.value === 'all') return null;
+  if (dateFilterType.value === 'today') {
+    const today = dayjs().format('YYYY-MM-DD');
+    // 包含已过期数据：从很早的日期到今天
+    return { start: '1970-01-01', end: today };
+  }
+  if (dateFilterType.value === 'week') {
+    const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
+    // 包含已过期数据：从很早的日期到一周后
+    return { start: '1970-01-01', end: nextWeek };
+  }
+  // custom
+  return { start: startDate.value, end: endDate.value };
+});
+
+const dateFilterLabel = computed(() => {
+  return dateFilterOptions.find(o => o.value === dateFilterType.value)?.label || '今天';
+});
+
+function togglePriority(priority: PriorityLevel) {
+  const index = selectedPriorities.value.indexOf(priority);
+  if (index > -1) {
+    selectedPriorities.value.splice(index, 1);
+  } else {
+    selectedPriorities.value.push(priority);
+  }
+}
+
+function onDateFilterChange(type: DateFilterType) {
+  dateFilterType.value = type;
+  if (type === 'custom') {
+    // 默认设置为今天到一周后
+    startDate.value = dayjs().format('YYYY-MM-DD');
+    endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD');
+  }
+}
 
 const groupOptions = computed(() => {
   const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
@@ -53,7 +168,7 @@ const groupOptions = computed(() => {
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {};
@@ -63,13 +178,13 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
     showMessage(t('common').dataRefreshed);
   }
 };
@@ -173,6 +288,10 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.todo-dock-container {
+  overflow: hidden;
+}
+
 .block__icons {
   .block__icon {
     opacity: 1;
@@ -180,9 +299,12 @@ onUnmounted(() => {
 }
 
 .todo-dock-body {
+  display: flex;
+  flex-direction: column;
   padding: 8px;
   gap: 8px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .todo-filter-card {
@@ -203,6 +325,116 @@ onUnmounted(() => {
   border-radius: var(--b3-border-radius);
   flex: 1;
   min-height: 0;
-  max-height: calc(100vh - 160px);
+  position: relative;
+}
+
+.todo-filter-card {
+  .search-row {
+    margin-bottom: 8px;
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--b3-theme-background);
+      border-radius: var(--b3-border-radius);
+      border: 1px solid var(--b3-border-color);
+
+      &:focus-within {
+        border-color: var(--b3-theme-primary);
+      }
+
+      .search-icon {
+        width: 14px;
+        height: 14px;
+        fill: var(--b3-theme-on-surface);
+        opacity: 0.5;
+      }
+
+      .search-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        outline: none;
+        color: var(--b3-theme-on-background);
+      }
+
+      .clear-btn {
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        opacity: 0.4;
+        color: var(--b3-theme-on-surface);
+
+        &:hover { opacity: 0.8; }
+      }
+    }
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .priority-filter {
+      display: flex;
+      gap: 2px;
+
+      .priority-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+        padding: 0;
+
+        &:hover, &.active {
+          background: var(--b3-theme-primary-lightest);
+        }
+      }
+    }
+
+    .date-filter-select {
+      width: auto !important;
+      min-width: 80px;
+
+      :deep(.b3-select) {
+        height: 28px;
+        font-size: 12px;
+        padding: 0 24px 0 8px;
+      }
+    }
+  }
+
+  .date-range-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--b3-border-color);
+
+    .date-input {
+      padding: 4px;
+      border: 1px solid var(--b3-border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      background: var(--b3-theme-background);
+      color: var(--b3-theme-on-background);
+    }
+
+
+  }
 }
 </style>

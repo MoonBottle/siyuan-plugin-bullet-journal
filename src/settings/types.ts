@@ -1,5 +1,5 @@
 import type { AIProviderConfig } from '@/types/ai';
-import type { ProjectDirectory, ProjectGroup } from '@/types/models';
+import type { ProjectDirectory, ProjectGroup, ScanMode } from '@/types/models';
 
 // TodoDock 设置
 export interface TodoDockSettings {
@@ -38,6 +38,9 @@ export interface CustomSlashCommand {
 
 // 设置数据结构
 export interface SettingsData {
+  // 扫描模式
+  scanMode: ScanMode;
+  
   directories: ProjectDirectory[];
   groups: ProjectGroup[];
   defaultGroup: string;
@@ -76,6 +79,9 @@ export const defaultPomodoroSettings: PomodoroSettings = {
 };
 
 export const defaultSettings: SettingsData = {
+  // 默认全空间扫描
+  scanMode: 'full',
+  
   directories: [],
   groups: [],
   defaultGroup: '',

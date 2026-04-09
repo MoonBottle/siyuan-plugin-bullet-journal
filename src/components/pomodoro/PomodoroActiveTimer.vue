@@ -380,7 +380,7 @@ const handleDone = async () => {
 
     if (success && plugin) {
       // 刷新项目数据（会触发统一检测逻辑）
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+      await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
     }
   } finally {
     isProcessing.value = false;
@@ -397,7 +397,7 @@ const handleAbandon = async () => {
     const tag = getStatusTag('abandoned');
     const success = await updateBlockContent(currentItem.value.blockId, tag);
     if (success && plugin) {
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+      await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
     }
   } finally {
     isProcessing.value = false;

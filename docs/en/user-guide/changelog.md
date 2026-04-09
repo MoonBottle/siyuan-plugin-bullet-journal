@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.12.2] - 2026-04-09
+
+### Features
+
+- **Priority System**: New item priority system with High/Medium/Low three-level management
+  - Priority markers: Use 🔥(High), 🌿(Medium), 🍃(Low) emoji to mark priority levels
+  - Priority setting: Available via context menu, item detail dialog, and slash command `/yxj` or `/priority`
+  - Priority filtering: Todo sidebar supports filtering items by priority
+  - Calendar view: Right-click tasks to set priority
+
+- **Todo Filter Enhancement**:
+  - Search: Support keyword search for todo items
+  - Date filtering: Support filtering by date range (Today/Tomorrow/This Week/Next Thursday, etc.)
+  - Status filtering: Completed and abandoned items also support search, date, and priority filtering
+  - Filter hints: Group and date filters display friendly hints with optimized empty states
+
+- **Scan Mode Configuration**: Support configuring project scan mode
+  - Full mode: Scan entire notebook (default)
+  - Quick mode: Only scan configured directories for faster loading
+
+### Fixes
+
+- **Chinese Input Slash Commands**: Fixed issue where slash command text (e.g., `、mt`, `、jt`) was not properly deleted when using Chinese input method
+- **Delete Document**: Automatically stop associated pomodoro when document is deleted
+- **Todo Sidebar**:
+  - Fixed future groups using filtered data for calculation
+  - Fixed global data detection logic and optimized empty state display
+  - Fixed prompt text when filtering results in no data
+
+### Styles
+
+- **Todo Sidebar**:
+  - Added priority button group with background color to distinguish selected state
+  - Optimized layout for search box, date filter, and priority filter bar
+  - Adjusted layout and content height management
+- **Context Menu**:
+  - Submenu supports separator divider
+  - Support for emoji icons and SiYuan icons
+  - Priority menu uses correct icon display
+
 ## [0.12.1] - 2026-04-06
 
 ### Features

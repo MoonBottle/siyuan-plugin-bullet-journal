@@ -47,7 +47,7 @@ const projectStore = useProjectStore();
 
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
     showMessage(t('common').dataRefreshed);
   }
 };
@@ -56,7 +56,7 @@ const handleRefresh = async () => {
 const handleDataRefresh = async () => {
   if (!plugin) return;
   settingsStore.loadFromPlugin();
-  await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 let unsubscribeRefresh: (() => void) | null = null;

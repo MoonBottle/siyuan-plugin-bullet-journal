@@ -1,6 +1,8 @@
 import { IMenu, Menu } from 'siyuan';
 import { t } from '@/i18n';
 import { getTodayISO, getTomorrowISO } from '@/utils/dayjs';
+import { PRIORITY_CONFIG } from '@/parser/priorityParser';
+import type { PriorityLevel } from '@/types/models';
 
 export interface MenuOptions {
   x: number;
@@ -11,6 +13,7 @@ export interface MenuOptions {
 export interface MenuItem {
   label?: string;
   icon?: string;
+  iconHTML?: string;
   accelerator?: string;
   disabled?: boolean;
   type?: 'separator' | 'submenu';
@@ -28,12 +31,18 @@ export function showContextMenu(options: MenuOptions) {
     }
 
     if (item.submenu && item.submenu.length > 0) {
-      const subItems: IMenu[] = item.submenu.map(sub => ({
-        label: sub.label,
-        icon: sub.icon,
-        disabled: sub.disabled,
-        click: sub.click ? () => sub.click!() : undefined
-      }));
+      const subItems: IMenu[] = item.submenu.map(sub => {
+        if (sub.type === 'separator') {
+          return { type: 'separator' } as IMenu;
+        }
+        return {
+          label: sub.label,
+          icon: sub.icon,
+          iconHTML: sub.iconHTML,
+          disabled: sub.disabled,
+          click: sub.click ? () => sub.click!() : undefined
+        };
+      });
 
       menu.addItem({
         label: item.label,
@@ -80,6 +89,7 @@ export function createItemMenu(
     onShowDetail?: () => void;
     onShowCalendar?: () => void;
     onStartPomodoro?: () => void;
+    onSetPriority?: (priority: PriorityLevel | undefined) => void;
   },
   options: {
     showCalendarMenu?: boolean;
@@ -140,6 +150,34 @@ export function createItemMenu(
       label: t('todo').abandon,
       icon: 'iconCloseRound',
       click: handlers.onAbandon
+    });
+
+    items.push({
+      label: t('todo').priority.setPriority,
+      icon: 'iconMark',
+      submenu: [
+        {
+          iconHTML: '🔥',
+          label: t('todo').priority.high,
+          click: () => handlers.onSetPriority?.('high'),
+        },
+        {
+          iconHTML: '🌿',
+          label: t('todo').priority.medium,
+          click: () => handlers.onSetPriority?.('medium'),
+        },
+        {
+          iconHTML: '🍃',
+          label: t('todo').priority.low,
+          click: () => handlers.onSetPriority?.('low'),
+        },
+        { type: 'separator' },
+        {
+          iconHTML: '⚪',
+          label: t('todo').priority.clear,
+          click: () => handlers.onSetPriority?.(undefined),
+        },
+      ],
     });
 
     items.push({ type: 'separator' });
