@@ -3,7 +3,17 @@
     <div class="todo-content">
       <SyLoading v-if="loading" :text="t('common').loading" />
 
-      <div v-else-if="todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty-guide">
+      <!-- 空状态：有筛选条件但无结果 -->
+      <div v-else-if="hasActiveFilters && todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty-guide">
+        <div class="empty-guide-icon">
+          <svg><use xlink:href="#iconSearch"></use></svg>
+        </div>
+        <div class="empty-guide-title">{{ t('todo').noFilterResults || '没有找到符合条件的事项' }}</div>
+        <div class="empty-guide-desc">{{ t('todo').adjustFilters || '请尝试调整筛选条件' }}</div>
+      </div>
+
+      <!-- 空状态：真的没有任何数据 -->
+      <div v-else-if="!hasAnyItemsRaw" class="empty-guide">
         <div class="empty-guide-icon">
           <svg><use xlink:href="#iconTask"></use></svg>
         </div>
@@ -545,6 +555,19 @@ const filteredItems = computed(() => {
     dateRange: props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
   });
+});
+
+// 是否有任何原始数据（不考虑筛选，用于判断空状态）
+const hasAnyItemsRaw = computed(() => {
+  const items = projectStore.getDisplayItems(props.groupId);
+  return items.length > 0;
+});
+
+// 是否有激活的筛选条件
+const hasActiveFilters = computed(() => {
+  return props.searchQuery?.trim() || 
+         props.dateRange || 
+         props.priorities.length > 0;
 });
 
 // 今日待办事项
