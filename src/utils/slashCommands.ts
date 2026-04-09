@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
+import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime, type BlockWriter } from '@/utils/fileUtils';
 import {
@@ -22,7 +22,7 @@ import {
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
-import type { Item, ProjectDirectory } from '@/types/models';
+import type { Item, ProjectDirectory, PriorityLevel } from '@/types/models';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
@@ -364,6 +364,15 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-create-skill',
       callback: getActionHandler('createSkill', config, SLASH_COMMAND_FILTERS.CREATE_SKILL)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.SET_PRIORITY,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setPriority}</span>
+          <span class="b3-list-item__meta">🔥🌿☁️</span>
+      </div>`,
+      id: 'bullet-journal-set-priority',
+      callback: getActionHandler('setPriority', config, SLASH_COMMAND_FILTERS.SET_PRIORITY)
     }
   ];
 
@@ -622,6 +631,11 @@ function getActionHandler(
         deleteSlashCommandContent(protyle, filter);
         createSkillFromSlash(nodeElement);
       };
+    case 'setPriority':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setPriorityForBlock(nodeElement);
+      };
     default:
       return () => {};
   }
@@ -650,7 +664,8 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     viewDetail: 'Detail',
     setReminder: 'Reminder',
     setRecurring: 'Recurring',
-    createSkill: 'AI Skill'
+    createSkill: 'AI Skill',
+    setPriority: 'Priority'
   };
   return labels[action] || action;
 }
@@ -1210,6 +1225,32 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
     const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
     if (focusableEl) {
       focusableEl.focus();
+    }
+  });
+}
+
+/**
+ * 为块设置优先级
+ */
+async function setPriorityForBlock(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  // 从块内容提取当前优先级
+  const blockContent = nodeElement.textContent || '';
+  const { parsePriorityFromLine } = await import('@/parser/priorityParser');
+  const currentPriority = parsePriorityFromLine(blockContent);
+
+  showPrioritySettingDialog(currentPriority, async (priority) => {
+    const { updateBlockPriority } = await import('@/utils/fileUtils');
+    const success = await updateBlockPriority(blockId, priority);
+    if (success) {
+      showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info');
+    } else {
+      showMessage('设置优先级失败', 2000, 'error');
     }
   });
 }
