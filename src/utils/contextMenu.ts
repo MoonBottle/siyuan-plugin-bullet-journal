@@ -13,6 +13,7 @@ export interface MenuOptions {
 export interface MenuItem {
   label?: string;
   icon?: string;
+  iconHTML?: string;
   accelerator?: string;
   disabled?: boolean;
   type?: 'separator' | 'submenu';
@@ -33,6 +34,7 @@ export function showContextMenu(options: MenuOptions) {
       const subItems: IMenu[] = item.submenu.map(sub => ({
         label: sub.label,
         icon: sub.icon,
+        iconHTML: sub.iconHTML,
         disabled: sub.disabled,
         click: sub.click ? () => sub.click!() : undefined
       }));
