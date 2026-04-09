@@ -147,27 +147,23 @@ export function createItemMenu(
 
     items.push({
       label: t('todo').priority.setPriority,
-      icon: 'iconFlag',
+      icon: 'iconMark',
       submenu: [
         {
           label: `${PRIORITY_CONFIG.high.emoji} ${t('todo').priority.high}`,
-          icon: '',
           click: () => handlers.onSetPriority?.('high'),
         },
         {
           label: `${PRIORITY_CONFIG.medium.emoji} ${t('todo').priority.medium}`,
-          icon: '',
           click: () => handlers.onSetPriority?.('medium'),
         },
         {
           label: `${PRIORITY_CONFIG.low.emoji} ${t('todo').priority.low}`,
-          icon: '',
           click: () => handlers.onSetPriority?.('low'),
         },
         { type: 'separator' },
         {
           label: `⚪ ${t('todo').priority.clear}`,
-          icon: '',
           click: () => handlers.onSetPriority?.(undefined),
         },
       ],
