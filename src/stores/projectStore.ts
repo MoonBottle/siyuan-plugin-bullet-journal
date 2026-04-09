@@ -268,7 +268,10 @@ export const useProjectStore = defineStore('project', {
         );
       }
 
-      // 5. 按优先级和时间排序
+      // 5. 只保留待办事项（排除已完成和已放弃）
+      items = items.filter(item => item.status === 'pending');
+
+      // 6. 按优先级和时间排序
       items.sort((a, b) => {
         // 先按优先级排序（高→中→低→无）
         const priorityDiff = comparePriority(a.priority, b.priority);
