@@ -153,7 +153,7 @@ async function handleCreateExample() {
     const docId = await createExampleDocument();
     if (docId && plugin) {
       // 刷新项目数据
-      await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+      await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
     }
   } finally {
     isProcessing.value = false;

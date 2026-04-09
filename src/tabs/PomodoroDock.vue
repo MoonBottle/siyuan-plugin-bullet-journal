@@ -69,13 +69,13 @@ const pomodoroStore = usePomodoroStore();
 const handleDataRefresh = async () => {
   if (!plugin) return;
   settingsStore.loadFromPlugin();
-  await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
     showMessage(t('common').dataRefreshed);
   }
 };

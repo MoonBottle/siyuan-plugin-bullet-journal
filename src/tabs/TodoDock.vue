@@ -63,13 +63,13 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.enabledDirectories);
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
     showMessage(t('common').dataRefreshed);
   }
 };
