@@ -28,7 +28,7 @@
           </div>
         </div>
 
-        <!-- 第二行：分组 + 优先级 + 日期 -->
+        <!-- 第二行：分组 + 日期 + 优先级 -->
         <div class="filter-row">
           <SySelect
             v-model="selectedGroup"
@@ -37,6 +37,13 @@
             class="group-select"
           />
           
+          <SySelect
+            v-model="dateFilterType"
+            :options="dateFilterOptions"
+            class="date-filter-select"
+            @change="onDateFilterChange"
+          />
+
           <div class="priority-filter">
             <button 
               v-for="p in priorityOptions" 
@@ -48,13 +55,6 @@
               {{ p.emoji }}
             </button>
           </div>
-
-          <SySelect
-            v-model="dateFilterType"
-            :options="dateFilterOptions"
-            class="date-filter-select"
-            @change="onDateFilterChange"
-          />
         </div>
 
         <!-- 自定义日期范围选择器 -->
