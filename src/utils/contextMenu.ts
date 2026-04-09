@@ -31,13 +31,18 @@ export function showContextMenu(options: MenuOptions) {
     }
 
     if (item.submenu && item.submenu.length > 0) {
-      const subItems: IMenu[] = item.submenu.map(sub => ({
-        label: sub.label,
-        icon: sub.icon,
-        iconHTML: sub.iconHTML,
-        disabled: sub.disabled,
-        click: sub.click ? () => sub.click!() : undefined
-      }));
+      const subItems: IMenu[] = item.submenu.map(sub => {
+        if (sub.type === 'separator') {
+          return { type: 'separator' } as IMenu;
+        }
+        return {
+          label: sub.label,
+          icon: sub.icon,
+          iconHTML: sub.iconHTML,
+          disabled: sub.disabled,
+          click: sub.click ? () => sub.click!() : undefined
+        };
+      });
 
       menu.addItem({
         label: item.label,
