@@ -41,8 +41,8 @@
             <button 
               v-for="p in priorityOptions" 
               :key="p.value"
-              :class="['priority-btn', { active: selectedPriorities.includes(p.value) }]"
-              :title="PRIORITY_CONFIG[p.value].label"
+              :class="['priority-btn', 'b3-tooltips', 'b3-tooltips__n', { active: selectedPriorities.includes(p.value) }]"
+              :aria-label="PRIORITY_CONFIG[p.value].label"
               @click="togglePriority(p.value)"
             >
               {{ p.emoji }}
@@ -362,6 +362,9 @@ onUnmounted(() => {
       gap: 2px;
 
       .priority-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 26px;
         height: 26px;
         border: none;
@@ -371,6 +374,7 @@ onUnmounted(() => {
         font-size: 14px;
         opacity: 0.35;
         transition: all 0.2s;
+        padding: 0;
 
         &:hover, &.active {
           opacity: 1;
