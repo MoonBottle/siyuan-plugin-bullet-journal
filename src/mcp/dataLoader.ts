@@ -4,7 +4,7 @@
 import { SiYuanClient } from './siyuan-client';
 import { loadPluginSettingsFromSiYuan, PLUGIN_NAME } from './config';
 import { parseKramdown } from '../parser/core';
-import type { Project, Item, ProjectDirectory } from '@/types/models';
+import type { Project, Item, ProjectDirectory, ScanMode } from '@/types/models';
 
 /**
  * 从思源读取最新插件配置。每次工具调用时使用，确保思源中修改设置后能立即生效。
@@ -39,10 +39,12 @@ function buildSqlGetProjectDocsByPath(dirPath: string): string {
 
 /**
  * 从思源加载项目与事项（与 list_projects / filter_items 内部逻辑一致）
+ * @param scanMode 扫描模式：'full' 扫描所有文档，'directories' 仅扫描配置目录
  */
 export async function loadProjectsAndItems(
   client: SiYuanClient,
-  directories: ProjectDirectory[]
+  directories: ProjectDirectory[],
+  scanMode: ScanMode = 'directories'
 ): Promise<{ projects: Project[]; items: Item[] }> {
   const enabledDirs = directories.filter(d => d.enabled);
   const projects: Project[] = [];
@@ -59,7 +61,9 @@ export async function loadProjectsAndItems(
     return result.map(row => ({ id: row.id, path: row.path, notebookId: row.notebookId }));
   };
 
-  if (enabledDirs.length === 0) {
+  // 全扫描模式：扫描所有包含任务标记的文档
+  // 目录扫描模式：仅扫描配置的目录
+  if (scanMode === 'full' || enabledDirs.length === 0) {
     const docs = await getAllDocs();
     for (const doc of docs) {
       if (processedDocIds.has(doc.id)) continue;

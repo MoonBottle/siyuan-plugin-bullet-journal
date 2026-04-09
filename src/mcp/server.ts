@@ -52,8 +52,8 @@ async function main() {
       })
     },
     async (args) => {
-      const { directories } = await loadSettings(client);
-      const result = await executeListProjects(client, directories || [], args);
+      const { directories, scanMode } = await loadSettings(client);
+      const result = await executeListProjects(client, directories || [], args, scanMode);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
       };
@@ -75,8 +75,8 @@ async function main() {
       })
     },
     async (args) => {
-      const { directories } = await loadSettings(client);
-      const result = await executeFilterItems(client, directories || [], args);
+      const { directories, scanMode } = await loadSettings(client);
+      const result = await executeFilterItems(client, directories || [], args, scanMode);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
       };

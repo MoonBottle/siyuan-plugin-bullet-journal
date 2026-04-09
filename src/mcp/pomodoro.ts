@@ -27,8 +27,8 @@ export async function executeGetPomodoroStats(
   client: SiYuanClient,
   args: GetPomodoroArgs
 ): Promise<PomodoroStatsOutput> {
-  const { directories } = await loadSettings(client);
-  const { projects } = await loadProjectsAndItems(client, directories || []);
+  const { directories, scanMode } = await loadSettings(client);
+  const { projects } = await loadProjectsAndItems(client, directories || [], scanMode);
 
   const todayDate = dayjs().format('YYYY-MM-DD');
   let startDate = args.startDate;
@@ -71,8 +71,8 @@ export async function executeGetPomodoroRecords(
   client: SiYuanClient,
   args: GetPomodoroArgs
 ): Promise<{ records: ReturnType<typeof toPomodoroRecordOutput>[] }> {
-  const { directories } = await loadSettings(client);
-  const { projects } = await loadProjectsAndItems(client, directories || []);
+  const { directories, scanMode } = await loadSettings(client);
+  const { projects } = await loadProjectsAndItems(client, directories || [], scanMode);
 
   const todayDate = dayjs().format('YYYY-MM-DD');
   let startDate = args.startDate;
