@@ -444,6 +444,7 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
     content: props.item || '',
     date: rawDate,
     status: props.itemStatus || 'pending',
+    priority: props.priority,
     docId: props.docId,
     lineNumber: props.lineNumber,
     blockId: props.blockId,

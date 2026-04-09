@@ -79,6 +79,9 @@
       >
         <template #header>
           <span class="card-label">{{ t('todo').item }}</span>
+          <span v-if="props.item.priority" class="priority-badge-header">
+            {{ PRIORITY_CONFIG[props.item.priority].emoji }} {{ PRIORITY_CONFIG[props.item.priority].label }}
+          </span>
           <span class="status-tag" :class="statusInfo.class">{{ statusInfo.text }}</span>
         </template>
 
@@ -130,21 +133,7 @@
                 <svg v-else><use xlink:href="#iconCopy"></use></svg>
               </span>
             </span>
-            <!-- 优先级显示 -->
-            <span class="meta-item priority-meta-item">
-              <span
-                class="meta-icon"
-                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('todo').priority.title)"
-                @mouseleave="hideIconTooltip"
-              >⚡</span>
-              <span v-if="props.item.priority" class="priority-badge">
-                {{ PRIORITY_CONFIG[props.item.priority].emoji }} {{ PRIORITY_CONFIG[props.item.priority].label }}
-              </span>
-              <span v-else class="priority-empty">{{ t('todo').priority.clear }}</span>
-              <button class="edit-priority-btn" @click="editPriority">
-                {{ t('common').edit }}
-              </button>
-            </span>
+
           </div>
         </div>
 
@@ -239,9 +228,8 @@ import { calculateReminderTime } from '@/parser/reminderParser';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
-import { optimizeDateTimeExpressions, updateBlockPriority } from '@/utils/fileUtils';
+import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
 import { useProjectStore } from '@/stores';
-import { showPrioritySettingDialog } from '@/utils/dialog';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
 
@@ -557,17 +545,6 @@ function handleSkipOccurrence() {
   emit('skipOccurrence');
 }
 
-// 编辑优先级
-function editPriority() {
-  showPrioritySettingDialog(props.item.priority, async (priority) => {
-    if (!props.item.blockId) return;
-    const success = await updateBlockPriority(props.item.blockId, priority);
-    if (success) {
-      // 更新本地显示的优先级
-      props.item.priority = priority;
-    }
-  });
-}
 </script>
 
 <style lang="scss" scoped>
@@ -804,12 +781,6 @@ function editPriority() {
   }
 }
 
-.priority-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .priority-badge {
   display: flex;
   align-items: center;
@@ -821,24 +792,17 @@ function editPriority() {
   font-weight: 500;
 }
 
-.priority-empty {
-  color: var(--b3-theme-on-surface);
-  opacity: 0.5;
-  font-size: 12px;
+.priority-badge-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--b3-theme-surface);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: auto;
+  margin-right: 4px;
 }
 
-.edit-priority-btn {
-  padding: 2px 6px;
-  font-size: 11px;
-  border: none;
-  background: transparent;
-  color: var(--b3-theme-primary);
-  cursor: pointer;
-  border-radius: 3px;
-  transition: background 0.2s;
-
-  &:hover {
-    background: var(--b3-theme-surface-light);
-  }
-}
 </style>

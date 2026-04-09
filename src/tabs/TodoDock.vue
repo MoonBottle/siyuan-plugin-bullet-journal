@@ -123,12 +123,13 @@ const dateRange = computed(() => {
   if (dateFilterType.value === 'all') return null;
   if (dateFilterType.value === 'today') {
     const today = dayjs().format('YYYY-MM-DD');
-    return { start: today, end: today };
+    // 包含已过期数据：从很早的日期到今天
+    return { start: '1970-01-01', end: today };
   }
   if (dateFilterType.value === 'week') {
-    const today = dayjs().format('YYYY-MM-DD');
     const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
-    return { start: today, end: nextWeek };
+    // 包含已过期数据：从很早的日期到一周后
+    return { start: '1970-01-01', end: nextWeek };
   }
   // custom
   return { start: startDate.value, end: endDate.value };
@@ -167,7 +168,7 @@ const groupOptions = computed(() => {
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {};

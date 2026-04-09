@@ -143,7 +143,7 @@ const groupOptions = computed(() => {
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
   if (!plugin) return;
-  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock'];
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
   if (hasStorePayload) {
     const patch: Record<string, unknown> = {};
