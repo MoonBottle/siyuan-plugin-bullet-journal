@@ -128,7 +128,25 @@
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
     "hideAbandoned": "Hide abandoned",
-    "startFocusAria": "Start Focus"
+    "startFocusAria": "Start Focus",
+    "searchPlaceholder": "Search items...",
+    "priority": {
+      "title": "Priority",
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority",
+      "clear": "Clear Priority",
+      "setPriority": "Set Priority"
+    },
+    "dateFilter": {
+      "title": "Date Filter",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "thisWeek": "Next 7 Days",
+      "thisMonth": "This Month",
+      "all": "All",
+      "custom": "Custom"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -525,7 +543,8 @@
     "markTaskSuccess": "Marked as task",
     "alreadyMarkedTask": "Already marked as task",
     "setReminder": "Set Reminder",
-    "setRecurring": "Set Recurring"
+    "setRecurring": "Set Recurring",
+    "setPriority": "Set Priority"
   },
   "reminder": {
     "setReminder": "Set Reminder",

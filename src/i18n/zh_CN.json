@@ -128,7 +128,25 @@
     "hideCompleted": "隐藏已完成",
     "showAbandoned": "显示已放弃",
     "hideAbandoned": "隐藏已放弃",
-    "startFocusAria": "开始专注"
+    "startFocusAria": "开始专注",
+    "searchPlaceholder": "搜索事项...",
+    "priority": {
+      "title": "优先级",
+      "high": "高优先级",
+      "medium": "中优先级",
+      "low": "低优先级",
+      "clear": "清除优先级",
+      "setPriority": "设置优先级"
+    },
+    "dateFilter": {
+      "title": "日期筛选",
+      "today": "今天",
+      "tomorrow": "明天",
+      "thisWeek": "近7天",
+      "thisMonth": "本月",
+      "all": "全部",
+      "custom": "自定义"
+    }
   },
   "settings": {
     "title": "设置",
@@ -563,7 +581,8 @@
     "createSkillFailed": "技能创建失败",
     "overrideBuiltinSkill": "「{name}」是内置技能，功能：{description}\n\n创建同名技能将覆盖内置版本，确定吗？",
     "overrideSuccess": "已覆盖内置技能「{name}」",
-    "willOverrideBuiltin": "将覆盖内置技能"
+    "willOverrideBuiltin": "将覆盖内置技能",
+    "setPriority": "设置优先级"
   },
   "reminder": {
     "setReminder": "设置提醒",
