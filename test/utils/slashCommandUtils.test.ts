@@ -62,6 +62,19 @@ describe('generateSlashPatterns', () => {
     expect(patterns.has('/s')).toBe(true);
     expect(patterns.size).toBe(1);
   });
+
+  it('生成长度大于 2 的 filter 的中文顿号版本', () => {
+    const patterns = generateSlashPatterns(['/mt']);
+    expect(patterns.has('/mt')).toBe(true);
+    expect(patterns.has('、mt')).toBe(true);
+    expect(patterns.has('/m')).toBe(true);
+  });
+
+  it('短 filter 不生成中文顿号版本', () => {
+    const patterns = generateSlashPatterns(['/s']);
+    expect(patterns.has('/s')).toBe(true);
+    expect(patterns.has('、s')).toBe(false);
+  });
 });
 
 describe('processLineText', () => {
@@ -370,6 +383,21 @@ describe('processLineText', () => {
   it('处理混合大小写 filter', () => {
     const result = processLineText('/Sx内容', ['/Sx']);
     expect(result).toBe('内容');
+  });
+
+  it('删除中文顿号版本的斜杠命令（、mt）', () => {
+    const result = processLineText('测试 3 、mt 📅2026-04-08', ['/mt', '/tomorrow']);
+    expect(result).toBe('测试 3  📅2026-04-08');
+  });
+
+  it('删除中文顿号版本的斜杠命令（、jt）', () => {
+    const result = processLineText('待办 、jt', ['/jt', '/today']);
+    expect(result).toBe('待办');
+  });
+
+  it('删除中文顿号版本的斜杠命令（、rq）', () => {
+    const result = processLineText('待办 、rq', ['/rq', '/date']);
+    expect(result).toBe('待办');
   });
 });
 
