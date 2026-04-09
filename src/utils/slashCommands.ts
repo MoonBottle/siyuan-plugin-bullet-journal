@@ -10,7 +10,7 @@ import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
-import { updateBlockContent, updateBlockDateTime, type BlockWriter } from '@/utils/fileUtils';
+import { updateBlockContent, updateBlockDateTime, updateBlockPriority, type BlockWriter } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
   processLineText,
@@ -23,6 +23,7 @@ import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
 import type { Item, ProjectDirectory, PriorityLevel } from '@/types/models';
+import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
@@ -1241,11 +1242,9 @@ async function setPriorityForBlock(nodeElement: HTMLElement) {
 
   // 从块内容提取当前优先级
   const blockContent = nodeElement.textContent || '';
-  const { parsePriorityFromLine } = await import('@/parser/priorityParser');
   const currentPriority = parsePriorityFromLine(blockContent);
 
   showPrioritySettingDialog(currentPriority, async (priority) => {
-    const { updateBlockPriority } = await import('@/utils/fileUtils');
     const success = await updateBlockPriority(blockId, priority);
     if (success) {
       showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info');
