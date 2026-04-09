@@ -3,7 +3,7 @@
  * 通过思源 API 获取文档 Kramdown 内容并解析（包含 blockId）
  * 解析逻辑复用 src/parser/core.ts
  */
-import type { Project, Item, ProjectDirectory, PomodoroRecord } from '@/types/models';
+import type { Project, Item, ProjectDirectory, PomodoroRecord, ScanMode } from '@/types/models';
 import { parseKramdown } from './core';
 import { sql, getDocKramdown } from '@/api';
 import { LineParser } from './lineParser';
@@ -11,20 +11,22 @@ import { defaultPomodoroSettings } from '@/settings';
 
 export class MarkdownParser {
   private directories: ProjectDirectory[];
+  private scanMode: ScanMode;
 
-  constructor(directories?: ProjectDirectory[]) {
+  constructor(directories: ProjectDirectory[], scanMode: ScanMode = 'full') {
     this.directories = directories?.filter(d => d.enabled) || [];
+    this.scanMode = scanMode;
   }
 
   /**
    * 解析所有配置目录中的项目文档；目录为空时扫描所有文档
    */
   public async parseAllProjects(): Promise<Project[]> {
-    console.log('[Task Assistant][Parser] 开始解析项目，目录数量:', this.directories.length);
+    console.log('[Task Assistant][Parser] 开始解析项目，scanMode:', this.scanMode, '目录数量:', this.directories.length);
     const projects: Project[] = [];
     const processedDocIds = new Set<string>();
 
-    if (this.directories.length === 0) {
+    if (this.scanMode === 'full') {
       // 目录配置为空：扫描所有文档
       const docs = await this.getAllDocs();
       for (const doc of docs) {
@@ -196,8 +198,8 @@ export class MarkdownParser {
     console.log('[Task Assistant][Parser] 开始流式解析项目，目录数量:', this.directories.length);
     const processedDocIds = new Set<string>();
 
-    if (this.directories.length === 0) {
-      // 目录配置为空：扫描所有文档
+    if (this.scanMode === 'full') {
+      // 全扫描模式
       const docs = await this.getAllDocs();
       for (const doc of docs) {
         if (processedDocIds.has(doc.id)) continue;
@@ -218,6 +220,7 @@ export class MarkdownParser {
         }
       }
     } else {
+      // 目录扫描模式
       for (const directory of this.directories) {
         const docs = await this.getProjectDocs(directory.path);
         for (const doc of docs) {
