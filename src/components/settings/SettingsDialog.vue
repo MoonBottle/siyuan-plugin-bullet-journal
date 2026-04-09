@@ -39,6 +39,7 @@
             v-show="sectionVisible('dir')"
             v-model:directories="local.directories"
             v-model:default-group="local.defaultGroup"
+            v-model:scan-mode="local.scanMode"
             :groups="local.groups"
           />
         </div>
