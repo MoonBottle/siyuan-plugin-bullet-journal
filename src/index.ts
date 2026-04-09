@@ -119,15 +119,18 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 首次加载项目数据（所有 Tab/Dock 共享这份数据）
     const settings = this.getSettings();
+    const scanMode = settings.scanMode || 'full';  // 获取 scanMode
     const enabledDirs = settings.directories.filter(d => d.enabled);
+
     console.log('[Task Assistant] Init loadProjects check:', {
+      scanMode,  // 添加日志
       directoriesCount: settings.directories.length,
       enabledDirsCount: enabledDirs.length,
       enabledDirs: enabledDirs.map(d => d.path)
     });
     console.log('[Task Assistant] Starting initial loadProjects...');
     const projectStore = useProjectStore(pinia);
-    projectStore.loadProjects(this, settings.scanMode, enabledDirs).then(async () => {
+    projectStore.loadProjects(this, scanMode, enabledDirs).then(async () => {
       console.log('[Task Assistant] Initial loadProjects completed');
       // 初始加载完成后同步提醒
       console.log('[ReminderService] Initial load completed');
@@ -960,7 +963,9 @@ export default class TaskAssistantPlugin extends Plugin {
               const pinia = getSharedPinia();
               if (pinia) {
                 const projectStore = useProjectStore(pinia);
-                await projectStore.refresh(this, settings.scanMode, this.getEnabledDirectories());
+                const currentSettings = this.getSettings();
+                const currentScanMode = currentSettings.scanMode || 'full';
+                await projectStore.refresh(this, currentScanMode, this.getEnabledDirectories());
               }
             }
           }
