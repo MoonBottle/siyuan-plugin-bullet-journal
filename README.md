@@ -121,4 +121,21 @@ If Task Assistant helps you, please consider:
 
 ## 📌 Recent Updates
 
-For recent version updates (Pomodoro, AI Chat, Gantt and Calendar enhancements, etc.), see [Changelog](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/changelog.md).
+### v0.12.2 Important Update
+
+**🆕 Scan Scope Settings (Directory Configuration)**
+
+Starting from v0.12.2, the plugin supports two scanning modes:
+
+| Mode | Description |
+|------|-------------|
+| **Scan Entire Workspace** (default) | Scan all documents containing task markers. Directory config is only used for **grouping**. All tasks are visible. |
+| **Scan Configured Directories Only** | Only scan configured directories, same behavior as older versions. Suitable for large workspaces. |
+
+**Upgrade Note**: After upgrading from older versions, "Full Scan Mode" is enabled by default, and tasks that disappeared due to directory configuration will **reappear**. To restore original behavior, manually switch to "Scan Configured Directories Only" mode in settings.
+
+For details, see [Configuration - Scan Scope](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/configuration.md#scan-scope-new-in-v0122).
+
+---
+
+More historical updates (Pomodoro, AI Chat, Gantt and Calendar enhancements, etc.) see [Changelog](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/changelog.md).

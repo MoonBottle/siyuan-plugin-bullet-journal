@@ -122,4 +122,21 @@
 
 ## 📌 最近更新
 
-近期版本更新（番茄钟、AI 对话、甘特图与日历增强等）详见 [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/changelog.md)。
+### v0.12.2 重要更新
+
+**🆕 扫描范围设置（目录配置）**
+
+从 v0.12.2 开始，插件支持两种扫描模式：
+
+| 模式 | 说明 |
+|------|------|
+| **扫描整个工作空间**（默认） | 扫描所有包含任务标记的文档，目录配置仅用于**分组归类**。所有任务都可见。 |
+| **仅扫描配置目录** | 只扫描配置的目录，与旧版本行为一致。适合大型工作空间。 |
+
+**升级提示**：从旧版本升级后，默认启用「全局扫描模式」，之前因配置目录而消失的任务会**重新出现**。如需恢复原行为，请在设置中切换到「仅扫描配置目录」模式。
+
+详细说明请参阅 [配置说明 - 扫描范围](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/configuration.md#扫描范围v0122-新增)。
+
+---
+
+更多历史更新（番茄钟、AI 对话、甘特图与日历增强等）详见 [更新日志](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/changelog.md)。
