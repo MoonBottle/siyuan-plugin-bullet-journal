@@ -6,6 +6,34 @@ This document introduces the various configuration options for the Task Assistan
 
 Directory configuration determines which documents the plugin scans to extract task information.
 
+> 🆕 **v0.12.2 New**: Scan scope settings (Full Scan / Configured Directories Only), resolves the issue where tasks disappear after configuring directories.
+
+### Scan Scope (New in v0.12.2)
+
+The plugin supports two scanning modes, switchable at the top of "Directory Configuration":
+
+| Mode | Icon | Description | Use Case |
+|------|------|-------------|----------|
+| **Scan Entire Workspace** | 🌐 | Scan all documents containing task markers, directory config is only used for grouping | Daily use, recommended |
+| **Scan Configured Directories Only** | 📁 | Only scan documents in directories configured below | Large workspaces, performance optimization |
+
+#### Relationship Between Scan Scope and Directory Configuration
+
+- **Full Scan Mode** (default): Scan all documents, configured directories are used for **grouping only**
+  - All tasks are visible
+  - Projects matching directory config will appear in corresponding groups
+  - Unmatched projects appear as "Uncategorized"
+
+- **Configured Directories Only Mode**: Only scan configured directories, same behavior as before v0.12.2
+  - Only tasks in configured directories are shown
+  - Tasks in other documents are not scanned
+
+#### Notes for Upgrading Users
+
+After upgrading from older versions to v0.12.2:
+- Default switches to "Full Scan Mode", previously disappeared tasks will reappear
+- To restore original behavior, manually switch to "Scan Configured Directories Only" mode
+
 ### Add Scan Directory
 
 1. Open SiYuan Settings → Plugins → Task Assistant
