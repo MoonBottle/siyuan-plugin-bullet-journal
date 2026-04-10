@@ -95,6 +95,68 @@
           />
         </SySettingItem>
       </template>
+      <!-- 专注时长预设 -->
+      <SySettingItem
+        :label="t('settings').pomodoro.focusDurationPresets"
+        :description="t('settings').pomodoro.focusDurationPresetsDesc"
+      >
+        <div class="duration-presets-inputs">
+          <input
+            v-for="(duration, index) in focusPresets"
+            :key="`focus-${index}-${duration}`"
+            v-model.number="focusPresets[index]"
+            type="number"
+            class="b3-text-field fn__flex-center"
+            style="width: 60px; text-align: center;"
+            min="1"
+            max="180"
+            @change="validateFocusPreset(index)"
+          />
+          <span class="unit-label">{{ t('common').minutes }}</span>
+        </div>
+      </SySettingItem>
+      <!-- 默认专注时长 -->
+      <SySettingItem
+        :label="t('settings').pomodoro.defaultFocusDuration"
+        :description="t('settings').pomodoro.defaultFocusDurationDesc"
+      >
+        <SySelect
+          :model-value="pomodoro.defaultFocusDuration ?? 25"
+          :options="focusDurationOptions"
+          @update:model-value="pomodoro.defaultFocusDuration = $event"
+        />
+      </SySettingItem>
+      <!-- 休息时长预设 -->
+      <SySettingItem
+        :label="t('settings').pomodoro.breakDurationPresets"
+        :description="t('settings').pomodoro.breakDurationPresetsDesc"
+      >
+        <div class="duration-presets-inputs">
+          <input
+            v-for="(duration, index) in breakPresets"
+            :key="`break-${index}-${duration}`"
+            v-model.number="breakPresets[index]"
+            type="number"
+            class="b3-text-field fn__flex-center"
+            style="width: 60px; text-align: center;"
+            min="1"
+            max="60"
+            @change="validateBreakPreset(index)"
+          />
+          <span class="unit-label">{{ t('common').minutes }}</span>
+        </div>
+      </SySettingItem>
+      <!-- 默认休息时长 -->
+      <SySettingItem
+        :label="t('settings').pomodoro.defaultBreakDuration"
+        :description="t('settings').pomodoro.defaultBreakDurationDesc"
+      >
+        <SySelect
+          :model-value="pomodoro.defaultBreakDuration ?? 5"
+          :options="breakDurationOptions"
+          @update:model-value="pomodoro.defaultBreakDuration = $event"
+        />
+      </SySettingItem>
     </SySettingItemList>
   </SySettingsSection>
 </template>
@@ -107,9 +169,14 @@ import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
 import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue';
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import { computed, ref, watch } from 'vue';
 
-defineProps<{
+const props = defineProps<{
   pomodoro: PomodoroSettings;
+}>();
+
+const emit = defineEmits<{
+  'update:pomodoro': [value: PomodoroSettings]
 }>();
 
 const recordModeOptions = [
@@ -117,5 +184,108 @@ const recordModeOptions = [
   { value: 'attr', label: t('settings').pomodoro.recordModeAttr }
 ];
 
+// 专注时长预设本地状态（4个）
+const focusPresets = ref<number[]>([15, 25, 45, 60]);
+
+// 休息时长预设本地状态（3个）
+const breakPresets = ref<number[]>([5, 10, 15]);
+
+// 从 props 初始化预设值
+const initPresets = () => {
+  if (props.pomodoro.focusDurationPresets?.length === 4) {
+    focusPresets.value = [...props.pomodoro.focusDurationPresets];
+  }
+  if (props.pomodoro.breakDurationPresets?.length === 3) {
+    breakPresets.value = [...props.pomodoro.breakDurationPresets];
+  }
+};
+initPresets();
+
+// 监听预设变化，同步到 pomodoro 配置
+watch(focusPresets, (newVal) => {
+  const newDefault = newVal.includes(props.pomodoro.defaultFocusDuration)
+    ? props.pomodoro.defaultFocusDuration
+    : newVal[0];
+  emit('update:pomodoro', {
+    ...props.pomodoro,
+    focusDurationPresets: [...newVal],
+    defaultFocusDuration: newDefault
+  });
+}, { deep: true });
+
+watch(breakPresets, (newVal) => {
+  const newDefault = newVal.includes(props.pomodoro.defaultBreakDuration)
+    ? props.pomodoro.defaultBreakDuration
+    : newVal[0];
+  emit('update:pomodoro', {
+    ...props.pomodoro,
+    breakDurationPresets: [...newVal],
+    defaultBreakDuration: newDefault
+  });
+}, { deep: true });
+
+// 监听 props 变化，同步本地状态
+watch(() => props.pomodoro.focusDurationPresets, () => {
+  if (props.pomodoro.focusDurationPresets?.length === 4) {
+    focusPresets.value = [...props.pomodoro.focusDurationPresets];
+  }
+}, { deep: true });
+
+watch(() => props.pomodoro.breakDurationPresets, () => {
+  if (props.pomodoro.breakDurationPresets?.length === 3) {
+    breakPresets.value = [...props.pomodoro.breakDurationPresets];
+  }
+}, { deep: true });
+
+// 验证专注预设输入
+const validateFocusPreset = (index: number) => {
+  let value = focusPresets.value[index];
+  if (value < 1) value = 1;
+  if (value > 180) value = 180;
+  focusPresets.value[index] = value;
+};
+
+// 验证休息预设输入
+const validateBreakPreset = (index: number) => {
+  let value = breakPresets.value[index];
+  if (value < 1) value = 1;
+  if (value > 60) value = 60;
+  breakPresets.value[index] = value;
+};
+
+// 专注时长下拉选项（从 presets 动态生成）
+const focusDurationOptions = computed(() => {
+  return focusPresets.value.map(minutes => ({
+    value: minutes,
+    label: `${minutes} ${t('common').minutes}`
+  }));
+});
+
+// 休息时长下拉选项（从 presets 动态生成）
+const breakDurationOptions = computed(() => {
+  return breakPresets.value.map(minutes => ({
+    value: minutes,
+    label: `${minutes} ${t('common').minutes}`
+  }));
+});
+
 </script>
+
+<style lang="scss" scoped>
+.duration-presets-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  input {
+    min-width: 50px;
+  }
+
+  .unit-label {
+    font-size: 13px;
+    color: var(--b3-theme-on-surface);
+    margin-left: 4px;
+  }
+}
+</style>
 
