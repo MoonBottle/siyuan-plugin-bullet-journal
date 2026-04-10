@@ -121,7 +121,7 @@
               :key="duration"
               class="break-btn"
               :class="{ active: selectedBreakDuration === duration }"
-              @click="handleStartBreak(duration)"
+              @click="selectBreakDuration(duration)"
             >
               {{ duration }}{{ t('common').minutes }}
             </button>
@@ -137,7 +137,10 @@
         </template>
         <button v-else class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
       </template>
-      <button v-else class="close-btn" @click="handleClose">{{ t('settings').pomodoro.close }}</button>
+      <template v-else>
+        <button class="skip-btn" @click="handleClose">{{ t('settings').pomodoro.skipBreak }}</button>
+        <button class="start-break-btn" @click="handleStartBreak">{{ t('settings').pomodoro.startBreak }}</button>
+      </template>
     </div>
   </div>
 </template>
@@ -237,8 +240,12 @@ async function handleSave() {
   }
 }
 
-function handleStartBreak(minutes: number) {
-  pomodoroStore.startBreak(minutes, plugin);
+function selectBreakDuration(minutes: number) {
+  selectedBreakDuration.value = minutes;
+}
+
+function handleStartBreak() {
+  pomodoroStore.startBreak(selectedBreakDuration.value, plugin);
   props.closeDialog();
 }
 
@@ -508,6 +515,37 @@ onBeforeUnmount(async () => {
 .close-btn {
   background: var(--b3-theme-surface-lighter);
   color: var(--b3-theme-on-background);
+}
+
+.skip-btn {
+  padding: 10px 24px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.skip-btn:hover {
+  border-color: var(--b3-theme-error);
+  color: var(--b3-theme-error);
+}
+
+.start-break-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.start-break-btn:hover {
+  opacity: 0.9;
 }
 
 .discard-btn {
