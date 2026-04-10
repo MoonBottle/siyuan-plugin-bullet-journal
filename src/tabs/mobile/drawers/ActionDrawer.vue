@@ -52,7 +52,6 @@
 </template>
 
 <script setup lang="ts">
-import { Teleport } from 'vue';
 import { t } from '@/i18n';
 import { updateBlockContent } from '@/utils/fileUtils';
 import type { Item } from '@/types/models';

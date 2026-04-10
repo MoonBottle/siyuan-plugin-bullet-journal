@@ -149,7 +149,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Teleport } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import { createTask, createItem } from '@/utils/quickCreate';

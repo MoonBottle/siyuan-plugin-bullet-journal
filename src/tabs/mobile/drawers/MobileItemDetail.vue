@@ -150,7 +150,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Teleport } from 'vue';
 import { Menu } from 'siyuan';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';

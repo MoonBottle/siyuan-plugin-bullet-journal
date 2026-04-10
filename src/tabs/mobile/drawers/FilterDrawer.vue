@@ -79,7 +79,6 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { Teleport } from 'vue';
 import { useSettingsStore } from '@/stores';
 import { t } from '@/i18n';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
