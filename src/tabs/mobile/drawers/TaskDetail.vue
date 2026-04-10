@@ -156,12 +156,13 @@ const props = defineProps<{
   modelValue: boolean;
   task: Task | null;
   projectName?: string;
+  projectId?: string;
 }>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
   'openItem': [item: Item];
-  'createItem': [taskId: string];
+  'createItem': [taskId: string, projectId?: string];
   'toggleItem': [item: Item, newStatus: ItemStatus];
 }>();
 
@@ -229,7 +230,7 @@ const toggleItemStatus = (item: Item) => {
 // Handle create item button click
 const handleCreateItem = () => {
   if (props.task?.id) {
-    emit('createItem', props.task.id);
+    emit('createItem', props.task.id, props.projectId);
   }
 };
 

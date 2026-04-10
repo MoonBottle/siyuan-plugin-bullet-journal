@@ -63,6 +63,7 @@
     <TaskDetail
       v-model="state.showTaskDetail"
       :task="selectedTask"
+      :project-id="selectedProject?.id"
       :project-name="selectedProject?.name"
       @open-item="openItemDetail"
       @create-item="handleCreateItem"
@@ -72,6 +73,8 @@
     <!-- Quick Create Drawer -->
     <QuickCreateDrawer
       v-model="state.showQuickCreate"
+      :preselected-project-id="state.selectedProjectId || undefined"
+      :preselected-task-id="state.selectedTaskBlockId || undefined"
       @created="handleCreated"
     />
   </div>
@@ -214,16 +217,9 @@ const handleCreateTask = (projectId: string) => {
   // Note: QuickCreateDrawer handles the actual task creation
 };
 
-const handleCreateItem = (taskId: string) => {
+const handleCreateItem = (taskId: string, projectId?: string) => {
   state.selectedTaskBlockId = taskId;
-  // Find project for this task
-  for (const project of projectStore.projects) {
-    const task = project.tasks.find(t => t.id === taskId);
-    if (task) {
-      state.selectedProjectId = project.id;
-      break;
-    }
-  }
+  state.selectedProjectId = projectId || '';
   state.showQuickCreate = true;
 };
 
