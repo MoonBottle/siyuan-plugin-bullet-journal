@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { t } from '@/i18n';
-import { updateBlockContent } from '@/utils/fileUtils';
+import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import type { Item } from '@/types/models';
 
 const props = defineProps<{
@@ -86,7 +86,6 @@ const handleMigrate = async () => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dateStr = tomorrow.toISOString().split('T')[0];
   
-  const { updateBlockDateTime } = await import('@/utils/fileUtils');
   await updateBlockDateTime(
     props.item.blockId,
     dateStr,
