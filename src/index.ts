@@ -90,6 +90,10 @@ export default class TaskAssistantPlugin extends Plugin {
     this.platform = frontEnd as SyFrontendTypes;
     this.isMobile = frontEnd === 'mobile' || frontEnd === 'browser-mobile';
     this.isBrowser = frontEnd.includes('browser');
+    
+    console.log('[TaskAssistant] getFrontend():', frontEnd);
+    console.log('[TaskAssistant] isMobile:', this.isMobile);
+    console.log('[TaskAssistant] platform:', this.platform);
     this.isLocal =
       location.href.includes('127.0.0.1') ||
       location.href.includes('localhost');
