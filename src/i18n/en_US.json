@@ -605,6 +605,56 @@
       "beforeEndDays": "{count} days before end"
     }
   },
+  "mobile": {
+    "filter": {
+      "title": "Filter",
+      "projectGroup": "Project Group",
+      "dateFilter": "Date Filter",
+      "priority": "Priority",
+      "reset": "Reset",
+      "confirm": "Confirm"
+    },
+    "action": {
+      "complete": "Complete",
+      "pomodoro": "Focus",
+      "migrate": "Migrate",
+      "abandon": "Abandon",
+      "detail": "Detail",
+      "calendar": "Calendar",
+      "reminder": "Reminder",
+      "more": "More"
+    },
+    "bottomNav": {
+      "refresh": "Refresh",
+      "add": "Add",
+      "settings": "Settings",
+      "view": "View"
+    },
+    "quickCreate": {
+      "title": "Quick Create",
+      "createTask": "Create Task",
+      "createItem": "Create Item",
+      "selectProject": "Select Project",
+      "selectTask": "Select Task",
+      "enterContent": "Enter content",
+      "selectDate": "Select date",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "detail": {
+      "project": "Project",
+      "task": "Task",
+      "item": "Item",
+      "time": "Time",
+      "duration": "Duration",
+      "focusTime": "Focus Time",
+      "status": "Status",
+      "priority": "Priority",
+      "created": "Created",
+      "updated": "Updated",
+      "description": "Description"
+    }
+  },
   "recurring": {
     "settingTitle": "Set Recurring",
     "enableRecurring": "Enable Recurring",
