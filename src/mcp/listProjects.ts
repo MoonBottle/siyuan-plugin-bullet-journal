@@ -47,7 +47,7 @@ export async function executeListProjects(
   client: SiYuanClient,
   directories: ProjectDirectory[],
   args: ListProjectsArgs,
-  scanMode: ScanMode = 'directories'
+  scanMode: ScanMode = 'full'
 ): Promise<{ projects: ListProjectOutput[] }> {
   const { projects } = await loadProjectsAndItems(client, directories, scanMode);
   return { projects: buildListProjectsResult(projects, args) };

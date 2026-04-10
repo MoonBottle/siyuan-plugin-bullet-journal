@@ -44,27 +44,42 @@ function buildSqlGetProjectDocsByPath(dirPath: string): string {
 export async function loadProjectsAndItems(
   client: SiYuanClient,
   directories: ProjectDirectory[],
-  scanMode: ScanMode = 'directories'
+  scanMode: ScanMode = 'full'
 ): Promise<{ projects: Project[]; items: Item[] }> {
   const enabledDirs = directories.filter(d => d.enabled);
   const projects: Project[] = [];
   const processedDocIds = new Set<string>();
 
+  console.error('[Task Assistant MCP] loadProjectsAndItems start:', {
+    scanMode,
+    directoriesCount: directories.length,
+    enabledDirsCount: enabledDirs.length,
+    enabledDirs: enabledDirs.map(d => d.path)
+  });
+
   const getAllDocs = async () => {
+    console.error('[Task Assistant MCP] Executing SQL_GET_ALL_PROJECT_DOCS');
     const result = await client.sql(SQL_GET_ALL_PROJECT_DOCS) as { id: string; path: string; notebookId: string }[];
+    console.error('[Task Assistant MCP] getAllDocs returned:', result.length, 'docs');
     return result.map(row => ({ id: row.id, path: row.path, notebookId: row.notebookId }));
   };
 
   const getProjectDocs = async (dirPath: string) => {
     const sqlQuery = buildSqlGetProjectDocsByPath(dirPath);
+    console.error('[Task Assistant MCP] Executing SQL for dir:', dirPath);
     const result = await client.sql(sqlQuery) as { id: string; path: string; notebookId: string }[];
+    console.error('[Task Assistant MCP] getProjectDocs returned:', result.length, 'docs for', dirPath);
     return result.map(row => ({ id: row.id, path: row.path, notebookId: row.notebookId }));
   };
 
   // 全扫描模式：扫描所有包含任务标记的文档
   // 目录扫描模式：仅扫描配置的目录
-  if (scanMode === 'full' || enabledDirs.length === 0) {
+  const useFullScan = scanMode === 'full' || enabledDirs.length === 0;
+  console.error('[Task Assistant MCP] useFullScan:', useFullScan);
+  
+  if (useFullScan) {
     const docs = await getAllDocs();
+    console.error('[Task Assistant MCP] Processing', docs.length, 'docs in full scan mode');
     for (const doc of docs) {
       if (processedDocIds.has(doc.id)) continue;
       processedDocIds.add(doc.id);
@@ -75,6 +90,7 @@ export async function loadProjectsAndItems(
       }
     }
   } else {
+    console.error('[Task Assistant MCP] Processing directories mode:', enabledDirs.length, 'dirs');
     for (const dir of enabledDirs) {
       const docs = await getProjectDocs(dir.path);
       for (const doc of docs) {
