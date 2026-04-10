@@ -7,7 +7,7 @@
         type="text"
         class="search-input"
         :placeholder="t('todo').searchPlaceholder"
-        @input="emit('update:search', searchQuery)"
+  
       />
       <button v-if="searchQuery" class="clear-btn" @click="clearSearch">
         <svg><use xlink:href="#iconClose"></use></svg>
@@ -25,7 +25,7 @@ import { ref, watch } from 'vue';
 import { t } from '@/i18n';
 
 const props = defineProps<{
-  modelValue: string;
+  search: string;
   hasActiveFilters: boolean;
 }>();
 
@@ -34,10 +34,14 @@ const emit = defineEmits<{
   'openFilter': [];
 }>();
 
-const searchQuery = ref(props.modelValue);
+const searchQuery = ref(props.search);
 
-watch(() => props.modelValue, (val) => {
+watch(() => props.search, (val) => {
   searchQuery.value = val;
+});
+
+watch(searchQuery, (val) => {
+  emit('update:search', val);
 });
 
 const clearSearch = () => {
