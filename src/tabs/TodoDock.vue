@@ -9,6 +9,11 @@ import { usePlugin } from '@/main';
 import DesktopTodoDock from './DesktopTodoDock.vue';
 import MobileTodoDock from './mobile/MobileTodoDock.vue';
 
-const plugin = usePlugin() as any;
-const isMobile = computed(() => plugin.isMobile);
+const props = defineProps<{
+  plugin?: any;
+}>();
+
+// Use injected plugin or fallback to usePlugin()
+const pluginInstance = computed(() => props.plugin || usePlugin());
+const isMobile = computed(() => pluginInstance.value?.isMobile);
 </script>
