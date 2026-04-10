@@ -827,6 +827,9 @@ export default class TaskAssistantPlugin extends Plugin {
    * 注册 Dock（侧边栏）
    */
   private registerDocks() {
+    // 保存 plugin 实例引用
+    const plugin = this;
+    
     // 待办 Dock
     this.addDock({
       config: {
@@ -843,7 +846,7 @@ export default class TaskAssistantPlugin extends Plugin {
         this.element.style.display = 'flex';
         this.element.style.flexDirection = 'column';
         const pinia = getSharedPinia() ?? createPinia();
-        const app = createApp(TodoDock, { plugin: this });
+        const app = createApp(TodoDock, { plugin });
         app.use(pinia);
         app.mount(this.element);
       },
