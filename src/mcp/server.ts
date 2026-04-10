@@ -52,8 +52,11 @@ async function main() {
       })
     },
     async (args) => {
+      console.error('[Task Assistant MCP] list_projects called with args:', args);
       const { directories, scanMode } = await loadSettings(client);
+      console.error('[Task Assistant MCP] list_projects using scanMode:', scanMode);
       const result = await executeListProjects(client, directories || [], args, scanMode);
+      console.error('[Task Assistant MCP] list_projects returned', result.projects.length, 'projects');
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
       };
@@ -75,8 +78,11 @@ async function main() {
       })
     },
     async (args) => {
+      console.error('[Task Assistant MCP] filter_items called with args:', args);
       const { directories, scanMode } = await loadSettings(client);
+      console.error('[Task Assistant MCP] filter_items using scanMode:', scanMode);
       const result = await executeFilterItems(client, directories || [], args, scanMode);
+      console.error('[Task Assistant MCP] filter_items returned', result.items.length, 'items');
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
       };

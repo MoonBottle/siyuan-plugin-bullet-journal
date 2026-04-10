@@ -64,7 +64,7 @@ export async function executeFilterItems(
   client: SiYuanClient,
   directories: ProjectDirectory[],
   args: FilterItemsArgs,
-  scanMode: ScanMode = 'directories'
+  scanMode: ScanMode = 'full'
 ): Promise<{ items: FilterItemOutput[] }> {
   const { items } = await loadProjectsAndItems(client, directories, scanMode);
   const filtered = filterItems(items, args);
