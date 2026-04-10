@@ -167,13 +167,13 @@ const currentDate = dayjs().format('YYYY-MM-DD');
 const expiredItems = computed(() => {
   if (!projectStore) return [];
   const items = projectStore.getExpiredItems('');
-  return items.filter(item => item.status === 'pending');
+  return (items || []).filter(item => item.status === 'pending');
 });
 
 const todayItems = computed(() => {
   if (!projectStore) return [];
   const items = projectStore.getFutureItems('');
-  return items.filter(item => item.date === currentDate && item.status === 'pending');
+  return (items || []).filter(item => item.date === currentDate && item.status === 'pending');
 });
 
 // 选择事项

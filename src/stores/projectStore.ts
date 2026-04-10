@@ -18,10 +18,11 @@ import { getHPathByID } from '@/api';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
-  items: Item[],
+  items: Item[] | undefined,
   currentDate: string,
   groupId: string
 ): Item[] {
+  if (!items) return [];
   const filtered = !groupId ? items : items.filter(i => i.project?.groupId === groupId);
   return filterDateRangeRepresentative(filtered, currentDate);
 }

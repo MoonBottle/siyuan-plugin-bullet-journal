@@ -7,6 +7,7 @@ import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import MobilePomodoroTimerDrawer from '@/components/pomodoro/MobilePomodoroTimerDrawer.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
 import MobileSettingsDrawer from '@/components/settings/MobileSettingsDrawer.vue';
 import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
@@ -643,10 +644,16 @@ export async function showPomodoroCompleteDialog(
 }
 
 /**
- * 显示开始专注弹框
+ * 显示开始专注弹框（移动端抽屉 / 桌面端对话框）
  * 供底栏、Dock 等任意上下文调用，不依赖 PomodoroDock 是否已挂载
  */
-export function showPomodoroTimerDialog(): Dialog {
+export function showPomodoroTimerDialog(): Dialog | null {
+  // 移动端使用抽屉式弹框
+  if (isMobileDevice()) {
+    return showMobilePomodoroTimerDrawer();
+  }
+
+  // 桌面端使用传统对话框
   const dialog = new Dialog({
     title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
@@ -673,6 +680,47 @@ export function showPomodoroTimerDialog(): Dialog {
   }, 0);
 
   return dialog;
+}
+
+/**
+ * 显示移动端专注计时抽屉
+ */
+function showMobilePomodoroTimerDrawer(): Dialog | null {
+  const mountEl = document.createElement('div');
+  mountEl.id = 'mobile-pomodoro-timer-mount';
+  document.body.appendChild(mountEl);
+
+  let visible = true;
+  let drawerApp: any = null;
+
+  const closeDrawer = () => {
+    visible = false;
+    if (drawerApp) {
+      drawerApp.unmount();
+      drawerApp = null;
+    }
+    if (mountEl.parentNode) {
+      mountEl.parentNode.removeChild(mountEl);
+    }
+  };
+
+  drawerApp = createApp(MobilePomodoroTimerDrawer, {
+    modelValue: visible,
+    'onUpdate:modelValue': (val: boolean) => {
+      if (!val) closeDrawer();
+    },
+  });
+
+  const pinia = getSharedPinia();
+  if (pinia) {
+    drawerApp.use(pinia);
+  }
+  drawerApp.mount(mountEl);
+
+  return {
+    element: mountEl,
+    destroy: closeDrawer,
+  } as Dialog;
 }
 
 /**
