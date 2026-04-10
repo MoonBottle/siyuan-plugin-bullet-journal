@@ -1,5 +1,5 @@
 // src/tabs/mobile/composables/useMobileTodo.ts
-import { ref, computed, reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import type { Item, PriorityLevel } from '@/types/models';
 
 export interface DateRange {
@@ -29,26 +29,26 @@ export interface MobileTodoState {
   selectedTaskBlockId: string | null;
 }
 
-const state = reactive<MobileTodoState>({
-  searchQuery: '',
-  selectedGroup: '',
-  dateFilterType: 'today',
-  dateRange: null,
-  selectedPriorities: [],
-  
-  showFilterDrawer: false,
-  showActionDrawer: false,
-  showItemDetail: false,
-  showQuickCreate: false,
-  showProjectDetail: false,
-  showTaskDetail: false,
-  
-  selectedItem: null,
-  selectedProjectId: null,
-  selectedTaskBlockId: null,
-});
-
 export function useMobileTodo() {
+  const state = reactive<MobileTodoState>({
+    searchQuery: '',
+    selectedGroup: '',
+    dateFilterType: 'today',
+    dateRange: null,
+    selectedPriorities: [],
+    
+    showFilterDrawer: false,
+    showActionDrawer: false,
+    showItemDetail: false,
+    showQuickCreate: false,
+    showProjectDetail: false,
+    showTaskDetail: false,
+    
+    selectedItem: null,
+    selectedProjectId: null,
+    selectedTaskBlockId: null,
+  });
+
   const hasActiveFilters = computed(() => {
     return state.selectedGroup !== '' ||
            state.searchQuery !== '' ||
