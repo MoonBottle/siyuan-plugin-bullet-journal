@@ -192,7 +192,13 @@
     },
     "dirConfig": {
       "title": "Directory Config",
-      "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as task assistant directory\" to add quickly."
+      "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as task assistant directory\" to add quickly.",
+      "scanMode": "Scan Mode",
+      "scanModeFull": "Full Scan",
+      "scanModeDirectories": "Directories Only",
+      "scanModeFullHint": "Scan all documents in the workspace",
+      "scanModeDirectoriesHint": "Only scan documents in configured directories and their subdirectories",
+      "fullScanDirectoriesHint": "Directory configuration is only used for grouping in full scan mode"
     },
     "scanMode": {
       "label": "Scan Scope",

@@ -28,6 +28,9 @@
       <div v-if="scanMode === 'full'" class="sy-scan-mode__hint">
         {{ t('settings').dirConfig.scanModeFullHint || '扫描整个工作空间中的所有文档' }}
       </div>
+      <div v-else class="sy-scan-mode__hint">
+        {{ t('settings').dirConfig.scanModeDirectoriesHint || '仅扫描下方配置的目录及其子目录中的文档' }}
+      </div>
     </div>
 
     <!-- 目录配置说明 -->

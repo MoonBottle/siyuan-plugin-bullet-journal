@@ -192,7 +192,13 @@
     },
     "dirConfig": {
       "title": "目录配置",
-      "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为任务助手目录」快速添加。"
+      "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为任务助手目录」快速添加。",
+      "scanMode": "扫描模式",
+      "scanModeFull": "全库扫描",
+      "scanModeDirectories": "指定目录",
+      "scanModeFullHint": "扫描整个工作空间中的所有文档",
+      "scanModeDirectoriesHint": "仅扫描下方配置的目录及其子目录中的文档",
+      "fullScanDirectoriesHint": "以下目录配置仅用于分组归类"
     },
     "scanMode": {
       "label": "扫描范围",
