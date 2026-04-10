@@ -91,7 +91,7 @@ import QuickCreateDrawer from './drawers/QuickCreateDrawer.vue';
 import { useItemDetail } from './composables/useItemDetail';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
-import { showMessage } from '@/utils/dialog';
+import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
 import { updateBlockContent } from '@/utils/fileUtils';
 import { t } from '@/i18n';
 import type { Item, Project, Task, ItemStatus, PriorityLevel } from '@/types/models';
@@ -246,8 +246,8 @@ const applyFilters = () => {
 };
 
 const handleOpenPomodoro = (item: Item) => {
-  // TODO: Open pomodoro timer
-  showMessage(t('mobile.pomodoro.started') || '开始专注');
+  // Open pomodoro timer dialog with preselected item
+  showPomodoroTimerDialog(item.blockId);
 };
 
 const handleSetReminder = (item: Item) => {

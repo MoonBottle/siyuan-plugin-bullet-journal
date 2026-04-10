@@ -647,10 +647,10 @@ export async function showPomodoroCompleteDialog(
  * 显示开始专注弹框（移动端抽屉 / 桌面端对话框）
  * 供底栏、Dock 等任意上下文调用，不依赖 PomodoroDock 是否已挂载
  */
-export function showPomodoroTimerDialog(): Dialog | null {
+export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | null {
   // 移动端使用抽屉式弹框
   if (isMobileDevice()) {
-    return showMobilePomodoroTimerDrawer();
+    return showMobilePomodoroTimerDrawer(preselectedBlockId);
   }
 
   // 桌面端使用传统对话框
@@ -685,7 +685,7 @@ export function showPomodoroTimerDialog(): Dialog | null {
 /**
  * 显示移动端专注计时抽屉
  */
-function showMobilePomodoroTimerDrawer(): Dialog | null {
+function showMobilePomodoroTimerDrawer(preselectedBlockId?: string): Dialog | null {
   const mountEl = document.createElement('div');
   mountEl.id = 'mobile-pomodoro-timer-mount';
   document.body.appendChild(mountEl);
@@ -706,6 +706,7 @@ function showMobilePomodoroTimerDrawer(): Dialog | null {
 
   drawerApp = createApp(MobilePomodoroTimerDrawer, {
     modelValue: visible,
+    preselectedBlockId,
     'onUpdate:modelValue': (val: boolean) => {
       if (!val) closeDrawer();
     },
