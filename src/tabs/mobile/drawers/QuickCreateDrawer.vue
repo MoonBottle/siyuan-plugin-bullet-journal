@@ -25,36 +25,18 @@
               <!-- Task Selection/Input -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.belongingTask') || '所属任务' }}</label>
-                <div class="task-input-wrapper">
-                  <input
-                    v-model="taskInput"
-                    type="text"
-                    class="form-input task-input"
-                    :placeholder="t('mobile.quickCreate.selectOrInputTask') || '选择或输入新任务名称'"
-                    @focus="openTaskSelector"
-                  />
-                  <button 
-                    v-if="taskInput && !isExistingTask"
-                    class="create-task-hint"
-                    @click="createNewTask"
-                  >
-                    <svg><use xlink:href="#iconAdd"></use></svg>
-                    <span>{{ t('mobile.quickCreate.createNewTask') || '创建新任务' }}</span>
-                  </button>
-                </div>
-                <!-- Task Suggestions -->
-                <div v-if="showTaskSuggestions && availableTasks.length > 0" class="task-suggestions">
-                  <div
-                    v-for="task in filteredTasks"
-                    :key="task.id"
-                    class="task-suggestion-item"
-                    :class="{ selected: selectedTaskId === task.id }"
-                    @click="selectTask(task)"
-                  >
-                    <span class="task-name">{{ task.name }}</span>
-                    <span v-if="task.level" class="task-level">{{ task.level }}</span>
-                    <svg v-if="selectedTaskId === task.id" class="check-icon"><use xlink:href="#iconCheck"></use></svg>
-                  </div>
+                <button 
+                  class="selector-btn" 
+                  :class="{ empty: !taskInput }" 
+                  @click="openTaskSelector"
+                  :disabled="!selectedProjectId"
+                >
+                  <span class="selector-text">{{ taskInput || (t('mobile.quickCreate.selectOrInputTask') || '选择或输入新任务名称') }}</span>
+                  <svg class="selector-arrow"><use xlink:href="#iconRight"></use></svg>
+                </button>
+                <div v-if="taskInput && !isExistingTask" class="new-task-hint">
+                  <svg><use xlink:href="#iconInfo"></use></svg>
+                  <span>{{ t('mobile.quickCreate.willCreateNewTask') || '将创建新任务' }}</span>
                 </div>
               </div>
               
@@ -159,6 +141,69 @@
             <div class="sheet-footer">
               <button class="sheet-cancel-btn" @click="closeProjectSheet">
                 {{ t('common.cancel') || '取消' }}
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+    
+    <!-- Task Selector Sheet -->
+    <Transition name="fade">
+      <div v-if="showTaskSheet" class="sheet-overlay" @click="closeTaskSheet">
+        <Transition name="slide-up">
+          <div v-if="showTaskSheet" class="selector-sheet" @click.stop>
+            <div class="sheet-handle" @click="closeTaskSheet">
+              <div class="handle-bar"></div>
+            </div>
+            <div class="sheet-header">
+              <h4 class="sheet-title">{{ t('mobile.quickCreate.selectTask') || '选择任务' }}</h4>
+            </div>
+            
+            <!-- Task Search -->
+            <div class="sheet-search">
+              <input
+                v-model="taskSearchQuery"
+                type="text"
+                class="search-input"
+                :placeholder="t('mobile.quickCreate.searchTask') || '搜索或输入新任务名称'"
+              />
+            </div>
+            
+            <!-- New Task Hint -->
+            <div v-if="taskSearchQuery && filteredTasksInSheet.length === 0" class="sheet-new-task-hint">
+              <svg><use xlink:href="#iconInfo"></use></svg>
+              <span>{{ t('mobile.quickCreate.willCreateNewTask') || '将创建新任务' }}</span>
+            </div>
+            
+            <div class="sheet-content">
+              <div v-if="availableTasks.length === 0" class="sheet-empty">
+                <svg class="empty-icon"><use xlink:href="#iconTask"></use></svg>
+                <span>{{ t('mobile.quickCreate.noTasks') || '该项目暂无任务' }}</span>
+              </div>
+              <button
+                v-for="task in filteredTasksInSheet"
+                :key="task.id"
+                class="sheet-option"
+                :class="{ selected: selectedTaskId === task.id }"
+                @click="selectTaskFromSheet(task)"
+              >
+                <div class="option-icon task-icon">
+                  <svg><use xlink:href="#iconTask"></use></svg>
+                </div>
+                <div class="option-info">
+                  <span class="option-text">{{ task.name }}</span>
+                  <span v-if="task.level" class="option-meta">{{ task.level }}</span>
+                </div>
+                <svg v-if="selectedTaskId === task.id" class="check-icon"><use xlink:href="#iconCheck"></use></svg>
+              </button>
+            </div>
+            <div class="sheet-footer">
+              <button class="sheet-cancel-btn" @click="closeTaskSheet">
+                {{ t('common.cancel') || '取消' }}
+              </button>
+              <button class="sheet-confirm-btn" @click="confirmTaskSelection">
+                {{ t('common.confirm') || '确认' }}
               </button>
             </div>
           </div>
@@ -331,12 +376,16 @@ const projectStore = useProjectStore();
 const selectedProjectId = ref('');
 const selectedTaskId = ref('');
 const taskInput = ref('');
-const showTaskSuggestions = ref(false);
+const tempTaskInput = ref(''); // For task sheet
 
 // Sheet visibility
 const showProjectSheet = ref(false);
+const showTaskSheet = ref(false);
 const showDatePicker = ref(false);
 const showTimePicker = ref(false);
+
+// Task sheet search
+const taskSearchQuery = ref('');
 
 // Date picker state
 const calendarDate = ref(dayjs());
@@ -381,10 +430,10 @@ const availableTasks = computed(() => {
   return project?.tasks || [];
 });
 
-const filteredTasks = computed(() => {
-  if (!taskInput.value) return availableTasks.value;
+const filteredTasksInSheet = computed(() => {
+  if (!taskSearchQuery.value) return availableTasks.value;
   return availableTasks.value.filter(t => 
-    t.name.toLowerCase().includes(taskInput.value.toLowerCase())
+    t.name.toLowerCase().includes(taskSearchQuery.value.toLowerCase())
   );
 });
 
@@ -501,28 +550,23 @@ const openTaskSelector = () => {
     showProjectSheet.value = true;
     return;
   }
-  showTaskSuggestions.value = true;
+  taskSearchQuery.value = '';
+  tempTaskInput.value = taskInput.value;
+  showTaskSheet.value = true;
 };
 
-const selectTask = (task: Task) => {
+const closeTaskSheet = () => {
+  showTaskSheet.value = false;
+};
+
+const selectTaskFromSheet = (task: Task) => {
   selectedTaskId.value = task.id;
-  taskInput.value = task.name;
-  showTaskSuggestions.value = false;
+  tempTaskInput.value = task.name;
 };
 
-const createNewTask = async () => {
-  if (!selectedProjectId.value || !taskInput.value.trim()) return;
-  
-  const result = await createTask(
-    selectedProjectId.value,
-    taskInput.value.trim(),
-    'L1'
-  );
-  
-  if (result.success && result.task) {
-    selectedTaskId.value = result.task.id;
-    showTaskSuggestions.value = false;
-  }
+const confirmTaskSelection = () => {
+  taskInput.value = tempTaskInput.value || taskSearchQuery.value;
+  closeTaskSheet();
 };
 
 // Date picker
@@ -838,23 +882,16 @@ const close = () => {
   }
 }
 
-.create-task-hint {
+.new-task-hint {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-top: 8px;
   padding: 10px 14px;
-  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.08);
-  border: 1px dashed var(--b3-theme-primary);
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.06);
   border-radius: 10px;
   color: var(--b3-theme-primary);
   font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.12);
-  }
   
   svg {
     width: 16px;
@@ -1126,6 +1163,72 @@ const close = () => {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+// Task Sheet Styles
+.sheet-search {
+  padding: 0 16px 12px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 12px;
+  background: var(--b3-theme-surface);
+  font-size: 15px;
+  color: var(--b3-theme-on-background);
+  box-sizing: border-box;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+  
+  &::placeholder {
+    color: var(--b3-theme-on-surface);
+    opacity: 0.5;
+  }
+}
+
+.sheet-new-task-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 12px;
+  padding: 12px 16px;
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.06);
+  border-radius: 10px;
+  color: var(--b3-theme-primary);
+  font-size: 14px;
+  
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+}
+
+.option-icon.task-icon {
+  background: rgba(16, 185, 129, 0.1);
+  
+  svg {
+    fill: #059669;
+  }
+}
+
+.option-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.option-meta {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.6;
 }
 
 // Selector Sheet Styles
