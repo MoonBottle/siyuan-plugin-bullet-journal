@@ -659,6 +659,8 @@
       "confirm": "Confirm",
       "noTasks": "No tasks in this project"
     },
+    "postpone": "Postpone",
+    "postponeSuccess": "Postponed {count} items to tomorrow",
     "nextWeek": "Next Week",
     "selectStartTime": "Select Start Time",
     "selectEndTime": "Select End Time",

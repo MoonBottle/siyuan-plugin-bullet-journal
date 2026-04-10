@@ -650,22 +650,29 @@ const handleSubmit = async () => {
   if (!canSubmit.value) return;
   
   try {
+    // Get project docId
+    const project = projects.value.find(p => p.id === selectedProjectId.value);
+    if (!project?.docId) {
+      console.error('Project not found or has no docId');
+      return;
+    }
+    
     // Ensure task exists
     let taskBlockId = selectedTaskId.value;
     
     if (!taskBlockId || !isExistingTask.value) {
       // Create new task
       const result = await createTask(
-        selectedProjectId.value,
+        project.docId,
         taskInput.value.trim(),
         'L1'
       );
       
-      if (!result.success || !result.task?.blockId) {
-        console.error('Failed to create task');
+      if (!result.success || !result.blockId) {
+        console.error('Failed to create task:', result.message);
         return;
       }
-      taskBlockId = result.task.blockId;
+      taskBlockId = result.blockId;
     } else {
       // Get blockId from existing task
       const task = availableTasks.value.find(t => t.id === taskBlockId);

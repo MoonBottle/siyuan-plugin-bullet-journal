@@ -699,6 +699,8 @@
       "confirm": "确认",
       "noTasks": "该项目暂无任务"
     },
+    "postpone": "顺延",
+    "postponeSuccess": "已顺延 {count} 个事项到明天",
     "nextWeek": "一周后",
     "selectStartTime": "选择开始时间",
     "selectEndTime": "选择结束时间",
