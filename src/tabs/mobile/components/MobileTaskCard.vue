@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import type { Item, PriorityLevel } from '@/types/models';
 import { formatTimeRange } from '@/utils/dateUtils';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
@@ -95,6 +95,12 @@ const handleTouchMove = () => {
   }
   isPressing.value = false;
 };
+
+onUnmounted(() => {
+  if (pressTimer) {
+    clearTimeout(pressTimer);
+  }
+});
 </script>
 
 <style lang="scss" scoped>
