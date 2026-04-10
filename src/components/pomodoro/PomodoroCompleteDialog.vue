@@ -116,9 +116,15 @@
         <div class="break-section">
           <p class="break-hint">{{ t('settings').pomodoro.breakHint }}</p>
           <div class="break-options">
-            <button class="break-btn" @click="handleStartBreak(5)">{{ t('settings').pomodoro.break5min }}</button>
-            <button class="break-btn" @click="handleStartBreak(10)">{{ t('settings').pomodoro.break10min }}</button>
-            <button class="break-btn" @click="handleStartBreak(15)">{{ t('settings').pomodoro.break15min }}</button>
+            <button
+              v-for="duration in breakDurations"
+              :key="duration"
+              class="break-btn"
+              :class="{ active: selectedBreakDuration === duration }"
+              @click="handleStartBreak(duration)"
+            >
+              {{ duration }}{{ t('common').minutes }}
+            </button>
           </div>
         </div>
       </template>
@@ -137,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount, computed } from 'vue';
+import { ref, onBeforeUnmount, computed, watch } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { t } from '@/i18n';
@@ -161,6 +167,26 @@ const description = ref('');
 const saved = ref(false);
 const discarded = ref(false);
 const skipAutoSave = ref(false);
+
+// 从设置读取休息时长预设
+const breakDurations = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15];
+});
+
+// 从设置读取默认休息时长
+const defaultBreakDuration = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.defaultBreakDuration ?? 5;
+});
+
+// 当前选中的休息时长
+const selectedBreakDuration = ref(defaultBreakDuration.value);
+
+// 默认选中设置的默认值
+watch(defaultBreakDuration, (newVal) => {
+  selectedBreakDuration.value = newVal;
+}, { immediate: true });
 
 // 监听自动延迟事件，关闭弹窗并跳过自动保存
 const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
@@ -448,6 +474,12 @@ onBeforeUnmount(async () => {
 .break-btn:hover {
   border-color: var(--b3-theme-primary);
   color: var(--b3-theme-primary);
+}
+
+.break-btn.active {
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary, #fff);
+  border-color: var(--b3-theme-primary);
 }
 
 .dialog-actions {
