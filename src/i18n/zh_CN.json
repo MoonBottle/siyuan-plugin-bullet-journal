@@ -88,6 +88,7 @@
     "title": "待办事项",
     "today": "今天",
     "tomorrow": "明天",
+    "yesterday": "昨天",
     "allDay": "全天",
     "noTodos": "暂无待办事项",
     "emptyGuideTitle": "开始使用任务助手",

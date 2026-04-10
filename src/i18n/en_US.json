@@ -88,6 +88,7 @@
     "title": "Todo",
     "today": "Today",
     "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
     "allDay": "All Day",
     "noTodos": "No pending items",
     "emptyGuideTitle": "Get Started with Task Assistant",
