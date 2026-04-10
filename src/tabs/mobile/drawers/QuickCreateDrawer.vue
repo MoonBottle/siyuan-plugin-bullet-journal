@@ -650,10 +650,10 @@ const handleSubmit = async () => {
   if (!canSubmit.value) return;
   
   try {
-    // Get project docId
+    // Get project
     const project = projects.value.find(p => p.id === selectedProjectId.value);
-    if (!project?.docId) {
-      console.error('Project not found or has no docId');
+    if (!project?.id) {
+      console.error('Project not found');
       return;
     }
     
@@ -661,9 +661,9 @@ const handleSubmit = async () => {
     let taskBlockId = selectedTaskId.value;
     
     if (!taskBlockId || !isExistingTask.value) {
-      // Create new task
+      // Create new task (use project.id as docId)
       const result = await createTask(
-        project.docId,
+        project.id,
         taskInput.value.trim(),
         'L1'
       );
