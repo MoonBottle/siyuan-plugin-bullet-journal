@@ -15,7 +15,7 @@ import { useSkillService } from '@/services/skillService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
-import TodoDock from '@/tabs/TodoDock.vue';
+import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
 import AiChatDock from '@/tabs/AiChatDock.vue';
 import PomodoroDock from '@/tabs/PomodoroDock.vue';
 import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
@@ -838,7 +838,7 @@ export default class TaskAssistantPlugin extends Plugin {
         this.element.style.display = 'flex';
         this.element.style.flexDirection = 'column';
         const pinia = getSharedPinia() ?? createPinia();
-        const app = createApp(TodoDock);
+        const app = createApp(DesktopTodoDock);
         app.use(pinia);
         app.mount(this.element);
       },
