@@ -28,7 +28,7 @@ export async function loadPluginSettingsFromSiYuan(
   }
   try {
     const parsed = JSON.parse(raw) as PluginSettings;
-    const result = {
+    const result: PluginSettings = {
       directories: Array.isArray(parsed.directories) ? parsed.directories : [],
       groups: Array.isArray(parsed.groups) ? parsed.groups : [],
       scanMode: parsed.scanMode === 'directories' ? 'directories' : 'full'  // 默认全扫描
