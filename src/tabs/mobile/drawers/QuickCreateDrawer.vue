@@ -722,13 +722,13 @@ const close = () => {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(2px);
-  z-index: 1000;
+  z-index: 1002;
   display: flex;
   align-items: flex-end;
 }
 
 .sheet-overlay {
-  z-index: 1001;
+  z-index: 1003;
 }
 
 .quick-create-drawer,

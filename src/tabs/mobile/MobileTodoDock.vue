@@ -12,7 +12,7 @@
       :date-range="state.dateRange"
       :priorities="state.selectedPriorities"
       :has-active-filters="hasActiveFilters"
-      @item-click="openActionDrawer"
+      @item-click="openItemDetail"
       @item-long-press="handleQuickComplete"
       @refresh="handleRefresh"
     />

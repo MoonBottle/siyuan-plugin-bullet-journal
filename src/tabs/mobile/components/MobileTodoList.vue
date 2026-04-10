@@ -28,36 +28,51 @@
       <div v-else class="todo-sections">
         <!-- Expired items -->
         <div v-if="expiredItems.length > 0" class="todo-section">
-          <div class="section-header" :class="{ collapsed: collapsedSections.expired }" @click="toggleSection('expired')">
+          <div class="section-header" @click="toggleSection('expired')">
             <div class="section-title-wrapper">
-              <div class="section-icon warning">
-                <svg><use xlink:href="#iconWarning"></use></svg>
-              </div>
+              <div class="section-status-bar expired"></div>
               <span class="section-title">{{ t('todo').expired }}</span>
               <span class="section-count">{{ expiredItems.length }}</span>
             </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.expired }">
-              <svg><use xlink:href="#iconDown"></use></svg>
+            <div class="section-actions">
+              <button class="action-link" @click.stop="handlePostponeAll(expiredItems)">
+                {{ t('mobile.postpone') || '顺延' }}
+              </button>
+              <div class="collapse-icon" :class="{ collapsed: collapsedSections.expired }">
+                <svg><use xlink:href="#iconDown"></use></svg>
+              </div>
             </div>
           </div>
-          <div v-show="!collapsedSections.expired" class="section-items">
-            <MobileTaskCard
-              v-for="item in expiredItems"
+          <div v-show="!collapsedSections.expired" class="section-content">
+            <div
+              v-for="(item, index) in expiredItems"
               :key="item.id"
-              :item="item"
+              class="todo-item"
+              :class="{ 'is-last': index === expiredItems.length - 1 }"
               @click="emit('itemClick', item)"
-              @long-press="emit('itemLongPress', item)"
-            />
+              @touchstart="handleTouchStart(item)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
+            >
+              <div class="item-status-bar expired"></div>
+              <div class="item-content">
+                <div class="item-title">{{ item.content }}</div>
+                <div class="item-meta">
+                  <span class="meta-date expired">{{ formatExpiredDate(item) }}</span>
+                  <svg v-if="item.repeatRule" class="meta-icon"><use xlink:href="#iconRefresh"></use></svg>
+                  <svg v-if="item.reminder?.enabled" class="meta-icon"><use xlink:href="#iconClock"></use></svg>
+                </div>
+              </div>
+              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+            </div>
           </div>
         </div>
         
         <!-- Today's items -->
         <div v-if="todayItems.length > 0" class="todo-section">
-          <div class="section-header" :class="{ collapsed: collapsedSections.today }" @click="toggleSection('today')">
+          <div class="section-header" @click="toggleSection('today')">
             <div class="section-title-wrapper">
-              <div class="section-icon primary">
-                <svg><use xlink:href="#iconCalendar"></use></svg>
-              </div>
+              <div class="section-status-bar today"></div>
               <span class="section-title">{{ t('todo').today }}</span>
               <span class="section-count">{{ todayItems.length }}</span>
             </div>
@@ -65,24 +80,38 @@
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.today" class="section-items">
-            <MobileTaskCard
-              v-for="item in todayItems"
+          <div v-show="!collapsedSections.today" class="section-content">
+            <div
+              v-for="(item, index) in todayItems"
               :key="item.id"
-              :item="item"
+              class="todo-item"
+              :class="{ 'is-last': index === todayItems.length - 1 }"
               @click="emit('itemClick', item)"
-              @long-press="emit('itemLongPress', item)"
-            />
+              @touchstart="handleTouchStart(item)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
+            >
+              <div class="item-status-bar today"></div>
+              <div class="item-content">
+                <div class="item-title">{{ item.content }}</div>
+                <div class="item-meta">
+                  <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
+                  <span v-else class="meta-time all-day">{{ t('todo.allDay') || '全天' }}</span>
+                  <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
+                  <svg v-if="item.repeatRule" class="meta-icon"><use xlink:href="#iconRefresh"></use></svg>
+                  <svg v-if="item.reminder?.enabled" class="meta-icon"><use xlink:href="#iconClock"></use></svg>
+                </div>
+              </div>
+              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+            </div>
           </div>
         </div>
         
         <!-- Tomorrow's items -->
         <div v-if="tomorrowItems.length > 0" class="todo-section">
-          <div class="section-header" :class="{ collapsed: collapsedSections.tomorrow }" @click="toggleSection('tomorrow')">
+          <div class="section-header" @click="toggleSection('tomorrow')">
             <div class="section-title-wrapper">
-              <div class="section-icon secondary">
-                <svg><use xlink:href="#iconCheck"></use></svg>
-              </div>
+              <div class="section-status-bar tomorrow"></div>
               <span class="section-title">{{ t('todo').tomorrow }}</span>
               <span class="section-count">{{ tomorrowItems.length }}</span>
             </div>
@@ -90,24 +119,36 @@
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.tomorrow" class="section-items">
-            <MobileTaskCard
-              v-for="item in tomorrowItems"
+          <div v-show="!collapsedSections.tomorrow" class="section-content">
+            <div
+              v-for="(item, index) in tomorrowItems"
               :key="item.id"
-              :item="item"
+              class="todo-item"
+              :class="{ 'is-last': index === tomorrowItems.length - 1 }"
               @click="emit('itemClick', item)"
-              @long-press="emit('itemLongPress', item)"
-            />
+              @touchstart="handleTouchStart(item)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
+            >
+              <div class="item-status-bar tomorrow"></div>
+              <div class="item-content">
+                <div class="item-title">{{ item.content }}</div>
+                <div class="item-meta">
+                  <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
+                  <span v-else class="meta-time all-day">{{ t('todo.allDay') || '全天' }}</span>
+                  <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
+                </div>
+              </div>
+              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+            </div>
           </div>
         </div>
         
         <!-- Future items -->
         <div v-if="futureItems.length > 0" class="todo-section">
-          <div class="section-header" :class="{ collapsed: collapsedSections.future }" @click="toggleSection('future')">
+          <div class="section-header" @click="toggleSection('future')">
             <div class="section-title-wrapper">
-              <div class="section-icon tertiary">
-                <svg><use xlink:href="#iconCalendar"></use></svg>
-              </div>
+              <div class="section-status-bar future"></div>
               <span class="section-title">{{ t('todo').future }}</span>
               <span class="section-count">{{ futureItems.length }}</span>
             </div>
@@ -115,16 +156,30 @@
               <svg><use xlink:href="#iconDown"></use></svg>
             </div>
           </div>
-          <div v-show="!collapsedSections.future" class="section-items">
+          <div v-show="!collapsedSections.future" class="section-content">
             <div v-for="date in futureDates" :key="date" class="date-group">
-              <div class="date-label">{{ formatDateLabel(date) }}</div>
-              <MobileTaskCard
-                v-for="item in groupedFutureItems.get(date)"
+              <div class="date-divider">{{ formatDateLabel(date) }}</div>
+              <div
+                v-for="(item, index) in groupedFutureItems.get(date)"
                 :key="item.id"
-                :item="item"
+                class="todo-item"
+                :class="{ 'is-last': index === groupedFutureItems.get(date)!.length - 1 }"
                 @click="emit('itemClick', item)"
-                @long-press="emit('itemLongPress', item)"
-              />
+                @touchstart="handleTouchStart(item)"
+                @touchend="handleTouchEnd"
+                @touchmove="handleTouchMove"
+              >
+                <div class="item-status-bar future"></div>
+                <div class="item-content">
+                  <div class="item-title">{{ item.content }}</div>
+                  <div class="item-meta">
+                    <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
+                    <span v-else class="meta-time all-day">{{ t('todo.allDay') || '全天' }}</span>
+                    <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
+                  </div>
+                </div>
+                <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -134,9 +189,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onUnmounted } from 'vue';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
-import MobileTaskCard from './MobileTaskCard.vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import type { Item, PriorityLevel } from '@/types/models';
@@ -144,6 +198,8 @@ import dayjs from '@/utils/dayjs';
 import { formatDateLabel as formatDateLabelUtil } from '@/utils/dateUtils';
 import { getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
+import { updateBlockDateTime } from '@/utils/fileUtils';
+import { showMessage } from '@/utils/dialog';
 
 const props = defineProps<{
   groupId?: string;
@@ -162,6 +218,11 @@ const emit = defineEmits<{
 const projectStore = useProjectStore();
 const loading = computed(() => projectStore.loading);
 const hasAnyItems = computed(() => projectStore.getDisplayItems('').length > 0);
+
+// Long press handling
+let pressTimer: ReturnType<typeof setTimeout> | null = null;
+let currentItem: Item | null = null;
+const PRESS_DURATION = 500;
 
 // Collapsible sections
 const collapsedSections = ref({
@@ -225,13 +286,98 @@ const futureDates = computed(() => {
   return Array.from(groupedFutureItems.value.keys()).sort();
 });
 
+// Format helpers
 const formatDateLabel = (date: string) => {
   return formatDateLabelUtil(date, t('todo').today, t('todo').tomorrow);
+};
+
+const formatExpiredDate = (item: Item) => {
+  const date = getEffectiveDate(item);
+  const day = dayjs(date);
+  const today = dayjs();
+  const diffDays = today.diff(day, 'day');
+  
+  if (diffDays === 1) return t('todo.yesterday') || '昨天';
+  return day.format('M月D日');
+};
+
+const formatTime = (item: Item) => {
+  if (!item.startDateTime) return '';
+  return item.startDateTime.split(' ')[1]?.slice(0, 5) || '';
+};
+
+const getPriorityLabel = (priority: PriorityLevel) => {
+  const labels: Record<string, string> = {
+    high: t('todo.priority.high') || '高',
+    medium: t('todo.priority.medium') || '中',
+    low: t('todo.priority.low') || '低',
+  };
+  return labels[priority] || priority;
+};
+
+// Touch handlers for long press
+const handleTouchStart = (item: Item) => {
+  currentItem = item;
+  pressTimer = setTimeout(() => {
+    if (currentItem) {
+      emit('itemLongPress', currentItem);
+    }
+    pressTimer = null;
+  }, PRESS_DURATION);
+};
+
+const handleTouchEnd = () => {
+  if (pressTimer) {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+  currentItem = null;
+};
+
+const handleTouchMove = () => {
+  if (pressTimer) {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+  currentItem = null;
+};
+
+// Postpone all expired items
+const handlePostponeAll = async (items: Item[]) => {
+  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
+  let successCount = 0;
+  
+  for (const item of items) {
+    if (item.blockId) {
+      try {
+        await updateBlockDateTime(
+          item.blockId,
+          tomorrow,
+          item.startDateTime?.split(' ')[1],
+          item.endDateTime?.split(' ')[1]
+        );
+        successCount++;
+      } catch (e) {
+        console.error('Failed to postpone item:', e);
+      }
+    }
+  }
+  
+  if (successCount > 0) {
+    showMessage(t('mobile.postponeSuccess') || `已顺延 ${successCount} 个事项到明天`);
+    emit('refresh');
+  }
 };
 
 const handleCreateExample = async () => {
   await createExampleDocument();
 };
+
+onUnmounted(() => {
+  if (pressTimer) {
+    clearTimeout(pressTimer);
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -247,6 +393,7 @@ const handleCreateExample = async () => {
   min-height: 100%;
 }
 
+// Empty states
 .empty-guide {
   display: flex;
   flex-direction: column;
@@ -330,17 +477,18 @@ const handleCreateExample = async () => {
   }
 }
 
+// Todo sections
 .todo-sections {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .todo-section {
   background: var(--b3-theme-background);
   border-radius: 16px;
-  border: 1px solid var(--b3-border-color);
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .section-header {
@@ -350,15 +498,12 @@ const handleCreateExample = async () => {
   padding: 14px 16px;
   cursor: pointer;
   user-select: none;
+  background: var(--b3-theme-surface);
+  border-bottom: 1px solid var(--b3-border-color);
   transition: background 0.2s;
-  border-bottom: 1px solid transparent;
   
   &:hover {
-    background: var(--b3-theme-surface);
-  }
-  
-  &.collapsed {
-    border-bottom-color: transparent;
+    background: var(--b3-theme-surface-lighter);
   }
 }
 
@@ -368,43 +513,30 @@ const handleCreateExample = async () => {
   gap: 10px;
 }
 
-.section-icon {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
+.section-status-bar {
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
   
-  svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
+  &.expired {
+    background: #ef4444;
   }
   
-  &.warning {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+  &.today {
+    background: var(--b3-theme-primary);
   }
   
-  &.primary {
-    background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
-    color: var(--b3-theme-primary);
+  &.tomorrow {
+    background: #10b981;
   }
   
-  &.secondary {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
-  }
-  
-  &.tertiary {
-    background: rgba(139, 92, 246, 0.1);
-    color: #7c3aed;
+  &.future {
+    background: #8b5cf6;
   }
 }
 
 .section-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
 }
@@ -415,10 +547,32 @@ const handleCreateExample = async () => {
   color: var(--b3-theme-on-surface);
   opacity: 0.6;
   background: var(--b3-theme-surface-lighter);
-  padding: 2px 8px;
+  padding: 2px 10px;
   border-radius: 10px;
   min-width: 24px;
   text-align: center;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: #10b981;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: rgba(16, 185, 129, 0.1);
+  }
 }
 
 .collapse-icon {
@@ -441,26 +595,159 @@ const handleCreateExample = async () => {
   }
 }
 
-.section-items {
-  padding: 12px;
-  background: var(--b3-theme-surface);
+.section-content {
+  padding: 4px 0;
 }
 
-.date-group {
-  margin-bottom: 16px;
+// Todo items
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--b3-border-color);
   
-  &:last-child {
-    margin-bottom: 0;
+  &:hover {
+    background: var(--b3-theme-surface);
+  }
+  
+  &:active {
+    background: var(--b3-theme-surface-lighter);
+  }
+  
+  &.is-last {
+    border-bottom: none;
   }
 }
 
-.date-label {
-  font-size: 13px;
+.item-status-bar {
+  width: 3px;
+  height: 40px;
+  border-radius: 2px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  
+  &.expired {
+    background: #ef4444;
+  }
+  
+  &.today {
+    background: var(--b3-theme-primary);
+  }
+  
+  &.tomorrow {
+    background: #10b981;
+  }
+  
+  &.future {
+    background: #8b5cf6;
+  }
+}
+
+.item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-date {
+  font-size: 12px;
+  font-weight: 500;
+  
+  &.expired {
+    color: #ef4444;
+  }
+}
+
+.meta-time {
+  font-size: 12px;
+  color: var(--b3-theme-primary);
+  font-weight: 500;
+  
+  &.all-day {
+    color: var(--b3-theme-on-surface);
+    opacity: 0.6;
+  }
+}
+
+.meta-icon {
+  width: 14px;
+  height: 14px;
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.4;
+}
+
+.priority-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  
+  &.high {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+  
+  &.medium {
+    background: rgba(249, 115, 22, 0.1);
+    color: #ea580c;
+  }
+  
+  &.low {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+  }
+}
+
+.item-project {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.6;
+  margin-left: 8px;
+  flex-shrink: 0;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Date group for future items
+.date-group {
+  &:not(:first-child) {
+    margin-top: 8px;
+  }
+}
+
+.date-divider {
+  padding: 8px 16px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--b3-theme-on-surface);
-  padding: 8px 4px 12px;
-  border-bottom: 1px dashed var(--b3-border-color);
-  margin-bottom: 12px;
-  opacity: 0.8;
+  opacity: 0.7;
+  background: var(--b3-theme-surface);
+  margin: 0 -16px;
+  padding-left: 32px;
 }
 </style>
