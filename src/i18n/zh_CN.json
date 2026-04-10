@@ -314,7 +314,15 @@
       "breakOverlayTitle": "休息一下",
       "breakOverlayHint": "离开电脑，放松一下吧",
       "breakOverlayClose": "关闭弹窗",
-      "breakOverlayReopen": "打开休息弹窗"
+      "breakOverlayReopen": "打开休息弹窗",
+      "focusDurationPresets": "专注时长预设",
+      "focusDurationPresetsDesc": "快速选择按钮的时长选项（分钟）",
+      "defaultFocusDuration": "默认专注时长",
+      "defaultFocusDurationDesc": "打开专注弹窗时默认选中的时长",
+      "breakDurationPresets": "休息时长预设",
+      "breakDurationPresetsDesc": "完成专注后休息的时长选项（分钟）",
+      "defaultBreakDuration": "默认休息时长",
+      "defaultBreakDurationDesc": "休息弹窗默认选中的时长"
     },
     "slashCommands": {
       "title": "斜杠命令",

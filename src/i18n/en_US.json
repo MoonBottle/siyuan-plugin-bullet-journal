@@ -293,7 +293,15 @@
       "breakOverlayTitle": "Take a Break",
       "breakOverlayHint": "Step away from your computer and relax",
       "breakOverlayClose": "Close",
-      "breakOverlayReopen": "Open Break Overlay"
+      "breakOverlayReopen": "Open Break Overlay",
+      "focusDurationPresets": "Focus Duration Presets",
+      "focusDurationPresetsDesc": "Quick select button duration options (minutes)",
+      "defaultFocusDuration": "Default Focus Duration",
+      "defaultFocusDurationDesc": "Default selected duration when opening focus dialog",
+      "breakDurationPresets": "Break Duration Presets",
+      "breakDurationPresetsDesc": "Break duration options after focus completes (minutes)",
+      "defaultBreakDuration": "Default Break Duration",
+      "defaultBreakDurationDesc": "Default selected duration in break dialog"
     },
     "slashCommands": {
       "title": "Slash Commands",
