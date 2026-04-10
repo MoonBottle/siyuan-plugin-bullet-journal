@@ -62,11 +62,14 @@ Review meeting (Abandoned item) @2026-03-08 14:00:00~15:00:00 #abandoned
 ```
 
 **Key markers explained:**
-- `#task` - Marks a line as a task
+- `#task` or `📋` - Marks a line as a task (supports Emoji)
 - `@L1`, `@L2`, `@L3` - Task hierarchy levels (L1 = parent, L2/L3 = subtasks)
-- `@YYYY-MM-DD` - Date marker for work items
+- `@YYYY-MM-DD` or `📅YYYY-MM-DD` - Date marker for work items (supports Emoji)
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
-- `#done` / `#completed`, `#abandoned` - Item status (optional)
+- `#done` / `#completed` / `✅`, `#abandoned` / `❌` - Item status (optional, supports Emoji)
+- `🔥` / `🌱` / `🍃` - Priority markers: High/Medium/Low (optional)
+- `⏰HH:mm` / `⏰N minutes before` - Reminder setting (optional)
+- `🔁daily` / `🔁weekly` / `🔁monthly` - Recurrence rules (optional)
 
 > 💡 **Tip**: Tasks themselves don't have dates - dates are assigned to work items under tasks. This allows a task to span multiple days with different items each day.
 
@@ -99,6 +102,20 @@ Once configured, access your tasks through multiple views:
 | **Pomodoro Focus** | Right-click top bar → Closed Panels → Pomodoro Focus | Pomodoro timer and focus records |
 
 > 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes. When editing in notes, right-click an item block and select "View Detail", or Ctrl+click (Cmd+click on Mac) on item content to open the item detail modal.
+
+### Use Slash Commands for Efficiency
+
+Type `/` in the editor to open the slash command panel for quick access to common operations:
+
+| Command | Function |
+|---------|----------|
+| `/today` | Mark as today's item |
+| `/tomorrow` | Mark as tomorrow's item |
+| `/done` | Mark as completed |
+| `/calendar` | Open calendar view |
+| `/focus` | Start Pomodoro focus |
+
+For more slash commands, see [Data Format - Slash Commands](./data-format.md#slash-commands).
 
 For more view details, see [Views](./views.md).
 

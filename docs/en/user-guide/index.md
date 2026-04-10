@@ -11,6 +11,7 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 ### Core Concepts
 
 - [Data Format](./data-format.md) - Detailed explanation of task and item marker syntax
+  - [Slash Commands](./data-format.md#slash-commands) - Quick operation command reference
 
 ### Features
 
