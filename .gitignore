@@ -8,6 +8,7 @@ dev
 dist
 build
 tmp
+docs/temp/
 .env
 .trae/documents
 .trae/spec
