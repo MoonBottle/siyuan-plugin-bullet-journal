@@ -1094,11 +1094,22 @@ const close = () => {
 
 .cancel-btn,
 .sheet-cancel-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
   
   &:hover {
     background: var(--b3-theme-surface-lighter);
+  }
+  
+  &:active {
+    transform: scale(0.98);
   }
 }
 
