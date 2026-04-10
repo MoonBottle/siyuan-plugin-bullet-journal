@@ -443,7 +443,7 @@ const getStatusEmoji = (item: Item): string => {
   // 优先级 emoji
   let priorityEmoji = '';
   if (item.priority === 'high') priorityEmoji = '🔥 ';
-  else if (item.priority === 'medium') priorityEmoji = '🌿 ';
+  else if (item.priority === 'medium') priorityEmoji = '🌱 ';
   else if (item.priority === 'low') priorityEmoji = '🍃 ';
   
   // 原有逻辑

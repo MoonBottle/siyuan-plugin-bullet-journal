@@ -5,7 +5,7 @@
 ### Features
 
 - **Priority System**: New item priority system with High/Medium/Low three-level management
-  - Priority markers: Use 🔥(High), 🌿(Medium), 🍃(Low) emoji to mark priority levels
+  - Priority markers: Use 🔥(High), 🌱(Medium), 🍃(Low) emoji to mark priority levels
   - Priority setting: Available via context menu, item detail dialog, and slash command `/yxj` or `/priority`
   - Priority filtering: Todo sidebar supports filtering items by priority
   - Calendar view: Right-click tasks to set priority

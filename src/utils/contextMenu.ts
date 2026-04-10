@@ -162,7 +162,7 @@ export function createItemMenu(
           click: () => handlers.onSetPriority?.('high'),
         },
         {
-          iconHTML: '🌿',
+          iconHTML: '🌱',
           label: t('todo').priority.medium,
           click: () => handlers.onSetPriority?.('medium'),
         },
