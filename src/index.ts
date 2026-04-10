@@ -952,7 +952,10 @@ export default class TaskAssistantPlugin extends Plugin {
         menu.addItem({
           icon: 'iconSettings',
           label: t('settings').title || '设置',
-          click: () => showSettingsDialog(this)
+          click: () => {
+            menu.close();
+            showSettingsDialog(this);
+          }
         });
         menu.addItem({
           icon: 'iconAdd',
