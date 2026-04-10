@@ -1,6 +1,8 @@
 // src/tabs/mobile/composables/useQuickCreate.ts
 import { computed, reactive } from 'vue';
 import type { Project, Task, PriorityLevel } from '@/types/models';
+import { useProjectStore } from '@/stores';
+import { createTask, createItem, smartCreate } from '@/utils/quickCreate';
 
 export interface QuickCreateState {
   // UI state
@@ -22,6 +24,8 @@ export interface QuickCreateState {
 }
 
 export function useQuickCreate() {
+  const projectStore = useProjectStore();
+
   const state = reactive<QuickCreateState>({
     isOpen: false,
     isSubmitting: false,
@@ -40,16 +44,21 @@ export function useQuickCreate() {
 
   // Computed properties
   const projects = computed<Project[]>(() => {
-    // TODO: Integrate with project store
-    return [];
+    return projectStore.projects.map(p => ({
+      id: p.id,
+      name: p.name,
+      box: p.box,
+    }));
   });
 
   const tasks = computed<Task[]>(() => {
-    // TODO: Return tasks from selected project
-    if (!state.selectedProjectId) {
-      return [];
-    }
-    return [];
+    if (!state.selectedProjectId) return [];
+    const project = projectStore.projects.find(p => p.id === state.selectedProjectId);
+    if (!project) return [];
+    return project.tasks.map(t => ({
+      blockId: t.blockId,
+      name: t.name,
+    }));
   });
 
   const canSubmit = computed(() => {
@@ -124,9 +133,23 @@ export function useQuickCreate() {
     state.isSubmitting = true;
 
     try {
-      // TODO: Implement actual submission logic
-      // This should create a new item with the provided details
-      await new Promise(resolve => setTimeout(resolve, 500)); // Placeholder
+      // Use smartCreate for intelligent task/item creation based on input
+      if (state.selectedProjectId) {
+        const result = await smartCreate(
+          state.content,
+          state.selectedProjectId,
+          state.selectedTaskBlockId || undefined
+        );
+
+        if (!result.success) {
+          console.error('Failed to create:', result.message);
+          return false;
+        }
+      } else {
+        // Fallback: no project selected
+        console.error('No project selected');
+        return false;
+      }
 
       reset();
       close();
