@@ -645,6 +645,56 @@
       "beforeEndDays": "结束前{count}天"
     }
   },
+  "mobile": {
+    "filter": {
+      "title": "筛选",
+      "projectGroup": "项目分组",
+      "dateFilter": "日期筛选",
+      "priority": "优先级",
+      "reset": "重置",
+      "confirm": "确认"
+    },
+    "action": {
+      "complete": "完成",
+      "pomodoro": "专注",
+      "migrate": "迁移",
+      "abandon": "放弃",
+      "detail": "详情",
+      "calendar": "日历",
+      "reminder": "提醒",
+      "more": "更多"
+    },
+    "bottomNav": {
+      "refresh": "刷新",
+      "add": "添加",
+      "settings": "设置",
+      "view": "视图"
+    },
+    "quickCreate": {
+      "title": "快速创建",
+      "createTask": "创建任务",
+      "createItem": "创建事项",
+      "selectProject": "选择项目",
+      "selectTask": "选择任务",
+      "enterContent": "输入内容",
+      "selectDate": "选择日期",
+      "cancel": "取消",
+      "confirm": "确认"
+    },
+    "detail": {
+      "project": "项目",
+      "task": "任务",
+      "item": "事项",
+      "time": "时间",
+      "duration": "时长",
+      "focusTime": "专注时长",
+      "status": "状态",
+      "priority": "优先级",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "description": "描述"
+    }
+  },
   "recurring": {
     "settingTitle": "设置重复",
     "repeatRule": "重复规则",
