@@ -224,18 +224,9 @@ watch(breakPresets, (newVal) => {
   });
 }, { deep: true });
 
-// 监听 props 变化，同步本地状态
-watch(() => props.pomodoro.focusDurationPresets, () => {
-  if (props.pomodoro.focusDurationPresets?.length === 4) {
-    focusPresets.value = [...props.pomodoro.focusDurationPresets];
-  }
-}, { deep: true });
-
-watch(() => props.pomodoro.breakDurationPresets, () => {
-  if (props.pomodoro.breakDurationPresets?.length === 3) {
-    breakPresets.value = [...props.pomodoro.breakDurationPresets];
-  }
-}, { deep: true });
+// 注意：不需要监听 props 变化来同步本地状态
+// 因为使用 emit 模式，本地状态是单一数据源
+// 父组件通过 v-model 绑定，emit 更新后会自动更新 props
 
 // 验证专注预设输入
 const validateFocusPreset = (index: number) => {
