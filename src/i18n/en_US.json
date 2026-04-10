@@ -113,6 +113,11 @@
     "viewCalendar": "View Calendar",
     "detail": "Detail",
     "itemDetail": "Item Detail",
+    "level": {
+      "L1": "L1",
+      "L2": "L2",
+      "L3": "L3"
+    },
     "project": "Project",
     "task": "Task",
     "item": "Item",
@@ -632,14 +637,69 @@
     },
     "quickCreate": {
       "title": "Quick Create",
-      "createTask": "Create Task",
-      "createItem": "Create Item",
+      "task": "Task",
+      "item": "Item",
+      "project": "Project",
       "selectProject": "Select Project",
+      "taskName": "Task Name",
+      "taskNamePlaceholder": "Enter task name",
+      "taskLevel": "Task Level",
+      "belongingTask": "Belonging Task",
       "selectTask": "Select Task",
-      "enterContent": "Enter content",
-      "selectDate": "Select date",
+      "itemContent": "Item Content",
+      "itemContentPlaceholder": "Enter item content",
+      "date": "Date",
+      "timeRange": "Time Range",
+      "priority": "Priority",
       "cancel": "Cancel",
       "confirm": "Confirm"
+    },
+    "task": {
+      "items": "Items",
+      "completed": "Completed",
+      "pending": "Pending",
+      "progress": "Progress",
+      "noItems": "No items",
+      "createItem": "Create Item"
+    },
+    "project": {
+      "tasks": "Tasks",
+      "items": "Items",
+      "completed": "Completed",
+      "progress": "Progress",
+      "noTasks": "No tasks",
+      "createTask": "Create Task"
+    },
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "abandoned": "Abandoned",
+      "updated": "Status updated"
+    },
+    "date": {
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    },
+    "priority": {
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority"
+    },
+    "settings": {
+      "title": "Settings",
+      "view": "View",
+      "configuration": "Configuration",
+      "advanced": "Advanced",
+      "hideCompleted": "Hide Completed",
+      "hideAbandoned": "Hide Abandoned",
+      "directories": "directories",
+      "groups": "groups",
+      "minutes": "min",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "about": "About",
+      "pluginSettings": "Plugin Settings",
+      "version": "Version"
     },
     "detail": {
       "project": "Project",
@@ -652,7 +712,10 @@
       "priority": "Priority",
       "created": "Created",
       "updated": "Updated",
-      "description": "Description"
+      "description": "Description",
+      "setReminder": "Set Reminder",
+      "setRecurring": "Set Recurring",
+      "pomodoroRecords": "Pomodoro Records"
     }
   },
   "recurring": {

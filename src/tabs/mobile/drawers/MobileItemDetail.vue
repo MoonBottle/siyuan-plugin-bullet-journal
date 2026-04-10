@@ -224,10 +224,14 @@ const duration = computed(() => {
 const focusTotalTime = computed(() => {
   if (!props.item?.pomodoros?.length) return '';
   const totalMinutes = props.item.pomodoros.reduce((sum, p) => {
+    if (!p.startTime) return sum;
     const start = new Date(p.startTime);
     const end = p.endTime ? new Date(p.endTime) : new Date();
+    // 检查是否是有效日期
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return sum;
     return sum + (end.getTime() - start.getTime()) / 60000;
   }, 0);
+  if (totalMinutes <= 0) return '';
   if (totalMinutes < 60) return `${Math.round(totalMinutes)}分钟`;
   return `${Math.floor(totalMinutes / 60)}小时${Math.round(totalMinutes % 60)}分钟`;
 });
@@ -266,14 +270,20 @@ const togglePomodoroList = () => {
 };
 
 const formatPomodoroTime = (p: PomodoroRecord): string => {
+  if (!p.startTime) return '--:--';
   const start = new Date(p.startTime);
   const end = p.endTime ? new Date(p.endTime) : new Date();
+  // 检查是否是有效日期
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return '--:--';
   return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
 };
 
 const formatPomodoroDuration = (p: PomodoroRecord): string => {
+  if (!p.startTime) return '--分钟';
   const start = new Date(p.startTime);
   const end = p.endTime ? new Date(p.endTime) : new Date();
+  // 检查是否是有效日期
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return '--分钟';
   const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
   return `${minutes}分钟`;
 };

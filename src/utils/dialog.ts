@@ -2,12 +2,13 @@
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
-import { Dialog } from 'siyuan';
+import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
+import MobileSettingsDrawer from '@/components/settings/MobileSettingsDrawer.vue';
 import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
 import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
@@ -675,9 +676,23 @@ export function showPomodoroTimerDialog(): Dialog {
 }
 
 /**
- * 显示设置弹框（Vue 重构版）
+ * 检测是否为移动端
  */
-export function showSettingsDialog(plugin: any): Dialog {
+function isMobileDevice(): boolean {
+  const frontend = getFrontend();
+  return frontend === 'mobile' || frontend === 'browser-mobile';
+}
+
+/**
+ * 显示设置弹框（Vue 重构版）- 支持移动端适配
+ */
+export function showSettingsDialog(plugin: any): Dialog | null {
+  // 移动端使用抽屉式设置面板
+  if (isMobileDevice()) {
+    return showMobileSettingsDrawer(plugin);
+  }
+  
+  // 桌面端使用传统对话框
   let settingsDialogApp: any = null;
   const dialog = new Dialog({
     title: t('settings').title,
@@ -710,6 +725,79 @@ export function showSettingsDialog(plugin: any): Dialog {
   }, 0);
 
   return dialog;
+}
+
+/**
+ * 显示移动端设置抽屉
+ */
+function showMobileSettingsDrawer(plugin: any): Dialog | null {
+  // 创建挂载点
+  const mountEl = document.createElement('div');
+  mountEl.id = 'mobile-settings-drawer-mount';
+  document.body.appendChild(mountEl);
+  
+  let settingsApp: any = null;
+  let visible = true;
+  
+  const closeDrawer = () => {
+    visible = false;
+    if (settingsApp) {
+      settingsApp.unmount();
+      settingsApp = null;
+    }
+    if (mountEl.parentNode) {
+      mountEl.parentNode.removeChild(mountEl);
+    }
+    void plugin.loadSettings();
+  };
+  
+  const handleSave = async (settings: Record<string, any>) => {
+    // 保存设置
+    if (plugin.saveData) {
+      await plugin.saveData('settings.json', JSON.stringify(settings, null, 2));
+    }
+    showMessage(t('settings').saveSuccess || '设置已保存', 'info');
+    closeDrawer();
+  };
+  
+  // 加载当前设置
+  const loadCurrentSettings = async () => {
+    let currentSettings = {};
+    if (plugin.loadData) {
+      try {
+        const data = await plugin.loadData('settings.json');
+        if (data) {
+          currentSettings = typeof data === 'string' ? JSON.parse(data) : data;
+        }
+      } catch (e) {
+        console.error('[Task Assistant] Failed to load settings:', e);
+      }
+    }
+    return currentSettings;
+  };
+  
+  loadCurrentSettings().then((initialSettings) => {
+    settingsApp = createApp(MobileSettingsDrawer, {
+      modelValue: visible,
+      initialSettings,
+      'onUpdate:modelValue': (val: boolean) => {
+        if (!val) closeDrawer();
+      },
+      onSave: handleSave,
+    });
+    
+    const pinia = getSharedPinia();
+    if (pinia) {
+      settingsApp.use(pinia);
+    }
+    settingsApp.mount(mountEl);
+  });
+  
+  // 返回一个模拟的 Dialog 对象
+  return {
+    element: mountEl,
+    destroy: closeDrawer,
+  } as Dialog;
 }
 
 /**

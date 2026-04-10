@@ -113,6 +113,11 @@
     "viewCalendar": "查看日历",
     "detail": "详情",
     "itemDetail": "事项详情",
+    "level": {
+      "L1": "L1",
+      "L2": "L2",
+      "L3": "L3"
+    },
     "project": "项目",
     "task": "任务",
     "item": "事项",
@@ -672,14 +677,69 @@
     },
     "quickCreate": {
       "title": "快速创建",
-      "createTask": "创建任务",
-      "createItem": "创建事项",
+      "task": "任务",
+      "item": "事项",
+      "project": "所属项目",
       "selectProject": "选择项目",
+      "taskName": "任务名称",
+      "taskNamePlaceholder": "输入任务名称",
+      "taskLevel": "任务层级",
+      "belongingTask": "所属任务",
       "selectTask": "选择任务",
-      "enterContent": "输入内容",
-      "selectDate": "选择日期",
+      "itemContent": "事项内容",
+      "itemContentPlaceholder": "输入事项内容",
+      "date": "日期",
+      "timeRange": "时间范围",
+      "priority": "优先级",
       "cancel": "取消",
       "confirm": "确认"
+    },
+    "task": {
+      "items": "事项",
+      "completed": "已完成",
+      "pending": "待完成",
+      "progress": "进度",
+      "noItems": "暂无事项",
+      "createItem": "创建事项"
+    },
+    "project": {
+      "tasks": "任务",
+      "items": "事项",
+      "completed": "已完成",
+      "progress": "进度",
+      "noTasks": "暂无任务",
+      "createTask": "创建任务"
+    },
+    "status": {
+      "pending": "待完成",
+      "completed": "已完成",
+      "abandoned": "已放弃",
+      "updated": "状态已更新"
+    },
+    "date": {
+      "today": "今天",
+      "tomorrow": "明天"
+    },
+    "priority": {
+      "high": "高优先级",
+      "medium": "中优先级",
+      "low": "低优先级"
+    },
+    "settings": {
+      "title": "设置",
+      "view": "视图",
+      "configuration": "配置",
+      "advanced": "高级",
+      "hideCompleted": "隐藏已完成",
+      "hideAbandoned": "隐藏已放弃",
+      "directories": "个目录",
+      "groups": "个分组",
+      "minutes": "分钟",
+      "enabled": "已启用",
+      "disabled": "未启用",
+      "about": "关于",
+      "pluginSettings": "插件设置",
+      "version": "版本"
     },
     "detail": {
       "project": "项目",
@@ -692,7 +752,10 @@
       "priority": "优先级",
       "created": "创建时间",
       "updated": "更新时间",
-      "description": "描述"
+      "description": "描述",
+      "setReminder": "设置提醒",
+      "setRecurring": "设置重复",
+      "pomodoroRecords": "番茄钟记录"
     }
   },
   "recurring": {

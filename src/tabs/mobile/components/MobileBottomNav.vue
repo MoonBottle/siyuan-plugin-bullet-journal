@@ -9,49 +9,30 @@
         <svg><use xlink:href="#iconAdd"></use></svg>
       </div>
     </button>
-    <button class="nav-item" @click="showSettingsMenu">
+    <button class="nav-item" @click="showSettings">
       <svg class="nav-icon"><use xlink:href="#iconSettings"></use></svg>
       <span class="nav-label">{{ t('common').more }}</span>
     </button>
   </div>
+  
+  <!-- Settings Drawer -->
+  <SettingsDrawer v-model="showSettingsDrawer" />
 </template>
 
 <script setup lang="ts">
-import { Menu } from 'siyuan';
-import { useProjectStore } from '@/stores';
+import { ref } from 'vue';
 import { t } from '@/i18n';
+import SettingsDrawer from '../drawers/SettingsDrawer.vue';
 
 const emit = defineEmits<{
   refresh: [];
   create: [];
 }>();
 
-const projectStore = useProjectStore();
+const showSettingsDrawer = ref(false);
 
-const showSettingsMenu = (event: MouseEvent) => {
-  const target = event.currentTarget as HTMLElement;
-  if (!target) return;
-
-  const rect = target.getBoundingClientRect();
-  const menu = new Menu('mobile-todo-settings');
-
-  menu.addItem({
-    icon: projectStore.hideCompleted ? 'iconEye' : 'iconEyeoff',
-    label: projectStore.hideCompleted ? t('todo').showCompleted : t('todo').hideCompleted,
-    click: () => projectStore.toggleHideCompleted(),
-  });
-
-  menu.addItem({
-    icon: projectStore.hideAbandoned ? 'iconEye' : 'iconEyeoff',
-    label: projectStore.hideAbandoned ? t('todo').showAbandoned : t('todo').hideAbandoned,
-    click: () => projectStore.toggleHideAbandoned(),
-  });
-
-  menu.open({
-    x: rect.left + rect.width / 2,
-    y: rect.top - 8,
-    isLeft: true,
-  });
+const showSettings = () => {
+  showSettingsDrawer.value = true;
 };
 </script>
 
@@ -78,6 +59,10 @@ const showSettingsMenu = (event: MouseEvent) => {
   background: transparent;
   cursor: pointer;
   color: var(--b3-theme-on-surface);
+  
+  &:active {
+    opacity: 0.7;
+  }
 }
 
 .nav-icon {
@@ -104,6 +89,10 @@ const showSettingsMenu = (event: MouseEvent) => {
   color: var(--b3-theme-on-primary);
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .add-btn svg {
