@@ -1,15 +1,14 @@
 <template>
-  <div class="task-item-detail-wrapper">
-    <MobileItemDetail
-      :model-value="modelValue"
-      :item="item"
-      :disable-navigation="true"
-      @update:model-value="$emit('update:modelValue', $event)"
-      @open-pomodoro="$emit('openPomodoro', $event)"
-      @set-reminder="$emit('setReminder', $event)"
-      @set-recurring="$emit('setRecurring', $event)"
-    />
-  </div>
+  <MobileItemDetail
+    :model-value="modelValue"
+    :item="item"
+    :disable-navigation="true"
+    overlay-class="task-item-detail-overlay"
+    @update:model-value="$emit('update:modelValue', $event)"
+    @open-pomodoro="$emit('openPomodoro', $event)"
+    @set-reminder="$emit('setReminder', $event)"
+    @set-recurring="$emit('setRecurring', $event)"
+  />
 </template>
 
 <script setup lang="ts">
@@ -29,11 +28,10 @@ defineEmits<{
 }>();
 </script>
 
-<style lang="scss" scoped>
-// Higher z-index wrapper to show above TaskDetail (z-index: 1001)
-.task-item-detail-wrapper {
-  :deep(.drawer-overlay) {
-    z-index: 1002;
-  }
+<style lang="scss">
+// Global style (no scoped) to override z-index
+// Higher than TaskDetail (z-index: 1001)
+.drawer-overlay.task-item-detail-overlay {
+  z-index: 1002;
 }
 </style>

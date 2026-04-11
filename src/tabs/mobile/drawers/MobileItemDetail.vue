@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
+      <div v-if="modelValue" class="drawer-overlay" :class="overlayClass" @click="close">
         <Transition name="slide-up">
           <div v-if="modelValue" class="item-detail-drawer" @click.stop>
             <!-- Handle Bar -->
@@ -192,6 +192,7 @@ const props = defineProps<{
   modelValue: boolean;
   item: Item | null;
   disableNavigation?: boolean;
+  overlayClass?: string;
 }>();
 
 const emit = defineEmits<{
