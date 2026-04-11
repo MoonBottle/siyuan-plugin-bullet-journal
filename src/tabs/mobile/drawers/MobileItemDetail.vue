@@ -3,7 +3,17 @@
     <Transition name="fade">
       <div v-if="modelValue" class="drawer-overlay" :class="overlayClass" @click="close">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="item-detail-drawer" @click.stop>
+          <div 
+            v-if="modelValue" 
+            ref="drawerRef"
+            class="item-detail-drawer" 
+            :class="{ 'is-dragging': isDragging }"
+            :style="drawerStyle"
+            @click.stop
+            @touchstart="onTouchStart"
+            @touchmove="onTouchMove"
+            @touchend="onTouchEnd"
+          >
             <!-- Handle Bar -->
             <div class="drawer-handle" @click="close">
               <div class="handle-bar"></div>
@@ -322,7 +332,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import dayjs from 'dayjs';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
@@ -371,6 +381,74 @@ const showAbandonConfirm = ref(false);
 
 // Migrate menu
 const showMigrateDrawer = ref(false);
+
+// 拖拽关闭相关
+const drawerRef = ref<HTMLElement | null>(null);
+const isDragging = ref(false);
+const startY = ref(0);
+const currentY = ref(0);
+const translateY = ref(0);
+
+const drawerStyle = computed(() => {
+  if (!isDragging.value && translateY.value === 0) return {};
+  return {
+    transform: `translateY(${translateY.value}px)`,
+    transition: isDragging.value ? 'none' : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'
+  };
+});
+
+const onTouchStart = (e: TouchEvent) => {
+  // 只在抽屉顶部区域（把手和标题）启用拖拽
+  const target = e.target as HTMLElement;
+  const drawer = drawerRef.value;
+  if (!drawer) return;
+  
+  // 检查是否点击/触摸在把手或头部区域
+  const handle = drawer.querySelector('.drawer-handle');
+  const header = drawer.querySelector('.drawer-header');
+  const isHandle = handle?.contains(target);
+  const isHeader = header?.contains(target);
+  
+  if (!isHandle && !isHeader) return;
+  
+  startY.value = e.touches[0].clientY;
+  currentY.value = startY.value;
+  isDragging.value = true;
+};
+
+const onTouchMove = (e: TouchEvent) => {
+  if (!isDragging.value) return;
+  
+  currentY.value = e.touches[0].clientY;
+  const diff = currentY.value - startY.value;
+  
+  // 只允许向下拖动
+  if (diff > 0) {
+    translateY.value = diff;
+  }
+};
+
+const onTouchEnd = () => {
+  if (!isDragging.value) return;
+  
+  isDragging.value = false;
+  const diff = currentY.value - startY.value;
+  
+  // 如果拖动超过 100px 或者速度较快，关闭抽屉
+  if (diff > 100) {
+    close();
+  } else {
+    // 否则回弹
+    translateY.value = 0;
+  }
+};
+
+// 关闭时重置位置
+watch(() => props.modelValue, (val) => {
+  if (!val) {
+    translateY.value = 0;
+  }
+});
 
 const isCompletedOrAbandoned = computed(() => 
   props.item?.status === 'completed' || props.item?.status === 'abandoned'
@@ -779,13 +857,23 @@ const close = () => {
   flex-direction: column;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+  will-change: transform;
+  
+  &.is-dragging {
+    user-select: none;
+  }
 }
 
 .drawer-handle {
   display: flex;
   justify-content: center;
   padding: 8px;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: pan-y;
+  
+  &:active {
+    cursor: grabbing;
+  }
 }
 
 .handle-bar {
@@ -799,6 +887,12 @@ const close = () => {
 .drawer-header {
   padding: 0 16px 8px;
   text-align: center;
+  cursor: grab;
+  touch-action: pan-y;
+  
+  &:active {
+    cursor: grabbing;
+  }
 }
 
 .drawer-title {
