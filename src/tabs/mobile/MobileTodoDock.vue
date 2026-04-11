@@ -51,6 +51,15 @@
       @set-recurring="handleSetRecurring"
     />
 
+    <!-- Task Item Detail Drawer (higher z-index, no nested navigation) -->
+    <TaskItemDetail
+      v-model="state.showTaskItemDetail"
+      :item="state.selectedTaskItem"
+      @open-pomodoro="handleOpenPomodoro"
+      @set-reminder="handleSetTaskItemReminder"
+      @set-recurring="handleSetTaskItemRecurring"
+    />
+
     <!-- Project Detail Drawer -->
     <ProjectDetail
       v-model="state.showProjectDetail"
@@ -65,7 +74,7 @@
       :task="selectedTask"
       :project-id="selectedProject?.id"
       :project-name="selectedProject?.name"
-      @open-item="openItemDetail"
+      @open-item="openTaskItemDetail"
       @create-item="handleCreateItem"
       @toggle-item="handleToggleItemStatus"
     />
@@ -88,6 +97,7 @@ import MobileBottomNav from './components/MobileBottomNav.vue';
 import FilterDrawer from './drawers/FilterDrawer.vue';
 import ActionDrawer from './drawers/ActionDrawer.vue';
 import MobileItemDetail from './drawers/MobileItemDetail.vue';
+import TaskItemDetail from './drawers/TaskItemDetail.vue';
 import ProjectDetail from './drawers/ProjectDetail.vue';
 import TaskDetail from './drawers/TaskDetail.vue';
 import QuickCreateDrawer from './drawers/QuickCreateDrawer.vue';
@@ -118,7 +128,9 @@ const state = reactive({
   showProjectDetail: false,
   showTaskDetail: false,
   showQuickCreate: false,
+  showTaskItemDetail: false,
   selectedItem: null as Item | null,
+  selectedTaskItem: null as Item | null,
   selectedProjectId: null as string | null,
   selectedTaskBlockId: null as string | null,
 });
@@ -169,6 +181,11 @@ const openItemDetail = (item: Item) => {
   state.selectedItem = item;
   openItem(item);
   state.showItemDetail = true;
+};
+
+const openTaskItemDetail = (item: Item) => {
+  state.selectedTaskItem = item;
+  state.showTaskItemDetail = true;
 };
 
 const openProjectDetail = (projectId: string) => {
@@ -252,6 +269,16 @@ const handleSetReminder = (item: Item) => {
 };
 
 const handleSetRecurring = (item: Item) => {
+  // TODO: Open recurring dialog
+  showMessage(t('mobile.recurring.set') || '设置重复');
+};
+
+const handleSetTaskItemReminder = (item: Item) => {
+  // TODO: Open reminder dialog
+  showMessage(t('mobile.reminder.set') || '设置提醒');
+};
+
+const handleSetTaskItemRecurring = (item: Item) => {
   // TODO: Open recurring dialog
   showMessage(t('mobile.recurring.set') || '设置重复');
 };

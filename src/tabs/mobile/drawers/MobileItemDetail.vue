@@ -28,18 +28,18 @@
               
               <!-- Project & Task -->
               <div v-if="item.project || item.task" class="info-card">
-                <div v-if="item.project" class="info-item" @click="goToProject">
+                <div v-if="item.project" class="info-item" :class="{ readonly: disableNavigation }" @click="goToProject">
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconFolder"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.project') || '项目' }}</span>
                   </div>
                   <div class="info-right">
                     <span class="info-value">{{ item.project.name }}</span>
-                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                    <svg v-if="!disableNavigation" class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
                   </div>
                 </div>
                 
-                <div v-if="item.task" class="info-item" @click="goToTask">
+                <div v-if="item.task" class="info-item" :class="{ readonly: disableNavigation }" @click="goToTask">
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconTask"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.task') || '任务' }}</span>
@@ -47,7 +47,7 @@
                   <div class="info-right">
                     <span class="info-value">{{ item.task.name }}</span>
                     <span v-if="item.task.level" class="level-badge">{{ item.task.level }}</span>
-                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                    <svg v-if="!disableNavigation" class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
                   </div>
                 </div>
               </div>
@@ -191,6 +191,7 @@ import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
 const props = defineProps<{
   modelValue: boolean;
   item: Item | null;
+  disableNavigation?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -275,12 +276,12 @@ const copyContent = () => {
 };
 
 const goToProject = () => {
-  if (!props.item?.project?.id) return;
+  if (props.disableNavigation || !props.item?.project?.id) return;
   emit('openProject', props.item.project.id);
 };
 
 const goToTask = () => {
-  if (!props.item?.task?.blockId) return;
+  if (props.disableNavigation || !props.item?.task?.blockId) return;
   emit('openTask', props.item.task.blockId);
 };
 
@@ -464,6 +465,14 @@ const close = () => {
   
   &:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
+  }
+  
+  &.readonly {
+    cursor: default;
+    
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 
