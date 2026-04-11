@@ -341,7 +341,7 @@ import { formatReminderDisplay } from '@/utils/displayUtils';
 import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
 import MobileReminderDrawer from './MobileReminderDrawer.vue';
 import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
-import { TimeRangeSelector } from '@/components/time-picker';
+import { TimeRangeSelector } from '@/mobile/components/time-picker';
 
 const props = defineProps<{
   modelValue: boolean;
