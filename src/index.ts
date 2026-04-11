@@ -838,30 +838,30 @@ export default class TaskAssistantPlugin extends Plugin {
     // 保存 plugin 实例引用
     const plugin = this;
 
-    // 日历 Dock（移动端专用）
-    if (this.isMobile) {
-      this.addDock({
-        config: {
-          position: 'RightBottom',
-          size: { width: 360, height: 500 },
-          icon: 'iconCalendar',
-          title: t('calendar').title
-        },
-        data: {},
-        type: DOCK_TYPES.CALENDAR,
-        init() {
-          this.element.style.height = '100%';
-          this.element.style.overflow = 'hidden';
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(CalendarTab);
-          app.use(pinia);
-          app.mount(this.element);
-        },
-        destroy() {
-          this.element.innerHTML = '';
-        }
-      });
-    }
+    // 日历 Dock（移动端专用）- 暂时注释掉
+    // if (this.isMobile) {
+    //   this.addDock({
+    //     config: {
+    //       position: 'RightBottom',
+    //       size: { width: 360, height: 500 },
+    //       icon: 'iconCalendar',
+    //       title: t('calendar').title
+    //     },
+    //     data: {},
+    //     type: DOCK_TYPES.CALENDAR,
+    //     init() {
+    //       this.element.style.height = '100%';
+    //       this.element.style.overflow = 'hidden';
+    //       const pinia = getSharedPinia() ?? createPinia();
+    //       const app = createApp(CalendarTab);
+    //       app.use(pinia);
+    //       app.mount(this.element);
+    //     },
+    //     destroy() {
+    //       this.element.innerHTML = '';
+    //     }
+    //   });
+    // }
     
     // 待办 Dock
     this.addDock({
@@ -911,29 +911,31 @@ export default class TaskAssistantPlugin extends Plugin {
       }
     });
 
-    // 番茄钟统计 Dock
-    const pomodoroDock = this.addDock({
-      config: {
-        position: 'RightBottom',
-        size: { width: 320, height: 500 },
-        icon: 'iconClock',
-        title: t('pomodoro').dockTitle
-      },
-      data: {},
-      type: DOCK_TYPES.POMODORO,
-      init() {
-        this.element.style.height = '100%';
-        this.element.style.overflow = 'hidden';
-        const pinia = getSharedPinia() ?? createPinia();
-        const app = createApp(PomodoroDock);
-        app.use(pinia);
-        app.mount(this.element);
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
-    this.pomodoroDockModel = pomodoroDock.model;
+    // 番茄钟统计 Dock（桌面端专用）
+    if (!this.isMobile) {
+      const pomodoroDock = this.addDock({
+        config: {
+          position: 'RightBottom',
+          size: { width: 320, height: 500 },
+          icon: 'iconClock',
+          title: t('pomodoro').dockTitle
+        },
+        data: {},
+        type: DOCK_TYPES.POMODORO,
+        init() {
+          this.element.style.height = '100%';
+          this.element.style.overflow = 'hidden';
+          const pinia = getSharedPinia() ?? createPinia();
+          const app = createApp(PomodoroDock);
+          app.use(pinia);
+          app.mount(this.element);
+        },
+        destroy() {
+          this.element.innerHTML = '';
+        }
+      });
+      this.pomodoroDockModel = pomodoroDock.model;
+    }
   }
 
   /**
