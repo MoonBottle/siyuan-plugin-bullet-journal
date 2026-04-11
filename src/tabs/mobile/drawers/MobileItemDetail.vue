@@ -16,17 +16,29 @@
             
             <!-- Content -->
             <div v-if="item" class="drawer-content">
-              <!-- Item Content Card -->
+              <!-- Mobile Pickers -->
+              <MobilePriorityPicker
+                v-model="showPriorityPicker"
+                :priority="item.priority"
+                @confirm="onPriorityChange"
+              />
+              <MobileDatePicker
+                v-model="showDatePicker"
+                :date="item.date"
+                @confirm="onDateChange"
+              />
+              <!-- Item Content Card - 可编辑 -->
               <div class="content-card">
-                <div class="item-main-content" @longpress="copyContent">
-                  {{ item.content }}
-                </div>
-                <div v-if="item.priority" class="priority-badge" :class="item.priority">
-                  {{ getPriorityLabel(item.priority) }}
+                <div class="content-row editable" @click="handleEditContent">
+                  <span class="content-label">{{ t('mobile.detail.content') || '内容' }}</span>
+                  <div class="content-value-wrapper">
+                    <span class="content-value">{{ item.content }}</span>
+                    <svg class="edit-icon"><use xlink:href="#iconEdit"></use></svg>
+                  </div>
                 </div>
               </div>
               
-              <!-- Project & Task -->
+              <!-- Project & Task - 垂直居中优化 -->
               <div v-if="item.project || item.task" class="info-card">
                 <div v-if="item.project" class="info-item" :class="{ readonly: disableNavigation }" @click="goToProject">
                   <div class="info-left">
@@ -52,17 +64,37 @@
                 </div>
               </div>
               
-              <!-- Time Info -->
+              <!-- Priority - 独立可点击行 -->
               <div class="info-card">
-                <div class="info-item">
+                <div class="info-item editable" @click="handleEditPriority">
+                  <div class="info-left">
+                    <svg class="info-icon priority-icon"><use xlink:href="#iconMark"></use></svg>
+                    <span class="info-label">{{ t('mobile.detail.priority') || '优先级' }}</span>
+                  </div>
+                  <div class="info-right">
+                    <span v-if="item.priority" class="priority-badge-inline" :class="item.priority">
+                      {{ getPriorityLabel(item.priority) }}
+                    </span>
+                    <span v-else class="info-value-placeholder">{{ t('mobile.detail.setPriority') || '设置优先级' }}</span>
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Time Info - 可编辑 -->
+              <div class="info-card">
+                <div class="info-item editable" @click="handleEditTime">
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconCalendar"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.time') || '时间' }}</span>
                   </div>
-                  <span class="info-value">{{ formatTimeDisplay }}</span>
+                  <div class="info-right">
+                    <span class="info-value">{{ formatTimeDisplay }}</span>
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
                 </div>
                 
-                <div v-if="duration" class="info-item">
+                <div v-if="duration" class="info-item readonly">
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.duration') || '时长' }}</span>
@@ -70,7 +102,7 @@
                   <span class="info-value">{{ duration }}</span>
                 </div>
                 
-                <div v-if="focusTotalTime" class="info-item">
+                <div v-if="focusTotalTime" class="info-item readonly">
                   <div class="info-left">
                     <svg class="info-icon"><use xlink:href="#iconHistory"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.focusTime') || '专注' }}</span>
@@ -174,6 +206,23 @@
         </Transition>
       </div>
     </Transition>
+    
+    <!-- Content Edit Dialog -->
+    <div v-if="showContentEdit" class="edit-dialog-overlay" @click="cancelEditContent">
+      <div class="edit-dialog" @click.stop>
+        <div class="edit-dialog-header">{{ t('mobile.edit.content') || '编辑内容' }}</div>
+        <textarea 
+          v-model="editingContent" 
+          class="edit-textarea" 
+          rows="3"
+          @keydown.enter.prevent="saveContent"
+        />
+        <div class="edit-dialog-footer">
+          <button class="edit-btn cancel" @click="cancelEditContent">{{ t('common.cancel') || '取消' }}</button>
+          <button class="edit-btn confirm" @click="saveContent">{{ t('common.confirm') || '确定' }}</button>
+        </div>
+      </div>
+    </div>
   </Teleport>
 </template>
 
@@ -181,11 +230,13 @@
 import { computed, ref } from 'vue';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
-import { updateBlockContent } from '@/utils/fileUtils';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import { formatReminderDisplay } from '@/utils/displayUtils';
 import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
 import { useSettingsStore } from '@/stores';
+import MobilePriorityPicker from '@/components/mobile/MobilePriorityPicker.vue';
+import MobileDatePicker from '@/components/mobile/MobileDatePicker.vue';
+import { updateBlockDateTime, updateBlockPriority, updateBlockContent } from '@/utils/fileUtils';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
 
 const props = defineProps<{
@@ -202,10 +253,19 @@ const emit = defineEmits<{
   'openPomodoro': [item: Item];
   'setReminder': [item: Item];
   'setRecurring': [item: Item];
+  'refresh': [];
 }>();
 
 const settingsStore = useSettingsStore();
 const showPomodoroList = ref(false);
+
+// Content editing
+const showContentEdit = ref(false);
+const editingContent = ref('');
+
+// Mobile pickers
+const showPriorityPicker = ref(false);
+const showDatePicker = ref(false);
 
 const isCompletedOrAbandoned = computed(() => 
   props.item?.status === 'completed' || props.item?.status === 'abandoned'
@@ -271,11 +331,6 @@ const itemLinks = computed(() => props.item?.links || []);
 
 const getPriorityLabel = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?.label || priority;
 
-const copyContent = () => {
-  if (!props.item?.content) return;
-  navigator.clipboard.writeText(props.item.content);
-};
-
 const goToProject = () => {
   if (props.disableNavigation || !props.item?.project?.id) return;
   emit('openProject', props.item.project.id);
@@ -338,6 +393,87 @@ const handleSetReminder = () => {
 const handleSetRecurring = () => {
   if (!props.item) return;
   emit('setRecurring', props.item);
+};
+
+// Edit content handlers
+const handleEditContent = () => {
+  if (!props.item) return;
+  editingContent.value = props.item.content;
+  showContentEdit.value = true;
+};
+
+const cancelEditContent = () => {
+  showContentEdit.value = false;
+  editingContent.value = '';
+};
+
+const saveContent = async () => {
+  if (!props.item?.blockId || !editingContent.value.trim()) return;
+  
+  try {
+    // Use updateBlockContent with newItemContent parameter to preserve markdown format
+    const success = await updateBlockContent(
+      props.item.blockId,
+      '', // no suffix to add
+      undefined, // no writer
+      editingContent.value.trim() // new item content
+    );
+    
+    if (success) {
+      emit('refresh');
+      cancelEditContent();
+    }
+  } catch (error) {
+    console.error('[MobileItemDetail] Failed to update content:', error);
+  }
+};
+
+// Edit time handlers
+const handleEditTime = () => {
+  showDatePicker.value = true;
+};
+
+const onDateChange = async (newDate: string) => {
+  if (!props.item || newDate === props.item.date) return;
+  
+  try {
+    // Use updateBlockDateTime to properly update the date
+    const success = await updateBlockDateTime(
+      props.item.blockId,
+      newDate,
+      props.item.startDateTime, // preserve existing time
+      props.item.endDateTime,   // preserve existing time
+      !props.item.startDateTime && !props.item.endDateTime, // allDay if no time
+      props.item.date, // original date to replace
+      props.item.siblingItems
+    );
+    
+    if (success) {
+      emit('refresh');
+    }
+  } catch (error) {
+    console.error('[MobileItemDetail] Failed to update date:', error);
+  }
+};
+
+// Edit priority handler
+const handleEditPriority = () => {
+  showPriorityPicker.value = true;
+};
+
+const onPriorityChange = async (newPriority: PriorityLevel | undefined) => {
+  if (!props.item || newPriority === props.item.priority) return;
+  
+  try {
+    // Use updateBlockPriority to properly update the priority
+    const success = await updateBlockPriority(props.item.blockId, newPriority);
+    
+    if (success) {
+      emit('refresh');
+    }
+  } catch (error) {
+    console.error('[MobileItemDetail] Failed to update priority:', error);
+  }
 };
 
 const close = () => {
@@ -415,48 +551,60 @@ const close = () => {
   margin-bottom: 12px;
 }
 
+// Content card - editable
 .content-card {
-  .item-main-content {
+  .content-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    &.editable {
+      cursor: pointer;
+      
+      &:active {
+        opacity: 0.7;
+      }
+    }
+  }
+  
+  .content-label {
+    font-size: 13px;
+    color: var(--b3-theme-on-surface);
+    opacity: 0.8;
+  }
+  
+  .content-value-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  
+  .content-value {
     font-size: 18px;
     font-weight: 500;
     line-height: 1.5;
     color: var(--b3-theme-on-background);
-    margin-bottom: 12px;
     word-break: break-word;
+    flex: 1;
   }
   
-  .priority-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    
-    &.high {
-      background: rgba(239, 68, 68, 0.1);
-      color: #dc2626;
-    }
-    
-    &.medium {
-      background: rgba(249, 115, 22, 0.1);
-      color: #ea580c;
-    }
-    
-    &.low {
-      background: rgba(107, 114, 128, 0.1);
-      color: #4b5563;
-    }
+  .edit-icon {
+    width: 18px;
+    height: 18px;
+    fill: var(--b3-theme-on-surface);
+    opacity: 0.5;
+    flex-shrink: 0;
   }
 }
 
-// Info items
+// Info items - 垂直居中优化
 .info-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  min-height: 44px;
+  padding: 10px 0;
   cursor: pointer;
   transition: opacity 0.2s;
   
@@ -475,42 +623,75 @@ const close = () => {
       opacity: 1;
     }
   }
+  
+  &.editable {
+    .arrow-icon {
+      opacity: 0.4;
+    }
+  }
 }
 
 .info-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .info-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+  margin-left: 12px;
 }
 
 .info-icon {
   width: 18px;
   height: 18px;
   fill: var(--b3-theme-primary);
+  flex-shrink: 0;
+  
+  &.priority-icon {
+    fill: #f59e0b;
+  }
 }
 
 .info-label {
   font-size: 14px;
   color: var(--b3-theme-on-surface);
+  white-space: nowrap;
 }
 
 .info-value {
   font-size: 14px;
   font-weight: 500;
   color: var(--b3-theme-on-background);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-value-placeholder {
+  font-size: 14px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.6;
 }
 
 .arrow-icon {
   width: 16px;
   height: 16px;
   fill: var(--b3-theme-on-surface);
-  opacity: 0.4;
+  opacity: 0;
+  flex-shrink: 0;
+  
+  .info-item.editable &,
+  .info-item:not(.readonly) & {
+    opacity: 0.4;
+  }
 }
 
 .level-badge {
@@ -520,6 +701,34 @@ const close = () => {
   background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   color: var(--b3-theme-primary);
   border-radius: 4px;
+  flex-shrink: 0;
+}
+
+// Priority badge inline
+.priority-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  
+  &.high {
+    background: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
+  }
+  
+  &.medium {
+    background: rgba(234, 88, 12, 0.15);
+    color: #ea580c;
+  }
+  
+  &.low {
+    background: rgba(107, 114, 128, 0.15);
+    color: #4b5563;
+  }
 }
 
 // Actions
@@ -591,6 +800,7 @@ const close = () => {
   justify-content: center;
   background: var(--b3-theme-surface-lighter);
   border-radius: 10px;
+  flex-shrink: 0;
   
   svg {
     width: 18px;
@@ -611,6 +821,7 @@ const close = () => {
   height: 16px;
   fill: var(--b3-theme-on-surface);
   opacity: 0.4;
+  flex-shrink: 0;
 }
 
 // Links
@@ -728,6 +939,88 @@ const close = () => {
   &.pomodoro {
     background: rgba(239, 68, 68, 0.1);
     color: #dc2626;
+  }
+}
+
+// Edit Dialog
+.edit-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1003;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.edit-dialog {
+  width: 100%;
+  max-width: 360px;
+  background: var(--b3-theme-background);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.edit-dialog-header {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 12px;
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-background);
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  
+  &:focus {
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.edit-dialog-footer {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.edit-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &.cancel {
+    background: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+  }
+  
+  &.confirm {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+  }
+  
+  &:active {
+    transform: scale(0.98);
   }
 }
 

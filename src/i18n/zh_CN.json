@@ -758,6 +758,7 @@
       "project": "项目",
       "task": "任务",
       "item": "事项",
+      "content": "内容",
       "time": "时间",
       "duration": "时长",
       "focusTime": "专注时长",
@@ -768,7 +769,12 @@
       "description": "描述",
       "setReminder": "设置提醒",
       "setRecurring": "设置重复",
+      "setPriority": "设置优先级",
       "pomodoroRecords": "番茄钟记录"
+    },
+    "edit": {
+      "content": "编辑内容",
+      "selectDate": "选择日期"
     }
   },
   "recurring": {

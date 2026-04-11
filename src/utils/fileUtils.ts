@@ -655,14 +655,17 @@ export async function openDocumentAtLine(
 }
 
 /**
- * 更新块内容（用于添加标签）
+ * 更新块内容（用于添加标签或修改事项内容）
  * @param blockId 块 ID
  * @param suffix 要添加的后缀（如 #done、@2024-01-16）
+ * @param writer 可选的写入器
+ * @param newItemContent 可选的新事项内容，用于替换原有内容
  */
 export async function updateBlockContent(
   blockId: string,
   suffix: string,
-  writer?: BlockWriter
+  writer?: BlockWriter,
+  newItemContent?: string
 ): Promise<boolean> {
   if (!blockId) return false;
 
@@ -735,7 +738,10 @@ export async function updateBlockContent(
       const isStatusTag = suffix === '#done' || suffix === '#abandoned' || suffix === '#已完成' || suffix === '#已放弃' || suffix === '✅' || suffix === '❌';
       console.log('[Task Assistant] updateBlockContent - suffix:', suffix, 'isStatusTag:', isStatusTag);
 
-      console.log('[Task Assistant] 主路径 - isTaskList:', isTaskList, 'isStatusTag:', isStatusTag);
+      // 如果有新事项内容，使用它替换原有内容
+      const hasNewContent = newItemContent !== undefined && newItemContent !== null;
+
+      console.log('[Task Assistant] 主路径 - isTaskList:', isTaskList, 'isStatusTag:', isStatusTag, 'hasNewContent:', hasNewContent);
       if (isTaskList && isStatusTag) {
         console.log('[Task Assistant] 主路径 - 分支: 任务列表格式 + 状态标签');
         // 任务列表格式 + 状态标签
@@ -757,8 +763,8 @@ export async function updateBlockContent(
             lines[itemLineIndex] = processLineText(newLine, ALL_SLASH_COMMAND_FILTERS);
           } else {
             // 更新内容子块时 strip 后拼接
-            const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
-            let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+            const contentToUse = hasNewContent ? newItemContent : stripListAndBlockAttr(itemLine.replace(taskListMatch[0], ''));
+            let cleanedContent = hasNewContent ? contentToUse : stripListAndBlockAttr(contentToUse);
             // 去除斜杠命令
             cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
             lines[itemLineIndex] = isAbandon && !cleanedContent.includes('#已放弃') && !cleanedContent.includes('#abandoned')
@@ -767,7 +773,7 @@ export async function updateBlockContent(
           }
         } else {
           // 如果匹配失败，使用原来的方式
-          let cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent = hasNewContent ? newItemContent! : stripListAndBlockAttr(itemLine);
           // 去除斜杠命令
           cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
@@ -777,17 +783,17 @@ export async function updateBlockContent(
         const taskListMatch = itemLine.match(/(\[\s*[xX]?\s*\]\s*)/);
         if (taskListMatch) {
           const taskListMarker = taskListMatch[1];
-          // 去除任务列表标记后的内容
-          const contentWithoutMarker = itemLine.replace(taskListMarker, '');
-          // 使用 stripListAndBlockAttr 去除列表标记、块属性
-          let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          // 使用新内容或清理原有内容
+          let cleanedContent = hasNewContent 
+            ? newItemContent! 
+            : stripListAndBlockAttr(itemLine.replace(taskListMarker, ''));
           // 去除斜杠命令
           cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           // 重新拼接：任务列表标记 + 清理后的内容 + 后缀
           lines[itemLineIndex] = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
         } else {
           // 如果匹配失败，使用原来的方式
-          let cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent = hasNewContent ? newItemContent! : stripListAndBlockAttr(itemLine);
           // 去除斜杠命令
           cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
@@ -795,7 +801,7 @@ export async function updateBlockContent(
       } else {
         // 非任务列表格式：使用原来的方式
         // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
-        let cleanedContent = stripListAndBlockAttr(itemLine);
+        let cleanedContent = hasNewContent ? newItemContent! : stripListAndBlockAttr(itemLine);
         // 去除斜杠命令
         cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
         // 添加后缀

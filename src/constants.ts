@@ -14,7 +14,8 @@ export const TAB_TYPES = {
 export const DOCK_TYPES = {
   TODO: 'bullet-journal-todo',
   AI_CHAT: 'bullet-journal-ai-chat',
-  POMODORO: 'bullet-journal-pomodoro'
+  POMODORO: 'bullet-journal-pomodoro',
+  CALENDAR: 'bullet-journal-calendar-dock'
 };
 
 // 斜杠命令 filter 配置

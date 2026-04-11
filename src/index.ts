@@ -750,23 +750,25 @@ export default class TaskAssistantPlugin extends Plugin {
    * 注册自定义 Tab
    */
   private registerTabs() {
-    // 日历视图 Tab
-    this.addTab({
-      type: TAB_TYPES.CALENDAR,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(CalendarTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount CalendarTab:', error);
+    // 日历视图 Tab（桌面端注册为 Tab，移动端注册为 Dock）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.CALENDAR,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(CalendarTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount CalendarTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
 
     // 甘特图视图 Tab
     this.addTab({
@@ -829,6 +831,31 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerDocks() {
     // 保存 plugin 实例引用
     const plugin = this;
+
+    // 日历 Dock（移动端专用）
+    if (this.isMobile) {
+      this.addDock({
+        config: {
+          position: 'RightBottom',
+          size: { width: 360, height: 500 },
+          icon: 'iconCalendar',
+          title: t('calendar').title
+        },
+        data: {},
+        type: DOCK_TYPES.CALENDAR,
+        init() {
+          this.element.style.height = '100%';
+          this.element.style.overflow = 'hidden';
+          const pinia = getSharedPinia() ?? createPinia();
+          const app = createApp(CalendarTab);
+          app.use(pinia);
+          app.mount(this.element);
+        },
+        destroy() {
+          this.element.innerHTML = '';
+        }
+      });
+    }
     
     // 待办 Dock
     this.addDock({
@@ -917,7 +944,11 @@ export default class TaskAssistantPlugin extends Plugin {
           icon: 'iconCalendar',
           label: t('calendar').title,
           click: () => {
-            this.openCustomTab(TAB_TYPES.CALENDAR);
+            if (this.isMobile) {
+              this.openCalendarDock();
+            } else {
+              this.openCustomTab(TAB_TYPES.CALENDAR);
+            }
           }
         });
         menu.addItem({
@@ -1599,6 +1630,20 @@ export default class TaskAssistantPlugin extends Plugin {
     this.makeDraggable(btn);
 
     return btn;
+  }
+
+  /**
+   * 打开日历 Dock
+   */
+  private openCalendarDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.CALENDAR}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open calendar dock:', error);
+    }
   }
 
   /**
