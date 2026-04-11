@@ -29,6 +29,7 @@ import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMar
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
+import { updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -1119,33 +1120,7 @@ export function showRecurringSettingDialog(item: Item): Dialog {
   return dialog;
 }
 
-/**
- * 更新事项的提醒设置
- */
-async function updateItemWithReminder(item: Item, config: ReminderConfig): Promise<void> {
-  if (!item.blockId) return;
 
-  // 获取当前 block 内容
-  const block = await siyuanAPI.getBlockByID(item.blockId);
-  if (!block) return;
-
-  // 构建新的内容
-  let content = block.content || block.markdown || '';
-  
-  // 移除旧的提醒标记
-  content = stripReminderMarker(content);
-  
-  // 添加新的提醒标记
-  if (config.enabled) {
-    const marker = generateReminderMarker(config);
-    if (marker) {
-      content += ` ${marker}`;
-    }
-  }
-
-  // 更新 block
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
-}
 
 /**
  * 显示优先级设置弹框
@@ -1195,39 +1170,5 @@ export function showPrioritySettingDialog(
   return dialog;
 }
 
-/**
- * 更新事项的重复设置
- */
-async function updateItemWithRecurring(
-  item: Item, 
-  repeatRule: RepeatRule | undefined, 
-  endCondition: EndCondition | undefined
-): Promise<void> {
-  if (!item.blockId) return;
 
-  // 获取当前 block 内容
-  const block = await siyuanAPI.getBlockByID(item.blockId);
-  if (!block) return;
-
-  // 构建新的内容
-  let content = block.content || block.markdown || '';
-  
-  // 移除旧的重复和结束条件标记（支持新旧格式）
-  content = stripRecurringMarkers(content);
-  
-  // 添加新的标记
-  if (repeatRule) {
-    content += ` ${generateRepeatRuleMarker(repeatRule)}`;
-    
-    if (endCondition) {
-      const endMarker = generateEndConditionMarker(endCondition);
-      if (endMarker) {
-        content += ` ${endMarker}`;
-      }
-    }
-  }
-
-  // 更新 block
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
-}
 
