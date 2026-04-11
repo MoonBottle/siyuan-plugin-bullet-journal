@@ -240,6 +240,36 @@
       @confirm="handleConfirmAbandon"
     />
     
+    <!-- Migrate Menu Drawer -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showMigrateDrawer" class="migrate-overlay" @click="showMigrateDrawer = false">
+          <Transition name="slide-up">
+            <div v-if="showMigrateDrawer" class="migrate-drawer" @click.stop>
+              <div class="migrate-handle" @click="showMigrateDrawer = false">
+                <div class="handle-bar"></div>
+              </div>
+              <div class="migrate-title">{{ (t('mobile.action.migrate') || '迁移至') as string }}</div>
+              <div class="migrate-options">
+                <button class="migrate-option" @click="handleMigrateToToday">
+                  <svg><use xlink:href="#iconForward"></use></svg>
+                  <span>{{ (t('todo').today || '今天') as string }}</span>
+                </button>
+                <button class="migrate-option" @click="handleMigrateToTomorrow">
+                  <svg><use xlink:href="#iconForward"></use></svg>
+                  <span>{{ (t('todo').tomorrow || '明天') as string }}</span>
+                </button>
+                <button class="migrate-option" @click="handleMigrateCustomDate">
+                  <svg><use xlink:href="#iconCalendar"></use></svg>
+                  <span>{{ (t('todo').chooseDate || '选择日期...') as string }}</span>
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
+    
     <!-- Content Edit Dialog -->
     <div v-if="showContentEdit" class="edit-dialog-overlay" @click="cancelEditContent">
       <div class="edit-dialog" @click.stop>
@@ -304,6 +334,9 @@ const showDatePicker = ref(false);
 
 // Confirm drawers
 const showAbandonConfirm = ref(false);
+
+// Migrate menu
+const showMigrateDrawer = ref(false);
 
 const isCompletedOrAbandoned = computed(() => 
   props.item?.status === 'completed' || props.item?.status === 'abandoned'
@@ -481,69 +514,21 @@ const handleConfirmAbandon = async () => {
 // 迁移菜单选择
 const showMigrateMenu = () => {
   if (!props.item) return;
-  
-  const todoTranslations = t('todo') as Record<string, string>;
-  const todayLabel = todoTranslations.today || '今天';
-  const tomorrowLabel = todoTranslations.tomorrow || '明天';
-  const customLabel = todoTranslations.chooseDate || '选择日期...';
-  
-  // 创建选项
-  const options = [
-    { label: `${todoTranslations.migrateToToday || '迁移到'} ${todayLabel}`, value: 'today' },
-    { label: `${todoTranslations.migrateToTomorrow || '迁移到'} ${tomorrowLabel}`, value: 'tomorrow' },
-    { label: customLabel, value: 'custom' }
-  ];
-  
-  // 使用原生 select 展示选项
-  const select = document.createElement('select');
-  select.style.position = 'fixed';
-  select.style.opacity = '0';
-  select.style.pointerEvents = 'none';
-  
-  // 添加占位选项
-  const placeholder = document.createElement('option');
-  placeholder.text = todoTranslations.migrate || '迁移';
-  placeholder.disabled = true;
-  placeholder.selected = true;
-  select.appendChild(placeholder);
-  
-  options.forEach(opt => {
-    const option = document.createElement('option');
-    option.value = opt.value;
-    option.text = opt.label;
-    select.appendChild(option);
-  });
-  
-  document.body.appendChild(select);
-  
-  select.addEventListener('change', (e) => {
-    const value = (e.target as HTMLSelectElement).value;
-    document.body.removeChild(select);
-    
-    if (value === 'today') {
-      handleMigrateToToday();
-    } else if (value === 'tomorrow') {
-      handleMigrateToTomorrow();
-    } else if (value === 'custom') {
-      showMigrateDatePicker();
-    }
-  });
-  
-  // 点击其他地方取消
-  const cleanup = () => {
-    if (select.parentNode) {
-      document.body.removeChild(select);
-    }
-    document.removeEventListener('click', cleanup);
-  };
-  setTimeout(() => document.addEventListener('click', cleanup), 0);
-  
-  select.click();
+  showMigrateDrawer.value = true;
+};
+
+// 迁移到自定义日期
+const handleMigrateCustomDate = () => {
+  showMigrateDrawer.value = false;
+  setTimeout(() => {
+    showDatePicker.value = true;
+  }, 200);
 };
 
 // 迁移到今天
 const handleMigrateToToday = async () => {
   if (!props.item?.blockId) return;
+  showMigrateDrawer.value = false;
   
   const todayStr = dayjs().format('YYYY-MM-DD');
   
@@ -574,6 +559,7 @@ const handleMigrateToToday = async () => {
 // 迁移到明天
 const handleMigrateToTomorrow = async () => {
   if (!props.item?.blockId) return;
+  showMigrateDrawer.value = false;
   
   const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
   
@@ -599,11 +585,6 @@ const handleMigrateToTomorrow = async () => {
   );
   
   close();
-};
-
-// 显示迁移日期选择器
-const showMigrateDatePicker = () => {
-  showDatePicker.value = true;
 };
 
 const handleStartPomodoro = () => {
@@ -1290,6 +1271,86 @@ const close = () => {
   
   &:active {
     transform: scale(0.98);
+  }
+}
+
+// Migrate Drawer
+.migrate-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 1003;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.migrate-drawer {
+  width: 100%;
+  max-width: 480px;
+  background: var(--b3-theme-background);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.migrate-handle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 16px;
+  cursor: pointer;
+  
+  .handle-bar {
+    width: 40px;
+    height: 4px;
+    background: var(--b3-theme-on-surface);
+    opacity: 0.25;
+    border-radius: 2px;
+  }
+}
+
+.migrate-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--b3-border-color);
+}
+
+.migrate-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.migrate-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: none;
+  background: var(--b3-theme-surface);
+  border-radius: 12px;
+  color: var(--b3-theme-on-background);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--b3-theme-primary);
+  }
+  
+  &:active {
+    transform: scale(0.98);
+    background: var(--b3-theme-surface-lighter);
   }
 }
 
