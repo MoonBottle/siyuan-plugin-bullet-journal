@@ -159,7 +159,10 @@
               <div v-if="pomodoroRecords.length > 0" class="info-card">
                 <div class="section-header" @click="togglePomodoroList">
                   <span class="section-title">{{ t('mobile.detail.pomodoroRecords') || '番茄钟记录' }}</span>
-                  <svg class="toggle-icon" :class="{ expanded: showPomodoroList }"><use xlink:href="#iconDown"></use></svg>
+                  <div class="section-right">
+                    <span class="total-duration">{{ totalPomodoroDuration }}</span>
+                    <svg class="toggle-icon" :class="{ expanded: showPomodoroList }"><use xlink:href="#iconDown"></use></svg>
+                  </div>
                 </div>
                 <div v-show="showPomodoroList" class="pomodoro-list">
                   <div 
@@ -326,6 +329,18 @@ const focusTotalTime = computed(() => {
 });
 
 const pomodoroRecords = computed(() => props.item?.pomodoros || []);
+
+// 计算番茄钟总时长
+const totalPomodoroDuration = computed(() => {
+  const total = pomodoroRecords.value.reduce((sum, p) => {
+    const minutes = p.actualDurationMinutes ?? p.durationMinutes ?? 0;
+    return sum + minutes;
+  }, 0);
+  if (total < 60) return `${total}分钟`;
+  const hours = Math.floor(total / 60);
+  const mins = total % 60;
+  return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`;
+});
 
 const itemLinks = computed(() => props.item?.links || []);
 
@@ -858,6 +873,21 @@ const close = () => {
 }
 
 // Pomodoro
+.section-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-duration {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--b3-theme-primary);
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
 .pomodoro-list {
   margin-top: 12px;
   padding-top: 12px;
