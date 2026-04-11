@@ -658,7 +658,8 @@
       "dateFilter": "日期筛选",
       "priority": "优先级",
       "reset": "重置",
-      "confirm": "确认"
+      "confirm": "确认",
+      "applied": "筛选已应用"
     },
     "action": {
       "complete": "完成",

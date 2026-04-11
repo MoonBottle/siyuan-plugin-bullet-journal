@@ -618,7 +618,8 @@
       "dateFilter": "Date Filter",
       "priority": "Priority",
       "reset": "Reset",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "applied": "Filter applied"
     },
     "action": {
       "complete": "Complete",

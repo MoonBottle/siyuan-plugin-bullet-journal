@@ -268,12 +268,12 @@ const applyFilters = () => {
   // Apply date filter
   if (state.dateFilter === 'today') {
     const today = dayjs().format('YYYY-MM-DD');
-    state.dateRange = { start: today, end: today };
+    // 包含已过期数据：从很早的日期到今天（与桌面端一致）
+    state.dateRange = { start: '1970-01-01', end: today };
   } else if (state.dateFilter === 'week') {
-    state.dateRange = {
-      start: dayjs().format('YYYY-MM-DD'),
-      end: dayjs().add(7, 'day').format('YYYY-MM-DD'),
-    };
+    const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
+    // 包含已过期数据：从很早的日期到一周后（与桌面端一致）
+    state.dateRange = { start: '1970-01-01', end: nextWeek };
   } else if (state.dateFilter === 'all') {
     state.dateRange = null;
   }
