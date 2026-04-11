@@ -1,112 +1,100 @@
 <template>
-  <Teleport to="body">
-    <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
-        <Transition name="slide-up">
-          <div v-if="modelValue" class="timer-starter-drawer" @click.stop>
-            <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
-            </div>
+  <div class="timer-starter">
+    <div class="drawer-header">
+      <h3 class="drawer-title">{{ t('pomodoro').startFocusTitle || '开始专注' }}</h3>
+    </div>
 
-            <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('pomodoro').startFocusTitle || '开始专注' }}</h3>
-            </div>
-
-            <div class="drawer-content">
-              <!-- Selected Item Display -->
-              <div v-if="selectedItem" class="selected-item-card">
-                <div class="item-project" v-if="selectedItem.project">
-                  <svg><use xlink:href="#iconFolder"></use></svg>
-                  {{ selectedItem.project.name }}
-                </div>
-                <div class="item-task" v-if="selectedItem.task">
-                  <svg><use xlink:href="#iconList"></use></svg>
-                  {{ selectedItem.task.name }}
-                  <span v-if="selectedItem.task.level" class="level-badge">{{ selectedItem.task.level }}</span>
-                </div>
-                <div class="item-content">
-                  <span class="status-emoji">{{ getStatusEmoji(selectedItem) }}</span>
-                  {{ selectedItem.content }}
-                </div>
-              </div>
-
-              <!-- Item Selector Button -->
-              <div class="form-section">
-                <label class="section-label">{{ t('pomodoroDialog').selectItem || '选择事项' }}</label>
-                <button class="selector-btn" :class="{ empty: !selectedItem }" @click="openItemSelector">
-                  <span class="selector-text">
-                    {{ selectedItem ? selectedItem.content : (t('pomodoroDialog').selectItem || '选择要专注的事项') }}
-                  </span>
-                  <svg class="selector-arrow"><use xlink:href="#iconRight"></use></svg>
-                </button>
-              </div>
-
-              <!-- Timer Mode Selector -->
-              <div class="form-section">
-                <label class="section-label">{{ t('pomodoroDialog').timerMode || '计时模式' }}</label>
-                <div class="mode-selector">
-                  <button
-                    class="mode-btn"
-                    :class="{ active: timerMode === 'countdown' }"
-                    @click="timerMode = 'countdown'"
-                  >
-                    {{ t('pomodoroDialog').countdown || '倒计时' }}
-                  </button>
-                  <button
-                    class="mode-btn"
-                    :class="{ active: timerMode === 'stopwatch' }"
-                    @click="timerMode = 'stopwatch'"
-                  >
-                    {{ t('pomodoroDialog').stopwatch || '正计时' }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Duration Selector (countdown mode only) -->
-              <div v-if="timerMode === 'countdown'" class="form-section">
-                <label class="section-label">{{ t('pomodoroDialog').setDuration || '专注时长' }}</label>
-                <div class="duration-grid">
-                  <button
-                    v-for="duration in durationPresets"
-                    :key="duration"
-                    class="duration-btn"
-                    :class="{ active: selectedDuration === duration }"
-                    @click="selectedDuration = duration"
-                  >
-                    <span class="duration-value">{{ duration }}</span>
-                    <span class="duration-unit">{{ t('common').minutes || '分钟' }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="drawer-footer">
-              <button class="cancel-btn" @click="close">
-                {{ t('common').cancel || '取消' }}
-              </button>
-              <button
-                class="confirm-btn"
-                :disabled="!selectedItem"
-                @click="startPomodoro"
-              >
-                {{ t('pomodoroDialog').startFocus || '开始专注' }}
-              </button>
-            </div>
-          </div>
-        </Transition>
+    <div class="drawer-content">
+      <!-- Selected Item Display -->
+      <div v-if="selectedItem" class="selected-item-card">
+        <div class="item-project" v-if="selectedItem.project">
+          <svg><use xlink:href="#iconFolder"></use></svg>
+          {{ selectedItem.project.name }}
+        </div>
+        <div class="item-task" v-if="selectedItem.task">
+          <svg><use xlink:href="#iconList"></use></svg>
+          {{ selectedItem.task.name }}
+          <span v-if="selectedItem.task.level" class="level-badge">{{ selectedItem.task.level }}</span>
+        </div>
+        <div class="item-content">
+          <span class="status-emoji">{{ getStatusEmoji(selectedItem) }}</span>
+          {{ selectedItem.content }}
+        </div>
       </div>
-    </Transition>
+
+      <!-- Item Selector Button -->
+      <div class="form-section">
+        <label class="section-label">{{ t('pomodoroDialog').selectItem || '选择事项' }}</label>
+        <button class="selector-btn" :class="{ empty: !selectedItem }" @click="openItemSelector">
+          <span class="selector-text">
+            {{ selectedItem ? selectedItem.content : (t('pomodoroDialog').selectItem || '选择要专注的事项') }}
+          </span>
+          <svg class="selector-arrow"><use xlink:href="#iconRight"></use></svg>
+        </button>
+      </div>
+
+      <!-- Timer Mode Selector -->
+      <div class="form-section">
+        <label class="section-label">{{ t('pomodoroDialog').timerMode || '计时模式' }}</label>
+        <div class="mode-selector">
+          <button
+            class="mode-btn"
+            :class="{ active: timerMode === 'countdown' }"
+            @click="timerMode = 'countdown'"
+          >
+            {{ t('pomodoroDialog').countdown || '倒计时' }}
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ active: timerMode === 'stopwatch' }"
+            @click="timerMode = 'stopwatch'"
+          >
+            {{ t('pomodoroDialog').stopwatch || '正计时' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Duration Selector (countdown mode only) -->
+      <div v-if="timerMode === 'countdown'" class="form-section">
+        <label class="section-label">{{ t('pomodoroDialog').setDuration || '专注时长' }}</label>
+        <div class="duration-grid">
+          <button
+            v-for="duration in durationPresets"
+            :key="duration"
+            class="duration-btn"
+            :class="{ active: selectedDuration === duration }"
+            @click="selectedDuration = duration"
+          >
+            <span class="duration-value">{{ duration }}</span>
+            <span class="duration-unit">{{ t('common').minutes || '分钟' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <button class="cancel-btn" @click="close">
+        {{ t('common').cancel || '取消' }}
+      </button>
+      <button
+        class="confirm-btn"
+        :disabled="!selectedItem"
+        @click="startPomodoro"
+      >
+        {{ t('pomodoroDialog').startFocus || '开始专注' }}
+      </button>
+    </div>
 
     <!-- Item Selector Sheet -->
     <ItemSelectorSheet
       v-model="showItemSheet"
       @select="onItemSelected"
     />
-  </Teleport>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useProjectStore, usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { getSharedPinia } from '@/utils/sharedPinia';
@@ -115,12 +103,11 @@ import { t } from '@/i18n';
 import ItemSelectorSheet from './ItemSelectorSheet.vue';
 
 const props = defineProps<{
-  modelValue: boolean;
   preselectedBlockId?: string;
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
+  'close': [];
   'started': [];
 }>();
 
@@ -153,11 +140,9 @@ const preselectedItem = computed(() => {
   return projectStore.getItemByBlockId(props.preselectedBlockId) || null;
 });
 
-// Watch for drawer open
-watch(() => props.modelValue, (val) => {
-  if (val) {
-    initState();
-  }
+// Initialize on mount
+onMounted(() => {
+  initState();
 });
 
 // Watch for default duration changes
@@ -165,7 +150,7 @@ watch(defaultDuration, (newVal) => {
   selectedDuration.value = newVal;
 });
 
-// Initialize state when drawer opens
+// Initialize state
 const initState = () => {
   if (preselectedItem.value) {
     selectedItem.value = preselectedItem.value;
@@ -222,55 +207,22 @@ const startPomodoro = async () => {
 
 // Close drawer
 const close = () => {
-  emit('update:modelValue', false);
+  emit('close');
 };
 </script>
 
 <style lang="scss" scoped>
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  z-index: 1002;
-  display: flex;
-  align-items: flex-end;
-}
-
-.timer-starter-drawer {
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  background: var(--b3-theme-background);
-  border-radius: 24px 24px 0 0;
+.timer-starter {
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
-}
-
-.drawer-handle {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.handle-bar {
-  width: 40px;
-  height: 4px;
-  background: var(--b3-theme-on-surface);
-  opacity: 0.25;
-  border-radius: 2px;
+  height: 100%;
+  background: var(--b3-theme-background);
 }
 
 .drawer-header {
-  padding: 4px 20px 16px;
+  padding: 16px 20px;
   text-align: center;
+  border-bottom: 1px solid var(--b3-border-color);
 }
 
 .drawer-title {
@@ -283,7 +235,7 @@ const close = () => {
 .drawer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 16px;
+  padding: 16px;
 }
 
 // Selected Item Card
@@ -499,6 +451,7 @@ const close = () => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 .cancel-btn,
@@ -537,26 +490,5 @@ const close = () => {
     opacity: 0.5;
     cursor: not-allowed;
   }
-}
-
-// Transitions
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
 }
 </style>
