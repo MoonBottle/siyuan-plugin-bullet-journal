@@ -17,13 +17,23 @@
             <!-- Content -->
             <div class="drawer-content">
               <RecurringSettingDialog
+                ref="recurringDialogRef"
                 :block-id="blockId || ''"
                 :initial-repeat-rule="initialRepeatRule"
                 :initial-end-condition="initialEndCondition"
                 layout="drawer"
-                @save="handleSave"
-                @cancel="close"
+                hide-footer
               />
+            </div>
+
+            <!-- Footer -->
+            <div class="drawer-footer">
+              <button class="footer-btn cancel" @click="close">
+                {{ t('common.cancel') || '取消' }}
+              </button>
+              <button class="footer-btn save" @click="handleSaveClick">
+                {{ t('recurring.save') || '保存' }}
+              </button>
             </div>
           </div>
         </Transition>
@@ -33,11 +43,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import { t } from '@/i18n';
 import { updateItemWithRecurring } from '@/utils/itemSettingUtils';
 import type { RepeatRule, EndCondition, Item } from '@/types/models';
+
+const recurringDialogRef = ref<InstanceType<typeof RecurringSettingDialog> | null>(null);
 
 interface Props {
   modelValue: boolean;
@@ -72,6 +84,11 @@ async function handleSave(repeatRule: RepeatRule | undefined, endCondition: EndC
   }
 }
 
+function handleSaveClick() {
+  // 调用 Dialog 内部的 getConfig 方法
+  recurringDialogRef.value?.getConfig();
+}
+
 function close() {
   emit('update:modelValue', false);
   emit('cancel');
@@ -101,7 +118,6 @@ function close() {
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -135,7 +151,52 @@ function close() {
 .drawer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 16px;
+  overflow-x: hidden;
+  padding: 0 16px;
+  min-height: 0;
+}
+
+.drawer-footer {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--b3-border-color);
+  background: var(--b3-theme-background);
+  flex-shrink: 0;
+}
+
+.footer-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &.cancel {
+    background: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    
+    &:hover {
+      background: var(--b3-theme-surface-lighter);
+    }
+  }
+  
+  &.save {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 // Transitions

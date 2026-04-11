@@ -91,7 +91,7 @@
       </div>
 
     <!-- 底部按钮 -->
-    <div class="action-section">
+    <div v-if="!hideFooter" class="action-section">
       <button class="start-btn" @click="handleSave">
         {{ t('recurring.save') }}
       </button>
@@ -115,6 +115,7 @@ interface Props {
   initialRepeatRule?: RepeatRule;
   initialEndCondition?: EndCondition;
   layout?: 'dialog' | 'drawer';
+  hideFooter?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -241,6 +242,11 @@ function handleSave() {
 function handleCancel() {
   emit('cancel');
 }
+
+// 暴露方法供父组件调用
+defineExpose({
+  getConfig: handleSave
+});
 </script>
 
 <style lang="scss" scoped>

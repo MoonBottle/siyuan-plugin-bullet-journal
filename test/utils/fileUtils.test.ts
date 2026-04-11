@@ -1049,4 +1049,164 @@ describe('updateBlockContent', () => {
       'block-1'
     );
   });
+
+  // ===== newItemContent 参数测试 =====
+
+  it('newItemContent: 基本替换功能 - 替换事项内容保留日期', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '旧事项内容 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '#重要', undefined, '新事项内容');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '新事项内容 📅2024-01-01 #重要\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 任务列表 + 状态标签 + 新内容', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务名称 📅2026-03-08
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '修改后的任务');
+
+    expect(result).toBe(true);
+    // 任务列表格式 + 状态标签：改为 [x]，使用新内容，不添加 ✅ 标签
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 修改后的任务 📅2026-03-08
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 任务列表 + 非状态标签 + 新内容', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务名称 📅2026-03-08
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '#重要', undefined, '修改后的任务');
+
+    expect(result).toBe(true);
+    // 任务列表格式 + 非状态标签：保留 [ ]，使用新内容，添加 #重要 标签
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 修改后的任务 📅2026-03-08 #重要
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 非任务列表格式 + 新内容', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '旧事项内容 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '新事项内容');
+
+    expect(result).toBe(true);
+    // 非任务列表格式 + 状态标签：使用新内容，添加 ✅ 标签
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '新事项内容 📅2024-01-01 ✅\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 空字符串作为新内容', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务名称 📅2026-03-08
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '#标签', undefined, '');
+
+    expect(result).toBe(true);
+    // 空字符串作为内容，保留日期和标签
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ]  📅2026-03-08 #标签
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 多行内容替换保留番茄钟行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务名称 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '新任务名称');
+
+    expect(result).toBe(true);
+    // 事项内容被替换，番茄钟行保留，标记改为 [x]
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务名称 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 父块解析时更新内容', async () => {
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'parent-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="parent-block-1"}[ ] 旧任务名称 @2026-03-08
+  {: id="content-block-1"}`
+        });
+      }
+      return Promise.resolve({
+        kramdown: '旧任务名称 @2026-03-08\n{: id="content-block-1" }'
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('content-block-1', '✅', undefined, '新任务名称');
+
+    expect(result).toBe(true);
+    // 使用父块 kramdown 更新，内容被替换，@ 转为 📅
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[x] 新任务名称 📅2026-03-08
+  {: id="content-block-1"}`,
+      'parent-block-1'
+    );
+  });
+
+  it('newItemContent: 新内容包含斜杠命令应被处理', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务 📅2026-03-08
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    // 新内容包含斜杠命令 /today
+    const result = await updateBlockContent('block-1', '#标签', undefined, '/today 新任务');
+
+    expect(result).toBe(true);
+    // 斜杠命令会被 processLineText 处理（mock 中直接返回原文）
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] /today 新任务 📅2026-03-08 #标签
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
 });

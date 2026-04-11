@@ -17,12 +17,22 @@
             <!-- Content -->
             <div class="drawer-content">
               <ReminderSettingDialog
+                ref="reminderDialogRef"
                 :block-id="blockId || ''"
                 :initial-config="initialConfig"
                 layout="drawer"
-                @save="handleSave"
-                @cancel="close"
+                hide-footer
               />
+            </div>
+
+            <!-- Footer -->
+            <div class="drawer-footer">
+              <button class="footer-btn cancel" @click="close">
+                {{ t('common.cancel') || '取消' }}
+              </button>
+              <button class="footer-btn save" @click="handleSaveClick">
+                {{ t('reminder.save') || '保存' }}
+              </button>
             </div>
           </div>
         </Transition>
@@ -32,11 +42,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import { t } from '@/i18n';
 import { updateItemWithReminder } from '@/utils/itemSettingUtils';
 import type { ReminderConfig, Item } from '@/types/models';
+
+const reminderDialogRef = ref<InstanceType<typeof ReminderSettingDialog> | null>(null);
 
 interface Props {
   modelValue: boolean;
@@ -70,6 +82,11 @@ async function handleSave(config: ReminderConfig) {
   }
 }
 
+function handleSaveClick() {
+  // 调用 Dialog 内部的 getConfig 方法
+  reminderDialogRef.value?.getConfig();
+}
+
 function close() {
   emit('update:modelValue', false);
   emit('cancel');
@@ -99,7 +116,6 @@ function close() {
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -133,7 +149,52 @@ function close() {
 .drawer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 16px;
+  overflow-x: hidden;
+  padding: 0 16px;
+  min-height: 0;
+}
+
+.drawer-footer {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--b3-border-color);
+  background: var(--b3-theme-background);
+  flex-shrink: 0;
+}
+
+.footer-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &.cancel {
+    background: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    
+    &:hover {
+      background: var(--b3-theme-surface-lighter);
+    }
+  }
+  
+  &.save {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 // Transitions
