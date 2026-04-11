@@ -347,19 +347,31 @@ const togglePomodoroList = () => {
 
 const formatPomodoroTime = (p: PomodoroRecord): string => {
   if (!p.startTime) return '--:--';
-  const start = new Date(p.startTime);
-  const end = p.endTime ? new Date(p.endTime) : new Date();
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return '--:--';
-  return `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
+  // startTime/endTime format is "HH:mm:ss"
+  const startParts = p.startTime.split(':');
+  const endParts = p.endTime ? p.endTime.split(':') : null;
+  if (startParts.length < 2) return '--:--';
+  const startHour = startParts[0].padStart(2, '0');
+  const startMin = startParts[1].padStart(2, '0');
+  const endStr = endParts ? `${endParts[0].padStart(2, '0')}:${endParts[1].padStart(2, '0')}` : 'now';
+  return `${startHour}:${startMin}-${endStr}`;
 };
 
 const formatPomodoroDuration = (p: PomodoroRecord): string => {
-  if (!p.startTime) return '--分钟';
-  const start = new Date(p.startTime);
-  const end = p.endTime ? new Date(p.endTime) : new Date();
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return '--分钟';
-  const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
-  return `${minutes}分钟`;
+  // Use actualDurationMinutes or durationMinutes if available
+  const minutes = p.actualDurationMinutes ?? p.durationMinutes;
+  if (minutes != null && minutes > 0) {
+    return `${minutes}分钟`;
+  }
+  // Fallback: calculate from startTime and endTime
+  if (!p.startTime || !p.endTime) return '--分钟';
+  const startParts = p.startTime.split(':').map(Number);
+  const endParts = p.endTime.split(':').map(Number);
+  if (startParts.length < 2 || endParts.length < 2) return '--分钟';
+  const startMinutes = startParts[0] * 60 + startParts[1];
+  const endMinutes = endParts[0] * 60 + endParts[1];
+  const duration = endMinutes - startMinutes;
+  return `${duration}分钟`;
 };
 
 const handleLinkClick = (url: string) => {
