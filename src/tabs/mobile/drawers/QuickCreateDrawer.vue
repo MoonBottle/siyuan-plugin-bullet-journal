@@ -13,6 +13,17 @@
             </div>
             
             <div class="drawer-content">
+              <!-- Item Content - 移到第一位 -->
+              <div class="form-section">
+                <label class="section-label">{{ t('mobile.quickCreate.itemContent') || '事项内容' }}</label>
+                <input
+                  v-model="itemForm.content"
+                  type="text"
+                  class="form-input"
+                  :placeholder="t('mobile.quickCreate.itemContentPlaceholder') || '输入事项内容'"
+                />
+              </div>
+
               <!-- Project Selection -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.project') || '所属项目' }}</label>
@@ -21,13 +32,13 @@
                   <svg class="selector-arrow"><use xlink:href="#iconRight"></use></svg>
                 </button>
               </div>
-              
+
               <!-- Task Selection/Input -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.belongingTask') || '所属任务' }}</label>
-                <button 
-                  class="selector-btn" 
-                  :class="{ empty: !taskInput }" 
+                <button
+                  class="selector-btn"
+                  :class="{ empty: !taskInput }"
                   @click="openTaskSelector"
                   :disabled="!selectedProjectId"
                 >
@@ -38,17 +49,6 @@
                   <svg><use xlink:href="#iconInfo"></use></svg>
                   <span>{{ t('mobile.quickCreate.willCreateNewTask') || '将创建新任务' }}</span>
                 </div>
-              </div>
-              
-              <!-- Item Content -->
-              <div class="form-section">
-                <label class="section-label">{{ t('mobile.quickCreate.itemContent') || '事项内容' }}</label>
-                <input
-                  v-model="itemForm.content"
-                  type="text"
-                  class="form-input"
-                  :placeholder="t('mobile.quickCreate.itemContentPlaceholder') || '输入事项内容'"
-                />
               </div>
               
               <!-- Date Selection -->
@@ -90,6 +90,36 @@
                   >
                     <span class="priority-dot"></span>
                     <span class="priority-label">{{ p.label }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Reminder & Recurring Actions -->
+              <div class="form-section">
+                <label class="section-label">{{ t('mobile.quickCreate.advanced') || '高级选项' }}</label>
+                <div class="actions-card">
+                  <button
+                    class="action-item"
+                    :class="{ active: reminderConfig?.enabled }"
+                    @click="handleSetReminder"
+                  >
+                    <div class="action-icon-wrapper">
+                      <svg><use xlink:href="#iconClock"></use></svg>
+                    </div>
+                    <span class="action-text">{{ reminderText }}</span>
+                    <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
+                  </button>
+
+                  <button
+                    class="action-item"
+                    :class="{ active: !!repeatRule }"
+                    @click="handleSetRecurring"
+                  >
+                    <div class="action-icon-wrapper">
+                      <svg><use xlink:href="#iconRefresh"></use></svg>
+                    </div>
+                    <span class="action-text">{{ recurringText }}</span>
+                    <svg class="action-arrow"><use xlink:href="#iconRight"></use></svg>
                   </button>
                 </div>
               </div>
@@ -348,6 +378,21 @@
         </Transition>
       </div>
     </Transition>
+
+    <!-- Reminder Drawer -->
+    <MobileReminderDrawer
+      v-model="showReminderDrawer"
+      :initial-config="reminderConfig"
+      @save="handleReminderSave"
+    />
+
+    <!-- Recurring Drawer -->
+    <MobileRecurringDrawer
+      v-model="showRecurringDrawer"
+      :initial-repeat-rule="repeatRule"
+      :initial-end-condition="endCondition"
+      @save="handleRecurringSave"
+    />
   </Teleport>
 </template>
 
@@ -356,8 +401,12 @@ import { ref, computed, watch } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import { createTask, createItem } from '@/utils/quickCreate';
-import type { PriorityLevel, Task } from '@/types/models';
+import type { PriorityLevel, Task, ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
 import dayjs from '@/utils/dayjs';
+import { formatReminderDisplay } from '@/utils/displayUtils';
+import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
+import MobileReminderDrawer from './MobileReminderDrawer.vue';
+import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -404,6 +453,54 @@ const itemForm = ref({
   endTime: '',
   priority: undefined as PriorityLevel | undefined,
 });
+
+// 新增：提醒和重复配置
+const reminderConfig = ref<ReminderConfig | undefined>(undefined);
+const repeatRule = ref<RepeatRule | undefined>(undefined);
+const endCondition = ref<EndCondition | undefined>(undefined);
+
+// 抽屉显示状态
+const showReminderDrawer = ref(false);
+const showRecurringDrawer = ref(false);
+
+// 提醒显示文本
+const reminderText = computed(() => {
+  if (!reminderConfig.value?.enabled) {
+    return t('mobile.detail.setReminder') || '设置提醒';
+  }
+  return formatReminderDisplay(reminderConfig.value, t);
+});
+
+// 重复显示文本
+const recurringText = computed(() => {
+  if (!repeatRule.value) {
+    return t('mobile.detail.setRecurring') || '设置重复';
+  }
+  const rule = generateRepeatRuleMarker(repeatRule.value);
+  const end = generateEndConditionMarker(endCondition.value);
+  return end ? `${rule} ${end}` : rule;
+});
+
+// 处理设置提醒
+const handleSetReminder = () => {
+  showReminderDrawer.value = true;
+};
+
+// 处理设置重复
+const handleSetRecurring = () => {
+  showRecurringDrawer.value = true;
+};
+
+// 处理保存提醒
+const handleReminderSave = (config: ReminderConfig) => {
+  reminderConfig.value = config;
+};
+
+// 处理保存重复
+const handleRecurringSave = (rule: RepeatRule | undefined, end: EndCondition | undefined) => {
+  repeatRule.value = rule;
+  endCondition.value = end;
+};
 
 // Options
 const priorityOptions = [
@@ -693,6 +790,9 @@ const handleSubmit = async () => {
       itemForm.value.endTime || undefined,
       {
         priority: itemForm.value.priority,
+        reminder: reminderConfig.value,
+        repeatRule: repeatRule.value,
+        endCondition: endCondition.value,
       }
     );
     
@@ -1109,6 +1209,75 @@ const close = () => {
 .priority-btn.active .priority-label {
   color: currentColor;
   font-weight: 600;
+}
+
+// Actions Card (Reminder/Recurring)
+.actions-card {
+  background: var(--b3-theme-surface);
+  border-radius: 16px;
+  padding: 8px 16px;
+}
+
+.action-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--b3-border-color);
+  }
+
+  &.active {
+    .action-icon-wrapper {
+      background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.15);
+    }
+
+    .action-text {
+      color: var(--b3-theme-primary);
+    }
+  }
+}
+
+.action-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--b3-theme-surface-lighter);
+  border-radius: 10px;
+  flex-shrink: 0;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--b3-theme-primary);
+  }
+}
+
+.action-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--b3-theme-on-surface);
+  text-align: left;
+}
+
+.action-arrow {
+  width: 16px;
+  height: 16px;
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.4;
+  flex-shrink: 0;
 }
 
 // Footer
