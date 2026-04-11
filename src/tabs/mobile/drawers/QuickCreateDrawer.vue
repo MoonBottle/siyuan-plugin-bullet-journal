@@ -349,20 +349,46 @@
             <div class="time-wheels">
               <div class="time-wheel">
                 <div class="wheel-label">{{ t('mobile.hour') || '时' }}</div>
-                <div class="wheel-container" ref="hourWheel">
-                  <div class="wheel-item" v-for="h in 24" :key="h-1" @click="selectHour(String(h-1))">
+                <div 
+                  class="wheel-container" 
+                  ref="hourWheel" 
+                  @scroll="handleWheelScroll('hour')"
+                >
+                  <div class="wheel-padding"></div>
+                  <div 
+                    v-for="h in 24" 
+                    :key="h-1" 
+                    class="wheel-item"
+                    :class="{ selected: tempHour === String(h-1).padStart(2, '0') }"
+                    @click="selectHour(String(h-1))"
+                  >
                     {{ String(h-1).padStart(2, '0') }}
                   </div>
+                  <div class="wheel-padding"></div>
                 </div>
+                <div class="wheel-indicator"></div>
               </div>
               <div class="time-separator">:</div>
               <div class="time-wheel">
                 <div class="wheel-label">{{ t('mobile.minute') || '分' }}</div>
-                <div class="wheel-container">
-                  <div class="wheel-item" v-for="m in minuteOptions" :key="m" @click="selectMinute(m)">
+                <div 
+                  class="wheel-container" 
+                  ref="minuteWheel"
+                  @scroll="handleWheelScroll('minute')"
+                >
+                  <div class="wheel-padding"></div>
+                  <div 
+                    v-for="m in minuteOptions" 
+                    :key="m" 
+                    class="wheel-item"
+                    :class="{ selected: tempMinute === m }"
+                    @click="selectMinute(m)"
+                  >
                     {{ m }}
                   </div>
+                  <div class="wheel-padding"></div>
                 </div>
+                <div class="wheel-indicator"></div>
               </div>
             </div>
             
@@ -444,6 +470,8 @@ const tempSelectedDate = ref('');
 const timePickerType = ref<'start' | 'end'>('start');
 const tempHour = ref('09');
 const tempMinute = ref('00');
+const hourWheel = ref<HTMLElement | null>(null);
+const minuteWheel = ref<HTMLElement | null>(null);
 
 // Item form
 const itemForm = ref({
@@ -712,6 +740,15 @@ const openTimePicker = (type: 'start' | 'end') => {
     tempMinute.value = '00';
   }
   showTimePicker.value = true;
+  // Scroll to selected items after opening
+  nextTick(() => {
+    setTimeout(() => {
+      const hourEl = hourWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
+      const minuteEl = minuteWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
+      hourEl?.scrollIntoView({ behavior: 'auto', block: 'center' });
+      minuteEl?.scrollIntoView({ behavior: 'auto', block: 'center' });
+    }, 50);
+  });
 };
 
 const closeTimePicker = () => {
@@ -720,10 +757,77 @@ const closeTimePicker = () => {
 
 const selectHour = (h: string) => {
   tempHour.value = h.padStart(2, '0');
+  // Scroll to selected item
+  nextTick(() => {
+    const container = hourWheel.value;
+    if (container) {
+      const selectedEl = container.querySelector('.wheel-item.selected') as HTMLElement;
+      if (selectedEl) {
+        selectedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  });
 };
 
 const selectMinute = (m: string) => {
   tempMinute.value = m;
+  // Scroll to selected item
+  nextTick(() => {
+    const container = minuteWheel.value;
+    if (container) {
+      const selectedEl = container.querySelector('.wheel-item.selected') as HTMLElement;
+      if (selectedEl) {
+        selectedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  });
+};
+
+// Handle wheel scroll to auto-select center item
+let hourScrollTimeout: ReturnType<typeof setTimeout> | null = null;
+let minuteScrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const handleWheelScroll = (wheel: 'hour' | 'minute') => {
+  const timeout = wheel === 'hour' ? hourScrollTimeout : minuteScrollTimeout;
+  if (timeout) clearTimeout(timeout);
+  
+  const newTimeout = setTimeout(() => {
+    const container = wheel === 'hour' ? hourWheel.value : minuteWheel.value;
+    if (!container) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.top + containerRect.height / 2;
+    
+    const items = container.querySelectorAll('.wheel-item');
+    let closestItem: Element | null = null;
+    let closestDistance = Infinity;
+    
+    items.forEach(item => {
+      const itemRect = item.getBoundingClientRect();
+      const itemCenter = itemRect.top + itemRect.height / 2;
+      const distance = Math.abs(containerCenter - itemCenter);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestItem = item;
+      }
+    });
+    
+    if (closestItem) {
+      const value = closestItem.textContent?.trim() || '';
+      if (wheel === 'hour') {
+        tempHour.value = value.padStart(2, '0');
+      } else {
+        tempMinute.value = value;
+      }
+    }
+  }, 50); // Short delay for scroll inertia to settle
+  
+  if (wheel === 'hour') {
+    hourScrollTimeout = newTimeout;
+  } else {
+    minuteScrollTimeout = newTimeout;
+  }
 };
 
 const selectQuickTime = (time: string) => {
@@ -1136,7 +1240,7 @@ const close = () => {
   font-size: 20px;
   font-weight: 500;
   align-self: center;
-  padding-bottom: 20px;
+  margin-top: 28px; // Align with wheel items center
 }
 
 // Priority Selector
@@ -1676,11 +1780,11 @@ const close = () => {
 
 .time-wheels {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   padding: 0 16px 16px;
-  height: 180px;
+  height: 200px;
 }
 
 .time-wheel {
@@ -1688,21 +1792,24 @@ const close = () => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  position: relative;
 }
 
 .wheel-label {
   font-size: 12px;
   color: var(--b3-theme-on-surface);
   opacity: 0.7;
+  font-weight: 500;
 }
 
 .wheel-container {
   height: 140px;
+  width: 80px;
   overflow-y: auto;
-  padding: 0 8px;
+  padding: 0 4px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  scroll-snap-type: y mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
   
@@ -1711,25 +1818,60 @@ const close = () => {
   }
 }
 
+.wheel-padding {
+  height: 50px;
+  flex-shrink: 0;
+}
+
 .wheel-item {
+  height: 40px;
   min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
   border-radius: 8px;
   font-size: 18px;
-  color: var(--b3-theme-on-background);
+  font-weight: 500;
+  color: var(--b3-theme-on-surface);
   cursor: pointer;
   transition: all 0.2s ease;
+  scroll-snap-align: center;
+  opacity: 0.5;
   
   &:hover {
     background: var(--b3-theme-surface);
+    opacity: 0.7;
   }
   
   &:active {
     transform: scale(0.95);
   }
+  
+  &.selected {
+    background: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    opacity: 1;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(var(--b3-theme-primary-rgb), 0.3);
+  }
+}
+
+.wheel-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 40px;
+  border: 2px solid var(--b3-theme-primary);
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.time-wheel:hover .wheel-indicator {
+  opacity: 0.3;
 }
 
 // Transitions
