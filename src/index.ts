@@ -1280,8 +1280,17 @@ export default class TaskAssistantPlugin extends Plugin {
    * 关键逻辑：比较 doOperations 和 undoOperations
    * - 只有当 undoOperations 中没有完成标记，而 doOperations 中有完成标记时，才是真正的新完成动作
    * - 如果 undoOperations 中已有完成标记，说明这只是对已有完成事项的编辑，不应触发重复创建
+   * 
+   * 注意：只在 desktop 或 mobile 主窗口执行，避免 desktop-window 多窗口时重复创建
    */
   private async handleTaskListCompletions(data: any) {
+    // 只在 desktop 或 mobile 主窗口执行，避免多窗口重复创建
+    const frontEnd = getFrontend();
+    if (frontEnd !== 'desktop' && frontEnd !== 'mobile') {
+      console.log('[Task Assistant] handleTaskListCompletions skipped on', frontEnd);
+      return;
+    }
+    
     console.log('[Task Assistant] handleTaskListCompletions called, data:', JSON.stringify(data).substring(0, 500));
     
     if (!Array.isArray(data.data)) {
