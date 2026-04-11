@@ -34,7 +34,7 @@
                 <div class="setting-item" @click="toggleHideAbandoned">
                   <div class="setting-info">
                     <div class="setting-icon">
-                      <svg><use xlink:href="#iconBan"></use></svg>
+                      <svg><use xlink:href="#iconCloseRound"></use></svg>
                     </div>
                     <span class="setting-label">{{ t('mobile.settings.hideAbandoned') || '隐藏已放弃' }}</span>
                   </div>
@@ -50,7 +50,8 @@
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.settings.about') || '关于' }}</label>
                 
-                <div class="setting-item" @click="openPluginSettings">
+                <!-- 插件设置入口暂时隐藏 -->
+                <!-- <div class="setting-item" @click="openPluginSettings">
                   <div class="setting-info">
                     <div class="setting-icon">
                       <svg><use xlink:href="#iconSettings"></use></svg>
@@ -60,12 +61,12 @@
                   <div class="setting-control">
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
                   </div>
-                </div>
+                </div> -->
                 
                 <div class="setting-item version-item">
                   <div class="setting-info">
                     <div class="setting-icon">
-                      <svg><use xlink:href="#iconBox"></use></svg>
+                      <svg><use xlink:href="#iconInfo"></use></svg>
                     </div>
                     <span class="setting-label">{{ t('mobile.settings.version') || '版本' }}</span>
                   </div>
