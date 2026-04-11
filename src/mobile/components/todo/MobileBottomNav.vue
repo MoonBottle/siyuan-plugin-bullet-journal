@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { t } from '@/i18n';
-import SettingsDrawer from '../drawers/SettingsDrawer.vue';
+import SettingsDrawer from '../../drawers/settings/SettingsDrawer.vue';
 
 const emit = defineEmits<{
   'open-pomodoro': [];

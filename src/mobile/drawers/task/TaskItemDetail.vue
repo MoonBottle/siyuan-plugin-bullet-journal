@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import MobileItemDetail from './MobileItemDetail.vue';
+import MobileItemDetail from '../item/MobileItemDetail.vue';
 import type { Item } from '@/types/models';
 
 defineProps<{

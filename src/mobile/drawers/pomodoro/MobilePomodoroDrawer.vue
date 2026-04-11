@@ -45,11 +45,11 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { eventBus, Events } from '@/utils/eventBus';
 import type { PendingPomodoroCompletion } from '@/types/models';
-import MobileTimerStarter from './pomodoro/MobileTimerStarter.vue';
-import MobileActiveTimer from './pomodoro/MobileActiveTimer.vue';
-import MobileBreakTimer from './pomodoro/MobileBreakTimer.vue';
-import MobileComplete from './pomodoro/MobileComplete.vue';
-import MobileRestDialog from './pomodoro/MobileRestDialog.vue';
+import MobileTimerStarter from './sub/MobileTimerStarter.vue';
+import MobileActiveTimer from './sub/MobileActiveTimer.vue';
+import MobileBreakTimer from './sub/MobileBreakTimer.vue';
+import MobileComplete from './sub/MobileComplete.vue';
+import MobileRestDialog from './sub/MobileRestDialog.vue';
 
 const props = defineProps<{
   modelValue: boolean;

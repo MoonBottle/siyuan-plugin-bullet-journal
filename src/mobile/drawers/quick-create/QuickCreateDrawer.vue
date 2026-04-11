@@ -339,8 +339,8 @@ import type { PriorityLevel, Task, ReminderConfig, RepeatRule, EndCondition } fr
 import dayjs from '@/utils/dayjs';
 import { formatReminderDisplay } from '@/utils/displayUtils';
 import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
-import MobileReminderDrawer from './MobileReminderDrawer.vue';
-import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
+import MobileReminderDrawer from '../pomodoro/MobileReminderDrawer.vue';
+import MobileRecurringDrawer from '../pomodoro/MobileRecurringDrawer.vue';
 import { TimeRangeSelector } from '@/mobile/components/time-picker';
 
 const props = defineProps<{

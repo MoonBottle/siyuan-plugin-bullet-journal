@@ -119,19 +119,19 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
-import MobileFilterBar from './components/MobileFilterBar.vue';
-import MobileTodoList from './components/MobileTodoList.vue';
-import MobileBottomNav from './components/MobileBottomNav.vue';
-import FilterDrawer from './drawers/FilterDrawer.vue';
-import ActionDrawer from './drawers/ActionDrawer.vue';
-import MobileItemDetail from './drawers/MobileItemDetail.vue';
-import TaskItemDetail from './drawers/TaskItemDetail.vue';
-import ProjectDetail from './drawers/ProjectDetail.vue';
-import TaskDetail from './drawers/TaskDetail.vue';
-import QuickCreateDrawer from './drawers/QuickCreateDrawer.vue';
-import MobilePomodoroDrawer from './drawers/MobilePomodoroDrawer.vue';
-import MobileReminderDrawer from './drawers/MobileReminderDrawer.vue';
-import MobileRecurringDrawer from './drawers/MobileRecurringDrawer.vue';
+import MobileFilterBar from './components/todo/MobileFilterBar.vue';
+import MobileTodoList from './components/todo/MobileTodoList.vue';
+import MobileBottomNav from './components/todo/MobileBottomNav.vue';
+import FilterDrawer from './drawers/filter/FilterDrawer.vue';
+import ActionDrawer from './drawers/action/ActionDrawer.vue';
+import MobileItemDetail from './drawers/item/MobileItemDetail.vue';
+import TaskItemDetail from './drawers/task/TaskItemDetail.vue';
+import ProjectDetail from './drawers/project/ProjectDetail.vue';
+import TaskDetail from './drawers/task/TaskDetail.vue';
+import QuickCreateDrawer from './drawers/quick-create/QuickCreateDrawer.vue';
+import MobilePomodoroDrawer from './drawers/pomodoro/MobilePomodoroDrawer.vue';
+import MobileReminderDrawer from './drawers/pomodoro/MobileReminderDrawer.vue';
+import MobileRecurringDrawer from './drawers/pomodoro/MobileRecurringDrawer.vue';
 import { useItemDetail } from './composables/useItemDetail';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';

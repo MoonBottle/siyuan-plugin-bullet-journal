@@ -117,7 +117,7 @@ import { usePlugin } from '@/main';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import type { Item } from '@/types/models';
 import { t } from '@/i18n';
-import MobileConfirmDrawer from '../MobileConfirmDrawer.vue';
+import MobileConfirmDrawer from '../../confirm/MobileConfirmDrawer.vue';
 import { getProgressDirection } from '@/utils/progressDirection';
 
 const emit = defineEmits<{

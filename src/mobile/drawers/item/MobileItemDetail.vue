@@ -344,7 +344,7 @@ import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPick
 import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue';
 import { updateBlockDateTime, updateBlockPriority, updateBlockContent } from '@/utils/fileUtils';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
-import MobileConfirmDrawer from './MobileConfirmDrawer.vue';
+import MobileConfirmDrawer from '../confirm/MobileConfirmDrawer.vue';
 import { TimeSettingDrawer } from '@/mobile/components/time-picker';
 
 const props = defineProps<{
