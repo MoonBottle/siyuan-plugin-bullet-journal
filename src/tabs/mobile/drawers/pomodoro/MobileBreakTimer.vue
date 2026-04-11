@@ -1,62 +1,44 @@
 <template>
-  <Teleport to="body">
-    <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
-        <Transition name="slide-up">
-          <div v-if="modelValue" class="break-timer-drawer" @click.stop>
-            <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
-            </div>
-
-            <div class="drawer-header">
-              <h3 class="drawer-title">{{ t('settings').pomodoro.breakLabel }}</h3>
-            </div>
-
-            <div class="drawer-content">
-              <!-- Breathing Circle with Countdown -->
-              <div class="timer-display">
-                <div class="breathing-circle">
-                  <!-- Progress Ring SVG -->
-                  <svg class="progress-ring" viewBox="0 0 120 120">
-                    <circle
-                      class="progress-ring-bg"
-                      cx="60"
-                      cy="60"
-                      :r="radius"
-                    />
-                    <circle
-                      class="progress-ring-fill"
-                      cx="60"
-                      cy="60"
-                      :r="radius"
-                      :stroke-dasharray="circumference"
-                      :stroke-dashoffset="circumference - (progress / 100) * circumference"
-                    />
-                  </svg>
-                  <div class="circle-inner">
-                    <div class="time-remaining">{{ formattedTime }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Hint Text -->
-              <div class="hint-text">{{ t('settings').pomodoro.breakHint }}</div>
-            </div>
-
-            <!-- Skip Button -->
-            <div class="drawer-footer">
-              <button class="skip-btn" @click="skipBreak">
-                <svg class="btn-icon" viewBox="0 0 24 24">
-                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
-                </svg>
-                {{ t('settings').pomodoro.skipBreak }}
-              </button>
-            </div>
-          </div>
-        </Transition>
+  <div class="mobile-break-timer">
+    <!-- Breathing Circle with Countdown -->
+    <div class="timer-display">
+      <div class="breathing-circle">
+        <!-- Progress Ring SVG -->
+        <svg class="progress-ring" viewBox="0 0 120 120">
+          <circle
+            class="progress-ring-bg"
+            cx="60"
+            cy="60"
+            :r="radius"
+          />
+          <circle
+            class="progress-ring-fill"
+            cx="60"
+            cy="60"
+            :r="radius"
+            :stroke-dasharray="circumference"
+            :stroke-dashoffset="circumference - (progress / 100) * circumference"
+          />
+        </svg>
+        <div class="circle-inner">
+          <div class="time-remaining">{{ formattedTime }}</div>
+        </div>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+
+    <!-- Hint Text -->
+    <div class="hint-text">{{ t('settings').pomodoro.breakHint }}</div>
+
+    <!-- Skip Button -->
+    <div class="action-footer">
+      <button class="skip-btn" @click="skipBreak">
+        <svg class="btn-icon" viewBox="0 0 24 24">
+          <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
+        </svg>
+        {{ t('settings').pomodoro.skipBreak }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -65,12 +47,8 @@ import { usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { t } from '@/i18n';
 
-const props = defineProps<{
-  modelValue: boolean;
-}>();
-
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
+  close: [];
 }>();
 
 const plugin = usePlugin() as any;
@@ -109,81 +87,21 @@ const skipBreak = async () => {
   isProcessing.value = true;
   try {
     await pomodoroStore.stopBreak(plugin);
-    close();
+    emit('close');
   } finally {
     isProcessing.value = false;
   }
 };
-
-// Close drawer
-const close = () => {
-  emit('update:modelValue', false);
-};
 </script>
 
 <style lang="scss" scoped>
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  z-index: 1002;
-  display: flex;
-  align-items: flex-end;
-}
-
-.break-timer-drawer {
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  background: var(--b3-theme-background);
-  border-radius: 24px 24px 0 0;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
-}
-
-.drawer-handle {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.handle-bar {
-  width: 40px;
-  height: 4px;
-  background: var(--b3-theme-on-surface);
-  opacity: 0.25;
-  border-radius: 2px;
-}
-
-.drawer-header {
-  padding: 4px 20px 16px;
-  text-align: center;
-}
-
-.drawer-title {
-  font-size: 17px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--b3-theme-on-background);
-}
-
-.drawer-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 16px 16px;
+.mobile-break-timer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 24px;
+  padding: 20px 16px;
 }
 
 // Timer Display with Breathing Animation
@@ -262,10 +180,8 @@ const close = () => {
   font-weight: 400;
 }
 
-// Drawer Footer
-.drawer-footer {
-  padding: 16px;
-  border-top: 1px solid var(--b3-border-color);
+// Action Footer
+.action-footer {
   display: flex;
   justify-content: center;
 }
@@ -301,26 +217,5 @@ const close = () => {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-}
-
-// Transitions
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
 }
 </style>
