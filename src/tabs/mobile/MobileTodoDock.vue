@@ -90,7 +90,11 @@
     />
 
     <!-- Pomodoro Drawer -->
-    <MobilePomodoroDrawer v-model="state.showPomodoroDrawer" />
+    <MobilePomodoroDrawer 
+      v-model="state.showPomodoroDrawer" 
+      :preselected-block-id="preselectedPomodoroBlockId"
+      @update:model-value="handlePomodoroDrawerClose"
+    />
   </div>
 </template>
 
@@ -146,6 +150,9 @@ const state = reactive({
 // Selected project and task refs for detail drawers
 const selectedProject = ref<Project | null>(null);
 const selectedTask = ref<Task | null>(null);
+
+// Pomodoro preselected block ID
+const preselectedPomodoroBlockId = ref<string | undefined>(undefined);
 
 // Computed
 const hasActiveFilters = computed(() => {
@@ -288,8 +295,15 @@ const applyFilters = () => {
 };
 
 const handleOpenPomodoro = (item: Item) => {
-  // Open pomodoro timer dialog with preselected item
-  showPomodoroTimerDialog(item.blockId);
+  // Open pomodoro drawer with preselected item
+  preselectedPomodoroBlockId.value = item.blockId;
+  state.showPomodoroDrawer = true;
+};
+
+const handlePomodoroDrawerClose = (value: boolean) => {
+  if (!value) {
+    preselectedPomodoroBlockId.value = undefined;
+  }
 };
 
 const handleSetReminder = (item: Item) => {

@@ -19,7 +19,12 @@
                 @save="handleCompleteSave"
               />
               <!-- 正常番茄钟流程 -->
-              <component :is="currentComponent" v-else @close="close" />
+              <component 
+              :is="currentComponent" 
+              v-else 
+              :preselected-block-id="preselectedBlockId"
+              @close="close" 
+            />
             </div>
           </div>
         </Transition>
@@ -48,6 +53,7 @@ import MobileRestDialog from './pomodoro/MobileRestDialog.vue';
 
 const props = defineProps<{
   modelValue: boolean;
+  preselectedBlockId?: string;
 }>();
 
 const emit = defineEmits<{
