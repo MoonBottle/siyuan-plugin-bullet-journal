@@ -66,7 +66,7 @@ vi.mock('@/constants', () => ({
 }));
 
 // 导入被测函数（在 mock 之后）
-import { updateBlockDateTime, updateBlockContent } from '@/utils/fileUtils';
+import { updateBlockDateTime, updateBlockContent, updateBlockPriority } from '@/utils/fileUtils';
 
 describe('updateBlockDateTime', () => {
   beforeEach(() => {
@@ -1393,5 +1393,295 @@ describe('updateBlockContent', () => {
   {: id="yyy"}`,
       'block-1'
     );
+  });
+});
+
+describe('updateBlockPriority', () => {
+  beforeEach(() => {
+    mockGetBlockKramdown.mockReset();
+    mockGetBlockByID.mockReset();
+    mockUpdateBlock.mockReset();
+    mockGetBlockByID.mockResolvedValue(undefined);
+  });
+
+  it('无 blockId 返回 false', async () => {
+    const result = await updateBlockPriority('', 'high');
+    expect(result).toBe(false);
+  });
+
+  it('基本功能：添加高优先级标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 🔥 📅2024-01-01\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('添加中优先级标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'medium');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 🌱 📅2024-01-01\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('添加低优先级标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'low');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 🍃 📅2024-01-01\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('清除优先级标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 🔥 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', undefined);
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 📅2024-01-01\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('替换已有优先级标记（高->中）', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 🔥 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'medium');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 🌱 📅2024-01-01\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('替换已有优先级标记（低->高）', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 🍃 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 🔥 📅2024-01-01\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('任务列表格式：添加优先级标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 待办事项 📅2026-03-08
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 待办事项 🔥 📅2026-03-08
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('保留自定义属性行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `整理资料 📅2024-01-01
+{: id="block-1" custom-attr="value" }`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(true);
+    // 应保留自定义属性
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `整理资料 🔥 📅2024-01-01
+{: id="block-1" custom-attr="value" }`,
+      'block-1'
+    );
+  });
+
+  it('多行内容：保留番茄钟行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 工作事项 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(true);
+    // 应只修改事项行，保留番茄钟行和块属性行
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 工作事项 🔥 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('多行内容：保留多个番茄钟行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 复杂任务 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  🍅2026-03-08 10:00:00~10:25:00 第二个番茄
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'medium');
+
+    expect(result).toBe(true);
+    // 应保留所有番茄钟行
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 复杂任务 🌱 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  🍅2026-03-08 10:00:00~10:25:00 第二个番茄
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('保留提醒和重复标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 周会 📅2026-03-17 ⏰09:00 🔁每周
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(true);
+    // 应保留提醒 ⏰ 和重复 🔁 标记
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 周会 🔥 📅2026-03-17 ⏰09:00 🔁每周
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('内容子块：从父块解析 kramdown 并更新父块', async () => {
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'parent-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="parent-block-1"}[ ] 任务名称 @2026-03-08
+  {: id="content-block-1"}`
+        });
+      }
+      return Promise.resolve({
+        kramdown: '任务名称 @2026-03-08\n{: id="content-block-1" }'
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('content-block-1', 'high');
+
+    expect(result).toBe(true);
+    expect(mockGetBlockKramdown).toHaveBeenCalledWith('parent-block-1');
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[ ] 任务名称 🔥 📅2026-03-08
+  {: id="content-block-1"}`,
+      'parent-block-1'
+    );
+  });
+
+  it('@ 日期应转换为 📅', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 @2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'low');
+
+    expect(result).toBe(true);
+    // @ 应转为 📅，优先级标记放在日期前
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 🍃 📅2024-01-01\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('API 获取失败返回 false', async () => {
+    mockGetBlockKramdown.mockResolvedValue(null);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(false);
+    expect(mockUpdateBlock).not.toHaveBeenCalled();
+  });
+
+  it('更新抛出异常返回 false', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '整理资料 📅2024-01-01\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockRejectedValue(new Error('Update failed'));
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(false);
+  });
+
+  it('降级路径：事项行检测失败时直接处理内容', async () => {
+    // 模拟没有日期标记的情况，会走降级路径
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- [ ] 无日期事项
+{: id="block-1" }`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockPriority('block-1', 'high');
+
+    expect(result).toBe(true);
+    // 降级路径应能正确处理并添加优先级
+    const callArg = mockUpdateBlock.mock.calls[0][1];
+    expect(callArg).toContain('🔥');
   });
 });

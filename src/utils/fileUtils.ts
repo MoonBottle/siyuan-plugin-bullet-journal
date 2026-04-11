@@ -1028,20 +1028,151 @@ export async function updateBlockContent(
  * 更新块的优先级
  * @param blockId 块 ID
  * @param priority 优先级（undefined 表示清除）
+ * @param writer 可选的写入器
  * @returns 是否成功
  */
 export async function updateBlockPriority(
   blockId: string,
-  priority: PriorityLevel | undefined
+  priority: PriorityLevel | undefined,
+  writer?: BlockWriter
 ): Promise<boolean> {
+  if (!blockId) return false;
+
   try {
+    // 统一先查父块：若父块 kramdown 中含 blockId 对应块且该块事项行有 [ ]/[x]，则用解析出的事项块 kramdown
+    let kramdown: string | null = null;
+    let usedParentKramdown = false;
+    let parentKramdown: string | null = null;
+    let itemBlockRawForReplace: string | null = null;
     const block = await getBlockByID(blockId);
-    if (!block) {
-      console.error('[Task Assistant] Block not found:', blockId);
-      return false;
+    if (block?.parent_id) {
+      const parentResult = await getBlockKramdown(block.parent_id);
+      if (parentResult?.kramdown) {
+        const blocks = parseKramdownBlocks(parentResult.kramdown);
+        const itemBlock = blocks.find((b) => b.blockId === blockId);
+        if (itemBlock) {
+          const itemBlockLines = itemBlock.content.split('\n');
+          for (const line of itemBlockLines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('{:')) continue;
+            if (trimmed.startsWith('🍅')) continue;
+            if ((trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+              if (isTaskListFormat(trimmed)) {
+                kramdown = itemBlock.raw;
+                usedParentKramdown = true;
+                parentKramdown = parentResult.kramdown;
+                itemBlockRawForReplace = itemBlock.raw;
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (!kramdown) {
+      const result = await getBlockKramdown(blockId);
+      if (!result?.kramdown) {
+        console.error('[Task Assistant] Failed to get block kramdown');
+        return false;
+      }
+      kramdown = result.kramdown;
     }
 
-    let content = block.content || block.markdown || '';
+    const lines = kramdown.split('\n');
+
+    // 找到事项行（包含 @日期 或 📅日期 的行，且不是番茄钟行、不是块属性行）
+    let itemLineIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // 跳过块属性行
+      if (line.startsWith('{:')) continue;
+      // 跳过番茄钟行
+      if (line.startsWith('🍅')) continue;
+      // 找到包含 @日期 或 📅日期 的事项行
+      if ((line.includes('@') || line.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(line)) {
+        itemLineIndex = i;
+        break;
+      }
+    }
+
+    if (itemLineIndex >= 0) {
+      // 只修改事项行中的优先级标记
+      let itemLine = lines[itemLineIndex];
+
+      // 检测是否使用任务列表格式
+      const isTaskList = isTaskListFormat(itemLine);
+
+      // 移除现有优先级标记，并修复双空格问题
+      itemLine = stripPriorityMarker(itemLine);
+      // 修复可能产生的双空格
+      itemLine = itemLine.replace(/\s{2,}/g, ' ');
+
+      // 添加新优先级标记
+      if (priority) {
+        const marker = generatePriorityMarker(priority);
+        // 在日期标记之前插入优先级标记（保持格式一致）
+        // 查找日期标记的位置
+        const dateMatch = itemLine.match(/(?:@|📅)\d{4}-\d{2}-\d{2}/);
+        if (dateMatch) {
+          // 在日期标记前插入优先级
+          const dateIndex = itemLine.indexOf(dateMatch[0]);
+          itemLine = itemLine.slice(0, dateIndex).trimEnd() + ' ' + marker + ' ' + itemLine.slice(dateIndex).trimStart();
+        } else {
+          // 没有日期标记，直接添加到末尾
+          itemLine = itemLine.trimEnd() + ' ' + marker;
+        }
+      }
+
+      // 去除斜杠命令
+      itemLine = processLineText(itemLine, ALL_SLASH_COMMAND_FILTERS);
+
+      // 任务列表格式：处理列表标记和块属性
+      if (isTaskList) {
+        if (usedParentKramdown && parentKramdown) {
+          // 父块解析情况：保留完整格式（- {: id="xxx"}[ ] ...）
+          // 不需要额外处理，直接保留原格式
+        } else {
+          // 普通情况：去除 - {: id="xxx"}，但保留 [ ] 或 [x]
+          // 提取任务列表标记
+          const taskListMatch = itemLine.match(/(\[\s*[xX]?\s*\]\s*)/);
+          if (taskListMatch) {
+            const taskListMarker = taskListMatch[1];
+            // 去除列表标记和块属性
+            let cleanedContent = itemLine.replace(/^\s*-\s*/, ''); // 去除行首的 "- "
+            cleanedContent = cleanedContent.replace(/\{\:\s*[^}]*\}/g, ''); // 去除块属性
+            cleanedContent = cleanedContent.replace(/^\s*-\s*/, ''); // 再次去除可能暴露的 "- "
+            cleanedContent = cleanedContent.replace(/^\s*\[\s*[xX]?\s*\]\s*/, ''); // 去除原有的任务列表标记
+            cleanedContent = cleanedContent.trim();
+            // 重新拼接：任务列表标记 + 内容
+            itemLine = taskListMarker + cleanedContent;
+          } else {
+            // 如果匹配失败，使用 stripListAndBlockAttr
+            itemLine = stripListAndBlockAttr(itemLine);
+          }
+        }
+      }
+
+      // 更新事项行
+      lines[itemLineIndex] = itemLine;
+
+      // 回写整个块（父块解析时更新父块，否则更新当前块）
+      let newContent = lines.join('\n');
+      // 将日期标记从 @ 转换为 📅
+      newContent = newContent.replace(/@(\d{4}-\d{2}-\d{2})/g, '📅$1');
+      let targetBlockId = blockId;
+      if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
+        newContent = parentKramdown.replace(itemBlockRawForReplace, newContent);
+        targetBlockId = block!.parent_id!;
+      }
+      if (writer) {
+        return await writer(newContent, targetBlockId);
+      }
+      await updateBlock('markdown', newContent, targetBlockId);
+      return true;
+    }
+
+    // 降级：如果没有找到事项行，直接处理整行内容
+    let content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
 
     // 移除现有优先级标记
     content = stripPriorityMarker(content);
@@ -1049,12 +1180,33 @@ export async function updateBlockPriority(
     // 添加新优先级标记
     if (priority) {
       const marker = generatePriorityMarker(priority);
-      content = content.trimEnd() + ' ' + marker;
+      // 在日期标记之前插入优先级标记
+      const dateMatch = content.match(/(?:@|📅)\d{4}-\d{2}-\d{2}/);
+      if (dateMatch) {
+        const dateIndex = content.indexOf(dateMatch[0]);
+        content = content.slice(0, dateIndex).trimEnd() + ' ' + marker + ' ' + content.slice(dateIndex).trimStart();
+      } else {
+        content = content.trimEnd() + ' ' + marker;
+      }
     }
 
-    // 更新块内容
-    const success = await updateBlock('markdown', content, blockId);
-    return success;
+    // 去除斜杠命令
+    content = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
+
+    // 将日期标记从 @ 转换为 📅
+    content = content.replace(/@(\d{4}-\d{2}-\d{2})/g, '📅$1');
+
+    let targetBlockId = blockId;
+    if (usedParentKramdown && parentKramdown && itemBlockRawForReplace) {
+      content = parentKramdown.replace(itemBlockRawForReplace, content);
+      targetBlockId = block!.parent_id!;
+    }
+    if (writer) {
+      return await writer(content, targetBlockId);
+    }
+    await updateBlock('markdown', content, targetBlockId);
+
+    return true;
   } catch (error) {
     console.error('[Task Assistant] Failed to update priority:', error);
     return false;
