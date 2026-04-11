@@ -97,6 +97,14 @@
         {{ t('pomodoroActive').endFocus }}
       </button>
     </div>
+
+    <!-- Confirm Drawer -->
+    <MobileConfirmDrawer
+      v-model="showConfirmDrawer"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      @confirm="handleConfirm"
+    />
   </div>
 </template>
 
@@ -107,7 +115,7 @@ import { usePlugin } from '@/main';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import type { Item } from '@/types/models';
 import { t } from '@/i18n';
-import { showConfirmDialog } from '@/utils/dialog';
+import MobileConfirmDrawer from '../MobileConfirmDrawer.vue';
 import { getProgressDirection } from '@/utils/progressDirection';
 
 const emit = defineEmits<{
@@ -121,6 +129,12 @@ const projectStore = pinia ? useProjectStore(pinia) : null;
 
 // Prevent double-click execution lock
 const isProcessing = ref(false);
+
+// Confirm drawer state
+const showConfirmDrawer = ref(false);
+const confirmTitle = ref('');
+const confirmMessage = ref('');
+const onConfirmCallback = ref<(() => void) | null>(null);
 
 // Circle circumference
 const radius = 54;
@@ -222,14 +236,20 @@ const resumePomodoro = async () => {
 
 // End pomodoro
 const endPomodoro = () => {
-  showConfirmDialog(
-    t('pomodoroActive').confirmEndTitle,
-    t('pomodoroActive').confirmEndMessage,
-    async () => {
-      await pomodoroStore?.completePomodoro(plugin);
-      emit('close');
-    }
-  );
+  confirmTitle.value = t('pomodoroActive').confirmEndTitle;
+  confirmMessage.value = t('pomodoroActive').confirmEndMessage;
+  onConfirmCallback.value = async () => {
+    await pomodoroStore?.completePomodoro(plugin);
+    emit('close');
+  };
+  showConfirmDrawer.value = true;
+};
+
+const handleConfirm = () => {
+  if (onConfirmCallback.value) {
+    onConfirmCallback.value();
+  }
+  showConfirmDrawer.value = false;
 };
 </script>
 
