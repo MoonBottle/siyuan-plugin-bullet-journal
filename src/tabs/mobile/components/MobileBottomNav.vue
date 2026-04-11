@@ -1,7 +1,7 @@
 <template>
   <div class="mobile-bottom-nav">
     <div class="nav-content">
-      <button class="nav-item" @click="emit('open-pomodoro')">
+      <button class="nav-item" @click="handleOpenPomodoro">
         <div class="nav-icon-wrapper">
           <svg class="nav-icon"><use xlink:href="#iconClock"></use></svg>
         </div>
@@ -41,6 +41,11 @@ const showSettingsDrawer = ref(false);
 
 const showSettings = () => {
   showSettingsDrawer.value = true;
+};
+
+const handleOpenPomodoro = () => {
+  console.log('[MobileBottomNav] 番茄钟按钮被点击');
+  emit('open-pomodoro');
 };
 </script>
 

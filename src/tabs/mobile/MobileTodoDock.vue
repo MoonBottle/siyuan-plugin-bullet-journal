@@ -18,7 +18,7 @@
     />
     
     <MobileBottomNav
-      @open-pomodoro="state.showPomodoroDrawer = true"
+      @open-pomodoro="handleOpenPomodoro"
       @create="openQuickCreate"
     />
 
@@ -321,6 +321,12 @@ const handleCreated = () => {
   showMessage(t('mobile.create.success') || '创建成功');
   // Refresh data after creation
   handleRefresh();
+};
+
+const handleOpenPomodoro = () => {
+  console.log('[MobileTodoDock] 收到番茄钟点击事件，当前 showPomodoroDrawer:', state.showPomodoroDrawer);
+  state.showPomodoroDrawer = true;
+  console.log('[MobileTodoDock] 设置后 showPomodoroDrawer:', state.showPomodoroDrawer);
 };
 
 // 数据刷新处理函数

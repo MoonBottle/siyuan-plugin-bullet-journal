@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { eventBus, Events } from '@/utils/eventBus';
 import type { PendingPomodoroCompletion } from '@/types/models';
@@ -42,6 +42,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
 }>();
+
+// 监听 modelValue 变化
+watch(() => props.modelValue, (newVal) => {
+  console.log('[MobilePomodoroDrawer] modelValue 变化:', newVal);
+});
 
 const pomodoroStore = usePomodoroStore();
 
