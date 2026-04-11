@@ -340,12 +340,12 @@ import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import { formatReminderDisplay } from '@/utils/displayUtils';
 import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
 import { useSettingsStore } from '@/stores';
-import MobilePriorityPicker from '@/components/mobile/MobilePriorityPicker.vue';
-import MobileDatePicker from '@/components/mobile/MobileDatePicker.vue';
+import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue';
+import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue';
 import { updateBlockDateTime, updateBlockPriority, updateBlockContent } from '@/utils/fileUtils';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
 import MobileConfirmDrawer from './MobileConfirmDrawer.vue';
-import { TimeSettingDrawer } from '@/components/time-picker';
+import { TimeSettingDrawer } from '@/mobile/components/time-picker';
 
 const props = defineProps<{
   modelValue: boolean;
