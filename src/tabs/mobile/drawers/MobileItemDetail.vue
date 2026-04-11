@@ -784,7 +784,7 @@ const close = () => {
 .drawer-handle {
   display: flex;
   justify-content: center;
-  padding: 12px;
+  padding: 8px;
   cursor: pointer;
 }
 
@@ -797,7 +797,7 @@ const close = () => {
 }
 
 .drawer-header {
-  padding: 4px 16px 12px;
+  padding: 0 16px 8px;
   text-align: center;
 }
 
@@ -819,9 +819,9 @@ const close = () => {
 .info-card,
 .actions-card {
   background: var(--b3-theme-surface);
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
 }
 
 // Content card - editable
@@ -876,8 +876,8 @@ const close = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 36px;
-  padding: 8px 0;
+  min-height: 32px;
+  padding: 6px 0;
   cursor: pointer;
   transition: opacity 0.2s;
   
@@ -1040,7 +1040,7 @@ const close = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
+  padding: 8px 0;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1173,7 +1173,7 @@ const close = () => {
 .drawer-footer {
   display: flex;
   justify-content: space-around;
-  padding: 8px 0;
+  padding: 6px 0;
   border-top: 1px solid var(--b3-border-color);
   background: var(--b3-theme-background);
 }
@@ -1182,8 +1182,8 @@ const close = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 2px;
+  padding: 4px 12px;
   border: none;
   background: transparent;
   color: var(--b3-theme-on-surface);
@@ -1201,13 +1201,13 @@ const close = () => {
   
   // 统一图标容器
   .footer-icon-wrapper {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--b3-theme-surface);
-    border-radius: 10px;
+    border-radius: 8px;
     transition: all 0.2s;
     
     svg {
