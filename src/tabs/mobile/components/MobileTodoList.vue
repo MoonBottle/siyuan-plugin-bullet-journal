@@ -3,7 +3,7 @@
     class="mobile-todo-list" 
     ref="scrollContainer"
     @touchstart="handleContainerTouchStart"
-    @touchmove="handleContainerTouchMove"
+    @touchmove.passive="handleContainerTouchMove"
     @touchend="handleContainerTouchEnd"
   >
     <!-- 下拉刷新指示器 -->
@@ -15,7 +15,7 @@
         <SyLoading :text="t('common').refreshing || '刷新中...'" />
       </div>
       <div v-else class="pull-text">
-        {{ pullDistance >= REFRESH_THRESHOLD ? '释放刷新' : '下拉刷新' }}
+        {{ pullDistance >= REFRESH_THRESHOLD ? (t('mobile.releaseToRefresh') || '释放刷新') : (t('mobile.pullToRefresh') || '下拉刷新') }}
       </div>
     </div>
     <div class="todo-content">
@@ -326,7 +326,10 @@ const handleContainerTouchMove = (e: TouchEvent) => {
   const diff = currentY - startY.value;
   if (diff > 0) {
     pullDistance.value = Math.min(diff * 0.5, REFRESH_THRESHOLD + 20);
-    e.preventDefault();
+    // Only prevent default when necessary (handled via .passive modifier)
+    if (pullDistance.value > 0) {
+      e.preventDefault();
+    }
   }
 };
 
@@ -336,7 +339,7 @@ const handleContainerTouchEnd = async () => {
   
   if (pullDistance.value >= REFRESH_THRESHOLD) {
     isRefreshing.value = true;
-    await emit('refresh');
+    emit('refresh');
     isRefreshing.value = false;
   }
   pullDistance.value = 0;

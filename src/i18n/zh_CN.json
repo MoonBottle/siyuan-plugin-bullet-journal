@@ -652,6 +652,8 @@
     }
   },
   "mobile": {
+    "pullToRefresh": "下拉刷新",
+    "releaseToRefresh": "释放刷新",
     "filter": {
       "title": "筛选",
       "projectGroup": "项目分组",

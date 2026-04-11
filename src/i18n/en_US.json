@@ -612,6 +612,8 @@
     }
   },
   "mobile": {
+    "pullToRefresh": "Pull to refresh",
+    "releaseToRefresh": "Release to refresh",
     "filter": {
       "title": "Filter",
       "projectGroup": "Project Group",
