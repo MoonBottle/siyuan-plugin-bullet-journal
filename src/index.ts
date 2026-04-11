@@ -143,8 +143,10 @@ export default class TaskAssistantPlugin extends Plugin {
       console.error('[Task Assistant] Failed to load projects on init:', err);
     });
 
-    // 注册顶栏按钮
-    this.registerTopBar();
+    // 注册顶栏按钮（移动端不注册）
+    if (!this.isMobile) {
+      this.registerTopBar();
+    }
 
     // 注册事件监听
     this.registerEventListeners();

@@ -82,7 +82,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { Menu, showMessage } from 'siyuan';
+import { Menu, showMessage, getFrontend } from 'siyuan';
+
+// 判断是否为移动端
+const isMobile = computed(() => {
+  const frontEnd = getFrontend();
+  return frontEnd === 'mobile' || frontEnd === 'browser-mobile';
+});
 import { usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, useAIStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
@@ -294,16 +300,17 @@ const handleMoreClick = (event: MouseEvent) => {
     });
   }
 
-  menu.addSeparator();
-
-  // 打开设置
-  menu.addItem({
-    icon: 'iconSettings',
-    label: t('settings').title,
-    click: () => {
-      handleOpenSettings();
-    }
-  });
+  // 打开设置（移动端隐藏）
+  if (!isMobile.value) {
+    menu.addSeparator();
+    menu.addItem({
+      icon: 'iconSettings',
+      label: t('settings').title,
+      click: () => {
+        handleOpenSettings();
+      }
+    });
+  }
 
   menu.open({
     x: rect.left,
