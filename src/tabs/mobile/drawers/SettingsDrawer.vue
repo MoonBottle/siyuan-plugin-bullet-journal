@@ -1,74 +1,88 @@
 <template>
   <Teleport to="body">
-    <Transition name="slide-up">
-      <div v-if="modelValue" class="settings-drawer-overlay" @click="closeOnOverlay">
-        <div class="settings-drawer" @click.stop>
-          <!-- Header -->
-          <div class="drawer-header">
-            <div class="drag-handle"></div>
-            <span class="header-title">{{ t('mobile.settings.title') || '设置' }}</span>
-            <button class="close-btn" @click="close">
-              <svg><use xlink:href="#iconClose"></use></svg>
-            </button>
-          </div>
-          
-          <!-- Content -->
-          <div class="drawer-content">
-            <!-- View Settings Section -->
-            <div class="settings-section">
-              <div class="section-title">{{ t('mobile.settings.view') || '视图设置' }}</div>
-              
-              <div class="setting-item" @click="toggleHideCompleted">
-                <div class="setting-info">
-                  <span class="setting-icon">👁️</span>
-                  <span class="setting-label">{{ t('mobile.settings.hideCompleted') || '隐藏已完成' }}</span>
+    <Transition name="fade">
+      <div v-if="modelValue" class="drawer-overlay" @click="close">
+        <Transition name="slide-up">
+          <div v-if="modelValue" class="settings-drawer" @click.stop>
+            <div class="drawer-handle" @click="close">
+              <div class="handle-bar"></div>
+            </div>
+            
+            <div class="drawer-header">
+              <h3 class="drawer-title">{{ t('mobile.settings.title') || '设置' }}</h3>
+            </div>
+            
+            <div class="drawer-content">
+              <!-- View Settings Section -->
+              <div class="form-section">
+                <label class="section-label">{{ t('mobile.settings.view') || '视图设置' }}</label>
+                
+                <div class="setting-item" @click="toggleHideCompleted">
+                  <div class="setting-info">
+                    <div class="setting-icon">
+                      <svg><use xlink:href="#iconEye"></use></svg>
+                    </div>
+                    <span class="setting-label">{{ t('mobile.settings.hideCompleted') || '隐藏已完成' }}</span>
+                  </div>
+                  <div class="setting-control">
+                    <div class="switch" :class="{ active: projectStore.hideCompleted }">
+                      <div class="switch-thumb"></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="setting-control">
-                  <div class="switch" :class="{ active: projectStore.hideCompleted }">
-                    <div class="switch-thumb"></div>
+                
+                <div class="setting-item" @click="toggleHideAbandoned">
+                  <div class="setting-info">
+                    <div class="setting-icon">
+                      <svg><use xlink:href="#iconBan"></use></svg>
+                    </div>
+                    <span class="setting-label">{{ t('mobile.settings.hideAbandoned') || '隐藏已放弃' }}</span>
+                  </div>
+                  <div class="setting-control">
+                    <div class="switch" :class="{ active: projectStore.hideAbandoned }">
+                      <div class="switch-thumb"></div>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div class="setting-item" @click="toggleHideAbandoned">
-                <div class="setting-info">
-                  <span class="setting-icon">🚫</span>
-                  <span class="setting-label">{{ t('mobile.settings.hideAbandoned') || '隐藏已放弃' }}</span>
+              <!-- About Section -->
+              <div class="form-section">
+                <label class="section-label">{{ t('mobile.settings.about') || '关于' }}</label>
+                
+                <div class="setting-item" @click="openPluginSettings">
+                  <div class="setting-info">
+                    <div class="setting-icon">
+                      <svg><use xlink:href="#iconSettings"></use></svg>
+                    </div>
+                    <span class="setting-label">{{ t('mobile.settings.pluginSettings') || '插件设置' }}</span>
+                  </div>
+                  <div class="setting-control">
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
                 </div>
-                <div class="setting-control">
-                  <div class="switch" :class="{ active: projectStore.hideAbandoned }">
-                    <div class="switch-thumb"></div>
+                
+                <div class="setting-item version-item">
+                  <div class="setting-info">
+                    <div class="setting-icon">
+                      <svg><use xlink:href="#iconBox"></use></svg>
+                    </div>
+                    <span class="setting-label">{{ t('mobile.settings.version') || '版本' }}</span>
+                  </div>
+                  <div class="setting-control">
+                    <span class="version-text">v{{ version }}</span>
                   </div>
                 </div>
               </div>
             </div>
             
-            <!-- About Section -->
-            <div class="settings-section">
-              <div class="section-title">{{ t('mobile.settings.about') || '关于' }}</div>
-              
-              <div class="setting-item" @click="openPluginSettings">
-                <div class="setting-info">
-                  <span class="setting-icon">⚙️</span>
-                  <span class="setting-label">{{ t('mobile.settings.pluginSettings') || '插件设置' }}</span>
-                </div>
-                <div class="setting-control">
-                  <span class="arrow">›</span>
-                </div>
-              </div>
-              
-              <div class="setting-item">
-                <div class="setting-info">
-                  <span class="setting-icon">📦</span>
-                  <span class="setting-label">{{ t('mobile.settings.version') || '版本' }}</span>
-                </div>
-                <div class="setting-control">
-                  <span class="version-text">v{{ version }}</span>
-                </div>
-              </div>
+            <div class="drawer-footer">
+              <button class="confirm-btn" @click="close">
+                {{ t('common.confirm') || '确认' }}
+              </button>
             </div>
           </div>
-        </div>
+        </Transition>
       </div>
     </Transition>
   </Teleport>
@@ -97,13 +111,6 @@ const close = () => {
   emit('update:modelValue', false);
 };
 
-const closeOnOverlay = (e: MouseEvent) => {
-  // 只有点击遮罩层本身才关闭
-  if (e.target === e.currentTarget) {
-    close();
-  }
-};
-
 const toggleHideCompleted = () => {
   projectStore.toggleHideCompleted();
 };
@@ -111,8 +118,6 @@ const toggleHideCompleted = () => {
 const toggleHideAbandoned = () => {
   projectStore.toggleHideAbandoned();
 };
-
-
 
 const openPluginSettings = () => {
   // 打开插件设置页面
@@ -124,126 +129,107 @@ const openPluginSettings = () => {
 </script>
 
 <style lang="scss" scoped>
-.settings-drawer-overlay {
+.drawer-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  backdrop-filter: blur(2px);
+  z-index: 1002;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  align-items: flex-end;
 }
 
 .settings-drawer {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
   background: var(--b3-theme-background);
-  border-radius: 16px 16px 0 0;
-  max-height: 70vh;
+  border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.3s ease-out;
+  max-height: 70vh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+.drawer-handle {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.handle-bar {
+  width: 40px;
+  height: 4px;
+  background: var(--b3-theme-on-surface);
+  opacity: 0.25;
+  border-radius: 2px;
 }
 
 .drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 16px;
-  position: relative;
-  border-bottom: 1px solid var(--b3-border-color);
+  padding: 4px 20px 16px;
+  text-align: center;
 }
 
-.drag-handle {
-  width: 36px;
-  height: 4px;
-  background: var(--b3-theme-on-surface);
-  opacity: 0.3;
-  border-radius: 2px;
-  position: absolute;
-  top: 8px;
-}
-
-.header-title {
-  font-size: 16px;
+.drawer-title {
+  font-size: 17px;
   font-weight: 600;
-  margin-top: 8px;
-}
-
-.close-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 50%;
-  
-  &:active {
-    background: var(--b3-theme-surface-lighter);
-  }
-  
-  svg {
-    width: 18px;
-    height: 18px;
-    fill: var(--b3-theme-on-surface);
-  }
+  margin: 0;
+  color: var(--b3-theme-on-background);
 }
 
 .drawer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0 24px;
+  padding: 0 16px 16px;
 }
 
-.settings-section {
-  padding: 16px;
-  
-  & + .settings-section {
-    border-top: 1px solid var(--b3-border-color);
-  }
+.form-section {
+  margin-bottom: 20px;
 }
 
-.section-title {
-  font-size: 12px;
+.section-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--b3-theme-on-surface);
-  opacity: 0.6;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-  padding-left: 4px;
+  margin-bottom: 10px;
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  border-radius: var(--b3-border-radius);
+  padding: 14px 16px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 12px;
+  background: var(--b3-theme-surface);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
   
-  &:active {
-    background: var(--b3-theme-surface-lighter);
+  &:hover {
+    border-color: var(--b3-theme-primary);
   }
   
-  & + .setting-item {
-    margin-top: 4px;
+  &:active {
+    transform: scale(0.99);
+  }
+  
+  &.version-item {
+    cursor: default;
+    
+    &:hover {
+      border-color: var(--b3-border-color);
+    }
+    
+    &:active {
+      transform: none;
+    }
   }
 }
 
@@ -254,9 +240,20 @@ const openPluginSettings = () => {
 }
 
 .setting-icon {
-  font-size: 18px;
-  width: 24px;
-  text-align: center;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+  border-radius: 10px;
+  flex-shrink: 0;
+  
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--b3-theme-primary);
+  }
 }
 
 .setting-label {
@@ -300,10 +297,12 @@ const openPluginSettings = () => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.arrow {
-  font-size: 18px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.5;
+.arrow-icon {
+  width: 16px;
+  height: 16px;
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.4;
+  transform: rotate(90deg);
 }
 
 .version-text {
@@ -312,22 +311,52 @@ const openPluginSettings = () => {
   opacity: 0.6;
 }
 
-// Transition animations
+// Footer
+.drawer-footer {
+  padding: 16px;
+  border-top: 1px solid var(--b3-border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.confirm-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+  
+  &:hover {
+    opacity: 0.9;
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+// Transitions
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: opacity 0.3s;
-  
-  .settings-drawer {
-    transition: transform 0.3s ease-out;
-  }
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .slide-up-enter-from,
 .slide-up-leave-to {
-  opacity: 0;
-  
-  .settings-drawer {
-    transform: translateY(100%);
-  }
+  transform: translateY(100%);
 }
 </style>
