@@ -7,7 +7,7 @@
 import { computed } from 'vue';
 import { usePlugin } from '@/main';
 import DesktopTodoDock from './DesktopTodoDock.vue';
-import MobileTodoDock from './mobile/MobileTodoDock.vue';
+import MobileTodoDock from '@/mobile/MobileTodoDock.vue';
 
 const props = defineProps<{
   plugin?: any;
