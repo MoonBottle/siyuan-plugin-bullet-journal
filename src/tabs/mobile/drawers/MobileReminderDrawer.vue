@@ -22,6 +22,7 @@
                 :initial-config="initialConfig"
                 layout="drawer"
                 hide-footer
+                @save="handleSave"
               />
             </div>
 

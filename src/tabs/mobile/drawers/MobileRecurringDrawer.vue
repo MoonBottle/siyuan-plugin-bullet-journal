@@ -23,6 +23,7 @@
                 :initial-end-condition="initialEndCondition"
                 layout="drawer"
                 hide-footer
+                @save="handleSave"
               />
             </div>
 
