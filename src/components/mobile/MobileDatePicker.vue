@@ -356,7 +356,7 @@ const confirm = () => {
   cursor: pointer;
   transition: all 0.2s ease;
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not(.selected) {
     background: var(--b3-theme-surface-lighter);
   }
 
@@ -375,8 +375,8 @@ const confirm = () => {
   }
 
   &.selected {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
+    background: var(--b3-theme-primary-lightest);
+    color: var(--b3-theme-primary);
     font-weight: 600;
   }
 }
