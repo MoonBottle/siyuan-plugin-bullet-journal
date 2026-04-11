@@ -203,14 +203,14 @@
 import { ref, reactive, computed } from 'vue';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
-import MobileDirectoryConfig from './mobile/MobileDirectoryConfig.vue';
-import MobileGroupConfig from './mobile/MobileGroupConfig.vue';
-import MobilePomodoroConfig from './mobile/MobilePomodoroConfig.vue';
-import MobileCalendarConfig from './mobile/MobileCalendarConfig.vue';
-import MobileLunchBreakConfig from './mobile/MobileLunchBreakConfig.vue';
-import MobileSlashCommandConfig from './mobile/MobileSlashCommandConfig.vue';
-import MobileAiConfig from './mobile/MobileAiConfig.vue';
-import MobileMcpConfig from './mobile/MobileMcpConfig.vue';
+import MobileDirectoryConfig from '@/mobile/drawers/settings/MobileDirectoryConfig.vue';
+import MobileGroupConfig from '@/mobile/drawers/settings/MobileGroupConfig.vue';
+import MobilePomodoroConfig from '@/mobile/drawers/settings/MobilePomodoroConfig.vue';
+import MobileCalendarConfig from '@/mobile/drawers/settings/MobileCalendarConfig.vue';
+import MobileLunchBreakConfig from '@/mobile/drawers/settings/MobileLunchBreakConfig.vue';
+import MobileSlashCommandConfig from '@/mobile/drawers/settings/MobileSlashCommandConfig.vue';
+import MobileAiConfig from '@/mobile/drawers/settings/MobileAiConfig.vue';
+import MobileMcpConfig from '@/mobile/drawers/settings/MobileMcpConfig.vue';
 
 interface Props {
   modelValue: boolean;
