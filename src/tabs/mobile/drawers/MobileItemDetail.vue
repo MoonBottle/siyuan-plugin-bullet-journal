@@ -270,22 +270,44 @@
       </Transition>
     </Teleport>
     
-    <!-- Content Edit Dialog -->
-    <div v-if="showContentEdit" class="edit-dialog-overlay" @click="cancelEditContent">
-      <div class="edit-dialog" @click.stop>
-        <div class="edit-dialog-header">{{ t('mobile.edit.content') || '编辑内容' }}</div>
-        <textarea 
-          v-model="editingContent" 
-          class="edit-textarea" 
-          rows="3"
-          @keydown.enter.prevent="saveContent"
-        />
-        <div class="edit-dialog-footer">
-          <button class="edit-btn cancel" @click="cancelEditContent">{{ t('common.cancel') || '取消' }}</button>
-          <button class="edit-btn confirm" @click="saveContent">{{ t('common.confirm') || '确定' }}</button>
-        </div>
+    <!-- Content Edit Drawer -->
+    <Transition name="fade">
+      <div v-if="showContentEdit" class="content-edit-overlay" @click="cancelEditContent">
+        <Transition name="slide-up">
+          <div v-if="showContentEdit" class="content-edit-drawer" @click.stop>
+            <!-- Handle Bar -->
+            <div class="drawer-handle" @click="cancelEditContent">
+              <div class="handle-bar"></div>
+            </div>
+            
+            <!-- Header -->
+            <div class="content-edit-header">
+              <h3 class="content-edit-title">{{ t('mobile.edit.content') || '编辑内容' }}</h3>
+            </div>
+            
+            <!-- Content -->
+            <div class="content-edit-body">
+              <textarea 
+                v-model="editingContent" 
+                class="content-edit-textarea" 
+                :placeholder="t('mobile.quickCreate.itemContentPlaceholder') || '输入事项内容'"
+                rows="4"
+              />
+            </div>
+            
+            <!-- Footer -->
+            <div class="content-edit-footer">
+              <button class="edit-action-btn cancel" @click="cancelEditContent">
+                {{ t('common.cancel') || '取消' }}
+              </button>
+              <button class="edit-action-btn confirm" @click="saveContent">
+                {{ t('common.confirm') || '确定' }}
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -1197,68 +1219,76 @@ const close = () => {
   }
 }
 
-// Edit Dialog
-.edit-dialog-overlay {
+// Content Edit Drawer
+.content-edit-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
   z-index: 1003;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 20px;
 }
 
-.edit-dialog {
+.content-edit-drawer {
   width: 100%;
-  max-width: 360px;
+  max-width: 480px;
   background: var(--b3-theme-background);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
-.edit-dialog-header {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-  margin-bottom: 16px;
+.content-edit-header {
+  padding: 4px 4px 16px;
   text-align: center;
 }
 
-.edit-textarea {
+.content-edit-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--b3-theme-on-background);
+}
+
+.content-edit-body {
+  padding: 0 4px 16px;
+}
+
+.content-edit-textarea {
   width: 100%;
-  min-height: 80px;
+  min-height: 100px;
   padding: 12px;
   border: 1px solid var(--b3-border-color);
   border-radius: 12px;
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-background);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
-  resize: vertical;
+  resize: none;
   outline: none;
   
   &:focus {
     border-color: var(--b3-theme-primary);
+    box-shadow: 0 0 0 3px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   }
 }
 
-.edit-dialog-footer {
+.content-edit-footer {
   display: flex;
   gap: 12px;
-  margin-top: 16px;
+  padding: 0 4px;
 }
 
-.edit-btn {
+.edit-action-btn {
   flex: 1;
-  padding: 12px;
+  padding: 14px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -1267,11 +1297,19 @@ const close = () => {
   &.cancel {
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-surface);
+    
+    &:hover {
+      background: var(--b3-theme-surface-lighter);
+    }
   }
   
   &.confirm {
     background: var(--b3-theme-primary);
     color: var(--b3-theme-on-primary);
+    
+    &:hover {
+      opacity: 0.9;
+    }
   }
   
   &:active {
