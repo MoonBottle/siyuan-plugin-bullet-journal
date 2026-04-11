@@ -177,9 +177,11 @@ const currentTimeStr = computed(() => `${currentHour.value}:${currentMinute.valu
   background: var(--b3-theme-background, #fff);
   border-radius: 20px 20px 0 0;
   padding: 16px;
-  max-height: 70vh;
+  max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 /* 头部 - 仅标题居中 */

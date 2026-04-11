@@ -120,9 +120,11 @@ function onCancel() {
 .time-setting-drawer {
   background: var(--b3-theme-background, #fff);
   border-radius: 20px 20px 0 0;
-  max-height: 80vh;
+  max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 /* 头部 */
@@ -166,17 +168,17 @@ function onCancel() {
 /* 内容区域 */
 .drawer-content {
   flex: 1;
-  overflow-y: auto;
   padding: 20px;
+  min-height: 0;
 }
 
 /* 底部按钮 */
 .drawer-footer {
   display: flex;
   gap: 12px;
-  padding: 16px 20px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
   border-top: 0.5px solid var(--b3-border-color, #eee);
+  flex-shrink: 0;
 }
 
 .footer-btn {
