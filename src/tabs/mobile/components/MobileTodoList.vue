@@ -3,7 +3,7 @@
     class="mobile-todo-list" 
     ref="scrollContainer"
     @touchstart="handleContainerTouchStart"
-    @touchmove.passive="handleContainerTouchMove"
+    @touchmove="handleContainerTouchMove"
     @touchend="handleContainerTouchEnd"
   >
     <!-- 下拉刷新指示器 -->

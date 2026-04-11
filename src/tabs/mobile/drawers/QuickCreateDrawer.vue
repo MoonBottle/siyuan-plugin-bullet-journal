@@ -249,50 +249,52 @@
               <h4 class="sheet-title">{{ t('mobile.quickCreate.selectDate') || '选择日期' }}</h4>
             </div>
             
-            <!-- Quick Date Buttons -->
-            <div class="quick-dates">
-              <button class="quick-date-btn" @click="selectQuickDate(0)">
-                <span class="quick-date-label">{{ t('todo.today') || '今天' }}</span>
-                <span class="quick-date-value">{{ formatQuickDate(0) }}</span>
-              </button>
-              <button class="quick-date-btn" @click="selectQuickDate(1)">
-                <span class="quick-date-label">{{ t('todo.tomorrow') || '明天' }}</span>
-                <span class="quick-date-value">{{ formatQuickDate(1) }}</span>
-              </button>
-              <button class="quick-date-btn" @click="selectQuickDate(7)">
-                <span class="quick-date-label">{{ t('mobile.nextWeek') || '一周后' }}</span>
-                <span class="quick-date-value">{{ formatQuickDate(7) }}</span>
-              </button>
-            </div>
-            
-            <!-- Calendar -->
-            <div class="calendar">
-              <div class="calendar-header">
-                <button class="nav-btn" @click="prevMonth">
-                  <svg><use xlink:href="#iconLeft"></use></svg>
+            <div class="sheet-content">
+              <!-- Quick Date Buttons -->
+              <div class="quick-dates">
+                <button class="quick-date-btn" @click="selectQuickDate(0)">
+                  <span class="quick-date-label">{{ t('todo.today') || '今天' }}</span>
+                  <span class="quick-date-value">{{ formatQuickDate(0) }}</span>
                 </button>
-                <span class="month-year">{{ calendarYear }}年{{ calendarMonth + 1 }}月</span>
-                <button class="nav-btn" @click="nextMonth">
-                  <svg><use xlink:href="#iconRight"></use></svg>
+                <button class="quick-date-btn" @click="selectQuickDate(1)">
+                  <span class="quick-date-label">{{ t('todo.tomorrow') || '明天' }}</span>
+                  <span class="quick-date-value">{{ formatQuickDate(1) }}</span>
+                </button>
+                <button class="quick-date-btn" @click="selectQuickDate(7)">
+                  <span class="quick-date-label">{{ t('mobile.nextWeek') || '一周后' }}</span>
+                  <span class="quick-date-value">{{ formatQuickDate(7) }}</span>
                 </button>
               </div>
-              <div class="calendar-weekdays">
-                <span v-for="day in weekdays" :key="day" class="weekday">{{ day }}</span>
-              </div>
-              <div class="calendar-days">
-                <button
-                  v-for="day in calendarDays"
-                  :key="day.date"
-                  class="calendar-day"
-                  :class="{
-                    'other-month': !day.isCurrentMonth,
-                    'selected': day.date === tempSelectedDate,
-                    'today': day.isToday
-                  }"
-                  @click="selectDate(day.date)"
-                >
-                  {{ day.day }}
-                </button>
+              
+              <!-- Calendar -->
+              <div class="calendar">
+                <div class="calendar-header">
+                  <button class="nav-btn" @click="prevMonth">
+                    <svg><use xlink:href="#iconLeft"></use></svg>
+                  </button>
+                  <span class="month-year">{{ calendarYear }}年{{ calendarMonth + 1 }}月</span>
+                  <button class="nav-btn" @click="nextMonth">
+                    <svg><use xlink:href="#iconRight"></use></svg>
+                  </button>
+                </div>
+                <div class="calendar-weekdays">
+                  <span v-for="day in weekdays" :key="day" class="weekday">{{ day }}</span>
+                </div>
+                <div class="calendar-days">
+                  <button
+                    v-for="day in calendarDays"
+                    :key="day.date"
+                    class="calendar-day"
+                    :class="{
+                      'other-month': !day.isCurrentMonth,
+                      'selected': day.date === tempSelectedDate,
+                      'today': day.isToday
+                    }"
+                    @click="selectDate(day.date)"
+                  >
+                    {{ day.day }}
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -735,7 +737,6 @@ const close = () => {
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -1269,7 +1270,7 @@ const close = () => {
   flex: 1;
   overflow-y: auto;
   padding: 8px 16px;
-  max-height: 50vh;
+  min-height: 0;
 }
 
 .sheet-option {
