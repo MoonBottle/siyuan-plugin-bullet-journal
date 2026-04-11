@@ -203,21 +203,21 @@
               </button>
               <!-- 放弃 -->
               <button v-if="!isCompletedOrAbandoned" class="footer-btn danger" @click="handleAbandon">
-                <div class="footer-icon-wrapper abandon">
+                <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconClose"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.abandon') || '放弃' }}</span>
               </button>
               <!-- 迁移 -->
               <button v-if="!isCompletedOrAbandoned" class="footer-btn" @click="showMigrateMenu">
-                <div class="footer-icon-wrapper migrate">
+                <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconForward"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.migrate') || '迁移' }}</span>
               </button>
               <!-- 专注 -->
               <button v-if="!isCompletedOrAbandoned" class="footer-btn" @click="handleStartPomodoro">
-                <div class="footer-icon-wrapper pomodoro">
+                <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconClock"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.pomodoro') || '专注' }}</span>
@@ -720,7 +720,6 @@ const close = () => {
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -740,31 +739,31 @@ const close = () => {
 }
 
 .drawer-header {
-  padding: 4px 20px 16px;
+  padding: 4px 16px 12px;
   text-align: center;
 }
 
 .drawer-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
   margin: 0;
-  color: var(--b3-theme-on-background);
+  color: var(--b3-theme-on-surface);
 }
 
 .drawer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 16px;
+  padding: 0 12px 12px;
 }
 
-// Cards
+// Cards - 更紧凑
 .content-card,
 .info-card,
 .actions-card {
   background: var(--b3-theme-surface);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 12px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
 }
 
 // Content card - editable
@@ -814,13 +813,13 @@ const close = () => {
   }
 }
 
-// Info items - 垂直居中优化
+// Info items - 更紧凑
 .info-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 44px;
-  padding: 10px 0;
+  min-height: 36px;
+  padding: 8px 0;
   cursor: pointer;
   transition: opacity 0.2s;
   
@@ -865,13 +864,15 @@ const close = () => {
 }
 
 .info-icon {
-  width: 18px;
-  height: 18px;
-  fill: var(--b3-theme-primary);
+  width: 16px;
+  height: 16px;
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.7;
   flex-shrink: 0;
   
   &.priority-icon {
     fill: #f59e0b;
+    opacity: 1;
   }
 }
 
@@ -949,10 +950,13 @@ const close = () => {
 
 // Actions
 .section-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--b3-theme-on-surface);
-  margin-bottom: 12px;
+  opacity: 0.7;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .section-header {
@@ -983,14 +987,14 @@ const close = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
+  padding: 10px 0;
   border: none;
   background: transparent;
   cursor: pointer;
   transition: opacity 0.2s;
   
   &:hover {
-    opacity: 0.8;
+    opacity: 0.7;
   }
   
   &:not(:last-child) {
@@ -998,10 +1002,6 @@ const close = () => {
   }
   
   &.active {
-    .action-icon-wrapper {
-      background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.15);
-    }
-    
     .action-text {
       color: var(--b3-theme-primary);
     }
@@ -1009,20 +1009,25 @@ const close = () => {
 }
 
 .action-icon-wrapper {
-  width: 36px;
-  height: 36px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--b3-theme-surface-lighter);
-  border-radius: 10px;
   flex-shrink: 0;
   
   svg {
-    width: 18px;
-    height: 18px;
-    fill: var(--b3-theme-primary);
+    width: 16px;
+    height: 16px;
+    fill: var(--b3-theme-on-surface);
+    opacity: 0.7;
   }
+}
+
+// Active 状态下的 icon 保持主题色
+.action-item.active .action-icon-wrapper svg {
+  fill: var(--b3-theme-primary);
+  opacity: 1;
 }
 
 .action-text {
@@ -1111,11 +1116,12 @@ const close = () => {
   font-weight: 500;
 }
 
-// Footer
+// Footer - 统一简洁风格
 .drawer-footer {
   display: flex;
   justify-content: space-around;
-  padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 0;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--b3-border-color);
   background: var(--b3-theme-background);
 }
@@ -1124,8 +1130,8 @@ const close = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 4px;
+  padding: 6px 12px;
   border: none;
   background: transparent;
   color: var(--b3-theme-on-surface);
@@ -1134,61 +1140,60 @@ const close = () => {
   transition: all 0.2s;
   
   &:hover {
-    opacity: 0.8;
+    opacity: 0.7;
   }
   
   &:active {
     transform: scale(0.95);
   }
   
+  // 统一图标容器
+  .footer-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--b3-theme-surface);
+    border-radius: 10px;
+    transition: all 0.2s;
+    
+    svg {
+      width: 18px;
+      height: 18px;
+      fill: var(--b3-theme-on-surface);
+    }
+  }
+  
+  // 悬停效果
+  &:hover .footer-icon-wrapper {
+    background: var(--b3-theme-surface-lighter);
+  }
+  
+  // 主要操作（完成）- 轻微强调
   &.primary {
     color: var(--b3-theme-primary);
     
     .footer-icon-wrapper {
-      background: var(--b3-theme-primary);
-      color: var(--b3-theme-on-primary);
+      background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+      
+      svg {
+        fill: var(--b3-theme-primary);
+      }
+    }
+    
+    &:hover .footer-icon-wrapper {
+      background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.15);
     }
   }
   
+  // 放弃 - 轻微警告色
   &.danger {
     color: #ef4444;
     
-    .footer-icon-wrapper {
-      background: #ef4444;
-      color: white;
+    .footer-icon-wrapper svg {
+      fill: #ef4444;
     }
-  }
-}
-
-.footer-icon-wrapper {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--b3-theme-surface);
-  border-radius: 12px;
-  transition: all 0.2s;
-  
-  svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-  }
-  
-  &.pomodoro {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-  }
-  
-  &.abandon {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-  }
-  
-  &.migrate {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
   }
 }
 

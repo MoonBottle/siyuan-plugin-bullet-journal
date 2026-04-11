@@ -137,6 +137,7 @@ const clearSearch = () => {
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
+  flex-shrink: 0;
   
   svg {
     width: 18px;
