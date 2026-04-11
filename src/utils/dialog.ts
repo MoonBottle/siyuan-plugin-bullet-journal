@@ -2,12 +2,14 @@
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
-import { Dialog } from 'siyuan';
+import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
+import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
+import MobileSettingsDrawer from '@/components/settings/MobileSettingsDrawer.vue';
 import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
 import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
@@ -27,6 +29,7 @@ import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMar
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
+import { updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -642,10 +645,16 @@ export async function showPomodoroCompleteDialog(
 }
 
 /**
- * 显示开始专注弹框
+ * 显示开始专注弹框（移动端抽屉 / 桌面端对话框）
  * 供底栏、Dock 等任意上下文调用，不依赖 PomodoroDock 是否已挂载
  */
-export function showPomodoroTimerDialog(): Dialog {
+export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | null {
+  // 移动端使用抽屉式弹框
+  if (isMobileDevice()) {
+    return showMobilePomodoroTimerDrawer(preselectedBlockId);
+  }
+
+  // 桌面端使用传统对话框
   const dialog = new Dialog({
     title: t('pomodoro').startFocusTitle,
     content: '<div id="pomodoro-timer-dialog-mount"></div>',
@@ -675,9 +684,65 @@ export function showPomodoroTimerDialog(): Dialog {
 }
 
 /**
- * 显示设置弹框（Vue 重构版）
+ * 显示移动端专注计时抽屉
  */
-export function showSettingsDialog(plugin: any): Dialog {
+function showMobilePomodoroTimerDrawer(preselectedBlockId?: string): Dialog | null {
+  const mountEl = document.createElement('div');
+  mountEl.id = 'mobile-pomodoro-timer-mount';
+  document.body.appendChild(mountEl);
+
+  let visible = true;
+  let drawerApp: any = null;
+
+  const closeDrawer = () => {
+    visible = false;
+    if (drawerApp) {
+      drawerApp.unmount();
+      drawerApp = null;
+    }
+    if (mountEl.parentNode) {
+      mountEl.parentNode.removeChild(mountEl);
+    }
+  };
+
+  drawerApp = createApp(MobilePomodoroTimerDrawer, {
+    modelValue: visible,
+    preselectedBlockId,
+    'onUpdate:modelValue': (val: boolean) => {
+      if (!val) closeDrawer();
+    },
+  });
+
+  const pinia = getSharedPinia();
+  if (pinia) {
+    drawerApp.use(pinia);
+  }
+  drawerApp.mount(mountEl);
+
+  return {
+    element: mountEl,
+    destroy: closeDrawer,
+  } as Dialog;
+}
+
+/**
+ * 检测是否为移动端
+ */
+function isMobileDevice(): boolean {
+  const frontend = getFrontend();
+  return frontend === 'mobile' || frontend === 'browser-mobile';
+}
+
+/**
+ * 显示设置弹框（Vue 重构版）- 支持移动端适配
+ */
+export function showSettingsDialog(plugin: any): Dialog | null {
+  // 移动端使用抽屉式设置面板
+  if (isMobileDevice()) {
+    return showMobileSettingsDrawer(plugin);
+  }
+  
+  // 桌面端使用传统对话框
   let settingsDialogApp: any = null;
   const dialog = new Dialog({
     title: t('settings').title,
@@ -710,6 +775,79 @@ export function showSettingsDialog(plugin: any): Dialog {
   }, 0);
 
   return dialog;
+}
+
+/**
+ * 显示移动端设置抽屉
+ */
+function showMobileSettingsDrawer(plugin: any): Dialog | null {
+  // 创建挂载点
+  const mountEl = document.createElement('div');
+  mountEl.id = 'mobile-settings-drawer-mount';
+  document.body.appendChild(mountEl);
+  
+  let settingsApp: any = null;
+  let visible = true;
+  
+  const closeDrawer = () => {
+    visible = false;
+    if (settingsApp) {
+      settingsApp.unmount();
+      settingsApp = null;
+    }
+    if (mountEl.parentNode) {
+      mountEl.parentNode.removeChild(mountEl);
+    }
+    void plugin.loadSettings();
+  };
+  
+  const handleSave = async (settings: Record<string, any>) => {
+    // 保存设置
+    if (plugin.saveData) {
+      await plugin.saveData('settings.json', JSON.stringify(settings, null, 2));
+    }
+    showMessage(t('settings').saveSuccess || '设置已保存', 'info');
+    closeDrawer();
+  };
+  
+  // 加载当前设置
+  const loadCurrentSettings = async () => {
+    let currentSettings = {};
+    if (plugin.loadData) {
+      try {
+        const data = await plugin.loadData('settings.json');
+        if (data) {
+          currentSettings = typeof data === 'string' ? JSON.parse(data) : data;
+        }
+      } catch (e) {
+        console.error('[Task Assistant] Failed to load settings:', e);
+      }
+    }
+    return currentSettings;
+  };
+  
+  loadCurrentSettings().then((initialSettings) => {
+    settingsApp = createApp(MobileSettingsDrawer, {
+      modelValue: visible,
+      initialSettings,
+      'onUpdate:modelValue': (val: boolean) => {
+        if (!val) closeDrawer();
+      },
+      onSave: handleSave,
+    });
+    
+    const pinia = getSharedPinia();
+    if (pinia) {
+      settingsApp.use(pinia);
+    }
+    settingsApp.mount(mountEl);
+  });
+  
+  // 返回一个模拟的 Dialog 对象
+  return {
+    element: mountEl,
+    destroy: closeDrawer,
+  } as Dialog;
 }
 
 /**
@@ -982,33 +1120,7 @@ export function showRecurringSettingDialog(item: Item): Dialog {
   return dialog;
 }
 
-/**
- * 更新事项的提醒设置
- */
-async function updateItemWithReminder(item: Item, config: ReminderConfig): Promise<void> {
-  if (!item.blockId) return;
 
-  // 获取当前 block 内容
-  const block = await siyuanAPI.getBlockByID(item.blockId);
-  if (!block) return;
-
-  // 构建新的内容
-  let content = block.content || block.markdown || '';
-  
-  // 移除旧的提醒标记
-  content = stripReminderMarker(content);
-  
-  // 添加新的提醒标记
-  if (config.enabled) {
-    const marker = generateReminderMarker(config);
-    if (marker) {
-      content += ` ${marker}`;
-    }
-  }
-
-  // 更新 block
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
-}
 
 /**
  * 显示优先级设置弹框
@@ -1058,39 +1170,5 @@ export function showPrioritySettingDialog(
   return dialog;
 }
 
-/**
- * 更新事项的重复设置
- */
-async function updateItemWithRecurring(
-  item: Item, 
-  repeatRule: RepeatRule | undefined, 
-  endCondition: EndCondition | undefined
-): Promise<void> {
-  if (!item.blockId) return;
 
-  // 获取当前 block 内容
-  const block = await siyuanAPI.getBlockByID(item.blockId);
-  if (!block) return;
-
-  // 构建新的内容
-  let content = block.content || block.markdown || '';
-  
-  // 移除旧的重复和结束条件标记（支持新旧格式）
-  content = stripRecurringMarkers(content);
-  
-  // 添加新的标记
-  if (repeatRule) {
-    content += ` ${generateRepeatRuleMarker(repeatRule)}`;
-    
-    if (endCondition) {
-      const endMarker = generateEndConditionMarker(endCondition);
-      if (endMarker) {
-        content += ` ${endMarker}`;
-      }
-    }
-  }
-
-  // 更新 block
-  await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
-}
 

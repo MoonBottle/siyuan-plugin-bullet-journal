@@ -98,7 +98,7 @@
               placement="bottom"
             />
           </div>
-          <button class="chat-panel__settings-btn" @click="handleOpenSettings">
+          <button v-if="!isMobile" class="chat-panel__settings-btn" @click="handleOpenSettings">
             <svg><use xlink:href="#iconSettings"></use></svg>
           </button>
         </div>
@@ -147,7 +147,7 @@
               {{ t('aiChat').notConfigured }}
             </span>
           </div>
-          <button class="chat-panel__settings-btn" @click="handleOpenSettings">
+          <button v-if="!isMobile" class="chat-panel__settings-btn" @click="handleOpenSettings">
             <svg><use xlink:href="#iconSettings"></use></svg>
           </button>
         </div>
@@ -177,7 +177,13 @@ import type { Project, ProjectGroup, Item } from '@/types/models';
 import type { AIProviderConfig, ChatMessage as ChatMessageType } from '@/types/ai';
 import { appendBlock, pushMsg } from '@/api';
 import { smartFormatMarkdown } from '@/utils/markdownRenderer';
-import { getActiveEditor } from 'siyuan';
+import { getActiveEditor, getFrontend } from 'siyuan';
+
+// 判断是否为移动端
+const isMobile = computed(() => {
+  const frontEnd = getFrontend();
+  return frontEnd === 'mobile' || frontEnd === 'browser-mobile';
+});
 
 // 带渲染元数据的消息
 interface RenderMessage extends ChatMessageType {

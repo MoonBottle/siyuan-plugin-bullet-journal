@@ -96,6 +96,68 @@ function buildDateRangeMark(
 }
 
 /**
+ * 从行中提取日期标记（包括日期范围和时间）
+ * @param line 行内容
+ * @returns 提取的日期标记，如果没有则返回空字符串
+ */
+/**
+ * 从行中提取所有事项标记（日期、时间、重复、结束条件、优先级等）
+ * @param line 行内容
+ * @returns 提取的所有标记拼接字符串，如果没有则返回空字符串
+ */
+function extractItemMarkers(line: string): string {
+  const markers: string[] = [];
+  
+  // 1. 提取优先级标记 (🔥 🌱 🍃)
+  const priorityPattern = /[🔥🌱🍃]/gu;
+  const priorityMatches = line.match(priorityPattern);
+  if (priorityMatches) {
+    markers.push(...priorityMatches);
+  }
+  
+  // 2. 提取日期表达式 (📅 或 @ 开头，可能包含时间和范围)
+  // 匹配: @2026-03-08, 📅2026-03-08, 📅2026-03-08~03-09, 📅2026-03-08 09:00:00~10:00:00
+  const datePattern = /(?:📅|@)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/;
+  const dateMatch = line.match(datePattern);
+  if (dateMatch) {
+    markers.push(dateMatch[0]);
+  }
+  
+  // 3. 提取提醒标记 (⏰开头)
+  // 匹配: ⏰09:00, ⏰提前10分钟, ⏰30 minutes before end
+  // 提醒标记通常是一段文字，直到下一个标记或行尾
+  // 停止条件：遇到 🔁、截止到、剩余、until
+  const reminderPattern = /⏰(?:\d{2}:\d{2}(?::\d{2})?|(?:提前|before|after)?[^\s]*(?:\s+(?!🔁|截止到|剩余|until)[^\s]+)*)/;
+  const reminderMatch = line.match(reminderPattern);
+  if (reminderMatch) {
+    const trimmed = reminderMatch[0].trim();
+    // 排除以 end 结尾的匹配（可能是相对结束提醒的一部分）
+    if (trimmed && !trimmed.match(/⏰\s*$/)) {
+      markers.push(trimmed);
+    }
+  }
+  
+  // 4. 提取重复标记 (🔁开头)
+  // 匹配: 🔁每周, 🔁daily, 🔁每月, 🔁每天, 🔁每周一三六, 🔁每月1,15日
+  // 重复标记在遇到结束条件标记前停止
+  const repeatPattern = /🔁(?:[^\s]+(?:\s+(?!截止到|剩余|until|remaining)[^\s]+)*)/;
+  const repeatMatch = line.match(repeatPattern);
+  if (repeatMatch) {
+    markers.push(repeatMatch[0].trim());
+  }
+  
+  // 5. 提取结束条件标记
+  // 匹配: 截止到YYYY-MM-DD, 剩余N次, until YYYY-MM-DD, N times remaining
+  const endConditionPattern = /(?:截止到|until|剩余|remaining)[^\s]+(?:\s+[^\s]+)*/i;
+  const endConditionMatch = line.match(endConditionPattern);
+  if (endConditionMatch) {
+    markers.push(endConditionMatch[0]);
+  }
+  
+  return markers.join(' ');
+}
+
+/**
  * 检测是否使用任务列表格式
  * @param line 行内容
  * @returns 是否使用任务列表格式
@@ -655,14 +717,17 @@ export async function openDocumentAtLine(
 }
 
 /**
- * 更新块内容（用于添加标签）
+ * 更新块内容（用于添加标签或修改事项内容）
  * @param blockId 块 ID
  * @param suffix 要添加的后缀（如 #done、@2024-01-16）
+ * @param writer 可选的写入器
+ * @param newItemContent 可选的新事项内容，用于替换原有内容
  */
 export async function updateBlockContent(
   blockId: string,
   suffix: string,
-  writer?: BlockWriter
+  writer?: BlockWriter,
+  newItemContent?: string
 ): Promise<boolean> {
   if (!blockId) return false;
 
@@ -722,6 +787,9 @@ export async function updateBlockContent(
       }
     }
 
+    // 如果有新事项内容，使用它替换原有内容
+    const hasNewContent = newItemContent !== undefined && newItemContent !== null;
+
     if (itemLineIndex >= 0) {
       // 只修改事项行，添加后缀
       console.log('[Task Assistant] ====== 走主路径（找到事项行）======');
@@ -735,7 +803,7 @@ export async function updateBlockContent(
       const isStatusTag = suffix === '#done' || suffix === '#abandoned' || suffix === '#已完成' || suffix === '#已放弃' || suffix === '✅' || suffix === '❌';
       console.log('[Task Assistant] updateBlockContent - suffix:', suffix, 'isStatusTag:', isStatusTag);
 
-      console.log('[Task Assistant] 主路径 - isTaskList:', isTaskList, 'isStatusTag:', isStatusTag);
+      console.log('[Task Assistant] 主路径 - isTaskList:', isTaskList, 'isStatusTag:', isStatusTag, 'hasNewContent:', hasNewContent);
       if (isTaskList && isStatusTag) {
         console.log('[Task Assistant] 主路径 - 分支: 任务列表格式 + 状态标签');
         // 任务列表格式 + 状态标签
@@ -752,13 +820,38 @@ export async function updateBlockContent(
             newLine = newLine.trimEnd() + ' ' + suffix;
           }
           if (usedParentKramdown) {
-            // 更新父块时保留完整列表项格式（- 和块属性），仅替换任务标记
+            // 更新父块时保留完整列表项格式（- 和块属性），仅替换任务标记和内容
+            if (hasNewContent) {
+              const markers = extractItemMarkers(itemLine);
+              const contentWithDate = markers ? `${newItemContent} ${markers}` : newItemContent!;
+              // 保留原行的列表标记和块属性，只替换内容部分
+              // 原行格式: - {: id="xxx"}[ ] 旧内容 📅日期
+              // 新行格式: - {: id="xxx"}[x] 新内容 📅日期
+              const listMarkerMatch = itemLine.match(/^(\s*-\s*\{: id="[^"]+"\})/);
+              if (listMarkerMatch) {
+                newLine = `${listMarkerMatch[1]}${newMarker}${contentWithDate}`;
+                if (isAbandon && !itemLine.includes('#已放弃') && !itemLine.includes('#abandoned')) {
+                  newLine = newLine + ' ' + suffix;
+                }
+              } else {
+                newLine = `${newMarker}${contentWithDate}`;
+                if (isAbandon && !itemLine.includes('#已放弃') && !itemLine.includes('#abandoned')) {
+                  newLine = newLine + ' ' + suffix;
+                }
+              }
+            }
             // 去除斜杠命令
             lines[itemLineIndex] = processLineText(newLine, ALL_SLASH_COMMAND_FILTERS);
           } else {
             // 更新内容子块时 strip 后拼接
-            const contentWithoutMarker = itemLine.replace(taskListMatch[0], '');
-            let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+            let cleanedContent: string;
+            if (hasNewContent) {
+              // 使用新内容，但需要保留原行中的日期标记
+              const markers = extractItemMarkers(itemLine);
+              cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+            } else {
+              cleanedContent = stripListAndBlockAttr(itemLine.replace(taskListMatch[0], ''));
+            }
             // 去除斜杠命令
             cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
             lines[itemLineIndex] = isAbandon && !cleanedContent.includes('#已放弃') && !cleanedContent.includes('#abandoned')
@@ -767,7 +860,13 @@ export async function updateBlockContent(
           }
         } else {
           // 如果匹配失败，使用原来的方式
-          let cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent: string;
+          if (hasNewContent) {
+            const markers = extractItemMarkers(itemLine);
+            cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+          } else {
+            cleanedContent = stripListAndBlockAttr(itemLine);
+          }
           // 去除斜杠命令
           cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
@@ -777,17 +876,28 @@ export async function updateBlockContent(
         const taskListMatch = itemLine.match(/(\[\s*[xX]?\s*\]\s*)/);
         if (taskListMatch) {
           const taskListMarker = taskListMatch[1];
-          // 去除任务列表标记后的内容
-          const contentWithoutMarker = itemLine.replace(taskListMarker, '');
-          // 使用 stripListAndBlockAttr 去除列表标记、块属性
-          let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+          // 使用新内容或清理原有内容
+          let cleanedContent: string;
+          if (hasNewContent) {
+            // 使用新内容，但需要保留原行中的日期标记
+            const markers = extractItemMarkers(itemLine);
+            cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+          } else {
+            cleanedContent = stripListAndBlockAttr(itemLine.replace(taskListMarker, ''));
+          }
           // 去除斜杠命令
           cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           // 重新拼接：任务列表标记 + 清理后的内容 + 后缀
           lines[itemLineIndex] = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
         } else {
           // 如果匹配失败，使用原来的方式
-          let cleanedContent = stripListAndBlockAttr(itemLine);
+          let cleanedContent: string;
+          if (hasNewContent) {
+            const markers = extractItemMarkers(itemLine);
+            cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+          } else {
+            cleanedContent = stripListAndBlockAttr(itemLine);
+          }
           // 去除斜杠命令
           cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
           lines[itemLineIndex] = `${cleanedContent} ${suffix}`.trim();
@@ -795,7 +905,13 @@ export async function updateBlockContent(
       } else {
         // 非任务列表格式：使用原来的方式
         // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
-        let cleanedContent = stripListAndBlockAttr(itemLine);
+        let cleanedContent: string;
+        if (hasNewContent) {
+          const markers = extractItemMarkers(itemLine);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+        } else {
+          cleanedContent = stripListAndBlockAttr(itemLine);
+        }
         // 去除斜杠命令
         cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
         // 添加后缀
@@ -832,7 +948,14 @@ export async function updateBlockContent(
       if (taskListMatch) {
         const isAbandon = suffix === '#abandoned' || suffix === '#已放弃' || suffix === '❌';
         const newMarker = (suffix === '#done' || suffix === '#已完成' || suffix === '✅') ? '[x] ' : '[ ] ';
-        let newLine = content.replace(taskListMatch[0], newMarker);
+        let cleanedContent: string;
+        if (hasNewContent) {
+          const markers = extractItemMarkers(content);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+        } else {
+          cleanedContent = content.replace(taskListMatch[0], '').trim();
+        }
+        let newLine = `${newMarker}${cleanedContent}`;
         if (isAbandon) {
           newLine = newLine.trimEnd() + ' ' + suffix;
         }
@@ -841,7 +964,13 @@ export async function updateBlockContent(
       } else {
         console.log('[Task Assistant] 降级路径 - taskListMatch 失败，使用 fallback');
         // 如果匹配失败，尝试去除任务列表标记后添加后缀
-        let cleanedContent = stripListAndBlockAttr(content);
+        let cleanedContent: string;
+        if (hasNewContent) {
+          const markers = extractItemMarkers(content);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+        } else {
+          cleanedContent = stripListAndBlockAttr(content);
+        }
         cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
         newContent = `${cleanedContent} ${suffix}`.trim();
       }
@@ -850,8 +979,14 @@ export async function updateBlockContent(
       const taskListMatch = content.match(/(\[\s*[xX]?\s*\]\s*)/);
       if (taskListMatch) {
         const taskListMarker = taskListMatch[1];
-        const contentWithoutMarker = content.replace(taskListMarker, '');
-        let cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+        let cleanedContent: string;
+        if (hasNewContent) {
+          const markers = extractItemMarkers(content);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+        } else {
+          const contentWithoutMarker = content.replace(taskListMarker, '');
+          cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
+        }
         cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
         newContent = `${taskListMarker}${cleanedContent} ${suffix}`.trim();
       } else {
@@ -859,7 +994,14 @@ export async function updateBlockContent(
       }
     } else {
       // 非任务列表格式
-      newContent = `${content} ${suffix}`;
+      let cleanedContent: string;
+      if (hasNewContent) {
+        const markers = extractItemMarkers(content);
+        cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
+      } else {
+        cleanedContent = content;
+      }
+      newContent = `${cleanedContent} ${suffix}`;
     }
     
     // 将日期标记从 @ 转换为 📅

@@ -146,10 +146,20 @@ const preselectedItem = computed(() => {
 // 计时模式：倒计时 / 正计时
 const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
 
-// 专注时长（仅倒计时使用）
-const quickDurations = [15, 25, 45, 60];
-const selectedDuration = ref(25);
-const customDuration = ref(25);
+// 从设置读取专注时长预设，使用默认值兑底
+const quickDurations = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.focusDurationPresets ?? [15, 25, 45, 60];
+});
+
+// 从设置读取默认专注时长
+const defaultDuration = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.defaultFocusDuration ?? 25;
+});
+
+const selectedDuration = ref(defaultDuration.value);
+const customDuration = ref(defaultDuration.value);
 
 // 获取过期和今天的待办事项
 const currentDate = dayjs().format('YYYY-MM-DD');
@@ -157,13 +167,13 @@ const currentDate = dayjs().format('YYYY-MM-DD');
 const expiredItems = computed(() => {
   if (!projectStore) return [];
   const items = projectStore.getExpiredItems('');
-  return items.filter(item => item.status === 'pending');
+  return (items || []).filter(item => item.status === 'pending');
 });
 
 const todayItems = computed(() => {
   if (!projectStore) return [];
   const items = projectStore.getFutureItems('');
-  return items.filter(item => item.date === currentDate && item.status === 'pending');
+  return (items || []).filter(item => item.date === currentDate && item.status === 'pending');
 });
 
 // 选择事项
@@ -249,6 +259,12 @@ onMounted(() => {
       selectedItem.value = todayItems.value[0];
     }
   }
+});
+
+// 当默认时长变化时，更新选中值（仅当用户未手动选择时）
+watch(defaultDuration, (newVal) => {
+  selectedDuration.value = newVal;
+  customDuration.value = newVal;
 });
 
 // 监听 preselectedItem 变化，当 store 刷新后更新 selectedItem

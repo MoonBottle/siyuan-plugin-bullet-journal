@@ -14,7 +14,7 @@ export const PRIORITY_CONFIG: Record<PriorityLevel, {
   sortOrder: number;
 }> = {
   high:   { emoji: '🔥', label: '高优先级', sortOrder: 0 },
-  medium: { emoji: '🌿', label: '中优先级', sortOrder: 1 },
+  medium: { emoji: '🌱', label: '中优先级', sortOrder: 1 },
   low:    { emoji: '🍃', label: '低优先级', sortOrder: 2 },
 };
 
@@ -25,7 +25,7 @@ export const PRIORITY_CONFIG: Record<PriorityLevel, {
  */
 export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
   if (line.includes('🔥')) return 'high';
-  if (line.includes('🌿')) return 'medium';
+  if (line.includes('🌱')) return 'medium';
   if (line.includes('🍃')) return 'low';
   return undefined;
 }
@@ -34,7 +34,7 @@ export function parsePriorityFromLine(line: string): PriorityLevel | undefined {
  * 移除优先级标记
  */
 export function stripPriorityMarker(content: string): string {
-  return content.replace(/[🔥🌿🍃]/gu, '').trim();
+  return content.replace(/[🔥🌱🍃]/gu, '').trim();
 }
 
 /**
@@ -43,7 +43,7 @@ export function stripPriorityMarker(content: string): string {
 export function generatePriorityMarker(priority: PriorityLevel): string {
   const emojiMap: Record<PriorityLevel, string> = {
     high: '🔥',
-    medium: '🌿',
+    medium: '🌱',
     low: '🍃',
   };
   return emojiMap[priority] || '';

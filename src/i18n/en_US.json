@@ -88,6 +88,7 @@
     "title": "Todo",
     "today": "Today",
     "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
     "allDay": "All Day",
     "noTodos": "No pending items",
     "emptyGuideTitle": "Get Started with Task Assistant",
@@ -113,6 +114,11 @@
     "viewCalendar": "View Calendar",
     "detail": "Detail",
     "itemDetail": "Item Detail",
+    "level": {
+      "L1": "L1",
+      "L2": "L2",
+      "L3": "L3"
+    },
     "project": "Project",
     "task": "Task",
     "item": "Item",
@@ -192,7 +198,25 @@
     },
     "dirConfig": {
       "title": "Directory Config",
-      "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as task assistant directory\" to add quickly."
+      "description": "Configure parent directories for project files. The plugin will scan documents under these directories. You can also right-click a node in the document tree and select \"Set as task assistant directory\" to add quickly.",
+      "scanMode": "Scan Mode",
+      "scanModeFull": "Full Scan",
+      "scanModeDirectories": "Directories Only",
+      "scanModeFullHint": "Scan all documents in the workspace",
+      "scanModeDirectoriesHint": "Only scan documents in configured directories and their subdirectories",
+      "fullScanDirectoriesHint": "Directory configuration is only used for grouping in full scan mode"
+    },
+    "scanMode": {
+      "label": "Scan Scope",
+      "full": {
+        "label": "Scan entire workspace",
+        "description": "All documents containing task markers will be scanned and displayed"
+      },
+      "directories": {
+        "label": "Scan configured directories only",
+        "description": "Only scan documents in the configured directories below, suitable for large workspaces"
+      },
+      "fullWithDirectoriesHint": "Currently in global scan mode, directory configuration is only used for grouping"
     },
     "scanMode": {
       "label": "Scan Scope",
@@ -282,7 +306,7 @@
       "autoExtendMaxCountDesc": "Dialog stays open after reaching max count",
       "completeTitle": "Focus Complete",
       "breakTitle": "Start Break",
-      "breakHint": "Choose break duration. You will be reminded when break ends.",
+      "breakHint": "Choose break duration and click Start Break to begin.",
       "break5min": "5 min",
       "break10min": "10 min",
       "break15min": "15 min",
@@ -290,10 +314,19 @@
       "breakEndMessage": "Break over, time to focus again",
       "breakLabel": "Break",
       "skipBreak": "Skip Break",
+      "startBreak": "Start Break",
       "breakOverlayTitle": "Take a Break",
       "breakOverlayHint": "Step away from your computer and relax",
       "breakOverlayClose": "Close",
-      "breakOverlayReopen": "Open Break Overlay"
+      "breakOverlayReopen": "Open Break Overlay",
+      "focusDurationPresets": "Focus Duration Presets",
+      "focusDurationPresetsDesc": "Quick select button duration options (minutes)",
+      "defaultFocusDuration": "Default Focus Duration",
+      "defaultFocusDurationDesc": "Default selected duration when opening focus dialog",
+      "breakDurationPresets": "Break Duration Presets",
+      "breakDurationPresetsDesc": "Break duration options after focus completes (minutes)",
+      "defaultBreakDuration": "Default Break Duration",
+      "defaultBreakDurationDesc": "Default selected duration in break dialog"
     },
     "slashCommands": {
       "title": "Slash Commands",
@@ -588,6 +621,151 @@
       "beforeEndMinutes": "{count} minutes before end",
       "beforeEndHours": "{count} hours before end",
       "beforeEndDays": "{count} days before end"
+    }
+  },
+  "mobile": {
+    "pullToRefresh": "Pull to refresh",
+    "releaseToRefresh": "Release to refresh",
+    "filter": {
+      "title": "Filter",
+      "projectGroup": "Project Group",
+      "dateFilter": "Date Filter",
+      "priority": "Priority",
+      "reset": "Reset",
+      "confirm": "Confirm",
+      "applied": "Filter applied"
+    },
+    "action": {
+      "complete": "Complete",
+      "pomodoro": "Focus",
+      "migrate": "Migrate",
+      "abandon": "Abandon",
+      "detail": "Detail",
+      "calendar": "Calendar",
+      "reminder": "Reminder",
+      "more": "More"
+    },
+    "bottomNav": {
+      "refresh": "Refresh",
+      "add": "Add",
+      "settings": "Settings",
+      "view": "View"
+    },
+    "quickCreate": {
+      "title": "Quick Create",
+      "task": "Task",
+      "item": "Item",
+      "project": "Project",
+      "selectProject": "Select Project",
+      "taskName": "Task Name",
+      "taskNamePlaceholder": "Enter task name",
+      "taskLevel": "Task Level",
+      "belongingTask": "Belonging Task",
+      "selectTask": "Select Task",
+      "searchTask": "Search or enter new task name",
+      "selectOrInputTask": "Select or enter new task name",
+      "willCreateNewTask": "Will create new task",
+      "itemContent": "Item Content",
+      "itemContentPlaceholder": "Enter item content",
+      "date": "Date",
+      "selectDate": "Select Date",
+      "timeRange": "Time Range",
+      "priority": "Priority",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "noTasks": "No tasks in this project",
+      "advanced": "Advanced Settings"
+    },
+    "postpone": "Postpone",
+    "postponeSuccess": "Postponed {count} items to tomorrow",
+    "nextWeek": "Next Week",
+    "selectStartTime": "Select Start Time",
+    "selectEndTime": "Select End Time",
+    "hour": "Hour",
+    "minute": "Min",
+    "task": {
+      "items": "Items",
+      "completed": "Completed",
+      "pending": "Pending",
+      "progress": "Progress",
+      "noItems": "No items",
+      "createItem": "Create Item"
+    },
+    "project": {
+      "tasks": "Tasks",
+      "items": "Items",
+      "completed": "Completed",
+      "progress": "Progress",
+      "noTasks": "No tasks",
+      "createTask": "Create Task"
+    },
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "abandoned": "Abandoned",
+      "updated": "Status updated"
+    },
+    "date": {
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    },
+    "priority": {
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority"
+    },
+    "settings": {
+      "title": "Settings",
+      "view": "View",
+      "configuration": "Configuration",
+      "advanced": "Advanced",
+      "hideCompleted": "Hide Completed",
+      "hideAbandoned": "Hide Abandoned",
+      "directories": "directories",
+      "groups": "groups",
+      "minutes": "min",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "about": "About",
+      "pluginSettings": "Plugin Settings",
+      "version": "Version"
+    },
+    "time": {
+      "allDay": "All Day",
+      "customTime": "Custom Time",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "selectTime": "Select Time",
+      "selectStartTime": "Select Start Time",
+      "selectEndTime": "Select End Time",
+      "timeSetting": "Time Setting",
+      "hour": "Hour",
+      "minute": "Minute",
+      "quickTime": "Quick Time"
+    },
+    "detail": {
+      "project": "Project",
+      "task": "Task",
+      "item": "Item",
+      "content": "Content",
+      "date": "Date",
+      "time": "Time",
+      "allDay": "All Day",
+      "noTime": "Not Set",
+      "duration": "Duration",
+      "focusTime": "Focus Time",
+      "status": "Status",
+      "priority": "Priority",
+      "created": "Created",
+      "updated": "Updated",
+      "description": "Description",
+      "setReminder": "Set Reminder",
+      "setRecurring": "Set Recurring",
+      "pomodoroRecords": "Pomodoro Records"
+    },
+    "edit": {
+      "content": "Edit Content",
+      "selectDate": "Select Date"
     }
   },
   "recurring": {

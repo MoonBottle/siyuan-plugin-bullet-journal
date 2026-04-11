@@ -15,6 +15,7 @@ import { useSkillService } from '@/services/skillService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
 import GanttTab from '@/tabs/GanttTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
+import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
 import TodoDock from '@/tabs/TodoDock.vue';
 import AiChatDock from '@/tabs/AiChatDock.vue';
 import PomodoroDock from '@/tabs/PomodoroDock.vue';
@@ -89,6 +90,10 @@ export default class TaskAssistantPlugin extends Plugin {
     this.platform = frontEnd as SyFrontendTypes;
     this.isMobile = frontEnd === 'mobile' || frontEnd === 'browser-mobile';
     this.isBrowser = frontEnd.includes('browser');
+    
+    console.log('[TaskAssistant] getFrontend():', frontEnd);
+    console.log('[TaskAssistant] isMobile:', this.isMobile);
+    console.log('[TaskAssistant] platform:', this.platform);
     this.isLocal =
       location.href.includes('127.0.0.1') ||
       location.href.includes('localhost');
@@ -138,8 +143,10 @@ export default class TaskAssistantPlugin extends Plugin {
       console.error('[Task Assistant] Failed to load projects on init:', err);
     });
 
-    // 注册顶栏按钮
-    this.registerTopBar();
+    // 注册顶栏按钮（移动端不注册）
+    if (!this.isMobile) {
+      this.registerTopBar();
+    }
 
     // 注册事件监听
     this.registerEventListeners();
@@ -745,83 +752,119 @@ export default class TaskAssistantPlugin extends Plugin {
    * 注册自定义 Tab
    */
   private registerTabs() {
-    // 日历视图 Tab
-    this.addTab({
-      type: TAB_TYPES.CALENDAR,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(CalendarTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount CalendarTab:', error);
+    // 日历视图 Tab（桌面端注册为 Tab，移动端注册为 Dock）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.CALENDAR,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(CalendarTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount CalendarTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
 
-    // 甘特图视图 Tab
-    this.addTab({
-      type: TAB_TYPES.GANTT,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(GanttTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount GanttTab:', error);
+    // 甘特图视图 Tab（桌面端专用）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.GANTT,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(GanttTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount GanttTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
 
-    // 项目视图 Tab
-    this.addTab({
-      type: TAB_TYPES.PROJECT,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(ProjectTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount ProjectTab:', error);
+    // 项目视图 Tab（桌面端专用）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.PROJECT,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(ProjectTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount ProjectTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
 
-    // 番茄钟统计 Tab
-    this.addTab({
-      type: TAB_TYPES.POMODORO_STATS,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(PomodoroStatsTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount PomodoroStatsTab:', error);
+    // 番茄钟统计 Tab（桌面端专用）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.POMODORO_STATS,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(PomodoroStatsTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount PomodoroStatsTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
   }
 
   /**
    * 注册 Dock（侧边栏）
    */
   private registerDocks() {
+    // 保存 plugin 实例引用
+    const plugin = this;
+
+    // 日历 Dock（移动端专用）- 暂时注释掉
+    // if (this.isMobile) {
+    //   this.addDock({
+    //     config: {
+    //       position: 'RightBottom',
+    //       size: { width: 360, height: 500 },
+    //       icon: 'iconCalendar',
+    //       title: t('calendar').title
+    //     },
+    //     data: {},
+    //     type: DOCK_TYPES.CALENDAR,
+    //     init() {
+    //       this.element.style.height = '100%';
+    //       this.element.style.overflow = 'hidden';
+    //       const pinia = getSharedPinia() ?? createPinia();
+    //       const app = createApp(CalendarTab);
+    //       app.use(pinia);
+    //       app.mount(this.element);
+    //     },
+    //     destroy() {
+    //       this.element.innerHTML = '';
+    //     }
+    //   });
+    // }
+    
     // 待办 Dock
     this.addDock({
       config: {
@@ -838,7 +881,7 @@ export default class TaskAssistantPlugin extends Plugin {
         this.element.style.display = 'flex';
         this.element.style.flexDirection = 'column';
         const pinia = getSharedPinia() ?? createPinia();
-        const app = createApp(TodoDock);
+        const app = createApp(TodoDock, { plugin });
         app.use(pinia);
         app.mount(this.element);
       },
@@ -870,29 +913,31 @@ export default class TaskAssistantPlugin extends Plugin {
       }
     });
 
-    // 番茄钟统计 Dock
-    const pomodoroDock = this.addDock({
-      config: {
-        position: 'RightBottom',
-        size: { width: 320, height: 500 },
-        icon: 'iconClock',
-        title: t('pomodoro').dockTitle
-      },
-      data: {},
-      type: DOCK_TYPES.POMODORO,
-      init() {
-        this.element.style.height = '100%';
-        this.element.style.overflow = 'hidden';
-        const pinia = getSharedPinia() ?? createPinia();
-        const app = createApp(PomodoroDock);
-        app.use(pinia);
-        app.mount(this.element);
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
-    this.pomodoroDockModel = pomodoroDock.model;
+    // 番茄钟统计 Dock（桌面端专用）
+    if (!this.isMobile) {
+      const pomodoroDock = this.addDock({
+        config: {
+          position: 'RightBottom',
+          size: { width: 320, height: 500 },
+          icon: 'iconClock',
+          title: t('pomodoro').dockTitle
+        },
+        data: {},
+        type: DOCK_TYPES.POMODORO,
+        init() {
+          this.element.style.height = '100%';
+          this.element.style.overflow = 'hidden';
+          const pinia = getSharedPinia() ?? createPinia();
+          const app = createApp(PomodoroDock);
+          app.use(pinia);
+          app.mount(this.element);
+        },
+        destroy() {
+          this.element.innerHTML = '';
+        }
+      });
+      this.pomodoroDockModel = pomodoroDock.model;
+    }
   }
 
   /**
@@ -909,7 +954,11 @@ export default class TaskAssistantPlugin extends Plugin {
           icon: 'iconCalendar',
           label: t('calendar').title,
           click: () => {
-            this.openCustomTab(TAB_TYPES.CALENDAR);
+            if (this.isMobile) {
+              this.openCalendarDock();
+            } else {
+              this.openCustomTab(TAB_TYPES.CALENDAR);
+            }
           }
         });
         menu.addItem({
@@ -952,7 +1001,10 @@ export default class TaskAssistantPlugin extends Plugin {
         menu.addItem({
           icon: 'iconSettings',
           label: t('settings').title || '设置',
-          click: () => showSettingsDialog(this)
+          click: () => {
+            menu.close();
+            showSettingsDialog(this);
+          }
         });
         menu.addItem({
           icon: 'iconAdd',
@@ -1269,8 +1321,17 @@ export default class TaskAssistantPlugin extends Plugin {
    * 关键逻辑：比较 doOperations 和 undoOperations
    * - 只有当 undoOperations 中没有完成标记，而 doOperations 中有完成标记时，才是真正的新完成动作
    * - 如果 undoOperations 中已有完成标记，说明这只是对已有完成事项的编辑，不应触发重复创建
+   * 
+   * 注意：只在 desktop 或 mobile 主窗口执行，避免 desktop-window 多窗口时重复创建
    */
   private async handleTaskListCompletions(data: any) {
+    // 只在 desktop 或 mobile 主窗口执行，避免多窗口重复创建
+    const frontEnd = getFrontend();
+    if (frontEnd !== 'desktop' && frontEnd !== 'mobile') {
+      console.log('[Task Assistant] handleTaskListCompletions skipped on', frontEnd);
+      return;
+    }
+    
     console.log('[Task Assistant] handleTaskListCompletions called, data:', JSON.stringify(data).substring(0, 500));
     
     if (!Array.isArray(data.data)) {
@@ -1579,6 +1640,20 @@ export default class TaskAssistantPlugin extends Plugin {
     this.makeDraggable(btn);
 
     return btn;
+  }
+
+  /**
+   * 打开日历 Dock
+   */
+  private openCalendarDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.CALENDAR}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open calendar dock:', error);
+    }
   }
 
   /**

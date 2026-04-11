@@ -1,0 +1,54 @@
+/* src/tabs/mobile/styles/mobile.scss */
+
+// Layout dimensions
+$mobile-header-height: 48px;
+$mobile-bottom-nav-height: 56px;
+$mobile-drawer-max-height: 85vh;
+$mobile-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+// Typography
+$mobile-font-size-title: 16px;
+$mobile-font-size-content: 15px;
+$mobile-font-size-body: 14px;
+$mobile-font-size-meta: 13px;
+$mobile-font-size-small: 12px;
+
+// Spacing
+$mobile-padding: 16px;
+$mobile-padding-sm: 12px;
+$mobile-gap: 12px;
+$mobile-gap-sm: 8px;
+
+// Touch targets (Apple HIG)
+$mobile-touch-height: 44px;
+$mobile-touch-gap: 8px;
+$mobile-button-height: 48px;
+
+// Colors (reference SiYuan vars)
+$mobile-bg-primary: var(--b3-theme-background);
+$mobile-bg-surface: var(--b3-theme-surface);
+$mobile-bg-surface-lighter: var(--b3-theme-surface-lighter);
+$mobile-text-primary: var(--b3-theme-on-background);
+$mobile-text-secondary: var(--b3-theme-on-surface);
+$mobile-border-color: var(--b3-border-color);
+$mobile-primary-color: var(--b3-theme-primary);
+$mobile-primary-light: var(--b3-theme-primary-light);
+
+// Animation
+$mobile-transition-duration: 0.25s;
+$mobile-drawer-animation: cubic-bezier(0.32, 0.72, 0, 1);
+
+// Mobile container base
+.mobile-todo-dock {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: $mobile-bg-primary;
+  font-size: $mobile-font-size-body;
+}
+
+// Safe area support
+.mobile-safe-bottom {
+  padding-bottom: $mobile-safe-area-bottom;
+}

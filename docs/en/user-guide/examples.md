@@ -19,37 +19,39 @@ Create a document `E-commerce-Order-System-Refactoring.sy.md` in SiYuan with the
 
 ### Work Tasks
 
-User Login Module #task @L1
+User Login Module 📋 @L1
 
 [Login Module Design](siyuan://blocks/20260220112000)
 
-Phone login #task @L2
+Phone login 📋 @L2
 
-Phone login development @2026-02-20
+Phone login development 📅2026-02-20 🔥
 
-SMS verification #task @L2
+SMS verification 📋 @L2
 
-SMS verification development @2026-02-21
+SMS verification development 📅2026-02-21 🌱
 
-Third-party login (WeChat/Google) #task @L2
+Third-party login (WeChat/Google) 📋 @L2
 
-Third-party login development @2026-02-22
+Third-party login development 📅2026-02-22
 
-Login module testing @2026-02-23
+Login module testing 📅2026-02-23
 
-Shopping Cart Optimization #task @L1
+Shopping Cart Optimization 📋 @L1
 
-Shopping cart requirements review @2026-02-24
+Shopping cart requirements review 📅2026-02-24 ⏰09:00
 
-Shopping cart unit test @2026-02-25 10:00:00~12:00:00
+Shopping cart unit test 📅2026-02-25 10:00:00~12:00:00
 
-Checkout Page Development #task @L1
+Checkout Page Development 📋 @L1
 
-Select shipping address @2026-02-26
+Select shipping address 📅2026-02-26
 
-Select payment method @2026-02-26
+Select payment method 📅2026-02-26
 
-Order confirmation @2026-02-27
+Order confirmation 📅2026-02-27
+
+Weekly meeting 📅2026-02-24 14:00~15:00 ⏰13:50 🔁weekly
 ```
 
 ## Document Structure Analysis
@@ -130,14 +132,50 @@ Project list groups by project:
 └── ...
 ```
 
+## Advanced Features Examples
+
+### Priority Markers
+
+Set priority for items to distinguish importance:
+
+```markdown
+Fix critical production bug 📅2026-03-09 🔥
+
+Routine code review 📅2026-03-09 🌱
+
+Improve documentation formatting 📅2026-03-09 🍃
+```
+
+### Reminder Settings
+
+Set reminders for important items:
+
+```markdown
+Weekly meeting 📅2026-03-17 14:00~16:00 ⏰13:50
+
+Project deadline 📅2026-03-20 ⏰1 day before
+```
+
+### Recurring Items
+
+Automatic creation for periodic tasks:
+
+```markdown
+Daily standup 📅2026-03-17 09:00 🔁daily until 2026-12-31
+
+Weekly meeting 📅2026-03-17 14:00 ⏰13:50 🔁weekly
+
+Monthly report 📅2026-03-17 10:00 🔁monthly on day 15
+```
+
 ## Task Status Update
 
 ### Complete Item
 
-When an item is complete, add the `#done` or `#completed` tag:
+When an item is complete, add the `#done`, `#completed` tag, or `✅` Emoji:
 
 ```markdown
-Phone login development @2026-02-20 #done
+Phone login development @2026-02-20 ✅
 ```
 
 ### Migrate Item
@@ -150,10 +188,52 @@ Phone login development @2026-02-21
 
 ### Abandon Item
 
-If decided not to do, add the `#abandoned` tag:
+If decided not to do, add the `#abandoned` tag or `❌` Emoji:
 
 ```markdown
-Third-party login development @2026-02-22 #abandoned
+Third-party login development @2026-02-22 ❌
+```
+
+## Slash Command Usage Examples
+
+Slash commands can significantly improve efficiency in daily usage:
+
+### Quick Date Marking
+
+```markdown
+# Input
+Complete requirements doc /today
+
+# Result
+Complete requirements doc 📅2026-03-09
+```
+
+### Quick Completion Marking
+
+```markdown
+# Input
+Fix login bug /done
+
+# Result
+Fix login bug ✅
+```
+
+### Quick View Opening
+
+```markdown
+# Input
+Weekly meeting /calendar
+
+# Result: Opens calendar view and automatically jumps to meeting date
+```
+
+### Quick Focus Start
+
+```markdown
+# Input
+Read technical docs /focus
+
+# Result: Opens Pomodoro focus dialog with "Read technical docs" preselected
 ```
 
 ## Best Practices

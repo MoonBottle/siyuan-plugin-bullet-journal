@@ -116,9 +116,15 @@
         <div class="break-section">
           <p class="break-hint">{{ t('settings').pomodoro.breakHint }}</p>
           <div class="break-options">
-            <button class="break-btn" @click="handleStartBreak(5)">{{ t('settings').pomodoro.break5min }}</button>
-            <button class="break-btn" @click="handleStartBreak(10)">{{ t('settings').pomodoro.break10min }}</button>
-            <button class="break-btn" @click="handleStartBreak(15)">{{ t('settings').pomodoro.break15min }}</button>
+            <button
+              v-for="duration in breakDurations"
+              :key="duration"
+              class="break-btn"
+              :class="{ active: selectedBreakDuration === duration }"
+              @click="selectBreakDuration(duration)"
+            >
+              {{ duration }}{{ t('common').minutes }}
+            </button>
           </div>
         </div>
       </template>
@@ -131,13 +137,16 @@
         </template>
         <button v-else class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
       </template>
-      <button v-else class="close-btn" @click="handleClose">{{ t('settings').pomodoro.close }}</button>
+      <template v-else>
+        <button class="skip-btn" @click="handleClose">{{ t('settings').pomodoro.skipBreak }}</button>
+        <button class="start-break-btn" @click="handleStartBreak">{{ t('settings').pomodoro.startBreak }}</button>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount, computed } from 'vue';
+import { ref, onBeforeUnmount, computed, watch } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { t } from '@/i18n';
@@ -161,6 +170,26 @@ const description = ref('');
 const saved = ref(false);
 const discarded = ref(false);
 const skipAutoSave = ref(false);
+
+// 从设置读取休息时长预设
+const breakDurations = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15];
+});
+
+// 从设置读取默认休息时长
+const defaultBreakDuration = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.defaultBreakDuration ?? 5;
+});
+
+// 当前选中的休息时长
+const selectedBreakDuration = ref(defaultBreakDuration.value);
+
+// 默认选中设置的默认值
+watch(defaultBreakDuration, (newVal) => {
+  selectedBreakDuration.value = newVal;
+}, { immediate: true });
 
 // 监听自动延迟事件，关闭弹窗并跳过自动保存
 const unsubscribeAutoExtend = eventBus.on(Events.POMODORO_AUTO_EXTENDED, () => {
@@ -211,8 +240,12 @@ async function handleSave() {
   }
 }
 
-function handleStartBreak(minutes: number) {
-  pomodoroStore.startBreak(minutes, plugin);
+function selectBreakDuration(minutes: number) {
+  selectedBreakDuration.value = minutes;
+}
+
+function handleStartBreak() {
+  pomodoroStore.startBreak(selectedBreakDuration.value, plugin);
   props.closeDialog();
 }
 
@@ -450,6 +483,12 @@ onBeforeUnmount(async () => {
   color: var(--b3-theme-primary);
 }
 
+.break-btn.active {
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary, #fff);
+  border-color: var(--b3-theme-primary);
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -476,6 +515,37 @@ onBeforeUnmount(async () => {
 .close-btn {
   background: var(--b3-theme-surface-lighter);
   color: var(--b3-theme-on-background);
+}
+
+.skip-btn {
+  padding: 10px 24px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.skip-btn:hover {
+  border-color: var(--b3-theme-error);
+  color: var(--b3-theme-error);
+}
+
+.start-break-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.start-break-btn:hover {
+  opacity: 0.9;
 }
 
 .discard-btn {

@@ -15,7 +15,7 @@
       <!-- 空状态：真的没有任何数据 -->
       <div v-else-if="!hasAnyItemsRaw" class="empty-guide">
         <div class="empty-guide-icon">
-          <svg><use xlink:href="#iconTask"></use></svg>
+          <svg><use xlink:href="#iconList"></use></svg>
         </div>
         <div class="empty-guide-title">{{ t('todo').emptyGuideTitle }}</div>
         <div class="empty-guide-desc">{{ t('todo').emptyGuideDesc }}</div>
@@ -443,7 +443,7 @@ const getStatusEmoji = (item: Item): string => {
   // 优先级 emoji
   let priorityEmoji = '';
   if (item.priority === 'high') priorityEmoji = '🔥 ';
-  else if (item.priority === 'medium') priorityEmoji = '🌿 ';
+  else if (item.priority === 'medium') priorityEmoji = '🌱 ';
   else if (item.priority === 'low') priorityEmoji = '🍃 ';
   
   // 原有逻辑
@@ -572,23 +572,28 @@ const hasActiveFilters = computed(() => {
          props.priorities.length > 0;
 });
 
+// 只包含待办状态的事项（已完成和已放弃单独分组）
+const pendingItems = computed(() => {
+  return filteredItems.value.filter(item => item.status === 'pending');
+});
+
 // 今日待办事项
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
-  return filteredItems.value.filter(item => item.date === todayStr);
+  return pendingItems.value.filter(item => item.date === todayStr);
 });
 
 // 明日待办事项
 const tomorrowItems = computed(() => {
   const tomorrowStr = getTomorrowStr();
-  return filteredItems.value.filter(item => item.date === tomorrowStr);
+  return pendingItems.value.filter(item => item.date === tomorrowStr);
 });
 
 // 未来待办事项
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return filteredItems.value.filter(item => {
+  return pendingItems.value.filter(item => {
     // 排除今天、明天和已过期的事项
     if (item.date === todayStr || item.date === tomorrowStr) return false;
     const effectiveDate = getEffectiveDate(item);
@@ -599,7 +604,7 @@ const futureItems = computed(() => {
 // 过期事项
 const expiredItems = computed(() => {
   const todayStr = getTodayStr();
-  return filteredItems.value.filter(item => {
+  return pendingItems.value.filter(item => {
     const effectiveDate = getEffectiveDate(item);
     return effectiveDate < todayStr;
   });

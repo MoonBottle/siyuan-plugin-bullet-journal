@@ -5,7 +5,7 @@
 ### Features
 
 - **Priority System**: New item priority system with High/Medium/Low three-level management
-  - Priority markers: Use 🔥(High), 🌿(Medium), 🍃(Low) emoji to mark priority levels
+  - Priority markers: Use 🔥(High), 🌱(Medium), 🍃(Low) emoji to mark priority levels
   - Priority setting: Available via context menu, item detail dialog, and slash command `/yxj` or `/priority`
   - Priority filtering: Todo sidebar supports filtering items by priority
   - Calendar view: Right-click tasks to set priority
@@ -19,6 +19,17 @@
 - **Scan Mode Configuration**: Support configuring project scan mode
   - Full mode: Scan entire notebook (default)
   - Quick mode: Only scan configured directories for faster loading
+
+- **Mobile Adaptation**: Brand new mobile interface adaptation
+  - Mobile component architecture: Unified migration to `src/mobile/` directory for future feature expansion
+  - Gesture interaction: Support drawer swipe-to-close for smoother operation
+  - UI adaptation: Auto-hide settings button and top bar for cleaner interface
+  - Item details: Bottom button order adjusted with common actions on the right
+
+- **Pomodoro Settings Enhancement**: Default focus and break durations now customizable
+  - New "Default Focus Duration" setting: Default selected duration when opening focus dialog
+  - New "Default Break Duration" setting: Default selected duration in break dialog
+  - Supported in both desktop and mobile settings panels
 
 ### Fixes
 

@@ -370,7 +370,7 @@ export function createSlashCommands(config: SlashCommandConfig) {
       filter: SLASH_COMMAND_FILTERS.SET_PRIORITY,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').setPriority}</span>
-          <span class="b3-list-item__meta">🔥🌿🍃</span>
+          <span class="b3-list-item__meta">🔥🌱🍃</span>
       </div>`,
       id: 'bullet-journal-set-priority',
       callback: getActionHandler('setPriority', config, SLASH_COMMAND_FILTERS.SET_PRIORITY)

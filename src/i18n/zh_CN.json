@@ -88,6 +88,7 @@
     "title": "待办事项",
     "today": "今天",
     "tomorrow": "明天",
+    "yesterday": "昨天",
     "allDay": "全天",
     "noTodos": "暂无待办事项",
     "emptyGuideTitle": "开始使用任务助手",
@@ -113,6 +114,11 @@
     "viewCalendar": "查看日历",
     "detail": "详情",
     "itemDetail": "事项详情",
+    "level": {
+      "L1": "L1",
+      "L2": "L2",
+      "L3": "L3"
+    },
     "project": "项目",
     "task": "任务",
     "item": "事项",
@@ -192,7 +198,25 @@
     },
     "dirConfig": {
       "title": "目录配置",
-      "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为任务助手目录」快速添加。"
+      "description": "配置项目文件所在的父目录，插件将扫描该目录及其子目录下的文档。也可在文档树中右键节点选择「设置为任务助手目录」快速添加。",
+      "scanMode": "扫描模式",
+      "scanModeFull": "全库扫描",
+      "scanModeDirectories": "指定目录",
+      "scanModeFullHint": "扫描整个工作空间中的所有文档",
+      "scanModeDirectoriesHint": "仅扫描下方配置的目录及其子目录中的文档",
+      "fullScanDirectoriesHint": "以下目录配置仅用于分组归类"
+    },
+    "scanMode": {
+      "label": "扫描范围",
+      "full": {
+        "label": "扫描整个工作空间",
+        "description": "所有包含任务标记的文档都会被扫描和展示"
+      },
+      "directories": {
+        "label": "仅扫描配置目录",
+        "description": "只扫描下方配置的目录中的文档，适合大型工作空间"
+      },
+      "fullWithDirectoriesHint": "当前为全局扫描模式，目录配置仅用于分组归类"
     },
     "scanMode": {
       "label": "扫描范围",
@@ -303,7 +327,7 @@
       "autoExtendMaxCountDesc": "达到最大次数后弹窗将保持打开",
       "completeTitle": "专注完成",
       "breakTitle": "开始休息",
-      "breakHint": "选择休息时长，休息结束后将提醒您继续专注",
+      "breakHint": "选择休息时长，点击「开始休息」启动倒计时",
       "break5min": "5 分钟",
       "break10min": "10 分钟",
       "break15min": "15 分钟",
@@ -311,10 +335,19 @@
       "breakEndMessage": "休息结束，请继续专注",
       "breakLabel": "休息",
       "skipBreak": "跳过休息",
+      "startBreak": "开始休息",
       "breakOverlayTitle": "休息一下",
       "breakOverlayHint": "离开电脑，放松一下吧",
       "breakOverlayClose": "关闭弹窗",
-      "breakOverlayReopen": "打开休息弹窗"
+      "breakOverlayReopen": "打开休息弹窗",
+      "focusDurationPresets": "专注时长预设",
+      "focusDurationPresetsDesc": "快速选择按钮的时长选项（分钟）",
+      "defaultFocusDuration": "默认专注时长",
+      "defaultFocusDurationDesc": "打开专注弹窗时默认选中的时长",
+      "breakDurationPresets": "休息时长预设",
+      "breakDurationPresetsDesc": "完成专注后休息的时长选项（分钟）",
+      "defaultBreakDuration": "默认休息时长",
+      "defaultBreakDurationDesc": "休息弹窗默认选中的时长"
     },
     "slashCommands": {
       "title": "斜杠命令",
@@ -628,6 +661,152 @@
       "beforeEndMinutes": "结束前{count}分钟",
       "beforeEndHours": "结束前{count}小时",
       "beforeEndDays": "结束前{count}天"
+    }
+  },
+  "mobile": {
+    "pullToRefresh": "下拉刷新",
+    "releaseToRefresh": "释放刷新",
+    "filter": {
+      "title": "筛选",
+      "projectGroup": "项目分组",
+      "dateFilter": "日期筛选",
+      "priority": "优先级",
+      "reset": "重置",
+      "confirm": "确认",
+      "applied": "筛选已应用"
+    },
+    "action": {
+      "complete": "完成",
+      "pomodoro": "专注",
+      "migrate": "迁移",
+      "abandon": "放弃",
+      "detail": "详情",
+      "calendar": "日历",
+      "reminder": "提醒",
+      "more": "更多"
+    },
+    "bottomNav": {
+      "refresh": "刷新",
+      "add": "添加",
+      "settings": "设置",
+      "view": "视图"
+    },
+    "quickCreate": {
+      "title": "快速创建",
+      "task": "任务",
+      "item": "事项",
+      "project": "所属项目",
+      "selectProject": "选择项目",
+      "taskName": "任务名称",
+      "taskNamePlaceholder": "输入任务名称",
+      "taskLevel": "任务层级",
+      "belongingTask": "所属任务",
+      "selectTask": "选择任务",
+      "searchTask": "搜索或输入新任务名称",
+      "selectOrInputTask": "选择或输入新任务名称",
+      "willCreateNewTask": "将创建新任务",
+      "itemContent": "事项内容",
+      "itemContentPlaceholder": "输入事项内容",
+      "date": "日期",
+      "selectDate": "选择日期",
+      "timeRange": "时间范围",
+      "priority": "优先级",
+      "cancel": "取消",
+      "confirm": "确认",
+      "noTasks": "该项目暂无任务",
+      "advanced": "高级设置"
+    },
+    "postpone": "顺延",
+    "postponeSuccess": "已顺延 {count} 个事项到明天",
+    "nextWeek": "一周后",
+    "selectStartTime": "选择开始时间",
+    "selectEndTime": "选择结束时间",
+    "hour": "时",
+    "minute": "分",
+    "task": {
+      "items": "事项",
+      "completed": "已完成",
+      "pending": "待完成",
+      "progress": "进度",
+      "noItems": "暂无事项",
+      "createItem": "创建事项"
+    },
+    "project": {
+      "tasks": "任务",
+      "items": "事项",
+      "completed": "已完成",
+      "progress": "进度",
+      "noTasks": "暂无任务",
+      "createTask": "创建任务"
+    },
+    "status": {
+      "pending": "待完成",
+      "completed": "已完成",
+      "abandoned": "已放弃",
+      "updated": "状态已更新"
+    },
+    "date": {
+      "today": "今天",
+      "tomorrow": "明天"
+    },
+    "priority": {
+      "high": "高优先级",
+      "medium": "中优先级",
+      "low": "低优先级"
+    },
+    "settings": {
+      "title": "设置",
+      "view": "视图",
+      "configuration": "配置",
+      "advanced": "高级",
+      "hideCompleted": "隐藏已完成",
+      "hideAbandoned": "隐藏已放弃",
+      "directories": "个目录",
+      "groups": "个分组",
+      "minutes": "分钟",
+      "enabled": "已启用",
+      "disabled": "未启用",
+      "about": "关于",
+      "pluginSettings": "插件设置",
+      "version": "版本"
+    },
+    "time": {
+      "allDay": "全天",
+      "customTime": "自定义时间",
+      "startTime": "开始时间",
+      "endTime": "结束时间",
+      "selectTime": "选择时间",
+      "selectStartTime": "选择开始时间",
+      "selectEndTime": "选择结束时间",
+      "timeSetting": "时间设置",
+      "hour": "时",
+      "minute": "分",
+      "quickTime": "快捷时间"
+    },
+    "detail": {
+      "project": "项目",
+      "task": "任务",
+      "item": "事项",
+      "content": "内容",
+      "date": "日期",
+      "time": "时间",
+      "allDay": "全天",
+      "noTime": "未设置",
+      "duration": "时长",
+      "focusTime": "专注时长",
+      "status": "状态",
+      "priority": "优先级",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "description": "描述",
+      "setReminder": "设置提醒",
+      "setRecurring": "设置重复",
+      "setPriority": "设置优先级",
+      "pomodoroRecords": "番茄钟记录"
+    },
+    "edit": {
+      "content": "编辑内容",
+      "selectDate": "选择日期"
     }
   },
   "recurring": {
