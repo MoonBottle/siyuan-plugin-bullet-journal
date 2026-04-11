@@ -16,7 +16,7 @@
                 :pending="pendingCompletion"
                 @close="showComplete = false"
               />
-              <component :is="currentComponent" v-else />
+              <component :is="currentComponent" v-else @close="close" />
             </div>
           </div>
         </Transition>
