@@ -204,13 +204,6 @@
             
             <!-- Bottom Action Bar -->
             <div class="drawer-footer">
-              <!-- 完成 -->
-              <button v-if="!isCompletedOrAbandoned" class="footer-btn primary" @click="handleComplete">
-                <div class="footer-icon-wrapper">
-                  <svg><use xlink:href="#iconCheck"></use></svg>
-                </div>
-                <span>{{ t('mobile.action.complete') || '完成' }}</span>
-              </button>
               <!-- 放弃 -->
               <button v-if="!isCompletedOrAbandoned" class="footer-btn danger" @click="handleAbandon">
                 <div class="footer-icon-wrapper">
@@ -231,6 +224,13 @@
                   <svg><use xlink:href="#iconClock"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.pomodoro') || '专注' }}</span>
+              </button>
+              <!-- 完成 -->
+              <button v-if="!isCompletedOrAbandoned" class="footer-btn primary" @click="handleComplete">
+                <div class="footer-icon-wrapper">
+                  <svg><use xlink:href="#iconCheck"></use></svg>
+                </div>
+                <span>{{ t('mobile.action.complete') || '完成' }}</span>
               </button>
             </div>
           </div>
