@@ -44,76 +44,6 @@
       
       <!-- Grouped list -->
       <div v-else class="todo-sections">
-        <!-- Completed items -->
-        <div v-if="!hideCompleted && completedItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('completed')">
-            <div class="section-title-wrapper">
-              <div class="section-status-bar completed"></div>
-              <span class="section-title">{{ t('todo').completed }}</span>
-              <span class="section-count">{{ completedItems.length }}</span>
-            </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.completed }">
-              <svg><use xlink:href="#iconDown"></use></svg>
-            </div>
-          </div>
-          <div v-show="!collapsedSections.completed" class="section-content">
-            <div
-              v-for="(item, index) in completedItems.slice(0, 10)"
-              :key="item.id"
-              class="todo-item completed-item"
-              :class="{ 'is-last': index === completedItems.slice(0, 10).length - 1 }"
-              @click="emit('itemClick', item)"
-              @touchstart="handleTouchStart(item)"
-              @touchend="handleTouchEnd"
-              @touchmove="handleTouchMove"
-            >
-              <div class="item-status-bar completed"></div>
-              <div class="item-content">
-                <div class="item-title">{{ item.content }}</div>
-                <div class="item-meta">
-                  <span class="meta-date">{{ formatExpiredDate(item) }}</span>
-                </div>
-              </div>
-              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Abandoned items -->
-        <div v-if="!hideAbandoned && abandonedItems.length > 0" class="todo-section">
-          <div class="section-header" @click="toggleSection('abandoned')">
-            <div class="section-title-wrapper">
-              <div class="section-status-bar abandoned"></div>
-              <span class="section-title">{{ t('todo').abandoned }}</span>
-              <span class="section-count">{{ abandonedItems.length }}</span>
-            </div>
-            <div class="collapse-icon" :class="{ collapsed: collapsedSections.abandoned }">
-              <svg><use xlink:href="#iconDown"></use></svg>
-            </div>
-          </div>
-          <div v-show="!collapsedSections.abandoned" class="section-content">
-            <div
-              v-for="(item, index) in abandonedItems.slice(0, 10)"
-              :key="item.id"
-              class="todo-item abandoned-item"
-              :class="{ 'is-last': index === abandonedItems.slice(0, 10).length - 1 }"
-              @click="emit('itemClick', item)"
-              @touchstart="handleTouchStart(item)"
-              @touchend="handleTouchEnd"
-              @touchmove="handleTouchMove"
-            >
-              <div class="item-status-bar abandoned"></div>
-              <div class="item-content">
-                <div class="item-title">{{ item.content }}</div>
-                <div class="item-meta">
-                  <span class="meta-date">{{ formatExpiredDate(item) }}</span>
-                </div>
-              </div>
-              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
-            </div>
-          </div>
-        </div>
-        
         <!-- Expired items -->
         <div v-if="expiredItems.length > 0" class="todo-section">
           <div class="section-header" @click="toggleSection('expired')">
@@ -268,6 +198,76 @@
                 </div>
                 <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Completed items -->
+        <div v-if="!hideCompleted && completedItems.length > 0" class="todo-section">
+          <div class="section-header" @click="toggleSection('completed')">
+            <div class="section-title-wrapper">
+              <div class="section-status-bar completed"></div>
+              <span class="section-title">{{ t('todo').completed }}</span>
+              <span class="section-count">{{ completedItems.length }}</span>
+            </div>
+            <div class="collapse-icon" :class="{ collapsed: collapsedSections.completed }">
+              <svg><use xlink:href="#iconDown"></use></svg>
+            </div>
+          </div>
+          <div v-show="!collapsedSections.completed" class="section-content">
+            <div
+              v-for="(item, index) in completedItems.slice(0, 10)"
+              :key="item.id"
+              class="todo-item completed-item"
+              :class="{ 'is-last': index === completedItems.slice(0, 10).length - 1 }"
+              @click="emit('itemClick', item)"
+              @touchstart="handleTouchStart(item)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
+            >
+              <div class="item-status-bar completed"></div>
+              <div class="item-content">
+                <div class="item-title">{{ item.content }}</div>
+                <div class="item-meta">
+                  <span class="meta-date">{{ formatExpiredDate(item) }}</span>
+                </div>
+              </div>
+              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Abandoned items -->
+        <div v-if="!hideAbandoned && abandonedItems.length > 0" class="todo-section">
+          <div class="section-header" @click="toggleSection('abandoned')">
+            <div class="section-title-wrapper">
+              <div class="section-status-bar abandoned"></div>
+              <span class="section-title">{{ t('todo').abandoned }}</span>
+              <span class="section-count">{{ abandonedItems.length }}</span>
+            </div>
+            <div class="collapse-icon" :class="{ collapsed: collapsedSections.abandoned }">
+              <svg><use xlink:href="#iconDown"></use></svg>
+            </div>
+          </div>
+          <div v-show="!collapsedSections.abandoned" class="section-content">
+            <div
+              v-for="(item, index) in abandonedItems.slice(0, 10)"
+              :key="item.id"
+              class="todo-item abandoned-item"
+              :class="{ 'is-last': index === abandonedItems.slice(0, 10).length - 1 }"
+              @click="emit('itemClick', item)"
+              @touchstart="handleTouchStart(item)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
+            >
+              <div class="item-status-bar abandoned"></div>
+              <div class="item-content">
+                <div class="item-title">{{ item.content }}</div>
+                <div class="item-meta">
+                  <span class="meta-date">{{ formatExpiredDate(item) }}</span>
+                </div>
+              </div>
+              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
             </div>
           </div>
         </div>
