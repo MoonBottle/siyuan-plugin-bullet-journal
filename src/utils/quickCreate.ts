@@ -58,7 +58,7 @@ const DATE_KEYWORDS: Record<string, () => string> = {
  * 支持格式：
  * - 任务: "任务名称 #task @L1" 或 "!任务名称" (L1), "!!任务名称" (L2), "!!!任务名称" (L3)
  * - 事项: "事项内容 📅2024-01-15" 或 "事项内容 @今天 14:00~16:00"
- * - 优先级: "!高优先级" (高), "!!中优先级" (中), "!!!低优先级" (低) - 与任务级别共用符号
+ * - 优先级: "🔥高优先级" (高), "🌱中优先级" (中), "🍃低优先级" (低) - 使用 Emoji 标记
  *
  * @param input 用户输入字符串
  * @returns 解析结果
@@ -139,16 +139,16 @@ export function parseQuickInput(input: string): ParsedInput {
       }
     }
 
-    // 解析优先级
-    const priorityMatch = content.match(/#(高|中|低|high|medium|low)\b/i);
-    if (priorityMatch) {
-      const priorityMap: Record<string, 'high' | 'medium' | 'low'> = {
-        '高': 'high', 'high': 'high',
-        '中': 'medium', 'medium': 'medium',
-        '低': 'low', 'low': 'low',
+    // 解析优先级（支持 Emoji 标记）
+    const priorityEmojiMatch = content.match(/([🔥🌱🍃])/);
+    if (priorityEmojiMatch) {
+      const priorityEmojiMap: Record<string, 'high' | 'medium' | 'low'> = {
+        '🔥': 'high',
+        '🌱': 'medium',
+        '🍃': 'low',
       };
-      result.priority = priorityMap[priorityMatch[1].toLowerCase()];
-      content = content.replace(priorityMatch[0], '').trim();
+      result.priority = priorityEmojiMap[priorityEmojiMatch[1]];
+      content = content.replace(priorityEmojiMatch[0], '').trim();
     }
 
     // 解析标签（剩余 #xxx 格式的内容）
@@ -254,12 +254,12 @@ export async function createItem(
 
   let itemContent = `${content} ${datePart}`;
 
-  // 添加优先级标记
+  // 添加优先级标记（使用 Emoji）
   if (options?.priority) {
     const priorityMap: Record<string, string> = {
-      high: '#高',
-      medium: '#中',
-      low: '#低',
+      high: '🔥',
+      medium: '🌱',
+      low: '🍃',
     };
     itemContent += ` ${priorityMap[options.priority]}`;
   }
