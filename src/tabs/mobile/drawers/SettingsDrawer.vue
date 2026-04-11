@@ -151,7 +151,7 @@ const openPluginSettings = () => {
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
-  max-height: 70vh;
+  max-height: 90vh;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }

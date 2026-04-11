@@ -777,6 +777,7 @@ const close = () => {
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -1173,7 +1174,6 @@ const close = () => {
   display: flex;
   justify-content: space-around;
   padding: 8px 0;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--b3-border-color);
   background: var(--b3-theme-background);
 }

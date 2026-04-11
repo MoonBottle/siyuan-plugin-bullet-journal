@@ -446,6 +446,7 @@ const close = () => {
   border-radius: 24px 24px 0 0;
   display: flex;
   flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -789,7 +790,7 @@ const close = () => {
 }
 
 .sheet-footer {
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 16px;
   border-top: 1px solid var(--b3-border-color);
   display: flex;
   justify-content: flex-end;
