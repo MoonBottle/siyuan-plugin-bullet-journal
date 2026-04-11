@@ -20,6 +20,17 @@
   - Full mode: Scan entire notebook (default)
   - Quick mode: Only scan configured directories for faster loading
 
+- **Mobile Adaptation**: Brand new mobile interface adaptation
+  - Mobile component architecture: Unified migration to `src/mobile/` directory for future feature expansion
+  - Gesture interaction: Support drawer swipe-to-close for smoother operation
+  - UI adaptation: Auto-hide settings button and top bar for cleaner interface
+  - Item details: Bottom button order adjusted with common actions on the right
+
+- **Pomodoro Settings Enhancement**: Default focus and break durations now customizable
+  - New "Default Focus Duration" setting: Default selected duration when opening focus dialog
+  - New "Default Break Duration" setting: Default selected duration in break dialog
+  - Supported in both desktop and mobile settings panels
+
 ### Fixes
 
 - **Chinese Input Slash Commands**: Fixed issue where slash command text (e.g., `、mt`, `、jt`) was not properly deleted when using Chinese input method
