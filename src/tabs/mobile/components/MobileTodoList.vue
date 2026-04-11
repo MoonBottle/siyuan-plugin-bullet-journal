@@ -683,13 +683,8 @@ onUnmounted(() => {
   padding: 14px 16px;
   cursor: pointer;
   user-select: none;
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
   border-bottom: 1px solid var(--b3-border-color);
-  transition: background 0.2s;
-  
-  &:hover {
-    background: var(--b3-theme-surface-lighter);
-  }
 }
 
 .section-title-wrapper {
