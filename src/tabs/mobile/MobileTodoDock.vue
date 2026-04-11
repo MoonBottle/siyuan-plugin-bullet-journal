@@ -340,6 +340,18 @@ let refreshChannel: BroadcastChannel | null = null;
 
 // 初始化数据监听
 onMounted(async () => {
+  // 从插件加载设置
+  settingsStore.loadFromPlugin();
+  
+  // 同步 todoDock 设置到 projectStore
+  projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
+  projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
+  
+  // 初始数据加载
+  if (plugin) {
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  }
+  
   // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 

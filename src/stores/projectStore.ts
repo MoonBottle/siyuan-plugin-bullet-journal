@@ -269,8 +269,13 @@ export const useProjectStore = defineStore('project', {
         );
       }
 
-      // 5. 只保留待办事项（排除已完成和已放弃）
-      items = items.filter(item => item.status === 'pending');
+      // 5. 根据设置过滤已完成和已放弃的事项
+      if (state.hideCompleted) {
+        items = items.filter(item => item.status !== 'completed');
+      }
+      if (state.hideAbandoned) {
+        items = items.filter(item => item.status !== 'abandoned');
+      }
 
       // 6. 按优先级和时间排序
       items.sort((a, b) => {

@@ -26,6 +26,76 @@
       
       <!-- Grouped list -->
       <div v-else class="todo-sections">
+        <!-- Completed items -->
+        <div v-if="!hideCompleted && completedItems.length > 0" class="todo-section">
+          <div class="section-header" @click="toggleSection('completed')">
+            <div class="section-title-wrapper">
+              <div class="section-status-bar completed"></div>
+              <span class="section-title">{{ t('todo').completed }}</span>
+              <span class="section-count">{{ completedItems.length }}</span>
+            </div>
+            <div class="collapse-icon" :class="{ collapsed: collapsedSections.completed }">
+              <svg><use xlink:href="#iconDown"></use></svg>
+            </div>
+          </div>
+          <div v-show="!collapsedSections.completed" class="section-content">
+            <div
+              v-for="(item, index) in completedItems.slice(0, 10)"
+              :key="item.id"
+              class="todo-item completed-item"
+              :class="{ 'is-last': index === completedItems.slice(0, 10).length - 1 }"
+              @click="emit('itemClick', item)"
+              @touchstart="handleTouchStart(item)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
+            >
+              <div class="item-status-bar completed"></div>
+              <div class="item-content">
+                <div class="item-title">{{ item.content }}</div>
+                <div class="item-meta">
+                  <span class="meta-date">{{ formatExpiredDate(item) }}</span>
+                </div>
+              </div>
+              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Abandoned items -->
+        <div v-if="!hideAbandoned && abandonedItems.length > 0" class="todo-section">
+          <div class="section-header" @click="toggleSection('abandoned')">
+            <div class="section-title-wrapper">
+              <div class="section-status-bar abandoned"></div>
+              <span class="section-title">{{ t('todo').abandoned }}</span>
+              <span class="section-count">{{ abandonedItems.length }}</span>
+            </div>
+            <div class="collapse-icon" :class="{ collapsed: collapsedSections.abandoned }">
+              <svg><use xlink:href="#iconDown"></use></svg>
+            </div>
+          </div>
+          <div v-show="!collapsedSections.abandoned" class="section-content">
+            <div
+              v-for="(item, index) in abandonedItems.slice(0, 10)"
+              :key="item.id"
+              class="todo-item abandoned-item"
+              :class="{ 'is-last': index === abandonedItems.slice(0, 10).length - 1 }"
+              @click="emit('itemClick', item)"
+              @touchstart="handleTouchStart(item)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
+            >
+              <div class="item-status-bar abandoned"></div>
+              <div class="item-content">
+                <div class="item-title">{{ item.content }}</div>
+                <div class="item-meta">
+                  <span class="meta-date">{{ formatExpiredDate(item) }}</span>
+                </div>
+              </div>
+              <div v-if="item.project" class="item-project">{{ item.project.name }}</div>
+            </div>
+          </div>
+        </div>
+        
         <!-- Expired items -->
         <div v-if="expiredItems.length > 0" class="todo-section">
           <div class="section-header" @click="toggleSection('expired')">
@@ -230,6 +300,8 @@ const collapsedSections = ref({
   today: false,
   tomorrow: false,
   future: false,
+  completed: false,
+  abandoned: false,
 });
 
 const toggleSection = (section: keyof typeof collapsedSections.value) => {
@@ -250,20 +322,49 @@ const filteredItems = computed(() => {
 const todayStr = dayjs().format('YYYY-MM-DD');
 const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
 
+// 隐藏设置
+const hideCompleted = computed(() => projectStore.hideCompleted);
+const hideAbandoned = computed(() => projectStore.hideAbandoned);
+
+// 只包含待办状态的事项（已完成和已放弃单独分组）
+const pendingItems = computed(() => {
+  return filteredItems.value.filter(item => item.status === 'pending');
+});
+
+// 已完成事项
+const completedItems = computed(() => {
+  return projectStore.getFilteredCompletedItems({
+    groupId: props.groupId || '',
+    searchQuery: props.searchQuery || '',
+    dateRange: props.dateRange,
+    priorities: props.priorities?.length ? props.priorities : undefined,
+  });
+});
+
+// 已放弃事项
+const abandonedItems = computed(() => {
+  return projectStore.getFilteredAbandonedItems({
+    groupId: props.groupId || '',
+    searchQuery: props.searchQuery || '',
+    dateRange: props.dateRange,
+    priorities: props.priorities?.length ? props.priorities : undefined,
+  });
+});
+
 const expiredItems = computed(() => {
-  return filteredItems.value.filter(item => getEffectiveDate(item) < todayStr);
+  return pendingItems.value.filter(item => getEffectiveDate(item) < todayStr);
 });
 
 const todayItems = computed(() => {
-  return filteredItems.value.filter(item => item.date === todayStr);
+  return pendingItems.value.filter(item => item.date === todayStr);
 });
 
 const tomorrowItems = computed(() => {
-  return filteredItems.value.filter(item => item.date === tomorrowStr);
+  return pendingItems.value.filter(item => item.date === tomorrowStr);
 });
 
 const futureItems = computed(() => {
-  return filteredItems.value.filter(item => {
+  return pendingItems.value.filter(item => {
     const date = item.date;
     return date > tomorrowStr && getEffectiveDate(item) >= todayStr;
   });
@@ -533,6 +634,14 @@ onUnmounted(() => {
   &.future {
     background: #8b5cf6;
   }
+  
+  &.completed {
+    background: #22c55e;
+  }
+  
+  &.abandoned {
+    background: #9ca3af;
+  }
 }
 
 .section-title {
@@ -644,6 +753,14 @@ onUnmounted(() => {
   &.future {
     background: #8b5cf6;
   }
+  
+  &.completed {
+    background: #22c55e;
+  }
+  
+  &.abandoned {
+    background: #9ca3af;
+  }
 }
 
 .item-content {
@@ -662,6 +779,12 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.completed-item .item-title,
+.abandoned-item .item-title {
+  text-decoration: line-through;
+  opacity: 0.6;
 }
 
 .item-meta {
