@@ -26,6 +26,10 @@ import { generatePriorityMarker } from '@/parser/priorityParser';
  * 构建设置项内容选项
  */
 export interface BuildItemContentOptions {
+  /** 开始时间 (HH:mm) */
+  startTime?: string;
+  /** 结束时间 (HH:mm) */
+  endTime?: string;
   /** 优先级 */
   priority?: PriorityLevel;
   /** 提醒配置 */
@@ -169,10 +173,16 @@ export function buildItemContent(
   date: string,
   options: BuildItemContentOptions = {}
 ): string {
-  const { priority, reminder, repeatRule, endCondition } = options;
+  const { startTime, endTime, priority, reminder, repeatRule, endCondition } = options;
 
-  // 构建日期部分
-  let content = `${baseContent} 📅${date}`;
+  // 构建日期部分（支持时间范围）
+  let datePart = `📅${date}`;
+  if (startTime && endTime) {
+    datePart = `📅${date} ${startTime}~${endTime}`;
+  } else if (startTime) {
+    datePart = `📅${date} ${startTime}`;
+  }
+  let content = `${baseContent} ${datePart}`;
 
   // 添加优先级标记
   if (priority) {
