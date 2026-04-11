@@ -8,6 +8,7 @@
     @open-pomodoro="$emit('openPomodoro', $event)"
     @set-reminder="$emit('setReminder', $event)"
     @set-recurring="$emit('setRecurring', $event)"
+    @refresh="$emit('refresh')"
   />
 </template>
 
@@ -25,6 +26,7 @@ defineEmits<{
   'openPomodoro': [item: Item];
   'setReminder': [item: Item];
   'setRecurring': [item: Item];
+  'refresh': [];
 }>();
 </script>
 

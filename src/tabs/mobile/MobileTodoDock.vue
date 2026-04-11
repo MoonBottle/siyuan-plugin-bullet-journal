@@ -49,6 +49,7 @@
       @open-pomodoro="handleOpenPomodoro"
       @set-reminder="handleSetReminder"
       @set-recurring="handleSetRecurring"
+      @refresh="handleRefresh"
     />
 
     <!-- Task Item Detail Drawer (higher z-index, no nested navigation) -->
@@ -58,6 +59,7 @@
       @open-pomodoro="handleOpenPomodoro"
       @set-reminder="handleSetTaskItemReminder"
       @set-recurring="handleSetTaskItemRecurring"
+      @refresh="handleRefresh"
     />
 
     <!-- Project Detail Drawer -->
@@ -90,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import MobileFilterBar from './components/MobileFilterBar.vue';
 import MobileTodoList from './components/MobileTodoList.vue';
 import MobileBottomNav from './components/MobileBottomNav.vue';
@@ -106,6 +108,7 @@ import { useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
 import { updateBlockContent } from '@/utils/fileUtils';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { t } from '@/i18n';
 import type { Item, Project, Task, ItemStatus, PriorityLevel } from '@/types/models';
 import dayjs from '@/utils/dayjs';
@@ -293,6 +296,55 @@ const handleCreated = () => {
   // Refresh data after creation
   handleRefresh();
 };
+
+// 数据刷新处理函数
+const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+  if (!plugin) return;
+  const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
+  if (hasStorePayload) {
+    const patch: Record<string, unknown> = {};
+    storeKeys.forEach(k => { if (payload[k] !== undefined) patch[k] = payload[k]; });
+    if (Object.keys(patch).length > 0) settingsStore.$patch(patch);
+  } else {
+    settingsStore.loadFromPlugin();
+  }
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+};
+
+// 事件取消订阅函数
+let unsubscribeRefresh: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
+
+// 初始化数据监听
+onMounted(async () => {
+  // 监听数据刷新事件（同上下文）
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  // 跨上下文：用 BroadcastChannel 接收
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannel.onmessage = (e: MessageEvent) => {
+      const data = e?.data;
+      if (data?.type === 'DATA_REFRESH') {
+        const { type: _t, ...rest } = data;
+        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
+      }
+    };
+  } catch {
+    // 忽略
+  }
+});
+
+onUnmounted(() => {
+  if (unsubscribeRefresh) {
+    unsubscribeRefresh();
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
+  }
+});
 </script>
 
 <style lang="scss" scoped>
