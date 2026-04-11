@@ -1,5 +1,23 @@
 <template>
-  <div class="mobile-todo-list">
+  <div 
+    class="mobile-todo-list" 
+    ref="scrollContainer"
+    @touchstart="handleContainerTouchStart"
+    @touchmove="handleContainerTouchMove"
+    @touchend="handleContainerTouchEnd"
+  >
+    <!-- 下拉刷新指示器 -->
+    <div 
+      class="pull-refresh-indicator"
+      :style="{ transform: `translateY(${pullDistance}px)` }"
+    >
+      <div v-if="isRefreshing" class="refresh-spinner">
+        <SyLoading :text="t('common').refreshing || '刷新中...'" />
+      </div>
+      <div v-else class="pull-text">
+        {{ pullDistance >= REFRESH_THRESHOLD ? '释放刷新' : '下拉刷新' }}
+      </div>
+    </div>
     <div class="todo-content">
       <SyLoading v-if="loading" :text="t('common').loading" />
       
@@ -285,6 +303,45 @@ const emit = defineEmits<{
   refresh: [];
 }>();
 
+// Pull-to-refresh state
+const isRefreshing = ref(false);
+const pullDistance = ref(0);
+const isPulling = ref(false);
+const startY = ref(0);
+const scrollContainer = ref<HTMLElement | null>(null);
+
+const REFRESH_THRESHOLD = 80;
+
+// Pull-to-refresh touch handlers
+const handleContainerTouchStart = (e: TouchEvent) => {
+  if (scrollContainer.value?.scrollTop === 0) {
+    startY.value = e.touches[0].clientY;
+    isPulling.value = true;
+  }
+};
+
+const handleContainerTouchMove = (e: TouchEvent) => {
+  if (!isPulling.value) return;
+  const currentY = e.touches[0].clientY;
+  const diff = currentY - startY.value;
+  if (diff > 0) {
+    pullDistance.value = Math.min(diff * 0.5, REFRESH_THRESHOLD + 20);
+    e.preventDefault();
+  }
+};
+
+const handleContainerTouchEnd = async () => {
+  if (!isPulling.value) return;
+  isPulling.value = false;
+  
+  if (pullDistance.value >= REFRESH_THRESHOLD) {
+    isRefreshing.value = true;
+    await emit('refresh');
+    isRefreshing.value = false;
+  }
+  pullDistance.value = 0;
+};
+
 const projectStore = useProjectStore();
 const loading = computed(() => projectStore.loading);
 const hasAnyItems = computed(() => projectStore.getDisplayItems('').length > 0);
@@ -487,6 +544,30 @@ onUnmounted(() => {
   overflow-y: auto;
   position: relative;
   background: var(--b3-theme-surface);
+}
+
+.pull-refresh-indicator {
+  position: absolute;
+  top: -60px;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.pull-text {
+  font-size: 14px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.6;
+}
+
+.refresh-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .todo-content {
