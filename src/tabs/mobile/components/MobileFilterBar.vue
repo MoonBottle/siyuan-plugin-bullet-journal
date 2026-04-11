@@ -53,8 +53,8 @@ const clearSearch = () => {
 .mobile-filter-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 10px 12px;
   background: var(--b3-theme-background);
   border-bottom: 1px solid var(--b3-border-color);
   flex-shrink: 0;
@@ -62,12 +62,13 @@ const clearSearch = () => {
 
 .search-box {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 8px;
+  padding: 8px 12px;
   background: var(--b3-theme-surface);
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid transparent;
   transition: all 0.2s ease;
   
@@ -126,14 +127,14 @@ const clearSearch = () => {
 }
 
 .filter-btn {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: var(--b3-theme-surface);
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
