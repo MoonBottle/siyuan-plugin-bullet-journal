@@ -7,7 +7,7 @@ import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
-import MobilePomodoroTimerDrawer from '@/components/pomodoro/MobilePomodoroTimerDrawer.vue';
+import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
 import SettingsDialog from '@/components/settings/SettingsDialog.vue';
 import MobileSettingsDrawer from '@/components/settings/MobileSettingsDrawer.vue';
 import ItemDetailDialog from '@/components/dialog/ItemDetailDialog.vue';
