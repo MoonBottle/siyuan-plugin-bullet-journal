@@ -333,7 +333,18 @@ const pomodoroRecords = computed(() => props.item?.pomodoros || []);
 // 计算番茄钟总时长
 const totalPomodoroDuration = computed(() => {
   const total = pomodoroRecords.value.reduce((sum, p) => {
-    const minutes = p.actualDurationMinutes ?? p.durationMinutes ?? 0;
+    // Parse as number, fallback to calculating from time strings
+    let minutes = Number(p.actualDurationMinutes ?? p.durationMinutes ?? 0);
+    // If no duration field, calculate from start/end time
+    if (!minutes && p.startTime && p.endTime) {
+      const startParts = p.startTime.split(':').map(Number);
+      const endParts = p.endTime.split(':').map(Number);
+      if (startParts.length >= 2 && endParts.length >= 2) {
+        const startMins = startParts[0] * 60 + startParts[1];
+        const endMins = endParts[0] * 60 + endParts[1];
+        minutes = endMins - startMins;
+      }
+    }
     return sum + minutes;
   }, 0);
   if (total < 60) return `${total}分钟`;
@@ -374,19 +385,18 @@ const formatPomodoroTime = (p: PomodoroRecord): string => {
 
 const formatPomodoroDuration = (p: PomodoroRecord): string => {
   // Use actualDurationMinutes or durationMinutes if available
-  const minutes = p.actualDurationMinutes ?? p.durationMinutes;
-  if (minutes != null && minutes > 0) {
-    return `${minutes}分钟`;
-  }
+  let minutes = Number(p.actualDurationMinutes ?? p.durationMinutes ?? 0);
   // Fallback: calculate from startTime and endTime
-  if (!p.startTime || !p.endTime) return '--分钟';
-  const startParts = p.startTime.split(':').map(Number);
-  const endParts = p.endTime.split(':').map(Number);
-  if (startParts.length < 2 || endParts.length < 2) return '--分钟';
-  const startMinutes = startParts[0] * 60 + startParts[1];
-  const endMinutes = endParts[0] * 60 + endParts[1];
-  const duration = endMinutes - startMinutes;
-  return `${duration}分钟`;
+  if (!minutes && p.startTime && p.endTime) {
+    const startParts = p.startTime.split(':').map(Number);
+    const endParts = p.endTime.split(':').map(Number);
+    if (startParts.length >= 2 && endParts.length >= 2) {
+      const startMins = startParts[0] * 60 + startParts[1];
+      const endMins = endParts[0] * 60 + endParts[1];
+      minutes = endMins - startMins;
+    }
+  }
+  return `${minutes}分钟`;
 };
 
 const handleLinkClick = (url: string) => {
