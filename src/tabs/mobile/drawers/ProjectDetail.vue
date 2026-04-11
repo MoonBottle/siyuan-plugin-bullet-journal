@@ -16,7 +16,9 @@
         <!-- Project Info Section -->
         <div class="project-info-section">
           <div class="project-name-row">
-            <span class="project-icon">📁</span>
+            <div class="project-icon">
+              <svg><use xlink:href="#iconFolder"></use></svg>
+            </div>
             <h2 class="project-name">{{ project.name }}</h2>
           </div>
           <div v-if="project.description" class="project-description">
@@ -47,7 +49,9 @@
           <!-- High Priority -->
           <div v-if="highPriorityTasks.length > 0" class="priority-section">
             <div class="priority-header high">
-              <span class="priority-icon">🔥</span>
+              <div class="priority-icon">
+                <svg><use xlink:href="#iconFire"></use></svg>
+              </div>
               <span class="priority-name">{{ t('mobile.priority.high') || '高优先级' }}</span>
               <span class="priority-count">{{ highPriorityTasks.length }}</span>
             </div>
@@ -78,7 +82,9 @@
           <!-- Medium Priority -->
           <div v-if="mediumPriorityTasks.length > 0" class="priority-section">
             <div class="priority-header medium">
-              <span class="priority-icon">🌱</span>
+              <div class="priority-icon">
+                <svg><use xlink:href="#iconLeaf"></use></svg>
+              </div>
               <span class="priority-name">{{ t('mobile.priority.medium') || '中优先级' }}</span>
               <span class="priority-count">{{ mediumPriorityTasks.length }}</span>
             </div>
@@ -109,7 +115,9 @@
           <!-- Low Priority -->
           <div v-if="lowPriorityTasks.length > 0" class="priority-section">
             <div class="priority-header low">
-              <span class="priority-icon">🍃</span>
+              <div class="priority-icon">
+                <svg><use xlink:href="#iconCoffee"></use></svg>
+              </div>
               <span class="priority-name">{{ t('mobile.priority.low') || '低优先级' }}</span>
               <span class="priority-count">{{ lowPriorityTasks.length }}</span>
             </div>
@@ -139,7 +147,9 @@
 
           <!-- No Tasks -->
           <div v-if="allTasks.length === 0" class="empty-state">
-            <span class="empty-icon">📋</span>
+            <div class="empty-icon">
+              <svg><use xlink:href="#iconTask"></use></svg>
+            </div>
             <span class="empty-text">{{ t('mobile.project.noTasks') || '暂无任务' }}</span>
             <button class="empty-action" @click="handleCreateTask">
               {{ t('mobile.project.createTask') || '创建任务' }}
@@ -227,12 +237,10 @@ function getTaskProgress(task: Task): number {
 // Get progress ring style
 function getProgressStyle(task: Task) {
   const progress = getTaskProgress(task);
-  const circumference = 2 * Math.PI * 18; // radius = 18
-  const offset = circumference - (progress / 100) * circumference;
   const color = progress === 100 ? '#52c41a' : progress > 50 ? '#1890ff' : '#faad14';
   
   return {
-    background: `conic-gradient(${color} ${progress}%, #e8e8e8 0)`
+    background: `conic-gradient(${color} ${progress}%, var(--b3-border-color) 0)`
   };
 }
 
@@ -285,8 +293,18 @@ const close = () => {
   align-items: center;
   justify-content: center;
   border: none;
-  background: transparent;
+  background: var(--b3-theme-surface);
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--b3-theme-surface-lighter);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 
   svg {
     width: 18px;
@@ -296,8 +314,9 @@ const close = () => {
 }
 
 .header-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
+  color: var(--b3-theme-on-background);
 }
 
 // Project Info Section
@@ -316,7 +335,20 @@ const close = () => {
 }
 
 .project-icon {
-  font-size: 28px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+  border-radius: 12px;
+  flex-shrink: 0;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--b3-theme-primary);
+  }
 }
 
 .project-name {
@@ -347,7 +379,8 @@ const close = () => {
   gap: 4px;
   padding: 12px 8px;
   background: var(--b3-theme-background);
-  border-radius: var(--b3-border-radius);
+  border-radius: 12px;
+  border: 1px solid var(--b3-border-color);
 }
 
 .stat-value {
@@ -379,28 +412,64 @@ const close = () => {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: var(--b3-border-radius);
+  border-radius: 12px;
   margin-bottom: 10px;
   font-weight: 500;
 
   &.high {
-    background: #fff2f0;
-    color: #cf1322;
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+
+    .priority-icon svg {
+      fill: #dc2626;
+    }
+
+    .priority-count {
+      background: rgba(220, 38, 38, 0.15);
+      color: #dc2626;
+    }
   }
 
   &.medium {
-    background: #fffbe6;
-    color: #d48806;
+    background: rgba(234, 88, 12, 0.08);
+    color: #ea580c;
+
+    .priority-icon svg {
+      fill: #ea580c;
+    }
+
+    .priority-count {
+      background: rgba(234, 88, 12, 0.15);
+      color: #ea580c;
+    }
   }
 
   &.low {
-    background: #f6ffed;
-    color: #389e0d;
+    background: rgba(75, 85, 99, 0.08);
+    color: #4b5563;
+
+    .priority-icon svg {
+      fill: #4b5563;
+    }
+
+    .priority-count {
+      background: rgba(75, 85, 99, 0.15);
+      color: #4b5563;
+    }
   }
 }
 
 .priority-icon {
-  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .priority-name {
@@ -410,9 +479,9 @@ const close = () => {
 
 .priority-count {
   font-size: 12px;
-  padding: 2px 8px;
-  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 10px;
   border-radius: 10px;
+  font-weight: 500;
 }
 
 // Task List
@@ -428,10 +497,14 @@ const close = () => {
   justify-content: space-between;
   padding: 14px 16px;
   background: var(--b3-theme-surface);
-  border-radius: var(--b3-border-radius);
+  border-radius: 12px;
   border: 1px solid var(--b3-border-color);
   cursor: pointer;
   transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--b3-theme-primary);
+  }
 
   &:active {
     background: var(--b3-theme-surface-lighter);
@@ -463,9 +536,10 @@ const close = () => {
 .task-level {
   font-size: 11px;
   padding: 2px 8px;
-  background: var(--b3-theme-primary-lightest);
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   color: var(--b3-theme-primary);
   border-radius: 4px;
+  font-weight: 500;
 }
 
 .task-items-count {
@@ -511,7 +585,8 @@ const close = () => {
   width: 16px;
   height: 16px;
   fill: var(--b3-theme-on-surface);
-  opacity: 0.5;
+  opacity: 0.4;
+  transform: rotate(90deg);
 }
 
 // Empty State
@@ -525,8 +600,20 @@ const close = () => {
 }
 
 .empty-icon {
-  font-size: 48px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+  border-radius: 16px;
   margin-bottom: 16px;
+
+  svg {
+    width: 32px;
+    height: 32px;
+    fill: var(--b3-theme-primary);
+  }
 }
 
 .empty-text {
@@ -537,17 +624,22 @@ const close = () => {
 }
 
 .empty-action {
-  padding: 10px 24px;
+  padding: 12px 24px;
   background: var(--b3-theme-primary);
   color: var(--b3-theme-on-primary);
   border: none;
-  border-radius: var(--b3-border-radius);
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
 
   &:active {
-    opacity: 0.9;
+    transform: scale(0.98);
   }
 }
 
