@@ -141,6 +141,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
+  save: [];
 }>();
 
 const pomodoroStore = usePomodoroStore();
@@ -245,6 +246,7 @@ async function handleSave() {
   );
   if (success) {
     showRestOptions.value = true;
+    emit('save');
   }
 }
 
