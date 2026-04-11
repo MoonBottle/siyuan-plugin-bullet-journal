@@ -1,11 +1,11 @@
 <template>
   <div class="mobile-bottom-nav">
     <div class="nav-content">
-      <button class="nav-item" :class="{ active: false }" @click="emit('refresh')">
+      <button class="nav-item" @click="emit('open-pomodoro')">
         <div class="nav-icon-wrapper">
-          <svg class="nav-icon"><use xlink:href="#iconRefresh"></use></svg>
+          <svg class="nav-icon"><use xlink:href="#iconClock"></use></svg>
         </div>
-        <span class="nav-label">{{ t('common').refresh }}</span>
+        <span class="nav-label">{{ t('pomodoro').title || '番茄钟' }}</span>
       </button>
       
       <div class="nav-spacer">
@@ -33,7 +33,7 @@ import { t } from '@/i18n';
 import SettingsDrawer from '../drawers/SettingsDrawer.vue';
 
 const emit = defineEmits<{
-  refresh: [];
+  'open-pomodoro': [];
   create: [];
 }>();
 
