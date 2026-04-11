@@ -144,7 +144,7 @@ function selectQuickTime(time: string) {
 
 // 确认
 function onConfirm() {
-  const timeStr = `${currentHour.value}:${currentMinute.value}`;
+  const timeStr = `${currentHour.value}:${currentMinute.value}:00`;
   emit('confirm', timeStr);
   emit('update:modelValue', false);
 }
@@ -170,7 +170,7 @@ const currentTimeStr = computed(() => `${currentHour.value}:${currentMinute.valu
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  z-index: 10000;
+  z-index: 10010;
 }
 
 .time-picker-sheet {
