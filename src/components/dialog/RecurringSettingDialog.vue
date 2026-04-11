@@ -1,5 +1,5 @@
 <template>
-  <div class="recurring-setting-dialog">
+  <div class="recurring-setting-dialog" :class="{ 'drawer-mode': layout === 'drawer' }">
     <!-- 事项信息卡片 -->
     <div v-if="item" class="selected-item-section">
       <SelectedItemCard :item="item" :show-header="true" />
@@ -116,9 +116,14 @@ interface Props {
   blockId: string;
   initialRepeatRule?: RepeatRule;
   initialEndCondition?: EndCondition;
+  layout?: 'dialog' | 'drawer';
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  layout: 'dialog'
+});
+
+
 
 const emit = defineEmits<{
   save: [repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined];
@@ -423,6 +428,38 @@ function handleCancel() {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+// Drawer 模式适配
+.recurring-setting-dialog.drawer-mode {
+  padding: 0;
+  min-width: auto;
+  max-width: 100%;
+
+  .quick-buttons {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .mode-btn {
+    min-height: 48px;
+    padding: 12px 8px;
+    font-size: 14px;
+  }
+
+  .weekday-buttons {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+
+  .weekday-btn {
+    padding: 10px 4px;
+    font-size: 12px;
+  }
+
+  .action-section {
+    margin-top: 20px;
+  }
 }
 
 .start-btn {

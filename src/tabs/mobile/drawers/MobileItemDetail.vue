@@ -64,6 +64,50 @@
                 </div>
               </div>
               
+              <!-- Date Info - 可编辑 -->
+              <div class="info-card">
+                <div class="info-item editable" @click="handleEditDate">
+                  <div class="info-left">
+                    <svg class="info-icon"><use xlink:href="#iconCalendar"></use></svg>
+                    <span class="info-label">{{ t('mobile.detail.date') || '日期' }}</span>
+                  </div>
+                  <div class="info-right">
+                    <span class="info-value">{{ formatDateDisplay }}</span>
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Time Info - 可编辑 -->
+              <div class="info-card">
+                <div class="info-item editable" @click="handleEditTime">
+                  <div class="info-left">
+                    <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
+                    <span class="info-label">{{ t('mobile.detail.time') || '时间' }}</span>
+                  </div>
+                  <div class="info-right">
+                    <span class="info-value">{{ formatTimeOnlyDisplay }}</span>
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
+                </div>
+
+                <div v-if="duration" class="info-item readonly">
+                  <div class="info-left">
+                    <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
+                    <span class="info-label">{{ t('mobile.detail.duration') || '时长' }}</span>
+                  </div>
+                  <span class="info-value">{{ duration }}</span>
+                </div>
+
+                <div v-if="focusTotalTime" class="info-item readonly">
+                  <div class="info-left">
+                    <svg class="info-icon"><use xlink:href="#iconHistory"></use></svg>
+                    <span class="info-label">{{ t('mobile.detail.focusTime') || '专注' }}</span>
+                  </div>
+                  <span class="info-value">{{ focusTotalTime }}</span>
+                </div>
+              </div>
+
               <!-- Priority - 独立可点击行 -->
               <div class="info-card">
                 <div class="info-item editable" @click="handleEditPriority">
@@ -78,36 +122,6 @@
                     <span v-else class="info-value-placeholder">{{ t('mobile.detail.setPriority') || '设置优先级' }}</span>
                     <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
                   </div>
-                </div>
-              </div>
-              
-              <!-- Time Info - 可编辑 -->
-              <div class="info-card">
-                <div class="info-item editable" @click="handleEditTime">
-                  <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconCalendar"></use></svg>
-                    <span class="info-label">{{ t('mobile.detail.time') || '时间' }}</span>
-                  </div>
-                  <div class="info-right">
-                    <span class="info-value">{{ formatTimeDisplay }}</span>
-                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
-                  </div>
-                </div>
-                
-                <div v-if="duration" class="info-item readonly">
-                  <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconClock"></use></svg>
-                    <span class="info-label">{{ t('mobile.detail.duration') || '时长' }}</span>
-                  </div>
-                  <span class="info-value">{{ duration }}</span>
-                </div>
-                
-                <div v-if="focusTotalTime" class="info-item readonly">
-                  <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconHistory"></use></svg>
-                    <span class="info-label">{{ t('mobile.detail.focusTime') || '专注' }}</span>
-                  </div>
-                  <span class="info-value">{{ focusTotalTime }}</span>
                 </div>
               </div>
               
@@ -292,12 +306,31 @@ const recurringText = computed(() => {
   return end ? `${rule} ${end}` : rule;
 });
 
+// 仅显示日期
+const formatDateDisplay = computed(() => {
+  if (!props.item) return '';
+  const todoTranslations = t('todo') as Record<string, string>;
+  return formatDateLabel(
+    props.item.date,
+    todoTranslations.today || '今天',
+    todoTranslations.tomorrow || '明天'
+  );
+});
+
+// 仅显示时间
+const formatTimeOnlyDisplay = computed(() => {
+  if (!props.item) return t('mobile.detail.noTime') || '未设置';
+  const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
+  return timeRange || (t('mobile.detail.allDay') || '全天');
+});
+
+// 兼容旧代码：完整时间显示（日期+时间）
 const formatTimeDisplay = computed(() => {
   if (!props.item) return '';
   const todoTranslations = t('todo') as Record<string, string>;
   const dateLabel = formatDateLabel(
-    props.item.date, 
-    todoTranslations.today || '今天', 
+    props.item.date,
+    todoTranslations.today || '今天',
     todoTranslations.tomorrow || '明天'
   );
   const timeRange = formatTimeRange(props.item.startDateTime, props.item.endDateTime);
@@ -465,7 +498,11 @@ const saveContent = async () => {
   }
 };
 
-// Edit time handlers
+// Edit date/time handlers
+const handleEditDate = () => {
+  showDatePicker.value = true;
+};
+
 const handleEditTime = () => {
   showDatePicker.value = true;
 };

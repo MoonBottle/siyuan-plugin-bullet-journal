@@ -90,10 +90,29 @@
     />
 
     <!-- Pomodoro Drawer -->
-    <MobilePomodoroDrawer 
-      v-model="state.showPomodoroDrawer" 
+    <MobilePomodoroDrawer
+      v-model="state.showPomodoroDrawer"
       :preselected-block-id="preselectedPomodoroBlockId"
       @update:model-value="handlePomodoroDrawerClose"
+    />
+
+    <!-- Reminder Drawer -->
+    <MobileReminderDrawer
+      v-model="showReminderDrawer"
+      :item="selectedItemForSetting"
+      :initial-config="selectedItemForSetting?.reminder"
+      @save="handleSettingDrawerClose"
+      @cancel="selectedItemForSetting = null"
+    />
+
+    <!-- Recurring Drawer -->
+    <MobileRecurringDrawer
+      v-model="showRecurringDrawer"
+      :item="selectedItemForSetting"
+      :initial-repeat-rule="selectedItemForSetting?.repeatRule"
+      :initial-end-condition="selectedItemForSetting?.endCondition"
+      @save="handleSettingDrawerClose"
+      @cancel="selectedItemForSetting = null"
     />
   </div>
 </template>
@@ -111,6 +130,8 @@ import ProjectDetail from './drawers/ProjectDetail.vue';
 import TaskDetail from './drawers/TaskDetail.vue';
 import QuickCreateDrawer from './drawers/QuickCreateDrawer.vue';
 import MobilePomodoroDrawer from './drawers/MobilePomodoroDrawer.vue';
+import MobileReminderDrawer from './drawers/MobileReminderDrawer.vue';
+import MobileRecurringDrawer from './drawers/MobileRecurringDrawer.vue';
 import { useItemDetail } from './composables/useItemDetail';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
@@ -153,6 +174,29 @@ const selectedTask = ref<Task | null>(null);
 
 // Pomodoro preselected block ID
 const preselectedPomodoroBlockId = ref<string | undefined>(undefined);
+
+// Reminder & Recurring drawer state
+const showReminderDrawer = ref(false);
+const showRecurringDrawer = ref(false);
+const selectedItemForSetting = ref<Item | null>(null);
+
+// Handle set reminder
+const handleSetReminder = (item: Item) => {
+  selectedItemForSetting.value = item;
+  showReminderDrawer.value = true;
+};
+
+// Handle set recurring
+const handleSetRecurring = (item: Item) => {
+  selectedItemForSetting.value = item;
+  showRecurringDrawer.value = true;
+};
+
+// Handle setting drawer close with refresh
+const handleSettingDrawerClose = () => {
+  selectedItemForSetting.value = null;
+  handleRefresh();
+};
 
 // Computed
 const hasActiveFilters = computed(() => {
@@ -306,24 +350,14 @@ const handlePomodoroDrawerClose = (value: boolean) => {
   }
 };
 
-const handleSetReminder = (item: Item) => {
-  // TODO: Open reminder dialog
-  showMessage(t('mobile.reminder.set') || '设置提醒');
-};
-
-const handleSetRecurring = (item: Item) => {
-  // TODO: Open recurring dialog
-  showMessage(t('mobile.recurring.set') || '设置重复');
-};
-
 const handleSetTaskItemReminder = (item: Item) => {
-  // TODO: Open reminder dialog
-  showMessage(t('mobile.reminder.set') || '设置提醒');
+  selectedItemForSetting.value = item;
+  showReminderDrawer.value = true;
 };
 
 const handleSetTaskItemRecurring = (item: Item) => {
-  // TODO: Open recurring dialog
-  showMessage(t('mobile.recurring.set') || '设置重复');
+  selectedItemForSetting.value = item;
+  showRecurringDrawer.value = true;
 };
 
 const handleToggleItemStatus = (item: Item, newStatus: ItemStatus) => {

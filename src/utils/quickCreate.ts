@@ -4,9 +4,10 @@
  */
 
 import type { BlockId, DocumentId } from '@/types';
-import type { Item, Task, Project, ItemStatus } from '@/types/models';
+import type { Item, Task, Project, ItemStatus, ReminderConfig, RepeatRule, EndCondition } from '@/types/models';
 import * as siyuanAPI from '@/api';
 import dayjs from '@/utils/dayjs';
+import { buildItemContent } from './itemSettingUtils';
 
 /**
  * 快速创建选项
@@ -225,16 +226,21 @@ export async function createTask(
  * @param options 额外选项
  * @returns 创建结果
  */
+export interface CreateItemOptions {
+  priority?: 'high' | 'medium' | 'low';
+  tags?: string[];
+  reminder?: ReminderConfig;
+  repeatRule?: RepeatRule;
+  endCondition?: EndCondition;
+}
+
 export async function createItem(
   taskBlockId: string,
   content: string,
   date: string,
   startTime?: string,
   endTime?: string,
-  options?: {
-    priority?: 'high' | 'medium' | 'low';
-    tags?: string[];
-  }
+  options?: CreateItemOptions
 ): Promise<CreateResult> {
   if (!content.trim()) {
     return { success: false, message: '事项内容不能为空' };
@@ -244,30 +250,15 @@ export async function createItem(
     return { success: false, message: '事项日期不能为空' };
   }
 
-  // 构建事项 Markdown
-  let datePart = `📅${date}`;
-  if (startTime && endTime) {
-    datePart = `📅${date} ${startTime}~${endTime}`;
-  } else if (startTime) {
-    datePart = `📅${date} ${startTime}`;
-  }
-
-  let itemContent = `${content} ${datePart}`;
-
-  // 添加优先级标记（使用 Emoji）
-  if (options?.priority) {
-    const priorityMap: Record<string, string> = {
-      high: '🔥',
-      medium: '🌱',
-      low: '🍃',
-    };
-    itemContent += ` ${priorityMap[options.priority]}`;
-  }
-
-  // 添加标签
-  if (options?.tags?.length) {
-    itemContent += ` ${options.tags.map(t => `#${t}`).join(' ')}`;
-  }
+  // 使用 buildItemContent 构建完整内容
+  const itemContent = buildItemContent(content, date, {
+    startTime,
+    endTime,
+    priority: options?.priority,
+    reminder: options?.reminder,
+    repeatRule: options?.repeatRule,
+    endCondition: options?.endCondition,
+  });
 
   try {
     // 在任务块后插入事项
