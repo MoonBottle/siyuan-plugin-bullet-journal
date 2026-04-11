@@ -770,59 +770,65 @@ export default class TaskAssistantPlugin extends Plugin {
       });
     }
 
-    // 甘特图视图 Tab
-    this.addTab({
-      type: TAB_TYPES.GANTT,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(GanttTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount GanttTab:', error);
+    // 甘特图视图 Tab（桌面端专用）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.GANTT,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(GanttTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount GanttTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
 
-    // 项目视图 Tab
-    this.addTab({
-      type: TAB_TYPES.PROJECT,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(ProjectTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount ProjectTab:', error);
+    // 项目视图 Tab（桌面端专用）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.PROJECT,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(ProjectTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount ProjectTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
 
-    // 番茄钟统计 Tab
-    this.addTab({
-      type: TAB_TYPES.POMODORO_STATS,
-      init() {
-        try {
-          const pinia = getSharedPinia() ?? createPinia();
-          const app = createApp(PomodoroStatsTab);
-          app.use(pinia);
-          app.mount(this.element);
-        } catch (error) {
-          console.error('[Task Assistant] Failed to mount PomodoroStatsTab:', error);
+    // 番茄钟统计 Tab（桌面端专用）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.POMODORO_STATS,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(PomodoroStatsTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error('[Task Assistant] Failed to mount PomodoroStatsTab:', error);
+          }
+        },
+        destroy() {
+          this.element.innerHTML = '';
         }
-      },
-      destroy() {
-        this.element.innerHTML = '';
-      }
-    });
+      });
+    }
   }
 
   /**
