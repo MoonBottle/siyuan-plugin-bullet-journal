@@ -16,7 +16,9 @@
         <!-- Task Info Section -->
         <div class="task-info-section">
           <div class="task-name-row">
-            <span class="task-icon">📋</span>
+            <div class="task-icon">
+              <svg><use xlink:href="#iconTask"></use></svg>
+            </div>
             <h2 class="task-name">{{ task.name }}</h2>
           </div>
           <div class="task-meta-row">
@@ -48,7 +50,9 @@
           <!-- Pending Items -->
           <div v-if="pendingItemsList.length > 0" class="status-section">
             <div class="status-header pending">
-              <span class="status-icon">⏳</span>
+              <div class="status-icon">
+                <svg><use xlink:href="#iconClock"></use></svg>
+              </div>
               <span class="status-name">{{ t('mobile.status.pending') || '待完成' }}</span>
               <span class="status-count">{{ pendingItemsList.length }}</span>
             </div>
@@ -76,7 +80,9 @@
           <!-- Completed Items -->
           <div v-if="completedItemsList.length > 0" class="status-section">
             <div class="status-header completed">
-              <span class="status-icon">✅</span>
+              <div class="status-icon">
+                <svg><use xlink:href="#iconCheck"></use></svg>
+              </div>
               <span class="status-name">{{ t('mobile.status.completed') || '已完成' }}</span>
               <span class="status-count">{{ completedItemsList.length }}</span>
             </div>
@@ -106,7 +112,9 @@
           <!-- Abandoned Items -->
           <div v-if="abandonedItemsList.length > 0" class="status-section">
             <div class="status-header abandoned">
-              <span class="status-icon">🚫</span>
+              <div class="status-icon">
+                <svg><use xlink:href="#iconBan"></use></svg>
+              </div>
               <span class="status-name">{{ t('mobile.status.abandoned') || '已放弃' }}</span>
               <span class="status-count">{{ abandonedItemsList.length }}</span>
             </div>
@@ -119,7 +127,7 @@
               >
                 <div class="item-checkbox">
                   <div class="checkbox-circle abandoned">
-                    <span>×</span>
+                    <svg><use xlink:href="#iconClose"></use></svg>
                   </div>
                 </div>
                 <div class="item-content">
@@ -135,7 +143,9 @@
 
           <!-- No Items -->
           <div v-if="allItems.length === 0" class="empty-state">
-            <span class="empty-icon">📝</span>
+            <div class="empty-icon">
+              <svg><use xlink:href="#iconEdit"></use></svg>
+            </div>
             <span class="empty-text">{{ t('mobile.task.noItems') || '暂无事项' }}</span>
             <button class="empty-action" @click="handleCreateItem">
               {{ t('mobile.task.createItem') || '创建事项' }}
@@ -271,8 +281,18 @@ const close = () => {
   align-items: center;
   justify-content: center;
   border: none;
-  background: transparent;
+  background: var(--b3-theme-surface);
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--b3-theme-surface-lighter);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 
   svg {
     width: 18px;
@@ -282,8 +302,9 @@ const close = () => {
 }
 
 .header-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
+  color: var(--b3-theme-on-background);
 }
 
 // Task Info Section
@@ -302,7 +323,20 @@ const close = () => {
 }
 
 .task-icon {
-  font-size: 28px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+  border-radius: 12px;
+  flex-shrink: 0;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--b3-theme-primary);
+  }
 }
 
 .task-name {
@@ -347,7 +381,8 @@ const close = () => {
   gap: 4px;
   padding: 12px 8px;
   background: var(--b3-theme-background);
-  border-radius: var(--b3-border-radius);
+  border-radius: 12px;
+  border: 1px solid var(--b3-border-color);
 }
 
 .stat-value {
@@ -379,28 +414,64 @@ const close = () => {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: var(--b3-border-radius);
+  border-radius: 12px;
   margin-bottom: 10px;
   font-weight: 500;
 
   &.pending {
-    background: #fffbe6;
-    color: #d48806;
+    background: rgba(234, 88, 12, 0.08);
+    color: #ea580c;
+
+    .status-icon svg {
+      fill: #ea580c;
+    }
+
+    .status-count {
+      background: rgba(234, 88, 12, 0.15);
+      color: #ea580c;
+    }
   }
 
   &.completed {
-    background: #f6ffed;
-    color: #389e0d;
+    background: rgba(34, 197, 94, 0.08);
+    color: #16a34a;
+
+    .status-icon svg {
+      fill: #16a34a;
+    }
+
+    .status-count {
+      background: rgba(34, 197, 94, 0.15);
+      color: #16a34a;
+    }
   }
 
   &.abandoned {
-    background: #f5f5f5;
-    color: #8c8c8c;
+    background: rgba(107, 114, 128, 0.08);
+    color: #6b7280;
+
+    .status-icon svg {
+      fill: #6b7280;
+    }
+
+    .status-count {
+      background: rgba(107, 114, 128, 0.15);
+      color: #6b7280;
+    }
   }
 }
 
 .status-icon {
-  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .status-name {
@@ -410,9 +481,9 @@ const close = () => {
 
 .status-count {
   font-size: 12px;
-  padding: 2px 8px;
-  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 10px;
   border-radius: 10px;
+  font-weight: 500;
 }
 
 // Item List
@@ -428,10 +499,14 @@ const close = () => {
   gap: 12px;
   padding: 14px 16px;
   background: var(--b3-theme-surface);
-  border-radius: var(--b3-border-radius);
+  border-radius: 12px;
   border: 1px solid var(--b3-border-color);
   cursor: pointer;
   transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--b3-theme-primary);
+  }
 
   &:active {
     background: var(--b3-theme-surface-lighter);
@@ -473,8 +548,8 @@ const close = () => {
   transition: all 0.2s ease;
 
   &.checked {
-    background: #52c41a;
-    border-color: #52c41a;
+    background: #22c55e;
+    border-color: #22c55e;
 
     svg {
       width: 12px;
@@ -484,10 +559,14 @@ const close = () => {
   }
 
   &.abandoned {
-    background: #8c8c8c;
-    border-color: #8c8c8c;
-    color: white;
-    font-size: 12px;
+    background: #6b7280;
+    border-color: #6b7280;
+
+    svg {
+      width: 10px;
+      height: 10px;
+      fill: white;
+    }
   }
 }
 
@@ -515,8 +594,9 @@ const close = () => {
   width: 16px;
   height: 16px;
   fill: var(--b3-theme-on-surface);
-  opacity: 0.5;
+  opacity: 0.4;
   flex-shrink: 0;
+  transform: rotate(90deg);
 }
 
 // Empty State
@@ -530,8 +610,20 @@ const close = () => {
 }
 
 .empty-icon {
-  font-size: 48px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
+  border-radius: 16px;
   margin-bottom: 16px;
+
+  svg {
+    width: 32px;
+    height: 32px;
+    fill: var(--b3-theme-primary);
+  }
 }
 
 .empty-text {
@@ -542,17 +634,22 @@ const close = () => {
 }
 
 .empty-action {
-  padding: 10px 24px;
+  padding: 12px 24px;
   background: var(--b3-theme-primary);
   color: var(--b3-theme-on-primary);
   border: none;
-  border-radius: var(--b3-border-radius);
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
 
   &:active {
-    opacity: 0.9;
+    transform: scale(0.98);
   }
 }
 
