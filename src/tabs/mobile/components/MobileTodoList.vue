@@ -77,6 +77,7 @@
                 <div class="item-title">{{ item.content }}</div>
                 <div class="item-meta">
                   <span class="meta-date expired">{{ formatExpiredDate(item) }}</span>
+                  <span v-if="item.priority" class="priority-tag" :class="item.priority">{{ getPriorityLabel(item.priority) }}</span>
                   <svg v-if="item.repeatRule" class="meta-icon"><use xlink:href="#iconRefresh"></use></svg>
                   <svg v-if="item.reminder?.enabled" class="meta-icon"><use xlink:href="#iconClock"></use></svg>
                 </div>
