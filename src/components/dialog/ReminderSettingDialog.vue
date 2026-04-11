@@ -5,8 +5,7 @@
       <SelectedItemCard :item="item" :show-header="true" />
     </div>
 
-    <template v-if="item">
-      <!-- 提醒方式 -->
+    <!-- 提醒方式 -->
       <div class="panel-title">{{ t('reminder.reminderMethod') }}</div>
       <div class="quick-buttons">
         <button
@@ -94,11 +93,10 @@
           </div>
         </div>
       </template>
-    </template>
 
     <!-- 底部按钮 -->
     <div class="action-section">
-      <button class="start-btn" :disabled="!item" @click="handleSave">
+      <button class="start-btn" @click="handleSave">
         {{ t('reminder.save') }}
       </button>
       <button class="cancel-btn" @click="handleCancel">

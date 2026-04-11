@@ -5,8 +5,7 @@
       <SelectedItemCard :item="item" :show-header="true" />
     </div>
 
-    <template v-if="item">
-      <!-- 重复规则 -->
+    <!-- 重复规则 -->
       <div class="panel-title">{{ t('recurring.repeatRule') }}</div>
       <div class="quick-buttons">
         <button
@@ -90,11 +89,10 @@
           <span class="count-label">{{ t('recurring.times') }}</span>
         </div>
       </div>
-    </template>
 
     <!-- 底部按钮 -->
     <div class="action-section">
-      <button class="start-btn" :disabled="!item" @click="handleSave">
+      <button class="start-btn" @click="handleSave">
         {{ t('recurring.save') }}
       </button>
       <button class="cancel-btn" @click="handleCancel">
