@@ -661,7 +661,8 @@
       "priority": "Priority",
       "cancel": "Cancel",
       "confirm": "Confirm",
-      "noTasks": "No tasks in this project"
+      "noTasks": "No tasks in this project",
+      "advanced": "Advanced Settings"
     },
     "postpone": "Postpone",
     "postponeSuccess": "Postponed {count} items to tomorrow",
