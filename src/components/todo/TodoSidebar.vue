@@ -4,7 +4,7 @@
       <SyLoading v-if="loading" :text="t('common').loading" />
 
       <!-- 空状态：有筛选条件但无结果 -->
-      <div v-else-if="hasActiveFilters && todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && completedItems.length === 0 && abandonedItems.length === 0 && expiredItems.length === 0" class="empty-guide">
+      <div v-else-if="hasActiveFilters && todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && expiredItems.length === 0 && (hideCompleted || completedItems.length === 0) && (hideAbandoned || abandonedItems.length === 0)" class="empty-guide">
         <div class="empty-guide-icon">
           <svg><use xlink:href="#iconSearch"></use></svg>
         </div>
