@@ -85,10 +85,10 @@
                     v-for="p in priorityOptions"
                     :key="p.value"
                     class="priority-btn"
-                    :class="{ active: itemForm.priority === p.value, [`priority-${p.value}`]: true }"
+                    :class="{ active: itemForm.priority === p.value }"
                     @click="itemForm.priority = itemForm.priority === p.value ? undefined : p.value"
                   >
-                    <span class="priority-dot"></span>
+                    <span class="priority-emoji">{{ p.emoji }}</span>
                     <span class="priority-label">{{ p.label }}</span>
                   </button>
                 </div>
@@ -504,9 +504,9 @@ const handleRecurringSave = (rule: RepeatRule | undefined, end: EndCondition | u
 
 // Options
 const priorityOptions = [
-  { value: 'high' as PriorityLevel, label: t('todo.priority.high') || '高' },
-  { value: 'medium' as PriorityLevel, label: t('todo.priority.medium') || '中' },
-  { value: 'low' as PriorityLevel, label: t('todo.priority.low') || '低' },
+  { value: 'high' as PriorityLevel, label: t('todo.priority.high') || '高', emoji: '🔥' },
+  { value: 'medium' as PriorityLevel, label: t('todo.priority.medium') || '中', emoji: '🌱' },
+  { value: 'low' as PriorityLevel, label: t('todo.priority.low') || '低', emoji: '🍃' },
 ];
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六'];

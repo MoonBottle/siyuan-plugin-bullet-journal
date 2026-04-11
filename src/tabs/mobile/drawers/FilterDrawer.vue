@@ -52,10 +52,10 @@
                     v-for="p in priorityOptions"
                     :key="p.value"
                     class="priority-btn"
-                    :class="{ active: localPriorities.includes(p.value), [`priority-${p.value}`]: true }"
+                    :class="{ active: localPriorities.includes(p.value) }"
                     @click="togglePriority(p.value)"
                   >
-                    <span class="priority-dot"></span>
+                    <span class="priority-emoji">{{ p.emoji }}</span>
                     <span class="priority-label">{{ p.label }}</span>
                   </button>
                 </div>
@@ -280,9 +280,9 @@ const dateOptions = [
 ];
 
 const priorityOptions = [
-  { value: 'high' as PriorityLevel, label: t('todo').priority?.high || '高优先级' },
-  { value: 'medium' as PriorityLevel, label: t('todo').priority?.medium || '中优先级' },
-  { value: 'low' as PriorityLevel, label: t('todo').priority?.low || '低优先级' },
+  { value: 'high' as PriorityLevel, label: t('todo').priority?.high || '高优先级', emoji: '🔥' },
+  { value: 'medium' as PriorityLevel, label: t('todo').priority?.medium || '中优先级', emoji: '🌱' },
+  { value: 'low' as PriorityLevel, label: t('todo').priority?.low || '低优先级', emoji: '🍃' },
 ];
 
 const selectedGroupName = computed(() => {

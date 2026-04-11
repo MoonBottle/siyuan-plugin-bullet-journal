@@ -1352,4 +1352,46 @@ describe('updateBlockContent', () => {
       'parent-block-1'
     );
   });
+
+  it('newItemContent: 修复重复标记重复问题 - 每周一三六场景', async () => {
+    // 用户反馈的案例：
+    // 原始：测试3333666 📅2026-04-11 ⏰提前5分钟 🔁每周一三六
+    // 新内容：测试3333666888
+    // 错误结果：测试3333666888 📅2026-04-11 ⏰提前5分钟 🔁每周一三六 每周一三六（重复了！）
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 测试3333666 📅2026-04-11 ⏰提前5分钟 🔁每周一三六
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '测试3333666888');
+
+    expect(result).toBe(true);
+    // 应正确保留所有标记且不重复
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 测试3333666888 📅2026-04-11 ⏰提前5分钟 🔁每周一三六
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 复杂重复规则 - 每月第1、15日', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 发工资 📅2026-04-01 ⏰09:00 🔁每月1,15日
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '发工资啦');
+
+    expect(result).toBe(true);
+    // 应保留完整重复标记 "🔁每月1,15日"
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 发工资啦 📅2026-04-01 ⏰09:00 🔁每月1,15日
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
 });

@@ -125,18 +125,25 @@ function extractItemMarkers(line: string): string {
   
   // 3. 提取提醒标记 (⏰开头)
   // 匹配: ⏰09:00, ⏰提前10分钟, ⏰30 minutes before end
-  const reminderPattern = /⏰(?:\d{2}:\d{2}(?::\d{2})?|[^\s]+(?:\s+[^\s]+)*)/;
+  // 提醒标记通常是一段文字，直到下一个标记或行尾
+  // 停止条件：遇到 🔁、截止到、剩余、until
+  const reminderPattern = /⏰(?:\d{2}:\d{2}(?::\d{2})?|(?:提前|before|after)?[^\s]*(?:\s+(?!🔁|截止到|剩余|until)[^\s]+)*)/;
   const reminderMatch = line.match(reminderPattern);
   if (reminderMatch) {
-    markers.push(reminderMatch[0]);
+    const trimmed = reminderMatch[0].trim();
+    // 排除以 end 结尾的匹配（可能是相对结束提醒的一部分）
+    if (trimmed && !trimmed.match(/⏰\s*$/)) {
+      markers.push(trimmed);
+    }
   }
   
   // 4. 提取重复标记 (🔁开头)
-  // 匹配: 🔁每周, 🔁daily, 🔁每月, 🔁每天
-  const repeatPattern = /🔁[^\s]+/;
+  // 匹配: 🔁每周, 🔁daily, 🔁每月, 🔁每天, 🔁每周一三六, 🔁每月1,15日
+  // 重复标记在遇到结束条件标记前停止
+  const repeatPattern = /🔁(?:[^\s]+(?:\s+(?!截止到|剩余|until|remaining)[^\s]+)*)/;
   const repeatMatch = line.match(repeatPattern);
   if (repeatMatch) {
-    markers.push(repeatMatch[0]);
+    markers.push(repeatMatch[0].trim());
   }
   
   // 5. 提取结束条件标记
