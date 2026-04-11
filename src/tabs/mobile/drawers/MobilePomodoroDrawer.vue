@@ -160,8 +160,8 @@ const handleSkipBreak = () => {
   display: flex;
   flex-direction: column;
   max-height: 85vh;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
 }
 
 .drawer-handle {
@@ -181,8 +181,11 @@ const handleSkipBreak = () => {
 
 .drawer-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 0 16px 16px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 // Fade transition

@@ -215,7 +215,8 @@ const close = () => {
 .timer-starter {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background: var(--b3-theme-background);
 }
 
@@ -235,6 +236,7 @@ const close = () => {
 .drawer-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
 }
 
@@ -452,6 +454,7 @@ const close = () => {
   justify-content: flex-end;
   gap: 12px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
 }
 
 .cancel-btn,

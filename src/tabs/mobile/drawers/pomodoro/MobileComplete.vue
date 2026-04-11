@@ -206,7 +206,8 @@ async function handleDiscard() {
 .mobile-complete {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background: var(--b3-theme-background);
 }
 
@@ -391,6 +392,7 @@ async function handleDiscard() {
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--b3-border-color);
   background: var(--b3-theme-background);
+  flex-shrink: 0;
 }
 
 .discard-btn {

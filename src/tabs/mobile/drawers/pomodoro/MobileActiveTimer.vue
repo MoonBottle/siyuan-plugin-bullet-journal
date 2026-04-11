@@ -259,9 +259,12 @@ const handleConfirm = () => {
 .mobile-active-timer {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   align-items: center;
   gap: 20px;
   padding: 16px;
+  overflow-y: auto;
 }
 
 // Timer Display
