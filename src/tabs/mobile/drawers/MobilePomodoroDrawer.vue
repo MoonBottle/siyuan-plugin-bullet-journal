@@ -11,7 +11,12 @@
 
             <!-- Dynamic Content -->
             <div class="drawer-content">
-              <Component :is="currentComponent" />
+              <MobileComplete
+                v-if="showComplete && pendingCompletion"
+                :pending="pendingCompletion"
+                @close="showComplete = false"
+              />
+              <component :is="currentComponent" v-else />
             </div>
           </div>
         </Transition>
@@ -21,11 +26,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePomodoroStore } from '@/stores';
+import { eventBus, Events } from '@/utils/eventBus';
+import type { PendingPomodoroCompletion } from '@/types/models';
 import MobileTimerStarter from './pomodoro/MobileTimerStarter.vue';
 import MobileActiveTimer from './pomodoro/MobileActiveTimer.vue';
 import MobileBreakTimer from './pomodoro/MobileBreakTimer.vue';
+import MobileComplete from './pomodoro/MobileComplete.vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -36,6 +44,27 @@ const emit = defineEmits<{
 }>();
 
 const pomodoroStore = usePomodoroStore();
+
+// 完成状态管理
+const showComplete = ref(false);
+const pendingCompletion = ref<PendingPomodoroCompletion | null>(null);
+
+// 监听专注完成事件
+let unsubscribeCompletion: (() => void) | null = null;
+
+onMounted(() => {
+  unsubscribeCompletion = eventBus.on(
+    Events.POMODORO_PENDING_COMPLETION,
+    (pending: PendingPomodoroCompletion) => {
+      pendingCompletion.value = pending;
+      showComplete.value = true;
+    }
+  );
+});
+
+onUnmounted(() => {
+  if (unsubscribeCompletion) unsubscribeCompletion();
+});
 
 // Dynamic component based on pomodoro state
 const currentComponent = computed(() => {
