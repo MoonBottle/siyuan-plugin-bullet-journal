@@ -152,7 +152,7 @@ function close() {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 16px;
+  padding: 0 16px 16px;
   min-height: 0;
 }
 

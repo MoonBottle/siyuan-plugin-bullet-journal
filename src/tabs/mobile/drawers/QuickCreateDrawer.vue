@@ -1133,8 +1133,10 @@ const close = () => {
 .time-separator {
   color: var(--b3-theme-on-surface);
   opacity: 0.5;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 500;
+  align-self: center;
+  padding-bottom: 20px;
 }
 
 // Priority Selector
