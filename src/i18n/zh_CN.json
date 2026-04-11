@@ -758,6 +758,19 @@
       "pluginSettings": "插件设置",
       "version": "版本"
     },
+    "time": {
+      "allDay": "全天",
+      "customTime": "自定义时间",
+      "startTime": "开始时间",
+      "endTime": "结束时间",
+      "selectTime": "选择时间",
+      "selectStartTime": "选择开始时间",
+      "selectEndTime": "选择结束时间",
+      "timeSetting": "时间设置",
+      "hour": "时",
+      "minute": "分",
+      "quickTime": "快捷时间"
+    },
     "detail": {
       "project": "项目",
       "task": "任务",

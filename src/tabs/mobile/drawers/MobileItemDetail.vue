@@ -270,6 +270,15 @@
       </Transition>
     </Teleport>
     
+    <!-- Time Setting Drawer -->
+    <TimeSettingDrawer
+      v-model="showTimeSettingDrawer"
+      :is-all-day="!props.item?.startDateTime && !props.item?.endDateTime"
+      :start-time="props.item?.startDateTime ? props.item.startDateTime.split(' ')[1] : undefined"
+      :end-time="props.item?.endDateTime ? props.item.endDateTime.split(' ')[1] : undefined"
+      @save="onTimeSettingSave"
+    />
+
     <!-- Content Edit Drawer -->
     <Transition name="fade">
       <div v-if="showContentEdit" class="content-edit-overlay" @click="cancelEditContent">
@@ -326,6 +335,7 @@ import MobileDatePicker from '@/components/mobile/MobileDatePicker.vue';
 import { updateBlockDateTime, updateBlockPriority, updateBlockContent } from '@/utils/fileUtils';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
 import MobileConfirmDrawer from './MobileConfirmDrawer.vue';
+import { TimeSettingDrawer } from '@/components/time-picker';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -354,6 +364,7 @@ const editingContent = ref('');
 // Mobile pickers
 const showPriorityPicker = ref(false);
 const showDatePicker = ref(false);
+const showTimeSettingDrawer = ref(false);
 
 // Confirm drawers
 const showAbandonConfirm = ref(false);
@@ -669,7 +680,7 @@ const handleEditDate = () => {
 };
 
 const handleEditTime = () => {
-  showDatePicker.value = true;
+  showTimeSettingDrawer.value = true;
 };
 
 const onDateChange = async (newDate: string) => {
@@ -712,6 +723,29 @@ const onPriorityChange = async (newPriority: PriorityLevel | undefined) => {
     }
   } catch (error) {
     console.error('[MobileItemDetail] Failed to update priority:', error);
+  }
+};
+
+// 处理时间设置保存
+const onTimeSettingSave = async (payload: { isAllDay: boolean; startTime?: string; endTime?: string }) => {
+  if (!props.item) return;
+  
+  try {
+    const success = await updateBlockDateTime(
+      props.item.blockId,
+      props.item.date,
+      payload.startTime,
+      payload.endTime,
+      payload.isAllDay,
+      props.item.date, // original date to replace
+      props.item.siblingItems
+    );
+    
+    if (success) {
+      emit('refresh');
+    }
+  } catch (error) {
+    console.error('[MobileItemDetail] Failed to update time:', error);
   }
 };
 

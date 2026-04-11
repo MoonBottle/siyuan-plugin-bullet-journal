@@ -718,6 +718,19 @@
       "pluginSettings": "Plugin Settings",
       "version": "Version"
     },
+    "time": {
+      "allDay": "All Day",
+      "customTime": "Custom Time",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "selectTime": "Select Time",
+      "selectStartTime": "Select Start Time",
+      "selectEndTime": "Select End Time",
+      "timeSetting": "Time Setting",
+      "hour": "Hour",
+      "minute": "Minute",
+      "quickTime": "Quick Time"
+    },
     "detail": {
       "project": "Project",
       "task": "Task",

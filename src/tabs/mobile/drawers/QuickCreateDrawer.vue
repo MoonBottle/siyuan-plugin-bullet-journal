@@ -63,18 +63,14 @@
                 </button>
               </div>
               
-              <!-- Time Selection -->
+              <!-- Time Selection - 使用新的 TimeRangeSelector -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.timeRange') || '时间范围' }}</label>
-                <div class="time-selector">
-                  <button class="time-btn" :class="{ empty: !itemForm.startTime }" @click="openTimePicker('start')">
-                    <span class="time-label">{{ itemForm.startTime || '开始' }}</span>
-                  </button>
-                  <span class="time-separator">~</span>
-                  <button class="time-btn" :class="{ empty: !itemForm.endTime }" @click="openTimePicker('end')">
-                    <span class="time-label">{{ itemForm.endTime || '结束' }}</span>
-                  </button>
-                </div>
+                <TimeRangeSelector
+                  v-model:is-all-day="itemForm.isAllDay"
+                  v-model:start-time="itemForm.startTime"
+                  v-model:end-time="itemForm.endTime"
+                />
               </div>
               
               <!-- Priority -->
@@ -313,97 +309,7 @@
       </div>
     </Transition>
     
-    <!-- Time Picker Sheet -->
-    <Transition name="fade">
-      <div v-if="showTimePicker" class="sheet-overlay" @click="closeTimePicker">
-        <Transition name="slide-up">
-          <div v-if="showTimePicker" class="time-picker-sheet" @click.stop>
-            <div class="sheet-handle" @click="closeTimePicker">
-              <div class="handle-bar"></div>
-            </div>
-            <div class="sheet-header">
-              <h4 class="sheet-title">
-                {{ timePickerType === 'start' ? (t('mobile.selectStartTime') || '选择开始时间') : (t('mobile.selectEndTime') || '选择结束时间') }}
-              </h4>
-            </div>
-            
-            <!-- Time Display -->
-            <div class="time-display">
-              <div class="time-value">{{ tempHour.padStart(2, '0') }}:{{ tempMinute.padStart(2, '0') }}</div>
-            </div>
-            
-            <!-- Quick Time Buttons -->
-            <div class="quick-times">
-              <button
-                v-for="time in quickTimes"
-                :key="time"
-                class="quick-time-btn"
-                :class="{ selected: tempHour === time.split(':')[0] && tempMinute === time.split(':')[1] }"
-                @click="selectQuickTime(time)"
-              >
-                {{ time }}
-              </button>
-            </div>
-            
-            <!-- Time Wheels -->
-            <div class="time-wheels">
-              <div class="time-wheel">
-                <div class="wheel-label">{{ t('mobile.hour') || '时' }}</div>
-                <div 
-                  class="wheel-container" 
-                  ref="hourWheel" 
-                  @scroll="handleWheelScroll('hour')"
-                >
-                  <div class="wheel-padding"></div>
-                  <div 
-                    v-for="h in 24" 
-                    :key="h-1" 
-                    class="wheel-item"
-                    :class="{ selected: tempHour === String(h-1).padStart(2, '0') }"
-                    @click="selectHour(String(h-1))"
-                  >
-                    {{ String(h-1).padStart(2, '0') }}
-                  </div>
-                  <div class="wheel-padding"></div>
-                </div>
-                <div class="wheel-indicator"></div>
-              </div>
-              <div class="time-separator">:</div>
-              <div class="time-wheel">
-                <div class="wheel-label">{{ t('mobile.minute') || '分' }}</div>
-                <div 
-                  class="wheel-container" 
-                  ref="minuteWheel"
-                  @scroll="handleWheelScroll('minute')"
-                >
-                  <div class="wheel-padding"></div>
-                  <div 
-                    v-for="m in minuteOptions" 
-                    :key="m" 
-                    class="wheel-item"
-                    :class="{ selected: tempMinute === m }"
-                    @click="selectMinute(m)"
-                  >
-                    {{ m }}
-                  </div>
-                  <div class="wheel-padding"></div>
-                </div>
-                <div class="wheel-indicator"></div>
-              </div>
-            </div>
-            
-            <div class="sheet-footer">
-              <button class="sheet-cancel-btn" @click="closeTimePicker">
-                {{ t('common.cancel') || '取消' }}
-              </button>
-              <button class="sheet-confirm-btn" @click="confirmTime">
-                {{ t('common.confirm') || '确认' }}
-              </button>
-            </div>
-          </div>
-        </Transition>
-      </div>
-    </Transition>
+
 
     <!-- Reminder Drawer -->
     <MobileReminderDrawer
@@ -433,6 +339,7 @@ import { formatReminderDisplay } from '@/utils/displayUtils';
 import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
 import MobileReminderDrawer from './MobileReminderDrawer.vue';
 import MobileRecurringDrawer from './MobileRecurringDrawer.vue';
+import { TimeRangeSelector } from '@/components/time-picker';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -457,7 +364,6 @@ const tempTaskInput = ref(''); // For task sheet
 const showProjectSheet = ref(false);
 const showTaskSheet = ref(false);
 const showDatePicker = ref(false);
-const showTimePicker = ref(false);
 
 // Task sheet search
 const taskSearchQuery = ref('');
@@ -466,17 +372,13 @@ const taskSearchQuery = ref('');
 const calendarDate = ref(dayjs());
 const tempSelectedDate = ref('');
 
-// Time picker state
-const timePickerType = ref<'start' | 'end'>('start');
-const tempHour = ref('09');
-const tempMinute = ref('00');
-const hourWheel = ref<HTMLElement | null>(null);
-const minuteWheel = ref<HTMLElement | null>(null);
 
-// Item form
+
+// Item form - 新增 isAllDay 字段
 const itemForm = ref({
   content: '',
   date: dayjs().format('YYYY-MM-DD'),
+  isAllDay: true, // 默认全天
   startTime: '',
   endTime: '',
   priority: undefined as PriorityLevel | undefined,
@@ -538,8 +440,6 @@ const priorityOptions = [
 ];
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-const quickTimes = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
-const minuteOptions = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
 
 // Computed
 const projects = computed(() => projectStore.projects);
@@ -598,7 +498,12 @@ const calendarDays = computed(() => {
 const canSubmit = computed(() => {
   if (!selectedProjectId.value) return false;
   if (!taskInput.value.trim()) return false;
-  return itemForm.value.content.trim().length > 0;
+  if (!itemForm.value.content.trim().length) return false;
+  // 自定义时间模式下需要填写完整的时间
+  if (!itemForm.value.isAllDay) {
+    if (!itemForm.value.startTime || !itemForm.value.endTime) return false;
+  }
+  return true;
 });
 
 // Watch for drawer open to reset/init form
@@ -626,6 +531,7 @@ const initForm = () => {
   itemForm.value = {
     content: '',
     date: dayjs().format('YYYY-MM-DD'),
+    isAllDay: true, // 重置为全天
     startTime: '',
     endTime: '',
     priority: undefined,
@@ -727,131 +633,7 @@ const confirmDate = () => {
   closeDatePicker();
 };
 
-// Time picker
-const openTimePicker = (type: 'start' | 'end') => {
-  timePickerType.value = type;
-  const currentTime = type === 'start' ? itemForm.value.startTime : itemForm.value.endTime;
-  if (currentTime) {
-    const [h, m] = currentTime.split(':');
-    tempHour.value = h;
-    tempMinute.value = m;
-  } else {
-    tempHour.value = '09';
-    tempMinute.value = '00';
-  }
-  showTimePicker.value = true;
-  // Scroll to selected items after opening
-  nextTick(() => {
-    setTimeout(() => {
-      const hourEl = hourWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
-      const minuteEl = minuteWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
-      hourEl?.scrollIntoView({ behavior: 'auto', block: 'center' });
-      minuteEl?.scrollIntoView({ behavior: 'auto', block: 'center' });
-    }, 50);
-  });
-};
-
-const closeTimePicker = () => {
-  showTimePicker.value = false;
-};
-
-const selectHour = (h: string) => {
-  tempHour.value = h.padStart(2, '0');
-  // Scroll to selected item
-  nextTick(() => {
-    const container = hourWheel.value;
-    if (container) {
-      const selectedEl = container.querySelector('.wheel-item.selected') as HTMLElement;
-      if (selectedEl) {
-        selectedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  });
-};
-
-const selectMinute = (m: string) => {
-  tempMinute.value = m;
-  // Scroll to selected item
-  nextTick(() => {
-    const container = minuteWheel.value;
-    if (container) {
-      const selectedEl = container.querySelector('.wheel-item.selected') as HTMLElement;
-      if (selectedEl) {
-        selectedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  });
-};
-
-// Handle wheel scroll to auto-select center item
-let hourScrollTimeout: ReturnType<typeof setTimeout> | null = null;
-let minuteScrollTimeout: ReturnType<typeof setTimeout> | null = null;
-
-const handleWheelScroll = (wheel: 'hour' | 'minute') => {
-  const timeout = wheel === 'hour' ? hourScrollTimeout : minuteScrollTimeout;
-  if (timeout) clearTimeout(timeout);
-  
-  const newTimeout = setTimeout(() => {
-    const container = wheel === 'hour' ? hourWheel.value : minuteWheel.value;
-    if (!container) return;
-    
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = containerRect.top + containerRect.height / 2;
-    
-    const items = container.querySelectorAll('.wheel-item');
-    let closestItem: Element | null = null;
-    let closestDistance = Infinity;
-    
-    items.forEach(item => {
-      const itemRect = item.getBoundingClientRect();
-      const itemCenter = itemRect.top + itemRect.height / 2;
-      const distance = Math.abs(containerCenter - itemCenter);
-      
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestItem = item;
-      }
-    });
-    
-    if (closestItem) {
-      const value = closestItem.textContent?.trim() || '';
-      if (wheel === 'hour') {
-        tempHour.value = value.padStart(2, '0');
-      } else {
-        tempMinute.value = value;
-      }
-    }
-  }, 50); // Short delay for scroll inertia to settle
-  
-  if (wheel === 'hour') {
-    hourScrollTimeout = newTimeout;
-  } else {
-    minuteScrollTimeout = newTimeout;
-  }
-};
-
-const selectQuickTime = (time: string) => {
-  const [h, m] = time.split(':');
-  tempHour.value = h;
-  tempMinute.value = m;
-  // Scroll wheels to selected time
-  nextTick(() => {
-    const hourEl = hourWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
-    const minuteEl = minuteWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
-    hourEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    minuteEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
-};
-
-const confirmTime = () => {
-  const time = `${tempHour.value.padStart(2, '0')}:${tempMinute.value.padStart(2, '0')}`;
-  if (timePickerType.value === 'start') {
-    itemForm.value.startTime = time;
-  } else {
-    itemForm.value.endTime = time;
-  }
-  closeTimePicker();
-};
+// Time picker - 已迁移到 TimeRangeSelector 组件
 
 // Submit
 const handleSubmit = async () => {
@@ -1205,49 +987,11 @@ const close = () => {
   color: var(--b3-theme-on-background);
 }
 
-// Time Selector
-.time-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.time-btn {
-  flex: 1;
-  padding: 14px 16px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 12px;
-  background: var(--b3-theme-surface);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    border-color: var(--b3-theme-primary);
+// Time Selector - 使用 TimeRangeSelector 组件的样式
+.time-range-selector {
+  :deep(.time-type-radio) {
+    margin-bottom: 8px;
   }
-  
-  &:active {
-    transform: scale(0.98);
-  }
-  
-  &.empty .time-label {
-    color: var(--b3-theme-on-surface);
-    opacity: 0.5;
-  }
-}
-
-.time-label {
-  font-size: 15px;
-  color: var(--b3-theme-on-background);
-  font-weight: 500;
-}
-
-.time-separator {
-  color: var(--b3-theme-on-surface);
-  opacity: 0.5;
-  font-size: 20px;
-  font-weight: 500;
-  align-self: center;
-  margin-top: 28px; // Align with wheel items center
 }
 
 // Priority Selector
@@ -1738,148 +1482,7 @@ const close = () => {
   }
 }
 
-// Time Picker Styles
-.time-display {
-  text-align: center;
-  padding: 16px 0;
-}
-
-.time-value {
-  font-size: 48px;
-  font-weight: 300;
-  color: var(--b3-theme-on-background);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 2px;
-}
-
-.quick-times {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 16px 16px;
-  justify-content: center;
-}
-
-.quick-time-btn {
-  padding: 8px 16px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 20px;
-  background: var(--b3-theme-surface);
-  font-size: 14px;
-  color: var(--b3-theme-on-surface);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    border-color: var(--b3-theme-primary);
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  &.selected {
-    background: var(--b3-theme-primary);
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-  }
-}
-
-.time-wheels {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 0 16px 16px;
-  height: 200px;
-}
-
-.time-wheel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-}
-
-.wheel-label {
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.7;
-  font-weight: 500;
-}
-
-.wheel-container {
-  height: 140px;
-  width: 80px;
-  overflow-y: auto;
-  padding: 0 4px;
-  display: flex;
-  flex-direction: column;
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.wheel-padding {
-  height: 50px;
-  flex-shrink: 0;
-}
-
-.wheel-item {
-  height: 40px;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--b3-theme-on-surface);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  scroll-snap-align: center;
-  opacity: 0.5;
-  
-  &:hover {
-    background: var(--b3-theme-surface);
-    opacity: 0.7;
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  &.selected {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary);
-    opacity: 1;
-    transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(var(--b3-theme-primary-rgb), 0.3);
-  }
-}
-
-.wheel-indicator {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 40px;
-  border: 2px solid var(--b3-theme-primary);
-  border-radius: 8px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.time-wheel:hover .wheel-indicator {
-  opacity: 0.3;
-}
+// Time Picker Styles - 已迁移到 TimePickerSheet 组件
 
 // Transitions
 .fade-enter-active,
