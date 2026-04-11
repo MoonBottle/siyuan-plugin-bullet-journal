@@ -423,7 +423,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import { createTask, createItem } from '@/utils/quickCreate';
@@ -834,6 +834,13 @@ const selectQuickTime = (time: string) => {
   const [h, m] = time.split(':');
   tempHour.value = h;
   tempMinute.value = m;
+  // Scroll wheels to selected time
+  nextTick(() => {
+    const hourEl = hourWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
+    const minuteEl = minuteWheel.value?.querySelector('.wheel-item.selected') as HTMLElement;
+    hourEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    minuteEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 };
 
 const confirmTime = () => {
