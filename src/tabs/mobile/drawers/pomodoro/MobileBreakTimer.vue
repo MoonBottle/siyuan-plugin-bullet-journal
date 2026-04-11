@@ -1,36 +1,28 @@
 <template>
   <div class="mobile-break-timer">
-    <!-- Breathing Circle with Countdown -->
-    <div class="timer-display">
-      <div class="breathing-circle">
-        <!-- Progress Ring SVG -->
-        <svg class="progress-ring" viewBox="0 0 120 120">
-          <circle
-            class="progress-ring-bg"
-            cx="60"
-            cy="60"
-            :r="radius"
-          />
-          <circle
-            class="progress-ring-fill"
-            cx="60"
-            cy="60"
-            :r="radius"
-            :stroke-dasharray="circumference"
-            :stroke-dashoffset="circumference - (progress / 100) * circumference"
-          />
-        </svg>
+    <!-- 顶部标题 -->
+    <div class="break-header">
+      <h2 class="break-title">{{ t('settings').pomodoro.breakTitle || '休息时间' }}</h2>
+      <p class="break-subtitle">{{ t('settings').pomodoro.breakSubtitle || '放松身心，为下一轮专注做准备' }}</p>
+    </div>
+
+    <!-- 呼吸圆圈与倒计时 -->
+    <div class="timer-section">
+      <div class="breathing-circle" :style="circleStyle">
         <div class="circle-inner">
           <div class="time-remaining">{{ formattedTime }}</div>
+          <div class="time-label">{{ t('common').minutes }}</div>
         </div>
       </div>
     </div>
 
-    <!-- Hint Text -->
-    <div class="hint-text">{{ t('settings').pomodoro.breakHint }}</div>
+    <!-- 提示文字 -->
+    <div class="hint-section">
+      <p class="hint-text">{{ t('settings').pomodoro.breakHint }}</p>
+    </div>
 
-    <!-- Skip Button -->
-    <div class="action-footer">
+    <!-- 跳过按钮 -->
+    <div class="action-section">
       <button class="skip-btn" @click="skipBreak">
         <svg class="btn-icon" viewBox="0 0 24 24">
           <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" fill="currentColor"/>
@@ -61,17 +53,28 @@ const breakTotalSeconds = computed(() => pomodoroStore.breakTotalSeconds);
 // Processing lock to prevent double clicks
 const isProcessing = ref(false);
 
-// Progress ring calculation
+// Progress percentage
 const progress = computed(() => {
   const total = breakTotalSeconds.value;
   const remaining = breakRemainingSeconds.value;
   if (total <= 0) return 0;
-  return ((total - remaining) / total) * 100;
+  return remaining / total;
 });
 
-// SVG circle properties
-const radius = 54;
-const circumference = 2 * Math.PI * radius;
+// Circle scale based on breathing animation
+const circleScale = computed(() => {
+  // Create a breathing effect based on time
+  const seconds = breakRemainingSeconds.value;
+  const breatheCycle = 4; // 4 second cycle
+  const phase = (seconds % breatheCycle) / breatheCycle;
+  // Scale between 0.95 and 1.05
+  return 0.95 + Math.sin(phase * Math.PI * 2) * 0.05;
+});
+
+const circleStyle = computed(() => ({
+  transform: `scale(${circleScale.value})`,
+  opacity: 0.8 + (1 - circleScale.value) * 2,
+}));
 
 // Formatted time MM:SS
 const formattedTime = computed(() => {
@@ -99,55 +102,59 @@ const skipBreak = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 20px 16px;
+  justify-content: space-between;
+  min-height: 100%;
+  padding: 24px 16px 32px;
+  background: var(--b3-theme-background);
 }
 
-// Timer Display with Breathing Animation
-.timer-display {
+// 顶部标题
+.break-header {
+  text-align: center;
+  padding-top: 20px;
+}
+
+.break-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+  margin: 0 0 8px;
+}
+
+.break-subtitle {
+  font-size: 14px;
+  color: var(--b3-theme-on-surface);
+  margin: 0;
+  opacity: 0.8;
+}
+
+// 计时器区域
+.timer-section {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 40px 0;
 }
 
 .breathing-circle {
-  width: 120px;
-  height: 120px;
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
-  background: var(--b3-theme-success);
+  background: linear-gradient(135deg, var(--b3-theme-success) 0%, #66BB6A 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: breathe 3s ease-in-out infinite;
-  position: relative;
-}
-
-.progress-ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.progress-ring-bg {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.2);
-  stroke-width: 4;
-}
-
-.progress-ring-fill {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 4;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.5s ease;
+  box-shadow: 
+    0 0 60px rgba(76, 175, 80, 0.3),
+    0 0 100px rgba(76, 175, 80, 0.1),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+  animation: breathe-glow 4s ease-in-out infinite;
 }
 
 .circle-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
 }
 
 .time-remaining {
@@ -157,33 +164,49 @@ const skipBreak = async () => {
   font-variant-numeric: tabular-nums;
   letter-spacing: 2px;
   line-height: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-// Breathing Animation
-@keyframes breathe {
-  0%, 100% { 
-    transform: scale(1); 
-    opacity: 0.8; 
+.time-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+// 呼吸发光动画
+@keyframes breathe-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 60px rgba(76, 175, 80, 0.3),
+      0 0 100px rgba(76, 175, 80, 0.1),
+      inset 0 0 20px rgba(255, 255, 255, 0.1);
   }
-  50% { 
-    transform: scale(1.1); 
-    opacity: 1; 
+  50% {
+    box-shadow: 
+      0 0 80px rgba(76, 175, 80, 0.5),
+      0 0 140px rgba(76, 175, 80, 0.2),
+      inset 0 0 30px rgba(255, 255, 255, 0.2);
   }
 }
 
-// Hint Text
-.hint-text {
-  font-size: 16px;
-  color: var(--b3-theme-on-surface);
+// 提示区域
+.hint-section {
   text-align: center;
-  font-weight: 400;
+  padding: 0 24px;
 }
 
-// Action Footer
-.action-footer {
-  display: flex;
-  justify-content: center;
+.hint-text {
+  font-size: 15px;
+  color: var(--b3-theme-on-surface);
+  line-height: 1.6;
+  margin: 0;
+}
+
+// 操作区域
+.action-section {
+  padding-top: 32px;
 }
 
 .skip-btn {
@@ -197,10 +220,9 @@ const skipBreak = async () => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: none;
+  border: 1px solid var(--b3-border-color);
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
-  border: 1px solid var(--b3-border-color);
 
   &:hover {
     background: var(--b3-theme-surface-lighter);

@@ -1,126 +1,88 @@
 <template>
   <div class="mobile-complete">
-    <!-- 状态1: 补填说明 -->
-    <template v-if="!showRestOptions">
-      <!-- 时长不足警告 -->
-      <div v-if="isDurationTooShort" class="duration-warning">
-        <span class="warning-icon">⚠️</span>
-        <span class="warning-text">{{ durationWarningMessage }}</span>
-      </div>
+    <!-- 时长不足警告 -->
+    <div v-if="isDurationTooShort" class="duration-warning">
+      <svg class="warning-icon" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z" fill="currentColor"/>
+      </svg>
+      <span class="warning-text">{{ durationWarningMessage }}</span>
+    </div>
 
-      <!-- 内容区域 -->
-      <div class="complete-content">
-        <!-- 项目/任务/事项信息卡片 -->
-        <div class="info-cards">
-          <!-- 项目卡片 -->
-          <div v-if="pending?.projectName" class="info-card">
-            <div class="info-card-header">
-              <span class="info-card-label">{{ t('todo').project }}</span>
-            </div>
-            <div class="info-card-body">
-              <span class="info-card-value">{{ pending.projectName }}</span>
-            </div>
+    <!-- 内容区域 -->
+    <div class="complete-content">
+      <!-- 项目/任务/事项信息卡片 -->
+      <div class="info-cards">
+        <!-- 项目卡片 -->
+        <div v-if="pending?.projectName" class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-label">{{ t('todo').project }}</span>
           </div>
-
-          <!-- 任务卡片 -->
-          <div v-if="pending?.taskName" class="info-card">
-            <div class="info-card-header">
-              <span class="info-card-label">{{ t('todo').task }}</span>
-              <span v-if="pending.taskLevel" class="task-level-badge" :class="'level-' + pending.taskLevel.toLowerCase()">
-                {{ pending.taskLevel }}
-              </span>
-            </div>
-            <div class="info-card-body">
-              <span class="info-card-value">{{ pending.taskName }}</span>
-            </div>
-          </div>
-
-          <!-- 事项卡片 -->
-          <div class="info-card">
-            <div class="info-card-header">
-              <span class="info-card-label">{{ t('todo').item }}</span>
-            </div>
-            <div class="info-card-body">
-              <span class="info-card-value">{{ pending?.itemContent }}</span>
-            </div>
+          <div class="info-card-body">
+            <span class="info-card-value">{{ pending.projectName }}</span>
           </div>
         </div>
 
-        <!-- 时间信息 -->
-        <div class="time-info-section">
-          <div class="time-info-row">
-            <span class="time-info-label">{{ t('pomodoroComplete').startTime }}</span>
-            <span class="time-info-value">{{ formattedStartTime }}</span>
+        <!-- 任务卡片 -->
+        <div v-if="pending?.taskName" class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-label">{{ t('todo').task }}</span>
+            <span v-if="pending.taskLevel" class="task-level-badge" :class="'level-' + pending.taskLevel.toLowerCase()">
+              {{ pending.taskLevel }}
+            </span>
           </div>
-          <div class="time-info-row">
-            <span class="time-info-label">{{ t('pomodoroComplete').endTime }}</span>
-            <span class="time-info-value">{{ formattedEndTime }}</span>
-          </div>
-          <div class="time-info-row">
-            <span class="time-info-label">{{ t('pomodoroComplete').focusDuration }}</span>
-            <span class="time-info-value">{{ t('pomodoroComplete').durationMinutes.replace('{minutes}', String(pending?.durationMinutes || 0)) }}</span>
+          <div class="info-card-body">
+            <span class="info-card-value">{{ pending.taskName }}</span>
           </div>
         </div>
 
-        <!-- 说明输入 -->
-        <div class="description-section">
-          <label class="description-label">{{ t('pomodoroComplete').descriptionLabel }}</label>
-          <textarea
-            v-model="description"
-            class="description-textarea"
-            :placeholder="t('pomodoroComplete').descriptionPlaceholder"
-            rows="4"
-          />
-        </div>
-      </div>
-
-      <!-- 底部按钮 -->
-      <div class="complete-footer">
-        <button class="discard-btn" @click="handleDiscard">
-          {{ t('pomodoroComplete').discardRecord }}
-        </button>
-        <button class="save-btn" @click="handleSave">
-          {{ isDurationTooShort ? t('pomodoroComplete').confirmRecord : t('pomodoroComplete').save }}
-        </button>
-      </div>
-    </template>
-
-    <!-- 状态2: 休息选项 -->
-    <template v-else>
-      <div class="rest-content">
-        <!-- 专注完成提示 -->
-        <div class="complete-hint">
-          <div class="complete-icon">🎉</div>
-          <p class="complete-text">{{ t('pomodoroComplete').focusComplete }}</p>
-        </div>
-
-        <!-- 休息时长选择 -->
-        <div class="break-section">
-          <p class="break-hint">{{ t('settings').pomodoro.breakHint }}</p>
-          <div class="break-options">
-            <button
-              v-for="duration in breakDurations"
-              :key="duration"
-              class="break-btn"
-              :class="{ active: selectedBreakDuration === duration }"
-              @click="selectBreakDuration(duration)"
-            >
-              {{ duration }}{{ t('common').minutes }}
-            </button>
+        <!-- 事项卡片 -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-label">{{ t('todo').item }}</span>
+          </div>
+          <div class="info-card-body">
+            <span class="info-card-value">{{ pending?.itemContent }}</span>
           </div>
         </div>
       </div>
 
-      <!-- 底部按钮 -->
-      <div class="complete-footer">
-        <button class="skip-btn" @click="handleClose">
-          {{ t('settings').pomodoro.skipBreak }}
-        </button>
-        <button class="start-break-btn" @click="handleStartBreak">
-          {{ t('settings').pomodoro.startBreak }}
-        </button>
+      <!-- 时间信息 -->
+      <div class="time-info-section">
+        <div class="time-info-row">
+          <span class="time-info-label">{{ t('pomodoroComplete').startTime }}</span>
+          <span class="time-info-value">{{ formattedStartTime }}</span>
+        </div>
+        <div class="time-info-row">
+          <span class="time-info-label">{{ t('pomodoroComplete').endTime }}</span>
+          <span class="time-info-value">{{ formattedEndTime }}</span>
+        </div>
+        <div class="time-info-row">
+          <span class="time-info-label">{{ t('pomodoroComplete').focusDuration }}</span>
+          <span class="time-info-value">{{ t('pomodoroComplete').durationMinutes.replace('{minutes}', String(pending?.durationMinutes || 0)) }}</span>
+        </div>
       </div>
-    </template>
+
+      <!-- 说明输入 -->
+      <div class="description-section">
+        <label class="description-label">{{ t('pomodoroComplete').descriptionLabel }}</label>
+        <textarea
+          v-model="description"
+          class="description-textarea"
+          :placeholder="t('pomodoroComplete').descriptionPlaceholder"
+          rows="4"
+        />
+      </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="complete-footer">
+      <button class="discard-btn" @click="handleDiscard">
+        {{ t('pomodoroComplete').discardRecord }}
+      </button>
+      <button class="save-btn" @click="handleSave">
+        {{ isDurationTooShort ? t('pomodoroComplete').confirmRecord : t('pomodoroComplete').save }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -149,33 +111,14 @@ const plugin = usePlugin() as any;
 
 // 状态
 const description = ref('');
-const showRestOptions = ref(false);
-const selectedBreakDuration = ref(5);
 const skipAutoSave = ref(false);
 const discarded = ref(false);
-
-// 从设置读取休息时长预设
-const breakDurations = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.breakDurationPresets ?? [5, 10, 15];
-});
-
-// 从设置读取默认休息时长
-const defaultBreakDuration = computed(() => {
-  const settings = plugin?.getSettings?.();
-  return settings?.pomodoro?.defaultBreakDuration ?? 5;
-});
 
 // 从设置读取最小专注时长
 const minFocusMinutes = computed(() => {
   const settings = plugin?.getSettings?.();
   return settings?.pomodoro?.minFocusMinutes ?? defaultPomodoroSettings.minFocusMinutes ?? 5;
 });
-
-// 默认选中设置的默认值
-watch(defaultBreakDuration, (newVal) => {
-  selectedBreakDuration.value = newVal;
-}, { immediate: true });
 
 // 专注时长是否过短
 const isDurationTooShort = computed(() => {
@@ -227,7 +170,7 @@ onUnmounted(async () => {
     return;
   }
   // 正常情况：未保存且专注时长足够，自动保存
-  if (!showRestOptions.value && props.pending && !isDurationTooShort.value) {
+  if (props.pending && !isDurationTooShort.value) {
     await pomodoroStore.savePomodoroRecordFromPending(
       plugin,
       props.pending,
@@ -245,7 +188,6 @@ async function handleSave() {
     description.value
   );
   if (success) {
-    showRestOptions.value = true;
     emit('save');
   }
 }
@@ -256,22 +198,6 @@ async function handleDiscard() {
   if (plugin) {
     await removePendingCompletion(plugin);
   }
-  emit('close');
-}
-
-// 选择休息时长
-function selectBreakDuration(minutes: number) {
-  selectedBreakDuration.value = minutes;
-}
-
-// 开始休息
-function handleStartBreak() {
-  pomodoroStore.startBreak(selectedBreakDuration.value, plugin);
-  emit('close');
-}
-
-// 关闭/跳过休息
-function handleClose() {
   emit('close');
 }
 </script>
@@ -296,7 +222,9 @@ function handleClose() {
   border-radius: 12px;
 
   .warning-icon {
-    font-size: 16px;
+    width: 18px;
+    height: 18px;
+    color: #FF9800;
     flex-shrink: 0;
   }
 
@@ -304,6 +232,7 @@ function handleClose() {
     font-size: 13px;
     color: #FF9800;
     font-weight: 500;
+    line-height: 1.4;
   }
 }
 
@@ -454,75 +383,6 @@ function handleClose() {
   }
 }
 
-// 休息内容区域
-.rest-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 24px 16px;
-}
-
-.complete-hint {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.complete-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.complete-text {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-  margin: 0;
-}
-
-// 休息选项
-.break-section {
-  width: 100%;
-  text-align: center;
-}
-
-.break-hint {
-  font-size: 14px;
-  color: var(--b3-theme-on-surface);
-  margin-bottom: 20px;
-}
-
-.break-options {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.break-btn {
-  padding: 14px 24px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 12px;
-  background: var(--b3-theme-surface);
-  color: var(--b3-theme-on-background);
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
-  }
-
-  &.active {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary, #fff);
-    border-color: var(--b3-theme-primary);
-  }
-}
-
 // 底部按钮
 .complete-footer {
   display: flex;
@@ -533,8 +393,7 @@ function handleClose() {
   background: var(--b3-theme-background);
 }
 
-.discard-btn,
-.skip-btn {
+.discard-btn {
   flex: 1;
   padding: 14px 20px;
   border: 1px solid var(--b3-border-color);
@@ -552,14 +411,13 @@ function handleClose() {
   }
 }
 
-.save-btn,
-.start-break-btn {
+.save-btn {
   flex: 1;
   padding: 14px 20px;
   border: none;
   border-radius: 12px;
   background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
+  color: var(--b3-theme-on-primary, #fff);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;

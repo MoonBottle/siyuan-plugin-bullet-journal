@@ -11,11 +11,14 @@
 
             <!-- Dynamic Content -->
             <div class="drawer-content">
+              <!-- 专注完成记录 - 底部抽屉 -->
               <MobileComplete
                 v-if="showComplete && pendingCompletion"
                 :pending="pendingCompletion"
-                @close="showComplete = false"
+                @close="handleCompleteClose"
+                @save="handleCompleteSave"
               />
+              <!-- 正常番茄钟流程 -->
               <component :is="currentComponent" v-else @close="close" />
             </div>
           </div>
@@ -23,6 +26,13 @@
       </div>
     </Transition>
   </Teleport>
+
+  <!-- 休息选择弹窗 - 居中 -->
+  <MobileRestDialog
+    v-model="showRestDialog"
+    @start="handleStartBreak"
+    @skip="handleSkipBreak"
+  />
 </template>
 
 <script setup lang="ts">
@@ -34,6 +44,7 @@ import MobileTimerStarter from './pomodoro/MobileTimerStarter.vue';
 import MobileActiveTimer from './pomodoro/MobileActiveTimer.vue';
 import MobileBreakTimer from './pomodoro/MobileBreakTimer.vue';
 import MobileComplete from './pomodoro/MobileComplete.vue';
+import MobileRestDialog from './pomodoro/MobileRestDialog.vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -53,6 +64,7 @@ const pomodoroStore = usePomodoroStore();
 // 完成状态管理
 const showComplete = ref(false);
 const pendingCompletion = ref<PendingPomodoroCompletion | null>(null);
+const showRestDialog = ref(false);
 
 // 监听专注完成事件
 let unsubscribeCompletion: (() => void) | null = null;
@@ -90,6 +102,32 @@ const closeOnOverlay = (e: MouseEvent) => {
   if (e.target === e.currentTarget) {
     close();
   }
+};
+
+// 专注记录关闭
+const handleCompleteClose = () => {
+  showComplete.value = false;
+  close();
+};
+
+// 专注记录保存成功 - 显示休息选择弹窗
+const handleCompleteSave = () => {
+  showComplete.value = false;
+  showRestDialog.value = true;
+};
+
+// 开始休息
+const handleStartBreak = (duration: number) => {
+  pomodoroStore.startBreak(duration);
+  // 休息倒计时会显示在 drawer 中，确保 drawer 是打开的
+  if (!props.modelValue) {
+    emit('update:modelValue', true);
+  }
+};
+
+// 跳过休息
+const handleSkipBreak = () => {
+  close();
 };
 </script>
 
