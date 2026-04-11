@@ -18,7 +18,7 @@
     />
     
     <MobileBottomNav
-      @refresh="handleRefresh"
+      @open-pomodoro="state.showPomodoroDrawer = true"
       @create="openQuickCreate"
     />
 
@@ -88,6 +88,9 @@
       :preselected-task-id="state.selectedTaskBlockId || undefined"
       @created="handleCreated"
     />
+
+    <!-- Pomodoro Drawer -->
+    <MobilePomodoroDrawer v-model="state.showPomodoroDrawer" />
   </div>
 </template>
 
@@ -103,6 +106,7 @@ import TaskItemDetail from './drawers/TaskItemDetail.vue';
 import ProjectDetail from './drawers/ProjectDetail.vue';
 import TaskDetail from './drawers/TaskDetail.vue';
 import QuickCreateDrawer from './drawers/QuickCreateDrawer.vue';
+import MobilePomodoroDrawer from './drawers/MobilePomodoroDrawer.vue';
 import { useItemDetail } from './composables/useItemDetail';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
@@ -136,6 +140,7 @@ const state = reactive({
   selectedTaskItem: null as Item | null,
   selectedProjectId: null as string | null,
   selectedTaskBlockId: null as string | null,
+  showPomodoroDrawer: false,
 });
 
 // Selected project and task refs for detail drawers
