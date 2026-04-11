@@ -156,8 +156,29 @@ settingsStore.loadFromPlugin();
 projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
 projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
 
+// 更新选中的 item 到最新数据
+const updateSelectedItems = () => {
+  // 如果 Item Detail 是打开的，更新 selectedItem
+  if (state.showItemDetail && state.selectedItem?.blockId) {
+    const allItems = projectStore.getDisplayItems('');
+    const updatedItem = allItems.find(i => i.blockId === state.selectedItem!.blockId);
+    if (updatedItem) {
+      state.selectedItem = updatedItem;
+    }
+  }
+  // 如果 Task Item Detail 是打开的，更新 selectedTaskItem
+  if (state.showTaskItemDetail && state.selectedTaskItem?.blockId) {
+    const allItems = projectStore.getDisplayItems('');
+    const updatedItem = allItems.find(i => i.blockId === state.selectedTaskItem!.blockId);
+    if (updatedItem) {
+      state.selectedTaskItem = updatedItem;
+    }
+  }
+};
+
 const handleRefresh = async () => {
   await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  updateSelectedItems();
   showMessage(t('common').dataRefreshed);
 };
 
@@ -310,6 +331,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  updateSelectedItems();
 };
 
 // 事件取消订阅函数
