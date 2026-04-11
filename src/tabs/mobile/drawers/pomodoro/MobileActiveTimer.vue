@@ -1,123 +1,103 @@
 <template>
-  <Teleport to="body">
-    <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
-        <Transition name="slide-up">
-          <div v-if="modelValue" class="active-timer-drawer" @click.stop>
-            <div class="drawer-handle" @click="close">
-              <div class="handle-bar"></div>
-            </div>
-
-            <div class="drawer-header">
-              <h3 class="drawer-title">
-                {{ isPaused ? t('pomodoroActive').paused : t('pomodoroActive').focusing }}
-              </h3>
-            </div>
-
-            <div class="drawer-content">
-              <!-- Timer Circle Display -->
-              <div class="timer-display" :class="{ 'is-paused': isPaused }">
-                <div class="timer-circle">
-                  <svg class="progress-ring" viewBox="0 0 120 120">
-                    <circle
-                      class="progress-ring-bg"
-                      cx="60"
-                      cy="60"
-                      r="54"
-                    />
-                    <circle
-                      class="progress-ring-fill"
-                      cx="60"
-                      cy="60"
-                      r="54"
-                      :stroke-dasharray="circumference"
-                      :stroke-dashoffset="strokeDashoffset"
-                    />
-                  </svg>
-                  <div class="timer-content">
-                    <div class="time-remaining">{{ formattedTime }}</div>
-                    <div v-if="!isStopwatch" class="focused-time-badge">
-                      {{ t('pomodoroActive').focusedFor.replace('{minutes}', String(accumulatedMinutes)) }}
-                    </div>
-                    <div v-else class="focused-time-badge">
-                      {{ t('pomodoroActive').stopwatchFocused.replace('{minutes}', String(accumulatedMinutes)) }}
-                    </div>
-                    <div v-if="isPaused" class="pause-badge">{{ t('pomodoroActive').pauseBadge }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Item Info Cards -->
-              <div class="item-info-section">
-                <!-- Project Card -->
-                <div v-if="currentItem?.project" class="info-card">
-                  <div class="info-card-header">
-                    <span class="info-card-label">{{ t('todo').project }}</span>
-                  </div>
-                  <div class="info-card-content">
-                    <svg><use xlink:href="#iconFolder"></use></svg>
-                    <span>{{ currentItem.project.name }}</span>
-                  </div>
-                </div>
-
-                <!-- Task Card -->
-                <div v-if="currentItem?.task" class="info-card">
-                  <div class="info-card-header">
-                    <span class="info-card-label">{{ t('todo').task }}</span>
-                    <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
-                      {{ currentItem.task.level }}
-                    </span>
-                  </div>
-                  <div class="info-card-content">
-                    <svg><use xlink:href="#iconList"></use></svg>
-                    <span>{{ currentItem.task.name }}</span>
-                  </div>
-                </div>
-
-                <!-- Item Card -->
-                <div class="info-card item-card">
-                  <div class="info-card-header">
-                    <span class="info-card-label">{{ t('todo').item }}</span>
-                  </div>
-                  <div class="info-card-content">
-                    <span class="status-emoji">{{ getStatusEmoji(currentItem) }}</span>
-                    <span>{{ itemContent }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Timer Actions -->
-            <div class="drawer-footer">
-              <template v-if="!isPaused">
-                <button class="pause-btn" @click="pausePomodoro">
-                  <svg class="btn-icon" viewBox="0 0 24 24">
-                    <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
-                    <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
-                  </svg>
-                  {{ t('pomodoroActive').pause }}
-                </button>
-              </template>
-              <template v-else>
-                <button class="resume-btn" @click="resumePomodoro">
-                  <svg class="btn-icon" viewBox="0 0 24 24">
-                    <polygon points="5,3 19,12 5,21" fill="currentColor"/>
-                  </svg>
-                  {{ t('pomodoroActive').resume }}
-                </button>
-              </template>
-              <button class="end-btn" @click="endPomodoro">
-                <svg class="btn-icon" viewBox="0 0 24 24">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
-                </svg>
-                {{ t('pomodoroActive').endFocus }}
-              </button>
-            </div>
+  <div class="mobile-active-timer">
+    <!-- Timer Circle Display -->
+    <div class="timer-display" :class="{ 'is-paused': isPaused }">
+      <div class="timer-circle">
+        <svg class="progress-ring" viewBox="0 0 120 120">
+          <circle
+            class="progress-ring-bg"
+            cx="60"
+            cy="60"
+            r="54"
+          />
+          <circle
+            class="progress-ring-fill"
+            cx="60"
+            cy="60"
+            r="54"
+            :stroke-dasharray="circumference"
+            :stroke-dashoffset="strokeDashoffset"
+          />
+        </svg>
+        <div class="timer-content">
+          <div class="time-remaining">{{ formattedTime }}</div>
+          <div v-if="!isStopwatch" class="focused-time-badge">
+            {{ t('pomodoroActive').focusedFor.replace('{minutes}', String(accumulatedMinutes)) }}
           </div>
-        </Transition>
+          <div v-else class="focused-time-badge">
+            {{ t('pomodoroActive').stopwatchFocused.replace('{minutes}', String(accumulatedMinutes)) }}
+          </div>
+          <div v-if="isPaused" class="pause-badge">{{ t('pomodoroActive').pauseBadge }}</div>
+        </div>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+
+    <!-- Item Info Cards -->
+    <div class="item-info-section">
+      <!-- Project Card -->
+      <div v-if="currentItem?.project" class="info-card">
+        <div class="info-card-header">
+          <span class="info-card-label">{{ t('todo').project }}</span>
+        </div>
+        <div class="info-card-content">
+          <svg><use xlink:href="#iconFolder"></use></svg>
+          <span>{{ currentItem.project.name }}</span>
+        </div>
+      </div>
+
+      <!-- Task Card -->
+      <div v-if="currentItem?.task" class="info-card">
+        <div class="info-card-header">
+          <span class="info-card-label">{{ t('todo').task }}</span>
+          <span v-if="currentItem.task.level" class="task-level-badge" :class="'level-' + currentItem.task.level.toLowerCase()">
+            {{ currentItem.task.level }}
+          </span>
+        </div>
+        <div class="info-card-content">
+          <svg><use xlink:href="#iconList"></use></svg>
+          <span>{{ currentItem.task.name }}</span>
+        </div>
+      </div>
+
+      <!-- Item Card -->
+      <div class="info-card item-card">
+        <div class="info-card-header">
+          <span class="info-card-label">{{ t('todo').item }}</span>
+        </div>
+        <div class="info-card-content">
+          <span class="status-emoji">{{ getStatusEmoji(currentItem) }}</span>
+          <span>{{ itemContent }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timer Actions -->
+    <div class="timer-actions">
+      <template v-if="!isPaused">
+        <button class="pause-btn" @click="pausePomodoro">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
+            <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+          </svg>
+          {{ t('pomodoroActive').pause }}
+        </button>
+      </template>
+      <template v-else>
+        <button class="resume-btn" @click="resumePomodoro">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+          </svg>
+          {{ t('pomodoroActive').resume }}
+        </button>
+      </template>
+      <button class="end-btn" @click="endPomodoro">
+        <svg class="btn-icon" viewBox="0 0 24 24">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+        </svg>
+        {{ t('pomodoroActive').endFocus }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -130,12 +110,8 @@ import { t } from '@/i18n';
 import { showConfirmDialog } from '@/utils/dialog';
 import { getProgressDirection } from '@/utils/progressDirection';
 
-const props = defineProps<{
-  modelValue: boolean;
-}>();
-
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
+  close: [];
 }>();
 
 const plugin = usePlugin() as any;
@@ -251,79 +227,19 @@ const endPomodoro = () => {
     t('pomodoroActive').confirmEndMessage,
     async () => {
       await pomodoroStore?.completePomodoro(plugin);
-      close();
+      emit('close');
     }
   );
-};
-
-// Close drawer
-const close = () => {
-  emit('update:modelValue', false);
 };
 </script>
 
 <style lang="scss" scoped>
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  z-index: 1002;
-  display: flex;
-  align-items: flex-end;
-}
-
-.active-timer-drawer {
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  background: var(--b3-theme-background);
-  border-radius: 24px 24px 0 0;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
-}
-
-.drawer-handle {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.handle-bar {
-  width: 40px;
-  height: 4px;
-  background: var(--b3-theme-on-surface);
-  opacity: 0.25;
-  border-radius: 2px;
-}
-
-.drawer-header {
-  padding: 4px 20px 16px;
-  text-align: center;
-}
-
-.drawer-title {
-  font-size: 17px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--b3-theme-on-background);
-}
-
-.drawer-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 16px 16px;
+.mobile-active-timer {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
+  padding: 16px;
 }
 
 // Timer Display
@@ -484,9 +400,10 @@ const close = () => {
   }
 }
 
-// Drawer Footer
-.drawer-footer {
-  padding: 16px;
+// Timer Actions
+.timer-actions {
+  width: 100%;
+  padding-top: 16px;
   border-top: 1px solid var(--b3-border-color);
   display: flex;
   justify-content: center;
@@ -546,26 +463,5 @@ const close = () => {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-}
-
-// Transitions
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
 }
 </style>
