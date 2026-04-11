@@ -2,10 +2,12 @@
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="modelValue" class="confirm-overlay" @click="handleCancel">
-        <Transition name="slide-up">
-          <div v-if="modelValue" class="confirm-drawer" @click.stop>
-            <div class="drawer-handle" @click="handleCancel">
-              <div class="handle-bar"></div>
+        <Transition name="zoom">
+          <div v-if="modelValue" class="confirm-dialog" @click.stop>
+            <div class="confirm-icon" v-if="icon">
+              <svg class="icon-svg">
+                <use :xlink:href="`#${icon}`"></use>
+              </svg>
             </div>
 
             <div class="confirm-content">
@@ -17,7 +19,11 @@
               <button class="cancel-btn" @click="handleCancel">
                 {{ cancelText }}
               </button>
-              <button class="confirm-btn" @click="handleConfirm">
+              <button 
+                class="confirm-btn" 
+                :class="{ 'danger': type === 'danger' }"
+                @click="handleConfirm"
+              >
                 {{ confirmText }}
               </button>
             </div>
@@ -35,6 +41,8 @@ const props = defineProps<{
   message: string;
   confirmText?: string;
   cancelText?: string;
+  type?: 'default' | 'danger';
+  icon?: string;
 }>();
 
 const emit = defineEmits<{
@@ -65,68 +73,70 @@ const handleCancel = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
   z-index: 1003;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: 24px;
 }
 
-.confirm-drawer {
+.confirm-dialog {
   width: 100%;
-  max-width: 480px;
+  max-width: 320px;
   background: var(--b3-theme-background);
-  border-radius: 24px 24px 0 0;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
-}
-
-.drawer-handle {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.handle-bar {
-  width: 40px;
-  height: 4px;
-  background: var(--b3-theme-on-surface);
-  opacity: 0.25;
-  border-radius: 2px;
-}
-
-.confirm-content {
-  padding: 8px 20px 20px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
 
+.confirm-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--b3-theme-error, #ef4444);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .icon-svg {
+    width: 28px;
+    height: 28px;
+    fill: white;
+  }
+}
+
+.confirm-content {
+  margin-bottom: 24px;
+}
+
 .confirm-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
-  margin: 0 0 12px;
+  margin: 0 0 8px;
+  line-height: 1.4;
 }
 
 .confirm-message {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--b3-theme-on-surface);
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0;
 }
 
 .confirm-footer {
   display: flex;
   gap: 12px;
-  padding: 16px;
-  border-top: 1px solid var(--b3-border-color);
 }
 
 .cancel-btn,
 .confirm-btn {
   flex: 1;
-  padding: 12px 24px;
-  border-radius: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -154,12 +164,16 @@ const handleCancel = () => {
   &:hover {
     opacity: 0.9;
   }
+
+  &.danger {
+    background: var(--b3-theme-error, #ef4444);
+  }
 }
 
 // Transitions
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,
@@ -167,13 +181,14 @@ const handleCancel = () => {
   opacity: 0;
 }
 
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+.zoom-enter-active,
+.zoom-leave-active {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
+.zoom-enter-from,
+.zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(10px);
 }
 </style>

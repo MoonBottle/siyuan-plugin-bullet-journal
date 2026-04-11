@@ -98,11 +98,13 @@
       </button>
     </div>
 
-    <!-- Confirm Drawer -->
+    <!-- Confirm Dialog -->
     <MobileConfirmDrawer
       v-model="showConfirmDrawer"
       :title="confirmTitle"
       :message="confirmMessage"
+      type="danger"
+      icon="iconClose"
       @confirm="handleConfirm"
     />
   </div>
