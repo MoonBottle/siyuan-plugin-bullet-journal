@@ -100,11 +100,54 @@ function buildDateRangeMark(
  * @param line 行内容
  * @returns 提取的日期标记，如果没有则返回空字符串
  */
-function extractDateMark(line: string): string {
-  // 匹配 📅 或 @ 开头的日期表达式
+/**
+ * 从行中提取所有事项标记（日期、时间、重复、结束条件、优先级等）
+ * @param line 行内容
+ * @returns 提取的所有标记拼接字符串，如果没有则返回空字符串
+ */
+function extractItemMarkers(line: string): string {
+  const markers: string[] = [];
+  
+  // 1. 提取优先级标记 (🔥 🌱 🍃)
+  const priorityPattern = /[🔥🌱🍃]/gu;
+  const priorityMatches = line.match(priorityPattern);
+  if (priorityMatches) {
+    markers.push(...priorityMatches);
+  }
+  
+  // 2. 提取日期表达式 (📅 或 @ 开头，可能包含时间和范围)
+  // 匹配: @2026-03-08, 📅2026-03-08, 📅2026-03-08~03-09, 📅2026-03-08 09:00:00~10:00:00
   const datePattern = /(?:📅|@)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/;
-  const match = line.match(datePattern);
-  return match ? match[0] : '';
+  const dateMatch = line.match(datePattern);
+  if (dateMatch) {
+    markers.push(dateMatch[0]);
+  }
+  
+  // 3. 提取提醒标记 (⏰开头)
+  // 匹配: ⏰09:00, ⏰提前10分钟, ⏰30 minutes before end
+  const reminderPattern = /⏰(?:\d{2}:\d{2}(?::\d{2})?|[^\s]+(?:\s+[^\s]+)*)/;
+  const reminderMatch = line.match(reminderPattern);
+  if (reminderMatch) {
+    markers.push(reminderMatch[0]);
+  }
+  
+  // 4. 提取重复标记 (🔁开头)
+  // 匹配: 🔁每周, 🔁daily, 🔁每月, 🔁每天
+  const repeatPattern = /🔁[^\s]+/;
+  const repeatMatch = line.match(repeatPattern);
+  if (repeatMatch) {
+    markers.push(repeatMatch[0]);
+  }
+  
+  // 5. 提取结束条件标记
+  // 匹配: 截止到YYYY-MM-DD, 剩余N次, until YYYY-MM-DD, N times remaining
+  const endConditionPattern = /(?:截止到|until|剩余|remaining)[^\s]+(?:\s+[^\s]+)*/i;
+  const endConditionMatch = line.match(endConditionPattern);
+  if (endConditionMatch) {
+    markers.push(endConditionMatch[0]);
+  }
+  
+  return markers.join(' ');
 }
 
 /**
@@ -772,8 +815,8 @@ export async function updateBlockContent(
           if (usedParentKramdown) {
             // 更新父块时保留完整列表项格式（- 和块属性），仅替换任务标记和内容
             if (hasNewContent) {
-              const dateMark = extractDateMark(itemLine);
-              const contentWithDate = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+              const markers = extractItemMarkers(itemLine);
+              const contentWithDate = markers ? `${newItemContent} ${markers}` : newItemContent!;
               // 保留原行的列表标记和块属性，只替换内容部分
               // 原行格式: - {: id="xxx"}[ ] 旧内容 📅日期
               // 新行格式: - {: id="xxx"}[x] 新内容 📅日期
@@ -797,8 +840,8 @@ export async function updateBlockContent(
             let cleanedContent: string;
             if (hasNewContent) {
               // 使用新内容，但需要保留原行中的日期标记
-              const dateMark = extractDateMark(itemLine);
-              cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+              const markers = extractItemMarkers(itemLine);
+              cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
             } else {
               cleanedContent = stripListAndBlockAttr(itemLine.replace(taskListMatch[0], ''));
             }
@@ -812,8 +855,8 @@ export async function updateBlockContent(
           // 如果匹配失败，使用原来的方式
           let cleanedContent: string;
           if (hasNewContent) {
-            const dateMark = extractDateMark(itemLine);
-            cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+            const markers = extractItemMarkers(itemLine);
+            cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
           } else {
             cleanedContent = stripListAndBlockAttr(itemLine);
           }
@@ -830,8 +873,8 @@ export async function updateBlockContent(
           let cleanedContent: string;
           if (hasNewContent) {
             // 使用新内容，但需要保留原行中的日期标记
-            const dateMark = extractDateMark(itemLine);
-            cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+            const markers = extractItemMarkers(itemLine);
+            cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
           } else {
             cleanedContent = stripListAndBlockAttr(itemLine.replace(taskListMarker, ''));
           }
@@ -843,8 +886,8 @@ export async function updateBlockContent(
           // 如果匹配失败，使用原来的方式
           let cleanedContent: string;
           if (hasNewContent) {
-            const dateMark = extractDateMark(itemLine);
-            cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+            const markers = extractItemMarkers(itemLine);
+            cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
           } else {
             cleanedContent = stripListAndBlockAttr(itemLine);
           }
@@ -857,8 +900,8 @@ export async function updateBlockContent(
         // 使用 stripListAndBlockAttr 去除列表标记、任务标记、块属性
         let cleanedContent: string;
         if (hasNewContent) {
-          const dateMark = extractDateMark(itemLine);
-          cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+          const markers = extractItemMarkers(itemLine);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
         } else {
           cleanedContent = stripListAndBlockAttr(itemLine);
         }
@@ -900,8 +943,8 @@ export async function updateBlockContent(
         const newMarker = (suffix === '#done' || suffix === '#已完成' || suffix === '✅') ? '[x] ' : '[ ] ';
         let cleanedContent: string;
         if (hasNewContent) {
-          const dateMark = extractDateMark(content);
-          cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+          const markers = extractItemMarkers(content);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
         } else {
           cleanedContent = content.replace(taskListMatch[0], '').trim();
         }
@@ -916,8 +959,8 @@ export async function updateBlockContent(
         // 如果匹配失败，尝试去除任务列表标记后添加后缀
         let cleanedContent: string;
         if (hasNewContent) {
-          const dateMark = extractDateMark(content);
-          cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+          const markers = extractItemMarkers(content);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
         } else {
           cleanedContent = stripListAndBlockAttr(content);
         }
@@ -931,8 +974,8 @@ export async function updateBlockContent(
         const taskListMarker = taskListMatch[1];
         let cleanedContent: string;
         if (hasNewContent) {
-          const dateMark = extractDateMark(content);
-          cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+          const markers = extractItemMarkers(content);
+          cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
         } else {
           const contentWithoutMarker = content.replace(taskListMarker, '');
           cleanedContent = stripListAndBlockAttr(contentWithoutMarker);
@@ -946,8 +989,8 @@ export async function updateBlockContent(
       // 非任务列表格式
       let cleanedContent: string;
       if (hasNewContent) {
-        const dateMark = extractDateMark(content);
-        cleanedContent = dateMark ? `${newItemContent} ${dateMark}` : newItemContent!;
+        const markers = extractItemMarkers(content);
+        cleanedContent = markers ? `${newItemContent} ${markers}` : newItemContent!;
       } else {
         cleanedContent = content;
       }

@@ -287,11 +287,12 @@
             
             <!-- Content -->
             <div class="content-edit-body">
-              <textarea 
+              <input
                 v-model="editingContent" 
-                class="content-edit-textarea" 
+                type="text"
+                class="content-edit-input" 
                 :placeholder="t('mobile.quickCreate.itemContentPlaceholder') || '输入事项内容'"
-                rows="4"
+                @keydown.enter.prevent="saveContent"
               />
             </div>
             
@@ -891,11 +892,6 @@ const close = () => {
   fill: var(--b3-theme-on-surface);
   opacity: 0.7;
   flex-shrink: 0;
-  
-  &.priority-icon {
-    fill: #f59e0b;
-    opacity: 1;
-  }
 }
 
 .info-label {
@@ -1256,21 +1252,20 @@ const close = () => {
 }
 
 .content-edit-body {
-  padding: 0 4px 16px;
+  padding: 0 0 16px;
 }
 
-.content-edit-textarea {
+.content-edit-input {
   width: 100%;
-  min-height: 100px;
-  padding: 12px;
+  height: 48px;
+  padding: 0 12px;
   border: 1px solid var(--b3-border-color);
   border-radius: 12px;
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-background);
   font-size: 16px;
-  line-height: 1.5;
-  resize: none;
   outline: none;
+  box-sizing: border-box;
   
   &:focus {
     border-color: var(--b3-theme-primary);
@@ -1281,7 +1276,7 @@ const close = () => {
 .content-edit-footer {
   display: flex;
   gap: 12px;
-  padding: 0 4px;
+  padding: 0;
 }
 
 .edit-action-btn {

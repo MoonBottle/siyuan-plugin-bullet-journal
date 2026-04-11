@@ -1209,4 +1209,147 @@ describe('updateBlockContent', () => {
       'block-1'
     );
   });
+
+  // ===== newItemContent 保留所有标记的测试 =====
+
+  it('newItemContent: 替换内容时保留优先级标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务名称 🔥 📅2026-03-08
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '新任务名称');
+
+    expect(result).toBe(true);
+    // 应保留优先级 🔥 和日期 📅
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务名称 🔥 📅2026-03-08
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 替换内容时保留提醒标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务 📅2026-03-08 ⏰09:00
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '新任务');
+
+    expect(result).toBe(true);
+    // 应保留日期 📅 和提醒 ⏰
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务 📅2026-03-08 ⏰09:00
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 替换内容时保留重复标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务 📅2026-03-08 🔁每周
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '新任务');
+
+    expect(result).toBe(true);
+    // 应保留日期 📅 和重复 🔁
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务 📅2026-03-08 🔁每周
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 替换内容时保留结束条件标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务 📅2026-03-08 🔁每天 剩余30次
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '新任务');
+
+    expect(result).toBe(true);
+    // 应保留日期 📅、重复 🔁 和结束条件
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务 📅2026-03-08 🔁每天 剩余30次
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 替换内容时保留所有标记组合', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}[ ] 旧任务名称 🌱 📅2026-03-08 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '✅', undefined, '新任务名称');
+
+    expect(result).toBe(true);
+    // 应保留所有标记：优先级 🌱、日期 📅、提醒 ⏰、重复 🔁、结束条件
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务名称 🌱 📅2026-03-08 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 非任务列表格式保留所有标记', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `旧任务名称 🔥 📅2026-03-08 ⏰09:00 🔁每周
+{: id="block-1" }`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('block-1', '#重要', undefined, '新任务名称');
+
+    expect(result).toBe(true);
+    // 应保留所有标记：优先级 🔥、日期 📅、提醒 ⏰、重复 🔁
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `新任务名称 🔥 📅2026-03-08 ⏰09:00 🔁每周 #重要
+{: id="block-1" }`,
+      'block-1'
+    );
+  });
+
+  it('newItemContent: 父块解析时保留所有标记', async () => {
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'parent-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="parent-block-1"}[ ] 旧任务名称 🍃 @2026-03-08 ⏰08:00 🔁daily
+  {: id="content-block-1"}`
+        });
+      }
+      return Promise.resolve({
+        kramdown: '旧任务名称 @2026-03-08\n{: id="content-block-1" }'
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockContent('content-block-1', '✅', undefined, '新任务名称');
+
+    expect(result).toBe(true);
+    // 应保留所有标记：优先级 🍃、日期（@转📅）、提醒 ⏰、重复 🔁
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[x] 新任务名称 🍃 📅2026-03-08 ⏰08:00 🔁daily
+  {: id="content-block-1"}`,
+      'parent-block-1'
+    );
+  });
 });
