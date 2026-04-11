@@ -4,9 +4,10 @@
       <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
       <input
         v-model="searchQuery"
-        type="text"
+        type="search"
         class="search-input"
         :placeholder="t('todo').searchPlaceholder"
+        @focus="handleFocus"
       />
       <button v-if="searchQuery" class="clear-btn" @click="clearSearch">
         <svg><use xlink:href="#iconClose"></use></svg>
@@ -47,6 +48,14 @@ const clearSearch = () => {
   searchQuery.value = '';
   emit('update:search', '');
 };
+
+const handleFocus = (e: FocusEvent) => {
+  // 防止 iOS 键盘弹出时的页面滚动
+  const target = e.target as HTMLElement;
+  setTimeout(() => {
+    target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+};
 </script>
 
 <style lang="scss" scoped>
@@ -58,6 +67,8 @@ const clearSearch = () => {
   background: var(--b3-theme-background);
   border-bottom: 1px solid var(--b3-border-color);
   flex-shrink: 0;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .search-box {
@@ -75,7 +86,6 @@ const clearSearch = () => {
   &:focus-within {
     border-color: var(--b3-theme-primary);
     background: var(--b3-theme-background);
-    box-shadow: 0 0 0 3px rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.1);
   }
 }
 
@@ -89,9 +99,10 @@ const clearSearch = () => {
 
 .search-input {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
-  font-size: 15px;
+  font-size: 16px;
   outline: none;
   color: var(--b3-theme-on-background);
   

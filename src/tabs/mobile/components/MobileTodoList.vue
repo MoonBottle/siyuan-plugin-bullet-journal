@@ -545,8 +545,10 @@ onUnmounted(() => {
 .mobile-todo-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   background: var(--b3-theme-surface);
+  width: 100%;
 }
 
 .pull-refresh-indicator {
@@ -576,6 +578,7 @@ onUnmounted(() => {
 .todo-content {
   padding: 12px 16px 24px;
   min-height: 100%;
+  box-sizing: border-box;
 }
 
 // Empty states
@@ -685,12 +688,15 @@ onUnmounted(() => {
   user-select: none;
   background: var(--b3-theme-background);
   border-bottom: 1px solid var(--b3-border-color);
+  box-sizing: border-box;
 }
 
 .section-title-wrapper {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1;
 }
 
 .section-status-bar {
@@ -727,6 +733,7 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
+  white-space: nowrap;
 }
 
 .section-count {
@@ -739,12 +746,14 @@ onUnmounted(() => {
   border-radius: 10px;
   min-width: 24px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .section-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .action-link {

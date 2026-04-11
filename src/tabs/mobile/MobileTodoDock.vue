@@ -440,6 +440,9 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   width: 100%;
+  max-width: 100vw;
   background: var(--b3-theme-surface);
+  overflow: hidden;
+  position: relative;
 }
 </style>
