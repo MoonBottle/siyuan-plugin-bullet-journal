@@ -721,7 +721,11 @@
       "project": "Project",
       "task": "Task",
       "item": "Item",
+      "content": "Content",
+      "date": "Date",
       "time": "Time",
+      "allDay": "All Day",
+      "noTime": "Not Set",
       "duration": "Duration",
       "focusTime": "Focus Time",
       "status": "Status",
@@ -732,6 +736,10 @@
       "setReminder": "Set Reminder",
       "setRecurring": "Set Recurring",
       "pomodoroRecords": "Pomodoro Records"
+    },
+    "edit": {
+      "content": "Edit Content",
+      "selectDate": "Select Date"
     }
   },
   "recurring": {

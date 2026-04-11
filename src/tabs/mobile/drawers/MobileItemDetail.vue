@@ -194,24 +194,28 @@
             
             <!-- Bottom Action Bar -->
             <div class="drawer-footer">
-              <button class="footer-btn" @click="handleOpenCalendar">
-                <div class="footer-icon-wrapper">
-                  <svg><use xlink:href="#iconCalendar"></use></svg>
-                </div>
-                <span>{{ t('mobile.action.calendar') || '日历' }}</span>
-              </button>
-              <button v-if="!isCompletedOrAbandoned" class="footer-btn" @click="handleSetReminder">
-                <div class="footer-icon-wrapper">
-                  <svg><use xlink:href="#iconClock"></use></svg>
-                </div>
-                <span>{{ t('mobile.action.reminder') || '提醒' }}</span>
-              </button>
+              <!-- 完成 -->
               <button v-if="!isCompletedOrAbandoned" class="footer-btn primary" @click="handleComplete">
                 <div class="footer-icon-wrapper">
                   <svg><use xlink:href="#iconCheck"></use></svg>
                 </div>
                 <span>{{ t('mobile.action.complete') || '完成' }}</span>
               </button>
+              <!-- 放弃 -->
+              <button v-if="!isCompletedOrAbandoned" class="footer-btn danger" @click="handleAbandon">
+                <div class="footer-icon-wrapper abandon">
+                  <svg><use xlink:href="#iconClose"></use></svg>
+                </div>
+                <span>{{ t('mobile.action.abandon') || '放弃' }}</span>
+              </button>
+              <!-- 迁移 -->
+              <button v-if="!isCompletedOrAbandoned" class="footer-btn" @click="showMigrateMenu">
+                <div class="footer-icon-wrapper migrate">
+                  <svg><use xlink:href="#iconForward"></use></svg>
+                </div>
+                <span>{{ t('mobile.action.migrate') || '迁移' }}</span>
+              </button>
+              <!-- 专注 -->
               <button v-if="!isCompletedOrAbandoned" class="footer-btn" @click="handleStartPomodoro">
                 <div class="footer-icon-wrapper pomodoro">
                   <svg><use xlink:href="#iconClock"></use></svg>
@@ -223,6 +227,18 @@
         </Transition>
       </div>
     </Transition>
+    
+    <!-- Abandon Confirm Drawer -->
+    <MobileConfirmDrawer
+      v-model="showAbandonConfirm"
+      :title="(t('todo').confirmAbandonTitle || '确认放弃') as string"
+      :message="(t('todo').confirmAbandonMessage || '确定要放弃这个事项吗？此操作不可撤销。') as string"
+      :confirm-text="(t('common').confirm || '确认') as string"
+      :cancel-text="(t('common').cancel || '取消') as string"
+      type="danger"
+      icon="iconClose"
+      @confirm="handleConfirmAbandon"
+    />
     
     <!-- Content Edit Dialog -->
     <div v-if="showContentEdit" class="edit-dialog-overlay" @click="cancelEditContent">
@@ -245,6 +261,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import dayjs from 'dayjs';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
@@ -255,6 +272,7 @@ import MobilePriorityPicker from '@/components/mobile/MobilePriorityPicker.vue';
 import MobileDatePicker from '@/components/mobile/MobileDatePicker.vue';
 import { updateBlockDateTime, updateBlockPriority, updateBlockContent } from '@/utils/fileUtils';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
+import MobileConfirmDrawer from './MobileConfirmDrawer.vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -283,6 +301,9 @@ const editingContent = ref('');
 // Mobile pickers
 const showPriorityPicker = ref(false);
 const showDatePicker = ref(false);
+
+// Confirm drawers
+const showAbandonConfirm = ref(false);
 
 const isCompletedOrAbandoned = computed(() => 
   props.item?.status === 'completed' || props.item?.status === 'abandoned'
@@ -443,6 +464,146 @@ const handleComplete = async () => {
   const tag = t('statusTag').completed || '✅';
   await updateBlockContent(props.item.blockId, tag);
   close();
+};
+
+const handleAbandon = () => {
+  if (!props.item?.blockId) return;
+  showAbandonConfirm.value = true;
+};
+
+const handleConfirmAbandon = async () => {
+  if (!props.item?.blockId) return;
+  const tag = t('statusTag').abandoned || '❌';
+  await updateBlockContent(props.item.blockId, tag);
+  close();
+};
+
+// 迁移菜单选择
+const showMigrateMenu = () => {
+  if (!props.item) return;
+  
+  const todoTranslations = t('todo') as Record<string, string>;
+  const todayLabel = todoTranslations.today || '今天';
+  const tomorrowLabel = todoTranslations.tomorrow || '明天';
+  const customLabel = todoTranslations.chooseDate || '选择日期...';
+  
+  // 创建选项
+  const options = [
+    { label: `${todoTranslations.migrateToToday || '迁移到'} ${todayLabel}`, value: 'today' },
+    { label: `${todoTranslations.migrateToTomorrow || '迁移到'} ${tomorrowLabel}`, value: 'tomorrow' },
+    { label: customLabel, value: 'custom' }
+  ];
+  
+  // 使用原生 select 展示选项
+  const select = document.createElement('select');
+  select.style.position = 'fixed';
+  select.style.opacity = '0';
+  select.style.pointerEvents = 'none';
+  
+  // 添加占位选项
+  const placeholder = document.createElement('option');
+  placeholder.text = todoTranslations.migrate || '迁移';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  select.appendChild(placeholder);
+  
+  options.forEach(opt => {
+    const option = document.createElement('option');
+    option.value = opt.value;
+    option.text = opt.label;
+    select.appendChild(option);
+  });
+  
+  document.body.appendChild(select);
+  
+  select.addEventListener('change', (e) => {
+    const value = (e.target as HTMLSelectElement).value;
+    document.body.removeChild(select);
+    
+    if (value === 'today') {
+      handleMigrateToToday();
+    } else if (value === 'tomorrow') {
+      handleMigrateToTomorrow();
+    } else if (value === 'custom') {
+      showMigrateDatePicker();
+    }
+  });
+  
+  // 点击其他地方取消
+  const cleanup = () => {
+    if (select.parentNode) {
+      document.body.removeChild(select);
+    }
+    document.removeEventListener('click', cleanup);
+  };
+  setTimeout(() => document.addEventListener('click', cleanup), 0);
+  
+  select.click();
+};
+
+// 迁移到今天
+const handleMigrateToToday = async () => {
+  if (!props.item?.blockId) return;
+  
+  const todayStr = dayjs().format('YYYY-MM-DD');
+  
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(props.item.siblingItems || []),
+    ...(props.item.date ? [{
+      date: props.item.date,
+      startDateTime: props.item.startDateTime,
+      endDateTime: props.item.endDateTime
+    }] : [])
+  ];
+  
+  await updateBlockDateTime(
+    props.item.blockId,
+    todayStr,
+    props.item.startDateTime ? props.item.startDateTime.split(' ')[1] : undefined,
+    props.item.endDateTime ? props.item.endDateTime.split(' ')[1] : undefined,
+    !props.item.startDateTime,
+    props.item.date,
+    completeSiblingItems,
+    props.item.status
+  );
+  
+  close();
+};
+
+// 迁移到明天
+const handleMigrateToTomorrow = async () => {
+  if (!props.item?.blockId) return;
+  
+  const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+  
+  // 构建完整的 siblingItems（包含当前日期）
+  const completeSiblingItems = [
+    ...(props.item.siblingItems || []),
+    ...(props.item.date ? [{
+      date: props.item.date,
+      startDateTime: props.item.startDateTime,
+      endDateTime: props.item.endDateTime
+    }] : [])
+  ];
+  
+  await updateBlockDateTime(
+    props.item.blockId,
+    tomorrowStr,
+    props.item.startDateTime ? props.item.startDateTime.split(' ')[1] : undefined,
+    props.item.endDateTime ? props.item.endDateTime.split(' ')[1] : undefined,
+    !props.item.startDateTime,
+    props.item.date,
+    completeSiblingItems,
+    props.item.status
+  );
+  
+  close();
+};
+
+// 显示迁移日期选择器
+const showMigrateDatePicker = () => {
+  showDatePicker.value = true;
 };
 
 const handleStartPomodoro = () => {
@@ -1007,6 +1168,15 @@ const close = () => {
       color: var(--b3-theme-on-primary);
     }
   }
+  
+  &.danger {
+    color: #ef4444;
+    
+    .footer-icon-wrapper {
+      background: #ef4444;
+      color: white;
+    }
+  }
 }
 
 .footer-icon-wrapper {
@@ -1028,6 +1198,16 @@ const close = () => {
   &.pomodoro {
     background: rgba(239, 68, 68, 0.1);
     color: #dc2626;
+  }
+  
+  &.abandon {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+  
+  &.migrate {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
   }
 }
 
