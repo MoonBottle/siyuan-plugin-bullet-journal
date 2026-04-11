@@ -16,6 +16,23 @@
               <!-- Breathing Circle with Countdown -->
               <div class="timer-display">
                 <div class="breathing-circle">
+                  <!-- Progress Ring SVG -->
+                  <svg class="progress-ring" viewBox="0 0 120 120">
+                    <circle
+                      class="progress-ring-bg"
+                      cx="60"
+                      cy="60"
+                      :r="radius"
+                    />
+                    <circle
+                      class="progress-ring-fill"
+                      cx="60"
+                      cy="60"
+                      :r="radius"
+                      :stroke-dasharray="circumference"
+                      :stroke-dashoffset="circumference - (progress / 100) * circumference"
+                    />
+                  </svg>
                   <div class="circle-inner">
                     <div class="time-remaining">{{ formattedTime }}</div>
                   </div>
@@ -23,7 +40,7 @@
               </div>
 
               <!-- Hint Text -->
-              <div class="hint-text">让眼睛休息一下</div>
+              <div class="hint-text">{{ t('settings').pomodoro.breakHint }}</div>
             </div>
 
             <!-- Skip Button -->
@@ -43,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { usePomodoroStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { t } from '@/i18n';
@@ -63,6 +80,21 @@ const pomodoroStore = usePomodoroStore();
 const breakRemainingSeconds = computed(() => pomodoroStore.breakRemainingSeconds);
 const breakTotalSeconds = computed(() => pomodoroStore.breakTotalSeconds);
 
+// Processing lock to prevent double clicks
+const isProcessing = ref(false);
+
+// Progress ring calculation
+const progress = computed(() => {
+  const total = breakTotalSeconds.value;
+  const remaining = breakRemainingSeconds.value;
+  if (total <= 0) return 0;
+  return ((total - remaining) / total) * 100;
+});
+
+// SVG circle properties
+const radius = 54;
+const circumference = 2 * Math.PI * radius;
+
 // Formatted time MM:SS
 const formattedTime = computed(() => {
   const secs = breakRemainingSeconds.value;
@@ -73,8 +105,14 @@ const formattedTime = computed(() => {
 
 // Skip break
 const skipBreak = async () => {
-  await pomodoroStore.stopBreak(plugin);
-  close();
+  if (isProcessing.value) return;
+  isProcessing.value = true;
+  try {
+    await pomodoroStore.stopBreak(plugin);
+    close();
+  } finally {
+    isProcessing.value = false;
+  }
 };
 
 // Close drawer
@@ -164,6 +202,28 @@ const close = () => {
   align-items: center;
   justify-content: center;
   animation: breathe 3s ease-in-out infinite;
+  position: relative;
+}
+
+.progress-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 4;
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
 }
 
 .circle-inner {
