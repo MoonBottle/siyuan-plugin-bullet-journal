@@ -15,7 +15,7 @@
       <!-- 空状态：真的没有任何数据 -->
       <div v-else-if="!hasAnyItemsRaw" class="empty-guide">
         <div class="empty-guide-icon">
-          <svg><use xlink:href="#iconTask"></use></svg>
+          <svg><use xlink:href="#iconList"></use></svg>
         </div>
         <div class="empty-guide-title">{{ t('todo').emptyGuideTitle }}</div>
         <div class="empty-guide-desc">{{ t('todo').emptyGuideDesc }}</div>

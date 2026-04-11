@@ -14,7 +14,7 @@
       
       <div v-else-if="!hasAnyItems" class="empty-guide">
         <div class="empty-icon-wrapper large">
-          <svg class="empty-icon"><use xlink:href="#iconTask"></use></svg>
+          <svg class="empty-icon"><use xlink:href="#iconList"></use></svg>
         </div>
         <div class="empty-title">{{ t('todo').emptyGuideTitle }}</div>
         <div class="empty-desc">{{ t('todo').emptyGuideDesc }}</div>

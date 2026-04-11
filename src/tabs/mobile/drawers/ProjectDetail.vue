@@ -148,7 +148,7 @@
           <!-- No Tasks -->
           <div v-if="allTasks.length === 0" class="empty-state">
             <div class="empty-icon">
-              <svg><use xlink:href="#iconTask"></use></svg>
+              <svg><use xlink:href="#iconList"></use></svg>
             </div>
             <span class="empty-text">{{ t('mobile.project.noTasks') || '暂无任务' }}</span>
             <button class="empty-action" @click="handleCreateTask">

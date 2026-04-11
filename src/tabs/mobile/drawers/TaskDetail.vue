@@ -17,7 +17,7 @@
         <div class="task-info-section">
           <div class="task-name-row">
             <div class="task-icon">
-              <svg><use xlink:href="#iconTask"></use></svg>
+              <svg><use xlink:href="#iconList"></use></svg>
             </div>
             <h2 class="task-name">{{ task.name }}</h2>
           </div>

@@ -178,7 +178,7 @@
             
             <div class="sheet-content">
               <div v-if="availableTasks.length === 0" class="sheet-empty">
-                <svg class="empty-icon"><use xlink:href="#iconTask"></use></svg>
+                <svg class="empty-icon"><use xlink:href="#iconList"></use></svg>
                 <span>{{ t('mobile.quickCreate.noTasks') || '该项目暂无任务' }}</span>
               </div>
               <button
@@ -189,7 +189,7 @@
                 @click="selectTaskFromSheet(task)"
               >
                 <div class="option-icon task-icon">
-                  <svg><use xlink:href="#iconTask"></use></svg>
+                  <svg><use xlink:href="#iconList"></use></svg>
                 </div>
                 <div class="option-info">
                   <span class="option-text">{{ task.name }}</span>

@@ -41,7 +41,7 @@
                 
                 <div v-if="item.task" class="info-item" :class="{ readonly: disableNavigation }" @click="goToTask">
                   <div class="info-left">
-                    <svg class="info-icon"><use xlink:href="#iconTask"></use></svg>
+                    <svg class="info-icon"><use xlink:href="#iconList"></use></svg>
                     <span class="info-label">{{ t('mobile.detail.task') || '任务' }}</span>
                   </div>
                   <div class="info-right">
@@ -601,7 +601,7 @@ const close = () => {
 .action-text {
   flex: 1;
   font-size: 14px;
-  color: var(--b3-theme-on-background);
+  color: var(--b3-theme-on-surface);
   text-align: left;
 }
 

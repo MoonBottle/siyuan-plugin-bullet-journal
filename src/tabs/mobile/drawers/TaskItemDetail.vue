@@ -1,9 +1,10 @@
 <template>
   <div class="task-item-detail-wrapper">
     <MobileItemDetail
-      v-model="modelValue"
+      :model-value="modelValue"
       :item="item"
       :disable-navigation="true"
+      @update:model-value="$emit('update:modelValue', $event)"
       @open-pomodoro="$emit('openPomodoro', $event)"
       @set-reminder="$emit('setReminder', $event)"
       @set-recurring="$emit('setRecurring', $event)"

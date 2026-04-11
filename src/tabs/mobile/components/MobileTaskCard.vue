@@ -31,7 +31,7 @@
     </div>
     
     <div v-if="item.task" class="task-name">
-      <svg class="task-icon"><use xlink:href="#iconTask"></use></svg>
+      <svg class="task-icon"><use xlink:href="#iconList"></use></svg>
       {{ item.task.name }}
     </div>
     
