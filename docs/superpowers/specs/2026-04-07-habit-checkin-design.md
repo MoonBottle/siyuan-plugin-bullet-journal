@@ -502,25 +502,33 @@ this.addDock({
 
 ### 8.3 移动端布局
 
-移动端简化为一层 + 抽屉展开：
+移动端**不单独注册 Dock**，打卡功能集成在 MobileTodoDock 的底部导航中（类似番茄钟模式）。
 
-**第一层（底部菜单）**：周日期 + 习惯列表
+**底部导航栏**（在现有 `番茄钟 | [+创建] | 更多` 基础上新增打卡按钮）：
+
+```
+┌───────────────────────────────────────────┐
+│  🍅番茄钟  |  🎯打卡  |  [+ 创建]  |  ⚙更多  │  ← MobileBottomNav 新增打卡
+└───────────────────────────────────────────┘
+```
+
+**打卡主界面**（点击打卡按钮后，替换 MobileTodoList 区域显示）：
 
 ```
 ┌─────────────────────────────┐
 │  一    二    三    四    五  六  日 │  ← 周日期（周一到周日，当天高亮）
 │ 4/7   4/8   4/9   4/10 4/11 4/12 4/13│
 ├─────────────────────────────┤
-│  💧 喝水     5/8杯     │
-│  ✅ 早起     已打卡    │
-│  🏃 跑步     3/5km    │
-│  🧘 冥想     待打卡    │
-│  📖 阅读     0/30min   │
+│  💧 喝水     5/8杯    [打卡] │
+│  ✅ 早起     已打卡         │
+│  🏃 跑步     3/5km   [打卡] │
+│  🧘 冥想     待打卡   [打卡] │
+│  📖 阅读     0/30min [打卡] │
 └─────────────────────────┘
 ```
 
-- 布局与桌面端第一层一致，但更紧凑
-- 习惯项可点击进入详情抽屉
+- 与 MobileTodoDock 共享同一个页面，通过底部导航切换显示
+- 点击习惯项 → 打开详情抽屉（打卡日历 + 日志 + 统计）
 
 **习惯详情抽屉（Drawer）**：
 
@@ -550,19 +558,33 @@ this.addDock({
 
 - 使用与现有 Mobile Drawer 一致的 `slide-up` 抽屉模式
 - Teleported to body，`v-model` 控制显示
-- 内容结构同桌面端第二层
 
-### 8.4 组件复用
+### 8.4 逻辑复用
 
-桌面端和移动端共享以下核心组件：
+**核心原则**：JS/TS 逻辑只写一套，桌面端和移动端各自写 UI，通过 composable/service 共享逻辑。
 
-| 组件 | 说明 |
+**共享逻辑层**（`src/services/` + `src/utils/` + `src/parser/`）：
+
+| 模块 | 说明 |
 |------|------|
-| `HabitWeekBar.vue` | 周日期行（共享） |
-| `HabitListItem.vue` | 习惯列表项（共享） |
-| `HabitMonthCalendar.vue` | 打卡月历（共享） |
-| `HabitRecordLog.vue` | 打卡日志列表（共享） |
-| `HabitCountInput.vue` | 计数型打卡输入（共享） |
+| `habitService.ts` | 打卡创建 record、更新打卡值、达标判断 |
+| `habitStatsUtils.ts` | 连续天数、完成率、热力图数据计算 |
+| `habitParser.ts` | `🎯` 解析 + `🔄` 频率解析 + 打卡值解析 |
+| `habitReminder.ts` | 习惯提醒计算逻辑 |
+
+**桌面端 UI**（`src/components/habit/`）：
+- 习惯列表、打卡月历、日志列表、统计卡片、打卡输入等组件
+
+**移动端 UI**（`src/mobile/components/habit/`）：
+- 独立的移动端 UI 组件，适配触屏交互和紧凑布局
+
+**平台入口**：
+- `src/tabs/HabitDock.vue` — 路由分发（同 TodoDock 模式）
+- `src/tabs/DesktopHabitDock.vue` — 桌面端 Dock
+- 移动端：集成在 `src/mobile/MobileTodoDock.vue` 中，通过底部导航切换显示
+- `src/mobile/drawers/habit/HabitDetailDrawer.vue` — 移动端习惯详情抽屉
+
+> UI 不共享，两端各自写。JS 逻辑通过 service/utils/composable 共享，不要写两遍。
 
 ### 8.5 Store Getter 设计
 
@@ -599,7 +621,9 @@ getHabitMonthCalendarData(habitId, yearMonth) → CalendarData[]
 | `src/stores/projectStore.ts` | 新增 habits 状态和 getters |
 | `src/types/models.ts` | 新增 Habit、CheckInRecord、HabitStats |
 | `src/constants.ts` | 新增 `DOCK_TYPES.HABIT`，新增习惯斜杠命令触发词 |
-| `src/index.ts` | 注册 HabitDock，注册斜杠命令 |
+| `src/index.ts` | 注册 HabitDock（桌面端），注册斜杠命令 |
+| `src/mobile/MobileTodoDock.vue` | 底部导航新增打卡按钮，切换显示打卡列表 |
+| `src/mobile/components/todo/MobileBottomNav.vue` | 新增打卡导航项 |
 | `src/i18n/zh_CN.json` | 新增 habit.* keys |
 | `src/i18n/en_US.json` | 新增 habit.* keys |
 
@@ -607,18 +631,20 @@ getHabitMonthCalendarData(habitId, yearMonth) → CalendarData[]
 
 | 文件 | 说明 |
 |------|------|
-| `src/parser/habitParser.ts` | `🎯` 解析 + 打卡值解析 |
-| `src/services/habitService.ts` | 打卡创建 record + 打卡逻辑 |
-| `src/utils/habitStatsUtils.ts` | 连续天数、完成率等统计计算 |
+| `src/parser/habitParser.ts` | `🎯` 解析 + `🔄` 频率解析 + 打卡值解析 |
+| `src/services/habitService.ts` | 打卡创建 record + 打卡逻辑（共享） |
+| `src/services/habitReminder.ts` | 习惯提醒计算逻辑（共享） |
+| `src/utils/habitStatsUtils.ts` | 连续天数、完成率等统计计算（共享） |
 | `src/tabs/HabitDock.vue` | Dock 路由组件（同 TodoDock 模式） |
 | `src/tabs/DesktopHabitDock.vue` | 桌面端 Dock 主视图 |
-| `src/components/habit/HabitWeekBar.vue` | 周日期行 |
-| `src/components/habit/HabitListItem.vue` | 习惯列表项 |
-| `src/components/habit/HabitMonthCalendar.vue` | 打卡月历 |
-| `src/components/habit/HabitRecordLog.vue` | 打卡日志列表 |
-| `src/components/habit/HabitCountInput.vue` | 计数型打卡输入 |
-| `src/components/dialog/HabitCreateDialog.vue` | 习惯创建弹框（`/xg` 触发） |
-| `src/mobile/MobileHabitDock.vue` | 移动端 Dock 主视图 |
+| `src/components/habit/HabitWeekBar.vue` | 周日期行（桌面端） |
+| `src/components/habit/HabitListItem.vue` | 习惯列表项（桌面端） |
+| `src/components/habit/HabitMonthCalendar.vue` | 打卡月历（桌面端） |
+| `src/components/habit/HabitRecordLog.vue` | 打卡日志列表（桌面端） |
+| `src/components/habit/HabitCountInput.vue` | 计数型打卡输入（桌面端） |
+| `src/components/habit/HabitStatsCards.vue` | 统计卡片（桌面端） |
+| `src/components/dialog/HabitCreateDialog.vue` | 习惯创建/编辑弹框（`/xg` 触发） |
+| `src/mobile/components/habit/` | 移动端打卡 UI 组件目录（独立实现，共享 JS 逻辑） |
 | `src/mobile/drawers/habit/HabitDetailDrawer.vue` | 移动端习惯详情抽屉 |
 
 ---
@@ -652,7 +678,7 @@ getHabitMonthCalendarData(habitId, yearMonth) → CalendarData[]
 - [ ] 计数型 UI 支持 +1 和自定义值
 - [ ] 桌面端 Dock：周日期行 + 习惯列表
 - [ ] 桌面端 Dock：点击习惯展开打卡日历 + 日志
-- [ ] 移动端：底部菜单 + 习惯列表
+- [ ] 移动端：集成在 MobileTodoDock 底部导航，通过打卡按钮切换显示
 - [ ] 移动端：习惯详情抽屉（打卡日历 + 日志）
 - [ ] 打卡日志解析规则与事项一致
 - [ ] 统计：连续天数（当前+最长）
