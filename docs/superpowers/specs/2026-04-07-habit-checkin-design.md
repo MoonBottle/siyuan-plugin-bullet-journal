@@ -100,9 +100,9 @@
 | `早起 🎯2026-04-01 坚持30天 🔄每天` | `Habit { type: 'binary', startDate: '2026-04-01', streakGoal: 30, frequency: { type: 'daily' } }` |
 | `喝水 🎯2026-04-01 坚持21天 8杯 🔄每天` | `Habit { type: 'count', startDate: '2026-04-01', streakGoal: 21, target: 8, unit: '杯', frequency: { type: 'daily' } }` |
 | `跑步 🎯2026-04-01 5公里 🔄每2天` | `Habit { type: 'count', startDate: '2026-04-01', target: 5, unit: '公里', frequency: { type: 'every_n_days', interval: 2 } }` |
-| `早起 📅2026-04-06 ✅` | `CheckInRecord { status: 'completed' }` |
-| `喝水 3/8杯 📅2026-04-06` | `CheckInRecord { currentValue: 3, targetValue: 8, status: 'pending' }` |
-| `喝水 8/8杯 📅2026-04-06 ✅` | `CheckInRecord { currentValue: 8, targetValue: 8, status: 'completed' }` |
+| `早起 📅2026-04-06 ✅` | `CheckInRecord { content: '早起', date: '2026-04-06' }` |
+| `喝水 3/8杯 📅2026-04-06` | `CheckInRecord { content: '喝水', currentValue: 3, targetValue: 8, unit: '杯' }` |
+| `喝水 8/8杯 📅2026-04-06 ✅` | `CheckInRecord { content: '喝水', currentValue: 8, targetValue: 8, unit: '杯' }` |
 
 ---
 
@@ -253,7 +253,7 @@ interface HabitStats {
   下方带 📅日期的行  → 归属当前 task 的 item，或 habit 的 record
 ```
 
-`🎯` 行和 `#任务` 行处于同一个层级，下方的 `@日期` 行归属最近的 `🎯` 或 `#任务`。
+`🎯` 行和 `#任务` 行处于同一个层级，下方的 `📅日期` 行归属最近的 `🎯` 或 `#任务`。
 
 ### 5.3 habitParser.ts
 
@@ -269,11 +269,11 @@ interface HabitStats {
 
 ### 5.4 打卡记录解析
 
-习惯下方的 `@日期` 行解析为 `CheckInRecord`：
+习惯下方的 `📅日期` 行解析为 `CheckInRecord`：
 
 - 提取日期（复用现有日期解析逻辑，支持 `@` 和 `📅`）
-- 提取状态标签（`✅`/`❌`/`#done`/`#已完成`/`#abandoned`/`#已放弃`/`[x]`/`[ ]`）
 - 计数型：从内容中提取 `N/M单位` 格式的当前值和目标值
+- `✅` 标记：计数型达标时自动追加，二元型打卡时自动追加
 - 关联到所属习惯的 `habitId`
 
 ---
@@ -291,7 +291,7 @@ interface HabitStats {
 **创建规则**：
 ```
 1. 用户点击打卡 → 检查今天是否已有 record
-2. 如果没有 → 创建一个新的 record block，状态为 completed（二元型）或记录初始值（计数型）
+2. 如果没有 → 创建一个新的 record block（二元型标记 `✅`，计数型记录初始值）
 3. 如果已有 → 更新已有 record 的值
 4. 位置：在最后一个 record 后面（或习惯定义行后面）
 ```
@@ -348,7 +348,7 @@ Dock UI 是打卡的主入口：
 
 ```
 从今天往前遍历 records：
-  二元型：status == 'completed' → 连续+1，否则中断
+  二元型：record 存在 → 连续+1，否则中断
   计数型：currentValue >= targetValue → 连续+1，否则中断
   遇到第一个非完成/非达标 → 停止
 ```
@@ -561,7 +561,7 @@ getHabitMonthCalendarData(habitId, yearMonth) → CalendarData[]
 | 现有功能 | 影响 |
 |----------|------|
 | 任务/事项解析 | 无影响，`🎯` 是新增标记不冲突 |
-| 提醒服务 | 习惯定义可带 `⏰`，自动创建的 record 继承提醒。复用现有 reminderService |
+| 提醒服务 | 习惯定义可带 `⏰`，用户创建的 record 继承提醒。复用现有 reminderService |
 | 番茄钟 | 无影响 |
 | 日历/甘特图 | 无影响，打卡记录不入日历 |
 | Todo 侧边栏 | 暂不集成 |
