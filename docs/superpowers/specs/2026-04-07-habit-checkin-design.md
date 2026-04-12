@@ -112,10 +112,9 @@
 
 ```typescript
 interface Habit {
-  id: string                    // 唯一 ID
   name: string                  // 习惯名（如"喝水"、"早起"）
   docId: string                 // 所属文档 ID
-  blockId: string               // SiYuan block ID
+  blockId: string               // SiYuan block ID，作为唯一标识
   lastBlockId?: string          // 最后一个 record 的 block ID（用于插入位置）
   type: 'binary' | 'count'     // 二元型 / 计数型
   startDate: string             // 开始日期（YYYY-MM-DD，必填）
@@ -141,12 +140,10 @@ type HabitFrequency = {
 
 ```typescript
 interface CheckInRecord {
-  id: string                    // 唯一 ID
-  content: string               // 内容（如"喝水 3杯"）
+  content: string               // 打卡日志内容（默认等于习惯名，用户可自定义修改）
   date: string                  // YYYY-MM-DD
   docId: string
-  blockId: string
-  status: 'pending' | 'completed' | 'abandoned'
+  blockId: string               // SiYuan block ID，作为唯一标识
 
   // 计数型专用
   currentValue?: number         // 当前值（如 3）
