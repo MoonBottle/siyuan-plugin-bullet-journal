@@ -53,26 +53,30 @@
 
 **二元型**：
 ```markdown
-早起 🎯 🔁每天           ← 习惯定义
+早起 🎯 🔁每天             ← 习惯定义
 
-早起 @2026-04-06        ← 待打卡
-早起 @2026-04-07 #done  ← 已打卡
+早起 📅2026-04-06          ← 待打卡
+早起 📅2026-04-07 ✅       ← 已打卡
 ```
 
 **计数型**：
 ```markdown
-喝水 🎯 8杯 🔁每天       ← 习惯定义
+喝水 🎯 8杯 🔁每天         ← 习惯定义
 
-喝水 0杯 @2026-04-06    ← 待打卡（初始 0）
-喝水 3杯 @2026-04-07    ← 进行中（3/8）
-喝水 8杯 @2026-04-08 #done  ← 已达标，自动标 #done
+喝水 0/8杯 📅2026-04-06    ← 待打卡（初始 0/8）
+喝水 3/8杯 📅2026-04-07    ← 进行中（3/8）
+喝水 8/8杯 📅2026-04-08 ✅ ← 已达标，自动标 ✅
 ```
+
+**计数型记录格式为 `当前值/目标值+单位`**，目标值在创建 record 时从习惯定义复制过来，后续修改习惯目标不影响历史记录。例如习惯从 8杯改为 10杯后，旧记录仍显示 `3/8杯`，新记录显示 `0/10杯`。
 
 ### 2.3 标记顺序约定
 
 ```
-习惯名 🎯 [目标值+单位] [⏰提醒时间] [🔁重复规则] [截止至日期|剩余次数]
+习惯名 🎯 [目标值+单位] [⏰提醒时间] [🔁重复规则] [截止至日期]
 ```
+
+> 状态标记（`✅`/`❌`）只出现在打卡记录行，习惯定义行不带状态。
 
 ### 2.4 解析规则
 
@@ -81,9 +85,9 @@
 | `早起 🎯 🔁每天` | `Habit { type: 'binary', repeatRule: { type: 'daily' } }` |
 | `喝水 🎯 8杯 🔁每天` | `Habit { type: 'count', target: 8, unit: '杯', repeatRule: { type: 'daily' } }` |
 | `跑步 🎯 5公里 🔁工作日` | `Habit { type: 'count', target: 5, unit: '公里', repeatRule: { type: 'workday' } }` |
-| `早起 @2026-04-06 #done` | `CheckInRecord { status: 'completed' }` |
-| `喝水 3杯 @2026-04-06` | `CheckInRecord { currentValue: 3, targetValue: 8, status: 'pending' }` |
-| `喝水 8杯 @2026-04-06 #done` | `CheckInRecord { currentValue: 8, targetValue: 8, status: 'completed' }` |
+| `早起 📅2026-04-06 ✅` | `CheckInRecord { status: 'completed' }` |
+| `喝水 3/8杯 📅2026-04-06` | `CheckInRecord { currentValue: 3, targetValue: 8, status: 'pending' }` |
+| `喝水 8/8杯 📅2026-04-06 ✅` | `CheckInRecord { currentValue: 8, targetValue: 8, status: 'completed' }` |
 
 ---
 
@@ -102,7 +106,7 @@ interface Habit {
   target?: number               // 目标值（计数型，如 8）
   unit?: string                 // 单位（计数型，如"杯"）
   repeatRule?: RepeatRule       // 复用已有的重复规则
-  endCondition?: EndCondition   // 复用已有的结束条件
+  endCondition?: EndCondition   // 仅支持截止日期（until），不支持剩余次数
   records: CheckInRecord[]      // 打卡记录
   links?: Link[]                // 链接
   pomodoros?: PomodoroRecord[]  // 番茄钟记录
@@ -145,13 +149,15 @@ interface Project {
 ```typescript
 interface HabitStats {
   habitId: string
+  // 打卡次数
+  monthlyCheckins: number       // 本月打卡次数（达标天数）
+  totalCheckins: number         // 总打卡次数（达标天数）
   // 连续性
   currentStreak: number         // 当前连续天数
   longestStreak: number         // 最长连续天数
   // 完成率
   completionRate: number        // 总完成率 (0-1)
-  weeklyCompletionRate: number  // 本周完成率
-  monthlyCompletionRate: number // 本月完成率
+  monthlyCompletionRate: number // 本月完成率 (0-1)
   // 计数型专用
   totalValue?: number           // 累计值（如总共跑了 120 公里）
   averageValue?: number         // 日均值
@@ -160,9 +166,35 @@ interface HabitStats {
 
 ---
 
-## 四、解析流程
+## 四、斜杠命令
 
-### 4.1 整体流程
+适配习惯打卡功能的斜杠命令，在编辑器中输入 `/` 唤起：
+
+### 习惯标记命令
+
+| 命令 | 触发词 | 功能说明 |
+|------|--------|----------|
+| 标记为习惯 | `/xg`, `/habit` | 为当前行添加 `🎯` 标记，将普通文本转为习惯定义 |
+| 打卡 | `/dk`, `/checkin` | 为当前打卡记录行添加 `✅`（二元型）或弹出计数输入（计数型） |
+| 打开习惯 Dock | `/xgd`, `/habits` | 打开习惯打卡侧边栏 |
+
+**使用示例**：
+
+```markdown
+# 输入斜杠命令快速创建习惯
+每天喝水 /xg
+# 结果：每天喝水 🎯
+
+# 输入斜杠命令快速打卡
+早起 📅2026-04-06 /dk
+# 结果：早起 📅2026-04-06 ✅
+```
+
+---
+
+## 五、解析流程
+
+### 5.1 整体流程
 
 ```
 笔记 Markdown (Kramdown)
@@ -173,7 +205,7 @@ interface HabitStats {
   → projectStore.habits[] 存储
 ```
 
-### 4.2 core.ts 解析逻辑扩展
+### 5.2 core.ts 解析逻辑扩展
 
 ```
 遍历 block 层级：
@@ -185,7 +217,7 @@ interface HabitStats {
 
 `🎯` 行和 `#任务` 行处于同一个层级，下方的 `@日期` 行归属最近的 `🎯` 或 `#任务`。
 
-### 4.3 habitParser.ts
+### 5.3 habitParser.ts
 
 负责解析习惯定义行：
 
@@ -195,20 +227,20 @@ interface HabitStats {
 - 有目标值 → `type: 'count'`，填充 `target` 和 `unit`
 - 复用 `recurringParser.ts` 解析 `🔁` 规则和结束条件
 
-### 4.4 打卡记录解析
+### 5.4 打卡记录解析
 
 习惯下方的 `@日期` 行解析为 `CheckInRecord`：
 
-- 提取日期（复用现有日期解析逻辑）
-- 提取状态标签（`#done`/`#已完成`/`#abandoned`/`#已放弃`/`[x]`/`[ ]`）
-- 计数型：从内容中提取 `N单位` 格式的当前值
+- 提取日期（复用现有日期解析逻辑，支持 `@` 和 `📅`）
+- 提取状态标签（`✅`/`❌`/`#done`/`#已完成`/`#abandoned`/`#已放弃`/`[x]`/`[ ]`）
+- 计数型：从内容中提取 `N/M单位` 格式的当前值和目标值
 - 关联到所属习惯的 `habitId`
 
 ---
 
-## 五、打卡流程
+## 六、打卡流程
 
-### 5.1 自动创建今日 record
+### 6.1 自动创建今日 record
 
 与重复事项的自动创建机制不同，习惯打卡在**每天/周期开始时自动创建** record block。
 
@@ -227,20 +259,21 @@ interface HabitStats {
 
 | 类型 | 生成的 Markdown |
 |------|-----------------|
-| 二元型 | `习惯名 @2026-04-07` |
-| 计数型 | `习惯名 0单位 @2026-04-07` |
+| 二元型 | `习惯名 📅2026-04-07` |
+| 计数型 | `习惯名 0/目标值单位 📅2026-04-07` |
 
 如果习惯定义有 `⏰` 提醒，record 自动继承（复用 `generateReminderMarker()` 逻辑）。
+计数型 record 的目标值在创建时从习惯定义复制，后续修改习惯目标不影响已有记录。
 
-### 5.2 打卡操作
+### 6.2 打卡操作
 
-**二元型**：标记 `#done`（或 UI 点击打卡按钮）
+**二元型**：标记 `✅`（或 UI 点击打卡按钮）
 
 **计数型**：更新当前值，判断是否达标
 ```
 用户更新打卡值（如从 3杯 → 8杯）
   → 判断 currentValue >= targetValue
-  → 是 → 自动追加 #done
+  → 是 → 自动追加 ✅
   → 否 → 保持 pending
 ```
 
@@ -254,9 +287,9 @@ interface HabitStats {
 
 ---
 
-## 六、统计计算
+## 七、统计计算
 
-### 6.1 连续天数（Streak）
+### 7.1 连续天数（Streak）
 
 ```
 从今天往前遍历 records：
@@ -267,7 +300,7 @@ interface HabitStats {
 
 **今日未打卡的特殊处理**：今天还没结束不算中断，`currentStreak` 从昨天开始算。
 
-### 6.2 完成率
+### 7.2 完成率
 
 | 指标 | 计算方式 |
 |------|----------|
@@ -277,7 +310,7 @@ interface HabitStats {
 
 计数型的"完成"：`currentValue >= targetValue` 算完成。
 
-### 6.3 热力图
+### 7.3 热力图
 
 支持两种展示模式：
 
@@ -300,39 +333,174 @@ interface HabitStats {
 
 ---
 
-## 七、UI 设计
+## 八、UI 设计
 
-### 7.1 整体布局：上下分栏
+习惯打卡以 **Dock** 形式存在（类似 TodoDock），桌面端和移动端均支持，布局各异。
 
-采用上下分栏结构，上部为今日打卡列表，下部为统计概览。
+### 8.1 注册方式
 
-**今日打卡列表**：
-- 显示今天需要打卡的所有习惯
-- 二元型：显示打卡/已打卡按钮
-- 计数型：显示进度条 + 快捷 +1 按钮
-- 头部显示 `今日打卡 N/M 已完成`
+在 `src/index.ts` 的 `registerDocks()` 中注册新 Dock，与 TodoDock 同级：
 
-**统计概览**：
-- 三个数字卡片：当前连续天数、本月完成率、最长连续
-- 近 30 天迷你热力图
-- 可点击展开详细统计
+```typescript
+this.addDock({
+  config: {
+    position: 'RightBottom',
+    size: { width: 320, height: 400 },
+    icon: 'iconCheck',     // 或其他合适的图标
+    title: t('habit').title
+  },
+  data: {},
+  type: DOCK_TYPES.HABIT,
+  init() { /* 同 TodoDock 模式 */ },
+  destroy() { /* 同 TodoDock 模式 */ }
+});
+```
 
-### 7.2 Store Getter 设计
+### 8.2 桌面端 Dock 布局
+
+参考 TodoDock 的结构模式，采用折叠式两层设计：
+
+**第一层（默认展示）**：周日期 + 习惯列表
+
+```
+┌─────────────────────────────────────────────────┐
+│  🎯 习惯打卡                                    │  ← block__icons 标题栏
+├─────────────────────────────────────────────────┤
+│  一    二    三    四    五    六    日           │  ← 周日期行（周一到周日，当天高亮）
+│ 4/7   4/8   4/9   4/10  4/11  4/12  4/13       │
+├─────────────────────────────────────────────────┤
+│  💧 喝水   5/8杯    [·] ●●●                     │  ← 计数型：进度点 + 当前值
+│  ✅ 早起   已打卡   ●●●●●●●                     │  ← 二元型：打卡状态 + 连续天数
+│  🏃 跑步   3/5公里  [·] ●●●                     │
+│  🧘 冥想   待打卡                               │
+│  📖 阅读   0/30分钟  [·]                        │
+└─────────────────────────────────────────────────┘
+```
+
+- **周日期行**：显示本周周一到周日，当天日期高亮，点击可切换查看某天的习惯
+- **习惯列表**：每个习惯一行，显示名称 + 进度/状态
+- **进度指示**：
+  - 二元型：`已打卡` / `待打卡` + 连续天数点阵
+  - 计数型：`当前值/目标值+单位` + 进度点阵
+- **快捷操作**：点击习惯行展开第二层
+
+**第二层（展开详情）**：点击习惯后展开该习惯的统计卡片、打卡日历和打卡日志
+
+```
+┌─────────────────────────────────────────────────┐
+│  ← 💧 喝水  8杯/天 🔁每天                       │  ← 返回按钮 + 习惯信息
+├─────────────────────────────────────────────────┤
+│  ┌──────────┐ ┌──────────┐                      │
+│  │ 月打卡    │ │ 总打卡    │                      │  ← 统计卡片（2x2 网格）
+│  │   8 次    │ │   42 次   │                      │     参考 DesktopTodoDock 风格
+│  └──────────┘ └──────────┘                      │
+│  ┌──────────┐ ┌──────────┐                      │
+│  │ 月完成率  │ │ 连续打卡  │                      │
+│  │   75%    │ │ 12/30 天  │                      │     当前连续/最长连续
+│  └──────────┘ └──────────┘                      │
+├─────────────────────────────────────────────────┤
+│       2026年4月                                  │
+│  一  二  三  四  五  六  日                       │  ← 打卡日历（月视图）
+│              1   2   3   4                       │
+│   5   6   7   8   9  10  11                     │     深绿=达标，浅绿=部分，灰=未打卡
+│  12  13  14  ...                                │
+├─────────────────────────────────────────────────┤
+│  📋 打卡日志                                     │
+│  ─────────────────────────────────────────────  │
+│  4/9  喝水 8杯  ✅ 达标                          │  ← 日志解析规则同事项
+│  4/8  喝水 5杯                                  │     显示日期、内容、状态
+│  4/7  喝水 7杯                                  │
+│  4/6  喝水 8杯  ✅ 达标                          │
+│  ...                                            │
+└─────────────────────────────────────────────────┘
+```
+
+- **统计卡片**：四个卡片（月打卡次数、总打卡次数、月完成率、当前连续/最长连续天数），风格参考 DesktopTodoDock 的卡片组件
+- **打卡日历**：月视图，用颜色深浅表示达标程度，可切换月份
+- **打卡日志**：列表形式，解析规则与事项相同（日期、内容、状态），按时间倒序
+- **计数型快捷操作**：日志中每条记录可点击 +1 或修改值
+
+### 8.3 移动端布局
+
+移动端简化为一层 + 抽屉展开：
+
+**第一层（底部菜单）**：周日期 + 习惯列表
+
+```
+┌─────────────────────────────┐
+│  一    二    三    四    五  六  日 │  ← 周日期（周一到周日，当天高亮）
+│ 4/7   4/8   4/9   4/10 4/11 4/12 4/13│
+├─────────────────────────────┤
+│  💧 喝水     5/8杯     │
+│  ✅ 早起     已打卡    │
+│  🏃 跑步     3/5km    │
+│  🧘 冥想     待打卡    │
+│  📖 阅读     0/30min   │
+└─────────────────────────┘
+```
+
+- 布局与桌面端第一层一致，但更紧凑
+- 习惯项可点击进入详情抽屉
+
+**习惯详情抽屉（Drawer）**：
+
+```
+┌─────────────────────────────┐
+│    ───  (拖拽手柄)           │
+│  💧 喝水  8杯/天            │
+├─────────────────────────────┤
+│  ┌────────┐ ┌────────┐      │
+│  │ 月打卡  │ │ 总打卡  │      │  ← 四个统计卡片
+│  │  8次   │ │  42次  │      │
+│  └────────┘ └────────┘      │
+│  ┌────────┐ ┌────────┐      │
+│  │月完成率│ │ 连续打卡│      │
+│  │  75%  │ │ 12/30天 │      │
+│  └────────┘ └────────┘      │
+├─────────────────────────────┤
+│  打卡日历（月视图）          │
+│  ...同桌面端...              │
+├─────────────────────────────┤
+│  打卡日志                    │
+│  4/9  8杯 ✅                │
+│  4/8  5杯                   │
+│  ...                        │
+└─────────────────────────────┘
+```
+
+- 使用与现有 Mobile Drawer 一致的 `slide-up` 抽屉模式
+- Teleported to body，`v-model` 控制显示
+- 内容结构同桌面端第二层
+
+### 8.4 组件复用
+
+桌面端和移动端共享以下核心组件：
+
+| 组件 | 说明 |
+|------|------|
+| `HabitWeekBar.vue` | 周日期行（共享） |
+| `HabitListItem.vue` | 习惯列表项（共享） |
+| `HabitMonthCalendar.vue` | 打卡月历（共享） |
+| `HabitRecordLog.vue` | 打卡日志列表（共享） |
+| `HabitCountInput.vue` | 计数型打卡输入（共享） |
+
+### 8.5 Store Getter 设计
 
 ```typescript
 // projectStore 新增 getters
-getHabits(groupId?)              → Habit[]
-getTodayRecords(habitId?)        → CheckInRecord[]
-getHabitStats(habitId)           → HabitStats
-getAllHabitStats()               → Map<string, HabitStats>
-getHabitHeatmapData(year)        → HeatmapData[]
+getHabits(groupId?)                    → Habit[]
+getTodayRecords(habitId?)              → CheckInRecord[]
+getRecordsByDate(date, habitId?)       → CheckInRecord[]  // 指定日期的记录
+getHabitStats(habitId)                 → HabitStats
+getAllHabitStats()                     → Map<string, HabitStats>
+getHabitMonthCalendarData(habitId, yearMonth) → CalendarData[]
 ```
 
 ---
 
-## 八、集成点
+## 九、集成点
 
-### 8.1 不影响现有功能
+### 9.1 不影响现有功能
 
 | 现有功能 | 影响 |
 |----------|------|
@@ -342,7 +510,7 @@ getHabitHeatmapData(year)        → HeatmapData[]
 | 日历/甘特图 | 无影响，打卡记录不入日历 |
 | Todo 侧边栏 | 暂不集成 |
 
-### 8.2 修改文件清单
+### 9.2 修改文件清单
 
 | 文件 | 修改内容 |
 |------|----------|
@@ -350,52 +518,65 @@ getHabitHeatmapData(year)        → HeatmapData[]
 | `src/parser/lineParser.ts` | 习惯下的 `@日期` 行解析为 record |
 | `src/stores/projectStore.ts` | 新增 habits 状态和 getters |
 | `src/types/models.ts` | 新增 Habit、CheckInRecord、HabitStats |
-| `src/index.ts` | 注册 HabitTab，启动时创建今日 record |
+| `src/constants.ts` | 新增 `DOCK_TYPES.HABIT`，新增习惯斜杠命令触发词 |
+| `src/index.ts` | 注册 HabitDock，启动时创建今日 record，注册斜杠命令 |
 | `src/i18n/zh_CN.json` | 新增 habit.* keys |
 | `src/i18n/en_US.json` | 新增 habit.* keys |
 
-### 8.3 新增文件清单
+### 9.3 新增文件清单
 
 | 文件 | 说明 |
 |------|------|
 | `src/parser/habitParser.ts` | `🎯` 解析 + 打卡值解析 |
 | `src/services/habitService.ts` | 自动创建 record + 打卡逻辑 |
 | `src/utils/habitStatsUtils.ts` | 连续天数、完成率等统计计算 |
-| `src/components/habit/HabitTab.vue` | 习惯 Tab 主视图 |
-| `src/components/habit/HabitTodayList.vue` | 今日打卡列表 |
-| `src/components/habit/HabitStatsOverview.vue` | 统计概览 |
-| `src/components/habit/HabitHeatmap.vue` | 年度热力图 |
-| `src/components/habit/HabitRecordList.vue` | 近期打卡记录 |
+| `src/tabs/HabitDock.vue` | Dock 路由组件（同 TodoDock 模式） |
+| `src/tabs/DesktopHabitDock.vue` | 桌面端 Dock 主视图 |
+| `src/components/habit/HabitWeekBar.vue` | 周日期行 |
+| `src/components/habit/HabitListItem.vue` | 习惯列表项 |
+| `src/components/habit/HabitMonthCalendar.vue` | 打卡月历 |
+| `src/components/habit/HabitRecordLog.vue` | 打卡日志列表 |
 | `src/components/habit/HabitCountInput.vue` | 计数型打卡输入 |
+| `src/mobile/MobileHabitDock.vue` | 移动端 Dock 主视图 |
+| `src/mobile/drawers/habit/HabitDetailDrawer.vue` | 移动端习惯详情抽屉 |
 
 ---
 
-## 九、实现优先级
+## 十、实现优先级
 
 | 阶段 | 内容 | 依赖 |
 |------|------|------|
 | P0 | 数据模型 + 解析 + Store | 无 |
-| P1 | 今日打卡列表（打卡/计数 UI） | P0 |
+| P0 | Dock 注册 + 桌面端第一层（周日期 + 习惯列表） | P0 |
+| P0 | 斜杠命令（`/xg` 标记习惯、`/dk` 打卡、`/xgd` 打开 Dock） | P0 |
+| P1 | 桌面端第二层（统计卡片 + 打卡日历 + 日志） | P0 |
 | P1 | 自动创建今日 record | P0 |
+| P1 | 计数型打卡 UI（+1/自定义值） | P0 |
+| P1 | 移动端第一层 + 详情抽屉 | P0 |
 | P2 | 统计概览（连续天数/完成率） | P0 |
-| P2 | 年度热力图 | P0 |
-| P3 | 日历视图 | P2 |
+| P2 | 打卡月历颜色渲染 | P0 |
 | P3 | 笔记中直接编辑打卡值 | P0 |
 
 ---
 
-## 十、验收标准
+## 十一、验收标准
 
 - [ ] 可解析 `🎯` 标记定义习惯（二元型和计数型）
 - [ ] 计数型支持目标值+单位（杯、公里、分钟等）
 - [ ] 复用 `🔁` 全部重复规则（每天/每周/每月/工作日/自定义周几）
 - [ ] 打卡记录自动创建（每天/周期开始时）
-- [ ] 二元型打卡标记 `#done`
-- [ ] 计数型达标自动标记 `#done`
+- [ ] 习惯定义可搭配 `⏰` 提醒，record 自动继承
+- [ ] 二元型打卡标记 `✅`
+- [ ] 计数型达标自动标记 `✅`
 - [ ] 计数型 UI 支持 +1 和自定义值
+- [ ] 桌面端 Dock：周日期行 + 习惯列表
+- [ ] 桌面端 Dock：点击习惯展开打卡日历 + 日志
+- [ ] 移动端：底部菜单 + 习惯列表
+- [ ] 移动端：习惯详情抽屉（打卡日历 + 日志）
+- [ ] 打卡日志解析规则与事项一致
 - [ ] 统计：连续天数（当前+最长）
 - [ ] 统计：完成率（总/本周/本月）
-- [ ] 年度热力图
-- [ ] 近期打卡记录列表
+- [ ] 打卡月历颜色深浅表示达标程度
 - [ ] 习惯与任务同级，不影响现有解析
+- [ ] 斜杠命令：`/xg` 标记习惯、`/dk` 快捷打卡、`/xgd` 打开习惯 Dock
 - [ ] i18n 支持中英文
