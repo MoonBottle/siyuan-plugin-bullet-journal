@@ -153,7 +153,8 @@ export interface CheckInRecord {
 
 // 习惯
 export interface Habit {
-  name: string;                  // 习惯名（如"喝水"、"早起"）
+  name: string;                  // 习惯名（如"喝水"、""早起""）
+  project?: Project;             // 所属项目（反向引用，运行时设置）
   docId: string;                 // 所属文档 ID
   blockId: string;               // SiYuan block ID，作为唯一标识
   lastBlockId?: string;          // 最后一个 record 的 block ID（用于插入位置）

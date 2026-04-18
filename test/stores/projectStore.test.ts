@@ -247,3 +247,69 @@ describe('projectStore 专注时长统计', () => {
     expect(byDay.get('2026-03-10')).toBe(20);
   });
 });
+
+describe('habits getters', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('getHabits 返回所有习惯', () => {
+    const store = useProjectStore();
+    store.$patch({
+      projects: [{
+        id: 'doc-1', name: '测试', tasks: [], habits: [
+          { name: '早起', type: 'binary', startDate: '2026-04-01', records: [], blockId: 'b1', docId: 'doc-1', frequency: { type: 'daily' } },
+          { name: '喝水', type: 'count', startDate: '2026-04-01', target: 8, unit: '杯', records: [], blockId: 'b2', docId: 'doc-1', frequency: { type: 'daily' } }
+        ], path: '/test'
+      }]
+    });
+    const habits = store.getHabits('');
+    expect(habits).toHaveLength(2);
+  });
+
+  it('getTodayRecords 返回今日打卡记录', () => {
+    const store = useProjectStore();
+    store.$patch({
+      projects: [{
+        id: 'doc-1', name: '测试', tasks: [], habits: [{
+          name: '早起', type: 'binary', startDate: '2026-04-01', records: [
+            { content: '早起', date: '2026-04-06', blockId: 'r1', docId: 'doc-1', habitId: 'b1' }
+          ], blockId: 'b1', docId: 'doc-1', frequency: { type: 'daily' }
+        }], path: '/test'
+      }],
+      currentDate: '2026-04-06'
+    });
+    const records = store.getTodayRecords('');
+    expect(records).toHaveLength(1);
+  });
+
+  it('getRecordsByDate 返回指定日期打卡记录', () => {
+    const store = useProjectStore();
+    store.$patch({
+      projects: [{
+        id: 'doc-1', name: '测试', tasks: [], habits: [{
+          name: '早起', type: 'binary', startDate: '2026-04-01', records: [
+            { content: '早起', date: '2026-04-06', blockId: 'r1', docId: 'doc-1', habitId: 'b1' },
+            { content: '早起', date: '2026-04-07', blockId: 'r2', docId: 'doc-1', habitId: 'b1' }
+          ], blockId: 'b1', docId: 'doc-1', frequency: { type: 'daily' }
+        }], path: '/test'
+      }]
+    });
+    const records = store.getRecordsByDate('2026-04-06', '');
+    expect(records).toHaveLength(1);
+    expect(records[0].date).toBe('2026-04-06');
+  });
+
+  it('getHabits 按分组过滤', () => {
+    const store = useProjectStore();
+    store.$patch({
+      projects: [
+        { id: 'doc-1', name: '测试A', groupId: 'g1', tasks: [], habits: [{ name: '早起', type: 'binary', startDate: '2026-04-01', records: [], blockId: 'b1', docId: 'doc-1', frequency: { type: 'daily' } }], path: '/testA' },
+        { id: 'doc-2', name: '测试B', groupId: 'g2', tasks: [], habits: [{ name: '喝水', type: 'count', startDate: '2026-04-01', target: 8, unit: '杯', records: [], blockId: 'b2', docId: 'doc-2', frequency: { type: 'daily' } }], path: '/testB' }
+      ]
+    });
+    expect(store.getHabits('')).toHaveLength(2);
+    expect(store.getHabits('g1')).toHaveLength(1);
+    expect(store.getHabits('g1')[0].name).toBe('早起');
+  });
+});

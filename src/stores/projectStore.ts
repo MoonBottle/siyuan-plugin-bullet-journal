@@ -3,7 +3,7 @@
  * 分组筛选按视图独立：getters 接受 groupId 参数，各 Tab/Dock 维护本地 selectedGroup。
  */
 import { defineStore } from 'pinia';
-import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode, PriorityLevel } from '@/types/models';
+import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode, PriorityLevel, Habit, CheckInRecord } from '@/types/models';
 import { comparePriority } from '@/parser/priorityParser';
 import { matchGroupId } from '@/utils/directoryUtils';
 import { MarkdownParser } from '@/parser/markdownParser';
@@ -545,6 +545,53 @@ export const useProjectStore = defineStore('project', {
       return allPomodoros
         .filter((p: PomodoroRecord) => p.date === date)
         .reduce((sum: number, p: PomodoroRecord) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
+    },
+
+    // 从 projects 计算所有习惯
+    habits: (state): Habit[] => {
+      const habits: Habit[] = [];
+      for (const project of state.projects) {
+        for (const habit of project.habits || []) {
+          habit.project = project;
+          habits.push(habit);
+        }
+      }
+      return habits;
+    },
+
+    // 按分组过滤的习惯
+    getHabits: (state) => (groupId: string): Habit[] => {
+      const habits = (state as any).habits as Habit[];
+      if (!groupId) return habits;
+      return habits.filter(h => h.project?.groupId === groupId);
+    },
+
+    // 获取今日打卡记录
+    getTodayRecords: (state) => (groupId: string): CheckInRecord[] => {
+      const records: CheckInRecord[] = [];
+      const habits = (state as any).getHabits(groupId) as Habit[];
+      for (const habit of habits) {
+        for (const record of habit.records) {
+          if (record.date === state.currentDate) {
+            records.push(record);
+          }
+        }
+      }
+      return records;
+    },
+
+    // 按日期获取打卡记录
+    getRecordsByDate: (state) => (date: string, groupId: string): CheckInRecord[] => {
+      const records: CheckInRecord[] = [];
+      const habits = (state as any).getHabits(groupId) as Habit[];
+      for (const habit of habits) {
+        for (const record of habit.records) {
+          if (record.date === date) {
+            records.push(record);
+          }
+        }
+      }
+      return records;
     }
   },
 
