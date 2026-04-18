@@ -2,8 +2,9 @@
  * 纯解析逻辑
  * 不依赖 API，仅接受字符串输入，供插件和 MCP 共用
  */
-import type { Project, Task, Item, PomodoroRecord } from '@/types/models';
+import type { Project, Task, Item, PomodoroRecord, Habit, CheckInRecord } from '@/types/models';
 import { LineParser, parseBlockRefs } from './lineParser';
+import { parseHabitLine, parseCheckInRecordLine, isHabitLine } from './habitParser';
 
 export interface KramdownBlock {
   content: string;
@@ -154,11 +155,12 @@ export function parseKramdown(
 
   let currentTask: Task | null = null;
   let currentItem: Item | null = null;
+  let currentHabit: Habit | null = null;
   let lineNumber = 0;
   /** 当前任务是否已遇到第一个事项，用于停止收集任务链接 */
   let hasSeenItemForCurrentTask = false;
-  /** 上一个处理的块类型：'project' | 'task' | 'item' | null */
-  let lastBlockType: 'project' | 'task' | 'item' | null = null;
+  /** 上一个处理的块类型：'project' | 'task' | 'item' | 'habit' | null */
+  let lastBlockType: 'project' | 'task' | 'item' | 'habit' | null = null;
   /** 任务列表项块 ID 栈（处理嵌套列表） */
   const listItemBlockIdStack: Array<{ id: string; level: number }> = [];
 
@@ -265,6 +267,41 @@ export function parseKramdown(
       }
     }
 
+    // 解析习惯行（包含 🎯 标记）
+    const cleanedContent = stripListAndBlockAttr(content);
+    if (isHabitLine(cleanedContent)) {
+      const habit = parseHabitLine(cleanedContent);
+      if (habit) {
+        // 先保存当前任务
+        if (currentTask) {
+          currentTask.docId = docId;
+          project.tasks.push(currentTask);
+        }
+        habit.docId = docId;
+        habit.blockId = block.blockId;
+        habit.records = [];
+        currentHabit = habit as Habit;
+        currentItem = null;
+        currentTask = null;
+        lastBlockType = 'habit';
+        project.habits.push(currentHabit);
+      }
+      continue;
+    }
+
+    // 解析打卡记录（在当前习惯下，包含 📅 或 @ 日期的行）
+    if (currentHabit && (content.includes('@') || content.includes('📅')) && !(content.includes('#任务') || content.includes('#task') || content.includes('📋')) && !isHabitLine(cleanedContent)) {
+      const record = parseCheckInRecordLine(cleanedContent, currentHabit.blockId);
+      if (record) {
+        record.docId = docId;
+        record.blockId = block.blockId;
+        currentHabit.records.push(record as CheckInRecord);
+        currentHabit.lastBlockId = block.blockId;
+        lastBlockType = 'habit';
+        continue;
+      }
+    }
+
     // 解析任务行（包含 #任务、#task 或 📋，且不是反引号内的说明文字）
     const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋');
     const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
@@ -280,6 +317,7 @@ export function parseKramdown(
         currentTask.pomodoros = [];
       }
       currentItem = null;
+      currentHabit = null;  // 严格交替：遇到任务行时重置习惯上下文
       lastBlockType = 'task';
       // 清空任务列表栈（新任务的作用域）
       listItemBlockIdStack.length = 0;
@@ -396,7 +434,7 @@ export function parseKramdown(
     }
   }
 
-  if (project.tasks.length === 0 && project.pomodoros!.length === 0) {
+  if (project.tasks.length === 0 && project.pomodoros!.length === 0 && project.habits.length === 0) {
     return null;
   }
 

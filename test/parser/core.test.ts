@@ -1041,3 +1041,57 @@ describe('parseKramdown Emoji 标记解析', () => {
     expect(project!.tasks[0].items[2].date).toBe('2026-06-03');
   });
 });
+
+describe('parseKramdown 习惯打卡解析', () => {
+  it('识别🎯行为习惯定义', () => {
+    const kramdown = `## 习惯测试
+{: id="doc-block" type="doc" }
+早起 🎯2026-04-01 坚持30天 🔄每天
+{: id="20260401000000-abcdef" }
+早起 📅2026-04-06 ✅
+{: id="20260406000000-ghijkl" }`;
+    const result = parseKramdown(kramdown, 'doc-1');
+    expect(result).not.toBeNull();
+    expect(result!.habits).toHaveLength(1);
+    expect(result!.habits[0].name).toBe('早起');
+    expect(result!.habits[0].type).toBe('binary');
+    expect(result!.habits[0].records).toHaveLength(1);
+    expect(result!.habits[0].records[0].date).toBe('2026-04-06');
+  });
+
+  it('习惯与任务严格交替', () => {
+    const kramdown = `## 交替测试
+{: id="doc-block" type="doc" }
+任务1 #任务 @L1
+{: id="task1-block" }
+事项1 📅2026-04-01
+{: id="item1-block" }
+喝水 🎯2026-04-01 8杯 🔄每天
+{: id="habit1-block" }
+喝水 3/8杯 📅2026-04-06
+{: id="record1-block" }
+任务2 #任务 @L2
+{: id="task2-block" }`;
+    const result = parseKramdown(kramdown, 'doc-2');
+    expect(result).not.toBeNull();
+    expect(result!.tasks).toHaveLength(2);
+    expect(result!.tasks[0].items).toHaveLength(1);
+    expect(result!.habits).toHaveLength(1);
+    expect(result!.habits[0].name).toBe('喝水');
+  });
+
+  it('多个习惯并行', () => {
+    const kramdown = `## 多习惯
+{: id="doc-block" type="doc" }
+早起 🎯2026-04-01 🔄每天
+{: id="h1-block" }
+早起 📅2026-04-06 ✅
+{: id="r1-block" }
+喝水 🎯2026-04-01 8杯 🔄每天
+{: id="h2-block" }
+喝水 5/8杯 📅2026-04-06
+{: id="r2-block" }`;
+    const result = parseKramdown(kramdown, 'doc-3');
+    expect(result!.habits).toHaveLength(2);
+  });
+});
