@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.3] - 2026-04-18
+
+### Fixes
+
+- **Mobile i18n**: Fixed internationalization parameter passing issue for item postpone success message
+- **Slash Commands**: Fixed incorrect handling when block contains inline elements like block references
+
 ## [0.12.2] - 2026-04-09
 
 ### Features
