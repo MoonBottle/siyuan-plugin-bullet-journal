@@ -145,6 +145,7 @@ export function parseKramdown(
     name: '',
     description: '',
     tasks: [],
+    habits: [],
     path: docPath || '',
     groupId: groupId,
     links: [],

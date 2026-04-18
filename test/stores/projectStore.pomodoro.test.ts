@@ -65,6 +65,7 @@ const mkProject = (tasks: Task[], overrides?: Partial<Project>): Project =>
     name: '测试项目',
     path: '/test',
     tasks,
+    habits: [],
     ...overrides
   }) as Project;
 

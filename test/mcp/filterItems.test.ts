@@ -22,7 +22,8 @@ const mockProject: Project = {
   id: 'proj-1',
   name: '子弹笔记插件',
   path: '/test',
-  tasks: []
+  tasks: [],
+  habits: []
 };
 
 const mockTask: Task = {
