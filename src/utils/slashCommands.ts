@@ -27,6 +27,7 @@ import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
+import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
@@ -54,26 +55,58 @@ function getEditorRange(element: Element): Range | null {
  * @param additionalTransform 可选的额外文本转换函数，用于同时处理其他修改（如添加状态标记）
  */
 export function deleteSlashCommandContent(
-  protyle: any, 
-  filters: string[], 
+  protyle: any,
+  filters: string[],
   suffix?: string,
   additionalTransform?: (text: string) => string
 ): void {
+  console.log('[SlashCommand] deleteSlashCommandContent called', { filters, suffix });
+
   // 获取编辑器元素
   const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
-  if (!wysiwygElement) return;
+  if (!wysiwygElement) {
+    console.log('[SlashCommand] wysiwygElement not found');
+    return;
+  }
 
   // 获取选中的 range 来确定当前位置
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
+  if (!selection || selection.rangeCount === 0) {
+    console.log('[SlashCommand] no selection');
+    return;
+  }
 
   const range = selection.getRangeAt(0);
   const startContainer = range.startContainer;
-  if (startContainer.nodeType !== Node.TEXT_NODE) return;
+  if (startContainer.nodeType !== Node.TEXT_NODE) {
+    console.log('[SlashCommand] startContainer is not text node', { nodeType: startContainer.nodeType });
+    return;
+  }
 
   const textNode = startContainer as Text;
   const textContent = textNode.textContent || '';
   const currentOffset = range.startOffset;
+
+  console.log('[SlashCommand] Current text node:', {
+    textContent,
+    currentOffset,
+    parentElement: textNode.parentElement?.tagName,
+    parentClass: textNode.parentElement?.className
+  });
+
+  // 找到包含当前文本节点的块元素
+  let blockElement = textNode.parentElement;
+  while (blockElement && !blockElement.getAttribute('data-node-id')) {
+    blockElement = blockElement.parentElement;
+  }
+
+  if (blockElement) {
+    console.log('[SlashCommand] Block element found:', {
+      blockId: blockElement.getAttribute('data-node-id'),
+      blockTextContent: blockElement.textContent,
+      blockHTML: blockElement.outerHTML.substring(0, 500)
+    });
+  }
 
   // 找到当前行的起始和结束位置
   let lineStart = currentOffset;
@@ -88,9 +121,11 @@ export function deleteSlashCommandContent(
 
   // 提取当前行
   const lineText = textContent.substring(lineStart, lineEnd);
+  console.log('[SlashCommand] Line text extracted:', { lineStart, lineEnd, lineText });
 
   // 处理行文本
   let newLineText = processLineText(lineText, filters);
+  console.log('[SlashCommand] Processed line text:', { newLineText });
 
   // 如果有 suffix，处理标记追加
   if (suffix) {
@@ -683,21 +718,36 @@ async function markAsTodayItem(
   writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) return;
+  console.log('[SlashCommand] markAsTodayItem called', { blockId });
+
+  if (!blockId) {
+    console.log('[SlashCommand] markAsTodayItem: no blockId');
+    return;
+  }
 
   const today = formatDate(new Date());
+  console.log('[SlashCommand] markAsTodayItem: today date', today);
 
   // 从 pinia 中获取已有日期时间信息
   const existingItems = await extractDatesFromBlock(blockId);
+  console.log('[SlashCommand] markAsTodayItem: existing items', existingItems);
 
   // 检查今天是否已存在
   const todayItem = existingItems.find(item => item.date === today);
   if (todayItem) {
+    console.log('[SlashCommand] markAsTodayItem: today already exists');
     // 日期已存在，删除斜杠命令并提示
     deleteSlashCommandContent(protyle, filter);
     showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
     return;
   }
+
+  console.log('[SlashCommand] markAsTodayItem: calling updateBlockDateTime', {
+    blockId,
+    today,
+    existingItemsCount: existingItems.length,
+    hasWriter: !!writer
+  });
 
   // 使用 updateBlockDateTime 添加今日日期
   const success = await updateBlockDateTime(
@@ -711,6 +761,8 @@ async function markAsTodayItem(
     undefined, // status
     writer
   );
+
+  console.log('[SlashCommand] markAsTodayItem: updateBlockDateTime result', success);
 
   if (success) {
     showMessage(t('slash').markSuccess, 2000, 'info');
@@ -839,21 +891,6 @@ function formatUpdatedAttr(date: Date): string {
 }
 
 /**
- * 查找块元素内的第一个文本节点
- */
-function findFirstTextNode(element: HTMLElement): Text | null {
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
-    acceptNode: (node) => {
-      if ((node.parentElement as HTMLElement)?.classList?.contains('protyle-attr')) {
-        return NodeFilter.FILTER_REJECT;
-      }
-      return node.textContent ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-    },
-  });
-  return walker.nextNode() as Text | null;
-}
-
-/**
  * 等待 protyle 事务队列清空
  */
 async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
@@ -876,24 +913,30 @@ function createProtyleWriter(
   currentBlockId: string,
 ): BlockWriter {
   const oldHTML = nodeElement.outerHTML;
+  console.log('[SlashCommand] createProtyleWriter created', { currentBlockId, oldHTML: oldHTML.substring(0, 200) });
 
   return async (content: string, targetBlockId: string): Promise<boolean> => {
     try {
-      console.log(`[Task Assistant] Writer called with content: "${content}", targetBlockId: ${targetBlockId}`);
-      
+      console.log(`[SlashCommand] Writer called`, { content, targetBlockId, currentBlockId });
+
       // 去掉块属性行 {: id="..." }，再判断是否单行
       const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
 
       const isSameBlock = targetBlockId === currentBlockId;
       const isSingleLine = !textContent.includes('\n');
 
-      console.log(`[Task Assistant] Writer called for block ${currentBlockId}. Same block: ${isSameBlock}, Single line: ${isSingleLine}`);
+      const safeForFastPath = isProtyleBlockSafeForWriterFastPath(nodeElement);
+      console.log(`[SlashCommand] Writer decision params`, { isSameBlock, isSingleLine, textContent, safeForFastPath });
 
-      if (isSameBlock && isSingleLine) {
-        const textNode = findFirstTextNode(nodeElement);
-        if (textNode) {
-          textNode.textContent = textContent;
+      if (isSameBlock && isSingleLine && safeForFastPath) {
+        const textNode = findFirstProtyleVisibleTextNode(nodeElement);
+        if (!textNode) {
+          await waitForProtyleTransactionsFlush();
+          await updateBlock('markdown', content, targetBlockId);
+          return true;
         }
+
+        textNode.textContent = textContent;
 
         nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()));
 

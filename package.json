@@ -46,6 +46,7 @@
     "eslint-plugin-perfectionist": "^5.7.0",
     "fast-glob": "^3.3.3",
     "glob": "^13.0.6",
+    "happy-dom": "^20.9.0",
     "minimist": "^1.2.8",
     "rollup-plugin-livereload": "^2.0.5",
     "sass": "^1.98.0",
