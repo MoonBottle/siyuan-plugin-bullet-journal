@@ -526,7 +526,7 @@ const handlePostponeAll = async (items: Item[]) => {
   }
   
   if (successCount > 0) {
-    showMessage(t('mobile.postponeSuccess') || `已顺延 ${successCount} 个事项到明天`);
+    showMessage(t('mobile.postponeSuccess', { count: successCount }) || `已顺延 ${successCount} 个事项到明天`);
     emit('refresh');
   }
 };
