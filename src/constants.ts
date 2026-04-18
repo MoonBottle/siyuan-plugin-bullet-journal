@@ -15,7 +15,8 @@ export const DOCK_TYPES = {
   TODO: 'bullet-journal-todo',
   AI_CHAT: 'bullet-journal-ai-chat',
   POMODORO: 'bullet-journal-pomodoro',
-  CALENDAR: 'bullet-journal-calendar-dock'
+  CALENDAR: 'bullet-journal-calendar-dock',
+  HABIT: 'bullet-journal-habit'
 };
 
 // 斜杠命令 filter 配置
@@ -39,7 +40,10 @@ export const SLASH_COMMAND_FILTERS = {
   SET_REMINDER: ['/tx', '/reminder'],
   SET_RECURRING: ['/cf', '/recurring'],
   CREATE_SKILL: ['/cjskill', '/create-skill', '/skill'],
-  SET_PRIORITY: ['/yxj', '/priority']
+  SET_PRIORITY: ['/yxj', '/priority'],
+  HABIT: ['/xg', '/habit'],
+  CHECK_IN: ['/dk', '/checkin'],
+  HABIT_DOCK: ['/xgd', '/habits']
 };
 
 // 所有斜杠命令 filters 的集合（用于去除斜杠命令）
@@ -63,5 +67,8 @@ export const ALL_SLASH_COMMAND_FILTERS = [
   ...SLASH_COMMAND_FILTERS.SET_REMINDER,
   ...SLASH_COMMAND_FILTERS.SET_RECURRING,
   ...SLASH_COMMAND_FILTERS.CREATE_SKILL,
-  ...SLASH_COMMAND_FILTERS.SET_PRIORITY
+  ...SLASH_COMMAND_FILTERS.SET_PRIORITY,
+  ...SLASH_COMMAND_FILTERS.HABIT,
+  ...SLASH_COMMAND_FILTERS.CHECK_IN,
+  ...SLASH_COMMAND_FILTERS.HABIT_DOCK
 ];

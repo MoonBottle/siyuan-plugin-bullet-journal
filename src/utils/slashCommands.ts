@@ -220,6 +220,7 @@ export interface SlashCommandConfig {
   openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => void;
   openPomodoroDock: () => void;
   openTodoDock: () => void;
+  openHabitDock: () => void;
   customSlashCommands?: CustomSlashCommand[];
 }
 
@@ -409,6 +410,33 @@ export function createSlashCommands(config: SlashCommandConfig) {
       </div>`,
       id: 'bullet-journal-set-priority',
       callback: getActionHandler('setPriority', config, SLASH_COMMAND_FILTERS.SET_PRIORITY)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.HABIT,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').createHabit || '创建习惯'}</span>
+          <span class="b3-list-item__meta">🎯</span>
+      </div>`,
+      id: 'bullet-journal-create-habit',
+      callback: getActionHandler('createHabit', config, SLASH_COMMAND_FILTERS.HABIT)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.CHECK_IN,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').checkIn || '打卡'}</span>
+          <span class="b3-list-item__meta">✅</span>
+      </div>`,
+      id: 'bullet-journal-check-in',
+      callback: getActionHandler('checkIn', config, SLASH_COMMAND_FILTERS.CHECK_IN)
+    },
+    {
+      filter: SLASH_COMMAND_FILTERS.HABIT_DOCK,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').habitDock || '习惯面板'}</span>
+          <span class="b3-list-item__meta">📋</span>
+      </div>`,
+      id: 'bullet-journal-habit-dock',
+      callback: () => { config.openHabitDock(); }
     }
   ];
 
@@ -671,6 +699,18 @@ function getActionHandler(
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
         setPriorityForBlock(nodeElement);
+      };
+    case 'createHabit':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        // TODO: 打开 HabitCreateDialog（Task 11 实现后完善）
+        console.log('[SlashCommand] createHabit: placeholder');
+      };
+    case 'checkIn':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        // TODO: 调用 habitService.checkIn（Task 8 实现后完善）
+        console.log('[SlashCommand] checkIn: placeholder');
       };
     default:
       return () => {};

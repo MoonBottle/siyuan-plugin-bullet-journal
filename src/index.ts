@@ -19,6 +19,7 @@ import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
 import TodoDock from '@/tabs/TodoDock.vue';
 import AiChatDock from '@/tabs/AiChatDock.vue';
 import PomodoroDock from '@/tabs/PomodoroDock.vue';
+import HabitDock from '@/tabs/HabitDock.vue';
 import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
 import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory } from '@/types/models';
@@ -938,6 +939,31 @@ export default class TaskAssistantPlugin extends Plugin {
       });
       this.pomodoroDockModel = pomodoroDock.model;
     }
+
+    // 习惯打卡 Dock
+    this.addDock({
+      config: {
+        position: 'RightBottom',
+        size: { width: 320, height: 400 },
+        icon: 'iconCheck',
+        title: t('habit')?.title || '习惯打卡'
+      },
+      data: {},
+      type: DOCK_TYPES.HABIT,
+      init() {
+        this.element.style.height = '100%';
+        this.element.style.overflow = 'hidden';
+        this.element.style.display = 'flex';
+        this.element.style.flexDirection = 'column';
+        const pinia = getSharedPinia() ?? createPinia();
+        const app = createApp(HabitDock, { plugin });
+        app.use(pinia);
+        app.mount(this.element);
+      },
+      destroy() {
+        this.element.innerHTML = '';
+      }
+    });
   }
 
   /**
@@ -2201,6 +2227,9 @@ export default class TaskAssistantPlugin extends Plugin {
       openTodoDock: () => {
         this.openTodoDock();
       },
+      openHabitDock: () => {
+        this.openHabitDock();
+      },
       customSlashCommands: settings.customSlashCommands || []
     };
 
@@ -2218,6 +2247,17 @@ export default class TaskAssistantPlugin extends Plugin {
       }
     } catch (error) {
       console.error('[Task Assistant] Failed to open todo dock:', error);
+    }
+  }
+
+  private openHabitDock() {
+    try {
+      const rightDock = (window as any).siyuan?.layout?.rightDock;
+      if (rightDock) {
+        rightDock.toggleModel(`${this.name}${DOCK_TYPES.HABIT}`, true);
+      }
+    } catch (error) {
+      console.error('[Task Assistant] Failed to open habit dock:', error);
     }
   }
 
