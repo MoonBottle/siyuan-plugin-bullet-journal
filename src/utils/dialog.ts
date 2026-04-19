@@ -1193,7 +1193,7 @@ export function showHabitCreateDialog(
   app.mount(container);
 
   const dialog = new Dialog({
-    title: t('slash').createHabit; '创建习惯',
+    title: t('slash').createHabit || '创建习惯',
     content: '',
     width: '460px',
     destroyCallback: () => {
