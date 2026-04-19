@@ -1,5 +1,10 @@
 <template>
   <div class="mobile-todo-dock">
+    <!-- 习惯视图 -->
+    <MobileHabitDock v-if="state.showHabitView" />
+    
+    <!-- 待办视图 -->
+    <template v-else>
     <MobileFilterBar
       v-model:search="state.searchQuery"
       :has-active-filters="hasActiveFilters"
@@ -19,6 +24,7 @@
     
     <MobileBottomNav
       @open-pomodoro="() => { console.log('[MobileTodoDock] 点击番茄钟'); state.showPomodoroDrawer = true; }"
+      @open-habit="state.showHabitView = true"
       @create="openQuickCreate"
     />
 
@@ -114,6 +120,7 @@
       @save="handleSettingDrawerClose"
       @cancel="selectedItemForSetting = null"
     />
+    </template>
   </div>
 </template>
 
@@ -122,6 +129,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import MobileFilterBar from './components/todo/MobileFilterBar.vue';
 import MobileTodoList from './components/todo/MobileTodoList.vue';
 import MobileBottomNav from './components/todo/MobileBottomNav.vue';
+import MobileHabitDock from './MobileHabitDock.vue';
 import FilterDrawer from './drawers/filter/FilterDrawer.vue';
 import ActionDrawer from './drawers/action/ActionDrawer.vue';
 import MobileItemDetail from './drawers/item/MobileItemDetail.vue';
@@ -166,6 +174,7 @@ const state = reactive({
   selectedProjectId: null as string | null,
   selectedTaskBlockId: null as string | null,
   showPomodoroDrawer: false,
+  showHabitView: false,
 });
 
 // Selected project and task refs for detail drawers
