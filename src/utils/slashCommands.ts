@@ -9,6 +9,7 @@ import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog } from '@/utils/dialog';
+import { insertBlock } from '@/api';
 import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime, updateBlockPriority, type BlockWriter } from '@/utils/fileUtils';
 import {
@@ -707,9 +708,7 @@ function getActionHandler(
           // Insert habit definition line at current cursor position
           const blockId = nodeElement?.getAttribute?.('data-node-id');
           if (blockId) {
-            import('@/api').then(({ insertBlock }) => {
-              insertBlock(markdown, blockId);
-            });
+            insertBlock(markdown, blockId);
           }
         });
       };
