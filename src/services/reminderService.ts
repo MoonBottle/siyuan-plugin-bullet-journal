@@ -7,6 +7,7 @@ import type { Plugin } from 'siyuan';
 import type { Item } from '@/types/models';
 import type { ProjectStore } from '@/stores/projectStore';
 import { showSystemNotification } from '@/utils/notification';
+import { getHabitsNeedingReminder } from '@/services/habitReminder';
 
 export class ReminderService {
   private checkInterval: ReturnType<typeof setInterval> | null = null;
@@ -94,6 +95,45 @@ export class ReminderService {
       if (reminderTime > now + 10000) {
         console.log(`[ReminderService] Breaking early: reminderTime > now + 10s`);
         break;
+      }
+    }
+
+    // 检查习惯提醒
+    await this.checkHabitReminders(plugin);
+  }
+
+  /**
+   * 检查习惯提醒
+   */
+  private async checkHabitReminders(plugin: Plugin): Promise<void> {
+    if (!this.projectStore) return;
+    if (typeof this.projectStore.getHabits !== 'function') return;
+
+    const now = Date.now();
+    const currentDate = this.projectStore.currentDate;
+    const habits = this.projectStore.getHabits('');
+
+    const habitReminders = getHabitsNeedingReminder(habits, currentDate, now);
+
+    for (const { habit, key } of habitReminders) {
+      if (!this.notifiedKeys.has(key)) {
+        const title = `🎯 ${habit.name}`;
+        const body = habit.type === 'count'
+          ? `${habit.name} ${habit.target || 0}${habit.unit || ''}`
+          : habit.name;
+
+        showSystemNotification(title, body, {
+          tag: `habit-reminder-${habit.blockId}`,
+          icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+          onClick: () => {
+            window.open(`siyuan://blocks/${habit.blockId}`, '_blank');
+          }
+        });
+
+        this.notifiedKeys.add(key);
+        setTimeout(() => this.notifiedKeys.delete(key), 24 * 60 * 60 * 1000);
+
+        console.log(`[ReminderService] Habit notification triggered: ${habit.name}`);
       }
     }
   }
