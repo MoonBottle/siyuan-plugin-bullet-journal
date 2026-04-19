@@ -708,7 +708,7 @@ function getActionHandler(
           // Insert habit definition line at current cursor position
           const blockId = nodeElement?.getAttribute?.('data-node-id');
           if (blockId) {
-            insertBlock(markdown, blockId);
+            insertBlock('markdown', markdown, undefined, blockId);
           }
         });
       };
