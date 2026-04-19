@@ -615,7 +615,10 @@
     "overrideBuiltinSkill": "「{name}」是内置技能，功能：{description}\n\n创建同名技能将覆盖内置版本，确定吗？",
     "overrideSuccess": "已覆盖内置技能「{name}」",
     "willOverrideBuiltin": "将覆盖内置技能",
-    "setPriority": "设置优先级"
+    "setPriority": "设置优先级",
+    "createHabit": "创建习惯",
+    "checkIn": "打卡",
+    "habitDock": "习惯面板"
   },
   "reminder": {
     "setReminder": "设置提醒",
@@ -855,5 +858,27 @@
       "weeklyOnDays": "每周{days}"
     },
     "nextOccurrence": "下次重复：{date}"
+  },
+  "habit": {
+    "title": "习惯打卡",
+    "todayChecked": "已打卡",
+    "todayUnchecked": "待打卡",
+    "periodCompleted": "本周已达标",
+    "streakDays": "连续{n}天",
+    "checkIn": "打卡",
+    "addOne": "+1",
+    "completed": "已完成",
+    "completionRate": "完成率",
+    "monthlyCheckins": "月打卡",
+    "totalCheckins": "总打卡",
+    "currentStreak": "当前连续",
+    "longestStreak": "最长连续",
+    "noHabits": "暂无习惯",
+    "noHabitsDesc": "在文档中使用 🎯 标记创建习惯",
+    "backToList": "返回列表",
+    "monthlyCompletionRate": "月完成率",
+    "weeklyCompletionRate": "周完成率",
+    "target": "目标 {target}{unit}",
+    "todayProgress": "今日进度"
   }
 }

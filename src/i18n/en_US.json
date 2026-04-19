@@ -577,7 +577,10 @@
     "alreadyMarkedTask": "Already marked as task",
     "setReminder": "Set Reminder",
     "setRecurring": "Set Recurring",
-    "setPriority": "Set Priority"
+    "setPriority": "Set Priority",
+    "createHabit": "Create Habit",
+    "checkIn": "Check In",
+    "habitDock": "Habit Panel"
   },
   "reminder": {
     "setReminder": "Set Reminder",
@@ -814,5 +817,27 @@
       "weeklyOnDays": "weekly on {days}"
     },
     "nextOccurrence": "Next: {date}"
+  },
+  "habit": {
+    "title": "Habit Check-in",
+    "todayChecked": "Checked in",
+    "todayUnchecked": "Pending",
+    "periodCompleted": "Completed this period",
+    "streakDays": "{n} day streak",
+    "checkIn": "Check In",
+    "addOne": "+1",
+    "completed": "Completed",
+    "completionRate": "Completion Rate",
+    "monthlyCheckins": "Monthly",
+    "totalCheckins": "Total",
+    "currentStreak": "Current Streak",
+    "longestStreak": "Longest Streak",
+    "noHabits": "No Habits",
+    "noHabitsDesc": "Use 🎯 marker in documents to create habits",
+    "backToList": "Back to List",
+    "monthlyCompletionRate": "Monthly Rate",
+    "weeklyCompletionRate": "Weekly Rate",
+    "target": "Target {target}{unit}",
+    "todayProgress": "Today's Progress"
   }
 }

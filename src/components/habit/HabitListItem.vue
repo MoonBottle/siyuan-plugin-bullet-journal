@@ -1,0 +1,235 @@
+<template>
+  <div
+    :class="['habit-list-item', {
+      'habit-list-item--completed': isCompleted,
+      'habit-list-item--count': habit.type === 'count'
+    }]"
+    @click="emit('click', habit)"
+  >
+    <div class="habit-list-item__main">
+      <div class="habit-list-item__header">
+        <span class="habit-list-item__name">{{ habit.name }}</span>
+        <span v-if="stats" class="habit-list-item__streak">
+          🔥 {{ t('habit').streakDays.replace('{n}', String(stats.currentStreak)) }}
+        </span>
+      </div>
+
+      <!-- 二元型 -->
+      <div v-if="habit.type === 'binary'" class="habit-list-item__status">
+        <span v-if="isCompleted" class="habit-list-item__checked">{{ t('habit').todayChecked }}</span>
+        <span v-else class="habit-list-item__unchecked">{{ t('habit').todayUnchecked }}</span>
+      </div>
+
+      <!-- 计数型 -->
+      <div v-else class="habit-list-item__progress">
+        <div class="habit-list-item__progress-bar">
+          <div
+            class="habit-list-item__progress-fill"
+            :style="{ width: progressPercent + '%' }"
+          ></div>
+        </div>
+        <span class="habit-list-item__progress-text">
+          {{ todayCurrentValue }}/{{ habit.target || 0 }}{{ habit.unit || '' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="habit-list-item__actions">
+      <!-- 二元型打卡按钮 -->
+      <button
+        v-if="habit.type === 'binary'"
+        :class="['habit-check-btn', { 'habit-check-btn--done': isCompleted }]"
+        :disabled="isCompleted"
+        @click.stop="emit('check-in', habit)"
+      >
+        {{ isCompleted ? '✅' : t('habit').checkIn }}
+      </button>
+
+      <!-- 计数型 +1 按钮 -->
+      <button
+        v-else
+        class="habit-increment-btn"
+        :disabled="isCompleted"
+        @click.stop="emit('increment', habit)"
+      >
+        {{ t('habit').addOne }}
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { t } from '@/i18n';
+import type { Habit, HabitStats } from '@/types/models';
+
+const props = defineProps<{
+  habit: Habit;
+  stats?: HabitStats;
+  selectedDate: string;
+  currentDate: string;
+}>();
+
+const emit = defineEmits<{
+  'check-in': [habit: Habit];
+  'increment': [habit: Habit];
+  'click': [habit: Habit];
+}>();
+
+const isCompleted = computed(() => {
+  return props.stats?.isPeriodCompleted ?? false;
+});
+
+const todayCurrentValue = computed(() => {
+  if (props.habit.type !== 'count') return 0;
+  const todayRecord = props.habit.records.find(r => r.date === props.selectedDate);
+  return todayRecord?.currentValue ?? 0;
+});
+
+const progressPercent = computed(() => {
+  if (!props.habit.target) return 0;
+  return Math.min((todayCurrentValue.value / props.habit.target) * 100, 100);
+});
+</script>
+
+<style scoped>
+.habit-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--b3-theme-surface-lighter);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.habit-list-item:hover {
+  background: var(--b3-theme-surface-lighter);
+}
+
+.habit-list-item--completed {
+  opacity: 0.7;
+}
+
+.habit-list-item__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.habit-list-item__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.habit-list-item__name {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habit-list-item__streak {
+  font-size: 11px;
+  color: var(--b3-theme-on-surface-light);
+  white-space: nowrap;
+}
+
+.habit-list-item__status {
+  font-size: 12px;
+}
+
+.habit-list-item__checked {
+  color: var(--b3-theme-primary);
+}
+
+.habit-list-item__unchecked {
+  color: var(--b3-theme-on-surface-light);
+}
+
+.habit-list-item__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.habit-list-item__progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--b3-theme-surface-lighter);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.habit-list-item__progress-fill {
+  height: 100%;
+  background: var(--b3-theme-primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.habit-list-item__progress-text {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface-light);
+  white-space: nowrap;
+}
+
+.habit-list-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.habit-check-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--b3-theme-primary);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--b3-theme-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.habit-check-btn:hover:not(:disabled) {
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+}
+
+.habit-check-btn--done {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.habit-check-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.habit-increment-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--b3-theme-primary);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--b3-theme-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.habit-increment-btn:hover:not(:disabled) {
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+}
+
+.habit-increment-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+</style>

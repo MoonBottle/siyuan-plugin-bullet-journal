@@ -1,28 +1,18 @@
 <template>
-  <div class="habit-dock">
-    <div class="habit-dock__placeholder">
-      <span>🎯 {{ t('habit')?.title || '习惯打卡' }}</span>
-    </div>
-  </div>
+  <MobileHabitDock v-if="isMobile" />
+  <DesktopHabitDock v-else />
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  plugin: any;
-}>();
-</script>
+import { computed } from 'vue';
+import { usePlugin } from '@/main';
+import DesktopHabitDock from './DesktopHabitDock.vue';
+import MobileHabitDock from '@/mobile/MobileHabitDock.vue';
 
-<style scoped>
-.habit-dock {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.habit-dock__placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--b3-theme-on-surface-light);
-}
-</style>
+const props = defineProps<{
+  plugin?: any;
+}>();
+
+const pluginInstance = computed(() => props.plugin || usePlugin());
+const isMobile = computed(() => pluginInstance.value?.isMobile);
+</script>
