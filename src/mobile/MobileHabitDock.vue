@@ -143,30 +143,29 @@ function openHabitDetail(habit: Habit) {
 
 async function handleCheckIn(habit: Habit) {
   const success = await checkIn(habit, state.selectedDate);
-  if (success) {
-    console.log('[MobileHabitDock] Check-in successful');
+  if (success && plugin) {
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
   }
 }
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, state.selectedDate, 1);
-  if (success) {
-    console.log('[MobileHabitDock] Increment successful');
+  if (success && plugin) {
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
   }
 }
 
 async function handleCountChange(newValue: number) {
   if (!state.selectedHabit) return;
   const success = await checkInCount(state.selectedHabit, state.selectedDate, newValue);
-  if (success) {
-    console.log('[MobileHabitDock] Count change successful');
+  if (success && plugin) {
+    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
   }
 }
 
-// 数据刷新
+// 数据刷新（打卡后触发）
 const handleDataRefresh = async () => {
   if (!plugin) return;
-  settingsStore.loadFromPlugin();
   await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
@@ -174,10 +173,8 @@ let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 onMounted(async () => {
-  settingsStore.loadFromPlugin();
-  if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
-  }
+  // 不需要重复加载，projectStore 已在 MobileTodoDock 中初始化
+  // 只监听数据刷新事件
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
