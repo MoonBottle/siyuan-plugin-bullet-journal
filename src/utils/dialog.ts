@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
@@ -15,6 +15,7 @@ import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
+import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
@@ -1170,5 +1171,40 @@ export function showPrioritySettingDialog(
   return dialog;
 }
 
+/**
+ * 显示习惯创建弹框
+ */
+export function showHabitCreateDialog(
+  onSave: (markdown: string) => void
+): Dialog {
+  const container = document.createElement('div');
 
+  const app = createApp(HabitCreateDialog, {
+    onSave: (markdown: string) => {
+      onSave(markdown);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    }
+  });
 
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('slash').createHabit; '创建习惯',
+    content: '',
+    width: '460px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  return dialog;
+}

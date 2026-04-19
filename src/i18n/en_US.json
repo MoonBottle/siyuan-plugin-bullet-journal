@@ -838,6 +838,26 @@
     "monthlyCompletionRate": "Monthly Rate",
     "weeklyCompletionRate": "Weekly Rate",
     "target": "Target {target}{unit}",
-    "todayProgress": "Today's Progress"
+    "todayProgress": "Today's Progress",
+    "nameLabel": "Habit Name",
+    "namePlaceholder": "Enter habit name, e.g. Wake up early",
+    "startDateLabel": "Start Date",
+    "durationLabel": "Duration (optional)",
+    "durationPlaceholder": "Leave empty for no limit",
+    "typeLabel": "Type",
+    "typeBinary": "Binary",
+    "typeCount": "Count",
+    "targetLabel": "Target + Unit",
+    "unitPlaceholder": "cups, km, minutes",
+    "frequencyLabel": "Frequency",
+    "freqDaily": "Daily",
+    "freqEveryNDays": "Every N days",
+    "freqWeekly": "Weekly",
+    "freqNPerWeek": "N days/week",
+    "freqWeeklyDays": "Specific days",
+    "daysInterval": "day interval",
+    "daysPerWeekLabel": "days/week",
+    "createSuccess": "Habit created",
+    "createFailed": "Failed to create habit"
   }
 }

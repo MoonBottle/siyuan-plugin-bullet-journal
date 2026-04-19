@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog } from '@/utils/dialog';
+import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime, updateBlockPriority, type BlockWriter } from '@/utils/fileUtils';
 import {
@@ -703,8 +703,15 @@ function getActionHandler(
     case 'createHabit':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
-        // TODO: 打开 HabitCreateDialog（Task 11 实现后完善）
-        console.log('[SlashCommand] createHabit: placeholder');
+        showHabitCreateDialog((markdown) => {
+          // Insert habit definition line at current cursor position
+          const blockId = nodeElement?.getAttribute?.('data-node-id');
+          if (blockId) {
+            import('@/api').then(({ insertBlock }) => {
+              insertBlock(markdown, blockId);
+            });
+          }
+        });
       };
     case 'checkIn':
       return (protyle, nodeElement) => {

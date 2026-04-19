@@ -879,6 +879,26 @@
     "monthlyCompletionRate": "月完成率",
     "weeklyCompletionRate": "周完成率",
     "target": "目标 {target}{unit}",
-    "todayProgress": "今日进度"
+    "todayProgress": "今日进度",
+    "nameLabel": "习惯名",
+    "namePlaceholder": "输入习惯名，如：早起、喝水",
+    "startDateLabel": "开始日期",
+    "durationLabel": "坚持天数（可选）",
+    "durationPlaceholder": "留空表示不限制",
+    "typeLabel": "类型",
+    "typeBinary": "二元型",
+    "typeCount": "计数型",
+    "targetLabel": "目标值+单位",
+    "unitPlaceholder": "杯、公里、分钟",
+    "frequencyLabel": "频率",
+    "freqDaily": "每天",
+    "freqEveryNDays": "每N天",
+    "freqWeekly": "每周",
+    "freqNPerWeek": "每周N天",
+    "freqWeeklyDays": "指定周几",
+    "daysInterval": "天间隔",
+    "daysPerWeekLabel": "天/周",
+    "createSuccess": "习惯已创建",
+    "createFailed": "创建习惯失败"
   }
 }
