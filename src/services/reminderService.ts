@@ -122,8 +122,10 @@ export class ReminderService {
 
           const key = makeScheduleKey(item, reminderTime);
 
-          if (reminderTime <= now) {
-            // 已过提醒时间但未通知过 → 立即触发
+          // 提醒时间已过：仅当在宽容窗口（5 分钟）内才视为漏掉的提醒
+          // 超过 5 分钟说明是事后编辑，不应触发
+          const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
+          if (reminderTime <= now && (now - reminderTime) <= MISSED_THRESHOLD_MS) {
             if (!this.notifiedKeys.has(key)) {
               console.log(`[ReminderService] Missed reminder, triggering now: "${item.content.substring(0, 20)}..." | key=${key}`);
               this.triggerNotification(item);
@@ -131,6 +133,12 @@ export class ReminderService {
               this.scheduleCleanup(key);
             } else {
               console.log(`[ReminderService] Already notified for key=${key}, skipping`);
+            }
+          } else if (reminderTime <= now) {
+            // 超过宽容窗口的已过期提醒，静默跳过
+            if (!this.notifiedKeys.has(key)) {
+              console.log(`[ReminderService] Stale reminder (${Math.round((now - reminderTime) / 60000)}min ago), skipping: "${item.content.substring(0, 20)}..." | key=${key}`);
+              this.notifiedKeys.add(key); // 标记为已处理，避免重复日志
             }
           } else if (reminderTime < now + 24 * 60 * 60 * 1000) {
             // 未来 24 小时内 → 加入调度

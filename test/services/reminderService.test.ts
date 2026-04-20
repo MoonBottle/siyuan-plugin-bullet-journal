@@ -165,6 +165,34 @@ describe('ReminderService', () => {
       expect(mockShowSystemNotification).toHaveBeenCalledTimes(2);
     });
 
+    it('超过宽容窗口（5分钟）的过期提醒不应触发通知', () => {
+      mockReminderTime = Date.now() - 10 * 60 * 1000; // 10 分钟前，超过宽容窗口
+
+      const item: Item = {
+        id: '1', content: '周会', date: '2026-03-17', status: 'pending',
+        lineNumber: 1, docId: 'doc1', blockId: 'block-123',
+        reminder: { enabled: true, type: 'absolute', time: '09:00' },
+      };
+
+      service.start({} as any, makeStore(item));
+
+      expect(mockShowSystemNotification).not.toHaveBeenCalled();
+    });
+
+    it('在宽容窗口内（5分钟）的过期提醒应触发通知', () => {
+      mockReminderTime = Date.now() - 3 * 60 * 1000; // 3 分钟前，在宽容窗口内
+
+      const item: Item = {
+        id: '1', content: '周会', date: '2026-03-17', status: 'pending',
+        lineNumber: 1, docId: 'doc1', blockId: 'block-123',
+        reminder: { enabled: true, type: 'absolute', time: '09:00' },
+      };
+
+      service.start({} as any, makeStore(item));
+
+      expect(mockShowSystemNotification).toHaveBeenCalledTimes(1);
+    });
+
     it('删除的事项应停止对应的 Cron job', () => {
       mockReminderTime = Date.now() + 60 * 60 * 1000;
 
