@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.12.4] - 2026-04-20
+
+### Features
+
+- **Reminder Service Refactor**: Rewrote reminder service using croner instead of polling
+  - More precise reminder scheduling with lower resource usage
+
+### Fixes
+
+- **Task Parsing**: Automatically remove Markdown heading markers (e.g., `# Heading`) when parsing tasks to ensure correct task name parsing
+
 ## [0.12.3] - 2026-04-18
 
 ### Fixes
