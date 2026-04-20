@@ -295,6 +295,18 @@ describe('parseTaskLine 任务解析', () => {
     expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
     expect(task.links![1]).toEqual({ name: '链接', url: 'https://example.com' });
   });
+
+  it.each([
+    ['# 重要项目 #任务', 'H1', '重要项目'],
+    ['## 日常维护 📋 @L2', 'H2', '日常维护'],
+    ['### redmine 维护 📋', 'H3', 'redmine 维护'],
+    ['#### 季度汇报 📋 @2024-01-01', 'H4', '季度汇报'],
+    ['##### 周会纪要 📋 @L3', 'H5', '周会纪要'],
+    ['###### 最低优先级任务 #任务', 'H6', '最低优先级任务'],
+  ] as const)('标题格式任务：%s 应剥离前缀', (line, _level, expectedName) => {
+    const task = LineParser.parseTaskLine(line, 1);
+    expect(task.name).toBe(expectedName);
+  });
 });
 
 describe('parseItemLine - 事项链接', () => {

@@ -65,7 +65,9 @@ export class LineParser {
 
     // 提取任务名称（移除所有标记）
     // 注意：思源 Kramdown 中 #任务 会显示为 #任务#（末尾多一个 #）
+    // 先移除行首的 Markdown 标题标记（### ... #），避免标题任务名残留
     let name = line
+      .replace(/^#{1,6}\s+/, '')
       .replace(/#任务#?/g, '')
       .replace(/#task#?/gi, '')
       .replace(/📋/g, '')
