@@ -137,8 +137,8 @@ export default class TaskAssistantPlugin extends Plugin {
     const projectStore = useProjectStore(pinia);
     projectStore.loadProjects(this, scanMode, enabledDirs).then(async () => {
       console.log('[Task Assistant] Initial loadProjects completed');
-      // 初始加载完成后同步提醒
-      console.log('[ReminderService] Initial load completed');
+      // 初始加载完成后触发提醒调度重建
+      reminderService.scheduleRebuild();
     }).catch(err => {
       console.error('[Task Assistant] Failed to load projects on init:', err);
     });
@@ -171,7 +171,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册斜杠命令
     this.registerSlashCommands();
 
-    // 启动提醒服务（传入 projectStore，服务内部会定时读取 itemsNeedingReminder）
+    // 启动提醒服务（基于 croner 精确调度）
     reminderService.start(this, projectStore);
 
     // 初始化技能存储服务
@@ -1537,6 +1537,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.refreshTimeout = setTimeout(() => {
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
+      reminderService.scheduleRebuild();
     }, 150);
   }
 
