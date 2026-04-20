@@ -13,9 +13,17 @@ import { showSystemNotification } from '@/utils/notification';
 
 type ProjectStoreType = ReturnType<typeof useProjectStore>;
 
+/**
+ * 生成调度 key：blockId-date-reminderTime
+ * 包含 reminderTime 确保同一事项改了提醒时间后能正确重新调度
+ */
+function makeScheduleKey(item: Item, reminderTime: number): string {
+  return `${item.blockId}-${item.date}-${reminderTime}`;
+}
+
 export class ReminderService {
-  private scheduledJobs: Map<string, Cron> = new Map(); // key: blockId-date → Cron job
-  private notifiedKeys: Set<string> = new Set(); // 已提醒的 key
+  private scheduledJobs: Map<string, Cron> = new Map(); // key → Cron job
+  private notifiedKeys: Set<string> = new Set(); // 已提醒的 scheduleKey
   private projectStore: ProjectStoreType | null = null;
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
   private visibilityHandler: (() => void) | null = null;
@@ -90,7 +98,7 @@ export class ReminderService {
     if (!this.projectStore) return;
 
     const now = Date.now();
-    const newKeys = new Map<string, { item: Item; reminderTime: number }>();
+    const newEntries = new Map<string, { item: Item; reminderTime: number }>();
 
     // 遍历所有事项，计算提醒时间
     for (const project of this.projectStore.projects) {
@@ -112,42 +120,50 @@ export class ReminderService {
 
           if (reminderTime <= 0) continue;
 
-          const key = `${item.blockId}-${item.date}`;
+          const key = makeScheduleKey(item, reminderTime);
 
           if (reminderTime <= now) {
             // 已过提醒时间但未通知过 → 立即触发
             if (!this.notifiedKeys.has(key)) {
-              console.log(`[ReminderService] Missed reminder, triggering now: "${item.content.substring(0, 20)}..."`);
+              console.log(`[ReminderService] Missed reminder, triggering now: "${item.content.substring(0, 20)}..." | key=${key}`);
               this.triggerNotification(item);
               this.notifiedKeys.add(key);
               this.scheduleCleanup(key);
+            } else {
+              console.log(`[ReminderService] Already notified for key=${key}, skipping`);
             }
           } else if (reminderTime < now + 24 * 60 * 60 * 1000) {
             // 未来 24 小时内 → 加入调度
-            newKeys.set(key, { item, reminderTime });
+            newEntries.set(key, { item, reminderTime });
           }
         }
       }
     }
 
-    // Diff：停掉已删除的 job
+    // Diff：停掉不再需要的 job
     for (const [key, job] of this.scheduledJobs) {
-      if (!newKeys.has(key)) {
+      if (!newEntries.has(key)) {
+        console.log(`[ReminderService] Removing obsolete job: key=${key}`);
         job.stop();
         this.scheduledJobs.delete(key);
       }
     }
 
     // 新增 job（已存在的跳过）
-    for (const [key, { item, reminderTime }] of newKeys) {
+    for (const [key, { item, reminderTime }] of newEntries) {
       if (this.scheduledJobs.has(key)) continue;
 
+      console.log(`[ReminderService] Scheduling job: key=${key} at ${new Date(reminderTime).toLocaleString()}`);
+
       const job = new Cron(new Date(reminderTime), () => {
-        const notifyKey = `${item.blockId}-${item.date}`;
+        const notifyKey = makeScheduleKey(item, reminderTime);
         if (!this.notifiedKeys.has(notifyKey)) {
+          console.log(`[ReminderService] Cron fired, triggering notification: key=${notifyKey}`);
           this.triggerNotification(item);
           this.notifiedKeys.add(notifyKey);
           this.scheduleCleanup(notifyKey);
+        } else {
+          console.log(`[ReminderService] Cron fired but already notified: key=${notifyKey}`);
         }
         this.scheduledJobs.delete(key);
       });
@@ -155,7 +171,7 @@ export class ReminderService {
       this.scheduledJobs.set(key, job);
     }
 
-    console.log(`[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active jobs, ${newKeys.size} items scanned`);
+    console.log(`[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active jobs, ${newEntries.size} items scanned, ${this.notifiedKeys.size} notified keys`);
   }
 
   /**

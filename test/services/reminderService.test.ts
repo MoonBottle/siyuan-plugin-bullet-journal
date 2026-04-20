@@ -178,7 +178,9 @@ describe('ReminderService', () => {
       service.start({} as any, store);
       expect((service as any).scheduledJobs.size).toBe(1);
 
-      const job = (service as any).scheduledJobs.get('block-123-2026-03-17');
+      // key format: blockId-date-reminderTime
+      const expectedKey = `block-123-2026-03-17-${mockReminderTime}`;
+      const job = (service as any).scheduledJobs.get(expectedKey);
       expect(job).toBeDefined();
 
       // 清空事项列表，rebuild 后旧 job 应被停止
