@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.12.5] - 2026-04-22
+
+### Features
+
+- **Link Parsing Enhancements**:
+  - Recognize standalone block-reference lines under tasks/items as links and store them as a dedicated link type
+- **Todo Dock Display Toggles**:
+  - Added "Show Links" and "Show Reminder/Recurring" toggles to the top-right menu, disabled by default
+- **Todo Card Enhancements**:
+  - Show merged task/item links in a compact area on the card
+  - Make reminder and recurring info directly clickable to open the existing settings dialogs
+
+### Styles
+
+- **Unified Link Styling**:
+  - Use the SiYuan link style consistently for links in both the detail dialog and Todo Dock
+  - Keep small prefix markers to distinguish external, SiYuan, and block-reference links
+
+### Docs
+
+- **Data Format Docs**: Added documentation for block-reference link types and Todo Dock display behavior
+
 ## [0.12.4] - 2026-04-20
 
 ### Features
