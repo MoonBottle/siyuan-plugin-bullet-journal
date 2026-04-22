@@ -134,6 +134,10 @@
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
     "hideAbandoned": "Hide abandoned",
+    "showLinks": "Show links",
+    "hideLinks": "Hide links",
+    "showReminderRecurring": "Show reminder & recurring",
+    "hideReminderRecurring": "Hide reminder & recurring",
     "startFocusAria": "Start Focus",
     "searchPlaceholder": "Search items...",
     "priority": {

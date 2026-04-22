@@ -4,9 +4,12 @@
  */
 
 // 链接
+export type LinkType = 'external' | 'siyuan' | 'block-ref';
+
 export interface Link {
   name: string;
   url: string;
+  type?: LinkType;
 }
 
 // 番茄钟状态

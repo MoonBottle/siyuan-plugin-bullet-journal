@@ -233,6 +233,28 @@ const handleMoreClick = (event: MouseEvent) => {
     },
   });
 
+  const showLinks = settingsStore.todoDock.showLinks;
+  menu.addItem({
+    icon: showLinks ? 'iconEyeoff' : 'iconEye',
+    label: showLinks ? t('todo').hideLinks : t('todo').showLinks,
+    click: () => {
+      settingsStore.todoDock.showLinks = !settingsStore.todoDock.showLinks;
+      settingsStore.saveToPlugin();
+    },
+  });
+
+  const showReminderAndRecurring = settingsStore.todoDock.showReminderAndRecurring;
+  menu.addItem({
+    icon: showReminderAndRecurring ? 'iconEyeoff' : 'iconEye',
+    label: showReminderAndRecurring
+      ? t('todo').hideReminderRecurring
+      : t('todo').showReminderRecurring,
+    click: () => {
+      settingsStore.todoDock.showReminderAndRecurring = !settingsStore.todoDock.showReminderAndRecurring;
+      settingsStore.saveToPlugin();
+    },
+  });
+
   menu.open({
     x: rect.left,
     y: rect.bottom + 4,

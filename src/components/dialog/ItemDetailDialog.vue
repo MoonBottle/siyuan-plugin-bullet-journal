@@ -29,6 +29,7 @@
             type="link"
             :text="link.name"
             :href="link.url"
+            :class="['typed-link', `typed-link--${link.type || 'default'}`]"
             @click="handleLinkClick(link.url)"
           />
         </template>
@@ -65,6 +66,7 @@
             type="link"
             :text="link.name"
             :href="link.url"
+            :class="['typed-link', `typed-link--${link.type || 'default'}`]"
             @click="handleLinkClick(link.url)"
           />
         </template>
@@ -194,6 +196,7 @@
             type="link"
             :text="link.name"
             :href="link.url"
+            :class="['typed-link', `typed-link--${link.type || 'default'}`]"
             @click="handleLinkClick(link.url)"
           />
         </template>
@@ -803,6 +806,25 @@ function handleSkipOccurrence() {
   font-weight: 500;
   margin-left: auto;
   margin-right: 4px;
+}
+
+:deep(.typed-link) {
+  border: 1px solid var(--b3-border-color);
+}
+
+:deep(.typed-link--external) {
+  background: var(--b3-theme-surface-lighter);
+  color: var(--b3-theme-on-surface);
+}
+
+:deep(.typed-link--siyuan) {
+  background: color-mix(in srgb, var(--b3-theme-primary) 12%, var(--b3-theme-surface) 88%);
+  color: var(--b3-theme-on-surface);
+}
+
+:deep(.typed-link--block-ref) {
+  background: color-mix(in srgb, var(--b3-theme-primary-light) 16%, var(--b3-theme-surface) 84%);
+  color: var(--b3-theme-on-surface);
 }
 
 </style>
