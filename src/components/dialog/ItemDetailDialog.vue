@@ -809,22 +809,38 @@ function handleSkipOccurrence() {
 }
 
 :deep(.typed-link) {
-  border: 1px solid var(--b3-border-color);
-}
-
-:deep(.typed-link--external) {
-  background: var(--b3-theme-surface-lighter);
-  color: var(--b3-theme-on-surface);
-}
-
-:deep(.typed-link--siyuan) {
+  position: relative;
+  padding-left: 22px;
+  border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 55%, var(--b3-border-color) 45%);
   background: color-mix(in srgb, var(--b3-theme-primary) 12%, var(--b3-theme-surface) 88%);
   color: var(--b3-theme-on-surface);
+  font-weight: 500;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--b3-theme-primary) 70%, transparent 30%);
 }
 
-:deep(.typed-link--block-ref) {
-  background: color-mix(in srgb, var(--b3-theme-primary-light) 16%, var(--b3-theme-surface) 84%);
-  color: var(--b3-theme-on-surface);
+:deep(.typed-link--external::before),
+:deep(.typed-link--siyuan::before),
+:deep(.typed-link--block-ref::before) {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.8;
+  color: var(--b3-theme-primary);
+}
+
+:deep(.typed-link--external::before) {
+  content: '↗';
+}
+
+:deep(.typed-link--siyuan::before) {
+  content: 'S';
+}
+
+:deep(.typed-link--block-ref::before) {
+  content: '❝';
 }
 
 </style>
