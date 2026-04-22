@@ -3,7 +3,7 @@
  * 不依赖 API，仅接受字符串输入，供插件和 MCP 共用
  */
 import type { Project, Task, Item, PomodoroRecord } from '@/types/models';
-import { LineParser, parseBlockRefs } from './lineParser';
+import { LineParser, createLink, isStandaloneBlockRefLine, parseBlockRefs } from './lineParser';
 
 export interface KramdownBlock {
   content: string;
@@ -248,7 +248,7 @@ export function parseKramdown(
         const strippedContent = stripListAndBlockAttr(content);
         const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch) {
-          project.links!.push({ name: linkMatch[1], url: linkMatch[2] });
+          project.links!.push(createLink(linkMatch[1], linkMatch[2]));
           continue;
         }
       }
@@ -258,7 +258,7 @@ export function parseKramdown(
         if (urlMatch) {
           const nameMatch = content.match(/^([^：:]+)[：:]/);
           const linkName = nameMatch ? nameMatch[1].trim() : '链接';
-          project.links!.push({ name: linkName, url: urlMatch[1] });
+          project.links!.push(createLink(linkName, urlMatch[1]));
           continue;
         }
       }
@@ -285,6 +285,27 @@ export function parseKramdown(
       continue;
     }
 
+    if (currentTask && isStandaloneBlockRefLine(stripListAndBlockAttr(content))) {
+      const { links } = parseBlockRefs(stripListAndBlockAttr(content));
+      if (links.length > 0) {
+        if (currentItem && hasSeenItemForCurrentTask) {
+          const mergedLinks = [...(currentItem.links || []), ...links];
+          currentTask.items
+            .filter(item => item.blockId === currentItem.blockId)
+            .forEach((item) => {
+              item.links = mergedLinks;
+            });
+          currentItem.links = mergedLinks;
+          continue;
+        }
+
+        if (!hasSeenItemForCurrentTask) {
+          currentTask.links = [...(currentTask.links || []), ...links];
+          continue;
+        }
+      }
+    }
+
     if (currentTask && content.includes('](') && !content.includes('@') && !content.includes('📅') && !hasSeenItemForCurrentTask) {
       const strippedContent = stripListAndBlockAttr(content);
       const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
@@ -292,7 +313,7 @@ export function parseKramdown(
         if (!currentTask.links) {
           currentTask.links = [];
         }
-        currentTask.links.push({ name: linkMatch[1], url: linkMatch[2] });
+        currentTask.links.push(createLink(linkMatch[1], linkMatch[2]));
         continue;
       }
     }
@@ -302,7 +323,7 @@ export function parseKramdown(
       hasSeenItemForCurrentTask = true;
       // 收集事项下方的链接行：当前事项行之后到下一个事项/任务行之间的所有链接行
       // 非链接行（如说明文字）跳过不中断，仅在遇到下一事项/任务行时停止
-      const itemLinks: Array<{ name: string; url: string }> = [];
+      const itemLinks = [] as NonNullable<Item['links']>;
       
       // 记录最后一个相关块的索引（初始为当前块）
       const currentBlockIndex = blocks.indexOf(block);
@@ -315,7 +336,7 @@ export function parseKramdown(
         const strippedLineContent = stripListAndBlockAttr(lineContent);
         const linkMatch = strippedLineContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !lineContent.includes('@')) {
-          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+          itemLinks.push(createLink(linkMatch[1], linkMatch[2]));
         }
       }
       let nextBlockIndex = currentBlockIndex + 1;
@@ -332,7 +353,7 @@ export function parseKramdown(
         const strippedNextContent = stripListAndBlockAttr(nextContent);
         const linkMatch = strippedNextContent.match(/\[(.*?)\]\((.*?)\)/);
         if (linkMatch && !nextContent.includes('@')) {
-          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+          itemLinks.push(createLink(linkMatch[1], linkMatch[2]));
         }
         nextBlockIndex++;
       }

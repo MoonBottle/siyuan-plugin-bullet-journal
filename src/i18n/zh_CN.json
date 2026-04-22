@@ -134,6 +134,10 @@
     "hideCompleted": "隐藏已完成",
     "showAbandoned": "显示已放弃",
     "hideAbandoned": "隐藏已放弃",
+    "showLinks": "显示链接",
+    "hideLinks": "隐藏链接",
+    "showReminderRecurring": "显示提醒与重复",
+    "hideReminderRecurring": "隐藏提醒与重复",
     "startFocusAria": "开始专注",
     "searchPlaceholder": "搜索事项...",
     "priority": {

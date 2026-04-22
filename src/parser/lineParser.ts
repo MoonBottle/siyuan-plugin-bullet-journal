@@ -12,6 +12,27 @@ import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 /** 思源块引用正则：((blockId)) 或 ((blockId "alias")) 或 ((blockId 'alias')) */
 const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g;
 
+export function inferLinkType(url: string): Link['type'] {
+  return url.startsWith('siyuan://') ? 'siyuan' : 'external';
+}
+
+export function createLink(name: string, url: string, type?: Link['type']): Link {
+  return {
+    name,
+    url,
+    type: type ?? inferLinkType(url)
+  };
+}
+
+export function isStandaloneBlockRefLine(text: string): boolean {
+  if (!text.trim()) return false;
+  const remainder = text.replace(BLOCK_REF_REGEX, '').trim();
+  BLOCK_REF_REGEX.lastIndex = 0;
+  const hasBlockRef = BLOCK_REF_REGEX.test(text);
+  BLOCK_REF_REGEX.lastIndex = 0;
+  return remainder.length === 0 && hasBlockRef;
+}
+
 /**
  * 解析思源行内块引用，提取 links 并 strip 显示文本
  * @param text 原始文本
@@ -21,10 +42,7 @@ export function parseBlockRefs(text: string): { stripped: string; links: Link[] 
   const links: Link[] = [];
   const stripped = text.replace(BLOCK_REF_REGEX, (_, blockId, aliasDouble, aliasSingle) => {
     const alias = aliasDouble ?? aliasSingle ?? undefined;
-    links.push({
-      name: alias || '块引用',
-      url: `siyuan://blocks/${blockId}`
-    });
+    links.push(createLink(alias || '块引用', `siyuan://blocks/${blockId}`, 'block-ref'));
     return alias ?? '';
   });
   // 保留换行符，只将非换行的连续空白字符替换为单个空格
@@ -60,7 +78,7 @@ export class LineParser {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     let urlMatch;
     while ((urlMatch = urlRegex.exec(line)) !== null) {
-      links.push({ name: '链接', url: urlMatch[1] });
+      links.push(createLink('链接', urlMatch[1]));
     }
 
     // 提取任务名称（移除所有标记）

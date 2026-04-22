@@ -21,7 +21,9 @@ export const useSettingsStore = defineStore('settings', {
     showPomodoroTotal: true,
     todoDock: {
       hideCompleted: false,
-      hideAbandoned: false
+      hideAbandoned: false,
+      showLinks: false,
+      showReminderAndRecurring: false
     },
     loaded: false
   }),
@@ -77,7 +79,12 @@ export const useSettingsStore = defineStore('settings', {
         this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
         this.showPomodoroBlocks = settings.showPomodoroBlocks ?? true;
         this.showPomodoroTotal = settings.showPomodoroTotal ?? true;
-        this.todoDock = settings.todoDock || { hideCompleted: false, hideAbandoned: false };
+        this.todoDock = {
+          hideCompleted: settings.todoDock?.hideCompleted ?? false,
+          hideAbandoned: settings.todoDock?.hideAbandoned ?? false,
+          showLinks: settings.todoDock?.showLinks ?? false,
+          showReminderAndRecurring: settings.todoDock?.showReminderAndRecurring ?? false
+        };
         this.loaded = true;
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
       }

@@ -187,7 +187,7 @@ describe('parseKramdown 块引用解析', () => {
     expect(project).not.toBeNull();
     expect(project!.name).toBe('网站测试重构项目');
     expect(project!.links).toHaveLength(1);
-    expect(project!.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(project!.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('任务名含块引用：strip 并提取到 task.links', () => {
@@ -203,7 +203,7 @@ describe('parseKramdown 块引用解析', () => {
     expect(project!.tasks).toHaveLength(1);
     expect(project!.tasks[0].name).toBe('首页测试改版');
     expect(project!.tasks[0].links).toHaveLength(1);
-    expect(project!.tasks[0].links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(project!.tasks[0].links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('任务块引用与下方链接合并', () => {
@@ -221,8 +221,8 @@ describe('parseKramdown 块引用解析', () => {
     expect(project!.tasks).toHaveLength(1);
     expect(project!.tasks[0].name).toBe('首页测试改版');
     expect(project!.tasks[0].links).toHaveLength(2);
-    expect(project!.tasks[0].links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
-    expect(project!.tasks[0].links![1]).toEqual({ name: '需求文档', url: 'https://example.com/homepage' });
+    expect(project!.tasks[0].links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
+    expect(project!.tasks[0].links![1]).toEqual({ name: '需求文档', url: 'https://example.com/homepage', type: 'external' });
   });
 });
 
@@ -455,6 +455,77 @@ describe('parseKramdown 事项链接解析', () => {
     expect(project!.tasks[0].items[0].links).toHaveLength(1);
     expect(project!.tasks[0].items[0].links![0].name).toBe('GitHub');
     expect(project!.tasks[0].items[0].links![0].url).toBe('https://github.com');
+  });
+
+  it('任务下方整行块引用：正确关联到任务 links', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务块引用 #任务#
+{: id="after-t" }
+- {: id="ref1" }((20260422075729-q6vs0km '需求文档'))
+{: id="after-ref1" }
+  - {: id="i1" }事项A @2026-04-22
+{: id="after-i1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].links).toEqual([
+      {
+        name: '需求文档',
+        url: 'siyuan://blocks/20260422075729-q6vs0km',
+        type: 'block-ref'
+      }
+    ]);
+  });
+
+  it('事项下方整行块引用：正确关联到事项 links', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }事项块引用 @2026-04-22
+{: id="after-i1" }
+  - {: id="ref1" }((20260422075729-q6vs0km '设计稿'))
+{: id="after-ref1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].links).toEqual([
+      {
+        name: '设计稿',
+        url: 'siyuan://blocks/20260422075729-q6vs0km',
+        type: 'block-ref'
+      }
+    ]);
+  });
+
+  it('多日期事项下方整行块引用：所有展开 item 都应共享 links', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }多日期事项 @2026-04-22, 2026-04-24
+{: id="after-i1" }
+  - {: id="ref1" }((20260422075729-q6vs0km '需求说明'))
+{: id="after-ref1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items).toHaveLength(2);
+    expect(project!.tasks[0].items[0].links).toEqual([
+      {
+        name: '需求说明',
+        url: 'siyuan://blocks/20260422075729-q6vs0km',
+        type: 'block-ref'
+      }
+    ]);
+    expect(project!.tasks[0].items[1].links).toEqual([
+      {
+        name: '需求说明',
+        url: 'siyuan://blocks/20260422075729-q6vs0km',
+        type: 'block-ref'
+      }
+    ]);
   });
 });
 

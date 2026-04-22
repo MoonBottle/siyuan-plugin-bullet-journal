@@ -56,6 +56,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
@@ -129,6 +130,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
@@ -202,6 +204,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
@@ -282,6 +285,7 @@
                   </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
                   <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+                  <TodoItemMeta :item="item" />
                   <template #footer>
                     <div class="item-actions-hover">
                       <span
@@ -357,6 +361,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
@@ -399,6 +404,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
@@ -422,9 +428,10 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import Card from '@/components/common/Card.vue';
+import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog, showPrioritySettingDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { updateBlockPriority } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';

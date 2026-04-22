@@ -5,6 +5,8 @@ import type { ProjectDirectory, ProjectGroup, ScanMode } from '@/types/models';
 export interface TodoDockSettings {
   hideCompleted: boolean;
   hideAbandoned: boolean;
+  showLinks: boolean;
+  showReminderAndRecurring: boolean;
 }
 
 // AI 聊天记录（单独存储）
@@ -116,7 +118,9 @@ export const defaultSettings: SettingsData = {
   showPomodoroTotal: true,
   todoDock: {
     hideCompleted: false,
-    hideAbandoned: false
+    hideAbandoned: false,
+    showLinks: false,
+    showReminderAndRecurring: false
   },
   ai: {
     providers: [],

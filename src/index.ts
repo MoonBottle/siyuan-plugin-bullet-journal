@@ -404,7 +404,9 @@ export default class TaskAssistantPlugin extends Plugin {
           showPomodoroTotal: data.showPomodoroTotal ?? true,
           todoDock: {
             hideCompleted: data.todoDock?.hideCompleted ?? false,
-            hideAbandoned: data.todoDock?.hideAbandoned ?? false
+            hideAbandoned: data.todoDock?.hideAbandoned ?? false,
+            showLinks: data.todoDock?.showLinks ?? false,
+            showReminderAndRecurring: data.todoDock?.showReminderAndRecurring ?? false
           },
           ai: {
             providers: data.ai?.providers || [],

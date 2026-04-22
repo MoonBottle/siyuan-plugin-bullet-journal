@@ -213,21 +213,21 @@ describe('parseBlockRefs 块引用解析', () => {
     const { stripped, links } = parseBlockRefs("首页((20260310210016-gkixdit '测试'))改版");
     expect(stripped).toBe('首页测试改版');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(links[0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('双引号锚文本', () => {
     const { stripped, links } = parseBlockRefs('((20200813131152-0wk5akh "在内容块中遨游"))');
     expect(stripped).toBe('在内容块中遨游');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ name: '在内容块中遨游', url: 'siyuan://blocks/20200813131152-0wk5akh' });
+    expect(links[0]).toEqual({ name: '在内容块中遨游', url: 'siyuan://blocks/20200813131152-0wk5akh', type: 'block-ref' });
   });
 
   it('无锚文本替换为空', () => {
     const { stripped, links } = parseBlockRefs('((20260310210016-gkixdit))纯文本');
     expect(stripped).toBe('纯文本');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(links[0]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('多个块引用', () => {
@@ -282,7 +282,7 @@ describe('parseTaskLine 任务解析', () => {
     );
     expect(task.name).toBe('首页测试改版（任务名称）');
     expect(task.links).toHaveLength(1);
-    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('任务名含块引用与 URL 链接：links 合并', () => {
@@ -292,8 +292,8 @@ describe('parseTaskLine 任务解析', () => {
     );
     expect(task.name).toBe('首页测试改版');
     expect(task.links).toHaveLength(2);
-    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
-    expect(task.links![1]).toEqual({ name: '链接', url: 'https://example.com' });
+    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
+    expect(task.links![1]).toEqual({ name: '链接', url: 'https://example.com', type: 'external' });
   });
 
   it.each([
@@ -363,7 +363,7 @@ describe('parseItemLine - 事项链接', () => {
     expect(items).toHaveLength(1);
     expect(items[0].content).toBe('确定设计风格别名');
     expect(items[0].links).toHaveLength(1);
-    expect(items[0].links![0]).toEqual({ name: '别名', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(items[0].links![0]).toEqual({ name: '别名', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('事项块引用与下方链接合并', () => {
@@ -377,7 +377,7 @@ describe('parseItemLine - 事项链接', () => {
     expect(items[0].content).toBe('工作事项块引用');
     expect(items[0].links).toHaveLength(2);
     expect(items[0].links![0]).toEqual({ name: '需求文档', url: 'https://example.com' });
-    expect(items[0].links![1]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(items[0].links![1]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 });
 
