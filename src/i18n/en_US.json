@@ -45,7 +45,7 @@
   "calendar": {
     "title": "Calendar",
     "today": "Today",
-    "dayTotalDuration": "Total {duration}",
+    "dayTotalDuration": "Work Hours {duration}",
     "month": "Month",
     "week": "Week",
     "day": "Day",
@@ -125,7 +125,7 @@
     "item": "Item",
     "copy": "Copy",
     "time": "Time",
-    "duration": "Duration",
+    "duration": "Work Hours",
     "focusTotalTime": "Total Focus Duration",
     "viewInCalendar": "View in Calendar",
     "calendar": "Calendar",

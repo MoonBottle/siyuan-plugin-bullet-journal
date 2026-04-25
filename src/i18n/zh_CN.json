@@ -45,7 +45,7 @@
   "calendar": {
     "title": "日历视图",
     "today": "今天",
-    "dayTotalDuration": "今日总耗时 {duration}",
+    "dayTotalDuration": "今日工时 {duration}",
     "month": "月",
     "week": "周",
     "day": "日",
@@ -125,7 +125,7 @@
     "item": "事项",
     "copy": "复制",
     "time": "时间",
-    "duration": "时长",
+    "duration": "工时",
     "focusTotalTime": "总专注时长",
     "viewInCalendar": "在日历中查看",
     "calendar": "日历",
