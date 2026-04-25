@@ -2,10 +2,14 @@
   <div v-if="showActions" class="todo-item-actions">
     <button
       v-if="showReminder"
-      class="action-btn b3-tooltips b3-tooltips__n"
+      class="action-btn"
       :class="{ active: hasReminder, readonly: isReadonly }"
       :disabled="isReadonly"
       :aria-label="reminderTooltip || reminderText"
+      @mouseenter="handleShowTooltip($event, reminderTooltip || reminderText)"
+      @mouseleave="handleHideTooltip"
+      @focus="handleShowTooltip($event, reminderTooltip || reminderText)"
+      @blur="handleHideTooltip"
       @click.stop="$emit('set-reminder')"
     >
       <span class="action-icon">⏰</span>
@@ -14,10 +18,14 @@
 
     <button
       v-if="showRecurring"
-      class="action-btn b3-tooltips b3-tooltips__n"
+      class="action-btn"
       :class="{ active: hasRecurring, readonly: isReadonly }"
       :disabled="isReadonly"
       :aria-label="recurringTooltip || recurringText"
+      @mouseenter="handleShowTooltip($event, recurringTooltip || recurringText)"
+      @mouseleave="handleHideTooltip"
+      @focus="handleShowTooltip($event, recurringTooltip || recurringText)"
+      @blur="handleHideTooltip"
       @click.stop="$emit('set-recurring')"
     >
       <span class="action-icon">🔁</span>
@@ -27,7 +35,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount } from 'vue';
+import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
 
 const props = defineProps<{
   hasReminder: boolean;
@@ -47,6 +56,23 @@ defineEmits<{
 }>();
 
 const showActions = computed(() => props.showReminder || props.showRecurring);
+
+function handleShowTooltip(event: MouseEvent | FocusEvent, text?: string) {
+  if (!text)
+    return;
+  const target = event.currentTarget;
+  if (!(target instanceof HTMLElement))
+    return;
+  showIconTooltip(target, text);
+}
+
+function handleHideTooltip() {
+  hideIconTooltip();
+}
+
+onBeforeUnmount(() => {
+  hideIconTooltip();
+});
 </script>
 
 <style lang="scss" scoped>

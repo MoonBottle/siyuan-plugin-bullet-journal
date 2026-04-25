@@ -44,6 +44,14 @@
             @change="onDateFilterChange"
           />
 
+          <button
+            class="sort-trigger b3-tooltips b3-tooltips__n"
+            :aria-label="t('todo.sortSettings')"
+            @click="toggleSortPanel"
+          >
+            <svg><use xlink:href="#iconSort"></use></svg>
+          </button>
+
           <div class="priority-filter">
             <button 
               v-for="p in priorityOptions" 
@@ -55,14 +63,6 @@
               {{ p.emoji }}
             </button>
           </div>
-
-          <button
-            class="sort-trigger b3-tooltips b3-tooltips__n"
-            :aria-label="t('todo.sortSettings')"
-            @click="toggleSortPanel"
-          >
-            <svg><use xlink:href="#iconSort"></use></svg>
-          </button>
         </div>
 
         <!-- 自定义日期范围选择器 -->
