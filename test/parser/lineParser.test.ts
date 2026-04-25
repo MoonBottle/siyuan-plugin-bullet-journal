@@ -37,6 +37,15 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].siblingItems).toBeUndefined();
   });
 
+  it('支持 HH:mm 时间范围并归一化为秒级时间', () => {
+    const items = LineParser.parseItemLine('周会 @2026-03-17 14:00~16:00', 1);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].startDateTime).toBe('2026-03-17 14:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-17 16:00:00');
+    expect(items[0].timePrecision).toBe('minute');
+  });
+
   it('多个日期（英文逗号）', () => {
     const items = LineParser.parseItemLine('整理资料 @2024-01-01, 2024-01-03, 2024-01-05', 1);
     expect(items).toHaveLength(3);
@@ -180,6 +189,18 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[4].date).toBe('2026-03-15');
     expect(items[4].startDateTime).toBe('2026-03-15 10:00:00');
     expect(items[4].endDateTime).toBe('2026-03-15 11:00:00');
+  });
+
+  it('多日期混合场景保留各自时间精度', () => {
+    const items = LineParser.parseItemLine(
+      '整理资料 @2026-03-06 09:00~09:30, 2026-03-10 14:00:05~15:00:10',
+      1
+    );
+
+    expect(items[0].timePrecision).toBe('minute');
+    expect(items[1].timePrecision).toBe('second');
+    expect(items[0].siblingItems?.[0].timePrecision).toBe('second');
+    expect(items[1].siblingItems?.[0].timePrecision).toBe('minute');
   });
 
   it('带状态标签', () => {

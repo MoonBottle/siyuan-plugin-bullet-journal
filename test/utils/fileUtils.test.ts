@@ -104,6 +104,56 @@ describe('updateBlockDateTime', () => {
     );
   });
 
+  it('分钟精度事项更新时间后保持 HH:mm 格式', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '周会 📅2026-03-17 14:00~16:00\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-03-18',
+      '15:30:00',
+      '17:30:00',
+      false,
+      '2026-03-17',
+      [],
+      'pending',
+      undefined,
+      'minute'
+    );
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '周会 📅2026-03-18 15:30~17:30\n{: id="block-1" }',
+      'block-1'
+    );
+  });
+
+  it('秒级事项更新时间后继续输出 HH:mm:ss 格式', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: '校时 📅2026-03-17 14:00:05~16:00:10\n{: id="block-1" }'
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-03-18',
+      '15:30:05',
+      '17:30:10',
+      false,
+      '2026-03-17',
+      [],
+      'pending',
+      undefined,
+      'second'
+    );
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock.mock.calls[0][1]).toContain('15:30:05~17:30:10');
+  });
+
   it('单日期场景：全天事件', async () => {
     mockGetBlockKramdown.mockResolvedValue({
       kramdown: '整理资料 📅2024-01-01\n{: id="block-1" }'

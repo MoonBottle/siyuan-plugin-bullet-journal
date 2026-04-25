@@ -340,6 +340,7 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
   const originalDate = eventInfo.date;
   const originalStartDateTime = eventInfo.originalStartDateTime;
   const originalEndDateTime = eventInfo.originalEndDateTime;
+  const timePrecision = eventInfo.timePrecision || eventInfo.extendedProps?.timePrecision || 'second';
   const siblingItems = eventInfo.siblingItems;
   const status = eventInfo.status;
 
@@ -350,7 +351,8 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     ...(originalDate ? [{
       date: originalDate,
       startDateTime: originalStartDateTime,
-      endDateTime: originalEndDateTime
+      endDateTime: originalEndDateTime,
+      timePrecision
     }] : [])
   ];
 
@@ -388,7 +390,9 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     allDay,
     originalDate,
     completeSiblingItems,
-    status
+    status,
+    undefined,
+    timePrecision
   );
 
   if (success) {

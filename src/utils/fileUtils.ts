@@ -4,12 +4,18 @@
 import { openTab } from 'siyuan';
 import { usePlugin } from '@/main';
 import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
-import type { ItemStatus, PriorityLevel } from '@/types/models';
+import type { ItemStatus, PriorityLevel, ItemDateTimeInfo, TimePrecision } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
 import { processLineText } from '@/utils/slashCommandUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 import { generatePriorityMarker, stripPriorityMarker } from '@/parser/priorityParser';
+
+const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
+const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;
+const DATE_MARKER_PATTERN = `(?:@|📅)\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`;
+const DATE_MARKER_REGEX = new RegExp(DATE_MARKER_PATTERN, 'g');
+const RESIDUAL_DATE_MARKER_REGEX = new RegExp(`[，,]\\s*\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`, 'g');
 
 /**
  * 写入钩子 - 用于斜杠命令中替换 updateBlock API
@@ -52,13 +58,19 @@ function formatTimeToSeconds(timeStr: string): string {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+function formatTimeForPrecision(timeStr: string, precision: TimePrecision = 'second'): string {
+  const normalized = formatTimeToSeconds(timeStr);
+  return precision === 'minute' ? normalized.slice(0, 5) : normalized;
+}
+
+function getTimePrecisionFromItem(item: ItemDateTimeInfo): TimePrecision {
+  return item.timePrecision ?? 'second';
+}
+
 /**
  * 构建日期时间标记
  */
-function buildDateTimeMark(
-  date: string,
-  timeKey?: string
-): string {
+function buildDateTimeMark(date: string, timeKey?: string): string {
   if (!timeKey) {
     return `📅${date}`;
   }
@@ -116,9 +128,7 @@ function extractItemMarkers(line: string): string {
   }
   
   // 2. 提取日期表达式 (📅 或 @ 开头，可能包含时间和范围)
-  // 匹配: @2026-03-08, 📅2026-03-08, 📅2026-03-08~03-09, 📅2026-03-08 09:00:00~10:00:00
-  const datePattern = /(?:📅|@)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/;
-  const dateMatch = line.match(datePattern);
+  const dateMatch = line.match(new RegExp(DATE_MARKER_PATTERN));
   if (dateMatch) {
     markers.push(dateMatch[0]);
   }
@@ -249,18 +259,21 @@ function groupDatesIntoRanges(dates: string[]): string[][] {
 /**
  * 按时间分组
  */
-function groupByTime(
-  items: Array<{ date: string; startDateTime?: string; endDateTime?: string }>
-): Map<string, string[]> {
+function buildTimeKey(item: ItemDateTimeInfo): string {
+  const precision = getTimePrecisionFromItem(item);
+  const startTime = item.startDateTime?.split(' ')[1];
+  const endTime = item.endDateTime?.split(' ')[1];
+
+  if (!startTime) return '';
+  if (!endTime) return formatTimeForPrecision(startTime, precision);
+  return `${formatTimeForPrecision(startTime, precision)}~${formatTimeForPrecision(endTime, precision)}`;
+}
+
+function groupByTime(items: ItemDateTimeInfo[]): Map<string, string[]> {
   const groups = new Map<string, string[]>();
 
   for (const item of items) {
-    let timeKey = '';
-    if (item.startDateTime) {
-      const startTime = item.startDateTime.split(' ')[1];
-      const endTime = item.endDateTime?.split(' ')[1];
-      timeKey = endTime ? `${startTime}~${endTime}` : startTime;
-    }
+    const timeKey = buildTimeKey(item);
 
     if (!groups.has(timeKey)) {
       groups.set(timeKey, []);
@@ -277,7 +290,7 @@ function groupByTime(
  * 按日期顺序排列，相同时间的连续日期合并为范围
  */
 export function optimizeDateTimeExpressions(
-  items: Array<{ date: string; startDateTime?: string; endDateTime?: string }>
+  items: ItemDateTimeInfo[]
 ): string {
   if (items.length === 0) return '';
 
@@ -290,12 +303,7 @@ export function optimizeDateTimeExpressions(
   const timeGroups = new Map<string, typeof sortedItems>();
 
   for (const item of sortedItems) {
-    let timeKey = '';
-    if (item.startDateTime) {
-      const startTime = item.startDateTime.split(' ')[1];
-      const endTime = item.endDateTime?.split(' ')[1];
-      timeKey = endTime ? `${startTime}~${endTime}` : startTime;
-    }
+      const timeKey = buildTimeKey(item);
 
     if (!timeGroups.has(timeKey)) {
       timeGroups.set(timeKey, []);
@@ -362,26 +370,27 @@ function handleSingleLineUpdate(
   formattedStartTime?: string,
   formattedEndTime?: string,
   originalDate?: string,
-  siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
-  status?: ItemStatus
+  siblingItems?: ItemDateTimeInfo[],
+  status?: ItemStatus,
+  timePrecision: TimePrecision = 'second'
 ): string {
   // 提取事项内容：先去除斜杠命令，再去除列表标记和块属性（支持父块 kramdown 格式），最后去除日期时间标记和状态标签
   let itemContent = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
   itemContent = stripListAndBlockAttr(itemContent)
-    .replace(/(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+    .replace(DATE_MARKER_REGEX, '')
     .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
-    // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
-    .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+    .replace(RESIDUAL_DATE_MARKER_REGEX, '')
     .trim();
 
   // 构建所有日期时间项列表
-  const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
+  const allItems: ItemDateTimeInfo[] = siblingItems ? [...siblingItems] : [];
 
   // 更新当前修改的 Item
   const updatedItem = {
     date: newDate,
     startDateTime: allDay ? undefined : (formattedStartTime ? `${newDate} ${formattedStartTime}` : undefined),
-    endDateTime: allDay ? undefined : (formattedEndTime ? `${newDate} ${formattedEndTime}` : undefined)
+    endDateTime: allDay ? undefined : (formattedEndTime ? `${newDate} ${formattedEndTime}` : undefined),
+    timePrecision: allDay ? undefined : timePrecision
   };
 
   // 替换或添加到列表
@@ -397,7 +406,7 @@ function handleSingleLineUpdate(
   }
 
   // 去重（按日期）
-  const uniqueItems = new Map<string, { date: string; startDateTime?: string; endDateTime?: string }>();
+  const uniqueItems = new Map<string, ItemDateTimeInfo>();
   for (const item of allItems) {
     uniqueItems.set(item.date, item);
   }
@@ -426,9 +435,10 @@ export async function updateBlockDateTime(
   newEndTime?: string,
   allDay: boolean = false,
   originalDate?: string,
-  siblingItems?: Array<{ date: string; startDateTime?: string; endDateTime?: string }>,
+  siblingItems?: ItemDateTimeInfo[],
   status?: ItemStatus,
-  writer?: BlockWriter
+  writer?: BlockWriter,
+  timePrecision: TimePrecision = 'second'
 ): Promise<boolean> {
   if (!blockId) return false;
 
@@ -498,7 +508,8 @@ export async function updateBlockDateTime(
         formattedEndTime,
         originalDate,
         siblingItems,
-        status
+        status,
+        timePrecision
       );
 
       const singleLineResult = newContent + attrSuffix;
@@ -541,7 +552,8 @@ export async function updateBlockDateTime(
         formattedEndTime,
         originalDate,
         siblingItems,
-        status
+        status,
+        timePrecision
       );
 
       const fallbackResult = newContent + attrSuffix;
@@ -559,17 +571,16 @@ export async function updateBlockDateTime(
     // 提取事项内容（去除日期时间标记和状态标签）
     // 先移除所有日期时间表达式（包括逗号分隔的多个日期）
     let itemContent = cleanedItemLine
-      .replace(/(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+      .replace(DATE_MARKER_REGEX, '')
       .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
-      // 移除残留的逗号、日期和时间（如 ", 2024-01-03" 或 ", 2024-01-03 10:00:00~11:00:00"）
-      .replace(/[，,]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+      .replace(RESIDUAL_DATE_MARKER_REGEX, '')
       .trim();
 
     // 去除斜杠命令（/sx, /事项, /today 等）
     itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS);
 
     // 构建所有日期时间项列表
-    const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = siblingItems ? [...siblingItems] : [];
+    const allItems: ItemDateTimeInfo[] = siblingItems ? [...siblingItems] : [];
 
     // 更新当前修改的 Item
     // 如果没有结束时间但有开始时间，自动加1小时
@@ -581,7 +592,8 @@ export async function updateBlockDateTime(
     const updatedItem = {
       date: newDate,
       startDateTime: allDay ? undefined : (formattedStartTime ? `${newDate} ${formattedStartTime}` : undefined),
-      endDateTime: allDay ? undefined : (formattedEndTime ? `${newDate} ${formattedEndTime}` : undefined)
+      endDateTime: allDay ? undefined : (formattedEndTime ? `${newDate} ${formattedEndTime}` : undefined),
+      timePrecision: allDay ? undefined : timePrecision
     };
 
     // 替换或添加到列表
@@ -597,7 +609,7 @@ export async function updateBlockDateTime(
     }
 
     // 去重（按日期）
-    const uniqueItems = new Map<string, { date: string; startDateTime?: string; endDateTime?: string }>();
+    const uniqueItems = new Map<string, ItemDateTimeInfo>();
     for (const item of allItems) {
       uniqueItems.set(item.date, item);
     }
@@ -620,7 +632,7 @@ export async function updateBlockDateTime(
     if (targetBlockId !== blockId) {
       // 更新父块时保留完整列表项格式（- 和 {: id=... }），但需要用去除斜杠命令后的内容替换
       const dateExpr =
-        /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?(?:\s*[,，]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?)*/g;
+        new RegExp(`${DATE_MARKER_PATTERN}(?:\\s*[,，]\\s*\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?)*`, 'g');
       // 先去除斜杠命令，再替换日期
       const cleanedItemLine = processLineText(itemLine, ALL_SLASH_COMMAND_FILTERS);
       newItemLine = cleanedItemLine.replace(dateExpr, optimizedExpr);
