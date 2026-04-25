@@ -2,7 +2,16 @@
  * 行解析器
  * 从 obsidian-hk-work-plugin 移植
  */
-import type { Task, Item, Link, ItemStatus, PomodoroRecord, PomodoroStatus } from '@/types/models';
+import type {
+  Task,
+  Item,
+  Link,
+  ItemStatus,
+  PomodoroRecord,
+  PomodoroStatus,
+  TimePrecision,
+  ItemDateTimeInfo,
+} from '@/types/models';
 import { parseReminderFromLine, stripReminderMarker } from './reminderParser';
 import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser';
 import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
@@ -11,6 +20,9 @@ import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 /** 思源块引用正则：((blockId)) 或 ((blockId "alias")) 或 ((blockId 'alias')) */
 const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\)/g;
+const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
+const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;
+const DATE_WITH_OPTIONAL_TIME_PATTERN = `(?:@|📅)\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`;
 
 export function inferLinkType(url: string): Link['type'] {
   return url.startsWith('siyuan://') ? 'siyuan' : 'external';
@@ -65,12 +77,12 @@ export class LineParser {
 
     // 解析时间范围 @YYYY-MM-DD HH:mm:ss~HH:mm:ss
     const timeRangeMatch = line.match(
-      /@(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})~(\d{2}:\d{2}:\d{2})/
+      new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})~(${TIME_PART_PATTERN})`)
     );
 
     // 解析单个时间 @YYYY-MM-DD HH:mm:ss
     const singleTimeMatch = line.match(
-      /@(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?!~)/
+      new RegExp(`@(\\d{4}-\\d{2}-\\d{2})\\s+(${TIME_PART_PATTERN})(?!~)`)
     );
 
     // 解析链接（支持多个）
@@ -90,8 +102,7 @@ export class LineParser {
       .replace(/#task#?/gi, '')
       .replace(/📋/g, '')
       .replace(/@L[123]/g, '')
-      .replace(/@\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(~\d{2}:\d{2}:\d{2})?)?/g, '')
-      .replace(/📅\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(~\d{2}:\d{2}:\d{2})?)?/g, '')
+      .replace(new RegExp(DATE_WITH_OPTIONAL_TIME_PATTERN, 'g'), '')
       .replace(/https?:\/\/[^\s]+/g, '')
       .trim();
 
@@ -106,12 +117,12 @@ export class LineParser {
       level,
       date,
       startDateTime: timeRangeMatch
-        ? `${timeRangeMatch[1]} ${timeRangeMatch[2]}`
+        ? `${timeRangeMatch[1]} ${this.normalizeTime(timeRangeMatch[2]).value}`
         : singleTimeMatch
-          ? `${singleTimeMatch[1]} ${singleTimeMatch[2]}`
+          ? `${singleTimeMatch[1]} ${this.normalizeTime(singleTimeMatch[2]).value}`
           : undefined,
       endDateTime: timeRangeMatch
-        ? `${timeRangeMatch[1]} ${timeRangeMatch[3]}`
+        ? `${timeRangeMatch[1]} ${this.normalizeTime(timeRangeMatch[3]).value}`
         : undefined,
       links: allLinks.length > 0 ? allLinks : undefined,
       items: [],
@@ -236,7 +247,7 @@ export class LineParser {
     const items: Item[] = [];
 
     // 先收集所有日期时间信息
-    const allDateTimeInfo: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [];
+    const allDateTimeInfo: ItemDateTimeInfo[] = [];
 
     for (const expr of dateTimeExpressions) {
       const dates = this.parseDatePart(expr.datePart);
@@ -245,8 +256,10 @@ export class LineParser {
       for (const date of dates) {
         let startDateTime: string | undefined;
         let endDateTime: string | undefined;
+        let timePrecision: TimePrecision | undefined;
 
         if (timeInfo) {
+          timePrecision = timeInfo.precision;
           if (timeInfo.endTime) {
             startDateTime = `${date} ${timeInfo.startTime}`;
             endDateTime = `${date} ${timeInfo.endTime}`;
@@ -255,7 +268,7 @@ export class LineParser {
           }
         }
 
-        allDateTimeInfo.push({ date, startDateTime, endDateTime });
+        allDateTimeInfo.push({ date, startDateTime, endDateTime, timePrecision });
       }
     }
 
@@ -268,7 +281,7 @@ export class LineParser {
 
     // 为每个日期创建 Item，并填充 siblingItems
     for (let i = 0; i < allDateTimeInfo.length; i++) {
-      const { date, startDateTime, endDateTime } = allDateTimeInfo[i];
+      const { date, startDateTime, endDateTime, timePrecision } = allDateTimeInfo[i];
 
       // 构建 siblingItems（排除当前 Item 自身）
       const siblingItems = allDateTimeInfo
@@ -276,7 +289,8 @@ export class LineParser {
         .map(info => ({
           date: info.date,
           startDateTime: info.startDateTime,
-          endDateTime: info.endDateTime
+          endDateTime: info.endDateTime,
+          timePrecision: info.timePrecision
         }));
 
       items.push({
@@ -285,6 +299,7 @@ export class LineParser {
         date,
         startDateTime,
         endDateTime,
+        timePrecision,
         lineNumber,
         docId: '',
         status,
@@ -315,7 +330,10 @@ export class LineParser {
 
     // 首先找到所有以 @ 或 📅 开头的日期时间块
     // 匹配 @日期 或 📅日期 或 @日期 时间 或 @日期 时间~时间，以及后续逗号分隔的日期
-    const mainRegex = /(?:@|📅)(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/g;
+    const mainRegex = new RegExp(
+      `(?:@|📅)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)(?:\\s+(${TIME_RANGE_PATTERN}))?`,
+      'g'
+    );
 
     let mainMatch;
     while ((mainMatch = mainRegex.exec(line)) !== null) {
@@ -337,11 +355,11 @@ export class LineParser {
 
       // 匹配逗号或逗号+空格后跟着的日期（可能带时间）
       // 格式: , 2024-01-03 或 , 2024-01-03 09:00:00~10:00:00
-      const continuationRegex = /^(?:\s*,\s*|\s+)(\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)(?:\s+(\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?))?/;
+      const continuationRegex = new RegExp(
+        `^(?:\\s*,\\s*|\\s+)(\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?)(?:\\s+(${TIME_RANGE_PATTERN}))?`
+      );
 
       let remaining = afterMainDate;
-      let lastMatchEnd = 0;
-
       while (remaining.length > 0) {
         const contMatch = remaining.match(continuationRegex);
         if (!contMatch) break;
@@ -387,15 +405,32 @@ export class LineParser {
   /**
    * 解析时间部分
    */
-  private static parseTimePart(timePart: string | null): { startTime: string; endTime?: string } | null {
+  private static parseTimePart(
+    timePart: string | null
+  ): { startTime: string; endTime?: string; precision: TimePrecision } | null {
     if (!timePart) return null;
 
     if (timePart.includes('~')) {
       const [start, end] = timePart.split('~');
-      return { startTime: start, endTime: end };
+      const normalizedStart = this.normalizeTime(start);
+      const normalizedEnd = this.normalizeTime(end);
+      return {
+        startTime: normalizedStart.value,
+        endTime: normalizedEnd.value,
+        precision: normalizedStart.precision === 'second' || normalizedEnd.precision === 'second'
+          ? 'second'
+          : 'minute'
+      };
     }
 
-    return { startTime: timePart };
+    const normalizedTime = this.normalizeTime(timePart);
+    return { startTime: normalizedTime.value, precision: normalizedTime.precision };
+  }
+
+  private static normalizeTime(time: string): { value: string; precision: TimePrecision } {
+    return time.length === 5
+      ? { value: `${time}:00`, precision: 'minute' }
+      : { value: time, precision: 'second' };
   }
 
   /**

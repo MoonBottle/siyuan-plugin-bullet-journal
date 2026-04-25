@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useProjectStore } from '@/stores/projectStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
 
 const mkItem = (
@@ -243,5 +244,92 @@ describe('projectStore 专注时长统计', () => {
 
     const byDay = store.getFocusMinutesByDateRange('2026-03-10', '2026-03-10', '');
     expect(byDay.get('2026-03-10')).toBe(20);
+  });
+});
+
+describe('projectStore 事项排序规则', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('默认按优先级再按时间排序', () => {
+    const store = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.todoDock.sortRules = [
+      { field: 'priority', direction: 'asc' },
+      { field: 'time', direction: 'asc' },
+    ];
+
+    const items = [
+      mkItem('2026-04-25', 'high-late', { priority: 'high', startDateTime: '2026-04-25 11:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'medium-early', { priority: 'medium', startDateTime: '2026-04-25 09:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'high-early', { priority: 'high', startDateTime: '2026-04-25 08:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-04-25',
+      projects: [createMockProject(items)],
+    });
+
+    const result = store.getFilteredAndSortedItems({ groupId: '' });
+    expect(result.map(item => item.blockId)).toEqual(['high-early', 'high-late', 'medium-early']);
+  });
+
+  it('支持时间优先后再按优先级倒序', () => {
+    const store = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.todoDock.sortRules = [
+      { field: 'time', direction: 'asc' },
+      { field: 'priority', direction: 'desc' },
+    ];
+
+    const items = [
+      mkItem('2026-04-25', 'medium-0900', { priority: 'medium', startDateTime: '2026-04-25 09:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'high-0900', { priority: 'high', startDateTime: '2026-04-25 09:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'low-0800', { priority: 'low', startDateTime: '2026-04-25 08:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-04-25',
+      projects: [createMockProject(items)],
+    });
+
+    const result = store.getFilteredAndSortedItems({ groupId: '' });
+    expect(result.map(item => item.blockId)).toEqual(['low-0800', 'medium-0900', 'high-0900']);
+  });
+
+  it('按提醒时间倒序排序时无提醒事项仍排最后', () => {
+    const store = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.todoDock.sortRules = [
+      { field: 'reminderTime', direction: 'desc' },
+      { field: 'content', direction: 'asc' },
+    ];
+
+    const items = [
+      mkItem('2026-04-25', 'no-reminder', { content: 'C 事项', startDateTime: '2026-04-25 10:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'reminder-earlier', {
+        content: 'A 事项',
+        startDateTime: '2026-04-25 10:00:00',
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        reminder: { enabled: true, type: 'relative', relativeTo: 'start', offsetMinutes: 30 } as any,
+      }),
+      mkItem('2026-04-25', 'reminder-later', {
+        content: 'B 事项',
+        startDateTime: '2026-04-25 10:00:00',
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        reminder: { enabled: true, type: 'relative', relativeTo: 'start', offsetMinutes: 10 } as any,
+      }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-04-25',
+      projects: [createMockProject(items)],
+    });
+
+    const result = store.getFilteredAndSortedItems({ groupId: '' });
+    expect(result.map(item => item.blockId)).toEqual(['reminder-later', 'reminder-earlier', 'no-reminder']);
   });
 });

@@ -1,44 +1,21 @@
 <template>
   <div v-if="shouldRender" class="item-meta-panel">
-    <div v-if="showLinks && visibleLinks.length > 0" class="item-meta-links">
-      <SyButton
-        v-for="link in visibleLinks"
-        :key="`${link.name}-${link.url}-${link.type || 'default'}`"
-        type="link"
-        :text="link.name"
-        :href="link.url"
-        :class="['typed-link', `typed-link--${link.type || 'default'}`]"
-      />
-    </div>
+    <TodoTypedLinks v-if="showLinks && visibleLinks.length > 0" :links="visibleLinks" />
 
-    <div
+    <TodoItemActionButtons
       v-if="showReminderAndRecurring && (!isCompletedOrAbandoned || hasReminder || hasRecurring)"
-      class="item-meta-actions"
-    >
-      <button
-        v-if="!isCompletedOrAbandoned || hasReminder"
-        class="item-meta-action b3-tooltips b3-tooltips__n"
-        :class="{ active: hasReminder, readonly: isCompletedOrAbandoned }"
-        :disabled="isCompletedOrAbandoned"
-        :aria-label="reminderTooltip"
-        @click.stop="openReminderSetting"
-      >
-        <span>⏰</span>
-        <span>{{ reminderText }}</span>
-      </button>
-
-      <button
-        v-if="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
-        class="item-meta-action b3-tooltips b3-tooltips__n"
-        :class="{ active: hasRecurring, readonly: isCompletedOrAbandoned }"
-        :disabled="isCompletedOrAbandoned"
-        :aria-label="recurringTooltip"
-        @click.stop="openRecurringSetting"
-      >
-        <span>🔁</span>
-        <span>{{ recurringText }}</span>
-      </button>
-    </div>
+      :has-reminder="hasReminder"
+      :has-recurring="hasRecurring"
+      :is-readonly="isCompletedOrAbandoned"
+      :show-reminder="!isCompletedOrAbandoned || hasReminder"
+      :show-recurring="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
+      :reminder-text="reminderText"
+      :recurring-text="recurringText"
+      :reminder-tooltip="reminderTooltip"
+      :recurring-tooltip="recurringTooltip"
+      @set-reminder="openReminderSetting"
+      @set-recurring="openRecurringSetting"
+    />
   </div>
 </template>
 
@@ -46,13 +23,14 @@
 import { computed } from 'vue';
 import type { Item, Link } from '@/types/models';
 import { useSettingsStore } from '@/stores';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 import { formatReminderDisplay } from '@/utils/displayUtils';
 import { calculateReminderTime } from '@/parser/reminderParser';
 import { generateEndConditionMarker, generateRepeatRuleMarker, getNextOccurrenceDate } from '@/parser/recurringParser';
 import { showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
+import TodoItemActionButtons from './TodoItemActionButtons.vue';
+import TodoTypedLinks from './TodoTypedLinks.vue';
 
 const props = defineProps<{
   item: Item;
@@ -139,92 +117,5 @@ function openRecurringSetting() {
   flex-direction: column;
   gap: 6px;
   margin-top: 6px;
-}
-
-.item-meta-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.item-meta-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.item-meta-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: 100%;
-  padding: 2px 8px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 999px;
-  background: var(--b3-theme-surface);
-  color: var(--b3-theme-on-surface);
-  font-size: 11px;
-  line-height: 1.4;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
-  }
-
-  &.active {
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
-  }
-
-  &.readonly {
-    cursor: default;
-    opacity: 0.8;
-
-    &:hover {
-      color: var(--b3-theme-on-surface);
-      border-color: var(--b3-border-color);
-    }
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-  }
-}
-
-:deep(.typed-link) {
-  position: relative;
-  padding-left: 22px;
-  border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 55%, var(--b3-border-color) 45%);
-  background: color-mix(in srgb, var(--b3-theme-primary) 6%, var(--b3-theme-surface) 94%);
-  color: var(--b3-theme-on-surface);
-  font-weight: 500;
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--b3-theme-primary) 70%, transparent 30%);
-}
-
-:deep(.typed-link--external::before),
-:deep(.typed-link--siyuan::before),
-:deep(.typed-link--block-ref::before) {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 10px;
-  line-height: 1;
-  opacity: 0.8;
-  color: var(--b3-theme-primary);
-}
-
-:deep(.typed-link--external::before) {
-  content: '↗';
-}
-
-:deep(.typed-link--siyuan::before) {
-  content: 'S';
-}
-
-:deep(.typed-link--block-ref::before) {
-  content: '❝';
 }
 </style>

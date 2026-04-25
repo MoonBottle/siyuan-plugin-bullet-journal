@@ -23,15 +23,7 @@
           </span>
         </div>
         <template #footer>
-          <SyButton
-            v-for="link in projectLinks"
-            :key="link.url"
-            type="link"
-            :text="link.name"
-            :href="link.url"
-            :class="['typed-link', `typed-link--${link.type || 'default'}`]"
-            @click="handleLinkClick(link.url)"
-          />
+          <TodoTypedLinks :links="projectLinks" @link-click="handleLinkClick" />
         </template>
       </Card>
 
@@ -60,15 +52,7 @@
           </span>
         </div>
         <template #footer>
-          <SyButton
-            v-for="link in taskLinks"
-            :key="link.url"
-            type="link"
-            :text="link.name"
-            :href="link.url"
-            :class="['typed-link', `typed-link--${link.type || 'default'}`]"
-            @click="handleLinkClick(link.url)"
-          />
+          <TodoTypedLinks :links="taskLinks" @link-click="handleLinkClick" />
         </template>
       </Card>
 
@@ -154,29 +138,19 @@
 
         <!-- 提醒和重复设置 -->
         <div v-if="(!isCompletedOrAbandoned) || hasReminder || hasRecurring" class="item-actions-row">
-          <button
-            v-if="!isCompletedOrAbandoned || hasReminder"
-            class="action-btn b3-tooltips b3-tooltips__n"
-            :class="{ active: hasReminder, readonly: isCompletedOrAbandoned }"
-            :disabled="isCompletedOrAbandoned"
-            :aria-label="reminderButtonTooltip || reminderText"
-            @click="handleSetReminder"
-          >
-            <span class="action-icon">⏰</span>
-            <span class="action-text">{{ reminderText }}</span>
-          </button>
-          
-          <button
-            v-if="(!isCompletedOrAbandoned && canSetRecurring) || hasRecurring"
-            class="action-btn b3-tooltips b3-tooltips__n"
-            :class="{ active: hasRecurring, readonly: isCompletedOrAbandoned }"
-            :disabled="isCompletedOrAbandoned"
-            :aria-label="recurringButtonTooltip || recurringText"
-            @click="handleSetRecurring"
-          >
-            <span class="action-icon" v-if="!hasRecurring">🔁</span>
-            <span class="action-text">{{ recurringText }}</span>
-          </button>
+          <TodoItemActionButtons
+            :has-reminder="hasReminder"
+            :has-recurring="hasRecurring"
+            :is-readonly="isCompletedOrAbandoned"
+            :show-reminder="!isCompletedOrAbandoned || hasReminder"
+            :show-recurring="((!isCompletedOrAbandoned && canSetRecurring) || hasRecurring)"
+            :reminder-text="reminderText"
+            :recurring-text="recurringText"
+            :reminder-tooltip="reminderButtonTooltip"
+            :recurring-tooltip="recurringButtonTooltip"
+            @set-reminder="handleSetReminder"
+            @set-recurring="handleSetRecurring"
+          />
           
           <!-- 跳过本次（仅过期事项显示） -->
           <button
@@ -190,15 +164,7 @@
         </div>
 
         <template #footer>
-          <SyButton
-            v-for="link in itemLinks"
-            :key="link.url"
-            type="link"
-            :text="link.name"
-            :href="link.url"
-            :class="['typed-link', `typed-link--${link.type || 'default'}`]"
-            @click="handleLinkClick(link.url)"
-          />
+          <TodoTypedLinks :links="itemLinks" @link-click="handleLinkClick" />
         </template>
       </Card>
     </div>
@@ -221,7 +187,6 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import Card from '@/components/common/Card.vue';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
 import { t } from '@/i18n';
 import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
@@ -232,9 +197,10 @@ import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
 import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
-import { useProjectStore } from '@/stores';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
+import TodoItemActionButtons from '@/components/todo/TodoItemActionButtons.vue';
+import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
 
 interface Props {
   item: Item;
@@ -724,52 +690,10 @@ function handleSkipOccurrence() {
 
 .item-actions-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 4px;
-  background: var(--b3-theme-surface);
-  color: var(--b3-theme-on-surface);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: var(--b3-theme-surface-light);
-    border-color: var(--b3-theme-primary);
-  }
-
-  &.active {
-    background: var(--b3-theme-surface);
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
-  }
-
-  &.readonly {
-    cursor: default;
-    opacity: 0.8;
-
-    &:hover {
-      background: var(--b3-theme-surface);
-      border-color: var(--b3-theme-primary);
-    }
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-  }
-}
-
-.action-icon {
-  font-size: 12px;
 }
 
 .skip-btn {
@@ -807,40 +731,4 @@ function handleSkipOccurrence() {
   margin-left: auto;
   margin-right: 4px;
 }
-
-:deep(.typed-link) {
-  position: relative;
-  padding-left: 22px;
-  border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 55%, var(--b3-border-color) 45%);
-  background: color-mix(in srgb, var(--b3-theme-primary) 6%, var(--b3-theme-surface) 94%);
-  color: var(--b3-theme-on-surface);
-  font-weight: 500;
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--b3-theme-primary) 70%, transparent 30%);
-}
-
-:deep(.typed-link--external::before),
-:deep(.typed-link--siyuan::before),
-:deep(.typed-link--block-ref::before) {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 10px;
-  line-height: 1;
-  opacity: 0.8;
-  color: var(--b3-theme-primary);
-}
-
-:deep(.typed-link--external::before) {
-  content: '↗';
-}
-
-:deep(.typed-link--siyuan::before) {
-  content: 'S';
-}
-
-:deep(.typed-link--block-ref::before) {
-  content: '❝';
-}
-
 </style>

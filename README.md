@@ -43,17 +43,17 @@ Lose 10 Pounds (Task Name) 📋
 
 Chest + Triceps + Cardio (Item Content) 📅2026-03-09 ✅
 
-Back + Triceps + Cardio 📅2026-03-11 ❌
+Back + Biceps + Cardio 📅2026-03-11 ❌
 
 Got dragged to drink, gave up, will try another day (Notes related to the item)
 
-Back + Triceps + Cardio 📅2026-03-10 08:00:00~10:00:00
+Back + Biceps + Cardio 📅2026-03-10 08:00~10:00
 ```
 
 **Marker Reference:**
 - `Project Name` - The first H1 or H2 heading in the document is recognized as the project name; if no heading, defaults to the document filename
 - `📋` - Marks a line as a task
-- `📅YYYY-MM-DD` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period
+- `📅YYYY-MM-DD` / `📅YYYY-MM-DD HH:mm~HH:mm` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Item date (required), lines with dates are recognized as items; can add time range for specific time period (supports both minute and second precision)
 - `✅` / `❌` - Item status (optional), marks item as completed or abandoned
 
 📌 Use slash commands to quickly add markers:

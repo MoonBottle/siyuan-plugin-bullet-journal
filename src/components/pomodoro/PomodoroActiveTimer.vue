@@ -75,13 +75,7 @@
           <span>{{ currentItem.project.name }}</span>
         </div>
         <template #footer>
-          <SyButton
-            v-for="link in currentItem.project.links"
-            :key="link.url"
-            type="link"
-            :text="link.name"
-            :href="link.url"
-          />
+          <TodoTypedLinks :links="currentItem.project.links || []" />
         </template>
       </Card>
 
@@ -102,13 +96,7 @@
           <span>{{ currentItem.task.name }}</span>
         </div>
         <template #footer>
-          <SyButton
-            v-for="link in currentItem.task.links"
-            :key="link.url"
-            type="link"
-            :text="link.name"
-            :href="link.url"
-          />
+          <TodoTypedLinks :links="currentItem.task.links || []" />
         </template>
       </Card>
 
@@ -128,18 +116,7 @@
         </div>
         <template #footer>
           <div class="item-footer-content">
-            <div
-              v-for="link in currentItem?.links || []"
-              :key="link.url"
-              class="item-link-wrapper"
-            >
-              <SyButton
-                type="link"
-                :text="link.name"
-                :href="link.url"
-                class="item-link"
-              />
-            </div>
+            <TodoTypedLinks :links="currentItem?.links || []" align="right" />
             <div class="item-actions">
               <span
                 v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
@@ -206,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
@@ -216,11 +193,11 @@ import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import Card from '@/components/common/Card.vue';
 import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
-import { showConfirmDialog, hideLinkTooltip, showItemDetailModal } from '@/utils/dialog';
-import SyButton from '@/components/SiyuanTheme/SyButton.vue';
+import { showConfirmDialog, showItemDetailModal } from '@/utils/dialog';
 import { t } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 import { getProgressDirection } from '@/utils/progressDirection';
+import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -417,8 +394,6 @@ const openCalendar = () => {
     plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: currentItem.value.date });
   }
 };
-
-onUnmounted(() => hideLinkTooltip());
 </script>
 
 <style lang="scss" scoped>
@@ -756,16 +731,6 @@ onUnmounted(() => hideLinkTooltip());
   flex-direction: column;
   gap: 4px;
   width: 100%;
-}
-
-.item-link-wrapper {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.item-link {
-  max-width: none !important;
 }
 
 .item-actions {

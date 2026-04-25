@@ -1,12 +1,29 @@
 import type { AIProviderConfig } from '@/types/ai';
 import type { ProjectDirectory, ProjectGroup, ScanMode } from '@/types/models';
 
+export type TodoSortField =
+  | 'priority'
+  | 'time'
+  | 'date'
+  | 'reminderTime'
+  | 'project'
+  | 'task'
+  | 'content';
+
+export type TodoSortDirection = 'asc' | 'desc';
+
+export interface TodoSortRule {
+  field: TodoSortField;
+  direction: TodoSortDirection;
+}
+
 // TodoDock 设置
 export interface TodoDockSettings {
   hideCompleted: boolean;
   hideAbandoned: boolean;
   showLinks: boolean;
   showReminderAndRecurring: boolean;
+  sortRules: TodoSortRule[];
 }
 
 // AI 聊天记录（单独存储）
@@ -104,6 +121,11 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   defaultBreakDuration: 5,
 };
 
+export const defaultTodoSortRules: TodoSortRule[] = [
+  { field: 'priority', direction: 'asc' },
+  { field: 'time', direction: 'asc' },
+];
+
 export const defaultSettings: SettingsData = {
   // 默认全空间扫描
   scanMode: 'full',
@@ -120,7 +142,8 @@ export const defaultSettings: SettingsData = {
     hideCompleted: false,
     hideAbandoned: false,
     showLinks: false,
-    showReminderAndRecurring: false
+    showReminderAndRecurring: false,
+    sortRules: [...defaultTodoSortRules],
   },
   ai: {
     providers: [],

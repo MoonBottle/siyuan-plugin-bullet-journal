@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.12.6] - 2026-04-25
+
+### Features
+
+- **Item Time Precision Support**:
+  - Support parsing time ranges in `HH:mm` format
+  - After calendar drag adjustments, preserve original precision by keeping `HH:mm` or `HH:mm:ss` format when rewriting Markdown
+
+- **Calendar Day View Statistics**:
+  - Display total work hours for all items on the current day in calendar day view
+
+- **Todo Sorting Rules**:
+  - Add sorting rule editor to the todo panel, supporting configuration of multiple sorting rule combinations
+
+### Refactors
+
+- **UI Component Optimization**:
+  - Extract shared reminder/recurring action button components
+  - Extract shared typed link components
+
+### Docs
+
+- Updated i18n text, unified "duration" to "work hours"
+
 ## [0.12.5] - 2026-04-22
 
 ### Features

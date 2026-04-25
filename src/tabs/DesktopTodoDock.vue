@@ -44,6 +44,14 @@
             @change="onDateFilterChange"
           />
 
+          <button
+            class="sort-trigger b3-tooltips b3-tooltips__n"
+            :aria-label="t('todo.sortSettings')"
+            @click="toggleSortPanel"
+          >
+            <svg><use xlink:href="#iconSort"></use></svg>
+          </button>
+
           <div class="priority-filter">
             <button 
               v-for="p in priorityOptions" 
@@ -62,6 +70,60 @@
           <input v-model="startDate" type="date" class="date-input" />
           <span>至</span>
           <input v-model="endDate" type="date" class="date-input" />
+        </div>
+
+        <div v-if="showSortPanel" class="sort-panel">
+          <div
+            v-for="(rule, index) in sortRules"
+            :key="`${rule.field}-${index}`"
+            class="sort-rule-row"
+          >
+            <SySelect
+              :model-value="rule.field"
+              :options="availableFieldOptions(index)"
+              class="sort-field-select"
+              @change="value => updateSortField(index, value)"
+            />
+            <SySelect
+              :model-value="rule.direction"
+              :options="sortDirectionOptions"
+              class="sort-direction-select"
+              @change="value => updateSortDirection(index, value)"
+            />
+            <button
+              class="sort-rule-btn b3-tooltips b3-tooltips__n"
+              :aria-label="t('todo.sortMoveUp')"
+              :disabled="index === 0"
+              @click="moveSortRule(index, -1)"
+            >
+              <svg><use xlink:href="#iconUp"></use></svg>
+            </button>
+            <button
+              class="sort-rule-btn b3-tooltips b3-tooltips__n"
+              :aria-label="t('todo.sortMoveDown')"
+              :disabled="index === sortRules.length - 1"
+              @click="moveSortRule(index, 1)"
+            >
+              <svg><use xlink:href="#iconDown"></use></svg>
+            </button>
+            <button
+              class="sort-rule-btn b3-tooltips b3-tooltips__n"
+              :aria-label="t('todo.sortRemoveRule')"
+              :disabled="sortRules.length <= 1"
+              @click="removeSortRule(index)"
+            >
+              <svg><use xlink:href="#iconClose"></use></svg>
+            </button>
+          </div>
+
+          <div class="sort-panel-actions">
+            <button class="b3-button b3-button--outline" @click="addSortRule">
+              {{ t('todo.sortAddRule') }}
+            </button>
+            <button class="b3-button b3-button--text" @click="resetSortRules">
+              {{ t('todo.sortReset') }}
+            </button>
+          </div>
         </div>
       </div>
       <div class="fn__flex-1 todo-dock-content">
@@ -89,6 +151,8 @@ import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import type { PriorityLevel } from '@/types/models';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
+import { defaultTodoSortRules } from '@/settings';
+import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -99,6 +163,7 @@ const selectedGroup = ref('');
 // 搜索和筛选状态
 const searchQuery = ref('');
 const selectedPriorities = ref<PriorityLevel[]>([]);
+const showSortPanel = ref(false);
 
 // 日期筛选类型：today | week | all | custom
 type DateFilterType = 'today' | 'week' | 'all' | 'custom';
@@ -113,10 +178,25 @@ const priorityOptions = [
 ];
 
 const dateFilterOptions = [
-  { value: 'today', label: '今天' },
-  { value: 'week', label: '近7天' },
-  { value: 'all', label: '全部' },
-  { value: 'custom', label: '自定义' },
+  { value: 'today', label: t('todo.dateFilter.today') },
+  { value: 'week', label: t('todo.dateFilter.thisWeek') },
+  { value: 'all', label: t('todo.dateFilter.all') },
+  { value: 'custom', label: t('todo.dateFilter.custom') },
+];
+
+const sortFieldOptions = [
+  { value: 'priority' as TodoSortField, label: t('todo.sortFields.priority') },
+  { value: 'time' as TodoSortField, label: t('todo.sortFields.time') },
+  { value: 'date' as TodoSortField, label: t('todo.sortFields.date') },
+  { value: 'reminderTime' as TodoSortField, label: t('todo.sortFields.reminderTime') },
+  { value: 'project' as TodoSortField, label: t('todo.sortFields.project') },
+  { value: 'task' as TodoSortField, label: t('todo.sortFields.task') },
+  { value: 'content' as TodoSortField, label: t('todo.sortFields.content') },
+];
+
+const sortDirectionOptions = [
+  { value: 'asc' as TodoSortDirection, label: t('todo.sortDirection.asc') },
+  { value: 'desc' as TodoSortDirection, label: t('todo.sortDirection.desc') },
 ];
 
 const dateRange = computed(() => {
@@ -136,7 +216,11 @@ const dateRange = computed(() => {
 });
 
 const dateFilterLabel = computed(() => {
-  return dateFilterOptions.find(o => o.value === dateFilterType.value)?.label || '今天';
+  return dateFilterOptions.find(o => o.value === dateFilterType.value)?.label || t('todo.dateFilter.today');
+});
+
+const sortRules = computed(() => {
+  return settingsStore.todoDock.sortRules;
 });
 
 function togglePriority(priority: PriorityLevel) {
@@ -155,6 +239,77 @@ function onDateFilterChange(type: DateFilterType) {
     startDate.value = dayjs().format('YYYY-MM-DD');
     endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD');
   }
+}
+
+function persistSortRules(nextRules: TodoSortRule[]) {
+  settingsStore.todoDock.sortRules = nextRules.length > 0
+    ? nextRules
+    : [...defaultTodoSortRules];
+  settingsStore.saveToPlugin();
+}
+
+function toggleSortPanel() {
+  showSortPanel.value = !showSortPanel.value;
+}
+
+function availableFieldOptions(index: number) {
+  const usedFields = new Set(
+    sortRules.value
+      .filter((_, ruleIndex) => ruleIndex !== index)
+      .map(rule => rule.field),
+  );
+
+  return sortFieldOptions.filter(option =>
+    option.value === sortRules.value[index]?.field || !usedFields.has(option.value),
+  );
+}
+
+function updateSortField(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    field: value as TodoSortField,
+  };
+  persistSortRules(nextRules);
+}
+
+function updateSortDirection(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    direction: value as TodoSortDirection,
+  };
+  persistSortRules(nextRules);
+}
+
+function addSortRule() {
+  const usedFields = new Set(sortRules.value.map(rule => rule.field));
+  const nextField = sortFieldOptions.find(option => !usedFields.has(option.value));
+  if (!nextField) return;
+
+  persistSortRules([
+    ...sortRules.value,
+    { field: nextField.value, direction: 'asc' },
+  ]);
+}
+
+function moveSortRule(index: number, delta: number) {
+  const targetIndex = index + delta;
+  if (targetIndex < 0 || targetIndex >= sortRules.value.length) return;
+
+  const nextRules = [...sortRules.value];
+  [nextRules[index], nextRules[targetIndex]] = [nextRules[targetIndex], nextRules[index]];
+  persistSortRules(nextRules);
+}
+
+function removeSortRule(index: number) {
+  if (sortRules.value.length <= 1) return;
+  const nextRules = sortRules.value.filter((_, ruleIndex) => ruleIndex !== index);
+  persistSortRules(nextRules);
+}
+
+function resetSortRules() {
+  persistSortRules([...defaultTodoSortRules]);
 }
 
 const groupOptions = computed(() => {
@@ -437,6 +592,32 @@ onUnmounted(() => {
         padding: 0 24px 0 8px;
       }
     }
+
+    .sort-trigger {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid var(--b3-border-color);
+      border-radius: 4px;
+      background: var(--b3-theme-background);
+      color: var(--b3-theme-on-surface);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+
+      &:hover {
+        border-color: var(--b3-theme-primary);
+        color: var(--b3-theme-primary);
+      }
+    }
   }
 
   .date-range-row {
@@ -457,6 +638,67 @@ onUnmounted(() => {
     }
 
 
+  }
+
+  .sort-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--b3-border-color);
+  }
+
+  .sort-rule-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 92px auto auto auto;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .sort-field-select,
+  .sort-direction-select {
+    width: 100%;
+
+    :deep(.sy-select__trigger) {
+      min-height: 28px;
+    }
+  }
+
+  .sort-rule-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    background: var(--b3-theme-background);
+    color: var(--b3-theme-on-surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-primary);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .sort-panel-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
   }
 }
 </style>

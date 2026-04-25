@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia';
 import type { ProjectGroup, ProjectDirectory, ScanMode } from '@/types/models';
 import { usePlugin } from '@/main';
+import { defaultTodoSortRules } from '@/settings/types';
 
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
@@ -23,7 +24,8 @@ export const useSettingsStore = defineStore('settings', {
       hideCompleted: false,
       hideAbandoned: false,
       showLinks: false,
-      showReminderAndRecurring: false
+      showReminderAndRecurring: false,
+      sortRules: [...defaultTodoSortRules],
     },
     loaded: false
   }),
@@ -83,7 +85,10 @@ export const useSettingsStore = defineStore('settings', {
           hideCompleted: settings.todoDock?.hideCompleted ?? false,
           hideAbandoned: settings.todoDock?.hideAbandoned ?? false,
           showLinks: settings.todoDock?.showLinks ?? false,
-          showReminderAndRecurring: settings.todoDock?.showReminderAndRecurring ?? false
+          showReminderAndRecurring: settings.todoDock?.showReminderAndRecurring ?? false,
+          sortRules: Array.isArray(settings.todoDock?.sortRules) && settings.todoDock.sortRules.length > 0
+            ? settings.todoDock.sortRules
+            : [...defaultTodoSortRules],
         };
         this.loaded = true;
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
