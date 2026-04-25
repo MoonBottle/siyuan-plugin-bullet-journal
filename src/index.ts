@@ -24,7 +24,7 @@ import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
-import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
+import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, defaultTodoSortRules, type AIChatHistory } from '@/settings';
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak, removeActivePomodoro, removePendingCompletion } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
@@ -406,7 +406,10 @@ export default class TaskAssistantPlugin extends Plugin {
             hideCompleted: data.todoDock?.hideCompleted ?? false,
             hideAbandoned: data.todoDock?.hideAbandoned ?? false,
             showLinks: data.todoDock?.showLinks ?? false,
-            showReminderAndRecurring: data.todoDock?.showReminderAndRecurring ?? false
+            showReminderAndRecurring: data.todoDock?.showReminderAndRecurring ?? false,
+            sortRules: Array.isArray(data.todoDock?.sortRules) && data.todoDock.sortRules.length > 0
+              ? data.todoDock.sortRules
+              : [...defaultTodoSortRules],
           },
           ai: {
             providers: data.ai?.providers || [],

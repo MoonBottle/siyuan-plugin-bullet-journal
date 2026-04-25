@@ -156,6 +156,25 @@
       "thisMonth": "本月",
       "all": "全部",
       "custom": "自定义"
+    },
+    "sortSettings": "排序设置",
+    "sortAddRule": "新增规则",
+    "sortReset": "恢复默认",
+    "sortMoveUp": "上移规则",
+    "sortMoveDown": "下移规则",
+    "sortRemoveRule": "删除规则",
+    "sortDirection": {
+      "asc": "升序",
+      "desc": "降序"
+    },
+    "sortFields": {
+      "priority": "优先级",
+      "time": "时间",
+      "date": "日期",
+      "reminderTime": "提醒时间",
+      "project": "项目名",
+      "task": "任务名",
+      "content": "内容"
     }
   },
   "settings": {

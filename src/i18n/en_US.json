@@ -156,6 +156,25 @@
       "thisMonth": "This Month",
       "all": "All",
       "custom": "Custom"
+    },
+    "sortSettings": "Sort Settings",
+    "sortAddRule": "Add Rule",
+    "sortReset": "Reset Default",
+    "sortMoveUp": "Move Rule Up",
+    "sortMoveDown": "Move Rule Down",
+    "sortRemoveRule": "Remove Rule",
+    "sortDirection": {
+      "asc": "Ascending",
+      "desc": "Descending"
+    },
+    "sortFields": {
+      "priority": "Priority",
+      "time": "Time",
+      "date": "Date",
+      "reminderTime": "Reminder Time",
+      "project": "Project",
+      "task": "Task",
+      "content": "Content"
     }
   },
   "settings": {

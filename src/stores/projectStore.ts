@@ -15,6 +15,8 @@ import { eventBus, Events } from '@/utils/eventBus';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
 import { calculateReminderTime } from '@/parser/reminderParser';
 import { getHPathByID } from '@/api';
+import type { TodoSortDirection, TodoSortRule } from '@/settings/types';
+import { defaultTodoSortRules } from '@/settings/types';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -25,6 +27,107 @@ function computeDisplayItems(
   if (!items) return [];
   const filtered = !groupId ? items : items.filter(i => i.project?.groupId === groupId);
   return filterDateRangeRepresentative(filtered, currentDate);
+}
+
+function normalizeString(value?: string): string {
+  return (value || '').toLocaleLowerCase();
+}
+
+function normalizeReminderTime(item: Item): number | null {
+  if (!item.reminder?.enabled) return null;
+  return calculateReminderTime(
+    item.date,
+    item.startDateTime,
+    item.endDateTime,
+    undefined,
+    undefined,
+    item.reminder,
+  );
+}
+
+function compareNullableNumber(a: number | null, b: number | null, direction: TodoSortDirection): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return direction === 'asc' ? a - b : b - a;
+}
+
+function compareNullableString(a: string | null, b: string | null, direction: TodoSortDirection): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return direction === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+}
+
+function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
+  for (const rule of sortRules) {
+    if (rule.field === 'priority') {
+      const diff = rule.direction === 'asc'
+        ? comparePriority(a.priority, b.priority)
+        : comparePriority(b.priority, a.priority);
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'time') {
+      const diff = compareNullableString(
+        a.startDateTime ?? null,
+        b.startDateTime ?? null,
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'date') {
+      const diff = rule.direction === 'asc'
+        ? a.date.localeCompare(b.date)
+        : b.date.localeCompare(a.date);
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'reminderTime') {
+      const diff = compareNullableNumber(
+        normalizeReminderTime(a),
+        normalizeReminderTime(b),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'project') {
+      const diff = compareNullableString(
+        normalizeString(a.project?.name),
+        normalizeString(b.project?.name),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'task') {
+      const diff = compareNullableString(
+        normalizeString(a.task?.name),
+        normalizeString(b.task?.name),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'content') {
+      const diff = compareNullableString(
+        normalizeString(a.content),
+        normalizeString(b.content),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+    }
+  }
+
+  return 0;
 }
 import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
@@ -277,17 +380,13 @@ export const useProjectStore = defineStore('project', {
         items = items.filter(item => item.status !== 'abandoned');
       }
 
-      // 6. 按优先级和时间排序
-      items.sort((a, b) => {
-        // 先按优先级排序（高→中→低→无）
-        const priorityDiff = comparePriority(a.priority, b.priority);
-        if (priorityDiff !== 0) return priorityDiff;
+      // 6. 按配置排序
+      const settingsStore = useSettingsStore();
+      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+        ? settingsStore.todoDock.sortRules
+        : defaultTodoSortRules;
 
-        // 同优先级按时间排序（开始时间或日期）
-        const timeA = a.startDateTime || a.date;
-        const timeB = b.startDateTime || b.date;
-        return timeA.localeCompare(timeB);
-      });
+      items.sort((a, b) => compareTodoItems(a, b, sortRules));
 
       return items;
     },
@@ -334,14 +433,13 @@ export const useProjectStore = defineStore('project', {
         );
       }
 
-      // 6. 按优先级和时间排序
-      items.sort((a, b) => {
-        const priorityDiff = comparePriority(a.priority, b.priority);
-        if (priorityDiff !== 0) return priorityDiff;
-        const timeA = a.startDateTime || a.date;
-        const timeB = b.startDateTime || b.date;
-        return timeA.localeCompare(timeB);
-      });
+      // 6. 按配置排序
+      const settingsStore = useSettingsStore();
+      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+        ? settingsStore.todoDock.sortRules
+        : defaultTodoSortRules;
+
+      items.sort((a, b) => compareTodoItems(a, b, sortRules));
 
       return items;
     },
@@ -388,14 +486,13 @@ export const useProjectStore = defineStore('project', {
         );
       }
 
-      // 6. 按优先级和时间排序
-      items.sort((a, b) => {
-        const priorityDiff = comparePriority(a.priority, b.priority);
-        if (priorityDiff !== 0) return priorityDiff;
-        const timeA = a.startDateTime || a.date;
-        const timeB = b.startDateTime || b.date;
-        return timeA.localeCompare(timeB);
-      });
+      // 6. 按配置排序
+      const settingsStore = useSettingsStore();
+      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+        ? settingsStore.todoDock.sortRules
+        : defaultTodoSortRules;
+
+      items.sort((a, b) => compareTodoItems(a, b, sortRules));
 
       return items;
     },
