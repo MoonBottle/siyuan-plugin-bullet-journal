@@ -45,6 +45,7 @@
   "calendar": {
     "title": "日历视图",
     "today": "今天",
+    "dayTotalDuration": "今日总耗时 {duration}",
     "month": "月",
     "week": "周",
     "day": "日",

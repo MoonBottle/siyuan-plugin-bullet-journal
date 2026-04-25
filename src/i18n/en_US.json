@@ -45,6 +45,7 @@
   "calendar": {
     "title": "Calendar",
     "today": "Today",
+    "dayTotalDuration": "Total {duration}",
     "month": "Month",
     "week": "Week",
     "day": "Day",

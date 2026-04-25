@@ -22,6 +22,7 @@
       </span>
       <!-- 日期显示 -->
       <span class="date-title">{{ currentTitle }}</span>
+      <span v-if="showDayTotalDuration" class="date-duration">{{ dayTotalDurationLabel }}</span>
       <span class="fn__flex-1 fn__space"></span>
       <!-- 视图切换 -->
       <SySelect v-model="currentView" :options="viewOptions" />
@@ -65,6 +66,7 @@ import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import { DataConverter } from '@/utils/dataConverter';
+import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 
@@ -95,6 +97,25 @@ const currentDateStr = ref(dayjs().format('YYYY-MM-DD'));
 // 是否显示番茄钟时间块（仅日视图 + 设置开启）
 const showPomodoroPanel = computed(() => {
   return currentView.value === 'timeGridDay' && settingsStore.showPomodoroBlocks;
+});
+
+const dayTotalDurationMinutes = computed(() => {
+  if (currentView.value !== 'timeGridDay') return 0;
+  return calculateDayTotalDurationMinutes(
+    filteredCalendarEvents.value,
+    currentDateStr.value,
+    settingsStore.lunchBreakStart,
+    settingsStore.lunchBreakEnd
+  );
+});
+
+const showDayTotalDuration = computed(() => {
+  return currentView.value === 'timeGridDay' && dayTotalDurationMinutes.value > 0;
+});
+
+const dayTotalDurationLabel = computed(() => {
+  const duration = formatTotalDuration(dayTotalDurationMinutes.value);
+  return t('calendar').dayTotalDuration.replace('{duration}', duration);
 });
 
 // 番茄钟背景时间块事件（右对齐，仅日视图）
@@ -450,6 +471,13 @@ watch(currentView, (newView) => {
   font-weight: 600;
   color: var(--b3-theme-on-background);
   margin-left: 12px;
+}
+
+.date-duration {
+  font-size: 13px;
+  color: var(--b3-theme-on-surface-light);
+  margin-left: 10px;
+  white-space: nowrap;
 }
 
 .tab-content {
