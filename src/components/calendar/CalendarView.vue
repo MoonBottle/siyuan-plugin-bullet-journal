@@ -575,6 +575,7 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
     date: extendedProps?.date,
     originalStartDateTime: extendedProps?.originalStartDateTime,
     originalEndDateTime: extendedProps?.originalEndDateTime,
+    timePrecision: extendedProps?.timePrecision,
     siblingItems: extendedProps?.siblingItems,
     status: extendedProps?.itemStatus
   };
