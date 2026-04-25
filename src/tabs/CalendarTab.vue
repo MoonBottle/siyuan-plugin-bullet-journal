@@ -340,21 +340,8 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
   const originalDate = eventInfo.date;
   const originalStartDateTime = eventInfo.originalStartDateTime;
   const originalEndDateTime = eventInfo.originalEndDateTime;
-  const timePrecision = eventInfo.timePrecision || eventInfo.extendedProps?.timePrecision || 'second';
   const siblingItems = eventInfo.siblingItems;
   const status = eventInfo.status;
-
-  // 重建完整的 siblingItems（包含当前日期）
-  // siblingItems 原本只包含"其他日期"，需要加上当前正在修改的日期
-  const completeSiblingItems = [
-    ...(siblingItems || []),
-    ...(originalDate ? [{
-      date: originalDate,
-      startDateTime: originalStartDateTime,
-      endDateTime: originalEndDateTime,
-      timePrecision
-    }] : [])
-  ];
 
   // 解析新的日期时间
   const startStr = eventInfo.start;
@@ -380,6 +367,23 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     const time = endStr.split('T')[1];
     newEndTime = time.substring(0, 8); // HH:mm:ss
   }
+
+  const timePrecision
+    = eventInfo.timePrecision
+      || eventInfo.extendedProps?.timePrecision
+      || (!originalStartDateTime && newStartTime ? 'minute' : 'second');
+
+  // 重建完整的 siblingItems（包含当前日期）
+  // siblingItems 原本只包含"其他日期"，需要加上当前正在修改的日期
+  const completeSiblingItems = [
+    ...(siblingItems || []),
+    ...(originalDate ? [{
+      date: originalDate,
+      startDateTime: originalStartDateTime,
+      endDateTime: originalEndDateTime,
+      timePrecision
+    }] : [])
+  ];
 
   // 更新块（传递 completeSiblingItems、status 以支持智能合并）
   const success = await updateBlockDateTime(
