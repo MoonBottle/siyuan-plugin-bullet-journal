@@ -24,6 +24,7 @@ export interface TodoDockSettings {
   showLinks: boolean;
   showReminderAndRecurring: boolean;
   sortRules: TodoSortRule[];
+  selectedGroup: string;
 }
 
 // AI 聊天记录（单独存储）
@@ -144,6 +145,7 @@ export const defaultSettings: SettingsData = {
     showLinks: false,
     showReminderAndRecurring: false,
     sortRules: [...defaultTodoSortRules],
+    selectedGroup: '',
   },
   ai: {
     providers: [],

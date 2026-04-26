@@ -139,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import dayjs from 'dayjs';
 import { Menu } from 'siyuan';
 import { usePlugin } from '@/main';
@@ -158,7 +158,12 @@ const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
-const selectedGroup = ref('');
+const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
+
+watch(selectedGroup, (val) => {
+  settingsStore.todoDock.selectedGroup = val;
+  settingsStore.saveToPlugin();
+});
 
 // 搜索和筛选状态
 const searchQuery = ref('');

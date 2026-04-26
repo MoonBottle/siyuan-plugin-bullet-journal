@@ -89,7 +89,7 @@ const openStatsTab = () => {
 
 // 打开开始专注弹框（使用共享函数，与底栏等调用方一致）
 const openTimerDialog = () => {
-  showPomodoroTimerDialog();
+  showPomodoroTimerDialog(undefined, settingsStore.todoDock.selectedGroup);
 };
 
 // 打开专注完成弹窗（补填说明）

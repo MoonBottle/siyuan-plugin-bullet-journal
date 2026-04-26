@@ -9,7 +9,7 @@ import { createPinia } from 'pinia';
 import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
 import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { getBlockIdFromElement, getBlockIdFromRange } from '@/utils/itemBlockUtils';
-import { useProjectStore, usePomodoroStore, useSkillStore, useAIStore } from '@/stores';
+import { useProjectStore, usePomodoroStore, useSkillStore, useAIStore, useSettingsStore } from '@/stores';
 import { useConversationStorage } from '@/services/conversationStorageService';
 import { useSkillService } from '@/services/skillService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
@@ -1947,8 +1947,11 @@ export default class TaskAssistantPlugin extends Plugin {
     const pomodoroStore = usePomodoroStore(pinia);
     if (pomodoroStore.isFocusing || pomodoroStore.isBreakActive) return;
 
+    const settingsStore = useSettingsStore(pinia);
+    const initialGroupId = settingsStore.todoDock.selectedGroup;
+
     // 直接打开弹框，无需等待 Dock 挂载
-    showPomodoroTimerDialog();
+    showPomodoroTimerDialog(undefined, initialGroupId);
     // 同时打开番茄 Dock，便于用户查看计时
     this.openPomodoroDock();
   }

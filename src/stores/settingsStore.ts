@@ -26,6 +26,7 @@ export const useSettingsStore = defineStore('settings', {
       showLinks: false,
       showReminderAndRecurring: false,
       sortRules: [...defaultTodoSortRules],
+      selectedGroup: '',
     },
     loaded: false
   }),
@@ -89,6 +90,7 @@ export const useSettingsStore = defineStore('settings', {
           sortRules: Array.isArray(settings.todoDock?.sortRules) && settings.todoDock.sortRules.length > 0
             ? settings.todoDock.sortRules
             : [...defaultTodoSortRules],
+          selectedGroup: settings.todoDock?.selectedGroup ?? '',
         };
         this.loaded = true;
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);

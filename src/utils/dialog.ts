@@ -648,10 +648,10 @@ export async function showPomodoroCompleteDialog(
  * 显示开始专注弹框（移动端抽屉 / 桌面端对话框）
  * 供底栏、Dock 等任意上下文调用，不依赖 PomodoroDock 是否已挂载
  */
-export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | null {
+export function showPomodoroTimerDialog(preselectedBlockId?: string, initialGroupId?: string): Dialog | null {
   // 移动端使用抽屉式弹框
   if (isMobileDevice()) {
-    return showMobilePomodoroTimerDrawer(preselectedBlockId);
+    return showMobilePomodoroTimerDrawer(preselectedBlockId, initialGroupId);
   }
 
   // 桌面端使用传统对话框
@@ -675,7 +675,7 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | n
   setTimeout(() => {
     const mountEl = dialog.element?.querySelector('#pomodoro-timer-dialog-mount');
     if (mountEl) {
-      timerDialogApp = createApp(PomodoroTimerDialog, { closeDialog });
+      timerDialogApp = createApp(PomodoroTimerDialog, { closeDialog, initialGroupId });
       timerDialogApp.mount(mountEl);
     }
   }, 0);
@@ -686,7 +686,7 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | n
 /**
  * 显示移动端专注计时抽屉
  */
-function showMobilePomodoroTimerDrawer(preselectedBlockId?: string): Dialog | null {
+function showMobilePomodoroTimerDrawer(preselectedBlockId?: string, initialGroupId?: string): Dialog | null {
   const mountEl = document.createElement('div');
   mountEl.id = 'mobile-pomodoro-timer-mount';
   document.body.appendChild(mountEl);
@@ -708,6 +708,7 @@ function showMobilePomodoroTimerDrawer(preselectedBlockId?: string): Dialog | nu
   drawerApp = createApp(MobilePomodoroTimerDrawer, {
     modelValue: visible,
     preselectedBlockId,
+    initialGroupId,
     'onUpdate:modelValue': (val: boolean) => {
       if (!val) closeDrawer();
     },
