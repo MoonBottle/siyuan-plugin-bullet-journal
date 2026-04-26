@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.7] - 2026-04-26
+
+### Fixes
+
+- **Todo Date Filter**: Fixed date filter not updating automatically after midnight, refresh also failed to show current day's data
+
 ## [0.12.6] - 2026-04-25
 
 ### Features
