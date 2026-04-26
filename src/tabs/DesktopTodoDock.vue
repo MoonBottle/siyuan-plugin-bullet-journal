@@ -171,6 +171,18 @@ const dateFilterType = ref<DateFilterType>('today');
 const startDate = ref(dayjs().format('YYYY-MM-DD'));
 const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
 
+const todayDate = ref(dayjs().format('YYYY-MM-DD'));
+let dateCheckTimer: ReturnType<typeof setInterval> | null = null;
+
+const startDateCheck = () => {
+  dateCheckTimer = setInterval(() => {
+    const newDate = dayjs().format('YYYY-MM-DD');
+    if (newDate !== todayDate.value) {
+      todayDate.value = newDate;
+    }
+  }, 60_000);
+};
+
 const priorityOptions = [
   { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
   { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji },
@@ -202,13 +214,10 @@ const sortDirectionOptions = [
 const dateRange = computed(() => {
   if (dateFilterType.value === 'all') return null;
   if (dateFilterType.value === 'today') {
-    const today = dayjs().format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到今天
-    return { start: '1970-01-01', end: today };
+    return { start: '1970-01-01', end: todayDate.value };
   }
   if (dateFilterType.value === 'week') {
-    const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到一周后
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
     return { start: '1970-01-01', end: nextWeek };
   }
   // custom
@@ -451,9 +460,15 @@ onMounted(async () => {
   } catch {
     // 忽略
   }
+
+  startDateCheck();
 });
 
 onUnmounted(() => {
+  if (dateCheckTimer) {
+    clearInterval(dateCheckTimer);
+    dateCheckTimer = null;
+  }
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }

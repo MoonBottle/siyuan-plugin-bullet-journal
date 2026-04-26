@@ -168,6 +168,19 @@ const state = reactive({
   showPomodoroDrawer: false,
 });
 
+const todayDate = ref(dayjs().format('YYYY-MM-DD'));
+let dateCheckTimer: ReturnType<typeof setInterval> | null = null;
+
+const startDateCheck = () => {
+  dateCheckTimer = setInterval(() => {
+    const newDate = dayjs().format('YYYY-MM-DD');
+    if (newDate !== todayDate.value) {
+      todayDate.value = newDate;
+      applyFilters();
+    }
+  }, 60_000);
+};
+
 // Selected project and task refs for detail drawers
 const selectedProject = ref<Project | null>(null);
 const selectedTask = ref<Task | null>(null);
@@ -323,12 +336,9 @@ const handleCreateItem = (taskId: string, projectId?: string) => {
 const applyFilters = () => {
   // Apply date filter
   if (state.dateFilter === 'today') {
-    const today = dayjs().format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到今天（与桌面端一致）
-    state.dateRange = { start: '1970-01-01', end: today };
+    state.dateRange = { start: '1970-01-01', end: todayDate.value };
   } else if (state.dateFilter === 'week') {
-    const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到一周后（与桌面端一致）
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
     state.dateRange = { start: '1970-01-01', end: nextWeek };
   } else if (state.dateFilter === 'all') {
     state.dateRange = null;
@@ -421,9 +431,16 @@ onMounted(async () => {
   } catch {
     // 忽略
   }
+
+  applyFilters();
+  startDateCheck();
 });
 
 onUnmounted(() => {
+  if (dateCheckTimer) {
+    clearInterval(dateCheckTimer);
+    dateCheckTimer = null;
+  }
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }
