@@ -41,10 +41,9 @@ function buildMessageForApi(m: ChatMessage, config: AIProviderConfig): Record<st
   }
   if (m.toolCalls && m.toolCalls.length > 0) {
     msg.tool_calls = m.toolCalls;
-    // Kimi thinking 模式要求 assistant 消息含 tool_calls 时必须有 reasoning_content
-    if (config.provider === 'kimi' && m.role === 'assistant') {
-      msg.reasoning_content = m.reasoning?.trim() || ' ';
-    }
+  }
+  if (m.role === 'assistant' && m.reasoning) {
+    msg.reasoning_content = m.reasoning;
   }
   return msg;
 }
