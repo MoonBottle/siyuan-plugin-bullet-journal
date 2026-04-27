@@ -6,6 +6,13 @@
         {{ t('todo').title }}
       </div>
       <span class="fn__flex-1 fn__space"></span>
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="todoSidebar?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
+        @click="todoSidebar?.toggleCollapseAll()"
+      >
+        <svg><use :xlink:href="todoSidebar?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
+      </span>
       <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').more" @click="handleMoreClick">
         <svg><use xlink:href="#iconMore"></use></svg>
       </span>
@@ -128,6 +135,7 @@
       </div>
       <div class="fn__flex-1 todo-dock-content">
         <TodoSidebar 
+          ref="todoSidebar"
           :group-id="selectedGroup"
           :search-query="searchQuery"
           :date-range="dateRange"
@@ -158,6 +166,8 @@ import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings'
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+
+const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
 
 const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
 

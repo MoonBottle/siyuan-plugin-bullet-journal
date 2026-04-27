@@ -140,6 +140,8 @@
     "showReminderRecurring": "Show reminder & recurring",
     "hideReminderRecurring": "Hide reminder & recurring",
     "startFocusAria": "Start Focus",
+    "collapseAll": "Collapse All",
+    "expandAll": "Expand All",
     "searchPlaceholder": "Search items...",
     "priority": {
       "title": "Priority",

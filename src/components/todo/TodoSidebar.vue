@@ -516,6 +516,32 @@ const toggleSection = (section: keyof typeof collapsedSections.value) => {
   collapsedSections.value[section] = !collapsedSections.value[section];
 };
 
+const allCollapsed = ref(false);
+
+const collapseAll = () => {
+  (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).forEach(key => {
+    collapsedSections.value[key] = true;
+  });
+  allCollapsed.value = true;
+};
+
+const expandAll = () => {
+  (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).forEach(key => {
+    collapsedSections.value[key] = false;
+  });
+  allCollapsed.value = false;
+};
+
+const toggleCollapseAll = () => {
+  if (allCollapsed.value) {
+    expandAll();
+  } else {
+    collapseAll();
+  }
+};
+
+defineExpose({ collapseAll, expandAll, toggleCollapseAll, allCollapsed });
+
 // 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
   return t('statusTag')[status] || '';
