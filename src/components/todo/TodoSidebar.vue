@@ -516,20 +516,20 @@ const toggleSection = (section: keyof typeof collapsedSections.value) => {
   collapsedSections.value[section] = !collapsedSections.value[section];
 };
 
-const allCollapsed = ref(false);
+const allCollapsed = computed(() => {
+  return (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).every(key => collapsedSections.value[key]);
+});
 
 const collapseAll = () => {
   (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).forEach(key => {
     collapsedSections.value[key] = true;
   });
-  allCollapsed.value = true;
 };
 
 const expandAll = () => {
   (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).forEach(key => {
     collapsedSections.value[key] = false;
   });
-  allCollapsed.value = false;
 };
 
 const toggleCollapseAll = () => {
