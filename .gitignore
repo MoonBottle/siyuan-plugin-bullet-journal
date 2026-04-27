@@ -16,3 +16,4 @@ docs/temp/
 .cursor
 package
 .agents/
+logs/

@@ -1,98 +1,98 @@
-# Plugin Runtime Lifecycle Design
+# 插件 Runtime 生命周期设计
 
-## Background
+## 背景
 
-Task Assistant currently assumes that plugin reload will also rebuild every open tab, dock, and dialog. Recent debugging shows that assumption is false in SiYuan:
+任务助手当前默认认为：插件 reload 之后，所有已打开的 tab、dock、dialog 也会随之重建。最近的排查已经证明，在 SiYuan 里这个前提并不成立：
 
-- plugin `onunload()` can complete normally
-- a new plugin instance can `onload()` normally
-- some old tab or dock views can remain mounted in detached VM contexts
-- those old views may keep old Vue app state, old Pinia stores, old event subscriptions, and old closures
+- 插件的 `onunload()` 可以正常执行完成
+- 新插件实例的 `onload()` 也可以正常完成
+- 一些旧 tab / dock 视图可能仍然存活在分离出来的旧 VM 上下文中
+- 这些旧视图可能继续持有旧的 Vue app 状态、旧的 Pinia store、旧的事件订阅和旧闭包
 
-This causes inconsistent behavior:
+这会带来一系列不一致行为：
 
-- directed refresh can degrade into stale listeners reacting from old contexts
-- a stale calendar tab can stop auto-refreshing after document edits
-- manual refresh from that same stale tab can still pull latest data, because the stale view can still call store refresh directly
-- dialog actions like "open document" can fail when they read `plugin-null` from outdated global state
+- 定向刷新会退化成旧上下文中的 stale listener 在继续响应
+- stale 的日历 tab 在文档修改后不再自动刷新
+- 同一个 stale 日历 tab 右上角手动刷新仍然可以拉到最新数据，因为它还可以直接调用旧 store 的 refresh
+- dialog 中“打开文档”这类操作，在读取到过时全局状态时可能出现 `plugin-null`
 
-The current `usePlugin()` + `getSharedPinia()` model is not strong enough to represent runtime replacement, stale views, and strict invalidation rules.
+当前基于 `usePlugin()` + `getSharedPinia()` 的模型，已经不足以表达 runtime 替换、视图 stale 和严格失效策略。
 
-## Problem Statement
+## 问题定义
 
-The plugin needs an explicit runtime model that:
+插件需要一个显式的 runtime 模型，满足以下要求：
 
-1. survives plugin replacement cleanly
-2. gives all consumers a single source of truth for current runtime dependencies
-3. lets views know whether they belong to the active runtime
-4. enforces strict stale invalidation for old tabs, docks, and dialogs
-5. prevents old contexts from continuing to read stores, subscribe to refresh events, or trigger host actions after runtime replacement
+1. 插件实例替换时能稳定切换
+2. 所有消费者都从单一事实来源读取当前 runtime 依赖
+3. 视图可以判断自己是否属于当前活跃 runtime
+4. 对旧 tab / dock / dialog 执行严格失效策略
+5. 阻止旧上下文在 runtime 替换后继续读写 store、订阅刷新事件或触发宿主动作
 
-## Goals
+## 目标
 
-- Introduce a unified runtime container for plugin lifecycle dependencies.
-- Introduce explicit `viewContext` / `dialogContext` identity objects.
-- Make stale views fail closed after runtime replacement.
-- Centralize access to plugin, app, Pinia, stores, eventBus, and BroadcastChannel.
-- Stop using scattered implicit globals as the primary dependency model.
-- Make stale-state behavior deterministic and testable.
+- 引入统一的 runtime 容器，托管插件生命周期依赖
+- 引入显式的 `viewContext` / `dialogContext` 身份对象
+- runtime 替换后，stale 视图必须 fail closed
+- 将 plugin、app、Pinia、store、eventBus、BroadcastChannel 访问统一收口
+- 停止把分散的隐式全局状态作为主要依赖模型
+- 让 stale 行为可预测、可验证、可测试
 
-## Non-Goals
+## 非目标
 
-- Preserve backward-compatible behavior where stale views remain partially usable.
-- Fully redesign every store or service in the same change.
-- Eliminate all existing utility wrappers in one step.
-- Automatically migrate stale view UI state into a fresh runtime.
+- 保留 stale 视图“半可用”的兼容行为
+- 在同一次改动中完全重写所有 store 或 service
+- 一次性消灭所有现有工具封装
+- 自动把 stale 视图的本地 UI 状态迁移到新 runtime
 
-## User Experience Policy
+## 用户体验策略
 
-This design uses **strict invalidation**.
+本设计采用 **严格失效** 策略。
 
-When runtime is replaced:
+当 runtime 被替换后：
 
-- old tabs and docks become stale
-- old dialogs become stale
-- stale contexts stop processing refreshes, store updates, and host actions
-- stale dialogs close immediately or refuse further interaction
-- stale tabs and docks show an overlay with:
-  - a stale-state explanation
-  - a "reopen view" action
+- 旧 tab 和 dock 进入 stale 状态
+- 旧 dialog 进入 stale 状态
+- stale 上下文停止处理刷新、停止访问 store、停止触发宿主动作
+- stale dialog 尽快关闭，或至少拒绝后续交互
+- stale tab / dock 在内容区显示 overlay，包含：
+  - 当前视图已失效的说明
+  - “重新打开当前视图”的操作入口
 
-This policy prefers deterministic lifecycle boundaries over partial continued behavior.
+该策略优先保证生命周期边界清晰和行为确定，而不是维持部分旧行为继续工作。
 
-## Design Overview
+## 总体设计
 
-The solution uses a **two-layer model**:
+方案采用 **双层模型**：
 
-1. **Singleton runtime container**
-   - owns current plugin runtime state
-   - handles injection, replacement, disposal, and dependency access
+1. **单例 runtime 容器**
+   - 持有当前活跃插件 runtime 的全部核心依赖
+   - 负责注入、替换、释放和依赖访问
 
-2. **Explicit context objects**
-   - each tab, dock, and dialog is created with a context identity
-   - context identity is validated against the active runtime before any sensitive operation
+2. **显式上下文对象**
+   - 每个 tab、dock、dialog 在创建时生成自己的上下文身份
+   - 所有敏感操作在执行前都要校验上下文是否仍然属于当前 runtime
 
-This prevents old views from silently borrowing new runtime dependencies after replacement.
+这样可以避免旧视图在 runtime 替换后继续偷偷借用最新依赖工作。
 
-## Architecture
+## 架构设计
 
 ### 1. `pluginRuntime`
 
-Add a dedicated runtime module, for example:
+新增专用 runtime 模块，例如：
 
 - `src/runtime/pluginRuntime.ts`
 
-Responsibilities:
+职责：
 
-- hold the current runtime record
-- expose current runtime epoch and instance id
-- install a new runtime on plugin `onload()`
-- replace the previous runtime on reload
-- dispose the runtime on `onunload()`
-- expose typed accessors for shared dependencies
-- manage stale-state checks
+- 持有当前 runtime 记录
+- 暴露当前 runtime 的 epoch 和 instance id
+- 在插件 `onload()` 时安装 runtime
+- 在插件 reload 时替换 runtime
+- 在插件 `onunload()` 时释放 runtime
+- 统一暴露共享依赖访问器
+- 提供 stale 判定能力
 
-Runtime record fields:
+runtime 记录字段建议包括：
 
 - `plugin`
 - `app`
@@ -101,10 +101,10 @@ Runtime record fields:
 - `broadcast`
 - `instanceId`
 - `epoch`
-- `state` (`active`, `disposing`, `disposed`)
-- optional debug metadata
+- `state`（`active`、`disposing`、`disposed`）
+- 可选调试元数据
 
-Core API:
+核心 API：
 
 - `installRuntime(plugin)`
 - `replaceRuntime(plugin)`
@@ -117,18 +117,18 @@ Core API:
 
 ### 2. `hostApi`
 
-Add a dedicated host action layer, for example:
+新增宿主动作层，例如：
 
 - `src/runtime/hostApi.ts`
 
-Responsibilities:
+职责：
 
-- wrap SiYuan host actions
-- always resolve through active runtime
-- reject calls from stale contexts
-- provide a narrow interface to the rest of the codebase
+- 封装所有依赖 SiYuan host 的动作
+- 所有动作都必须通过当前活跃 runtime 执行
+- stale 上下文调用时统一拒绝
+- 向业务层暴露窄接口，避免业务代码直接碰裸 `plugin`
 
-Representative API:
+代表性 API：
 
 - `openDocument(context, docId)`
 - `openDocumentAtLine(context, docId, lineNumber?, blockId?)`
@@ -136,291 +136,297 @@ Representative API:
 - `showMessage(context, text, timeout?, type?)`
 - `broadcastRefresh(context, payload?)`
 
-`hostApi` should never read global plugin state directly. It must go through `pluginRuntime`.
+`hostApi` 不应再直接读取全局 plugin 状态，必须统一走 `pluginRuntime`。
 
 ### 3. `runtimeStores`
 
-Add a store access layer, for example:
+新增 store 访问层，例如：
 
 - `src/runtime/runtimeStores.ts`
 
-Responsibilities:
+职责：
 
-- provide current runtime-bound store accessors
-- prevent direct dependency on scattered `getSharedPinia()` calls
-- fail when called from stale contexts
+- 提供基于当前 runtime 的 store 访问器
+- 避免继续分散依赖 `getSharedPinia()`
+- stale 上下文访问 store 时直接失败
 
-Representative API:
+代表性 API：
 
 - `getProjectStore(context)`
 - `getSettingsStore(context)`
 - `getPomodoroStore(context)`
 - `getAIStore(context)`
 
-All of these should internally resolve store instances from the current runtime Pinia.
+这些 API 内部统一从当前 runtime 的 Pinia 上解析 store 实例。
 
-### 4. `viewContext` and `dialogContext`
+### 4. `viewContext` 与 `dialogContext`
 
-Add context factories, for example:
+新增上下文工厂，例如：
 
 - `src/runtime/viewContext.ts`
 
-Each context should contain:
+每个上下文对象建议包含：
 
-- `kind` (`tab`, `dock`, `dialog`)
+- `kind`（`tab`、`dock`、`dialog`）
 - `name`
 - `createdAtEpoch`
 - `createdByInstanceId`
 - `contextId`
-- optional `reopenAction`
-- optional debug location info
+- 可选的 `reopenAction`
+- 可选调试位置信息
 
-Core API:
+核心 API：
 
 - `createViewContext(kind, name, options?)`
 - `createDialogContext(name, options?)`
 - `isContextStale(context)`
 - `assertContextActive(context)`
 
-Strict invalidation rule:
+严格失效规则：
 
-- if `context.createdAtEpoch !== runtime.currentEpoch`, the context is stale
+- 只要 `context.createdAtEpoch !== runtime.currentEpoch`，该上下文就判定为 stale
 
 ### 5. `staleViewGuard`
 
-Add a reusable guard for long-lived UI surfaces.
+新增长生命周期 UI 守卫层。
 
-Responsibilities:
+职责：
 
-- watch runtime epoch changes
-- mark local view state stale
-- stop event handlers, timers, and refresh subscriptions
-- expose a stale-state flag for overlay rendering
+- 监听 runtime epoch 变化
+- 在本地视图状态中标记 stale
+- 停止事件处理器、定时器和刷新订阅
+- 向界面层暴露 stale 状态，供 overlay 渲染
 
-Representative behavior:
+代表性行为：
 
-- tabs and docks listen for runtime replacement
-- when stale, they:
-  - unsubscribe eventBus listeners
-  - close BroadcastChannel listeners
-  - stop timers
-  - block refresh and host actions
-  - render stale overlay
+- tab / dock 监听 runtime 替换事件
+- 一旦变 stale，立刻：
+  - 取消 eventBus 订阅
+  - 关闭 BroadcastChannel 监听
+  - 停止 timer
+  - 拦截 refresh 和所有宿主动作
+  - 渲染 stale overlay
 
-## Lifecycle Rules
+## 生命周期规则
 
-### Plugin `onload()`
+### 插件 `onload()`
 
-1. create new Pinia
-2. initialize runtime with new plugin/app/pinia
-3. register tabs and docks
-4. mount views with `viewContext`
-5. all mounted views resolve dependencies through runtime-aware APIs
+1. 创建新的 Pinia
+2. 用新的 plugin / app / pinia 初始化 runtime
+3. 注册 tabs 和 docks
+4. 挂载视图时同时创建 `viewContext`
+5. 所有已挂载视图统一通过 runtime API 获取依赖
 
-### Plugin reload / replacement
+### 插件 reload / runtime 替换
 
-1. old runtime enters `disposing`
-2. replacement runtime is installed with new epoch
-3. runtime replacement event is emitted
-4. stale guards in old views detect epoch mismatch
-5. old views detach from event sources and enter stale state
+1. 旧 runtime 进入 `disposing`
+2. 新 runtime 以新的 epoch 安装完成
+3. 对外发出 runtime replacement 事件
+4. 旧视图中的 stale guard 检测到 epoch 不匹配
+5. 旧视图与事件源解除绑定，并进入 stale 状态
 
-### Plugin `onunload()`
+### 插件 `onunload()`
 
-1. runtime enters `disposing`
-2. unload event is emitted
-3. runtime-managed listeners and broadcasts are closed
-4. runtime state is marked `disposed`
+1. runtime 进入 `disposing`
+2. 发出 unload 事件
+3. 关闭 runtime 管理的监听器和广播通道
+4. 将 runtime 标记为 `disposed`
 
-The design intentionally does **not** depend on SiYuan to destroy old tabs or docks correctly.
+本设计**不依赖** SiYuan 是否会正确销毁旧 tab / dock。
 
-## Store Strategy
+## Store 策略
 
-### Current issue
+### 当前问题
 
-Today, tabs can hold old Pinia and old store references indefinitely if the Vue app is not remounted.
+如果 Vue app 没有重新 mount，tab 会无限期持有旧 Pinia 和旧 store 引用。
 
-### New rule
+### 新规则
 
-- views must not treat directly captured store references as permanently valid
-- long-lived actions must go through `runtimeStores`
-- stale views must stop reading and mutating stores
+- 视图不能再把直接捕获到的 store 视为永久有效
+- 所有长生命周期关键路径都必须通过 `runtimeStores`
+- stale 视图不得继续读写 store
 
-Implementation note:
+实现说明：
 
-- initial migration can keep local store variables in active views
-- but any refresh, reload, or host-driven action path must validate context before store use
-- final target is runtime-mediated store access everywhere that matters across lifecycle boundaries
+- 第一阶段可以保留 active 视图里的局部 store 变量
+- 但所有 refresh、reload、宿主联动路径都必须先校验 context，再访问 store
+- 最终目标是：所有跨生命周期敏感路径都改为 runtime 介入的 store 访问
 
-## EventBus Strategy
+## EventBus 策略
 
-Current problem:
+当前问题：
 
-- old VM-local event buses can remain alive
-- old listeners can keep running in detached views
+- 旧 VM 内部的 eventBus 可能继续存在
+- 旧 listener 可能继续在 stale 视图中运行
 
-New rule:
+新规则：
 
-- eventBus becomes part of runtime state
-- subscription helpers require context
-- runtime replacement invalidates all old-context subscriptions
+- eventBus 成为 runtime 的一部分
+- 订阅必须通过带 context 的 helper
+- runtime 替换后，旧 context 的订阅全部自动失效
 
-Representative helper:
+代表性 helper：
 
 - `runtimeEvents.on(context, event, handler)`
 
-Behavior:
+行为要求：
 
-- if context is stale, subscription is rejected
-- if runtime is replaced later, the subscription auto-disposes
+- stale context 无法新增订阅
+- runtime 替换后，对应订阅自动释放
 
-## BroadcastChannel Strategy
+## BroadcastChannel 策略
 
-Current problem:
+当前问题：
 
-- old views can keep listening on `BroadcastChannel`
-- old contexts may react after runtime replacement
+- 旧视图可能继续监听 `BroadcastChannel`
+- 旧上下文可能在 runtime 替换后继续响应消息
 
-New rule:
+新规则：
 
-- BroadcastChannel ownership is runtime-scoped
-- channel listeners must be created through runtime helpers
-- old contexts close listeners immediately on stale detection
+- BroadcastChannel 的所有权属于 runtime
+- channel listener 必须通过 runtime helper 创建
+- stale 视图一旦被检测到，必须立即关闭对应 channel 监听
 
-Representative helper:
+代表性 helper：
 
 - `runtimeBroadcast.subscribe(context, channelName, handler)`
 
-Behavior:
+行为要求：
 
-- runtime replacement closes old subscriptions
-- stale contexts cannot create new subscriptions
+- runtime 替换时自动关闭旧订阅
+- stale context 不能继续创建新订阅
 
-## Tab, Dock, and Dialog Policy
+## Tab、Dock、Dialog 策略
 
 ### Tab / Dock
 
-When stale:
+当视图进入 stale 状态后：
 
-- content area shows overlay
-- overlay text explains that plugin has reloaded and current view is stale
-- overlay provides "reopen current view"
-- all actions beneath overlay are blocked
+- 内容区显示 overlay
+- overlay 明确提示“插件已重载，当前视图已失效”
+- overlay 提供“重新打开当前视图”
+- overlay 下方原有操作全部阻断
 
 ### Dialog
 
-When stale:
+当 dialog 进入 stale 状态后：
 
-- dialog closes automatically if possible
-- if closure is not immediate, actions are disabled and stale message is shown
+- 优先自动关闭
+- 如果无法立即关闭，则禁用所有交互并显示 stale 提示
 
-### Reopen action
+### 重新打开动作
 
-Each context may optionally carry a reopen descriptor:
+每个 context 可选携带一个 reopen 描述：
 
 - tab type
 - dock type
-- navigation options
+- 导航参数
 
-`hostApi.reopenContext(context)` can use that descriptor to reopen the fresh view through the active runtime.
+`hostApi.reopenContext(context)` 可以利用该描述，在当前活跃 runtime 中重建新视图。
 
-## Migration Plan
+## 迁移计划
 
-### Phase 1: Runtime skeleton
+### 阶段 1：runtime 骨架
 
-- add `pluginRuntime`
-- add runtime epoch / instance id management
-- move current plugin and Pinia ownership into runtime
-- keep old compatibility helpers temporarily
+- 新增 `pluginRuntime`
+- 引入 runtime epoch / instance id 管理
+- 将 plugin 和 Pinia 的所有权移入 runtime
+- 暂时保留现有兼容 helper
 
-### Phase 2: Context model
+### 阶段 2：上下文模型
 
-- add `viewContext` / `dialogContext`
-- create contexts in tabs, docks, and dialogs
-- add stale assertion helpers
+- 新增 `viewContext` / `dialogContext`
+- tabs、docks、dialogs 创建时分配 context
+- 引入 stale 断言 helper
 
-### Phase 3: Host actions
+### 阶段 3：宿主动作迁移
 
-- migrate `openDocument`
-- migrate `openDocumentAtLine`
-- migrate `openCustomTab`
-- migrate `showMessage`
+- 迁移 `openDocument`
+- 迁移 `openDocumentAtLine`
+- 迁移 `openCustomTab`
+- 迁移 `showMessage`
 
-### Phase 4: Event and broadcast ownership
+### 阶段 4：事件与广播归 runtime 管理
 
-- move eventBus subscription helpers behind runtime
-- move BroadcastChannel helpers behind runtime
-- invalidate old listeners on runtime replacement
+- eventBus 订阅 helper 改走 runtime
+- BroadcastChannel helper 改走 runtime
+- runtime 替换时统一使旧 listener 失效
 
-### Phase 5: Store access hardening
+### 阶段 5：store 访问收口
 
-- move critical store access behind `runtimeStores`
-- remove direct lifecycle-sensitive `getSharedPinia()` usage from long-lived surfaces
+- 关键路径 store 访问迁移到 `runtimeStores`
+- 从长生命周期视图中移除直接依赖 `getSharedPinia()` 的路径
 
-### Phase 6: Compatibility cleanup
+### 阶段 6：兼容层清理
 
-- reduce `usePlugin()` to compatibility-only paths
-- remove obsolete guard layers made redundant by runtime
-- prune temporary debug logs after verification
+- 将 `usePlugin()` 降级为兼容层接口
+- 删除被 runtime 替代的旧 guard 和分散逻辑
+- 在验证完成后清理过渡期 debug 日志
 
-## Testing Strategy
+## 测试策略
 
-### Unit tests
+### 单元测试
 
-Add tests for:
+补充以下测试：
 
 - runtime install / replace / dispose
-- context stale detection
-- host action rejection on stale context
-- auto-disposal of runtime event subscriptions
-- BroadcastChannel invalidation behavior
+- context stale 判定
+- stale context 的 host action 拒绝行为
+- runtime event 订阅自动释放
+- BroadcastChannel 失效行为
 
-### Integration tests
+### 集成测试
 
-Add targeted tests for:
+增加针对性场景：
 
-- stale calendar tab after runtime replacement
-- stale dock after runtime replacement
-- dialog opened before replacement then interacted with after replacement
-- strict invalidation overlay rendering
+- stale calendar tab 在 runtime 替换后行为正确
+- stale dock 在 runtime 替换后行为正确
+- 替换前打开的 dialog，在替换后交互被正确拒绝
+- stale overlay 渲染正确
 
-### Manual verification
+### 手工验证
 
-Scenarios to verify:
+重点验证以下链路：
 
-1. open calendar tab
-2. reload plugin
-3. old calendar tab shows stale overlay
-4. document changes no longer auto-refresh stale tab
-5. stale tab cannot trigger host actions
-6. stale tab can reopen a fresh calendar tab
-7. fresh calendar tab behaves normally
+1. 打开 CalendarTab
+2. reload 插件
+3. 旧 CalendarTab 进入 stale overlay
+4. 文档修改后，旧 tab 不再自动刷新
+5. 旧 tab 不再允许宿主动作继续执行
+6. 通过 overlay 重新打开新 CalendarTab
+7. 新 CalendarTab 行为恢复正常
 
-## Risks
+## 风险
 
-### 1. Migration breadth
+### 1. 迁移范围大
 
-Many modules currently reach for `usePlugin()` or `getSharedPinia()` directly. Migration must be incremental.
+目前大量模块直接依赖 `usePlugin()` 或 `getSharedPinia()`，迁移必须分阶段推进。
 
-### 2. Mixed dependency modes during transition
+### 2. 过渡期可能出现混合模式
 
-There will be a period where some modules use runtime while others use legacy globals. During that window, behavior may remain inconsistent if boundaries are not explicit.
+在 runtime 方案和旧全局方案并存的一段时间内，如果边界没有定义清楚，仍然可能出现行为不一致。
 
-### 3. Overgrown runtime
+### 3. runtime 过度膨胀
 
-If runtime becomes a generic dumping ground, maintainability will regress. Keep lifecycle, host actions, and store access in separate modules under a shared runtime namespace.
+如果 runtime 变成没有边界的全局杂物间，可维护性会下降。需要坚持把：
 
-## Recommendation
+- 生命周期管理
+- 宿主动作
+- store 访问
 
-Proceed with the runtime refactor using the **singleton runtime + explicit context** model and **strict invalidation** policy.
+拆成共享命名空间下的独立模块。
 
-This is the clearest way to make plugin reload behavior deterministic in the presence of lingering tab, dock, and dialog contexts that SiYuan does not reliably rebuild.
+## 结论与建议
 
-## Open Questions Resolved
+建议按 **单例 runtime + 显式 context** 的双层模型推进，并采用 **严格失效** 策略。
 
-- Scope: full runtime ownership including plugin, stores, eventBus, BroadcastChannel, and stale policy
-- invalidation strategy: strict invalidation
-- model choice: singleton runtime plus explicit context identities
-- stale recovery default:
-  - tab/dock: overlay + reopen action
-  - dialog: close by default
+这是在 SiYuan 不可靠重建旧 tab / dock / dialog 的前提下，最清晰、最可验证、最容易收敛行为边界的方案。
+
+## 已确认决策
+
+- scope：runtime 统一托管 plugin、store、eventBus、BroadcastChannel 和 stale 策略
+- invalidation policy：严格失效
+- model choice：单例 runtime + 显式 context 身份
+- stale 恢复默认行为：
+  - tab / dock：overlay + reopen
+  - dialog：默认关闭
