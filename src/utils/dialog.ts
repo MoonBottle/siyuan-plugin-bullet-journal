@@ -2,6 +2,7 @@
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
+import type { Plugin } from 'siyuan';
 import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
@@ -21,7 +22,7 @@ import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils
 import { getDateRangeStatus, getEffectiveDate, getTimeRangeStatus } from './dateRangeUtils';
 import { openDocumentAtLine } from './fileUtils';
 import { useSettingsStore } from '@/stores';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
 import dayjs from './dayjs';
 import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
@@ -276,9 +277,22 @@ function createButtons(buttons: Array<{ text: string; class: string; action: str
 /**
  * 显示事项详情弹框
  */
-export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean }): Dialog {
-  const plugin = usePlugin();
+export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean, plugin?: Plugin | null }): Dialog {
+  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null;
+  const currentPlugin = getCurrentPlugin() as any;
   const showAllDates = options?.showAllDates ?? false;
+
+  console.warn('[Task Assistant][DialogDebug] showItemDetailModal created:', {
+    dialogType: 'item-detail',
+    capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
+    currentPluginInstanceId: currentPlugin?.debugInstanceId ?? 'plugin-null',
+    docId: item.docId,
+    blockId: item.blockId,
+    lineNumber: item.lineNumber,
+    itemDate: item.date,
+    showAllDates,
+    location: location.href,
+  });
 
   // 创建容器元素
   const container = document.createElement('div');
@@ -291,10 +305,33 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
       dialog.destroy();
     },
     onOpenDoc: async () => {
-      await openDocumentAtLine(item.docId, item.lineNumber, item.blockId);
+      const latestPlugin = getCurrentPlugin() as any;
+      console.warn('[Task Assistant][DialogDebug] item-detail onOpenDoc clicked:', {
+        dialogType: 'item-detail',
+        capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
+        currentPluginInstanceId: latestPlugin?.debugInstanceId ?? 'plugin-null',
+        docId: item.docId,
+        blockId: item.blockId,
+        lineNumber: item.lineNumber,
+        itemDate: item.date,
+        location: location.href,
+      });
+      if (!plugin) return;
+      await openDocumentAtLine(plugin, item.docId, item.lineNumber, item.blockId);
       dialog.destroy();
     },
     onOpenCalendar: (date: string) => {
+      const latestPlugin = getCurrentPlugin() as any;
+      console.warn('[Task Assistant][DialogDebug] item-detail onOpenCalendar clicked:', {
+        dialogType: 'item-detail',
+        capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
+        currentPluginInstanceId: latestPlugin?.debugInstanceId ?? 'plugin-null',
+        requestedDate: date,
+        docId: item.docId,
+        blockId: item.blockId,
+        lineNumber: item.lineNumber,
+        location: location.href,
+      });
       console.warn('[Task Assistant] dialog open-calendar', date);
       if (plugin && (plugin as any).openCustomTab) {
         (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date });
@@ -424,13 +461,29 @@ export function buildEventDetailContent(
 /**
  * 显示日历事件详情弹框
  */
-export function showEventDetailModal(event: CalendarEvent): Dialog {
-  const plugin = usePlugin();
+export function showEventDetailModal(
+  event: CalendarEvent,
+  options?: { plugin?: Plugin | null }
+): Dialog {
+  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null;
+  const currentPlugin = getCurrentPlugin() as any;
   const props = event.extendedProps;
   const rawDate = props.date
     || (typeof event.start === 'string' ? (event.start.includes('T') ? event.start.split('T')[0] : event.start.split(' ')[0]) : '')
     || (event.start ? dayjs(event.start).format('YYYY-MM-DD') : '');
   const dateStr = rawDate || dayjs().format('YYYY-MM-DD');
+
+  console.warn('[Task Assistant][DialogDebug] showEventDetailModal created:', {
+    dialogType: 'calendar-event-detail',
+    capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
+    currentPluginInstanceId: currentPlugin?.debugInstanceId ?? 'plugin-null',
+    docId: props.docId,
+    blockId: props.blockId,
+    lineNumber: props.lineNumber,
+    itemDate: rawDate,
+    title: event.title,
+    location: location.href,
+  });
 
   // 单例守卫：关闭已存在的事项详情弹框，避免重复点击创建多个
   if (lastEventDetailDialog) {
@@ -472,10 +525,35 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       dialog.destroy();
     },
     onOpenDoc: async () => {
-      await openDocumentAtLine(props.docId, props.lineNumber, props.blockId);
+      const latestPlugin = getCurrentPlugin() as any;
+      console.warn('[Task Assistant][DialogDebug] calendar-event-detail onOpenDoc clicked:', {
+        dialogType: 'calendar-event-detail',
+        capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
+        currentPluginInstanceId: latestPlugin?.debugInstanceId ?? 'plugin-null',
+        docId: props.docId,
+        blockId: props.blockId,
+        lineNumber: props.lineNumber,
+        itemDate: rawDate,
+        title: event.title,
+        location: location.href,
+      });
+      if (!plugin) return;
+      await openDocumentAtLine(plugin, props.docId, props.lineNumber, props.blockId);
       dialog.destroy();
     },
     onOpenCalendar: () => {
+      const latestPlugin = getCurrentPlugin() as any;
+      console.warn('[Task Assistant][DialogDebug] calendar-event-detail onOpenCalendar clicked:', {
+        dialogType: 'calendar-event-detail',
+        capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
+        currentPluginInstanceId: latestPlugin?.debugInstanceId ?? 'plugin-null',
+        requestedDate: dateStr,
+        docId: props.docId,
+        blockId: props.blockId,
+        lineNumber: props.lineNumber,
+        title: event.title,
+        location: location.href,
+      });
       if (plugin && (plugin as any).openCustomTab) {
         (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: dateStr });
       }

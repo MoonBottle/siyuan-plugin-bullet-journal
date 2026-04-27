@@ -832,19 +832,44 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerTabs() {
     // 日历视图 Tab（桌面端注册为 Tab，移动端注册为 Dock）
     if (!this.isMobile) {
+      const plugin = this;
       this.addTab({
         type: TAB_TYPES.CALENDAR,
         init() {
           try {
+            const mountId = `calendar-tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            console.warn('[Task Assistant][TabLifecycle] CalendarTab init start:', {
+              pluginInstanceId: plugin.debugInstanceId,
+              mountId,
+              elementConnected: this.element?.isConnected ?? false,
+              childElementCountBeforeMount: this.element?.childElementCount ?? 0,
+              location: location.href,
+            });
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(CalendarTab);
             app.use(pinia);
+            (this.element as HTMLElement).dataset.taCalendarMountId = mountId;
+            (this.element as HTMLElement).dataset.taCalendarPluginInstanceId = plugin.debugInstanceId;
             app.mount(this.element);
+            console.warn('[Task Assistant][TabLifecycle] CalendarTab init completed:', {
+              pluginInstanceId: plugin.debugInstanceId,
+              mountId,
+              elementConnected: this.element?.isConnected ?? false,
+              childElementCountAfterMount: this.element?.childElementCount ?? 0,
+              location: location.href,
+            });
           } catch (error) {
             console.error('[Task Assistant] Failed to mount CalendarTab:', error);
           }
         },
         destroy() {
+          console.warn('[Task Assistant][TabLifecycle] CalendarTab destroy called:', {
+            mountId: (this.element as HTMLElement | null)?.dataset?.taCalendarMountId ?? 'missing',
+            pluginInstanceId: (this.element as HTMLElement | null)?.dataset?.taCalendarPluginInstanceId ?? 'missing',
+            elementConnected: this.element?.isConnected ?? false,
+            childElementCountBeforeDestroy: this.element?.childElementCount ?? 0,
+            location: location.href,
+          });
           this.element.innerHTML = '';
         }
       });

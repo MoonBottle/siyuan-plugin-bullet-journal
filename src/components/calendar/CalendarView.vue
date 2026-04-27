@@ -28,7 +28,7 @@ import { createApp } from 'vue';
 import type { Item, PriorityLevel } from '@/types/models';
 import { t, getCurrentLocale } from '@/i18n';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
@@ -334,8 +334,8 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
         await updateBlockContent(item.blockId, tag);
       },
       onOpenDoc: () => {
-        if (item.docId && item.lineNumber) {
-          openDocumentAtLine(item.docId, item.lineNumber);
+        if (plugin && item.docId && item.lineNumber) {
+          openDocumentAtLine(plugin, item.docId, item.lineNumber);
         }
       },
       onShowDetail: () => {
@@ -346,7 +346,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           allDay: true,
           extendedProps: props
         };
-        showEventDetailModal(eventData);
+        showEventDetailModal(eventData, { plugin: plugin as any });
       },
       onSetPriority: (priority: PriorityLevel | undefined) => {
         if (!item.blockId) return;
@@ -418,6 +418,16 @@ onMounted(async () => {
 
       eventClick: (info) => {
         if (info.event.extendedProps?.isPomodoroBlock) return;
+        const currentPlugin = getCurrentPlugin() as any;
+        console.warn('[Task Assistant][CalendarEventDebug] eventClick -> showEventDetailModal:', {
+          capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
+          currentPluginInstanceId: currentPlugin?.debugInstanceId ?? 'plugin-null',
+          docId: info.event.extendedProps?.docId,
+          blockId: info.event.extendedProps?.blockId,
+          lineNumber: info.event.extendedProps?.lineNumber,
+          title: info.event.title,
+          location: location.href,
+        });
         const eventData: CalendarEvent = {
           id: info.event.id,
           title: info.event.title,
@@ -426,7 +436,7 @@ onMounted(async () => {
           allDay: info.event.allDay,
           extendedProps: info.event.extendedProps
         };
-        showEventDetailModal(eventData);
+        showEventDetailModal(eventData, { plugin: plugin as any });
       },
 
       eventDidMount: (info) => {

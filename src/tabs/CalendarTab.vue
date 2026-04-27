@@ -219,11 +219,17 @@ let unsubscribeNavigate: (() => void) | null = null;
 let unsubscribeChangeView: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+let tabLifecycleHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
 // 初始化数据
 onMounted(async () => {
   console.log('[Task Assistant] CalendarTab onMounted');
-  console.warn('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('CalendarTab', plugin));
+  console.warn('[Task Assistant][ViewLifecycle] onMounted:', {
+    ...buildViewDebugContext('CalendarTab', plugin),
+    mountId: tabRootRef.value?.parentElement?.dataset?.taCalendarMountId ?? 'missing',
+    hostPluginInstanceId: tabRootRef.value?.parentElement?.dataset?.taCalendarPluginInstanceId ?? 'missing',
+    rootConnected: tabRootRef.value?.isConnected ?? false,
+  });
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
@@ -267,10 +273,31 @@ onMounted(async () => {
   setTimeout(() => {
     updateTitle();
   }, 100);
+
+  tabLifecycleHeartbeatTimer = setInterval(() => {
+    const currentPlugin = getCurrentPlugin() as any;
+    const hostElement = tabRootRef.value?.parentElement as HTMLElement | null;
+    console.warn('[Task Assistant][TabLifecycle] CalendarTab heartbeat:', {
+      ...buildViewDebugContext('CalendarTab', plugin),
+      currentPluginInstanceId: currentPlugin?.debugInstanceId ?? 'plugin-null',
+      mountId: hostElement?.dataset?.taCalendarMountId ?? 'missing',
+      hostPluginInstanceId: hostElement?.dataset?.taCalendarPluginInstanceId ?? 'missing',
+      rootConnected: tabRootRef.value?.isConnected ?? false,
+      hostConnected: hostElement?.isConnected ?? false,
+      hostChildElementCount: hostElement?.childElementCount ?? 0,
+      currentTitle: currentTitle.value,
+      eventsCount: calendarEvents.value.length,
+    });
+  }, 5000);
 });
 
 onUnmounted(() => {
-  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('CalendarTab', plugin));
+  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', {
+    ...buildViewDebugContext('CalendarTab', plugin),
+    mountId: tabRootRef.value?.parentElement?.dataset?.taCalendarMountId ?? 'missing',
+    hostPluginInstanceId: tabRootRef.value?.parentElement?.dataset?.taCalendarPluginInstanceId ?? 'missing',
+    rootConnected: tabRootRef.value?.isConnected ?? false,
+  });
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }
@@ -287,6 +314,10 @@ onUnmounted(() => {
   if (refreshChannel) {
     refreshChannel.close();
     refreshChannel = null;
+  }
+  if (tabLifecycleHeartbeatTimer) {
+    clearInterval(tabLifecycleHeartbeatTimer);
+    tabLifecycleHeartbeatTimer = null;
   }
 });
 
