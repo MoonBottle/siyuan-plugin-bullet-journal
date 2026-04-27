@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.8] - 2026-04-27
+
+### Features
+
+- **Pomodoro Group Filtering**: Added task group filtering in the pomodoro timer dialog
+- **Todo Collapse/Expand**: Added collapse all / expand all functionality for the todo sidebar
+- **Completed Task Search & Filtering**: Added search and filtering support for completed and abandoned tasks
+
+### Refactors
+
+- **DeepSeek Support**: Simplified message building logic, removed kimi-specific handling, generalized reasoning_content logic
+
 ## [0.12.7] - 2026-04-26
 
 ### Fixes
