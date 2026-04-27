@@ -47,7 +47,7 @@ Back + Biceps + Cardio 📅2026-03-11 ❌
 
 Got dragged to drink, gave up, will try another day (Notes related to the item)
 
-Back + Biceps + Cardio 📅2026-03-10 08:00~10:00
+Back + Biceps + Cardio 📅2026-03-12 08:00~10:00
 ```
 
 **Marker Reference:**
