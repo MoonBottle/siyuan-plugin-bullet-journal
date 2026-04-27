@@ -477,11 +477,13 @@ const props = withDefaults(defineProps<{
   groupId?: string;
   searchQuery?: string;
   dateRange?: { start: string; end: string } | null;
+  completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
 }>(), {
   groupId: '',
   searchQuery: '',
   dateRange: null,
+  completedDateRange: null,
   priorities: () => [],
 });
 
@@ -540,7 +542,7 @@ const completedItems = computed(() => {
   return projectStore.getFilteredCompletedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
-    dateRange: props.dateRange,
+    dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
   });
 });
@@ -550,7 +552,7 @@ const abandonedItems = computed(() => {
   return projectStore.getFilteredAbandonedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
-    dateRange: props.dateRange,
+    dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
   });
 });

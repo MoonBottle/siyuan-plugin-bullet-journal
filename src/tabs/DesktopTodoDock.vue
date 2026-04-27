@@ -131,6 +131,7 @@
           :group-id="selectedGroup"
           :search-query="searchQuery"
           :date-range="dateRange"
+          :completed-date-range="completedDateRange"
           :priorities="selectedPriorities"
         />
       </div>
@@ -226,6 +227,18 @@ const dateRange = computed(() => {
     return { start: '1970-01-01', end: nextWeek };
   }
   // custom
+  return { start: startDate.value, end: endDate.value };
+});
+
+const completedDateRange = computed(() => {
+  if (dateFilterType.value === 'all') return null;
+  if (dateFilterType.value === 'today') {
+    return { start: todayDate.value, end: todayDate.value };
+  }
+  if (dateFilterType.value === 'week') {
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
+    return { start: todayDate.value, end: nextWeek };
+  }
   return { start: startDate.value, end: endDate.value };
 });
 

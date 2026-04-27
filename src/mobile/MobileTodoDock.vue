@@ -10,6 +10,7 @@
       :group-id="state.selectedGroup"
       :search-query="state.searchQuery"
       :date-range="state.dateRange"
+      :completed-date-range="completedDateRange"
       :priorities="state.selectedPriorities"
       :has-active-filters="hasActiveFilters"
       @item-click="openItemDetail"
@@ -347,6 +348,18 @@ const applyFilters = () => {
   
   showMessage(t('mobile.filter.applied') || '筛选已应用');
 };
+
+const completedDateRange = computed(() => {
+  if (state.dateFilter === 'all') return null;
+  if (state.dateFilter === 'today') {
+    return { start: todayDate.value, end: todayDate.value };
+  }
+  if (state.dateFilter === 'week') {
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
+    return { start: todayDate.value, end: nextWeek };
+  }
+  return state.dateRange;
+});
 
 const handleOpenPomodoro = (item: Item) => {
   // Open pomodoro drawer with preselected item
