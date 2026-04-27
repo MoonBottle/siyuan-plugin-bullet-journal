@@ -5,6 +5,7 @@ import { SiYuanClient } from './siyuan-client';
 import { loadPluginSettingsFromSiYuan, PLUGIN_NAME } from './config';
 import { parseKramdown } from '../parser/core';
 import type { Project, Item, ProjectDirectory, ScanMode } from '@/types/models';
+import { matchGroupId } from '@/utils/directoryUtils';
 
 /**
  * 从思源读取最新插件配置。每次工具调用时使用，确保思源中修改设置后能立即生效。
@@ -86,8 +87,22 @@ export async function loadProjectsAndItems(
       const kramdown = await client.getBlockKramdown(doc.id);
       if (kramdown) {
         const project = parseKramdown(kramdown, doc.id, undefined, doc.path || doc.notebookId);
-        if (project) projects.push(project);
+        if (project) {
+          if (enabledDirs.length > 0 && project.path) {
+            project.groupId = matchGroupId(project.path, enabledDirs);
+          }
+          projects.push(project);
+        }
       }
+    }
+
+    if (enabledDirs.length > 0) {
+      console.error('[Task Assistant MCP] Full scan group match summary:', projects.map(project => ({
+        id: project.id,
+        name: project.name,
+        path: project.path,
+        groupId: project.groupId
+      })));
     }
   } else {
     console.error('[Task Assistant MCP] Processing directories mode:', enabledDirs.length, 'dirs');

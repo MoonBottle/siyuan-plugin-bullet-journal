@@ -88,8 +88,9 @@ export default defineConfig(({
             src: "./plugin.json",
             dest: "./",
           },
-          // 开发模式：插件输出到 workspace，需复制 mcp-server.js；生产模式：mcp-server.js 已在 dist 中
-          ...(isWatch
+          // 插件设置生成的 MCP 配置指向插件根目录下的 mcp-server.js，
+          // 因此只要输出到工作空间插件目录，就必须同步复制最新的 MCP 构建产物。
+          ...(siyuanWorkspacePath
             ? [{ src: "./dist/mcp-server.js", dest: "./" }]
             : []),
           {
