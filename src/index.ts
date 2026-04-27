@@ -1197,9 +1197,11 @@ export default class TaskAssistantPlugin extends Plugin {
     // 检测数据变化相关的事件
     const data = event.detail;
     if (!data || !data.cmd) return;
+    console.log('[Task Assistant] onWsMain received cmd:', data.cmd);
 
     // 处理文档删除事件 - 同步删除关联的技能
     if (data.cmd === 'removeDoc') {
+      console.log('[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh');
       this.handleDocRemove(data);
       this.scheduleRefresh();
       return;
@@ -1208,12 +1210,14 @@ export default class TaskAssistantPlugin extends Plugin {
     // 全量刷新命令
     const fullRefreshCmds = ['txerr', 'refreshdoc', 'createdailynote', 'moveDoc'];
     if (fullRefreshCmds.includes(data.cmd)) {
+      console.log('[Task Assistant] onWsMain -> full refresh branch for cmd:', data.cmd);
       this.scheduleRefresh();
       return;
     }
 
     // 保存文档 - 定向刷新
     if (data.cmd === 'savedoc') {
+      console.log('[Task Assistant] onWsMain -> directed refresh branch for savedoc');
       this.handleDirectedRefresh(data);
       return;
     }
@@ -1224,6 +1228,7 @@ export default class TaskAssistantPlugin extends Plugin {
         (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
       );
       if (hasAttrChange) {
+        console.log('[Task Assistant] onWsMain -> directed refresh branch for transactions/updateAttrs');
         this.handleDirectedRefresh(data);
       }
 
@@ -1500,14 +1505,17 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private handleDirectedRefresh(data: any) {
     let rootIDs: string[] = [];
+    let source = 'unknown';
 
     // 1. transactions 命令：context.rootIDs
     if (data?.context?.rootIDs && Array.isArray(data.context.rootIDs)) {
       rootIDs = data.context.rootIDs;
+      source = 'context.rootIDs';
     }
     // 2. savedoc 命令：data.rootID
     else if (data?.data?.rootID && typeof data.data.rootID === 'string') {
       rootIDs = [data.data.rootID];
+      source = 'data.rootID';
     }
     // 3. transactions 命令（备选）：doOperations[].rootID
     else if (Array.isArray(data?.data)) {
@@ -1522,11 +1530,21 @@ export default class TaskAssistantPlugin extends Plugin {
         }
       }
       rootIDs = ids;
+      source = 'doOperations.rootID';
     }
+
+    console.log('[Task Assistant] handleDirectedRefresh extracted rootIDs:', {
+      cmd: data?.cmd,
+      source,
+      rootIDs,
+      rootIDsCount: rootIDs.length,
+    });
 
     if (rootIDs.length > 0) {
       dirtyDocTracker.markDirty(rootIDs);
       console.log('[Task Assistant] ws-main directed refresh for docs:', rootIDs);
+    } else {
+      console.warn('[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs');
     }
     this.scheduleRefresh();
   }
@@ -1535,11 +1553,19 @@ export default class TaskAssistantPlugin extends Plugin {
    * 延迟刷新（防抖）
    */
   private scheduleRefresh() {
+    console.log('[Task Assistant] scheduleRefresh called:', {
+      hadPendingTimer: Boolean(this.refreshTimeout),
+      dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
+    });
+
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
 
     this.refreshTimeout = setTimeout(() => {
+      console.log('[Task Assistant] scheduleRefresh timer fired:', {
+        dirtyDocsAtEmit: dirtyDocTracker.getDirtyDocs(),
+      });
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
       reminderService.scheduleRebuild();

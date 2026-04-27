@@ -694,32 +694,63 @@ export const useProjectStore = defineStore('project', {
      */
     async refresh(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]) {
       // 如果正在刷新，跳过
-      if (this.refreshing) return;
+      if (this.refreshing) {
+        console.log('[Task Assistant] Refresh skipped because another refresh is in progress:', {
+          refreshKey: this.refreshKey,
+          scanMode,
+          directoriesCount: directories.length,
+          dirtyDocsAtSkip: dirtyDocTracker.getDirtyDocs(),
+        });
+        return;
+      }
 
       this.refreshing = true;
       this.refreshKey++;
 
       const newDate = dayjs().format('YYYY-MM-DD');
-      console.log('[Task Assistant] Refresh started, date:', newDate);
+      console.log('[Task Assistant] Refresh started:', {
+        refreshKey: this.refreshKey,
+        date: newDate,
+        scanMode,
+        directoriesCount: directories.length,
+        enabledDirsCount: directories.filter(d => d.enabled).length,
+        currentProjectsCount: this.projects.length,
+      });
 
       try {
         const dirtyDocIds = dirtyDocTracker.getDirtyDocs();
+        console.log('[Task Assistant] Refresh dirty docs snapshot:', {
+          refreshKey: this.refreshKey,
+          dirtyDocIds,
+          dirtyDocCount: dirtyDocIds.length,
+        });
 
         if (dirtyDocIds.length > 0) {
           // 定向刷新：只更新指定文档
+          console.log('[Task Assistant] Refresh choosing directed refresh path');
           await this.refreshDirtyDocs(_plugin, scanMode, directories, dirtyDocIds);
         } else {
           // 全量刷新
+          console.log('[Task Assistant] Refresh choosing full refresh path because no dirty docs were present');
           await this.refreshFull(_plugin, scanMode, directories);
         }
 
         this.currentDate = newDate;
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
       } catch (error) {
-        console.error('[Task Assistant] Refresh failed:', error);
+        console.error('[Task Assistant] Refresh failed, falling back to full refresh:', {
+          refreshKey: this.refreshKey,
+          error,
+          dirtyDocsAtFailure: dirtyDocTracker.getDirtyDocs(),
+        });
         // 出错时回退到全量刷新
         await this.refreshFull(_plugin, scanMode, directories);
       } finally {
+        console.log('[Task Assistant] Refresh finished:', {
+          refreshKey: this.refreshKey,
+          currentProjectsCount: this.projects.length,
+          remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
+        });
         this.refreshing = false;
       }
     },
@@ -728,7 +759,12 @@ export const useProjectStore = defineStore('project', {
      * 全量刷新（使用流式解析）
      */
     async refreshFull(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]): Promise<void> {
-      console.log('[Task Assistant] Full refresh, scanMode:', scanMode);
+      console.log('[Task Assistant] Full refresh started:', {
+        scanMode,
+        directoriesCount: directories.length,
+        enabledDirsCount: directories.filter(d => d.enabled).length,
+        dirtyDocsBeforeClear: dirtyDocTracker.getDirtyDocs(),
+      });
 
       const enabledDirs = directories.filter(d => d.enabled);
       const parser = new MarkdownParser(enabledDirs, scanMode);
@@ -746,6 +782,10 @@ export const useProjectStore = defineStore('project', {
       });
 
       dirtyDocTracker.clearAll();
+      console.log('[Task Assistant] Full refresh completed:', {
+        projectsCount: this.projects.length,
+        remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
+      });
     },
 
     /**
@@ -758,7 +798,13 @@ export const useProjectStore = defineStore('project', {
       directories: ProjectDirectory[],
       dirtyDocIds: string[]
     ): Promise<void> {
-      console.log('[Task Assistant] Refreshing dirty docs:', dirtyDocIds);
+      console.log('[Task Assistant] Directed refresh started:', {
+        dirtyDocIds,
+        dirtyDocCount: dirtyDocIds.length,
+        scanMode,
+        directoriesCount: directories.length,
+        enabledDirsCount: directories.filter(d => d.enabled).length,
+      });
 
       const enabledDirs = directories.filter(d => d.enabled);
       const parser = new MarkdownParser(enabledDirs, scanMode);
@@ -770,11 +816,22 @@ export const useProjectStore = defineStore('project', {
           const existingProject = this.projects.find(p => p.id === docId);
           const groupId = existingProject?.groupId;
           let path = existingProject?.path;
+          console.log('[Task Assistant] Directed refresh processing doc:', {
+            docId,
+            hasExistingProject: Boolean(existingProject),
+            existingProjectName: existingProject?.name,
+            existingGroupId: groupId,
+            existingPath: path,
+          });
           
           // 如果没有 path，从思源查询
           if (!path) {
             try {
               path = await getHPathByID(docId);
+              console.log('[Task Assistant] Directed refresh resolved path from Siyuan:', {
+                docId,
+                path,
+              });
             } catch (e) {
               console.warn('[Task Assistant] Failed to get hpath for doc:', docId);
               path = '';
@@ -786,6 +843,12 @@ export const useProjectStore = defineStore('project', {
           if (scanMode === 'full' && enabledDirs.length > 0 && path) {
             finalGroupId = matchGroupId(path, enabledDirs);
           }
+          console.log('[Task Assistant] Directed refresh parse context:', {
+            docId,
+            path,
+            originalGroupId: groupId,
+            finalGroupId,
+          });
 
           // 使用 parser 的复用方法：解析 + 番茄钟合并
           const project = await parser.parseAndProcessSingleDocument(
@@ -794,7 +857,17 @@ export const useProjectStore = defineStore('project', {
 
           if (project) {
             this.updateProjectsIncrementally([project]);
-            console.log('[Task Assistant] Project refreshed:', project.name);
+            console.log('[Task Assistant] Project refreshed:', {
+              docId,
+              projectName: project.name,
+              itemsCount: project.items?.length,
+            });
+          } else {
+            console.warn('[Task Assistant] Directed refresh produced no project for doc:', {
+              docId,
+              path,
+              finalGroupId,
+            });
           }
         } catch (error) {
           console.error(`[Task Assistant] Failed to refresh doc ${docId}:`, error);
@@ -804,7 +877,11 @@ export const useProjectStore = defineStore('project', {
       // 清除脏标记
       dirtyDocTracker.clearDirty(dirtyDocIds);
 
-      console.log('[Task Assistant] Dirty docs refreshed:', dirtyDocIds.length);
+      console.log('[Task Assistant] Directed refresh completed:', {
+        refreshedCount: dirtyDocIds.length,
+        remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
+        currentProjectsCount: this.projects.length,
+      });
     },
 
     /**
