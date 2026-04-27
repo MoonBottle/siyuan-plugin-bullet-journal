@@ -151,13 +151,15 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import dayjs from 'dayjs';
 import { Menu } from 'siyuan';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
+import { buildViewDebugContext } from '@/utils/viewDebug';
 import type { PriorityLevel } from '@/types/models';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import { defaultTodoSortRules } from '@/settings';
@@ -359,6 +361,11 @@ const groupOptions = computed(() => {
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+  console.warn('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+    ...buildViewDebugContext('DesktopTodoDock', plugin),
+    hasPayload: Boolean(payload),
+    payloadKeys: payload ? Object.keys(payload) : [],
+  });
   if (!plugin) return;
   const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
@@ -457,9 +464,11 @@ const handleMoreClick = (event: MouseEvent) => {
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 // 初始化数据
 onMounted(async () => {
+  console.warn('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('DesktopTodoDock', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -478,13 +487,19 @@ onMounted(async () => {
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = (e: MessageEvent) => {
-      const data = e?.data;
-      if (data?.type === 'DATA_REFRESH') {
-        const { type: _t, ...rest } = data;
-        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
-      }
-    };
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: (payload) => {
+        console.warn('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+          ...buildViewDebugContext('DesktopTodoDock', plugin),
+          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+        });
+        return handleDataRefresh(payload);
+      },
+      viewName: 'DesktopTodoDock',
+    });
   } catch {
     // 忽略
   }
@@ -493,12 +508,17 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('DesktopTodoDock', plugin));
   if (dateCheckTimer) {
     clearInterval(dateCheckTimer);
     dateCheckTimer = null;
   }
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
   }
   if (refreshChannel) {
     refreshChannel.close();

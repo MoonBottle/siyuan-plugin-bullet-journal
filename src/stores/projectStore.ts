@@ -712,6 +712,8 @@ export const useProjectStore = defineStore('project', {
         refreshKey: this.refreshKey,
         date: newDate,
         scanMode,
+        pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
+        pluginAvailable: Boolean(_plugin),
         directoriesCount: directories.length,
         enabledDirsCount: directories.filter(d => d.enabled).length,
         currentProjectsCount: this.projects.length,
@@ -731,7 +733,11 @@ export const useProjectStore = defineStore('project', {
           await this.refreshDirtyDocs(_plugin, scanMode, directories, dirtyDocIds);
         } else {
           // 全量刷新
-          console.log('[Task Assistant] Refresh choosing full refresh path because no dirty docs were present');
+          console.warn('[Task Assistant] Refresh choosing full refresh path because no dirty docs were present:', {
+            refreshKey: this.refreshKey,
+            pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
+            pluginAvailable: Boolean(_plugin),
+          });
           await this.refreshFull(_plugin, scanMode, directories);
         }
 
@@ -759,8 +765,10 @@ export const useProjectStore = defineStore('project', {
      * 全量刷新（使用流式解析）
      */
     async refreshFull(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]): Promise<void> {
-      console.log('[Task Assistant] Full refresh started:', {
+      console.warn('[Task Assistant] Full refresh started:', {
         scanMode,
+        pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
+        pluginAvailable: Boolean(_plugin),
         directoriesCount: directories.length,
         enabledDirsCount: directories.filter(d => d.enabled).length,
         dirtyDocsBeforeClear: dirtyDocTracker.getDirtyDocs(),

@@ -70,6 +70,16 @@ export function broadcastDataRefresh(payload?: object): void {
   }
 }
 
+export function broadcastPluginUnloading(pluginInstanceId?: string): void {
+  try {
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    channel.postMessage({ type: 'PLUGIN_UNLOADING', pluginInstanceId });
+    channel.close();
+  } catch {
+    // 忽略不支持或跨源场景
+  }
+}
+
 // 事件类型
 export const Events = {
   DATA_REFRESH: 'data:refresh',

@@ -16,6 +16,10 @@ export function useApp(): App | null {
   return appInstance;
 }
 
+export function getCurrentPlugin(): Plugin | null {
+  return plugin;
+}
+
 export async function init(pluginInstance: Plugin) {
   plugin = pluginInstance;
   appInstance = pluginInstance.app;

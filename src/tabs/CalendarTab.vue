@@ -58,11 +58,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import type { PomodoroRecord } from '@/types/models';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine, updateBlockDateTime } from '@/utils/fileUtils';
 import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import { buildViewDebugContext } from '@/utils/viewDebug';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import { DataConverter } from '@/utils/dataConverter';
@@ -163,6 +165,11 @@ const groupOptions = computed(() => {
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+  console.warn('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+    ...buildViewDebugContext('CalendarTab', plugin),
+    hasPayload: Boolean(payload),
+    payloadKeys: payload ? Object.keys(payload) : [],
+  });
   if (!plugin) return;
   const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
@@ -211,10 +218,12 @@ let unsubscribeRefresh: (() => void) | null = null;
 let unsubscribeNavigate: (() => void) | null = null;
 let unsubscribeChangeView: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 // 初始化数据
 onMounted(async () => {
   console.log('[Task Assistant] CalendarTab onMounted');
+  console.warn('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('CalendarTab', plugin));
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
@@ -236,13 +245,19 @@ onMounted(async () => {
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = (e: MessageEvent) => {
-      const data = e?.data;
-      if (data?.type === 'DATA_REFRESH') {
-        const { type: _t, ...rest } = data;
-        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
-      }
-    };
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: (payload) => {
+        console.warn('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+          ...buildViewDebugContext('CalendarTab', plugin),
+          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+        });
+        return handleDataRefresh(payload);
+      },
+      viewName: 'CalendarTab',
+    });
   } catch {
     // 忽略
   }
@@ -255,6 +270,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('CalendarTab', plugin));
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }
@@ -263,6 +279,10 @@ onUnmounted(() => {
   }
   if (unsubscribeChangeView) {
     unsubscribeChangeView();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
   }
   if (refreshChannel) {
     refreshChannel.close();
