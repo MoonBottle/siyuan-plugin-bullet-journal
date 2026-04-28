@@ -2,366 +2,513 @@
 
 ## 背景
 
-任务助手当前默认认为：插件 reload 之后，所有已打开的 tab、dock、dialog 也会随之重建。最近的排查已经证明，在 SiYuan 里这个前提并不成立：
+任务助手此前默认认为：插件 reload 之后，所有已打开的 tab、dock、dialog 都会随插件一起销毁并重建。最近的排查已经证明，在 SiYuan 中这个前提并不稳定成立：
 
-- 插件的 `onunload()` 可以正常执行完成
-- 新插件实例的 `onload()` 也可以正常完成
-- 一些旧 tab / dock 视图可能仍然存活在分离出来的旧 VM 上下文中
-- 这些旧视图可能继续持有旧的 Vue app 状态、旧的 Pinia store、旧的事件订阅和旧闭包
+- 插件的 `onunload()` 可以正常执行
+- 新插件实例的 `onload()` 也可以正常执行
+- 旧 tab / dock / dialog 可能继续存活在旧 VM 上下文中
+- 这些旧视图可能继续持有旧的 Vue app 状态、旧的 Pinia store、旧的事件订阅、旧闭包和旧宿主依赖
 
-这会带来一系列不一致行为：
+已经观察到的异常包括：
 
-- 定向刷新会退化成旧上下文中的 stale listener 在继续响应
-- stale 的日历 tab 在文档修改后不再自动刷新
-- 同一个 stale 日历 tab 右上角手动刷新仍然可以拉到最新数据，因为它还可以直接调用旧 store 的 refresh
-- dialog 中“打开文档”这类操作，在读取到过时全局状态时可能出现 `plugin-null`
+- 定向刷新明明已命中 dirty doc，但后续被旧上下文干扰
+- 日历 tab 在插件 reload 后不再自动刷新
+- 右上角手动刷新还能工作，因为旧 tab 仍能调用旧 store 的 refresh
+- dialog 中“打开文档”会因为读取到过时 plugin 状态而失效
+- 旧 `BroadcastChannel` 或旧 event listener 会在 reload 后继续响应
 
-当前基于 `usePlugin()` + `getSharedPinia()` 的模型，已经不足以表达 runtime 替换、视图 stale 和严格失效策略。
+这说明问题不只是“有没有做清理”，而是当前依赖模型本身缺少一个明确的、可热替换的 runtime 层。
 
 ## 问题定义
 
-插件需要一个显式的 runtime 模型，满足以下要求：
+插件需要一个显式 runtime 模型，能够在插件 reload 后实现：
 
-1. 插件实例替换时能稳定切换
-2. 所有消费者都从单一事实来源读取当前 runtime 依赖
-3. 视图可以判断自己是否属于当前活跃 runtime
-4. 对旧 tab / dock / dialog 执行严格失效策略
-5. 阻止旧上下文在 runtime 替换后继续读写 store、订阅刷新事件或触发宿主动作
+1. 用户已打开的 tab / dock / dialog 尽量无感继续工作
+2. UI 后续动作自动切换到新的插件实例
+3. 自动刷新链路继续可用，而不是退化为只能手动刷新
+4. 旧异步任务、旧监听器、旧广播订阅不会继续污染新 runtime
+5. 所有长生命周期消费者都从统一入口拿依赖，而不是各自持有会过期的引用
 
 ## 目标
 
-- 引入统一的 runtime 容器，托管插件生命周期依赖
-- 引入显式的 `viewContext` / `dialogContext` 身份对象
-- runtime 替换后，stale 视图必须 fail closed
-- 将 plugin、app、Pinia、store、eventBus、BroadcastChannel 访问统一收口
-- 停止把分散的隐式全局状态作为主要依赖模型
-- 让 stale 行为可预测、可验证、可测试
+- 将“插件 reload 后用户无感切换”作为最高优先级目标
+- 引入统一 runtime facade，作为页面生命周期内稳定不变的依赖入口
+- 将每次插件 `onload()` 对应的真实依赖封装为可替换的 runtime session
+- 让 UI 绑定稳定 facade，而不是直接绑定具体 plugin / pinia / store / eventBus 实例
+- 用桥接状态把新 session 数据无感切换到旧 UI
+- 明确旧 session 的释放、异步竞态保护和监听器回收规则
 
 ## 非目标
 
-- 保留 stale 视图“半可用”的兼容行为
-- 在同一次改动中完全重写所有 store 或 service
-- 一次性消灭所有现有工具封装
-- 自动把 stale 视图的本地 UI 状态迁移到新 runtime
+- 不要求在第一阶段彻底重写所有 store 或 service
+- 不要求一次性把所有工具类都重构成新架构
+- 不追求 reload 过程中绝对零瞬时波动
+- 不保证所有第三方重组件完全不需要额外适配
 
 ## 用户体验策略
 
-本设计采用 **严格失效** 策略。
+本设计采用 **热切换优先** 策略。
 
-当 runtime 被替换后：
+当插件被 reload 时：
 
-- 旧 tab 和 dock 进入 stale 状态
-- 旧 dialog 进入 stale 状态
-- stale 上下文停止处理刷新、停止访问 store、停止触发宿主动作
-- stale dialog 尽快关闭，或至少拒绝后续交互
-- stale tab / dock 在内容区显示 overlay，包含：
-  - 当前视图已失效的说明
-  - “重新打开当前视图”的操作入口
+- 已打开 tab / dock 尽量保持可见，不要求用户手动重开
+- 已打开 dialog 若仍在交互链路中，优先继续工作；若无法安全继续，则局部降级而不是直接全局失效
+- 文档打开、刷新、广播、事件订阅等动作应自动切换到新 session
+- 用户感知应尽可能接近“插件内部热更新完成”，而不是“旧视图失效后等待重开”
 
-该策略优先保证生命周期边界清晰和行为确定，而不是维持部分旧行为继续工作。
+这里的重点不是维持旧对象继续工作，而是让旧 UI 外壳通过稳定 facade 自动接上新的底层依赖。
 
 ## 总体设计
 
-方案采用 **双层模型**：
+方案采用 **稳定门面 + 可替换 session + 响应式桥接状态** 的三层模型：
 
-1. **单例 runtime 容器**
-   - 持有当前活跃插件 runtime 的全部核心依赖
-   - 负责注入、替换、释放和依赖访问
+1. **稳定 Runtime Facade**
+   - 页面级单例
+   - 对 UI 暴露稳定不变的访问入口
+   - 生命周期尽量长于单次插件实例
 
-2. **显式上下文对象**
-   - 每个 tab、dock、dialog 在创建时生成自己的上下文身份
-   - 所有敏感操作在执行前都要校验上下文是否仍然属于当前 runtime
+2. **Runtime Session**
+   - 每次插件 `onload()` 创建一个新的 session
+   - session 内持有真实 plugin / app / pinia / stores / eventBus / BroadcastChannel / listeners
+   - reload 时由新 session 替换旧 session
 
-这样可以避免旧视图在 runtime 替换后继续偷偷借用最新依赖工作。
+3. **Bridge State / ViewModel**
+   - facade 对外暴露稳定的响应式 `ref` / `computed` / action
+   - session 切换时，bridge state 自动重新接入新 store
+   - UI 继续绑定同一个 facade 对象，不需要感知 session 替换
 
-## 架构设计
+该模型的核心不是“旧视图继续持有旧依赖”，而是“旧视图只持有稳定 facade，由 facade 把后续操作路由到当前 session”。
 
-### 1. `pluginRuntime`
+## 核心原则
 
-新增专用 runtime 模块，例如：
+### 1. UI 不直接持有易失依赖
 
-- `src/runtime/pluginRuntime.ts`
-
-职责：
-
-- 持有当前 runtime 记录
-- 暴露当前 runtime 的 epoch 和 instance id
-- 在插件 `onload()` 时安装 runtime
-- 在插件 reload 时替换 runtime
-- 在插件 `onunload()` 时释放 runtime
-- 统一暴露共享依赖访问器
-- 提供 stale 判定能力
-
-runtime 记录字段建议包括：
+以下对象都不能作为长生命周期 UI 的直接长期依赖：
 
 - `plugin`
 - `app`
-- `pinia`
-- `eventBus`
-- `broadcast`
-- `instanceId`
-- `epoch`
-- `state`（`active`、`disposing`、`disposed`）
-- 可选调试元数据
+- Pinia 实例
+- 具体 store 实例
+- eventBus 实例
+- BroadcastChannel 实例
+
+这些对象都属于 session，而不是 facade。
+
+### 2. UI 绑定 facade，不绑定 session
+
+tab / dock / dialog 内部允许在 setup 时拿一次 facade，但不应拿一次 session 内部对象后长期缓存。
+
+### 3. 依赖反转只做到“依赖来源”
+
+runtime 负责：
+
+- 管理生命周期
+- 管理依赖切换
+- 提供稳定 action
+- 提供稳定 bridge state
+
+runtime 不负责：
+
+- 直接命令式驱动 Vue 组件刷新
+- 接管 Vue 的渲染调度
+- 替代 Pinia / Vue 响应式系统
+
+也就是说，这里做的是“依赖来源控制反转”，不是“UI 渲染控制反转”。
+
+### 4. 旧异步结果不得回写新状态
+
+任何由 session 发起的异步任务，在结果落地前都必须校验发起时的 `sessionId` 是否仍为当前活跃 session。不是当前 session 的结果必须丢弃。
+
+## 架构设计
+
+### 1. `pluginRuntimeFacade`
+
+建议新增：
+
+- `src/runtime/pluginRuntimeFacade.ts`
+
+职责：
+
+- 暴露稳定单例 facade
+- 持有当前 active session 引用
+- 持有稳定 bridge state
+- 对外提供稳定 action 和稳定数据入口
+- 协调 session 替换、事件重接和旧 session 释放
+
+建议字段：
+
+- `activeSession`
+- `bridgeState`
+- `hostApi`
+- `storeAccess`
+- `eventAccess`
+- `broadcastAccess`
+- `runtimeVersion`
+- `state`（`idle`、`ready`、`switching`、`disposed`）
 
 核心 API：
 
-- `installRuntime(plugin)`
-- `replaceRuntime(plugin)`
-- `disposeRuntime(instanceId?)`
-- `getRuntime()`
-- `getRuntimeOrThrow()`
-- `getCurrentInstanceId()`
-- `getCurrentEpoch()`
-- `isRuntimeActive(instanceId | epoch)`
+- `getRuntimeFacade()`
+- `attachSession(plugin)`
+- `replaceSession(plugin)`
+- `disposeActiveSession(reason?)`
+- `getActiveSession()`
+- `getRuntimeState()`
 
-### 2. `hostApi`
+### 2. `runtimeSession`
 
-新增宿主动作层，例如：
+建议新增：
 
-- `src/runtime/hostApi.ts`
+- `src/runtime/runtimeSession.ts`
+
+职责：
+
+- 表示一次真实插件实例生命周期
+- 持有该次 `onload()` 创建出来的所有实际依赖
+- 持有该 session 级 cleanup
+- 在替换时进入 `disposing`，完成解绑后进入 `disposed`
+
+建议字段：
+
+- `sessionId`
+- `plugin`
+- `app`
+- `pinia`
+- `stores`
+- `eventBus`
+- `broadcastRegistry`
+- `cleanupManager`
+- `createdAt`
+- `state`（`active`、`disposing`、`disposed`）
+
+核心 API：
+
+- `createRuntimeSession(plugin)`
+- `disposeRuntimeSession(session, reason?)`
+- `isSessionActive(sessionId)`
+
+### 3. `runtimeBridgeState`
+
+建议新增：
+
+- `src/runtime/runtimeBridgeState.ts`
+
+职责：
+
+- 对外暴露稳定响应式状态
+- 在 active session 切换时同步挂接新 store
+- 将 session 内部 store 数据映射到稳定 facade 状态
+
+建议包含：
+
+- `projects`
+- `calendarEvents`
+- `todoItems`
+- `pomodoroStats`
+- `settings`
+- `isRefreshing`
+- `lastRefreshAt`
+- `runtimeStatus`
+
+关键要求：
+
+- 这些字段本身的 `ref` 引用尽量稳定
+- session 替换时更新 `ref.value`，而不是整体替换整个 bridge 对象
+- UI 只依赖 bridge state，不直接依赖具体 store
+
+### 4. `runtimeHostApi`
+
+建议新增：
+
+- `src/runtime/runtimeHostApi.ts`
 
 职责：
 
 - 封装所有依赖 SiYuan host 的动作
-- 所有动作都必须通过当前活跃 runtime 执行
-- stale 上下文调用时统一拒绝
-- 向业务层暴露窄接口，避免业务代码直接碰裸 `plugin`
+- 调用时总是路由到当前 active session
+- 对 session 切换和 `plugin-null` 做统一保护
 
 代表性 API：
 
-- `openDocument(context, docId)`
-- `openDocumentAtLine(context, docId, lineNumber?, blockId?)`
-- `openCustomTab(context, type, options?)`
-- `showMessage(context, text, timeout?, type?)`
-- `broadcastRefresh(context, payload?)`
+- `openDocument(docId, options?)`
+- `openDocumentAtLine(docId, lineNumber?, blockId?)`
+- `openCustomTab(type, options?)`
+- `showMessage(text, timeout?, type?)`
+- `emitRefresh(payload?)`
 
-`hostApi` 不应再直接读取全局 plugin 状态，必须统一走 `pluginRuntime`。
+要求：
 
-### 3. `runtimeStores`
+- 外部不再直接持有裸 `plugin`
+- dialog / tab / dock 点击动作统一走 hostApi facade
 
-新增 store 访问层，例如：
+### 5. `runtimeStoreAccess`
 
-- `src/runtime/runtimeStores.ts`
+建议新增：
+
+- `src/runtime/runtimeStoreAccess.ts`
 
 职责：
 
-- 提供基于当前 runtime 的 store 访问器
-- 避免继续分散依赖 `getSharedPinia()`
-- stale 上下文访问 store 时直接失败
+- 为业务代码提供稳定 store 访问入口
+- 允许逐步把现有直接 `useXxxStore(sharedPinia)` 的路径迁移进来
+- 处理 session 替换时 store 重新解析的问题
 
 代表性 API：
 
-- `getProjectStore(context)`
-- `getSettingsStore(context)`
-- `getPomodoroStore(context)`
-- `getAIStore(context)`
+- `withProjectStore(fn)`
+- `withSettingsStore(fn)`
+- `withPomodoroStore(fn)`
+- `withAIStore(fn)`
 
-这些 API 内部统一从当前 runtime 的 Pinia 上解析 store 实例。
+注意：
 
-### 4. `viewContext` 与 `dialogContext`
+- 不建议继续提供“拿到具体 store 后长期缓存”的模式
+- 更适合提供 action 型访问，或由 bridge state 直接暴露只读数据
 
-新增上下文工厂，例如：
+### 6. `runtimeViewModel`
 
-- `src/runtime/viewContext.ts`
+建议新增：
 
-每个上下文对象建议包含：
-
-- `kind`（`tab`、`dock`、`dialog`）
-- `name`
-- `createdAtEpoch`
-- `createdByInstanceId`
-- `contextId`
-- 可选的 `reopenAction`
-- 可选调试位置信息
-
-核心 API：
-
-- `createViewContext(kind, name, options?)`
-- `createDialogContext(name, options?)`
-- `isContextStale(context)`
-- `assertContextActive(context)`
-
-严格失效规则：
-
-- 只要 `context.createdAtEpoch !== runtime.currentEpoch`，该上下文就判定为 stale
-
-### 5. `staleViewGuard`
-
-新增长生命周期 UI 守卫层。
+- `src/runtime/viewModels/`
 
 职责：
 
-- 监听 runtime epoch 变化
-- 在本地视图状态中标记 stale
-- 停止事件处理器、定时器和刷新订阅
-- 向界面层暴露 stale 状态，供 overlay 渲染
+- 为复杂视图提供稳定的 UI 使用面
+- 让 UI 依赖更窄的 view model，而不是直接碰 runtime 全量能力
 
-代表性行为：
+例如：
 
-- tab / dock 监听 runtime 替换事件
-- 一旦变 stale，立刻：
-  - 取消 eventBus 订阅
-  - 关闭 BroadcastChannel 监听
-  - 停止 timer
-  - 拦截 refresh 和所有宿主动作
-  - 渲染 stale overlay
+- `createCalendarViewModel(runtimeFacade)`
+- `createTodoViewModel(runtimeFacade)`
+- `createProjectViewModel(runtimeFacade)`
+
+view model 内部可以：
+
+- 读取 bridge state
+- 调用 hostApi
+- 组合本视图专用的 `computed`
+- 处理 session 切换时的轻量重接逻辑
 
 ## 生命周期规则
 
 ### 插件 `onload()`
 
-1. 创建新的 Pinia
-2. 用新的 plugin / app / pinia 初始化 runtime
-3. 注册 tabs 和 docks
-4. 挂载视图时同时创建 `viewContext`
-5. 所有已挂载视图统一通过 runtime API 获取依赖
+1. 创建新的 Pinia、stores、eventBus、broadcast listener、cleanup
+2. 组装新的 `runtimeSession`
+3. facade 执行 `attachSession` 或 `replaceSession`
+4. bridge state 挂接到新 session 的 store 数据
+5. hostApi / eventAccess / broadcastAccess 切换到底层新 session
+6. 旧 UI 无需重建，后续操作自动路由到新 session
 
-### 插件 reload / runtime 替换
+### 插件 reload
 
-1. 旧 runtime 进入 `disposing`
-2. 新 runtime 以新的 epoch 安装完成
-3. 对外发出 runtime replacement 事件
-4. 旧视图中的 stale guard 检测到 epoch 不匹配
-5. 旧视图与事件源解除绑定，并进入 stale 状态
+1. 新插件实例进入 `onload()`
+2. facade 先创建并激活新 session
+3. bridge state 原子切到新 session 数据源
+4. 旧 session 停止接受新动作
+5. 旧 session 进入 `disposing`
+6. 旧 session 的 event listener / broadcast listener / timers / cleanup 被释放
+7. 旧 session 的晚到异步结果因为 `sessionId` 校验失败而被丢弃
 
 ### 插件 `onunload()`
 
-1. runtime 进入 `disposing`
-2. 发出 unload 事件
-3. 关闭 runtime 管理的监听器和广播通道
-4. 将 runtime 标记为 `disposed`
+1. 当前 session 标记为 `disposing`
+2. facade 状态切为 `switching` 或 `idle`
+3. 释放当前 session 管理的监听器和资源
+4. 若紧接着发生新的 `onload()`，新 session 直接接管 facade
+5. 若没有新的 `onload()`，facade 保持可识别的“未连接”状态
 
-本设计**不依赖** SiYuan 是否会正确销毁旧 tab / dock。
+## Runtime 与 UI 的职责边界
+
+### Runtime 负责什么
+
+- 提供稳定依赖入口
+- 提供稳定 action
+- 提供稳定 bridge state
+- 管理 session 热替换
+- 做异步竞态保护
+- 释放旧 session 资源
+
+### UI 负责什么
+
+- 订阅 facade 暴露的响应式数据
+- 调用 facade 暴露的 action
+- 维护本地展示态和交互态
+- 在必要时对 runtime 状态做局部展示降级
+
+### 明确不做什么
+
+本设计不采用“runtime register 一个 UI 刷新函数，由 runtime 直接命令式刷新组件”的方案。原因：
+
+- 会把 runtime 变成新的渲染调度中心
+- 会与 Vue/Pinia 自身的响应式机制职责重叠
+- 会让 tab / dock / dialog 的 mount/unmount 关系更难维护
+- 会显著增加订阅管理、异常隔离和测试成本
+
+因此，推荐模式是：
+
+- runtime 控制依赖切换
+- bridge state 负责响应式数据桥接
+- UI 继续通过 Vue 的声明式机制刷新
 
 ## Store 策略
 
 ### 当前问题
 
-如果 Vue app 没有重新 mount，tab 会无限期持有旧 Pinia 和旧 store 引用。
+当前 tab 往往在 setup 时直接拿到某个 store 实例并长期持有。插件 reload 后，即使插件已经换成了新实例，旧 tab 里缓存的 store 仍然是旧的。
 
-### 新规则
+### 新策略
 
-- 视图不能再把直接捕获到的 store 视为永久有效
-- 所有长生命周期关键路径都必须通过 `runtimeStores`
-- stale 视图不得继续读写 store
+- UI 不应长期持有具体 store 实例
+- 跨生命周期关键数据统一由 bridge state 暴露
+- 跨生命周期关键动作统一通过 runtime store access 执行
 
-实现说明：
+### 分阶段落地
 
-- 第一阶段可以保留 active 视图里的局部 store 变量
-- 但所有 refresh、reload、宿主联动路径都必须先校验 context，再访问 store
-- 最终目标是：所有跨生命周期敏感路径都改为 runtime 介入的 store 访问
+第一阶段：
+
+- 先把刷新、打开文档、事件广播等高风险链路迁到 runtime facade
+
+第二阶段：
+
+- 将 Calendar、Todo、Project、Pomodoro 等主视图的关键读模型迁到 bridge state / view model
+
+第三阶段：
+
+- 收敛长生命周期组件里对共享 Pinia 的直接依赖
 
 ## EventBus 策略
 
-当前问题：
+### 当前问题
 
 - 旧 VM 内部的 eventBus 可能继续存在
-- 旧 listener 可能继续在 stale 视图中运行
+- 旧 listener 可能继续在 reload 后响应
 
-新规则：
+### 新策略
 
-- eventBus 成为 runtime 的一部分
-- 订阅必须通过带 context 的 helper
-- runtime 替换后，旧 context 的订阅全部自动失效
+- eventBus 的真实实例属于 session
+- UI 对事件的消费通过 facade 暴露的稳定事件入口完成
+- facade 在 session 替换时自动重新挂接新 session 事件源
+- 旧 session listener 统一在 dispose 时释放
 
-代表性 helper：
+建议模式：
 
-- `runtimeEvents.on(context, event, handler)`
+- `runtimeFacade.events.on(...)`
+- `runtimeFacade.events.off(...)`
+- `runtimeFacade.events.emit(...)`
 
-行为要求：
-
-- stale context 无法新增订阅
-- runtime 替换后，对应订阅自动释放
+这里 facade 可以是稳定对象，但底层实际 emitter 随 session 切换。
 
 ## BroadcastChannel 策略
 
-当前问题：
+### 当前问题
 
-- 旧视图可能继续监听 `BroadcastChannel`
-- 旧上下文可能在 runtime 替换后继续响应消息
+- 旧 BroadcastChannel listener 会在 reload 后继续工作
+- 旧 tab 可能继续消费旧通道消息
 
-新规则：
+### 新策略
 
-- BroadcastChannel 的所有权属于 runtime
-- channel listener 必须通过 runtime helper 创建
-- stale 视图一旦被检测到，必须立即关闭对应 channel 监听
-
-代表性 helper：
-
-- `runtimeBroadcast.subscribe(context, channelName, handler)`
-
-行为要求：
-
-- runtime 替换时自动关闭旧订阅
-- stale context 不能继续创建新订阅
+- BroadcastChannel 的底层实例属于 session
+- facade 只暴露稳定订阅入口
+- session dispose 时统一关闭旧 channel 和旧 listener
+- 收到异步消息后若发现 session 已过期，则丢弃消息，不回写 bridge state
 
 ## Tab、Dock、Dialog 策略
 
 ### Tab / Dock
 
-当视图进入 stale 状态后：
+目标是尽量保持当前界面继续可用，而不是默认判 stale 失效。
 
-- 内容区显示 overlay
-- overlay 明确提示“插件已重载，当前视图已失效”
-- overlay 提供“重新打开当前视图”
-- overlay 下方原有操作全部阻断
+要求：
+
+- reload 后已有 tab / dock 继续显示
+- 后续自动刷新继续通过新 session 生效
+- 点击“打开文档”等宿主动作走新的 hostApi
+- 若 runtime 正处于短暂切换窗口，可显示轻量 loading/connecting 态，而不是失效 overlay
 
 ### Dialog
 
-当 dialog 进入 stale 状态后：
+dialog 默认也走 facade。
 
-- 优先自动关闭
-- 如果无法立即关闭，则禁用所有交互并显示 stale 提示
+要求：
 
-### 重新打开动作
+- 如果 dialog 的动作依赖 runtime，应通过 facade 执行
+- 若 reload 发生在 dialog 打开期间，优先继续可用
+- 只有在缺少必要上下文且无法恢复时，才做局部禁用或关闭
 
-每个 context 可选携带一个 reopen 描述：
+### 第三方重组件
 
-- tab type
-- dock type
-- 导航参数
+对于 FullCalendar、Gantt 等内部缓存较重的组件，允许在 session 切换后增加一层局部同步逻辑，例如：
 
-`hostApi.reopenContext(context)` 可以利用该描述，在当前活跃 runtime 中重建新视图。
+- 重新喂入数据源
+- 重新触发视图级 refresh
+- 仅在必要时局部 remount 子组件
+
+原则仍然是：尽量不让用户重开整个 tab。
+
+## 异步与竞态控制
+
+这是本方案的关键。
+
+### 基本规则
+
+- 每个 session 都有唯一 `sessionId`
+- 所有异步任务都记录发起时 `sessionId`
+- 落地结果前校验当前 active session 是否仍相同
+- 不相同则直接丢弃
+
+### 需要纳入保护的链路
+
+- 项目刷新
+- 定向刷新
+- 事件广播回调
+- dialog 中的打开文档动作前置查询
+- 远程请求或延迟执行的宿主动作
+
+### 推荐封装
+
+- `runInSession(sessionId, task)`
+- `applyIfActiveSession(sessionId, fn)`
+- `guardSessionResult(sessionId, value)`
 
 ## 迁移计划
 
-### 阶段 1：runtime 骨架
+### 阶段 1：建立稳定 facade 与 session 容器
 
-- 新增 `pluginRuntime`
-- 引入 runtime epoch / instance id 管理
-- 将 plugin 和 Pinia 的所有权移入 runtime
-- 暂时保留现有兼容 helper
+- 新增 `pluginRuntimeFacade`
+- 新增 `runtimeSession`
+- 在插件 `onload()` / `onunload()` 中接入 attach / replace / dispose
 
-### 阶段 2：上下文模型
-
-- 新增 `viewContext` / `dialogContext`
-- tabs、docks、dialogs 创建时分配 context
-- 引入 stale 断言 helper
-
-### 阶段 3：宿主动作迁移
+### 阶段 2：接管高风险宿主动作
 
 - 迁移 `openDocument`
 - 迁移 `openDocumentAtLine`
 - 迁移 `openCustomTab`
-- 迁移 `showMessage`
+- 迁移消息提示与广播入口
 
-### 阶段 4：事件与广播归 runtime 管理
+### 阶段 3：建立 bridge state
 
-- eventBus 订阅 helper 改走 runtime
-- BroadcastChannel helper 改走 runtime
-- runtime 替换时统一使旧 listener 失效
+- 为 `projectStore` 建立稳定桥接状态
+- 先覆盖项目、日历事件、刷新状态等核心读模型
 
-### 阶段 5：store 访问收口
+### 阶段 4：主视图改用 facade / view model
 
-- 关键路径 store 访问迁移到 `runtimeStores`
-- 从长生命周期视图中移除直接依赖 `getSharedPinia()` 的路径
+- CalendarTab / CalendarView
+- TodoSidebar / DesktopTodoDock / MobileTodoDock
+- ProjectTab
+- Pomodoro 相关视图
 
-### 阶段 6：兼容层清理
+### 阶段 5：事件与广播统一切换
 
-- 将 `usePlugin()` 降级为兼容层接口
-- 删除被 runtime 替代的旧 guard 和分散逻辑
-- 在验证完成后清理过渡期 debug 日志
+- eventBus 消费改走 facade 入口
+- BroadcastChannel 消费改走 facade 入口
+- 旧 listener 统一纳入 session cleanup
+
+### 阶段 6：收敛遗留直接依赖
+
+- 清理散落的 `usePlugin()`
+- 清理长生命周期组件中直接拿 store 并长期缓存的路径
+- 收敛过渡期兼容层和调试日志
 
 ## 测试策略
 
@@ -369,64 +516,74 @@ runtime 记录字段建议包括：
 
 补充以下测试：
 
-- runtime install / replace / dispose
-- context stale 判定
-- stale context 的 host action 拒绝行为
-- runtime event 订阅自动释放
-- BroadcastChannel 失效行为
+- facade attach / replace / dispose
+- session 切换时 bridge state 是否正确更新
+- 旧 session 异步结果是否被正确丢弃
+- hostApi 是否总是路由到 active session
+- 旧 listener / BroadcastChannel 是否在 dispose 后释放
 
 ### 集成测试
 
-增加针对性场景：
+重点覆盖：
 
-- stale calendar tab 在 runtime 替换后行为正确
-- stale dock 在 runtime 替换后行为正确
-- 替换前打开的 dialog，在替换后交互被正确拒绝
-- stale overlay 渲染正确
+- CalendarTab 打开后插件 reload，自动刷新仍然生效
+- Calendar dialog 打开后插件 reload，打开文档仍然可用
+- Todo / Project / Pomodoro 视图在 reload 后继续可用
+- 定向刷新在 reload 前后都不会退化成全量刷新
 
 ### 手工验证
 
-重点验证以下链路：
+建议按以下链路验证：
 
 1. 打开 CalendarTab
-2. reload 插件
-3. 旧 CalendarTab 进入 stale overlay
-4. 文档修改后，旧 tab 不再自动刷新
-5. 旧 tab 不再允许宿主动作继续执行
-6. 通过 overlay 重新打开新 CalendarTab
-7. 新 CalendarTab 行为恢复正常
+2. 修改文档，确认自动刷新正常
+3. reload 插件
+4. 不关闭 tab，继续修改文档
+5. 确认日历继续自动刷新
+6. 打开事项详情 dialog，点击“打开文档”
+7. 确认仍能跳转
+8. 再验证 Todo / Project / Pomodoro 视图同类行为
 
 ## 风险
 
-### 1. 迁移范围大
+### 1. facade 容易沦为新的全局杂物间
 
-目前大量模块直接依赖 `usePlugin()` 或 `getSharedPinia()`，迁移必须分阶段推进。
+必须控制边界，只托管：
 
-### 2. 过渡期可能出现混合模式
-
-在 runtime 方案和旧全局方案并存的一段时间内，如果边界没有定义清楚，仍然可能出现行为不一致。
-
-### 3. runtime 过度膨胀
-
-如果 runtime 变成没有边界的全局杂物间，可维护性会下降。需要坚持把：
-
-- 生命周期管理
+- 生命周期切换
 - 宿主动作
-- store 访问
+- bridge state
+- 事件与广播入口
 
-拆成共享命名空间下的独立模块。
+不能把所有业务逻辑都塞进 facade。
+
+### 2. bridge state 设计不当会造成双份状态混乱
+
+bridge state 应尽量作为稳定投影层，而不是再造一套完整业务 store。
+
+### 3. 部分旧代码可能继续偷偷缓存 session 内对象
+
+这会导致热切换方案局部失效，因此迁移时必须重点检查：
+
+- 长生命周期组件 setup
+- 工具函数闭包
+- dialog action handler
+- 事件回调
+
+### 4. 第三方组件可能存在内部缓存
+
+需要允许对 FullCalendar、Gantt 等组件做针对性的局部重接或轻量 remount。
 
 ## 结论与建议
 
-建议按 **单例 runtime + 显式 context** 的双层模型推进，并采用 **严格失效** 策略。
+建议将 runtime 方案从“严格失效优先”调整为 **稳定 facade + 可热切换 session + 响应式 bridge state**。
 
-这是在 SiYuan 不可靠重建旧 tab / dock / dialog 的前提下，最清晰、最可验证、最容易收敛行为边界的方案。
+这是最符合“插件重启后用户无感切换”目标的方案。它保留了生命周期边界的清晰性，同时避免把已经打开的 tab / dock / dialog 一律判死。
 
 ## 已确认决策
 
-- scope：runtime 统一托管 plugin、store、eventBus、BroadcastChannel 和 stale 策略
-- invalidation policy：严格失效
-- model choice：单例 runtime + 显式 context 身份
-- stale 恢复默认行为：
-  - tab / dock：overlay + reopen
-  - dialog：默认关闭
+- 核心目标：插件 reload 后用户尽量无感
+- model choice：稳定 facade + 可替换 session + bridge state
+- UI 策略：继续使用 Vue 响应式渲染，不采用 runtime 直接命令式刷新 UI
+- 依赖策略：UI 不直接长期持有 plugin、store、eventBus、BroadcastChannel
+- 一致性策略：所有异步结果必须经过 `sessionId` 校验
