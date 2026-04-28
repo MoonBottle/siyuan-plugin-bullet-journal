@@ -55,7 +55,7 @@ const groupOptions = computed(() => {
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
-  console.warn('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
     ...buildViewDebugContext('ProjectTab', plugin),
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
@@ -81,7 +81,7 @@ let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = n
 
 // 初始化数据
 onMounted(async () => {
-  console.warn('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('ProjectTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('ProjectTab', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -100,7 +100,7 @@ onMounted(async () => {
       plugin,
       getCurrentPlugin,
       onRefresh: (payload) => {
-        console.warn('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('ProjectTab', plugin),
           data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
         });
@@ -114,7 +114,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('ProjectTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('ProjectTab', plugin));
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }

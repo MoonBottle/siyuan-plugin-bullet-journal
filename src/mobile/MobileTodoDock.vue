@@ -398,7 +398,7 @@ const handleCreated = () => {
 
 // 数据刷新处理函数
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
-  console.warn('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
     ...buildViewDebugContext('MobileTodoDock', plugin),
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
@@ -424,7 +424,7 @@ let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = n
 
 // 初始化数据监听
 onMounted(async () => {
-  console.warn('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('MobileTodoDock', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('MobileTodoDock', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
   
@@ -448,7 +448,7 @@ onMounted(async () => {
       plugin,
       getCurrentPlugin,
       onRefresh: (payload) => {
-        console.warn('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('MobileTodoDock', plugin),
           data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
         });
@@ -465,7 +465,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('MobileTodoDock', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('MobileTodoDock', plugin));
   if (dateCheckTimer) {
     clearInterval(dateCheckTimer);
     dateCheckTimer = null;

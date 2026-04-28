@@ -64,7 +64,6 @@ import { openDocumentAtLine, updateBlockDateTime } from '@/utils/fileUtils';
 import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { buildViewDebugContext } from '@/utils/viewDebug';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import { DataConverter } from '@/utils/dataConverter';
@@ -165,8 +164,11 @@ const groupOptions = computed(() => {
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
-  console.warn('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
-    ...buildViewDebugContext('CalendarTab', plugin),
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+    viewName: 'CalendarTab',
+    pluginInstanceId: plugin?.debugInstanceId ?? 'plugin-null',
+    pluginAvailable: Boolean(plugin),
+    location: location.href,
     hasPayload: Boolean(payload),
     payloadKeys: payload ? Object.keys(payload) : [],
   });
@@ -187,7 +189,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 // 日历导航处理函数（仅当前 Tab 可见时处理，避免多 Tab 重复跳转）
 const handleCalendarNavigate = (date: string) => {
   const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
-  console.warn('[Task Assistant] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
+  console.log('[Task Assistant] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
   if (!isVisible || !calendarRef.value || !date) return;
   calendarRef.value.gotoDate(date);
   updateTitle();
@@ -196,7 +198,7 @@ const handleCalendarNavigate = (date: string) => {
 // 日历视图切换处理函数
 const handleCalendarChangeView = (view: string) => {
   const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
-  console.warn('[Task Assistant] handleCalendarChangeView', view, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
+  console.log('[Task Assistant] handleCalendarChangeView', view, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
   if (!isVisible || !calendarRef.value || !view) return;
 
   // 将简写的视图名称映射为 FullCalendar 的视图名称
@@ -219,17 +221,10 @@ let unsubscribeNavigate: (() => void) | null = null;
 let unsubscribeChangeView: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
-let tabLifecycleHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
 // 初始化数据
 onMounted(async () => {
   console.log('[Task Assistant] CalendarTab onMounted');
-  console.warn('[Task Assistant][ViewLifecycle] onMounted:', {
-    ...buildViewDebugContext('CalendarTab', plugin),
-    mountId: tabRootRef.value?.parentElement?.dataset?.taCalendarMountId ?? 'missing',
-    hostPluginInstanceId: tabRootRef.value?.parentElement?.dataset?.taCalendarPluginInstanceId ?? 'missing',
-    rootConnected: tabRootRef.value?.isConnected ?? false,
-  });
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
@@ -255,13 +250,7 @@ onMounted(async () => {
       channel: refreshChannel,
       plugin,
       getCurrentPlugin,
-      onRefresh: (payload) => {
-        console.warn('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
-          ...buildViewDebugContext('CalendarTab', plugin),
-          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
-        });
-        return handleDataRefresh(payload);
-      },
+      onRefresh: payload => handleDataRefresh(payload),
       viewName: 'CalendarTab',
     });
   } catch {
@@ -273,31 +262,9 @@ onMounted(async () => {
   setTimeout(() => {
     updateTitle();
   }, 100);
-
-  tabLifecycleHeartbeatTimer = setInterval(() => {
-    const currentPlugin = getCurrentPlugin() as any;
-    const hostElement = tabRootRef.value?.parentElement as HTMLElement | null;
-    console.warn('[Task Assistant][TabLifecycle] CalendarTab heartbeat:', {
-      ...buildViewDebugContext('CalendarTab', plugin),
-      currentPluginInstanceId: currentPlugin?.debugInstanceId ?? 'plugin-null',
-      mountId: hostElement?.dataset?.taCalendarMountId ?? 'missing',
-      hostPluginInstanceId: hostElement?.dataset?.taCalendarPluginInstanceId ?? 'missing',
-      rootConnected: tabRootRef.value?.isConnected ?? false,
-      hostConnected: hostElement?.isConnected ?? false,
-      hostChildElementCount: hostElement?.childElementCount ?? 0,
-      currentTitle: currentTitle.value,
-      eventsCount: calendarEvents.value.length,
-    });
-  }, 5000);
 });
 
 onUnmounted(() => {
-  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', {
-    ...buildViewDebugContext('CalendarTab', plugin),
-    mountId: tabRootRef.value?.parentElement?.dataset?.taCalendarMountId ?? 'missing',
-    hostPluginInstanceId: tabRootRef.value?.parentElement?.dataset?.taCalendarPluginInstanceId ?? 'missing',
-    rootConnected: tabRootRef.value?.isConnected ?? false,
-  });
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }
@@ -314,10 +281,6 @@ onUnmounted(() => {
   if (refreshChannel) {
     refreshChannel.close();
     refreshChannel = null;
-  }
-  if (tabLifecycleHeartbeatTimer) {
-    clearInterval(tabLifecycleHeartbeatTimer);
-    tabLifecycleHeartbeatTimer = null;
   }
 });
 

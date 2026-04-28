@@ -69,7 +69,7 @@ const pomodoroStore = usePomodoroStore();
 
 // 数据刷新处理函数
 const handleDataRefresh = async () => {
-  console.warn('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroDock', plugin));
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroDock', plugin));
   if (!plugin) return;
   settingsStore.loadFromPlugin();
   await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
@@ -217,7 +217,7 @@ const handlePomodoroRestore = async (data: any) => {
 
 // 初始化数据
 onMounted(async () => {
-  console.warn('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroDock', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroDock', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -247,7 +247,7 @@ onMounted(async () => {
       plugin,
       getCurrentPlugin,
       onRefresh: () => {
-        console.warn('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('PomodoroDock', plugin),
           data: { type: 'DATA_REFRESH' },
         });
@@ -261,7 +261,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('PomodoroDock', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('PomodoroDock', plugin));
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }

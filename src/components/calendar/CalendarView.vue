@@ -28,7 +28,7 @@ import { createApp } from 'vue';
 import type { Item, PriorityLevel } from '@/types/models';
 import { t, getCurrentLocale } from '@/i18n';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
-import { getCurrentPlugin, usePlugin } from '@/main';
+import { usePlugin } from '@/main';
 import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji } from '@/utils/dateRangeUtils';
@@ -418,16 +418,6 @@ onMounted(async () => {
 
       eventClick: (info) => {
         if (info.event.extendedProps?.isPomodoroBlock) return;
-        const currentPlugin = getCurrentPlugin() as any;
-        console.warn('[Task Assistant][CalendarEventDebug] eventClick -> showEventDetailModal:', {
-          capturedPluginInstanceId: (plugin as any)?.debugInstanceId ?? 'plugin-null',
-          currentPluginInstanceId: currentPlugin?.debugInstanceId ?? 'plugin-null',
-          docId: info.event.extendedProps?.docId,
-          blockId: info.event.extendedProps?.blockId,
-          lineNumber: info.event.extendedProps?.lineNumber,
-          title: info.event.title,
-          location: location.href,
-        });
         const eventData: CalendarEvent = {
           id: info.event.id,
           title: info.event.title,
@@ -503,7 +493,7 @@ onMounted(async () => {
     updateEvents();
 
     if (pendingNavigateDate) {
-      console.warn('[Task Assistant] CalendarView apply pendingNavigateDate', pendingNavigateDate);
+      console.log('[Task Assistant] CalendarView apply pendingNavigateDate', pendingNavigateDate);
       calendarInstance.gotoDate(pendingNavigateDate);
       pendingNavigateDate = null;
       emit('navigated');

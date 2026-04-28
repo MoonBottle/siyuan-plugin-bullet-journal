@@ -113,7 +113,7 @@ export default class TaskAssistantPlugin extends Plugin {
   async onload() {
     const debugState = getTaskAssistantDebugState();
     debugState.activeInstanceIds.push(this.debugInstanceId);
-    console.warn('[Task Assistant][Lifecycle] onload start:', {
+    console.log('[Task Assistant][Lifecycle] onload start:', {
       instanceId: this.debugInstanceId,
       activeInstanceIds: [...debugState.activeInstanceIds],
       unloadHistory: [...debugState.unloadHistory],
@@ -215,7 +215,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.initClawBot(pinia);
 
     this.hasCompletedOnload = true;
-    console.warn('[Task Assistant][Lifecycle] onload completed:', {
+    console.log('[Task Assistant][Lifecycle] onload completed:', {
       instanceId: this.debugInstanceId,
       activeInstanceIds: [...getTaskAssistantDebugState().activeInstanceIds],
       frontEnd,
@@ -399,7 +399,7 @@ export default class TaskAssistantPlugin extends Plugin {
   onunload() {
     broadcastPluginUnloading(this.debugInstanceId);
     const debugState = getTaskAssistantDebugState();
-    console.warn('[Task Assistant][Lifecycle] onunload start:', {
+    console.log('[Task Assistant][Lifecycle] onunload start:', {
       instanceId: this.debugInstanceId,
       hasCompletedOnload: this.hasCompletedOnload,
       activeInstanceIdsBefore: [...debugState.activeInstanceIds],
@@ -429,7 +429,7 @@ export default class TaskAssistantPlugin extends Plugin {
       debugState.unloadHistory = debugState.unloadHistory.slice(-10);
     }
 
-    console.warn('[Task Assistant][Lifecycle] onunload completed:', {
+    console.log('[Task Assistant][Lifecycle] onunload completed:', {
       instanceId: this.debugInstanceId,
       activeInstanceIdsAfter: [...debugState.activeInstanceIds],
       unloadHistory: [...debugState.unloadHistory],
@@ -832,44 +832,19 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerTabs() {
     // 日历视图 Tab（桌面端注册为 Tab，移动端注册为 Dock）
     if (!this.isMobile) {
-      const plugin = this;
       this.addTab({
         type: TAB_TYPES.CALENDAR,
         init() {
           try {
-            const mountId = `calendar-tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            console.warn('[Task Assistant][TabLifecycle] CalendarTab init start:', {
-              pluginInstanceId: plugin.debugInstanceId,
-              mountId,
-              elementConnected: this.element?.isConnected ?? false,
-              childElementCountBeforeMount: this.element?.childElementCount ?? 0,
-              location: location.href,
-            });
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(CalendarTab);
             app.use(pinia);
-            (this.element as HTMLElement).dataset.taCalendarMountId = mountId;
-            (this.element as HTMLElement).dataset.taCalendarPluginInstanceId = plugin.debugInstanceId;
             app.mount(this.element);
-            console.warn('[Task Assistant][TabLifecycle] CalendarTab init completed:', {
-              pluginInstanceId: plugin.debugInstanceId,
-              mountId,
-              elementConnected: this.element?.isConnected ?? false,
-              childElementCountAfterMount: this.element?.childElementCount ?? 0,
-              location: location.href,
-            });
           } catch (error) {
             console.error('[Task Assistant] Failed to mount CalendarTab:', error);
           }
         },
         destroy() {
-          console.warn('[Task Assistant][TabLifecycle] CalendarTab destroy called:', {
-            mountId: (this.element as HTMLElement | null)?.dataset?.taCalendarMountId ?? 'missing',
-            pluginInstanceId: (this.element as HTMLElement | null)?.dataset?.taCalendarPluginInstanceId ?? 'missing',
-            elementConnected: this.element?.isConnected ?? false,
-            childElementCountBeforeDestroy: this.element?.childElementCount ?? 0,
-            location: location.href,
-          });
           this.element.innerHTML = '';
         }
       });
@@ -1226,7 +1201,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const customData = { type };
     const initialDate = options?.initialDate;
     const initialView = options?.initialView;
-    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate, 'initialView:', initialView);
+    console.log('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate, 'initialView:', initialView);
 
     try {
       openTab({
@@ -1239,11 +1214,11 @@ export default class TaskAssistantPlugin extends Plugin {
         },
         afterOpen: () => {
           if (initialDate) {
-            console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
+            console.log('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
             eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
           }
           if (initialView && type === TAB_TYPES.CALENDAR) {
-            console.warn('[Task Assistant] afterOpen emit CALENDAR_CHANGE_VIEW', initialView);
+            console.log('[Task Assistant] afterOpen emit CALENDAR_CHANGE_VIEW', initialView);
             eventBus.emit(Events.CALENDAR_CHANGE_VIEW, initialView);
           }
         }
@@ -1289,14 +1264,14 @@ export default class TaskAssistantPlugin extends Plugin {
 
   private registerPluginEventListener(event: string, handler: (...args: any[]) => void) {
     const boundHandler = handler.bind(this);
-    console.warn('[Task Assistant][Lifecycle] register plugin event listener:', {
+    console.log('[Task Assistant][Lifecycle] register plugin event listener:', {
       instanceId: this.debugInstanceId,
       event,
       handlerName: handler.name || 'anonymous',
     });
     this.eventBus.on(event, boundHandler);
     this.cleanupManager.add(() => {
-      console.warn('[Task Assistant][Lifecycle] cleanup plugin event listener:', {
+      console.log('[Task Assistant][Lifecycle] cleanup plugin event listener:', {
         instanceId: this.debugInstanceId,
         event,
         handlerName: handler.name || 'anonymous',
@@ -1306,14 +1281,14 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   private registerAppEventListener(event: string, handler: (...args: any[]) => void) {
-    console.warn('[Task Assistant][Lifecycle] register app event listener:', {
+    console.log('[Task Assistant][Lifecycle] register app event listener:', {
       instanceId: this.debugInstanceId,
       event,
       handlerName: handler.name || 'anonymous',
     });
     const unsubscribe = eventBus.on(event, handler);
     this.cleanupManager.add(() => {
-      console.warn('[Task Assistant][Lifecycle] cleanup app event listener:', {
+      console.log('[Task Assistant][Lifecycle] cleanup app event listener:', {
         instanceId: this.debugInstanceId,
         event,
         handlerName: handler.name || 'anonymous',
@@ -1323,13 +1298,13 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   private registerWindowEventListener(event: string, handler: EventListenerOrEventListenerObject) {
-    console.warn('[Task Assistant][Lifecycle] register window event listener:', {
+    console.log('[Task Assistant][Lifecycle] register window event listener:', {
       instanceId: this.debugInstanceId,
       event,
     });
     window.addEventListener(event, handler);
     this.cleanupManager.add(() => {
-      console.warn('[Task Assistant][Lifecycle] cleanup window event listener:', {
+      console.log('[Task Assistant][Lifecycle] cleanup window event listener:', {
         instanceId: this.debugInstanceId,
         event,
       });

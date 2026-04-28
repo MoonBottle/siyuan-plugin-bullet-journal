@@ -56,7 +56,7 @@ const handleRefresh = async () => {
 
 // 数据刷新处理函数
 const handleDataRefresh = async () => {
-  console.warn('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroStatsTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroStatsTab', plugin));
   if (!plugin) return;
   settingsStore.loadFromPlugin();
   await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
@@ -67,7 +67,7 @@ let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 onMounted(async () => {
-  console.warn('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
   settingsStore.loadFromPlugin();
 
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
@@ -79,7 +79,7 @@ onMounted(async () => {
       plugin,
       getCurrentPlugin,
       onRefresh: () => {
-        console.warn('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('PomodoroStatsTab', plugin),
           data: { type: 'DATA_REFRESH' },
         });
@@ -93,7 +93,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  console.warn('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }

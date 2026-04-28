@@ -36,7 +36,7 @@ export function createRefreshChannelGuard(options: RefreshChannelGuardOptions) {
     const data = event?.data;
 
     if (hasStalePluginInstance()) {
-      console.warn('[Task Assistant][ViewLifecycle] closing stale refresh channel:', {
+      console.log('[Task Assistant][ViewLifecycle] closing stale refresh channel:', {
         viewName: options.viewName,
         capturedPluginInstanceId: getPluginInstanceId(options.plugin),
         currentPluginInstanceId: getPluginInstanceId(options.getCurrentPlugin()),
@@ -46,7 +46,7 @@ export function createRefreshChannelGuard(options: RefreshChannelGuardOptions) {
     }
 
     if (data?.type === 'PLUGIN_UNLOADING' && data.pluginInstanceId === getPluginInstanceId(options.plugin)) {
-      console.warn('[Task Assistant][ViewLifecycle] closing refresh channel due to plugin unloading:', {
+      console.log('[Task Assistant][ViewLifecycle] closing refresh channel due to plugin unloading:', {
         viewName: options.viewName,
         pluginInstanceId: getPluginInstanceId(options.plugin),
       });

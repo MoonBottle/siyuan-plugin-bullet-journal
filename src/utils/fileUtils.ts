@@ -3,7 +3,7 @@
  */
 import type { Plugin } from 'siyuan';
 import { openTab } from 'siyuan';
-import { getCurrentPlugin, usePlugin } from '@/main';
+import { usePlugin } from '@/main';
 import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
 import type { ItemStatus, PriorityLevel, ItemDateTimeInfo, TimePrecision } from '@/types/models';
 import { t } from '@/i18n';
@@ -696,19 +696,9 @@ export async function openDocumentAtLine(
 ): Promise<boolean> {
   const hasPluginOverride = typeof pluginOrDocId !== 'string';
   const plugin = (hasPluginOverride ? pluginOrDocId : usePlugin()) as any;
-  const currentPlugin = getCurrentPlugin() as any;
   const docId = (hasPluginOverride ? docIdOrLineNumber : pluginOrDocId) as string | undefined;
   const lineNumber = (hasPluginOverride ? lineNumberOrBlockId : docIdOrLineNumber) as number | undefined;
   const blockId = (hasPluginOverride ? maybeBlockId : lineNumberOrBlockId) as string | undefined;
-  console.warn('[Task Assistant][OpenDocDebug] openDocumentAtLine called:', {
-    hasPluginOverride,
-    capturedPluginInstanceId: plugin?.debugInstanceId ?? 'plugin-null',
-    currentPluginInstanceId: currentPlugin?.debugInstanceId ?? 'plugin-null',
-    docId,
-    lineNumber,
-    blockId,
-    location: location.href,
-  });
   if (!plugin || !docId) return false;
 
   try {
