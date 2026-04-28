@@ -268,6 +268,48 @@ describe('parseKramdown 事项链接解析', () => {
     expect(project!.tasks[0].items[0].links![1].name).toBe('设计稿');
   });
 
+  it('事项下方图片附件：识别为 attachment 并记录附件块 blockId', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }导出数据 @2026-04-27 11:00~12:00
+{: id="after-i1" }
+![0851d4ddc2897e0cf1313a3d6fec6cd3](assets/demo-20260427112346.png)
+{: id="asset-block-1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].links).toEqual([
+      {
+        name: '0851d4ddc2897e0cf1313a3d6fec6cd3',
+        url: 'assets/demo-20260427112346.png',
+        type: 'attachment',
+        blockId: 'asset-block-1',
+      },
+    ]);
+  });
+
+  it('事项下方普通附件链接：attachment 与外链可并存', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }准备材料 @2026-04-27
+{: id="after-i1" }
+  - {: id="link1" }[说明文档](https://example.com/spec)
+{: id="after-link1" }
+  - {: id="asset1" }[报价单](assets/quote.pdf)
+{: id="after-asset1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items[0].links).toEqual([
+      { name: '说明文档', url: 'https://example.com/spec', type: 'external' },
+      { name: '报价单', url: 'assets/quote.pdf', type: 'attachment', blockId: 'after-asset1' },
+    ]);
+  });
+
   it('事项无链接：links 为 undefined', () => {
     const kramdown = `## 项目
 {: id="doc-block" type="doc" }

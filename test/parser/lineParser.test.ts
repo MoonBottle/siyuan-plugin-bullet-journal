@@ -4,7 +4,7 @@
  * - parseBlockRefs：思源块引用解析
  */
 import { describe, it, expect } from 'vitest';
-import { LineParser, parseBlockRefs } from '@/parser/lineParser';
+import { LineParser, createLink, inferLinkType, parseBlockRefs } from '@/parser/lineParser';
 
 describe('parseItemLine 多日期解析', () => {
   it('单个日期', () => {
@@ -269,6 +269,19 @@ describe('parseBlockRefs 块引用解析', () => {
 });
 
 describe('parseTaskLine 任务解析', () => {
+  it('inferLinkType: assets 相对路径识别为 attachment', () => {
+    expect(inferLinkType('assets/demo.png')).toBe('attachment');
+  });
+
+  it('createLink: attachment 支持 blockId', () => {
+    expect(createLink('截图', 'assets/demo.png', 'attachment', 'block-asset-1')).toEqual({
+      name: '截图',
+      url: 'assets/demo.png',
+      type: 'attachment',
+      blockId: 'block-asset-1',
+    });
+  });
+
   it('基础任务', () => {
     const task = LineParser.parseTaskLine('测试任务 #任务', 1);
     expect(task.name).toBe('测试任务');
@@ -331,6 +344,15 @@ describe('parseTaskLine 任务解析', () => {
 });
 
 describe('parseItemLine - 事项链接', () => {
+  it('事项传入 attachment links 时保留 type 和 blockId', () => {
+    const links = [
+      { name: '截图', url: 'assets/demo.png', type: 'attachment' as const, blockId: 'asset-block-1' },
+    ];
+    const items = LineParser.parseItemLine('带附件事项 @2024-01-01', 1, links);
+    expect(items).toHaveLength(1);
+    expect(items[0].links).toEqual(links);
+  });
+
   it('事项带单个链接', () => {
     const links = [{ name: '示例链接', url: 'https://example.com' }];
     const items = LineParser.parseItemLine('工作事项 @2024-01-01', 1, links);

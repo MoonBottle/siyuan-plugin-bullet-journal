@@ -2,18 +2,20 @@
   <div v-if="links.length > 0" class="typed-link-list" :class="{ 'is-right-aligned': align === 'right' }">
     <SyButton
       v-for="link in links"
-      :key="`${link.name}-${link.url}-${link.type || 'default'}`"
+      :key="`${link.name}-${link.url}-${link.type || 'default'}-${link.blockId || 'no-block'}`"
       type="link"
       :text="link.name"
-      :href="link.url"
-      :class="['typed-link', `typed-link--${link.type || 'default'}`]"
-      @click="emit('linkClick', link.url)"
+      :href="link.type === 'attachment' ? undefined : link.url"
+      :class="['typed-link', getTypedLinkMeta(link.type).typeClass]"
+      :data-icon="getTypedLinkMeta(link.type).iconText"
+      @click="emit('linkClick', link)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import SyButton from '@/components/SiyuanTheme/SyButton.vue';
+import { getTypedLinkMeta } from './typedLinkMeta';
 import type { Link } from '@/types/models';
 
 withDefaults(defineProps<{
@@ -24,7 +26,7 @@ withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-  linkClick: [url: string];
+  linkClick: [link: Link];
 }>();
 </script>
 
@@ -50,6 +52,7 @@ const emit = defineEmits<{
 }
 
 :deep(.typed-link--external::before),
+:deep(.typed-link--attachment::before),
 :deep(.typed-link--siyuan::before),
 :deep(.typed-link--block-ref::before) {
   position: absolute;
@@ -63,14 +66,24 @@ const emit = defineEmits<{
 }
 
 :deep(.typed-link--external::before) {
-  content: '↗';
+  content: attr(data-icon);
+}
+
+:deep(.typed-link--attachment) {
+  border-color: color-mix(in srgb, var(--b3-card-warning-color) 45%, var(--b3-border-color) 55%);
+  background: color-mix(in srgb, var(--b3-card-warning-background) 70%, var(--b3-theme-surface) 30%);
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--b3-card-warning-color) 75%, transparent 25%);
+}
+
+:deep(.typed-link--attachment::before) {
+  content: attr(data-icon);
 }
 
 :deep(.typed-link--siyuan::before) {
-  content: 'S';
+  content: attr(data-icon);
 }
 
 :deep(.typed-link--block-ref::before) {
-  content: '❝';
+  content: attr(data-icon);
 }
 </style>

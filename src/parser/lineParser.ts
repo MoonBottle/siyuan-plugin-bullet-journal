@@ -25,14 +25,21 @@ const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;
 const DATE_WITH_OPTIONAL_TIME_PATTERN = `(?:@|📅)\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`;
 
 export function inferLinkType(url: string): Link['type'] {
-  return url.startsWith('siyuan://') ? 'siyuan' : 'external';
+  if (url.startsWith('siyuan://')) {
+    return 'siyuan';
+  }
+  if (url.startsWith('assets/')) {
+    return 'attachment';
+  }
+  return 'external';
 }
 
-export function createLink(name: string, url: string, type?: Link['type']): Link {
+export function createLink(name: string, url: string, type?: Link['type'], blockId?: string): Link {
   return {
     name,
     url,
-    type: type ?? inferLinkType(url)
+    type: type ?? inferLinkType(url),
+    ...(blockId ? { blockId } : {})
   };
 }
 

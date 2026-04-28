@@ -186,6 +186,7 @@
 
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
+import { showMessage } from 'siyuan';
 import Card from '@/components/common/Card.vue';
 import { t } from '@/i18n';
 import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
@@ -196,9 +197,10 @@ import { calculateReminderTime } from '@/parser/reminderParser';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
-import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
+import { openDocumentAtLine, optimizeDateTimeExpressions } from '@/utils/fileUtils';
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import type { Item, Project, Task, PomodoroRecord } from '@/types/models';
+import type { Item, Project, Task, PomodoroRecord, Link } from '@/types/models';
 import TodoItemActionButtons from '@/components/todo/TodoItemActionButtons.vue';
 import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
 
@@ -491,9 +493,27 @@ function handleOpenCalendar() {
 }
 
 // 处理链接点击
-function handleLinkClick(url: string) {
-  console.log('[ItemDetailDialog] link clicked, url:', url);
-  if (url.startsWith('siyuan://')) {
+async function handleLinkClick(link: Link) {
+  console.log('[ItemDetailDialog] link clicked, link:', link);
+
+  if (link.type === 'attachment') {
+    const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId);
+    if (!targetBlockId || !props.item.docId) {
+      showMessage(t('common').blockIdError, 'error');
+      return;
+    }
+
+    const opened = await openDocumentAtLine(props.item.docId, undefined, targetBlockId);
+    if (!opened) {
+      showMessage(t('common').blockIdError, 'error');
+      return;
+    }
+
+    handleClose();
+    return;
+  }
+
+  if (link.url.startsWith('siyuan://')) {
     console.log('[ItemDetailDialog] siyuan link detected, closing dialog');
     handleClose();
   }

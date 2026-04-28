@@ -1,6 +1,6 @@
 <template>
   <div v-if="shouldRender" class="item-meta-panel">
-    <TodoTypedLinks v-if="showLinks && visibleLinks.length > 0" :links="visibleLinks" />
+    <TodoTypedLinks v-if="showLinks && visibleLinks.length > 0" :links="visibleLinks" @link-click="handleLinkClick" />
 
     <TodoItemActionButtons
       v-if="showReminderAndRecurring && (!isCompletedOrAbandoned || hasReminder || hasRecurring)"
@@ -21,12 +21,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { showMessage } from 'siyuan';
 import type { Item, Link } from '@/types/models';
 import { useSettingsStore } from '@/stores';
 import { t } from '@/i18n';
 import { formatReminderDisplay } from '@/utils/displayUtils';
 import { calculateReminderTime } from '@/parser/reminderParser';
 import { generateEndConditionMarker, generateRepeatRuleMarker, getNextOccurrenceDate } from '@/parser/recurringParser';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
 import { showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
 import TodoItemActionButtons from './TodoItemActionButtons.vue';
@@ -108,6 +111,23 @@ function openReminderSetting() {
 function openRecurringSetting() {
   if (isCompletedOrAbandoned.value || !canSetRecurring.value) return;
   showRecurringSettingDialog(props.item);
+}
+
+async function handleLinkClick(link: Link) {
+  if (link.type !== 'attachment') {
+    return;
+  }
+
+  const targetBlockId = resolveAttachmentTargetBlockId(link, props.item.blockId);
+  if (!props.item.docId || !targetBlockId) {
+    showMessage(t('common').blockIdError, 'error');
+    return;
+  }
+
+  const opened = await openDocumentAtLine(props.item.docId, undefined, targetBlockId);
+  if (!opened) {
+    showMessage(t('common').blockIdError, 'error');
+  }
 }
 </script>
 

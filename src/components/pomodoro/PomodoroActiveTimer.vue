@@ -75,7 +75,7 @@
           <span>{{ currentItem.project.name }}</span>
         </div>
         <template #footer>
-          <TodoTypedLinks :links="currentItem.project.links || []" />
+          <TodoTypedLinks :links="currentItem.project.links || []" @link-click="handleLinkClick" />
         </template>
       </Card>
 
@@ -96,7 +96,7 @@
           <span>{{ currentItem.task.name }}</span>
         </div>
         <template #footer>
-          <TodoTypedLinks :links="currentItem.task.links || []" />
+          <TodoTypedLinks :links="currentItem.task.links || []" @link-click="handleLinkClick" />
         </template>
       </Card>
 
@@ -116,7 +116,7 @@
         </div>
         <template #footer>
           <div class="item-footer-content">
-            <TodoTypedLinks :links="currentItem?.links || []" align="right" />
+            <TodoTypedLinks :links="currentItem?.links || []" align="right" @link-click="handleLinkClick" />
             <div class="item-actions">
               <span
                 v-if="currentItem?.status !== 'completed' && currentItem?.status !== 'abandoned'"
@@ -184,16 +184,18 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { showMessage } from 'siyuan';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
-import type { Item } from '@/types/models';
+import type { Item, Link } from '@/types/models';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import Card from '@/components/common/Card.vue';
 import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
 import { showConfirmDialog, showItemDetailModal } from '@/utils/dialog';
+import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
 import { t } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 import { getProgressDirection } from '@/utils/progressDirection';
@@ -392,6 +394,24 @@ const openCalendar = () => {
   if (!currentItem.value?.date) return;
   if (plugin && plugin.openCustomTab) {
     plugin.openCustomTab(TAB_TYPES.CALENDAR, { initialDate: currentItem.value.date });
+  }
+};
+
+const handleLinkClick = async (link: Link) => {
+  if (link.type !== 'attachment') {
+    return;
+  }
+
+  const docId = currentItem.value?.docId;
+  const targetBlockId = resolveAttachmentTargetBlockId(link, currentItem.value?.blockId);
+  if (!docId || !targetBlockId) {
+    showMessage(t('common').blockIdError, 'error');
+    return;
+  }
+
+  const opened = await openDocumentAtLine(docId, undefined, targetBlockId);
+  if (!opened) {
+    showMessage(t('common').blockIdError, 'error');
   }
 };
 </script>
