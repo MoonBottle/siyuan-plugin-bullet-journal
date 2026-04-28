@@ -8,6 +8,12 @@
 - **Todo Collapse/Expand**: Added collapse all / expand all functionality for the todo sidebar
 - **Completed Task Search & Filtering**: Added search and filtering support for completed and abandoned tasks
 
+### Fixes
+
+- **MCP Group Filtering**:
+  - Fixed `filter_items` failing to return items when filtering by `groupId` in full scan mode
+  - Fixed build output not syncing the plugin-root `mcp-server.js`, which caused MCP clients to run an outdated server file
+
 ### Refactors
 
 - **DeepSeek Support**: Simplified message building logic, removed kimi-specific handling, generalized reasoning_content logic
