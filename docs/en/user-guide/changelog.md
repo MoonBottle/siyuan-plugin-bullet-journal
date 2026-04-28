@@ -13,10 +13,19 @@
 - **MCP Group Filtering**:
   - Fixed `filter_items` failing to return items when filtering by `groupId` in full scan mode
   - Fixed build output not syncing the plugin-root `mcp-server.js`, which caused MCP clients to run an outdated server file
+- **SiYuan Attachment Links**:
+  - Fixed `assets/...` attachment links being incorrectly treated as external links
+  - Attachment links in Todo, detail dialogs, and the pomodoro panel now jump back to the source block context
 
 ### Refactors
 
 - **DeepSeek Support**: Simplified message building logic, removed kimi-specific handling, generalized reasoning_content logic
+
+### Styles
+
+- **Unified Link Presentation**:
+  - Added a dedicated icon and visual style for attachment links so they are distinct from external, SiYuan, and block-reference links
+  - Reused the shared typed-link component in the calendar hover tooltip while keeping those links display-only
 
 ## [0.12.7] - 2026-04-26
 
