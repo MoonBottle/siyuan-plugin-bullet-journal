@@ -13,13 +13,15 @@
 - 插件启动较晚时，无法像普通事项一样按宽容窗口补发
 - 数据刷新或 `visibilitychange` 没有恰好覆盖提醒时刻时，提醒可能永久丢失
 
-目标是让习惯提醒与普通事项提醒完全对齐，统一为“重建调度 -> 创建 Cron -> 允许宽容窗口补发”的模型。
+目标是让习惯提醒与普通事项提醒完全对齐，统一为“重建调度 -> 创建 Cron -> 允许宽容窗口补发”的模型，并把跨天日期推进收敛到单一入口，避免提醒系统和 Todo 视图对“今天”的理解短时间不一致。
 
 ## 目标
 
 - 让习惯提醒与普通事项提醒使用同一类调度语义
 - 避免继续依赖 10 秒扫描窗口触发习惯提醒
 - 支持数据刷新、前后台切换、插件晚启动后的稳定补发
+- 让 `projectStore.currentDate` 成为跨天日期的唯一事实源
+- 让 TodoDock 桌面端和移动端停止使用各自的本地跨天轮询
 - 保持现有提醒展示、跳转块、去重清理等用户体验不变
 
 ## 非目标
@@ -41,6 +43,22 @@
 - `habitReminder.ts` 输出的是“现在该不该提醒”，而不是“今天什么时候提醒”
 - `ReminderService` 没有为习惯维护持久的 `Cron` 作业
 - 习惯提醒不会参与统一的 diff、stop、cleanup 过程
+
+同时，当前 TodoDock 还有另一套独立的跨天处理：
+
+- `DesktopTodoDock.vue` 使用本地 `todayDate + setInterval`
+- `MobileTodoDock.vue` 使用本地 `todayDate + setInterval`
+
+这导致系统内存在多套“今天”的来源：
+
+- `projectStore.currentDate`
+- DesktopTodoDock 本地 `todayDate`
+- MobileTodoDock 本地 `todayDate`
+
+如果这些值不在同一个入口推进，就会出现短时间不一致：
+
+- Todo 分组和筛选已经跨天，但提醒系统还没有跨天
+- 提醒系统已经重建到次日，但 TodoDock 仍停留在上一天
 
 ## 方案选择
 
@@ -94,6 +112,8 @@
 - 普通事项和习惯提醒共享统一的调度生命周期
 - 两类提醒使用不同 key 空间和不同 job map
 - 业务判断与调度判断分离
+- `projectStore.currentDate` 是唯一日期源
+- 零点日期推进只能从一个入口发生
 
 ### 生命周期
 
@@ -102,12 +122,20 @@
 - 插件启动
 - 数据刷新后调用 `scheduleRebuild()`
 - 页面从后台恢复到前台时
+- 每日零点自动推进日期并重建
 
 每次重建时：
 
 1. 计算普通事项提醒条目
 2. 计算习惯提醒条目
 3. 对两类条目分别做“补发 / 调度 / 清理”
+
+零点时额外执行：
+
+1. 将 `projectStore.currentDate` 推进到当天
+2. 重建事项提醒
+3. 重建习惯提醒
+4. 让 TodoDock/HabitDock 等基于 store 的视图自动刷新
 
 ## 详细设计
 
@@ -117,6 +145,7 @@
 
 - `scheduledJobs: Map<string, Cron>`：普通事项
 - `habitScheduledJobs: Map<string, Cron>`：习惯提醒
+- `midnightRefreshJob: Cron | null`：零点日期推进
 
 保留并继续复用：
 
@@ -125,7 +154,12 @@
 - `openBlock(blockId)`
 - `visibilitychange -> rebuildSchedule()`
 
-`stop()` 和 `clearAllJobs()` 需要同时清理两类作业。
+新增：
+
+- `scheduleMidnightRefresh()`：调度下一次零点
+- `handleMidnightRefresh()`：推进 `projectStore.currentDate` 并重建
+
+`stop()` 和 `clearAllJobs()` 需要同时清理三类作业/定时对象。
 
 ### 2. 习惯提醒条目生成
 
@@ -184,6 +218,27 @@ habit-${habit.blockId}-${currentDate}-${reminderTimestamp}
 - 保持两类提醒语义一致
 - 避免习惯提醒出现“事项可补发、习惯不可补发”的用户困惑
 
+### 4.1 零点日期推进
+
+仅仅让习惯提醒使用 Cron 仍不足以覆盖“应用跨午夜持续打开”的情况。因为习惯提醒是按“日”建模的，而不是像普通事项那样天然适合预先覆盖未来 24 小时。
+
+因此新增一类专门的零点 job：
+
+- 插件启动时，`ReminderService.start()` 调用 `scheduleMidnightRefresh()`
+- 该方法计算“下一次本地零点”的 `Date`，并创建一次性 `Cron`
+- 到达零点时执行 `handleMidnightRefresh()`
+
+`handleMidnightRefresh()` 的职责：
+
+1. 将 `projectStore.currentDate` 更新为当天日期字符串
+2. 调用 `rebuildSchedule()`
+3. 重新调用 `scheduleMidnightRefresh()`，继续挂下一次零点 job
+
+这样可以解决：
+
+- 应用前台持续开着跨午夜时，第二天习惯提醒无法自动建 job
+- TodoDock 与提醒系统各自跨天，产生短时间不一致
+
 ### 5. Cron 作业管理
 
 习惯提醒重建时维护一个新的 `habitNewEntries`：
@@ -232,6 +287,24 @@ private triggerHabitNotification(habit: Habit): void
 
 这样 `habitReminder.ts` 只负责业务判断，不再负责“当前时刻命中窗口”的调度判断。
 
+### 8. TodoDock 跨天逻辑收敛
+
+桌面端和移动端 TodoDock 当前都维护本地 `todayDate`，并通过 `setInterval` 每分钟比较一次日期变化。该逻辑需要移除。
+
+改造原则：
+
+- `DesktopTodoDock.vue` 不再维护本地 `todayDate`
+- `MobileTodoDock.vue` 不再维护本地 `todayDate`
+- 两端都直接依赖 `projectStore.currentDate`
+
+具体做法：
+
+- DesktopTodoDock 的 `dateRange` / `completedDateRange` 改为基于 `projectStore.currentDate`
+- MobileTodoDock 的筛选应用逻辑改为基于 `projectStore.currentDate`
+- 当 `projectStore.currentDate` 变化时，移动端应重新应用 today/week 筛选
+
+这样 Todo 视图与提醒系统都只消费同一个日期源。
+
 ## 错误处理
 
 - 单个习惯提醒时间解析失败时跳过该习惯，不阻断整体重建
@@ -254,7 +327,15 @@ private triggerHabitNotification(habit: Habit): void
 - 宽容窗口内的已过期习惯提醒会立即补发
 - 超出宽容窗口的已过期习惯提醒不会补发
 - 修改提醒时间后旧 job 被移除、新 job 被创建
-- `stop()` 会清理习惯与事项两类 job
+- `stop()` 会清理习惯、事项、零点三类 job
+- 零点 job 触发后会推进 `projectStore.currentDate`
+- 零点 job 触发后会重新挂下一次零点 job
+
+### TodoDock
+
+- DesktopTodoDock 不再创建本地日期轮询定时器
+- MobileTodoDock 不再创建本地日期轮询定时器
+- 当 `projectStore.currentDate` 变化时，today/week 筛选结果会同步变化
 
 ## 兼容性与迁移
 
@@ -266,8 +347,11 @@ private triggerHabitNotification(habit: Habit): void
 
 - `src/services/reminderService.ts`
 - `src/services/habitReminder.ts`
+- `src/tabs/DesktopTodoDock.vue`
+- `src/mobile/MobileTodoDock.vue`
 - `test/services/reminderService.test.ts`
 - 新增或更新 `habitReminder` 相关测试
+- 新增或更新 TodoDock 相关测试
 
 ## 风险与控制
 
@@ -291,6 +375,20 @@ private triggerHabitNotification(habit: Habit): void
 - key 含 `reminderTimestamp`
 - 每次重建做完整 diff
 
+### 风险 4：零点推进后 UI 与调度系统仍使用不同日期源
+
+控制：
+
+- 删除 TodoDock 本地 `todayDate` 轮询
+- 所有 today/week 计算改为读取 `projectStore.currentDate`
+- 在测试中覆盖零点推进后的视图筛选行为
+
 ## 实施摘要
 
-本次改动不引入新服务，而是在现有 `ReminderService` 内为习惯提醒新增一套与普通事项等价的 Croner 调度流程。`habitReminder.ts` 从“窗口命中判断器”调整为“提醒条目生成器”，从而实现业务判断与调度判断解耦，并使习惯提醒获得与普通事项相同的稳定性语义。
+本次改动不引入新服务，而是在现有 `ReminderService` 内完成三件事：
+
+1. 为习惯提醒新增一套与普通事项等价的 Croner 调度流程
+2. 新增零点日期推进 job，统一更新 `projectStore.currentDate`
+3. 接管 TodoDock 现有跨天逻辑，让桌面端和移动端都只依赖 `projectStore.currentDate`
+
+`habitReminder.ts` 从“窗口命中判断器”调整为“提醒条目生成器”，从而实现业务判断与调度判断解耦，并使习惯提醒、普通事项提醒和 Todo 视图都建立在同一个跨天推进模型上。
