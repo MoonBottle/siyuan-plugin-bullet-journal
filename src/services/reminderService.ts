@@ -6,13 +6,15 @@
 
 import { Cron } from 'croner';
 import type { Plugin } from 'siyuan';
-import type { Item } from '@/types/models';
+import type { Habit, Item } from '@/types/models';
 import { useProjectStore } from '@/stores';
 import { calculateReminderTime } from '@/parser/reminderParser';
 import { showSystemNotification } from '@/utils/notification';
-import { getHabitsNeedingReminder } from '@/services/habitReminder';
+import { getHabitReminderEntries } from '@/services/habitReminder';
 
 type ProjectStoreType = ReturnType<typeof useProjectStore>;
+const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
+const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
  * 生成调度 key：blockId-date-reminderTime
@@ -24,6 +26,7 @@ function makeScheduleKey(item: Item, reminderTime: number): string {
 
 export class ReminderService {
   private scheduledJobs: Map<string, Cron> = new Map(); // key → Cron job
+  private habitScheduledJobs: Map<string, Cron> = new Map(); // key → Habit Cron job
   private notifiedKeys: Set<string> = new Set(); // 已提醒的 scheduleKey
   private projectStore: ProjectStoreType | null = null;
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
@@ -100,6 +103,7 @@ export class ReminderService {
 
     const now = Date.now();
     const newEntries = new Map<string, { item: Item; reminderTime: number }>();
+    const habitNewEntries = new Map<string, { habit: Habit; reminderTime: number }>();
 
     // 遍历所有事项，计算提醒时间
     for (const project of this.projectStore.projects) {
@@ -125,7 +129,6 @@ export class ReminderService {
 
           // 提醒时间已过：仅当在宽容窗口（5 分钟）内才视为漏掉的提醒
           // 超过 5 分钟说明是事后编辑，不应触发
-          const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
           if (reminderTime <= now && (now - reminderTime) <= MISSED_THRESHOLD_MS) {
             if (!this.notifiedKeys.has(key)) {
               console.log(`[ReminderService] Missed reminder, triggering now: "${item.content.substring(0, 20)}..." | key=${key}`);
@@ -141,11 +144,34 @@ export class ReminderService {
               console.log(`[ReminderService] Stale reminder (${Math.round((now - reminderTime) / 60000)}min ago), skipping: "${item.content.substring(0, 20)}..." | key=${key}`);
               this.notifiedKeys.add(key); // 标记为已处理，避免重复日志
             }
-          } else if (reminderTime < now + 24 * 60 * 60 * 1000) {
+          } else if (reminderTime < now + FUTURE_WINDOW_MS) {
             // 未来 24 小时内 → 加入调度
             newEntries.set(key, { item, reminderTime });
           }
         }
+      }
+    }
+
+    const habits = typeof this.projectStore.getHabits === 'function'
+      ? this.projectStore.getHabits('')
+      : [];
+
+    for (const entry of getHabitReminderEntries(habits, this.projectStore.currentDate)) {
+      if (entry.reminderTime <= now && (now - entry.reminderTime) <= MISSED_THRESHOLD_MS) {
+        if (!this.notifiedKeys.has(entry.key)) {
+          this.triggerHabitNotification(entry.habit);
+          this.notifiedKeys.add(entry.key);
+          this.scheduleCleanup(entry.key);
+        }
+      } else if (entry.reminderTime <= now) {
+        if (!this.notifiedKeys.has(entry.key)) {
+          this.notifiedKeys.add(entry.key);
+        }
+      } else if (entry.reminderTime < now + FUTURE_WINDOW_MS) {
+        habitNewEntries.set(entry.key, {
+          habit: entry.habit,
+          reminderTime: entry.reminderTime,
+        });
       }
     }
 
@@ -180,44 +206,31 @@ export class ReminderService {
       this.scheduledJobs.set(key, job);
     }
 
-    console.log(`[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active jobs, ${newEntries.size} items scanned, ${this.notifiedKeys.size} notified keys`);
-    this.checkHabitReminders();
-  }
+    for (const [key, job] of this.habitScheduledJobs) {
+      if (!habitNewEntries.has(key)) {
+        job.stop();
+        this.habitScheduledJobs.delete(key);
+      }
+    }
 
-  /**
-   * 检查习惯提醒
-   */
-  private checkHabitReminders(): void {
-    if (!this.projectStore) return;
-    if (typeof this.projectStore.getHabits !== 'function') return;
+    for (const [key, { habit, reminderTime }] of habitNewEntries) {
+      if (this.habitScheduledJobs.has(key)) continue;
 
-    const now = Date.now();
-    const currentDate = this.projectStore.currentDate;
-    const habits = this.projectStore.getHabits('');
-
-    const habitReminders = getHabitsNeedingReminder(habits, currentDate, now);
-
-    for (const { habit, key } of habitReminders) {
-      if (this.notifiedKeys.has(key)) continue;
-
-      const title = `🎯 ${habit.name}`;
-      const body = habit.type === 'count'
-        ? `${habit.name} ${habit.target || 0}${habit.unit || ''}`
-        : habit.name;
-
-      showSystemNotification(title, body, {
-        tag: `habit-reminder-${habit.blockId}`,
-        icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
-        onClick: () => {
-          window.open(`siyuan://blocks/${habit.blockId}`, '_blank');
-        },
+      const job = new Cron(new Date(reminderTime), () => {
+        if (!this.notifiedKeys.has(key)) {
+          this.triggerHabitNotification(habit);
+          this.notifiedKeys.add(key);
+          this.scheduleCleanup(key);
+        }
+        this.habitScheduledJobs.delete(key);
       });
 
-      this.notifiedKeys.add(key);
-      this.scheduleCleanup(key);
-
-      console.log(`[ReminderService] Habit notification triggered: ${habit.name}`);
+      this.habitScheduledJobs.set(key, job);
     }
+
+    console.log(
+      `[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active item jobs, ${this.habitScheduledJobs.size} active habit jobs, ${newEntries.size} items scanned, ${this.notifiedKeys.size} notified keys`
+    );
   }
 
   /**
@@ -228,6 +241,10 @@ export class ReminderService {
       job.stop();
     }
     this.scheduledJobs.clear();
+    for (const [, job] of this.habitScheduledJobs) {
+      job.stop();
+    }
+    this.habitScheduledJobs.clear();
   }
 
   /**
@@ -248,6 +265,26 @@ export class ReminderService {
     });
 
     console.log(`[ReminderService] Notification triggered: ${item.content}`);
+  }
+
+  /**
+   * 触发习惯提醒通知
+   */
+  private triggerHabitNotification(habit: Habit): void {
+    const title = `🎯 ${habit.name}`;
+    const body = habit.type === 'count'
+      ? `${habit.name} ${habit.target || 0}${habit.unit || ''}`
+      : habit.name;
+
+    showSystemNotification(title, body, {
+      tag: `habit-reminder-${habit.blockId}`,
+      icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+      onClick: () => {
+        this.openBlock(habit.blockId);
+      },
+    });
+
+    console.log(`[ReminderService] Habit notification triggered: ${habit.name}`);
   }
 
   /**

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isCheckInDay, getHabitReminderTime, getHabitsNeedingReminder } from '@/services/habitReminder';
-import type { Habit, HabitFrequency } from '@/types/models';
+import { isCheckInDay, getHabitReminderTime, getHabitReminderEntries } from '@/services/habitReminder';
+import type { Habit } from '@/types/models';
 
 function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
   return {
@@ -72,8 +72,22 @@ describe('getHabitReminderTime', () => {
   });
 });
 
-describe('getHabitsNeedingReminder', () => {
-  it('已达标的习惯不应提醒', () => {
+describe('getHabitReminderEntries', () => {
+  it('今天应提醒的习惯会生成 entry', () => {
+    const habit = mkHabit({
+      name: '冥想',
+      reminder: { type: 'absolute', time: '07:00' }
+    });
+
+    const entries = getHabitReminderEntries([habit], '2026-04-07');
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].habit.name).toBe('冥想');
+    expect(entries[0].reminderTime).toBe(new Date('2026-04-07T07:00:00').getTime());
+    expect(entries[0].key).toBe(`habit-habit-1-2026-04-07-${entries[0].reminderTime}`);
+  });
+
+  it('今天已达标的习惯不生成 entry', () => {
     const habit = mkHabit({
       name: '早起',
       frequency: { type: 'daily' },
@@ -86,25 +100,18 @@ describe('getHabitsNeedingReminder', () => {
         habitId: 'habit-1'
       }]
     });
-    // 构造 now 为提醒时间
-    const d = new Date('2026-04-07T07:00:00');
-    const now = d.getTime();
-    const reminders = getHabitsNeedingReminder([habit], '2026-04-07', now);
-    // 二元型有记录即达标，不应提醒
-    expect(reminders).toHaveLength(0);
+
+    expect(getHabitReminderEntries([habit], '2026-04-07')).toHaveLength(0);
   });
 
-  it('未打卡的习惯应在提醒时间触发', () => {
+  it('非打卡日不生成 entry', () => {
     const habit = mkHabit({
-      name: '冥想',
-      frequency: { type: 'daily' },
+      name: '跑步',
+      frequency: { type: 'weekly_days', daysOfWeek: [5] },
       reminder: { type: 'absolute', time: '07:00' },
       records: []
     });
-    const d = new Date('2026-04-07T07:00:00');
-    const now = d.getTime();
-    const reminders = getHabitsNeedingReminder([habit], '2026-04-07', now);
-    expect(reminders).toHaveLength(1);
-    expect(reminders[0].habit.name).toBe('冥想');
+
+    expect(getHabitReminderEntries([habit], '2026-04-04')).toHaveLength(0);
   });
 });

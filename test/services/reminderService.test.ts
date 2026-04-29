@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ReminderService } from '@/services/reminderService';
-import type { Item } from '@/types/models';
+import type { Habit, Item } from '@/types/models';
 
 // Mock notification utils
 const mockShowSystemNotification = vi.fn();
@@ -39,6 +39,7 @@ beforeEach(() => {
   (globalThis.Notification as any).permission = 'default';
   (globalThis.Notification as any).requestPermission = mockNotificationRequestPermission;
   mockReminderTime = 0;
+  vi.useFakeTimers();
 });
 
 describe('ReminderService', () => {
@@ -52,31 +53,49 @@ describe('ReminderService', () => {
 
   afterEach(() => {
     service.stop();
+    vi.useRealTimers();
   });
+
+  function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
+    return {
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      records: [],
+      frequency: { type: 'daily' },
+      ...overrides,
+    };
+  }
+
+  function makeStore(items: Item | Item[] = [], habits: Habit[] = []) {
+    return {
+      currentDate: '2026-04-07',
+      getHabits: () => habits,
+      projects: [{ tasks: [{ items: Array.isArray(items) ? items : [items] }] }],
+    };
+  }
 
   describe('start / stop lifecycle', () => {
     it('启动时应该请求通知权限', () => {
-      const projectStore = { projects: [] } as any;
-      service.start({} as any, projectStore);
+      const projectStore = makeStore([], []);
+      service.start({} as any, projectStore as any);
       expect(mockNotificationRequestPermission).toHaveBeenCalled();
     });
 
     it('启动和停止后应清理所有 job', () => {
-      const projectStore = { projects: [] } as any;
-      service.start({} as any, projectStore);
+      vi.setSystemTime(new Date('2026-04-07T06:00:00'));
+      const projectStore = makeStore([], [
+        mkHabit({ name: '冥想', reminder: { type: 'absolute', time: '07:00' } }),
+      ]);
+      service.start({} as any, projectStore as any);
       service.stop();
       expect((service as any).scheduledJobs.size).toBe(0);
+      expect((service as any).habitScheduledJobs.size).toBe(0);
     });
   });
 
   describe('rebuildSchedule', () => {
-    /** 创建一个带单事项的 projectStore */
-    function makeStore(items: Item | Item[]) {
-      return {
-        projects: [{ tasks: [{ items: Array.isArray(items) ? items : [items] }] }],
-      };
-    }
-
     it('到达提醒时间应该触发通知', () => {
       mockReminderTime = Date.now() - 5000; // 5 秒前，已过期
 
@@ -87,7 +106,7 @@ describe('ReminderService', () => {
         project: { name: '项目A' }, task: { name: '任务A' },
       };
 
-      service.start({} as any, makeStore(item));
+      service.start({} as any, makeStore(item) as any);
 
       expect(mockShowSystemNotification).toHaveBeenCalledTimes(1);
       const [title, body] = mockShowSystemNotification.mock.calls[0];
@@ -104,7 +123,7 @@ describe('ReminderService', () => {
         reminder: { enabled: true, type: 'absolute', time: '09:00' },
       };
 
-      service.start({} as any, makeStore(item));
+      service.start({} as any, makeStore(item) as any);
       expect(mockShowSystemNotification).toHaveBeenCalledTimes(1);
 
       // 第二次 rebuild（同一 blockId + date，已被 notifiedKeys 覆盖）
@@ -121,7 +140,7 @@ describe('ReminderService', () => {
         reminder: { enabled: true, type: 'absolute', time: '10:00' },
       };
 
-      service.start({} as any, makeStore(item));
+      service.start({} as any, makeStore(item) as any);
 
       expect(mockShowSystemNotification).not.toHaveBeenCalled();
       // 但应创建一个 scheduled job
@@ -137,7 +156,7 @@ describe('ReminderService', () => {
         reminder: { enabled: true, type: 'absolute', time: '09:00' },
       };
 
-      service.start({} as any, makeStore(item));
+      service.start({} as any, makeStore(item) as any);
       expect(mockShowSystemNotification).not.toHaveBeenCalled();
     });
 
@@ -161,7 +180,7 @@ describe('ReminderService', () => {
         reminder: { enabled: true, type: 'absolute', time: '09:00' },
       };
 
-      service.start({} as any, makeStore([item1, item2]));
+      service.start({} as any, makeStore([item1, item2]) as any);
       expect(mockShowSystemNotification).toHaveBeenCalledTimes(2);
     });
 
@@ -174,7 +193,7 @@ describe('ReminderService', () => {
         reminder: { enabled: true, type: 'absolute', time: '09:00' },
       };
 
-      service.start({} as any, makeStore(item));
+      service.start({} as any, makeStore(item) as any);
 
       expect(mockShowSystemNotification).not.toHaveBeenCalled();
     });
@@ -188,7 +207,7 @@ describe('ReminderService', () => {
         reminder: { enabled: true, type: 'absolute', time: '09:00' },
       };
 
-      service.start({} as any, makeStore(item));
+      service.start({} as any, makeStore(item) as any);
 
       expect(mockShowSystemNotification).toHaveBeenCalledTimes(1);
     });
@@ -203,7 +222,7 @@ describe('ReminderService', () => {
       };
 
       const store = makeStore(item);
-      service.start({} as any, store);
+      service.start({} as any, store as any);
       expect((service as any).scheduledJobs.size).toBe(1);
 
       // key format: blockId-date-reminderTime
@@ -217,6 +236,68 @@ describe('ReminderService', () => {
 
       expect(job.stop).toHaveBeenCalled();
       expect((service as any).scheduledJobs.size).toBe(0);
+    });
+
+    it('未来习惯提醒应创建独立的 Cron job', () => {
+      vi.setSystemTime(new Date('2026-04-07T06:00:00'));
+      const habit = mkHabit({
+        name: '冥想',
+        reminder: { type: 'absolute', time: '07:00' },
+      });
+
+      service.start({} as any, makeStore([], [habit]) as any);
+
+      expect((service as any).habitScheduledJobs.size).toBe(1);
+    });
+
+    it('习惯提醒在宽容窗口内应立即补发', () => {
+      vi.setSystemTime(new Date('2026-04-07T07:03:00'));
+      const habit = mkHabit({
+        name: '冥想',
+        reminder: { type: 'absolute', time: '07:00' },
+      });
+
+      service.start({} as any, makeStore([], [habit]) as any);
+
+      expect(mockShowSystemNotification).toHaveBeenCalledWith(
+        expect.stringContaining('🎯'),
+        expect.stringContaining('冥想'),
+        expect.objectContaining({ tag: 'habit-reminder-habit-1' }),
+      );
+    });
+
+    it('超出宽容窗口的习惯提醒不应补发', () => {
+      vi.setSystemTime(new Date('2026-04-07T07:10:00'));
+      const habit = mkHabit({
+        name: '冥想',
+        reminder: { type: 'absolute', time: '07:00' },
+      });
+
+      service.start({} as any, makeStore([], [habit]) as any);
+
+      expect(mockShowSystemNotification).not.toHaveBeenCalled();
+      expect((service as any).habitScheduledJobs.size).toBe(0);
+    });
+
+    it('习惯提醒时间变化后应删除旧 job 并创建新 job', () => {
+      vi.setSystemTime(new Date('2026-04-07T06:00:00'));
+      const store = makeStore([], [mkHabit({
+        name: '冥想',
+        reminder: { type: 'absolute', time: '07:00' },
+      })]) as any;
+
+      service.start({} as any, store);
+      const oldJobs = new Map((service as any).habitScheduledJobs);
+
+      store.getHabits = () => [mkHabit({
+        name: '冥想',
+        reminder: { type: 'absolute', time: '08:00' },
+      })];
+      (service as any).rebuildSchedule();
+
+      const oldJob = Array.from(oldJobs.values())[0] as any;
+      expect(oldJob.stop).toHaveBeenCalled();
+      expect((service as any).habitScheduledJobs.size).toBe(1);
     });
   });
 
@@ -232,6 +313,8 @@ describe('ReminderService', () => {
 
       const store = {
         projects: [{ tasks: [{ items: [item] }] }],
+        getHabits: () => [],
+        currentDate: '2026-04-07',
       } as any;
 
       service.start({} as any, store);
@@ -249,9 +332,8 @@ describe('ReminderService', () => {
 
   describe('scheduleRebuild', () => {
     it('应防抖调用（短时间内多次调用只执行一次）', () => {
-      vi.useFakeTimers();
-      const projectStore = { projects: [] } as any;
-      service.start({} as any, projectStore);
+      const projectStore = makeStore([], []);
+      service.start({} as any, projectStore as any);
 
       const spy = vi.spyOn(service as any, 'rebuildSchedule');
       spy.mockClear(); // 清除 start 内部调用的记录
@@ -264,8 +346,6 @@ describe('ReminderService', () => {
 
       vi.advanceTimersByTime(300);
       expect(spy).toHaveBeenCalledTimes(1);
-
-      vi.useRealTimers();
     });
   });
 });

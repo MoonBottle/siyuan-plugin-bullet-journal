@@ -8,9 +8,9 @@ import dayjs from '@/utils/dayjs';
 import type { Habit, HabitFrequency } from '@/types/models';
 import { calculateHabitStats } from '@/utils/habitStatsUtils';
 
-export interface HabitReminder {
+export interface HabitReminderEntry {
   habit: Habit;
-  reminderTime: Date;
+  reminderTime: number;
   key: string;
 }
 
@@ -101,41 +101,30 @@ export function getHabitReminderTime(habit: Habit, date: string): Date | null {
 }
 
 /**
- * 获取需要提醒的习惯列表
- * @param habits 所有习惯列表
- * @param currentDate 当前日期
- * @param now 当前时间戳
+ * 获取当前日期的习惯提醒条目
  */
-export function getHabitsNeedingReminder(
+export function getHabitReminderEntries(
   habits: Habit[],
-  currentDate: string,
-  now: number
-): HabitReminder[] {
-  const reminders: HabitReminder[] = [];
+  currentDate: string
+): HabitReminderEntry[] {
+  const entries: HabitReminderEntry[] = [];
 
   for (const habit of habits) {
-    // 检查今天是否是打卡日
     if (!isCheckInDay(habit, currentDate)) continue;
 
-    // 检查是否已打卡（今天已达标）
     const stats = calculateHabitStats(habit, currentDate);
     if (stats.isPeriodCompleted) continue;
 
-    // 获取提醒时间
     const reminderTime = getHabitReminderTime(habit, currentDate);
     if (!reminderTime) continue;
 
-    const reminderMs = reminderTime.getTime();
-
-    // 检查是否到提醒时间（10秒窗口）
-    if (reminderMs <= now && reminderMs > now - 10000) {
-      reminders.push({
-        habit,
-        reminderTime,
-        key: `habit-${habit.blockId}-${currentDate}`,
-      });
-    }
+    const reminderTimestamp = reminderTime.getTime();
+    entries.push({
+      habit,
+      reminderTime: reminderTimestamp,
+      key: `habit-${habit.blockId}-${currentDate}-${reminderTimestamp}`,
+    });
   }
 
-  return reminders;
+  return entries;
 }
