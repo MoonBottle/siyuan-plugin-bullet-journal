@@ -2,9 +2,10 @@
  * filter_items 过滤逻辑的单元测试
  * 重点验证 status 过滤是否正常
  */
-import { describe, it, expect } from 'vitest';
-import { filterItems } from '@/mcp/filterItems';
-import type { Item, Project, Task } from '@/types/models';
+import { describe, it, expect, vi } from 'vitest';
+import { executeFilterItems, filterItems } from '@/mcp/filterItems';
+import type { SiYuanClient } from '@/mcp/siyuan-client';
+import type { Item, Project, ProjectDirectory, Task } from '@/types/models';
 
 function createMockItem(overrides: Partial<Item> & { status: Item['status'] }): Item {
   return {
@@ -117,5 +118,47 @@ describe('filterItems - status 过滤', () => {
     const result = filterItems(items, { status: 'pending' });
 
     expect(result).toHaveLength(0);
+  });
+});
+
+describe('executeFilterItems - groupId 过滤', () => {
+  it('全库扫描时应根据目录路径匹配 groupId 后再过滤事项', async () => {
+    const client = {
+      sql: vi.fn().mockResolvedValue([
+        {
+          id: 'doc-1',
+          path: '工作/重要/项目A',
+          notebookId: 'notebook-1'
+        }
+      ]),
+      getBlockKramdown: vi.fn().mockResolvedValue(`# 测试项目
+{: id="doc-block" type="doc" }
+## 任务名称 #task @L1
+{: id="task-block" updated="20260428210000" }
+- [ ] 事项内容 @2026-04-28
+{: id="item-block" updated="20260428210001" }`)
+    } as unknown as SiYuanClient;
+
+    const directories: ProjectDirectory[] = [
+      {
+        id: 'dir-1',
+        path: '工作/重要',
+        enabled: true,
+        groupId: 'group-important'
+      }
+    ];
+
+    const result = await executeFilterItems(
+      client,
+      directories,
+      { groupId: 'group-important' },
+      'full'
+    );
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      content: '事项内容',
+      projectName: '测试项目'
+    });
   });
 });

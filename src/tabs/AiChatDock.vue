@@ -89,9 +89,11 @@ const isMobile = computed(() => {
   const frontEnd = getFrontend();
   return frontEnd === 'mobile' || frontEnd === 'browser-mobile';
 });
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, useAIStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import { buildViewDebugContext } from '@/utils/viewDebug';
 import { useConversationStorage, type ConversationIndexItem } from '@/services/conversationStorageService';
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
@@ -211,6 +213,11 @@ async function refreshConversationsList() {
 
 // 数据刷新处理函数
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+    ...buildViewDebugContext('AiChatDock', plugin),
+    hasPayload: Boolean(payload),
+    payloadKeys: payload ? Object.keys(payload) : [],
+  });
   if (!plugin) return;
   const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'ai'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
@@ -329,6 +336,7 @@ const handleOpenSettings = () => {
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 // 自动保存配置（带防抖）
 const autoSaveConfig = () => {
@@ -348,6 +356,7 @@ const autoSaveConfig = () => {
 
 // 初始化数据
 onMounted(async () => {
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('AiChatDock', plugin));
   // 初始化存储服务（内部已加载对话列表）
   await aiStore.initializeStorage(plugin);
   
@@ -382,13 +391,19 @@ onMounted(async () => {
   // 跨上下文：Dock 可能在 iframe 中，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = (e: MessageEvent) => {
-      const data = e?.data;
-      if (data?.type === 'DATA_REFRESH') {
-        const { type: _t, ...rest } = data;
-        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
-      }
-    };
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: (payload) => {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+          ...buildViewDebugContext('AiChatDock', plugin),
+          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+        });
+        return handleDataRefresh(payload);
+      },
+      viewName: 'AiChatDock',
+    });
   } catch {
     // 忽略
   }
@@ -409,8 +424,13 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('AiChatDock', plugin));
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
   }
   if (refreshChannel) {
     refreshChannel.close();

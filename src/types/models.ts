@@ -4,9 +4,13 @@
  */
 
 // 链接
+export type LinkType = 'external' | 'siyuan' | 'block-ref' | 'attachment';
+
 export interface Link {
   name: string;
   url: string;
+  type?: LinkType;
+  blockId?: string;
 }
 
 // 番茄钟状态
@@ -204,6 +208,15 @@ export interface EndCondition {
   maxCount?: number;   // type='count' 时使用
 }
 
+export type TimePrecision = 'minute' | 'second';
+
+export interface ItemDateTimeInfo {
+  date: string;
+  startDateTime?: string;
+  endDateTime?: string;
+  timePrecision?: TimePrecision;
+}
+
 // 工作事项
 export interface Item {
   id: string;              // 事项 ID
@@ -211,6 +224,7 @@ export interface Item {
   date: string;            // 日期
   startDateTime?: string;  // 开始时间
   endDateTime?: string;    // 结束时间
+  timePrecision?: TimePrecision; // 时间精度
   task?: Task;             // 所属任务
   project?: Project;       // 所属项目
   lineNumber: number;      // 行号
@@ -220,11 +234,7 @@ export interface Item {
   status: ItemStatus;      // 事项状态
   links?: Link[];          // 事项链接（支持多个）
   // 多日期支持：同一块中的其他日期时间信息
-  siblingItems?: Array<{
-    date: string;
-    startDateTime?: string;
-    endDateTime?: string;
-  }>;
+  siblingItems?: ItemDateTimeInfo[];
   /** 日期跨度开始日（多日期事项有值：连续 @07~09 或离散 @07,09） */
   dateRangeStart?: string;
   /** 日期跨度结束日（同上，用于分组、过期与进行中判断） */
@@ -273,11 +283,8 @@ export interface CalendarEvent {
     date?: string;
     originalStartDateTime?: string;
     originalEndDateTime?: string;
-    siblingItems?: Array<{
-      date: string;
-      startDateTime?: string;
-      endDateTime?: string;
-    }>;
+    timePrecision?: TimePrecision;
+    siblingItems?: ItemDateTimeInfo[];
     dateRangeStart?: string;
     dateRangeEnd?: string;
     pomodoros?: PomodoroRecord[];
@@ -307,11 +314,8 @@ export interface GanttTaskExtendedProps {
   date?: string;
   originalStartDateTime?: string;
   originalEndDateTime?: string;
-  siblingItems?: Array<{
-    date: string;
-    startDateTime?: string;
-    endDateTime?: string;
-  }>;
+  timePrecision?: TimePrecision;
+  siblingItems?: ItemDateTimeInfo[];
   pomodoros?: PomodoroRecord[];
 }
 

@@ -2,8 +2,8 @@
  * 纯解析逻辑
  * 不依赖 API，仅接受字符串输入，供插件和 MCP 共用
  */
-import type { Project, Task, Item, PomodoroRecord, Habit, CheckInRecord } from '@/types/models';
-import { LineParser, parseBlockRefs } from './lineParser';
+import type { Project, Task, Item, PomodoroRecord, Habit, CheckInRecord, Link } from '@/types/models';
+import { LineParser, createLink, isStandaloneBlockRefLine, parseBlockRefs } from './lineParser';
 import { parseHabitLine, parseCheckInRecordLine, isHabitLine } from './habitParser';
 
 export interface KramdownBlock {
@@ -129,6 +129,24 @@ function isPomodoroLine(line: string): boolean {
   return cleaned.startsWith('🍅');
 }
 
+function extractMarkdownLinks(text: string, blockId: string): Link[] {
+  const links: Link[] = [];
+  const linkRegex = /!?\[([^\]]*)\]\(([^)]+)\)/g;
+
+  let match: RegExpExecArray | null;
+  while ((match = linkRegex.exec(text)) !== null) {
+    const [, rawName, rawUrl] = match;
+    const url = rawUrl.trim();
+    const isAttachment = url.startsWith('assets/');
+    const fallbackName = url.split('/').pop() || '附件';
+    const name = rawName.trim() || fallbackName;
+
+    links.push(createLink(name, url, isAttachment ? 'attachment' : undefined, isAttachment ? blockId : undefined));
+  }
+
+  return links;
+}
+
 /**
  * 解析 Kramdown 内容为 Project
  * 纯函数，不依赖 API
@@ -249,9 +267,9 @@ export function parseKramdown(
     if (!currentTask) {
       if (content.includes('](')) {
         const strippedContent = stripListAndBlockAttr(content);
-        const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
-        if (linkMatch) {
-          project.links!.push({ name: linkMatch[1], url: linkMatch[2] });
+        const links = extractMarkdownLinks(strippedContent, block.blockId);
+        if (links.length > 0) {
+          project.links!.push(...links);
           continue;
         }
       }
@@ -261,7 +279,7 @@ export function parseKramdown(
         if (urlMatch) {
           const nameMatch = content.match(/^([^：:]+)[：:]/);
           const linkName = nameMatch ? nameMatch[1].trim() : '链接';
-          project.links!.push({ name: linkName, url: urlMatch[1] });
+          project.links!.push(createLink(linkName, urlMatch[1]));
           continue;
         }
       }
@@ -324,14 +342,35 @@ export function parseKramdown(
       continue;
     }
 
+    if (currentTask && isStandaloneBlockRefLine(stripListAndBlockAttr(content))) {
+      const { links } = parseBlockRefs(stripListAndBlockAttr(content));
+      if (links.length > 0) {
+        if (currentItem && hasSeenItemForCurrentTask) {
+          const mergedLinks = [...(currentItem.links || []), ...links];
+          currentTask.items
+            .filter(item => item.blockId === currentItem.blockId)
+            .forEach((item) => {
+              item.links = mergedLinks;
+            });
+          currentItem.links = mergedLinks;
+          continue;
+        }
+
+        if (!hasSeenItemForCurrentTask) {
+          currentTask.links = [...(currentTask.links || []), ...links];
+          continue;
+        }
+      }
+    }
+
     if (currentTask && content.includes('](') && !content.includes('@') && !content.includes('📅') && !hasSeenItemForCurrentTask) {
       const strippedContent = stripListAndBlockAttr(content);
-      const linkMatch = strippedContent.match(/\[(.*?)\]\((.*?)\)/);
-      if (linkMatch) {
+      const links = extractMarkdownLinks(strippedContent, block.blockId);
+      if (links.length > 0) {
         if (!currentTask.links) {
           currentTask.links = [];
         }
-        currentTask.links.push({ name: linkMatch[1], url: linkMatch[2] });
+        currentTask.links.push(...links);
         continue;
       }
     }
@@ -341,7 +380,7 @@ export function parseKramdown(
       hasSeenItemForCurrentTask = true;
       // 收集事项下方的链接行：当前事项行之后到下一个事项/任务行之间的所有链接行
       // 非链接行（如说明文字）跳过不中断，仅在遇到下一事项/任务行时停止
-      const itemLinks: Array<{ name: string; url: string }> = [];
+      const itemLinks = [] as NonNullable<Item['links']>;
       
       // 记录最后一个相关块的索引（初始为当前块）
       const currentBlockIndex = blocks.indexOf(block);
@@ -352,9 +391,9 @@ export function parseKramdown(
         const lineContent = blockLines[idx];
         if (isNextItemOrTaskLine(lineContent)) break;
         const strippedLineContent = stripListAndBlockAttr(lineContent);
-        const linkMatch = strippedLineContent.match(/\[(.*?)\]\((.*?)\)/);
-        if (linkMatch && !lineContent.includes('@')) {
-          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+        const links = extractMarkdownLinks(strippedLineContent, block.blockId);
+        if (links.length > 0 && !lineContent.includes('@')) {
+          itemLinks.push(...links);
         }
       }
       let nextBlockIndex = currentBlockIndex + 1;
@@ -369,9 +408,9 @@ export function parseKramdown(
         lastRelatedBlockIndex = nextBlockIndex;
 
         const strippedNextContent = stripListAndBlockAttr(nextContent);
-        const linkMatch = strippedNextContent.match(/\[(.*?)\]\((.*?)\)/);
-        if (linkMatch && !nextContent.includes('@')) {
-          itemLinks.push({ name: linkMatch[1], url: linkMatch[2] });
+        const links = extractMarkdownLinks(strippedNextContent, nextBlock.blockId);
+        if (links.length > 0 && !nextContent.includes('@')) {
+          itemLinks.push(...links);
         }
         nextBlockIndex++;
       }

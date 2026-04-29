@@ -20,6 +20,7 @@ export interface FilterItemsArgs {
  */
 export function filterItems(items: Item[], args: FilterItemsArgs): Item[] {
   let filtered = [...items];
+  const initialCount = filtered.length;
 
   if (args.projectId) {
     filtered = filtered.filter(i => i.project?.id === args.projectId);
@@ -29,6 +30,7 @@ export function filterItems(items: Item[], args: FilterItemsArgs): Item[] {
   } else if (args.groupId) {
     filtered = filtered.filter(i => i.project?.groupId === args.groupId);
   }
+  const afterScopeCount = filtered.length;
 
   if (args.startDate) {
     filtered = filtered.filter(i => i.date >= args.startDate!);
@@ -36,9 +38,19 @@ export function filterItems(items: Item[], args: FilterItemsArgs): Item[] {
   if (args.endDate) {
     filtered = filtered.filter(i => i.date <= args.endDate!);
   }
+  const afterDateCount = filtered.length;
   if (args.status) {
     filtered = filtered.filter(i => i.status === args.status);
   }
+  const afterStatusCount = filtered.length;
+
+  console.error('[Task Assistant MCP] filterItems counts:', {
+    initialCount,
+    afterScopeCount,
+    afterDateCount,
+    afterStatusCount,
+    args
+  });
 
   return filtered;
 }

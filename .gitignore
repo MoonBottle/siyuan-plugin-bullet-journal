@@ -16,3 +16,5 @@ docs/temp/
 .cursor
 package
 /.codebuddy/
+.agents/
+logs/

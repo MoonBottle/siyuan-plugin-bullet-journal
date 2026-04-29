@@ -137,7 +137,7 @@ export function calculateReminderTime(
   endTime: string | undefined,
   reminder: ReminderConfig
 ): number {
-  console.log(`[calculateReminderTime] itemDate=${itemDate}, startDateTime=${startDateTime}, endDateTime=${endDateTime}, reminder=`, reminder);
+  // console.log(`[calculateReminderTime] itemDate=${itemDate}, startDateTime=${startDateTime}, endDateTime=${endDateTime}, reminder=`, reminder);
 
   if (reminder.type === 'absolute' && reminder.time) {
     // 绝对时间：日期 + 时间
@@ -145,7 +145,7 @@ export function calculateReminderTime(
     const date = new Date(itemDate);
     date.setHours(hours, minutes, 0, 0);
     const result = date.getTime();
-    console.log(`[calculateReminderTime] Absolute: ${reminder.time} -> ${new Date(result).toLocaleString()}`);
+    // console.log(`[calculateReminderTime] Absolute: ${reminder.time} -> ${new Date(result).toLocaleString()}`);
     return result;
   }
 

@@ -31,7 +31,14 @@
 
             <!-- Item Selector (if no preselected item) -->
             <div v-if="!preselectedBlockId" class="item-selector">
-              <div class="selector-label">{{ t('pomodoroDialog').selectItem }}</div>
+              <div class="selector-header">
+                <div class="selector-label">{{ t('pomodoroDialog').selectItem }}</div>
+                <select v-model="selectedGroup" class="group-select-mobile">
+                  <option v-for="opt in groupOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
               
               <!-- Expired Items -->
               <div v-if="expiredItems.length > 0" class="item-section">
@@ -141,7 +148,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useProjectStore, usePomodoroStore } from '@/stores';
+import { useProjectStore, usePomodoroStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import type { Item } from '@/types/models';
@@ -152,6 +159,7 @@ import { t } from '@/i18n';
 const props = defineProps<{
   modelValue: boolean;
   preselectedBlockId?: string;
+  initialGroupId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -162,10 +170,24 @@ const plugin = usePlugin() as any;
 const pinia = getSharedPinia();
 const projectStore = pinia ? useProjectStore(pinia) : null;
 const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
+const settingsStore = pinia ? useSettingsStore(pinia) : null;
 
 const selectedItem = ref<Item | null>(null);
 const timerMode = ref<'countdown' | 'stopwatch'>('countdown');
 const currentDate = dayjs().format('YYYY-MM-DD');
+
+// 分组筛选
+const selectedGroup = ref(props.initialGroupId ?? '');
+
+const groupOptions = computed(() => {
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  if (settingsStore) {
+    settingsStore.groups.forEach(g => {
+      options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
+    });
+  }
+  return options;
+});
 
 const quickDurations = computed(() => {
   const settings = plugin?.getSettings?.();
@@ -187,13 +209,13 @@ const preselectedItem = computed(() => {
 
 const expiredItems = computed(() => {
   if (!projectStore) return [];
-  const items = projectStore.getExpiredItems('');
+  const items = projectStore.getExpiredItems(selectedGroup.value);
   return (items || []).filter((item: Item) => item.status === 'pending');
 });
 
 const todayItems = computed(() => {
   if (!projectStore) return [];
-  const items = projectStore.getFutureItems('');
+  const items = projectStore.getFutureItems(selectedGroup.value);
   return (items || []).filter((item: Item) => item.date === currentDate && item.status === 'pending');
 });
 
@@ -293,6 +315,16 @@ watch(defaultDuration, (newVal) => {
 watch(preselectedItem, (newItem) => {
   if (newItem && props.preselectedBlockId) {
     selectedItem.value = newItem;
+  }
+});
+
+watch(selectedGroup, () => {
+  if (selectedItem.value) {
+    const allItems = [...expiredItems.value, ...todayItems.value];
+    const stillValid = allItems.some(item => item.id === selectedItem.value!.id);
+    if (!stillValid) {
+      selectedItem.value = expiredItems.value[0] || todayItems.value[0] || null;
+    }
   }
 });
 </script>
@@ -412,13 +444,34 @@ watch(preselectedItem, (newItem) => {
 .item-selector {
   margin-bottom: 16px;
 
+  .selector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+
   .selector-label {
     font-size: 13px;
     font-weight: 500;
     color: #6c6c70;
     text-transform: uppercase;
-    margin-bottom: 8px;
-    padding-left: 4px;
+  }
+
+  .group-select-mobile {
+    padding: 6px 12px;
+    border: 1px solid #e5e5ea;
+    border-radius: 8px;
+    background: #fff;
+    color: #000;
+    font-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%238e8e93'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
   }
 }
 

@@ -56,6 +56,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
@@ -129,6 +130,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
@@ -202,6 +204,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
@@ -282,6 +285,7 @@
                   </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
                   <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+                  <TodoItemMeta :item="item" />
                   <template #footer>
                     <div class="item-actions-hover">
                       <span
@@ -357,6 +361,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
@@ -399,6 +404,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
                   <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
@@ -422,9 +428,10 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import Card from '@/components/common/Card.vue';
+import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog, showPrioritySettingDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { updateBlockPriority } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
@@ -470,11 +477,13 @@ const props = withDefaults(defineProps<{
   groupId?: string;
   searchQuery?: string;
   dateRange?: { start: string; end: string } | null;
+  completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
 }>(), {
   groupId: '',
   searchQuery: '',
   dateRange: null,
+  completedDateRange: null,
   priorities: () => [],
 });
 
@@ -507,6 +516,32 @@ const toggleSection = (section: keyof typeof collapsedSections.value) => {
   collapsedSections.value[section] = !collapsedSections.value[section];
 };
 
+const allCollapsed = computed(() => {
+  return (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).every(key => collapsedSections.value[key]);
+});
+
+const collapseAll = () => {
+  (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).forEach(key => {
+    collapsedSections.value[key] = true;
+  });
+};
+
+const expandAll = () => {
+  (Object.keys(collapsedSections.value) as Array<keyof typeof collapsedSections.value>).forEach(key => {
+    collapsedSections.value[key] = false;
+  });
+};
+
+const toggleCollapseAll = () => {
+  if (allCollapsed.value) {
+    expandAll();
+  } else {
+    collapseAll();
+  }
+};
+
+defineExpose({ collapseAll, expandAll, toggleCollapseAll, allCollapsed });
+
 // 根据状态获取标签（使用 i18n）
 const getStatusTag = (status: 'completed' | 'abandoned'): string => {
   return t('statusTag')[status] || '';
@@ -533,7 +568,7 @@ const completedItems = computed(() => {
   return projectStore.getFilteredCompletedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
-    dateRange: props.dateRange,
+    dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
   });
 });
@@ -543,7 +578,7 @@ const abandonedItems = computed(() => {
   return projectStore.getFilteredAbandonedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
-    dateRange: props.dateRange,
+    dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
   });
 });
@@ -656,7 +691,7 @@ const openDetail = (item: Item) => {
 
 // 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
 const openCalendar = (item: Item) => {
-  console.warn('[Task Assistant] openCalendar', item.date);
+  console.log('[Task Assistant] openCalendar', item.date);
   if (plugin && (plugin as any).openCustomTab) {
     (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
   }

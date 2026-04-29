@@ -334,8 +334,8 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
         await updateBlockContent(item.blockId, tag);
       },
       onOpenDoc: () => {
-        if (item.docId && item.lineNumber) {
-          openDocumentAtLine(item.docId, item.lineNumber);
+        if (plugin && item.docId && item.lineNumber) {
+          openDocumentAtLine(plugin, item.docId, item.lineNumber);
         }
       },
       onShowDetail: () => {
@@ -346,7 +346,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
           allDay: true,
           extendedProps: props
         };
-        showEventDetailModal(eventData);
+        showEventDetailModal(eventData, { plugin: plugin as any });
       },
       onSetPriority: (priority: PriorityLevel | undefined) => {
         if (!item.blockId) return;
@@ -426,7 +426,7 @@ onMounted(async () => {
           allDay: info.event.allDay,
           extendedProps: info.event.extendedProps
         };
-        showEventDetailModal(eventData);
+        showEventDetailModal(eventData, { plugin: plugin as any });
       },
 
       eventDidMount: (info) => {
@@ -493,7 +493,7 @@ onMounted(async () => {
     updateEvents();
 
     if (pendingNavigateDate) {
-      console.warn('[Task Assistant] CalendarView apply pendingNavigateDate', pendingNavigateDate);
+      console.log('[Task Assistant] CalendarView apply pendingNavigateDate', pendingNavigateDate);
       calendarInstance.gotoDate(pendingNavigateDate);
       pendingNavigateDate = null;
       emit('navigated');
@@ -575,6 +575,7 @@ const handleEventChange = (info: any, changeType: 'drop' | 'resize') => {
     date: extendedProps?.date,
     originalStartDateTime: extendedProps?.originalStartDateTime,
     originalEndDateTime: extendedProps?.originalEndDateTime,
+    timePrecision: extendedProps?.timePrecision,
     siblingItems: extendedProps?.siblingItems,
     status: extendedProps?.itemStatus
   };

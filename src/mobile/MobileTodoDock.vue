@@ -15,6 +15,7 @@
       :group-id="state.selectedGroup"
       :search-query="state.searchQuery"
       :date-range="state.dateRange"
+      :completed-date-range="completedDateRange"
       :priorities="state.selectedPriorities"
       :has-active-filters="hasActiveFilters"
       @item-click="openItemDetail"
@@ -142,10 +143,12 @@ import MobileReminderDrawer from './drawers/pomodoro/MobileReminderDrawer.vue';
 import MobileRecurringDrawer from './drawers/pomodoro/MobileRecurringDrawer.vue';
 import { useItemDetail } from './composables/useItemDetail';
 import { useProjectStore, useSettingsStore } from '@/stores';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
 import { updateBlockContent } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import { buildViewDebugContext } from '@/utils/viewDebug';
 import { t } from '@/i18n';
 import type { Item, Project, Task, ItemStatus, PriorityLevel } from '@/types/models';
 import dayjs from '@/utils/dayjs';
@@ -176,6 +179,19 @@ const state = reactive({
   showPomodoroDrawer: false,
   showHabitView: false,
 });
+
+const todayDate = ref(dayjs().format('YYYY-MM-DD'));
+let dateCheckTimer: ReturnType<typeof setInterval> | null = null;
+
+const startDateCheck = () => {
+  dateCheckTimer = setInterval(() => {
+    const newDate = dayjs().format('YYYY-MM-DD');
+    if (newDate !== todayDate.value) {
+      todayDate.value = newDate;
+      applyFilters();
+    }
+  }, 60_000);
+};
 
 // Selected project and task refs for detail drawers
 const selectedProject = ref<Project | null>(null);
@@ -332,12 +348,9 @@ const handleCreateItem = (taskId: string, projectId?: string) => {
 const applyFilters = () => {
   // Apply date filter
   if (state.dateFilter === 'today') {
-    const today = dayjs().format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到今天（与桌面端一致）
-    state.dateRange = { start: '1970-01-01', end: today };
+    state.dateRange = { start: '1970-01-01', end: todayDate.value };
   } else if (state.dateFilter === 'week') {
-    const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到一周后（与桌面端一致）
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
     state.dateRange = { start: '1970-01-01', end: nextWeek };
   } else if (state.dateFilter === 'all') {
     state.dateRange = null;
@@ -346,6 +359,18 @@ const applyFilters = () => {
   
   showMessage(t('mobile.filter.applied') || '筛选已应用');
 };
+
+const completedDateRange = computed(() => {
+  if (state.dateFilter === 'all') return null;
+  if (state.dateFilter === 'today') {
+    return { start: todayDate.value, end: todayDate.value };
+  }
+  if (state.dateFilter === 'week') {
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
+    return { start: todayDate.value, end: nextWeek };
+  }
+  return state.dateRange;
+});
 
 const handleOpenPomodoro = (item: Item) => {
   // Open pomodoro drawer with preselected item
@@ -382,6 +407,11 @@ const handleCreated = () => {
 
 // 数据刷新处理函数
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+    ...buildViewDebugContext('MobileTodoDock', plugin),
+    hasPayload: Boolean(payload),
+    payloadKeys: payload ? Object.keys(payload) : [],
+  });
   if (!plugin) return;
   const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
@@ -399,9 +429,11 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 // 初始化数据监听
 onMounted(async () => {
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('MobileTodoDock', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
   
@@ -420,21 +452,39 @@ onMounted(async () => {
   // 跨上下文：用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = (e: MessageEvent) => {
-      const data = e?.data;
-      if (data?.type === 'DATA_REFRESH') {
-        const { type: _t, ...rest } = data;
-        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
-      }
-    };
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: (payload) => {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+          ...buildViewDebugContext('MobileTodoDock', plugin),
+          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+        });
+        return handleDataRefresh(payload);
+      },
+      viewName: 'MobileTodoDock',
+    });
   } catch {
     // 忽略
   }
+
+  applyFilters();
+  startDateCheck();
 });
 
 onUnmounted(() => {
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('MobileTodoDock', plugin));
+  if (dateCheckTimer) {
+    clearInterval(dateCheckTimer);
+    dateCheckTimer = null;
+  }
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
   }
   if (refreshChannel) {
     refreshChannel.close();

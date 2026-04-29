@@ -45,6 +45,7 @@
   "calendar": {
     "title": "Calendar",
     "today": "Today",
+    "dayTotalDuration": "Work Hours {duration}",
     "month": "Month",
     "week": "Week",
     "day": "Day",
@@ -124,7 +125,7 @@
     "item": "Item",
     "copy": "Copy",
     "time": "Time",
-    "duration": "Duration",
+    "duration": "Work Hours",
     "focusTotalTime": "Total Focus Duration",
     "viewInCalendar": "View in Calendar",
     "calendar": "Calendar",
@@ -134,7 +135,13 @@
     "hideCompleted": "Hide completed",
     "showAbandoned": "Show abandoned",
     "hideAbandoned": "Hide abandoned",
+    "showLinks": "Show links",
+    "hideLinks": "Hide links",
+    "showReminderRecurring": "Show reminder & recurring",
+    "hideReminderRecurring": "Hide reminder & recurring",
     "startFocusAria": "Start Focus",
+    "collapseAll": "Collapse All",
+    "expandAll": "Expand All",
     "searchPlaceholder": "Search items...",
     "priority": {
       "title": "Priority",
@@ -152,6 +159,25 @@
       "thisMonth": "This Month",
       "all": "All",
       "custom": "Custom"
+    },
+    "sortSettings": "Sort Settings",
+    "sortAddRule": "Add Rule",
+    "sortReset": "Reset Default",
+    "sortMoveUp": "Move Rule Up",
+    "sortMoveDown": "Move Rule Down",
+    "sortRemoveRule": "Remove Rule",
+    "sortDirection": {
+      "asc": "Ascending",
+      "desc": "Descending"
+    },
+    "sortFields": {
+      "priority": "Priority",
+      "time": "Time",
+      "date": "Date",
+      "reminderTime": "Reminder Time",
+      "project": "Project",
+      "task": "Task",
+      "content": "Content"
     }
   },
   "settings": {

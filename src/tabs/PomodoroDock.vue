@@ -42,9 +42,10 @@
 import { onMounted, onUnmounted, h, createApp } from 'vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { Dialog } from 'siyuan';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, usePomodoroStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import PomodoroStats from '@/components/pomodoro/PomodoroStats.vue';
 import PomodoroRecordList from '@/components/pomodoro/PomodoroRecordList.vue';
 import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
@@ -57,6 +58,7 @@ import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
 import { getBlockByID } from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
 import { requestNotificationPermission } from '@/utils/notification';
+import { buildViewDebugContext } from '@/utils/viewDebug';
 import { TAB_TYPES } from '@/constants';
 import { t } from '@/i18n';
 
@@ -67,6 +69,7 @@ const pomodoroStore = usePomodoroStore();
 
 // 数据刷新处理函数
 const handleDataRefresh = async () => {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroDock', plugin));
   if (!plugin) return;
   settingsStore.loadFromPlugin();
   await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
@@ -89,7 +92,7 @@ const openStatsTab = () => {
 
 // 打开开始专注弹框（使用共享函数，与底栏等调用方一致）
 const openTimerDialog = () => {
-  showPomodoroTimerDialog();
+  showPomodoroTimerDialog(undefined, settingsStore.todoDock.selectedGroup);
 };
 
 // 打开专注完成弹窗（补填说明）
@@ -185,6 +188,7 @@ let unsubscribeOpenTimerDialog: (() => void) | null = null;
 let unsubscribeBreakStarted: (() => void) | null = null;
 let unsubscribeBreakEnded: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 // 恢复专注状态
 const restorePomodoroState = async () => {
@@ -213,6 +217,7 @@ const handlePomodoroRestore = async (data: any) => {
 
 // 初始化数据
 onMounted(async () => {
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroDock', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -237,18 +242,26 @@ onMounted(async () => {
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = (e: MessageEvent) => {
-      const data = e?.data;
-      if (data?.type === 'DATA_REFRESH') {
-        handleDataRefresh();
-      }
-    };
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: () => {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+          ...buildViewDebugContext('PomodoroDock', plugin),
+          data: { type: 'DATA_REFRESH' },
+        });
+        return handleDataRefresh();
+      },
+      viewName: 'PomodoroDock',
+    });
   } catch {
     // 忽略
   }
 });
 
 onUnmounted(() => {
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('PomodoroDock', plugin));
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }
@@ -266,6 +279,10 @@ onUnmounted(() => {
   }
   if (unsubscribeBreakEnded) {
     unsubscribeBreakEnded();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
   }
   if (refreshChannel) {
     refreshChannel.close();

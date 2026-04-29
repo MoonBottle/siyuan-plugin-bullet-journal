@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia';
 import type { ProjectGroup, ProjectDirectory, ScanMode } from '@/types/models';
 import { usePlugin } from '@/main';
+import { defaultTodoSortRules } from '@/settings/types';
 
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
@@ -21,7 +22,11 @@ export const useSettingsStore = defineStore('settings', {
     showPomodoroTotal: true,
     todoDock: {
       hideCompleted: false,
-      hideAbandoned: false
+      hideAbandoned: false,
+      showLinks: false,
+      showReminderAndRecurring: false,
+      sortRules: [...defaultTodoSortRules],
+      selectedGroup: '',
     },
     loaded: false
   }),
@@ -77,7 +82,16 @@ export const useSettingsStore = defineStore('settings', {
         this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
         this.showPomodoroBlocks = settings.showPomodoroBlocks ?? true;
         this.showPomodoroTotal = settings.showPomodoroTotal ?? true;
-        this.todoDock = settings.todoDock || { hideCompleted: false, hideAbandoned: false };
+        this.todoDock = {
+          hideCompleted: settings.todoDock?.hideCompleted ?? false,
+          hideAbandoned: settings.todoDock?.hideAbandoned ?? false,
+          showLinks: settings.todoDock?.showLinks ?? false,
+          showReminderAndRecurring: settings.todoDock?.showReminderAndRecurring ?? false,
+          sortRules: Array.isArray(settings.todoDock?.sortRules) && settings.todoDock.sortRules.length > 0
+            ? settings.todoDock.sortRules
+            : [...defaultTodoSortRules],
+          selectedGroup: settings.todoDock?.selectedGroup ?? '',
+        };
         this.loaded = true;
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
       }

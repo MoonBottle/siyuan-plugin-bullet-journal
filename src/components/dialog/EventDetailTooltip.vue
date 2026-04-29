@@ -15,13 +15,9 @@
           <span class="card-text">{{ project }}</span>
         </div>
         <template #footer>
-          <span
-            v-for="link in projectLinks"
-            :key="link.url"
-            class="link-tag"
-          >
-            {{ formatLinkDisplay(link.name).display }}
-          </span>
+          <div class="tooltip-links">
+            <TodoTypedLinks :links="projectLinks" />
+          </div>
         </template>
       </Card>
 
@@ -42,13 +38,9 @@
           <span class="card-text">{{ task }}</span>
         </div>
         <template #footer>
-          <span
-            v-for="link in taskLinks"
-            :key="link.url"
-            class="link-tag"
-          >
-            {{ formatLinkDisplay(link.name).display }}
-          </span>
+          <div class="tooltip-links">
+            <TodoTypedLinks :links="taskLinks" />
+          </div>
         </template>
       </Card>
 
@@ -88,13 +80,9 @@
         </div>
 
         <template #footer>
-          <span
-            v-for="link in itemLinks"
-            :key="link.url"
-            class="link-tag"
-          >
-            {{ formatLinkDisplay(link.name).display }}
-          </span>
+          <div class="tooltip-links">
+            <TodoTypedLinks :links="itemLinks" />
+          </div>
         </template>
       </Card>
     </div>
@@ -104,29 +92,30 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Card from '@/components/common/Card.vue';
+import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes } from '@/utils/dialog';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
-import type { PomodoroRecord } from '@/types/models';
+import type { Link, PomodoroRecord } from '@/types/models';
 
 interface Props {
   // 项目
   project?: string;
-  projectLinks?: Array<{ name: string; url: string }>;
+  projectLinks?: Link[];
 
   // 任务
   task?: string;
   level?: string;
-  taskLinks?: Array<{ name: string; url: string }>;
+  taskLinks?: Link[];
 
   // 事项
   item?: string;
   itemContent?: string;
   itemStatus?: string;
-  itemLinks?: Array<{ name: string; url: string }>;
+  itemLinks?: Link[];
 
   // 时间
   date?: string;
@@ -235,15 +224,6 @@ const statusInfo = computed(() => {
   };
   return statusMap[itemStatus.value] || statusMap['pending'];
 });
-
-// 格式化链接显示
-function formatLinkDisplay(name: string): { display: string; full: string } {
-  const maxLength = 12;
-  if (name.length <= maxLength) {
-    return { display: name, full: name };
-  }
-  return { display: name.slice(0, maxLength) + '...', full: name };
-}
 </script>
 
 <style lang="scss" scoped>
@@ -370,17 +350,14 @@ function formatLinkDisplay(name: string): { display: string; full: string } {
   border-top: 1px dashed var(--b3-border-color);
 }
 
-.link-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 6px;
-  font-size: 11px;
-  color: var(--b3-theme-primary);
-  background: var(--b3-theme-surface-lighter);
-  border-radius: 3px;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.tooltip-links {
+  :deep(.typed-link-list) {
+    gap: 4px;
+  }
+
+  :deep(.typed-link) {
+    pointer-events: none;
+    cursor: default;
+  }
 }
 </style>

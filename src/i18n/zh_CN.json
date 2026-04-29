@@ -45,6 +45,7 @@
   "calendar": {
     "title": "日历视图",
     "today": "今天",
+    "dayTotalDuration": "今日工时 {duration}",
     "month": "月",
     "week": "周",
     "day": "日",
@@ -124,7 +125,7 @@
     "item": "事项",
     "copy": "复制",
     "time": "时间",
-    "duration": "时长",
+    "duration": "工时",
     "focusTotalTime": "总专注时长",
     "viewInCalendar": "在日历中查看",
     "calendar": "日历",
@@ -134,7 +135,13 @@
     "hideCompleted": "隐藏已完成",
     "showAbandoned": "显示已放弃",
     "hideAbandoned": "隐藏已放弃",
+    "showLinks": "显示链接",
+    "hideLinks": "隐藏链接",
+    "showReminderRecurring": "显示提醒与重复",
+    "hideReminderRecurring": "隐藏提醒与重复",
     "startFocusAria": "开始专注",
+    "collapseAll": "全部折叠",
+    "expandAll": "全部展开",
     "searchPlaceholder": "搜索事项...",
     "priority": {
       "title": "优先级",
@@ -152,6 +159,25 @@
       "thisMonth": "本月",
       "all": "全部",
       "custom": "自定义"
+    },
+    "sortSettings": "排序设置",
+    "sortAddRule": "新增规则",
+    "sortReset": "恢复默认",
+    "sortMoveUp": "上移规则",
+    "sortMoveDown": "下移规则",
+    "sortRemoveRule": "删除规则",
+    "sortDirection": {
+      "asc": "升序",
+      "desc": "降序"
+    },
+    "sortFields": {
+      "priority": "优先级",
+      "time": "时间",
+      "date": "日期",
+      "reminderTime": "提醒时间",
+      "project": "项目名",
+      "task": "任务名",
+      "content": "内容"
     }
   },
   "settings": {

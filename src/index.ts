@@ -3,13 +3,13 @@ import { getHPathByID } from '@/api';
 import '@/index.scss';
 import PluginInfoString from '@/../plugin.json';
 import { init, destroy } from '@/main';
-import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
+import { eventBus, Events, broadcastDataRefresh, broadcastPluginUnloading } from '@/utils/eventBus';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { getSharedPinia, setSharedPinia } from '@/utils/sharedPinia';
 import { showItemDetailModal, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { getBlockIdFromElement, getBlockIdFromRange } from '@/utils/itemBlockUtils';
-import { useProjectStore, usePomodoroStore, useSkillStore, useAIStore } from '@/stores';
+import { useProjectStore, usePomodoroStore, useSkillStore, useAIStore, useSettingsStore } from '@/stores';
 import { useConversationStorage } from '@/services/conversationStorageService';
 import { useSkillService } from '@/services/skillService';
 import CalendarTab from '@/tabs/CalendarTab.vue';
@@ -25,7 +25,7 @@ import { TAB_TYPES, DOCK_TYPES } from '@/constants';
 import type { ProjectDirectory } from '@/types/models';
 import { t } from '@/i18n';
 import type { AIProviderConfig } from '@/types/ai';
-import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, type AIChatHistory } from '@/settings';
+import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoroSettings, defaultTodoSortRules, type AIChatHistory } from '@/settings';
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak, removeActivePomodoro, removePendingCompletion } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
@@ -33,6 +33,7 @@ import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
 import { reminderService } from '@/services/reminderService';
 import { createNextOccurrence, shouldCreateNextOccurrence } from '@/services/recurringService';
+import { CleanupManager } from '@/utils/cleanupManager';
 
 let PluginInfo = {
   version: '',
@@ -43,6 +44,26 @@ try {
   // Plugin info parse error
 }
 const { version } = PluginInfo;
+
+type TaskAssistantDebugState = {
+  activeInstanceIds: string[];
+  unloadHistory: string[];
+};
+
+function getTaskAssistantDebugState(): TaskAssistantDebugState {
+  const globalWindow = window as typeof window & {
+    __taskAssistantDebugState?: TaskAssistantDebugState;
+  };
+
+  if (!globalWindow.__taskAssistantDebugState) {
+    globalWindow.__taskAssistantDebugState = {
+      activeInstanceIds: [],
+      unloadHistory: [],
+    };
+  }
+
+  return globalWindow.__taskAssistantDebugState;
+}
 
 /**
  * 插件内共享的 Pinia 实例。
@@ -67,8 +88,12 @@ export default class TaskAssistantPlugin extends Plugin {
   public isInWindow: boolean;
   public platform: SyFrontendTypes;
   public readonly version = version;
+  public readonly debugInstanceId = `ta-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   private refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+  private restorePomodoroTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly cleanupManager = new CleanupManager();
+  private hasCompletedOnload = false;
 
   /** 刚通过「仅保存 AI」写入的时间戳，用于避免同一次点击触发 confirmCallback 时再次 putFile */
   private lastAISettingsSaveTime = 0;
@@ -87,6 +112,15 @@ export default class TaskAssistantPlugin extends Plugin {
   private processingTaskCompletions = new Map<string, Promise<void>>();
 
   async onload() {
+    const debugState = getTaskAssistantDebugState();
+    debugState.activeInstanceIds.push(this.debugInstanceId);
+    console.log('[Task Assistant][Lifecycle] onload start:', {
+      instanceId: this.debugInstanceId,
+      activeInstanceIds: [...debugState.activeInstanceIds],
+      unloadHistory: [...debugState.unloadHistory],
+      location: location.href,
+    });
+
     const frontEnd = getFrontend();
     this.platform = frontEnd as SyFrontendTypes;
     this.isMobile = frontEnd === 'mobile' || frontEnd === 'browser-mobile';
@@ -138,8 +172,8 @@ export default class TaskAssistantPlugin extends Plugin {
     const projectStore = useProjectStore(pinia);
     projectStore.loadProjects(this, scanMode, enabledDirs).then(async () => {
       console.log('[Task Assistant] Initial loadProjects completed');
-      // 初始加载完成后同步提醒
-      console.log('[ReminderService] Initial load completed');
+      // 初始加载完成后触发提醒调度重建
+      reminderService.scheduleRebuild();
     }).catch(err => {
       console.error('[Task Assistant] Failed to load projects on init:', err);
     });
@@ -154,25 +188,25 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 监听文档树右键菜单事件
     console.log('[Task Assistant] Registering open-menu-doctree event listener');
-    this.eventBus.on('open-menu-doctree', this.handleDocTreeMenu.bind(this));
+    this.registerPluginEventListener('open-menu-doctree', this.handleDocTreeMenu);
 
     // 监听编辑器内容右键菜单、Ctrl+点击，用于打开事项详情弹框
-    this.eventBus.on('open-menu-content', this.handleOpenMenuContent.bind(this));
-    this.eventBus.on('click-editorcontent', this.handleClickEditorContent.bind(this));
+    this.registerPluginEventListener('open-menu-content', this.handleOpenMenuContent);
+    this.registerPluginEventListener('click-editorcontent', this.handleClickEditorContent);
 
     // 初始化悬浮番茄按钮
     this.initFloatingTomatoButton();
 
     // 自动恢复进行中的番茄钟（不依赖 dock 是否打开）
     // 延迟执行，确保所有模块已加载
-    setTimeout(() => {
+    this.restorePomodoroTimeout = setTimeout(() => {
       this.checkAndRestorePomodoro();
     }, 1000);
 
     // 注册斜杠命令
     this.registerSlashCommands();
 
-    // 启动提醒服务（传入 projectStore，服务内部会定时读取 itemsNeedingReminder）
+    // 启动提醒服务（基于 croner 精确调度）
     reminderService.start(this, projectStore);
 
     // 初始化技能存储服务
@@ -180,6 +214,16 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 初始化微信 ClawBot（不依赖 AI Dock 是否打开，确保通知能正常发送）
     this.initClawBot(pinia);
+
+    this.hasCompletedOnload = true;
+    console.log('[Task Assistant][Lifecycle] onload completed:', {
+      instanceId: this.debugInstanceId,
+      activeInstanceIds: [...getTaskAssistantDebugState().activeInstanceIds],
+      frontEnd,
+      isMobile: this.isMobile,
+      isBrowser: this.isBrowser,
+      isInWindow: this.isInWindow,
+    });
   }
 
   /**
@@ -195,12 +239,13 @@ export default class TaskAssistantPlugin extends Plugin {
       await skillStore.loadFromPlugin(this);
       
       // 监听技能存储变化事件
-      window.addEventListener('skill-store-changed', async (event: any) => {
-        const data = event.detail;
+      const handleSkillStoreChanged = async (event: Event) => {
+        const data = (event as CustomEvent).detail;
         if (data) {
           await this.saveData('aiSkills', data);
         }
-      });
+      };
+      this.registerWindowEventListener('skill-store-changed', handleSkillStoreChanged);
 
       console.log('[Task Assistant] Skill storage initialized');
     } catch (error) {
@@ -353,15 +398,43 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   onunload() {
-    this.eventBus.off('open-menu-doctree', this.handleDocTreeMenu.bind(this));
-    this.eventBus.off('open-menu-content', this.handleOpenMenuContent.bind(this));
-    this.eventBus.off('click-editorcontent', this.handleClickEditorContent.bind(this));
+    broadcastPluginUnloading(this.debugInstanceId);
+    const debugState = getTaskAssistantDebugState();
+    console.log('[Task Assistant][Lifecycle] onunload start:', {
+      instanceId: this.debugInstanceId,
+      hasCompletedOnload: this.hasCompletedOnload,
+      activeInstanceIdsBefore: [...debugState.activeInstanceIds],
+      refreshTimeoutPending: Boolean(this.refreshTimeout),
+      restorePomodoroTimeoutPending: Boolean(this.restorePomodoroTimeout),
+    });
+
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+      this.refreshTimeout = null;
+    }
+    if (this.restorePomodoroTimeout) {
+      clearTimeout(this.restorePomodoroTimeout);
+      this.restorePomodoroTimeout = null;
+    }
+    this.cleanupManager.runAll();
     eventBus.clear();
     destroy();
     // 清理悬浮番茄按钮
     this.hideFloatingTomatoButton();
     // 停止提醒服务
     reminderService.stop();
+
+    debugState.activeInstanceIds = debugState.activeInstanceIds.filter(id => id !== this.debugInstanceId);
+    debugState.unloadHistory.push(`${this.debugInstanceId}@${Date.now()}`);
+    if (debugState.unloadHistory.length > 10) {
+      debugState.unloadHistory = debugState.unloadHistory.slice(-10);
+    }
+
+    console.log('[Task Assistant][Lifecycle] onunload completed:', {
+      instanceId: this.debugInstanceId,
+      activeInstanceIdsAfter: [...debugState.activeInstanceIds],
+      unloadHistory: [...debugState.unloadHistory],
+    });
   }
 
   /**
@@ -405,7 +478,12 @@ export default class TaskAssistantPlugin extends Plugin {
           showPomodoroTotal: data.showPomodoroTotal ?? true,
           todoDock: {
             hideCompleted: data.todoDock?.hideCompleted ?? false,
-            hideAbandoned: data.todoDock?.hideAbandoned ?? false
+            hideAbandoned: data.todoDock?.hideAbandoned ?? false,
+            showLinks: data.todoDock?.showLinks ?? false,
+            showReminderAndRecurring: data.todoDock?.showReminderAndRecurring ?? false,
+            sortRules: Array.isArray(data.todoDock?.sortRules) && data.todoDock.sortRules.length > 0
+              ? data.todoDock.sortRules
+              : [...defaultTodoSortRules],
           },
           ai: {
             providers: data.ai?.providers || [],
@@ -1149,7 +1227,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const customData = { type };
     const initialDate = options?.initialDate;
     const initialView = options?.initialView;
-    console.warn('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate, 'initialView:', initialView);
+    console.log('[Task Assistant] openCustomTab', type, 'initialDate:', initialDate, 'initialView:', initialView);
 
     try {
       openTab({
@@ -1162,11 +1240,11 @@ export default class TaskAssistantPlugin extends Plugin {
         },
         afterOpen: () => {
           if (initialDate) {
-            console.warn('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
+            console.log('[Task Assistant] afterOpen emit CALENDAR_NAVIGATE', initialDate);
             eventBus.emit(Events.CALENDAR_NAVIGATE, initialDate);
           }
           if (initialView && type === TAB_TYPES.CALENDAR) {
-            console.warn('[Task Assistant] afterOpen emit CALENDAR_CHANGE_VIEW', initialView);
+            console.log('[Task Assistant] afterOpen emit CALENDAR_CHANGE_VIEW', initialView);
             eventBus.emit(Events.CALENDAR_CHANGE_VIEW, initialView);
           }
         }
@@ -1207,7 +1285,57 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private registerEventListeners() {
     // 监听 WebSocket 消息，用于检测数据变化
-    this.eventBus.on('ws-main', this.onWsMain.bind(this));
+    this.registerPluginEventListener('ws-main', this.onWsMain);
+  }
+
+  private registerPluginEventListener(event: string, handler: (...args: any[]) => void) {
+    const boundHandler = handler.bind(this);
+    console.log('[Task Assistant][Lifecycle] register plugin event listener:', {
+      instanceId: this.debugInstanceId,
+      event,
+      handlerName: handler.name || 'anonymous',
+    });
+    this.eventBus.on(event, boundHandler);
+    this.cleanupManager.add(() => {
+      console.log('[Task Assistant][Lifecycle] cleanup plugin event listener:', {
+        instanceId: this.debugInstanceId,
+        event,
+        handlerName: handler.name || 'anonymous',
+      });
+      this.eventBus.off(event, boundHandler);
+    });
+  }
+
+  private registerAppEventListener(event: string, handler: (...args: any[]) => void) {
+    console.log('[Task Assistant][Lifecycle] register app event listener:', {
+      instanceId: this.debugInstanceId,
+      event,
+      handlerName: handler.name || 'anonymous',
+    });
+    const unsubscribe = eventBus.on(event, handler);
+    this.cleanupManager.add(() => {
+      console.log('[Task Assistant][Lifecycle] cleanup app event listener:', {
+        instanceId: this.debugInstanceId,
+        event,
+        handlerName: handler.name || 'anonymous',
+      });
+      unsubscribe();
+    });
+  }
+
+  private registerWindowEventListener(event: string, handler: EventListenerOrEventListenerObject) {
+    console.log('[Task Assistant][Lifecycle] register window event listener:', {
+      instanceId: this.debugInstanceId,
+      event,
+    });
+    window.addEventListener(event, handler);
+    this.cleanupManager.add(() => {
+      console.log('[Task Assistant][Lifecycle] cleanup window event listener:', {
+        instanceId: this.debugInstanceId,
+        event,
+      });
+      window.removeEventListener(event, handler);
+    });
   }
 
   /**
@@ -1218,9 +1346,11 @@ export default class TaskAssistantPlugin extends Plugin {
     // 检测数据变化相关的事件
     const data = event.detail;
     if (!data || !data.cmd) return;
+    console.log('[Task Assistant] onWsMain received cmd:', data.cmd);
 
     // 处理文档删除事件 - 同步删除关联的技能
     if (data.cmd === 'removeDoc') {
+      console.log('[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh');
       this.handleDocRemove(data);
       this.scheduleRefresh();
       return;
@@ -1229,12 +1359,14 @@ export default class TaskAssistantPlugin extends Plugin {
     // 全量刷新命令
     const fullRefreshCmds = ['txerr', 'refreshdoc', 'createdailynote', 'moveDoc'];
     if (fullRefreshCmds.includes(data.cmd)) {
+      console.log('[Task Assistant] onWsMain -> full refresh branch for cmd:', data.cmd);
       this.scheduleRefresh();
       return;
     }
 
     // 保存文档 - 定向刷新
     if (data.cmd === 'savedoc') {
+      console.log('[Task Assistant] onWsMain -> directed refresh branch for savedoc');
       this.handleDirectedRefresh(data);
       return;
     }
@@ -1245,6 +1377,7 @@ export default class TaskAssistantPlugin extends Plugin {
         (tx: any) => tx?.doOperations?.some((op: any) => op?.action === 'updateAttrs')
       );
       if (hasAttrChange) {
+        console.log('[Task Assistant] onWsMain -> directed refresh branch for transactions/updateAttrs');
         this.handleDirectedRefresh(data);
       }
 
@@ -1521,14 +1654,17 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private handleDirectedRefresh(data: any) {
     let rootIDs: string[] = [];
+    let source = 'unknown';
 
     // 1. transactions 命令：context.rootIDs
     if (data?.context?.rootIDs && Array.isArray(data.context.rootIDs)) {
       rootIDs = data.context.rootIDs;
+      source = 'context.rootIDs';
     }
     // 2. savedoc 命令：data.rootID
     else if (data?.data?.rootID && typeof data.data.rootID === 'string') {
       rootIDs = [data.data.rootID];
+      source = 'data.rootID';
     }
     // 3. transactions 命令（备选）：doOperations[].rootID
     else if (Array.isArray(data?.data)) {
@@ -1543,11 +1679,21 @@ export default class TaskAssistantPlugin extends Plugin {
         }
       }
       rootIDs = ids;
+      source = 'doOperations.rootID';
     }
+
+    console.log('[Task Assistant] handleDirectedRefresh extracted rootIDs:', {
+      cmd: data?.cmd,
+      source,
+      rootIDs,
+      rootIDsCount: rootIDs.length,
+    });
 
     if (rootIDs.length > 0) {
       dirtyDocTracker.markDirty(rootIDs);
       console.log('[Task Assistant] ws-main directed refresh for docs:', rootIDs);
+    } else {
+      console.warn('[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs');
     }
     this.scheduleRefresh();
   }
@@ -1556,13 +1702,22 @@ export default class TaskAssistantPlugin extends Plugin {
    * 延迟刷新（防抖）
    */
   private scheduleRefresh() {
+    console.log('[Task Assistant] scheduleRefresh called:', {
+      hadPendingTimer: Boolean(this.refreshTimeout),
+      dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
+    });
+
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
 
     this.refreshTimeout = setTimeout(() => {
+      console.log('[Task Assistant] scheduleRefresh timer fired:', {
+        dirtyDocsAtEmit: dirtyDocTracker.getDirtyDocs(),
+      });
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
+      reminderService.scheduleRebuild();
     }, 150);
   }
 
@@ -1577,33 +1732,33 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   private initFloatingTomatoButton() {
     // 监听专注状态变化（无论是否有进行中的专注都要监听）
-    eventBus.on(Events.POMODORO_STARTED, () => {
+    this.registerAppEventListener(Events.POMODORO_STARTED, () => {
       this.showFloatingTomatoButton();
     });
 
     // 监听番茄钟恢复事件（Dock 未打开时也需要显示悬浮按钮）
-    eventBus.on(Events.POMODORO_RESTORE, () => {
+    this.registerAppEventListener(Events.POMODORO_RESTORE, () => {
       this.showFloatingTomatoButton();
     });
 
-    eventBus.on(Events.POMODORO_COMPLETED, () => {
+    this.registerAppEventListener(Events.POMODORO_COMPLETED, () => {
       this.hideFloatingTomatoButton();
     });
 
-    eventBus.on(Events.POMODORO_CANCELLED, () => {
+    this.registerAppEventListener(Events.POMODORO_CANCELLED, () => {
       this.hideFloatingTomatoButton();
     });
 
-    eventBus.on(Events.BREAK_STARTED, () => {
+    this.registerAppEventListener(Events.BREAK_STARTED, () => {
       this.showFloatingTomatoButton();
     });
 
-    eventBus.on(Events.BREAK_ENDED, () => {
+    this.registerAppEventListener(Events.BREAK_ENDED, () => {
       this.hideFloatingTomatoButton();
     });
 
     // 订阅 Store 的 TICK 事件，统一更新四处显示（由 pomodoroStore 集中驱动）
-    eventBus.on(Events.POMODORO_TICK, (data: {
+    this.registerAppEventListener(Events.POMODORO_TICK, (data: {
       remainingSeconds: number;
       accumulatedSeconds: number;
       isPaused?: boolean;
@@ -1613,7 +1768,7 @@ export default class TaskAssistantPlugin extends Plugin {
       this.updateTimerDisplaysFromStore(data, false);
     });
 
-    eventBus.on(Events.BREAK_TICK, (data: {
+    this.registerAppEventListener(Events.BREAK_TICK, (data: {
       remainingSeconds: number;
       totalSeconds: number;
     }) => {
@@ -1621,7 +1776,7 @@ export default class TaskAssistantPlugin extends Plugin {
     });
 
     // 监听设置变更事件，动态更新番茄钟 UI 显示/隐藏
-    eventBus.on(Events.SETTINGS_CHANGED, () => {
+    this.registerAppEventListener(Events.SETTINGS_CHANGED, () => {
       this.updatePomodoroUIVisibility();
       // 重新注册斜杠命令以应用自定义命令变更
       this.registerSlashCommands();
@@ -1967,8 +2122,11 @@ export default class TaskAssistantPlugin extends Plugin {
     const pomodoroStore = usePomodoroStore(pinia);
     if (pomodoroStore.isFocusing || pomodoroStore.isBreakActive) return;
 
+    const settingsStore = useSettingsStore(pinia);
+    const initialGroupId = settingsStore.todoDock.selectedGroup;
+
     // 直接打开弹框，无需等待 Dock 挂载
-    showPomodoroTimerDialog();
+    showPomodoroTimerDialog(undefined, initialGroupId);
     // 同时打开番茄 Dock，便于用户查看计时
     this.openPomodoroDock();
   }

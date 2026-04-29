@@ -4,7 +4,7 @@
  * - parseBlockRefs：思源块引用解析
  */
 import { describe, it, expect } from 'vitest';
-import { LineParser, parseBlockRefs } from '@/parser/lineParser';
+import { LineParser, createLink, inferLinkType, parseBlockRefs } from '@/parser/lineParser';
 
 describe('parseItemLine 多日期解析', () => {
   it('单个日期', () => {
@@ -35,6 +35,15 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[0].startDateTime).toBe('2024-01-01 09:00:00');
     expect(items[0].endDateTime).toBe('2024-01-01 10:00:00');
     expect(items[0].siblingItems).toBeUndefined();
+  });
+
+  it('支持 HH:mm 时间范围并归一化为秒级时间', () => {
+    const items = LineParser.parseItemLine('周会 @2026-03-17 14:00~16:00', 1);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].startDateTime).toBe('2026-03-17 14:00:00');
+    expect(items[0].endDateTime).toBe('2026-03-17 16:00:00');
+    expect(items[0].timePrecision).toBe('minute');
   });
 
   it('多个日期（英文逗号）', () => {
@@ -182,6 +191,18 @@ describe('parseItemLine 多日期解析', () => {
     expect(items[4].endDateTime).toBe('2026-03-15 11:00:00');
   });
 
+  it('多日期混合场景保留各自时间精度', () => {
+    const items = LineParser.parseItemLine(
+      '整理资料 @2026-03-06 09:00~09:30, 2026-03-10 14:00:05~15:00:10',
+      1
+    );
+
+    expect(items[0].timePrecision).toBe('minute');
+    expect(items[1].timePrecision).toBe('second');
+    expect(items[0].siblingItems?.[0].timePrecision).toBe('second');
+    expect(items[1].siblingItems?.[0].timePrecision).toBe('minute');
+  });
+
   it('带状态标签', () => {
     const items = LineParser.parseItemLine('整理资料 @2024-01-01 #done', 1);
     expect(items).toHaveLength(1);
@@ -213,21 +234,21 @@ describe('parseBlockRefs 块引用解析', () => {
     const { stripped, links } = parseBlockRefs("首页((20260310210016-gkixdit '测试'))改版");
     expect(stripped).toBe('首页测试改版');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(links[0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('双引号锚文本', () => {
     const { stripped, links } = parseBlockRefs('((20200813131152-0wk5akh "在内容块中遨游"))');
     expect(stripped).toBe('在内容块中遨游');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ name: '在内容块中遨游', url: 'siyuan://blocks/20200813131152-0wk5akh' });
+    expect(links[0]).toEqual({ name: '在内容块中遨游', url: 'siyuan://blocks/20200813131152-0wk5akh', type: 'block-ref' });
   });
 
   it('无锚文本替换为空', () => {
     const { stripped, links } = parseBlockRefs('((20260310210016-gkixdit))纯文本');
     expect(stripped).toBe('纯文本');
     expect(links).toHaveLength(1);
-    expect(links[0]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(links[0]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('多个块引用', () => {
@@ -248,6 +269,19 @@ describe('parseBlockRefs 块引用解析', () => {
 });
 
 describe('parseTaskLine 任务解析', () => {
+  it('inferLinkType: assets 相对路径识别为 attachment', () => {
+    expect(inferLinkType('assets/demo.png')).toBe('attachment');
+  });
+
+  it('createLink: attachment 支持 blockId', () => {
+    expect(createLink('截图', 'assets/demo.png', 'attachment', 'block-asset-1')).toEqual({
+      name: '截图',
+      url: 'assets/demo.png',
+      type: 'attachment',
+      blockId: 'block-asset-1',
+    });
+  });
+
   it('基础任务', () => {
     const task = LineParser.parseTaskLine('测试任务 #任务', 1);
     expect(task.name).toBe('测试任务');
@@ -282,7 +316,7 @@ describe('parseTaskLine 任务解析', () => {
     );
     expect(task.name).toBe('首页测试改版（任务名称）');
     expect(task.links).toHaveLength(1);
-    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('任务名含块引用与 URL 链接：links 合并', () => {
@@ -292,12 +326,33 @@ describe('parseTaskLine 任务解析', () => {
     );
     expect(task.name).toBe('首页测试改版');
     expect(task.links).toHaveLength(2);
-    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit' });
-    expect(task.links![1]).toEqual({ name: '链接', url: 'https://example.com' });
+    expect(task.links![0]).toEqual({ name: '测试', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
+    expect(task.links![1]).toEqual({ name: '链接', url: 'https://example.com', type: 'external' });
+  });
+
+  it.each([
+    ['# 重要项目 #任务', 'H1', '重要项目'],
+    ['## 日常维护 📋 @L2', 'H2', '日常维护'],
+    ['### redmine 维护 📋', 'H3', 'redmine 维护'],
+    ['#### 季度汇报 📋 @2024-01-01', 'H4', '季度汇报'],
+    ['##### 周会纪要 📋 @L3', 'H5', '周会纪要'],
+    ['###### 最低优先级任务 #任务', 'H6', '最低优先级任务'],
+  ] as const)('标题格式任务：%s 应剥离前缀', (line, _level, expectedName) => {
+    const task = LineParser.parseTaskLine(line, 1);
+    expect(task.name).toBe(expectedName);
   });
 });
 
 describe('parseItemLine - 事项链接', () => {
+  it('事项传入 attachment links 时保留 type 和 blockId', () => {
+    const links = [
+      { name: '截图', url: 'assets/demo.png', type: 'attachment' as const, blockId: 'asset-block-1' },
+    ];
+    const items = LineParser.parseItemLine('带附件事项 @2024-01-01', 1, links);
+    expect(items).toHaveLength(1);
+    expect(items[0].links).toEqual(links);
+  });
+
   it('事项带单个链接', () => {
     const links = [{ name: '示例链接', url: 'https://example.com' }];
     const items = LineParser.parseItemLine('工作事项 @2024-01-01', 1, links);
@@ -351,7 +406,7 @@ describe('parseItemLine - 事项链接', () => {
     expect(items).toHaveLength(1);
     expect(items[0].content).toBe('确定设计风格别名');
     expect(items[0].links).toHaveLength(1);
-    expect(items[0].links![0]).toEqual({ name: '别名', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(items[0].links![0]).toEqual({ name: '别名', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 
   it('事项块引用与下方链接合并', () => {
@@ -365,7 +420,7 @@ describe('parseItemLine - 事项链接', () => {
     expect(items[0].content).toBe('工作事项块引用');
     expect(items[0].links).toHaveLength(2);
     expect(items[0].links![0]).toEqual({ name: '需求文档', url: 'https://example.com' });
-    expect(items[0].links![1]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit' });
+    expect(items[0].links![1]).toEqual({ name: '块引用', url: 'siyuan://blocks/20260310210016-gkixdit', type: 'block-ref' });
   });
 });
 

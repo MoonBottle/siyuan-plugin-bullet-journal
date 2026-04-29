@@ -41,7 +41,7 @@
         <span>{{ t('settings').dirConfig.fullScanDirectoriesHint || '以下目录配置仅用于分组归类' }}</span>
       </div>
 
-      <div class="sy-directory-list" :class="{ 'is-disabled': scanMode === 'full' }">
+      <div class="sy-directory-list">
         <div
           v-for="(dir, index) in directories"
           :key="dir.id"
@@ -52,7 +52,6 @@
             type="text"
             class="b3-text-field fn__flex-center sy-directory-item__path"
             :placeholder="t('settings').projectDirectories.pathPlaceholder"
-            :disabled="scanMode === 'full'"
           />
           <SySelect
             :model-value="dir.groupId ?? ''"
@@ -65,16 +64,14 @@
             icon="iconTrashcan"
             :aria-label="t('settings').projectGroups.deleteButton"
             @click="removeDir(index)"
-            :disabled="scanMode === 'full'"
           />
-          <SySwitch v-model="dir.enabled" :disabled="scanMode === 'full'" />
+          <SySwitch v-model="dir.enabled" />
         </div>
       </div>
       <SySettingsActionButton 
         icon="iconAdd" 
         :text="t('settings').projectDirectories.addButton" 
         @click="addDir" 
-        :disabled="scanMode === 'full'"
       />
     </SySettingsSection>
   </template>
@@ -133,7 +130,6 @@
           v-for="(dir, index) in directories" 
           :key="dir.id"
           class="ios-cell ios-cell-directory"
-          :class="{ 'is-disabled': scanMode === 'full' }"
         >
           <div class="directory-info">
             <input
@@ -141,13 +137,11 @@
               type="text"
               class="ios-input"
               :placeholder="t('settings').projectDirectories.pathPlaceholder"
-              :disabled="scanMode === 'full'"
             />
             <div class="directory-meta">
               <select 
                 v-model="dir.groupId" 
                 class="ios-select-small"
-                :disabled="scanMode === 'full'"
               >
                 <option :value="undefined">{{ t('settings').projectGroups.noGroup }}</option>
                 <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
@@ -160,7 +154,6 @@
           <button 
             class="delete-btn" 
             @click="removeDir(index)"
-            :disabled="scanMode === 'full'"
           >
             <svg><use xlink:href="#iconTrashcan"></use></svg>
           </button>
@@ -168,7 +161,6 @@
         <button 
           class="ios-add-btn" 
           @click="addDir"
-          :disabled="scanMode === 'full'"
         >
           <span class="add-icon">+</span>
           {{ t('settings').projectDirectories.addButton }}
@@ -225,7 +217,6 @@ function removeDir(index: number) {
 }
 
 function toggleDirEnabled(index: number) {
-  if (props.scanMode === 'full') return;
   const dir = props.directories[index];
   if (dir) {
     dir.enabled = !dir.enabled;

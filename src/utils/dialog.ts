@@ -2,6 +2,7 @@
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
+import type { Plugin } from 'siyuan';
 import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
 import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
@@ -277,8 +278,8 @@ function createButtons(buttons: Array<{ text: string; class: string; action: str
 /**
  * 显示事项详情弹框
  */
-export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean }): Dialog {
-  const plugin = usePlugin();
+export function showItemDetailModal(item: Item, options?: { showAllDates?: boolean, plugin?: Plugin | null }): Dialog {
+  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null;
   const showAllDates = options?.showAllDates ?? false;
 
   // 创建容器元素
@@ -292,11 +293,12 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
       dialog.destroy();
     },
     onOpenDoc: async () => {
-      await openDocumentAtLine(item.docId, item.lineNumber, item.blockId);
+      if (!plugin) return;
+      await openDocumentAtLine(plugin, item.docId, item.lineNumber, item.blockId);
       dialog.destroy();
     },
     onOpenCalendar: (date: string) => {
-      console.warn('[Task Assistant] dialog open-calendar', date);
+      console.log('[Task Assistant] dialog open-calendar', date);
       if (plugin && (plugin as any).openCustomTab) {
         (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: date });
       }
@@ -425,8 +427,11 @@ export function buildEventDetailContent(
 /**
  * 显示日历事件详情弹框
  */
-export function showEventDetailModal(event: CalendarEvent): Dialog {
-  const plugin = usePlugin();
+export function showEventDetailModal(
+  event: CalendarEvent,
+  options?: { plugin?: Plugin | null }
+): Dialog {
+  const plugin = (options?.plugin ?? usePlugin()) as Plugin | null;
   const props = event.extendedProps;
   const rawDate = props.date
     || (typeof event.start === 'string' ? (event.start.includes('T') ? event.start.split('T')[0] : event.start.split(' ')[0]) : '')
@@ -473,7 +478,8 @@ export function showEventDetailModal(event: CalendarEvent): Dialog {
       dialog.destroy();
     },
     onOpenDoc: async () => {
-      await openDocumentAtLine(props.docId, props.lineNumber, props.blockId);
+      if (!plugin) return;
+      await openDocumentAtLine(plugin, props.docId, props.lineNumber, props.blockId);
       dialog.destroy();
     },
     onOpenCalendar: () => {
@@ -649,10 +655,10 @@ export async function showPomodoroCompleteDialog(
  * 显示开始专注弹框（移动端抽屉 / 桌面端对话框）
  * 供底栏、Dock 等任意上下文调用，不依赖 PomodoroDock 是否已挂载
  */
-export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | null {
+export function showPomodoroTimerDialog(preselectedBlockId?: string, initialGroupId?: string): Dialog | null {
   // 移动端使用抽屉式弹框
   if (isMobileDevice()) {
-    return showMobilePomodoroTimerDrawer(preselectedBlockId);
+    return showMobilePomodoroTimerDrawer(preselectedBlockId, initialGroupId);
   }
 
   // 桌面端使用传统对话框
@@ -676,7 +682,7 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | n
   setTimeout(() => {
     const mountEl = dialog.element?.querySelector('#pomodoro-timer-dialog-mount');
     if (mountEl) {
-      timerDialogApp = createApp(PomodoroTimerDialog, { closeDialog });
+      timerDialogApp = createApp(PomodoroTimerDialog, { closeDialog, initialGroupId });
       timerDialogApp.mount(mountEl);
     }
   }, 0);
@@ -687,7 +693,7 @@ export function showPomodoroTimerDialog(preselectedBlockId?: string): Dialog | n
 /**
  * 显示移动端专注计时抽屉
  */
-function showMobilePomodoroTimerDrawer(preselectedBlockId?: string): Dialog | null {
+function showMobilePomodoroTimerDrawer(preselectedBlockId?: string, initialGroupId?: string): Dialog | null {
   const mountEl = document.createElement('div');
   mountEl.id = 'mobile-pomodoro-timer-mount';
   document.body.appendChild(mountEl);
@@ -709,6 +715,7 @@ function showMobilePomodoroTimerDrawer(preselectedBlockId?: string): Dialog | nu
   drawerApp = createApp(MobilePomodoroTimerDrawer, {
     modelValue: visible,
     preselectedBlockId,
+    initialGroupId,
     'onUpdate:modelValue': (val: boolean) => {
       if (!val) closeDrawer();
     },

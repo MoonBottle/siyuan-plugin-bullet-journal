@@ -1,5 +1,95 @@
 # Changelog
 
+## [0.12.8] - 2026-04-28
+
+### Features
+
+- **Pomodoro Group Filtering**: Added task group filtering in the pomodoro timer dialog
+- **Todo Collapse/Expand**: Added collapse all / expand all functionality for the todo sidebar
+- **Completed Task Search & Filtering**: Added search and filtering support for completed and abandoned tasks
+
+### Fixes
+
+- **MCP Group Filtering**:
+  - Fixed `filter_items` failing to return items when filtering by `groupId` in full scan mode
+  - Fixed build output not syncing the plugin-root `mcp-server.js`, which caused MCP clients to run an outdated server file
+- **SiYuan Attachment Links**:
+  - Fixed `assets/...` attachment links being incorrectly treated as external links
+  - Attachment links in Todo, detail dialogs, and the pomodoro panel now jump back to the source block context
+
+### Refactors
+
+- **DeepSeek Support**: Simplified message building logic, removed kimi-specific handling, generalized reasoning_content logic
+
+### Styles
+
+- **Unified Link Presentation**:
+  - Added a dedicated icon and visual style for attachment links so they are distinct from external, SiYuan, and block-reference links
+  - Reused the shared typed-link component in the calendar hover tooltip while keeping those links display-only
+
+## [0.12.7] - 2026-04-26
+
+### Fixes
+
+- **Todo Date Filter**: Fixed date filter not updating automatically after midnight, refresh also failed to show current day's data
+
+## [0.12.6] - 2026-04-25
+
+### Features
+
+- **Item Time Precision Support**:
+  - Support parsing time ranges in `HH:mm` format
+  - After calendar drag adjustments, preserve original precision by keeping `HH:mm` or `HH:mm:ss` format when rewriting Markdown
+
+- **Calendar Day View Statistics**:
+  - Display total work hours for all items on the current day in calendar day view
+
+- **Todo Sorting Rules**:
+  - Add sorting rule editor to the todo panel, supporting configuration of multiple sorting rule combinations
+
+### Refactors
+
+- **UI Component Optimization**:
+  - Extract shared reminder/recurring action button components
+  - Extract shared typed link components
+
+### Docs
+
+- Updated i18n text, unified "duration" to "work hours"
+
+## [0.12.5] - 2026-04-22
+
+### Features
+
+- **Link Parsing Enhancements**:
+  - Recognize standalone block-reference lines under tasks/items as links and store them as a dedicated link type
+- **Todo Dock Display Toggles**:
+  - Added "Show Links" and "Show Reminder/Recurring" toggles to the top-right menu, disabled by default
+- **Todo Card Enhancements**:
+  - Show merged task/item links in a compact area on the card
+  - Make reminder and recurring info directly clickable to open the existing settings dialogs
+
+### Styles
+
+- **Unified Link Styling**:
+  - Use the SiYuan link style consistently for links in both the detail dialog and Todo Dock
+  - Keep small prefix markers to distinguish external, SiYuan, and block-reference links
+
+### Docs
+
+- **Data Format Docs**: Added documentation for block-reference link types and Todo Dock display behavior
+
+## [0.12.4] - 2026-04-20
+
+### Features
+
+- **Reminder Service Refactor**: Rewrote reminder service using croner instead of polling
+  - More precise reminder scheduling with lower resource usage
+
+### Fixes
+
+- **Task Parsing**: Automatically remove Markdown heading markers (e.g., `# Heading`) when parsing tasks to ensure correct task name parsing
+
 ## [0.12.3] - 2026-04-18
 
 ### Fixes

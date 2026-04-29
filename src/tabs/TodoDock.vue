@@ -16,9 +16,4 @@ const props = defineProps<{
 // Use injected plugin or fallback to usePlugin()
 const pluginInstance = computed(() => props.plugin || usePlugin());
 const isMobile = computed(() => pluginInstance.value?.isMobile);
-
-// Debug log
-console.log('[TodoDock] pluginInstance:', pluginInstance.value);
-console.log('[TodoDock] isMobile:', isMobile.value);
-console.log('[TodoDock] platform:', pluginInstance.value?.platform);
 </script>

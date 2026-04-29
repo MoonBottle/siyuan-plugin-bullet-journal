@@ -22,6 +22,7 @@
       </span>
       <!-- 日期显示 -->
       <span class="date-title">{{ currentTitle }}</span>
+      <span v-if="showDayTotalDuration" class="date-duration">{{ dayTotalDurationLabel }}</span>
       <span class="fn__flex-1 fn__space"></span>
       <!-- 视图切换 -->
       <SySelect v-model="currentView" :options="viewOptions" />
@@ -57,14 +58,16 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import type { PomodoroRecord } from '@/types/models';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { openDocumentAtLine, updateBlockDateTime } from '@/utils/fileUtils';
 import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import { DataConverter } from '@/utils/dataConverter';
+import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 
@@ -95,6 +98,25 @@ const currentDateStr = ref(dayjs().format('YYYY-MM-DD'));
 // 是否显示番茄钟时间块（仅日视图 + 设置开启）
 const showPomodoroPanel = computed(() => {
   return currentView.value === 'timeGridDay' && settingsStore.showPomodoroBlocks;
+});
+
+const dayTotalDurationMinutes = computed(() => {
+  if (currentView.value !== 'timeGridDay') return 0;
+  return calculateDayTotalDurationMinutes(
+    filteredCalendarEvents.value,
+    currentDateStr.value,
+    settingsStore.lunchBreakStart,
+    settingsStore.lunchBreakEnd
+  );
+});
+
+const showDayTotalDuration = computed(() => {
+  return currentView.value === 'timeGridDay' && dayTotalDurationMinutes.value > 0;
+});
+
+const dayTotalDurationLabel = computed(() => {
+  const duration = formatTotalDuration(dayTotalDurationMinutes.value);
+  return t('calendar').dayTotalDuration.replace('{duration}', duration);
 });
 
 // 番茄钟背景时间块事件（右对齐，仅日视图）
@@ -142,6 +164,14 @@ const groupOptions = computed(() => {
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+    viewName: 'CalendarTab',
+    pluginInstanceId: plugin?.debugInstanceId ?? 'plugin-null',
+    pluginAvailable: Boolean(plugin),
+    location: location.href,
+    hasPayload: Boolean(payload),
+    payloadKeys: payload ? Object.keys(payload) : [],
+  });
   if (!plugin) return;
   const storeKeys = ['directories', 'groups', 'defaultGroup', 'calendarDefaultView', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
@@ -159,7 +189,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 // 日历导航处理函数（仅当前 Tab 可见时处理，避免多 Tab 重复跳转）
 const handleCalendarNavigate = (date: string) => {
   const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
-  console.warn('[Task Assistant] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
+  console.log('[Task Assistant] handleCalendarNavigate', date, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
   if (!isVisible || !calendarRef.value || !date) return;
   calendarRef.value.gotoDate(date);
   updateTitle();
@@ -168,7 +198,7 @@ const handleCalendarNavigate = (date: string) => {
 // 日历视图切换处理函数
 const handleCalendarChangeView = (view: string) => {
   const isVisible = tabRootRef.value && tabRootRef.value.getBoundingClientRect().width > 0;
-  console.warn('[Task Assistant] handleCalendarChangeView', view, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
+  console.log('[Task Assistant] handleCalendarChangeView', view, 'visible:', isVisible, 'calendarRef:', !!calendarRef.value);
   if (!isVisible || !calendarRef.value || !view) return;
 
   // 将简写的视图名称映射为 FullCalendar 的视图名称
@@ -190,6 +220,7 @@ let unsubscribeRefresh: (() => void) | null = null;
 let unsubscribeNavigate: (() => void) | null = null;
 let unsubscribeChangeView: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 // 初始化数据
 onMounted(async () => {
@@ -215,13 +246,13 @@ onMounted(async () => {
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = (e: MessageEvent) => {
-      const data = e?.data;
-      if (data?.type === 'DATA_REFRESH') {
-        const { type: _t, ...rest } = data;
-        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
-      }
-    };
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: payload => handleDataRefresh(payload),
+      viewName: 'CalendarTab',
+    });
   } catch {
     // 忽略
   }
@@ -242,6 +273,10 @@ onUnmounted(() => {
   }
   if (unsubscribeChangeView) {
     unsubscribeChangeView();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
   }
   if (refreshChannel) {
     refreshChannel.close();
@@ -343,17 +378,6 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
   const siblingItems = eventInfo.siblingItems;
   const status = eventInfo.status;
 
-  // 重建完整的 siblingItems（包含当前日期）
-  // siblingItems 原本只包含"其他日期"，需要加上当前正在修改的日期
-  const completeSiblingItems = [
-    ...(siblingItems || []),
-    ...(originalDate ? [{
-      date: originalDate,
-      startDateTime: originalStartDateTime,
-      endDateTime: originalEndDateTime
-    }] : [])
-  ];
-
   // 解析新的日期时间
   const startStr = eventInfo.start;
   const endStr = eventInfo.end;
@@ -379,6 +403,23 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     newEndTime = time.substring(0, 8); // HH:mm:ss
   }
 
+  const timePrecision
+    = eventInfo.timePrecision
+      || eventInfo.extendedProps?.timePrecision
+      || (!originalStartDateTime && newStartTime ? 'minute' : 'second');
+
+  // 重建完整的 siblingItems（包含当前日期）
+  // siblingItems 原本只包含"其他日期"，需要加上当前正在修改的日期
+  const completeSiblingItems = [
+    ...(siblingItems || []),
+    ...(originalDate ? [{
+      date: originalDate,
+      startDateTime: originalStartDateTime,
+      endDateTime: originalEndDateTime,
+      timePrecision
+    }] : [])
+  ];
+
   // 更新块（传递 completeSiblingItems、status 以支持智能合并）
   const success = await updateBlockDateTime(
     blockId,
@@ -388,7 +429,9 @@ const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
     allDay,
     originalDate,
     completeSiblingItems,
-    status
+    status,
+    undefined,
+    timePrecision
   );
 
   if (success) {
@@ -442,6 +485,13 @@ watch(currentView, (newView) => {
   font-weight: 600;
   color: var(--b3-theme-on-background);
   margin-left: 12px;
+}
+
+.date-duration {
+  font-size: 13px;
+  color: var(--b3-theme-on-surface-light);
+  margin-left: 10px;
+  white-space: nowrap;
 }
 
 .tab-content {

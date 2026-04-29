@@ -3,7 +3,15 @@
     <div class="dialog-body" :class="{ 'no-left-panel': hideItemList }">
       <!-- 左侧：待办事项列表（仅在非预选模式下显示） -->
       <div v-if="!hideItemList" class="left-panel">
-        <div class="panel-title">{{ t('pomodoroDialog').selectItem }}</div>
+        <div class="left-panel-header">
+          <div class="panel-title">{{ t('pomodoroDialog').selectItem }}</div>
+          <SySelect
+            v-model="selectedGroup"
+            :options="groupOptions"
+            :placeholder="t('settings').projectGroups.allGroups"
+            class="group-select"
+          />
+        </div>
         <div class="item-list">
           <!-- 过期事项 -->
           <div v-if="expiredItems.length > 0" class="item-group">
@@ -114,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useProjectStore, usePomodoroStore } from '@/stores';
+import { useProjectStore, usePomodoroStore, useSettingsStore } from '@/stores';
 import { usePlugin } from '@/main';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import type { Item } from '@/types/models';
@@ -122,20 +130,36 @@ import dayjs from '@/utils/dayjs';
 import { DOCK_TYPES } from '@/constants';
 import { t } from '@/i18n';
 import SelectedItemCard from './SelectedItemCard.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 
 const props = defineProps<{
   closeDialog: () => void;
   preselectedBlockId?: string;
   hideItemList?: boolean;
+  initialGroupId?: string;
 }>()
 
 const plugin = usePlugin() as any;
 const pinia = getSharedPinia();
 const projectStore = pinia ? useProjectStore(pinia) : null;
 const pomodoroStore = pinia ? usePomodoroStore(pinia) : null;
+const settingsStore = pinia ? useSettingsStore(pinia) : null;
 
 // 选中的事项
 const selectedItem = ref<Item | null>(null);
+
+// 分组筛选
+const selectedGroup = ref(props.initialGroupId ?? '');
+
+const groupOptions = computed(() => {
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  if (settingsStore) {
+    settingsStore.groups.forEach(g => {
+      options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
+    });
+  }
+  return options;
+});
 
 // 根据 preselectedBlockId 实时查找 item，确保获取最新的数据（使用 Map 索引，O(1) 查找）
 const preselectedItem = computed(() => {
@@ -166,13 +190,13 @@ const currentDate = dayjs().format('YYYY-MM-DD');
 
 const expiredItems = computed(() => {
   if (!projectStore) return [];
-  const items = projectStore.getExpiredItems('');
+  const items = projectStore.getExpiredItems(selectedGroup.value);
   return (items || []).filter(item => item.status === 'pending');
 });
 
 const todayItems = computed(() => {
   if (!projectStore) return [];
-  const items = projectStore.getFutureItems('');
+  const items = projectStore.getFutureItems(selectedGroup.value);
   return (items || []).filter(item => item.date === currentDate && item.status === 'pending');
 });
 
@@ -273,6 +297,17 @@ watch(preselectedItem, (newItem) => {
     selectedItem.value = newItem;
   }
 });
+
+// 分组切换时，如果当前选中事项不在新分组中，自动选中第一个事项
+watch(selectedGroup, () => {
+  if (selectedItem.value) {
+    const allItems = [...expiredItems.value, ...todayItems.value];
+    const stillValid = allItems.some(item => item.id === selectedItem.value!.id);
+    if (!stillValid) {
+      selectedItem.value = expiredItems.value[0] || todayItems.value[0] || null;
+    }
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -295,6 +330,24 @@ watch(preselectedItem, (newItem) => {
   min-width: 280px;
   display: flex;
   flex-direction: column;
+}
+
+.left-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+
+  .panel-title {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .group-select {
+    flex: 1;
+    max-width: 160px;
+  }
 }
 
 .right-panel {

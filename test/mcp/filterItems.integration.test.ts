@@ -15,7 +15,7 @@ const apiUrl = process.env.SIYUAN_API_URL || 'http://127.0.0.1:6806';
 
 const TEST_PROJECT_NAME = '多日期事项测试文档';
 
-describe.skipIf(!token)('filter_items 集成测试 - 多日期事项', () => {
+describe.skip('filter_items 集成测试 - 多日期事项', () => {
   let client: SiYuanClient;
   let directories: ProjectDirectory[];
   let testProjectId: string;

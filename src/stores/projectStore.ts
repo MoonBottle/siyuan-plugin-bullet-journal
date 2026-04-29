@@ -15,6 +15,8 @@ import { eventBus, Events } from '@/utils/eventBus';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
 import { calculateReminderTime } from '@/parser/reminderParser';
 import { getHPathByID } from '@/api';
+import type { TodoSortDirection, TodoSortRule } from '@/settings/types';
+import { defaultTodoSortRules } from '@/settings/types';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -25,6 +27,107 @@ function computeDisplayItems(
   if (!items) return [];
   const filtered = !groupId ? items : items.filter(i => i.project?.groupId === groupId);
   return filterDateRangeRepresentative(filtered, currentDate);
+}
+
+function normalizeString(value?: string): string {
+  return (value || '').toLocaleLowerCase();
+}
+
+function normalizeReminderTime(item: Item): number | null {
+  if (!item.reminder?.enabled) return null;
+  return calculateReminderTime(
+    item.date,
+    item.startDateTime,
+    item.endDateTime,
+    undefined,
+    undefined,
+    item.reminder,
+  );
+}
+
+function compareNullableNumber(a: number | null, b: number | null, direction: TodoSortDirection): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return direction === 'asc' ? a - b : b - a;
+}
+
+function compareNullableString(a: string | null, b: string | null, direction: TodoSortDirection): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return direction === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+}
+
+function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
+  for (const rule of sortRules) {
+    if (rule.field === 'priority') {
+      const diff = rule.direction === 'asc'
+        ? comparePriority(a.priority, b.priority)
+        : comparePriority(b.priority, a.priority);
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'time') {
+      const diff = compareNullableString(
+        a.startDateTime ?? null,
+        b.startDateTime ?? null,
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'date') {
+      const diff = rule.direction === 'asc'
+        ? a.date.localeCompare(b.date)
+        : b.date.localeCompare(a.date);
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'reminderTime') {
+      const diff = compareNullableNumber(
+        normalizeReminderTime(a),
+        normalizeReminderTime(b),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'project') {
+      const diff = compareNullableString(
+        normalizeString(a.project?.name),
+        normalizeString(b.project?.name),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'task') {
+      const diff = compareNullableString(
+        normalizeString(a.task?.name),
+        normalizeString(b.task?.name),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+      continue;
+    }
+
+    if (rule.field === 'content') {
+      const diff = compareNullableString(
+        normalizeString(a.content),
+        normalizeString(b.content),
+        rule.direction,
+      );
+      if (diff !== 0) return diff;
+    }
+  }
+
+  return 0;
 }
 import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
@@ -277,17 +380,13 @@ export const useProjectStore = defineStore('project', {
         items = items.filter(item => item.status !== 'abandoned');
       }
 
-      // 6. 按优先级和时间排序
-      items.sort((a, b) => {
-        // 先按优先级排序（高→中→低→无）
-        const priorityDiff = comparePriority(a.priority, b.priority);
-        if (priorityDiff !== 0) return priorityDiff;
+      // 6. 按配置排序
+      const settingsStore = useSettingsStore();
+      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+        ? settingsStore.todoDock.sortRules
+        : defaultTodoSortRules;
 
-        // 同优先级按时间排序（开始时间或日期）
-        const timeA = a.startDateTime || a.date;
-        const timeB = b.startDateTime || b.date;
-        return timeA.localeCompare(timeB);
-      });
+      items.sort((a, b) => compareTodoItems(a, b, sortRules));
 
       return items;
     },
@@ -334,14 +433,13 @@ export const useProjectStore = defineStore('project', {
         );
       }
 
-      // 6. 按优先级和时间排序
-      items.sort((a, b) => {
-        const priorityDiff = comparePriority(a.priority, b.priority);
-        if (priorityDiff !== 0) return priorityDiff;
-        const timeA = a.startDateTime || a.date;
-        const timeB = b.startDateTime || b.date;
-        return timeA.localeCompare(timeB);
-      });
+      // 6. 按配置排序
+      const settingsStore = useSettingsStore();
+      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+        ? settingsStore.todoDock.sortRules
+        : defaultTodoSortRules;
+
+      items.sort((a, b) => compareTodoItems(a, b, sortRules));
 
       return items;
     },
@@ -388,14 +486,13 @@ export const useProjectStore = defineStore('project', {
         );
       }
 
-      // 6. 按优先级和时间排序
-      items.sort((a, b) => {
-        const priorityDiff = comparePriority(a.priority, b.priority);
-        if (priorityDiff !== 0) return priorityDiff;
-        const timeA = a.startDateTime || a.date;
-        const timeB = b.startDateTime || b.date;
-        return timeA.localeCompare(timeB);
-      });
+      // 6. 按配置排序
+      const settingsStore = useSettingsStore();
+      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+        ? settingsStore.todoDock.sortRules
+        : defaultTodoSortRules;
+
+      items.sort((a, b) => compareTodoItems(a, b, sortRules));
 
       return items;
     },
@@ -644,32 +741,69 @@ export const useProjectStore = defineStore('project', {
      */
     async refresh(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]) {
       // 如果正在刷新，跳过
-      if (this.refreshing) return;
+      if (this.refreshing) {
+        console.log('[Task Assistant] Refresh skipped because another refresh is in progress:', {
+          refreshKey: this.refreshKey,
+          scanMode,
+          directoriesCount: directories.length,
+          dirtyDocsAtSkip: dirtyDocTracker.getDirtyDocs(),
+        });
+        return;
+      }
 
       this.refreshing = true;
       this.refreshKey++;
 
       const newDate = dayjs().format('YYYY-MM-DD');
-      console.log('[Task Assistant] Refresh started, date:', newDate);
+      console.log('[Task Assistant] Refresh started:', {
+        refreshKey: this.refreshKey,
+        date: newDate,
+        scanMode,
+        pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
+        pluginAvailable: Boolean(_plugin),
+        directoriesCount: directories.length,
+        enabledDirsCount: directories.filter(d => d.enabled).length,
+        currentProjectsCount: this.projects.length,
+      });
 
       try {
         const dirtyDocIds = dirtyDocTracker.getDirtyDocs();
+        console.log('[Task Assistant] Refresh dirty docs snapshot:', {
+          refreshKey: this.refreshKey,
+          dirtyDocIds,
+          dirtyDocCount: dirtyDocIds.length,
+        });
 
         if (dirtyDocIds.length > 0) {
           // 定向刷新：只更新指定文档
+          console.log('[Task Assistant] Refresh choosing directed refresh path');
           await this.refreshDirtyDocs(_plugin, scanMode, directories, dirtyDocIds);
         } else {
           // 全量刷新
+          console.warn('[Task Assistant] Refresh choosing full refresh path because no dirty docs were present:', {
+            refreshKey: this.refreshKey,
+            pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
+            pluginAvailable: Boolean(_plugin),
+          });
           await this.refreshFull(_plugin, scanMode, directories);
         }
 
         this.currentDate = newDate;
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
       } catch (error) {
-        console.error('[Task Assistant] Refresh failed:', error);
+        console.error('[Task Assistant] Refresh failed, falling back to full refresh:', {
+          refreshKey: this.refreshKey,
+          error,
+          dirtyDocsAtFailure: dirtyDocTracker.getDirtyDocs(),
+        });
         // 出错时回退到全量刷新
         await this.refreshFull(_plugin, scanMode, directories);
       } finally {
+        console.log('[Task Assistant] Refresh finished:', {
+          refreshKey: this.refreshKey,
+          currentProjectsCount: this.projects.length,
+          remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
+        });
         this.refreshing = false;
       }
     },
@@ -678,7 +812,14 @@ export const useProjectStore = defineStore('project', {
      * 全量刷新（使用流式解析）
      */
     async refreshFull(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]): Promise<void> {
-      console.log('[Task Assistant] Full refresh, scanMode:', scanMode);
+      console.warn('[Task Assistant] Full refresh started:', {
+        scanMode,
+        pluginInstanceId: _plugin?.debugInstanceId ?? 'plugin-null',
+        pluginAvailable: Boolean(_plugin),
+        directoriesCount: directories.length,
+        enabledDirsCount: directories.filter(d => d.enabled).length,
+        dirtyDocsBeforeClear: dirtyDocTracker.getDirtyDocs(),
+      });
 
       const enabledDirs = directories.filter(d => d.enabled);
       const parser = new MarkdownParser(enabledDirs, scanMode);
@@ -696,6 +837,10 @@ export const useProjectStore = defineStore('project', {
       });
 
       dirtyDocTracker.clearAll();
+      console.log('[Task Assistant] Full refresh completed:', {
+        projectsCount: this.projects.length,
+        remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
+      });
     },
 
     /**
@@ -708,7 +853,13 @@ export const useProjectStore = defineStore('project', {
       directories: ProjectDirectory[],
       dirtyDocIds: string[]
     ): Promise<void> {
-      console.log('[Task Assistant] Refreshing dirty docs:', dirtyDocIds);
+      console.log('[Task Assistant] Directed refresh started:', {
+        dirtyDocIds,
+        dirtyDocCount: dirtyDocIds.length,
+        scanMode,
+        directoriesCount: directories.length,
+        enabledDirsCount: directories.filter(d => d.enabled).length,
+      });
 
       const enabledDirs = directories.filter(d => d.enabled);
       const parser = new MarkdownParser(enabledDirs, scanMode);
@@ -720,11 +871,22 @@ export const useProjectStore = defineStore('project', {
           const existingProject = this.projects.find(p => p.id === docId);
           const groupId = existingProject?.groupId;
           let path = existingProject?.path;
+          console.log('[Task Assistant] Directed refresh processing doc:', {
+            docId,
+            hasExistingProject: Boolean(existingProject),
+            existingProjectName: existingProject?.name,
+            existingGroupId: groupId,
+            existingPath: path,
+          });
           
           // 如果没有 path，从思源查询
           if (!path) {
             try {
               path = await getHPathByID(docId);
+              console.log('[Task Assistant] Directed refresh resolved path from Siyuan:', {
+                docId,
+                path,
+              });
             } catch (e) {
               console.warn('[Task Assistant] Failed to get hpath for doc:', docId);
               path = '';
@@ -736,6 +898,12 @@ export const useProjectStore = defineStore('project', {
           if (scanMode === 'full' && enabledDirs.length > 0 && path) {
             finalGroupId = matchGroupId(path, enabledDirs);
           }
+          console.log('[Task Assistant] Directed refresh parse context:', {
+            docId,
+            path,
+            originalGroupId: groupId,
+            finalGroupId,
+          });
 
           // 使用 parser 的复用方法：解析 + 番茄钟合并
           const project = await parser.parseAndProcessSingleDocument(
@@ -744,7 +912,17 @@ export const useProjectStore = defineStore('project', {
 
           if (project) {
             this.updateProjectsIncrementally([project]);
-            console.log('[Task Assistant] Project refreshed:', project.name);
+            console.log('[Task Assistant] Project refreshed:', {
+              docId,
+              projectName: project.name,
+              itemsCount: project.items?.length,
+            });
+          } else {
+            console.warn('[Task Assistant] Directed refresh produced no project for doc:', {
+              docId,
+              path,
+              finalGroupId,
+            });
           }
         } catch (error) {
           console.error(`[Task Assistant] Failed to refresh doc ${docId}:`, error);
@@ -754,7 +932,11 @@ export const useProjectStore = defineStore('project', {
       // 清除脏标记
       dirtyDocTracker.clearDirty(dirtyDocIds);
 
-      console.log('[Task Assistant] Dirty docs refreshed:', dirtyDocIds.length);
+      console.log('[Task Assistant] Directed refresh completed:', {
+        refreshedCount: dirtyDocIds.length,
+        remainingDirtyDocs: dirtyDocTracker.getDirtyDocs(),
+        currentProjectsCount: this.projects.length,
+      });
     },
 
     /**

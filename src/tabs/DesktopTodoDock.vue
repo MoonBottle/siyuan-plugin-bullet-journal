@@ -6,6 +6,13 @@
         {{ t('todo').title }}
       </div>
       <span class="fn__flex-1 fn__space"></span>
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="todoSidebar?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
+        @click="todoSidebar?.toggleCollapseAll()"
+      >
+        <svg><use :xlink:href="todoSidebar?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
+      </span>
       <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').more" @click="handleMoreClick">
         <svg><use xlink:href="#iconMore"></use></svg>
       </span>
@@ -44,6 +51,14 @@
             @change="onDateFilterChange"
           />
 
+          <button
+            class="sort-trigger b3-tooltips b3-tooltips__n"
+            :aria-label="t('todo.sortSettings')"
+            @click="toggleSortPanel"
+          >
+            <svg><use xlink:href="#iconSort"></use></svg>
+          </button>
+
           <div class="priority-filter">
             <button 
               v-for="p in priorityOptions" 
@@ -63,12 +78,68 @@
           <span>至</span>
           <input v-model="endDate" type="date" class="date-input" />
         </div>
+
+        <div v-if="showSortPanel" class="sort-panel">
+          <div
+            v-for="(rule, index) in sortRules"
+            :key="`${rule.field}-${index}`"
+            class="sort-rule-row"
+          >
+            <SySelect
+              :model-value="rule.field"
+              :options="availableFieldOptions(index)"
+              class="sort-field-select"
+              @change="value => updateSortField(index, value)"
+            />
+            <SySelect
+              :model-value="rule.direction"
+              :options="sortDirectionOptions"
+              class="sort-direction-select"
+              @change="value => updateSortDirection(index, value)"
+            />
+            <button
+              class="sort-rule-btn b3-tooltips b3-tooltips__n"
+              :aria-label="t('todo.sortMoveUp')"
+              :disabled="index === 0"
+              @click="moveSortRule(index, -1)"
+            >
+              <svg><use xlink:href="#iconUp"></use></svg>
+            </button>
+            <button
+              class="sort-rule-btn b3-tooltips b3-tooltips__n"
+              :aria-label="t('todo.sortMoveDown')"
+              :disabled="index === sortRules.length - 1"
+              @click="moveSortRule(index, 1)"
+            >
+              <svg><use xlink:href="#iconDown"></use></svg>
+            </button>
+            <button
+              class="sort-rule-btn b3-tooltips b3-tooltips__n"
+              :aria-label="t('todo.sortRemoveRule')"
+              :disabled="sortRules.length <= 1"
+              @click="removeSortRule(index)"
+            >
+              <svg><use xlink:href="#iconClose"></use></svg>
+            </button>
+          </div>
+
+          <div class="sort-panel-actions">
+            <button class="b3-button b3-button--outline" @click="addSortRule">
+              {{ t('todo.sortAddRule') }}
+            </button>
+            <button class="b3-button b3-button--text" @click="resetSortRules">
+              {{ t('todo.sortReset') }}
+            </button>
+          </div>
+        </div>
       </div>
       <div class="fn__flex-1 todo-dock-content">
         <TodoSidebar 
+          ref="todoSidebar"
           :group-id="selectedGroup"
           :search-query="searchQuery"
           :date-range="dateRange"
+          :completed-date-range="completedDateRange"
           :priorities="selectedPriorities"
         />
       </div>
@@ -77,34 +148,58 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import dayjs from 'dayjs';
 import { Menu } from 'siyuan';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
+import { buildViewDebugContext } from '@/utils/viewDebug';
 import type { PriorityLevel } from '@/types/models';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
+import { defaultTodoSortRules } from '@/settings';
+import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
-const selectedGroup = ref('');
+const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
+
+const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
+
+watch(selectedGroup, (val) => {
+  settingsStore.todoDock.selectedGroup = val;
+  settingsStore.saveToPlugin();
+});
 
 // 搜索和筛选状态
 const searchQuery = ref('');
 const selectedPriorities = ref<PriorityLevel[]>([]);
+const showSortPanel = ref(false);
 
 // 日期筛选类型：today | week | all | custom
 type DateFilterType = 'today' | 'week' | 'all' | 'custom';
 const dateFilterType = ref<DateFilterType>('today');
 const startDate = ref(dayjs().format('YYYY-MM-DD'));
 const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
+
+const todayDate = ref(dayjs().format('YYYY-MM-DD'));
+let dateCheckTimer: ReturnType<typeof setInterval> | null = null;
+
+const startDateCheck = () => {
+  dateCheckTimer = setInterval(() => {
+    const newDate = dayjs().format('YYYY-MM-DD');
+    if (newDate !== todayDate.value) {
+      todayDate.value = newDate;
+    }
+  }, 60_000);
+};
 
 const priorityOptions = [
   { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
@@ -113,30 +208,58 @@ const priorityOptions = [
 ];
 
 const dateFilterOptions = [
-  { value: 'today', label: '今天' },
-  { value: 'week', label: '近7天' },
-  { value: 'all', label: '全部' },
-  { value: 'custom', label: '自定义' },
+  { value: 'today', label: t('todo.dateFilter.today') },
+  { value: 'week', label: t('todo.dateFilter.thisWeek') },
+  { value: 'all', label: t('todo.dateFilter.all') },
+  { value: 'custom', label: t('todo.dateFilter.custom') },
+];
+
+const sortFieldOptions = [
+  { value: 'priority' as TodoSortField, label: t('todo.sortFields.priority') },
+  { value: 'time' as TodoSortField, label: t('todo.sortFields.time') },
+  { value: 'date' as TodoSortField, label: t('todo.sortFields.date') },
+  { value: 'reminderTime' as TodoSortField, label: t('todo.sortFields.reminderTime') },
+  { value: 'project' as TodoSortField, label: t('todo.sortFields.project') },
+  { value: 'task' as TodoSortField, label: t('todo.sortFields.task') },
+  { value: 'content' as TodoSortField, label: t('todo.sortFields.content') },
+];
+
+const sortDirectionOptions = [
+  { value: 'asc' as TodoSortDirection, label: t('todo.sortDirection.asc') },
+  { value: 'desc' as TodoSortDirection, label: t('todo.sortDirection.desc') },
 ];
 
 const dateRange = computed(() => {
   if (dateFilterType.value === 'all') return null;
   if (dateFilterType.value === 'today') {
-    const today = dayjs().format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到今天
-    return { start: '1970-01-01', end: today };
+    return { start: '1970-01-01', end: todayDate.value };
   }
   if (dateFilterType.value === 'week') {
-    const nextWeek = dayjs().add(6, 'day').format('YYYY-MM-DD');
-    // 包含已过期数据：从很早的日期到一周后
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
     return { start: '1970-01-01', end: nextWeek };
   }
   // custom
   return { start: startDate.value, end: endDate.value };
 });
 
+const completedDateRange = computed(() => {
+  if (dateFilterType.value === 'all') return null;
+  if (dateFilterType.value === 'today') {
+    return { start: todayDate.value, end: todayDate.value };
+  }
+  if (dateFilterType.value === 'week') {
+    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
+    return { start: todayDate.value, end: nextWeek };
+  }
+  return { start: startDate.value, end: endDate.value };
+});
+
 const dateFilterLabel = computed(() => {
-  return dateFilterOptions.find(o => o.value === dateFilterType.value)?.label || '今天';
+  return dateFilterOptions.find(o => o.value === dateFilterType.value)?.label || t('todo.dateFilter.today');
+});
+
+const sortRules = computed(() => {
+  return settingsStore.todoDock.sortRules;
 });
 
 function togglePriority(priority: PriorityLevel) {
@@ -157,6 +280,77 @@ function onDateFilterChange(type: DateFilterType) {
   }
 }
 
+function persistSortRules(nextRules: TodoSortRule[]) {
+  settingsStore.todoDock.sortRules = nextRules.length > 0
+    ? nextRules
+    : [...defaultTodoSortRules];
+  settingsStore.saveToPlugin();
+}
+
+function toggleSortPanel() {
+  showSortPanel.value = !showSortPanel.value;
+}
+
+function availableFieldOptions(index: number) {
+  const usedFields = new Set(
+    sortRules.value
+      .filter((_, ruleIndex) => ruleIndex !== index)
+      .map(rule => rule.field),
+  );
+
+  return sortFieldOptions.filter(option =>
+    option.value === sortRules.value[index]?.field || !usedFields.has(option.value),
+  );
+}
+
+function updateSortField(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    field: value as TodoSortField,
+  };
+  persistSortRules(nextRules);
+}
+
+function updateSortDirection(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    direction: value as TodoSortDirection,
+  };
+  persistSortRules(nextRules);
+}
+
+function addSortRule() {
+  const usedFields = new Set(sortRules.value.map(rule => rule.field));
+  const nextField = sortFieldOptions.find(option => !usedFields.has(option.value));
+  if (!nextField) return;
+
+  persistSortRules([
+    ...sortRules.value,
+    { field: nextField.value, direction: 'asc' },
+  ]);
+}
+
+function moveSortRule(index: number, delta: number) {
+  const targetIndex = index + delta;
+  if (targetIndex < 0 || targetIndex >= sortRules.value.length) return;
+
+  const nextRules = [...sortRules.value];
+  [nextRules[index], nextRules[targetIndex]] = [nextRules[targetIndex], nextRules[index]];
+  persistSortRules(nextRules);
+}
+
+function removeSortRule(index: number) {
+  if (sortRules.value.length <= 1) return;
+  const nextRules = sortRules.value.filter((_, ruleIndex) => ruleIndex !== index);
+  persistSortRules(nextRules);
+}
+
+function resetSortRules() {
+  persistSortRules([...defaultTodoSortRules]);
+}
+
 const groupOptions = computed(() => {
   const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
   settingsStore.groups.forEach(g => {
@@ -167,6 +361,11 @@ const groupOptions = computed(() => {
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）
 const handleDataRefresh = async (payload?: Record<string, unknown>) => {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', {
+    ...buildViewDebugContext('DesktopTodoDock', plugin),
+    hasPayload: Boolean(payload),
+    payloadKeys: payload ? Object.keys(payload) : [],
+  });
   if (!plugin) return;
   const storeKeys = ['directories', 'groups', 'defaultGroup', 'lunchBreakStart', 'lunchBreakEnd', 'showPomodoroBlocks', 'showPomodoroTotal', 'todoDock', 'scanMode'];
   const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(k => k in payload);
@@ -233,6 +432,28 @@ const handleMoreClick = (event: MouseEvent) => {
     },
   });
 
+  const showLinks = settingsStore.todoDock.showLinks;
+  menu.addItem({
+    icon: showLinks ? 'iconEyeoff' : 'iconEye',
+    label: showLinks ? t('todo').hideLinks : t('todo').showLinks,
+    click: () => {
+      settingsStore.todoDock.showLinks = !settingsStore.todoDock.showLinks;
+      settingsStore.saveToPlugin();
+    },
+  });
+
+  const showReminderAndRecurring = settingsStore.todoDock.showReminderAndRecurring;
+  menu.addItem({
+    icon: showReminderAndRecurring ? 'iconEyeoff' : 'iconEye',
+    label: showReminderAndRecurring
+      ? t('todo').hideReminderRecurring
+      : t('todo').showReminderRecurring,
+    click: () => {
+      settingsStore.todoDock.showReminderAndRecurring = !settingsStore.todoDock.showReminderAndRecurring;
+      settingsStore.saveToPlugin();
+    },
+  });
+
   menu.open({
     x: rect.left,
     y: rect.bottom + 4,
@@ -243,9 +464,11 @@ const handleMoreClick = (event: MouseEvent) => {
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 // 初始化数据
 onMounted(async () => {
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('DesktopTodoDock', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
@@ -264,21 +487,38 @@ onMounted(async () => {
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = (e: MessageEvent) => {
-      const data = e?.data;
-      if (data?.type === 'DATA_REFRESH') {
-        const { type: _t, ...rest } = data;
-        handleDataRefresh(Object.keys(rest).length > 0 ? rest : undefined);
-      }
-    };
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: (payload) => {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+          ...buildViewDebugContext('DesktopTodoDock', plugin),
+          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+        });
+        return handleDataRefresh(payload);
+      },
+      viewName: 'DesktopTodoDock',
+    });
   } catch {
     // 忽略
   }
+
+  startDateCheck();
 });
 
 onUnmounted(() => {
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('DesktopTodoDock', plugin));
+  if (dateCheckTimer) {
+    clearInterval(dateCheckTimer);
+    dateCheckTimer = null;
+  }
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
   }
   if (refreshChannel) {
     refreshChannel.close();
@@ -415,6 +655,32 @@ onUnmounted(() => {
         padding: 0 24px 0 8px;
       }
     }
+
+    .sort-trigger {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid var(--b3-border-color);
+      border-radius: 4px;
+      background: var(--b3-theme-background);
+      color: var(--b3-theme-on-surface);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+
+      &:hover {
+        border-color: var(--b3-theme-primary);
+        color: var(--b3-theme-primary);
+      }
+    }
   }
 
   .date-range-row {
@@ -435,6 +701,67 @@ onUnmounted(() => {
     }
 
 
+  }
+
+  .sort-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--b3-border-color);
+  }
+
+  .sort-rule-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 92px auto auto auto;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .sort-field-select,
+  .sort-direction-select {
+    width: 100%;
+
+    :deep(.sy-select__trigger) {
+      min-height: 28px;
+    }
+  }
+
+  .sort-rule-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    background: var(--b3-theme-background);
+    color: var(--b3-theme-on-surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--b3-theme-primary);
+      color: var(--b3-theme-primary);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .sort-panel-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
   }
 }
 </style>
