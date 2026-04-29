@@ -42,7 +42,7 @@ export class ReminderService {
 
     this.requestNotificationPermission();
     this.setupVisibilityListener();
-    this.rebuildSchedule();
+    this.rebuildSchedulesFromNow();
     this.scheduleMidnightRefresh();
 
     console.log('[ReminderService] Started with croner');
@@ -70,7 +70,7 @@ export class ReminderService {
    */
   scheduleRebuild(): void {
     if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
-    this.rebuildTimer = setTimeout(() => this.rebuildSchedule(), 300);
+    this.rebuildTimer = setTimeout(() => this.rebuildSchedulesFromNow(), 300);
   }
 
   /**
@@ -92,10 +92,34 @@ export class ReminderService {
     this.visibilityHandler = () => {
       if (document.visibilityState === 'visible') {
         console.log('[ReminderService] Page became visible, rebuilding schedule');
-        this.rebuildSchedule();
+        this.rebuildSchedulesFromNow();
       }
     };
     document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  /**
+   * 根据当前真实日期先校准 store，再重建调度
+   */
+  private rebuildSchedulesFromNow(): void {
+    this.syncCurrentDateFromNow();
+    this.rebuildSchedule();
+  }
+
+  /**
+   * 把 currentDate 校准到当前真实日期
+   */
+  private syncCurrentDateFromNow(): void {
+    if (!this.projectStore) return;
+
+    const today = dayjs().format('YYYY-MM-DD');
+    if (this.projectStore.currentDate === today) return;
+
+    if (typeof (this.projectStore as any).setCurrentDate === 'function') {
+      (this.projectStore as any).setCurrentDate(today);
+    } else {
+      this.projectStore.currentDate = today;
+    }
   }
 
   /**
@@ -276,14 +300,7 @@ export class ReminderService {
   private handleMidnightRefresh(): void {
     if (!this.projectStore) return;
 
-    const nextDate = dayjs().format('YYYY-MM-DD');
-    if (typeof (this.projectStore as any).setCurrentDate === 'function') {
-      (this.projectStore as any).setCurrentDate(nextDate);
-    } else {
-      this.projectStore.currentDate = nextDate;
-    }
-
-    this.rebuildSchedule();
+    this.rebuildSchedulesFromNow();
     this.scheduleMidnightRefresh();
   }
 

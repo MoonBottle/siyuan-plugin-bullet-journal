@@ -83,6 +83,16 @@ describe('ReminderService', () => {
       expect(mockNotificationRequestPermission).toHaveBeenCalled();
     });
 
+    it('启动时应先把过期的 currentDate 校准到今天', () => {
+      vi.setSystemTime(new Date('2026-04-08T08:00:00'));
+      const projectStore = makeStore([], []) as any;
+      projectStore.currentDate = '2026-04-07';
+
+      service.start({} as any, projectStore);
+
+      expect(projectStore.currentDate).toBe('2026-04-08');
+    });
+
     it('启动时应挂载下一次零点刷新 job', () => {
       vi.setSystemTime(new Date('2026-04-07T10:30:00'));
       const projectStore = makeStore([], []);
@@ -374,6 +384,20 @@ describe('ReminderService', () => {
 
       vi.advanceTimersByTime(300);
       expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('触发防抖重建时应先校准过期的 currentDate', () => {
+      vi.setSystemTime(new Date('2026-04-08T08:00:00'));
+      const projectStore = makeStore([], []) as any;
+      projectStore.currentDate = '2026-04-07';
+
+      service.start({} as any, projectStore);
+      projectStore.currentDate = '2026-04-07';
+
+      service.scheduleRebuild();
+      vi.advanceTimersByTime(300);
+
+      expect(projectStore.currentDate).toBe('2026-04-08');
     });
   });
 });
