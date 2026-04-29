@@ -2,279 +2,85 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Align habit check-in reminders with the existing Croner-based item reminder flow so habits get scheduled Cron jobs, missed-window catch-up, and diff-based cleanup.
+**Goal:** 让习惯提醒、零点跨天推进和 TodoDock 的 today/week 视图都对齐到 `ReminderService + projectStore.currentDate` 这一套单一时钟模型。
 
-**Architecture:** Keep `ReminderService` as the single reminder orchestration entrypoint. Move habit reminder code from “check whether it should fire right now” to “build reminder entries for today”, then let `ReminderService.rebuildSchedule()` apply the same rebuild, catch-up, and cleanup rules to both item jobs and habit jobs.
+**Architecture:** 保留 `ReminderService` 作为唯一提醒编排入口，在现有事项提醒与习惯提醒 Cron 调度之上新增一个零点一次性 job，负责推进 `projectStore.currentDate` 并触发全量重建。桌面端与移动端 TodoDock 去掉各自本地轮询，只消费 `projectStore.currentDate`，从而消除提醒系统与 Todo 视图短时间跨天不一致的问题。
 
-**Tech Stack:** TypeScript, Vitest, Croner, Pinia-backed project store
+**Tech Stack:** TypeScript, Vue 3, Pinia, Vitest, Croner
 
 ---
 
 ## File Structure
 
-- Modify: `src/services/habitReminder.ts`
-  - Replace the current `getHabitsNeedingReminder(habits, currentDate, now)` window-check helper with a pure entry builder that returns today's habit reminder entries.
 - Modify: `src/services/reminderService.ts`
-  - Add `habitScheduledJobs`, habit rebuild logic, habit Cron callbacks, and habit notification helper.
-- Modify: `test/services/habitReminder.test.ts`
-  - Replace the old window-trigger tests with entry-builder tests.
+  - 在现有事项/习惯 Cron 调度上增加零点刷新 job、统一 stop/cleanup 生命周期。
+- Modify: `src/stores/projectStore.ts`
+  - 视需要补一个轻量日期推进 action，避免服务层直接散写 `currentDate`。
+- Modify: `src/tabs/DesktopTodoDock.vue`
+  - 去掉本地 `todayDate` 和分钟轮询，改为直接依赖 `projectStore.currentDate`。
+- Modify: `src/mobile/MobileTodoDock.vue`
+  - 去掉本地 `todayDate` 和分钟轮询，改为直接依赖 `projectStore.currentDate`，并在日期变化时重算 today/week 筛选。
 - Modify: `test/services/reminderService.test.ts`
-  - Add tests covering habit Cron scheduling, missed-window catch-up, cleanup, and reminder-time changes.
+  - 补零点 job 调度、清理、日期推进相关测试。
+- Create or Modify: `test/tabs/DesktopTodoDock.test.ts`
+  - 如果仓库已有 Vue 组件测试模式则直接新增；否则复用现有测试设施做最小组件测试。
+- Create or Modify: `test/mobile/MobileTodoDock.test.ts`
+  - 验证移动端 today/week 筛选对 `projectStore.currentDate` 的依赖。
 
-### Task 1: Refactor habit reminder helper to build reminder entries
-
-**Files:**
-- Modify: `src/services/habitReminder.ts`
-- Test: `test/services/habitReminder.test.ts`
-
-- [ ] **Step 1: Write the failing helper tests**
-
-Add these tests to `test/services/habitReminder.test.ts` and update the import to use `getHabitReminderEntries`:
-
-```ts
-import { describe, it, expect } from 'vitest';
-import { isCheckInDay, getHabitReminderTime, getHabitReminderEntries } from '@/services/habitReminder';
-import type { Habit } from '@/types/models';
-
-function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
-  return {
-    docId: 'doc-1',
-    blockId: 'habit-1',
-    type: 'binary',
-    startDate: '2026-04-01',
-    records: [],
-    frequency: { type: 'daily' },
-    ...overrides,
-  };
-}
-
-describe('getHabitReminderEntries', () => {
-  it('今天应提醒的习惯会生成 entry', () => {
-    const habit = mkHabit({
-      name: '冥想',
-      reminder: { type: 'absolute', time: '07:00' },
-    });
-
-    const entries = getHabitReminderEntries([habit], '2026-04-07');
-
-    expect(entries).toHaveLength(1);
-    expect(entries[0].habit.name).toBe('冥想');
-    expect(entries[0].reminderTime).toBe(new Date('2026-04-07T07:00:00').getTime());
-    expect(entries[0].key).toBe(`habit-habit-1-2026-04-07-${entries[0].reminderTime}`);
-  });
-
-  it('今天已达标的习惯不生成 entry', () => {
-    const habit = mkHabit({
-      name: '早起',
-      reminder: { type: 'absolute', time: '07:00' },
-      records: [{
-        content: '早起',
-        date: '2026-04-07',
-        docId: 'doc-1',
-        blockId: 'record-1',
-        habitId: 'habit-1',
-      }],
-    });
-
-    expect(getHabitReminderEntries([habit], '2026-04-07')).toHaveLength(0);
-  });
-
-  it('非打卡日不生成 entry', () => {
-    const habit = mkHabit({
-      name: '跑步',
-      reminder: { type: 'absolute', time: '07:00' },
-      frequency: { type: 'weekly_days', daysOfWeek: [5] },
-    });
-
-    expect(getHabitReminderEntries([habit], '2026-04-04')).toHaveLength(0);
-  });
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run:
-
-```bash
-npx vitest run test/services/habitReminder.test.ts
-```
-
-Expected: FAIL because `getHabitReminderEntries` is not exported yet and the old tests still reference `getHabitsNeedingReminder`.
-
-- [ ] **Step 3: Write the minimal helper implementation**
-
-Update `src/services/habitReminder.ts` to this shape:
-
-```ts
-import dayjs from '@/utils/dayjs';
-import type { Habit, HabitFrequency } from '@/types/models';
-import { calculateHabitStats } from '@/utils/habitStatsUtils';
-
-export interface HabitReminderEntry {
-  habit: Habit;
-  reminderTime: number;
-  key: string;
-}
-
-export function isCheckInDay(habit: Habit, date: string): boolean {
-  // keep existing implementation
-}
-
-function isFrequencyDay(frequency: HabitFrequency, startDate: string, date: string): boolean {
-  // keep existing implementation
-}
-
-export function getHabitReminderTime(habit: Habit, date: string): Date | null {
-  // keep existing implementation
-}
-
-export function getHabitReminderEntries(
-  habits: Habit[],
-  currentDate: string
-): HabitReminderEntry[] {
-  const entries: HabitReminderEntry[] = [];
-
-  for (const habit of habits) {
-    if (!isCheckInDay(habit, currentDate)) continue;
-
-    const stats = calculateHabitStats(habit, currentDate);
-    if (stats.isPeriodCompleted) continue;
-
-    const reminderTime = getHabitReminderTime(habit, currentDate);
-    if (!reminderTime) continue;
-
-    const reminderTimestamp = reminderTime.getTime();
-    entries.push({
-      habit,
-      reminderTime: reminderTimestamp,
-      key: `habit-${habit.blockId}-${currentDate}-${reminderTimestamp}`,
-    });
-  }
-
-  return entries;
-}
-```
-
-Then remove the obsolete `HabitReminder` interface and `getHabitsNeedingReminder`.
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run:
-
-```bash
-npx vitest run test/services/habitReminder.test.ts
-```
-
-Expected: PASS with the new helper tests green.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/services/habitReminder.ts test/services/habitReminder.test.ts
-git commit -m "refactor(reminder): build habit reminder entries"
-```
-
-### Task 2: Add Cron-based habit scheduling to ReminderService
+## Task 1: 为 ReminderService 增加零点日期推进 job
 
 **Files:**
 - Modify: `src/services/reminderService.ts`
+- Modify: `src/stores/projectStore.ts`
 - Test: `test/services/reminderService.test.ts`
 
-- [ ] **Step 1: Write the failing ReminderService tests for habit scheduling**
+- [ ] **Step 1: 先写失败测试，覆盖零点 job 的生命周期**
 
-Extend `test/services/reminderService.test.ts` with a habit-aware store helper and these cases:
+在 `test/services/reminderService.test.ts` 中新增以下测试，沿用当前文件对 `Cron`、通知和 store stub 的 mock 方式：
 
 ```ts
-import type { Habit } from '@/types/models';
+it('启动时应挂载下一次零点刷新 job', () => {
+  vi.setSystemTime(new Date('2026-04-07T10:30:00'));
+  const projectStore = makeStore() as any;
 
-function mkHabit(overrides: Partial<Habit> & { name: string }): Habit {
-  return {
-    docId: 'doc-1',
-    blockId: 'habit-1',
-    type: 'binary',
-    startDate: '2026-04-01',
-    records: [],
-    frequency: { type: 'daily' },
-    ...overrides,
-  };
-}
+  service.start({} as any, projectStore);
 
-function makeStore(items: Item | Item[] = [], habits: Habit[] = []) {
-  return {
-    currentDate: '2026-04-07',
-    getHabits: () => habits,
-    projects: [{ tasks: [{ items: Array.isArray(items) ? items : [items] }] }],
-  };
-}
-
-it('未来习惯提醒应创建独立的 Cron job', () => {
-  const habit = mkHabit({
-    name: '冥想',
-    reminder: { type: 'absolute', time: '07:00' },
-  });
-
-  vi.setSystemTime(new Date('2026-04-07T06:00:00'));
-  service.start({} as any, makeStore([], [habit]) as any);
-
-  expect((service as any).habitScheduledJobs.size).toBe(1);
-});
-
-it('习惯提醒在宽容窗口内应立即补发', () => {
-  const habit = mkHabit({
-    name: '冥想',
-    reminder: { type: 'absolute', time: '07:00' },
-  });
-
-  vi.setSystemTime(new Date('2026-04-07T07:03:00'));
-  service.start({} as any, makeStore([], [habit]) as any);
-
-  expect(mockShowSystemNotification).toHaveBeenCalledWith(
-    expect.stringContaining('🎯'),
-    expect.stringContaining('冥想'),
-    expect.objectContaining({ tag: 'habit-reminder-habit-1' }),
+  expect((service as any).midnightRefreshJob).toBeTruthy();
+  expect(Cron).toHaveBeenCalledWith(
+    expect.any(Date),
+    expect.any(Function),
   );
 });
 
-it('习惯提醒时间变化后应删除旧 job 并创建新 job', () => {
-  vi.setSystemTime(new Date('2026-04-07T06:00:00'));
-  const store = makeStore([], [mkHabit({
-    name: '冥想',
-    reminder: { type: 'absolute', time: '07:00' },
-  })]) as any;
+it('零点 job 触发后应推进 currentDate 并重建调度', () => {
+  vi.setSystemTime(new Date('2026-04-07T23:59:59'));
+  const projectStore = makeStore() as any;
+  const rebuildSpy = vi.spyOn(service as any, 'rebuildSchedule');
 
-  service.start({} as any, store);
-  const oldJobs = new Map((service as any).habitScheduledJobs);
-
-  store.getHabits = () => [mkHabit({
-    name: '冥想',
-    reminder: { type: 'absolute', time: '08:00' },
-  })];
-  (service as any).rebuildSchedule();
-
-  const oldJob = Array.from(oldJobs.values())[0];
-  expect(oldJob.stop).toHaveBeenCalled();
-  expect((service as any).habitScheduledJobs.size).toBe(1);
-});
-```
-
-Also strengthen the lifecycle test:
-
-```ts
-it('启动和停止后应清理所有 job', () => {
-  const projectStore = makeStore([], [
-    mkHabit({ name: '冥想', reminder: { type: 'absolute', time: '07:00' } }),
-  ]) as any;
-
-  vi.setSystemTime(new Date('2026-04-07T06:00:00'));
   service.start({} as any, projectStore);
+
+  vi.setSystemTime(new Date('2026-04-08T00:00:01'));
+  (service as any).handleMidnightRefresh();
+
+  expect(projectStore.currentDate).toBe('2026-04-08');
+  expect(rebuildSpy).toHaveBeenCalled();
+  expect((service as any).midnightRefreshJob).toBeTruthy();
+});
+
+it('stop 时应清理零点 job', () => {
+  vi.setSystemTime(new Date('2026-04-07T10:30:00'));
+  const projectStore = makeStore() as any;
+
+  service.start({} as any, projectStore);
+  const midnightJob = (service as any).midnightRefreshJob;
   service.stop();
 
-  expect((service as any).scheduledJobs.size).toBe(0);
-  expect((service as any).habitScheduledJobs.size).toBe(0);
+  expect(midnightJob.stop).toHaveBeenCalled();
+  expect((service as any).midnightRefreshJob).toBeNull();
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: 跑测试，确认按预期失败**
 
 Run:
 
@@ -282,131 +88,78 @@ Run:
 npx vitest run test/services/reminderService.test.ts
 ```
 
-Expected: FAIL because `habitScheduledJobs` does not exist and habit reminders are still fired by `checkHabitReminders()` rather than Cron scheduling.
+Expected: FAIL，原因应为 `midnightRefreshJob` / `handleMidnightRefresh()` 尚不存在，或 `stop()` 尚未清理零点 job。
 
-- [ ] **Step 3: Implement minimal ReminderService changes**
+- [ ] **Step 3: 写最小实现，让 ReminderService 接管跨天**
 
-Refactor `src/services/reminderService.ts` along these lines:
+在 `src/services/reminderService.ts` 中补这组最小实现：
 
 ```ts
-import { Cron } from 'croner';
-import type { Plugin } from 'siyuan';
-import type { Habit, Item } from '@/types/models';
-import { useProjectStore } from '@/stores';
-import { calculateReminderTime } from '@/parser/reminderParser';
-import { showSystemNotification } from '@/utils/notification';
-import { getHabitReminderEntries } from '@/services/habitReminder';
+private midnightRefreshJob: Cron | null = null;
 
-type ProjectStoreType = ReturnType<typeof useProjectStore>;
+private scheduleMidnightRefresh(): void {
+  if (this.midnightRefreshJob) {
+    this.midnightRefreshJob.stop();
+    this.midnightRefreshJob = null;
+  }
 
-function makeScheduleKey(item: Item, reminderTime: number): string {
-  return `${item.blockId}-${item.date}-${reminderTime}`;
+  const nextMidnight = new Date();
+  nextMidnight.setHours(24, 0, 0, 0);
+
+  this.midnightRefreshJob = new Cron(nextMidnight, () => {
+    this.handleMidnightRefresh();
+  });
 }
 
-const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
-const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000;
+private handleMidnightRefresh(): void {
+  if (!this.projectStore) return;
 
-export class ReminderService {
-  private scheduledJobs: Map<string, Cron> = new Map();
-  private habitScheduledJobs: Map<string, Cron> = new Map();
-  private notifiedKeys: Set<string> = new Set();
-  private projectStore: ProjectStoreType | null = null;
-  private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
-  private visibilityHandler: (() => void) | null = null;
-
-  private rebuildSchedule(): void {
-    if (!this.projectStore) return;
-
-    const now = Date.now();
-    const newEntries = new Map<string, { item: Item; reminderTime: number }>();
-    const habitNewEntries = new Map<string, { habit: Habit; reminderTime: number }>();
-
-    // keep existing item scan, but use MISSED_THRESHOLD_MS and FUTURE_WINDOW_MS constants
-
-    const habits = typeof this.projectStore.getHabits === 'function'
-      ? this.projectStore.getHabits('')
-      : [];
-
-    for (const entry of getHabitReminderEntries(habits, this.projectStore.currentDate)) {
-      if (entry.reminderTime <= now && (now - entry.reminderTime) <= MISSED_THRESHOLD_MS) {
-        if (!this.notifiedKeys.has(entry.key)) {
-          this.triggerHabitNotification(entry.habit);
-          this.notifiedKeys.add(entry.key);
-          this.scheduleCleanup(entry.key);
-        }
-      } else if (entry.reminderTime <= now) {
-        if (!this.notifiedKeys.has(entry.key)) {
-          this.notifiedKeys.add(entry.key);
-        }
-      } else if (entry.reminderTime < now + FUTURE_WINDOW_MS) {
-        habitNewEntries.set(entry.key, {
-          habit: entry.habit,
-          reminderTime: entry.reminderTime,
-        });
-      }
-    }
-
-    // keep existing item diff logic
-
-    for (const [key, job] of this.habitScheduledJobs) {
-      if (!habitNewEntries.has(key)) {
-        job.stop();
-        this.habitScheduledJobs.delete(key);
-      }
-    }
-
-    for (const [key, { habit, reminderTime }] of habitNewEntries) {
-      if (this.habitScheduledJobs.has(key)) continue;
-
-      const job = new Cron(new Date(reminderTime), () => {
-        if (!this.notifiedKeys.has(key)) {
-          this.triggerHabitNotification(habit);
-          this.notifiedKeys.add(key);
-          this.scheduleCleanup(key);
-        }
-        this.habitScheduledJobs.delete(key);
-      });
-
-      this.habitScheduledJobs.set(key, job);
-    }
+  const nextDate = dayjs().format('YYYY-MM-DD');
+  if (typeof this.projectStore.setCurrentDate === 'function') {
+    this.projectStore.setCurrentDate(nextDate);
+  } else {
+    this.projectStore.currentDate = nextDate;
   }
 
-  private clearAllJobs(): void {
-    for (const [, job] of this.scheduledJobs) {
-      job.stop();
-    }
-    this.scheduledJobs.clear();
+  this.rebuildSchedule();
+  this.scheduleMidnightRefresh();
+}
+```
 
-    for (const [, job] of this.habitScheduledJobs) {
-      job.stop();
-    }
-    this.habitScheduledJobs.clear();
-  }
+同时做这几个接线动作：
 
-  private triggerHabitNotification(habit: Habit): void {
-    const title = `🎯 ${habit.name}`;
-    const body = habit.type === 'count'
-      ? `${habit.name} ${habit.target || 0}${habit.unit || ''}`
-      : habit.name;
+```ts
+start(_plugin: Plugin, projectStore: ProjectStoreType): void {
+  this.projectStore = projectStore;
+  this.requestNotificationPermission();
+  this.setupVisibilityListener();
+  this.rebuildSchedule();
+  this.scheduleMidnightRefresh();
+}
 
-    showSystemNotification(title, body, {
-      tag: `habit-reminder-${habit.blockId}`,
-      icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
-      onClick: () => {
-        this.openBlock(habit.blockId);
-      },
-    });
+private clearAllJobs(): void {
+  for (const [, job] of this.scheduledJobs) job.stop();
+  this.scheduledJobs.clear();
+
+  for (const [, job] of this.habitScheduledJobs) job.stop();
+  this.habitScheduledJobs.clear();
+
+  if (this.midnightRefreshJob) {
+    this.midnightRefreshJob.stop();
+    this.midnightRefreshJob = null;
   }
 }
 ```
 
-Important implementation notes:
+如果要避免服务层直接写 store state，则在 `src/stores/projectStore.ts` 增加一个极小 action：
 
-- Delete `checkHabitReminders()`
-- Import `Habit` because `triggerHabitNotification` now takes a typed habit
-- Keep habit keys in the `habit-...-timestamp` format from Task 1
+```ts
+setCurrentDate(newDate: string) {
+  this.currentDate = newDate;
+}
+```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 4: 跑测试，确认转绿**
 
 Run:
 
@@ -414,22 +167,277 @@ Run:
 npx vitest run test/services/reminderService.test.ts
 ```
 
-Expected: PASS with both item reminder tests and new habit scheduling tests green.
+Expected: PASS，现有事项/习惯提醒测试继续通过，新增零点 job 生命周期测试转绿。
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: 提交这一小步**
 
 ```bash
-git add src/services/reminderService.ts test/services/reminderService.test.ts
-git commit -m "feat(reminder): schedule habit reminders with croner"
+git add src/services/reminderService.ts src/stores/projectStore.ts test/services/reminderService.test.ts
+git commit -m "feat(reminder): refresh schedules at midnight"
 ```
 
-### Task 3: Run focused regression coverage for the aligned reminder flow
+## Task 2: 桌面 TodoDock 收口到 projectStore.currentDate
 
 **Files:**
-- Test: `test/services/habitReminder.test.ts`
-- Test: `test/services/reminderService.test.ts`
+- Modify: `src/tabs/DesktopTodoDock.vue`
+- Test: `test/tabs/DesktopTodoDock.test.ts`
 
-- [ ] **Step 1: Run the focused reminder test suite**
+- [ ] **Step 1: 先写失败测试，锁定桌面端不再自管日期**
+
+新增 `test/tabs/DesktopTodoDock.test.ts`，最小覆盖两个行为：
+
+```ts
+it('today 过滤应直接使用 projectStore.currentDate', async () => {
+  const projectStore = createProjectStoreStub({ currentDate: '2026-04-07' });
+  const wrapper = mount(DesktopTodoDock, {
+    global: {
+      plugins: [createTestingPinia({ stubActions: false })],
+      provide: { projectStore },
+    },
+  });
+
+  expect((wrapper.vm as any).dateRange).toEqual({
+    start: '1970-01-01',
+    end: '2026-04-07',
+  });
+
+  projectStore.currentDate = '2026-04-08';
+  await nextTick();
+
+  expect((wrapper.vm as any).dateRange).toEqual({
+    start: '1970-01-01',
+    end: '2026-04-08',
+  });
+});
+
+it('卸载时不应再清理本地跨天 interval', async () => {
+  const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
+  const wrapper = mount(DesktopTodoDock, { /* same test shell */ });
+
+  wrapper.unmount();
+
+  expect(clearIntervalSpy).not.toHaveBeenCalledWith(expect.any(Number));
+});
+```
+
+如果现有组件测试基座不能直接 mount Dock，可退一步抽取一个纯函数 helper，例如：
+
+```ts
+export function buildTodoDateRange(
+  filterType: DateFilterType,
+  currentDate: string,
+  startDate: string,
+  endDate: string,
+) { /* ... */ }
+```
+
+然后对 helper 写单测；不要为了凑组件测试强行引入大规模测试基建。
+
+- [ ] **Step 2: 跑测试，确认失败**
+
+Run:
+
+```bash
+npx vitest run test/tabs/DesktopTodoDock.test.ts
+```
+
+Expected: FAIL，原因应为组件仍在使用 `todayDate` 本地 ref 和 `setInterval` 轮询。
+
+- [ ] **Step 3: 写最小实现，移除桌面端本地跨天轮询**
+
+修改 `src/tabs/DesktopTodoDock.vue`：
+
+```ts
+const currentDate = computed(() => projectStore.currentDate);
+
+const dateRange = computed(() => {
+  if (dateFilterType.value === 'all') return null;
+  if (dateFilterType.value === 'today') {
+    return { start: '1970-01-01', end: currentDate.value };
+  }
+  if (dateFilterType.value === 'week') {
+    const nextWeek = dayjs(currentDate.value).add(6, 'day').format('YYYY-MM-DD');
+    return { start: '1970-01-01', end: nextWeek };
+  }
+  return { start: startDate.value, end: endDate.value };
+});
+
+const completedDateRange = computed(() => {
+  if (dateFilterType.value === 'all') return null;
+  if (dateFilterType.value === 'today') {
+    return { start: currentDate.value, end: currentDate.value };
+  }
+  if (dateFilterType.value === 'week') {
+    const nextWeek = dayjs(currentDate.value).add(6, 'day').format('YYYY-MM-DD');
+    return { start: currentDate.value, end: nextWeek };
+  }
+  return { start: startDate.value, end: endDate.value };
+});
+```
+
+并删除：
+
+```ts
+const todayDate = ref(...)
+let dateCheckTimer ...
+const startDateCheck = () => ...
+```
+
+同时删掉 `onMounted()` 里的 `startDateCheck()` 和 `onUnmounted()` 里的 interval cleanup。
+
+- [ ] **Step 4: 跑测试，确认转绿**
+
+Run:
+
+```bash
+npx vitest run test/tabs/DesktopTodoDock.test.ts
+```
+
+Expected: PASS，桌面端 dateRange/completedDateRange 会随 `projectStore.currentDate` 变化而变化。
+
+- [ ] **Step 5: 提交这一小步**
+
+```bash
+git add src/tabs/DesktopTodoDock.vue test/tabs/DesktopTodoDock.test.ts
+git commit -m "refactor(todo): use store date in desktop dock"
+```
+
+## Task 3: 移动 TodoDock 收口到 projectStore.currentDate
+
+**Files:**
+- Modify: `src/mobile/MobileTodoDock.vue`
+- Test: `test/mobile/MobileTodoDock.test.ts`
+
+- [ ] **Step 1: 先写失败测试，覆盖移动端 today/week 重新计算**
+
+新增 `test/mobile/MobileTodoDock.test.ts`，至少覆盖这两个行为：
+
+```ts
+it('today 筛选应基于 projectStore.currentDate 计算 dateRange', async () => {
+  const projectStore = createProjectStoreStub({ currentDate: '2026-04-07' });
+  const wrapper = mount(MobileTodoDock, createMobileDockMountOptions(projectStore));
+
+  expect((wrapper.vm as any).state.dateRange).toEqual({
+    start: '1970-01-01',
+    end: '2026-04-07',
+  });
+
+  projectStore.currentDate = '2026-04-08';
+  await nextTick();
+
+  expect((wrapper.vm as any).state.dateRange).toEqual({
+    start: '1970-01-01',
+    end: '2026-04-08',
+  });
+});
+
+it('week 筛选在 currentDate 变化后应重新应用', async () => {
+  const projectStore = createProjectStoreStub({ currentDate: '2026-04-07' });
+  const wrapper = mount(MobileTodoDock, createMobileDockMountOptions(projectStore));
+
+  (wrapper.vm as any).state.dateFilter = 'week';
+  (wrapper.vm as any).applyFilters();
+  expect((wrapper.vm as any).state.dateRange).toEqual({
+    start: '1970-01-01',
+    end: '2026-04-13',
+  });
+
+  projectStore.currentDate = '2026-04-08';
+  await nextTick();
+
+  expect((wrapper.vm as any).state.dateRange).toEqual({
+    start: '1970-01-01',
+    end: '2026-04-14',
+  });
+});
+```
+
+- [ ] **Step 2: 跑测试，确认失败**
+
+Run:
+
+```bash
+npx vitest run test/mobile/MobileTodoDock.test.ts
+```
+
+Expected: FAIL，原因应为移动端当前仍依赖 `todayDate` 本地 ref，并且只有 interval 命中时才会重新 `applyFilters()`。
+
+- [ ] **Step 3: 写最小实现，移除移动端本地跨天轮询**
+
+修改 `src/mobile/MobileTodoDock.vue`：
+
+```ts
+const currentDate = computed(() => projectStore.currentDate);
+
+const applyFilters = () => {
+  if (state.dateFilter === 'today') {
+    state.dateRange = { start: '1970-01-01', end: currentDate.value };
+  } else if (state.dateFilter === 'week') {
+    const nextWeek = dayjs(currentDate.value).add(6, 'day').format('YYYY-MM-DD');
+    state.dateRange = { start: '1970-01-01', end: nextWeek };
+  } else if (state.dateFilter === 'all') {
+    state.dateRange = null;
+  }
+};
+
+const completedDateRange = computed(() => {
+  if (state.dateFilter === 'all') return null;
+  if (state.dateFilter === 'today') {
+    return { start: currentDate.value, end: currentDate.value };
+  }
+  if (state.dateFilter === 'week') {
+    const nextWeek = dayjs(currentDate.value).add(6, 'day').format('YYYY-MM-DD');
+    return { start: currentDate.value, end: nextWeek };
+  }
+  return state.dateRange;
+});
+
+watch(
+  () => projectStore.currentDate,
+  () => {
+    if (state.dateFilter === 'today' || state.dateFilter === 'week') {
+      applyFilters();
+    }
+  }
+);
+```
+
+并删除：
+
+```ts
+const todayDate = ref(...)
+let dateCheckTimer ...
+const startDateCheck = () => ...
+```
+
+同时删掉 `onMounted()` 里的 `startDateCheck()` 与 `onUnmounted()` 中对应 cleanup。
+
+- [ ] **Step 4: 跑测试，确认转绿**
+
+Run:
+
+```bash
+npx vitest run test/mobile/MobileTodoDock.test.ts
+```
+
+Expected: PASS，移动端 today/week 筛选在 `projectStore.currentDate` 推进后立即同步。
+
+- [ ] **Step 5: 提交这一小步**
+
+```bash
+git add src/mobile/MobileTodoDock.vue test/mobile/MobileTodoDock.test.ts
+git commit -m "refactor(todo): use store date in mobile dock"
+```
+
+## Task 4: 跑聚焦回归，验证提醒与 Todo 跨天统一
+
+**Files:**
+- Test: `test/services/reminderService.test.ts`
+- Test: `test/tabs/DesktopTodoDock.test.ts`
+- Test: `test/mobile/MobileTodoDock.test.ts`
+- Test: `test/services/habitReminder.test.ts`
+
+- [ ] **Step 1: 跑提醒相关聚焦测试**
 
 Run:
 
@@ -437,45 +445,56 @@ Run:
 npx vitest run test/services/habitReminder.test.ts test/services/reminderService.test.ts
 ```
 
-Expected: PASS with all habit helper and reminder orchestration tests green.
+Expected: PASS，确认习惯提醒条目构建、事项/习惯 Cron 调度与零点刷新不会互相打架。
 
-- [ ] **Step 2: Run the parser/store regression slice that already depends on merged reminder behavior**
-
-Run:
-
-```bash
-npx vitest run test/stores/projectStore.test.ts test/parser/core.test.ts
-```
-
-Expected: PASS, confirming the reminder refactor did not break habit parsing assumptions or store-level habit access.
-
-- [ ] **Step 3: Review the final diff before closing**
+- [ ] **Step 2: 跑 TodoDock 聚焦测试**
 
 Run:
 
 ```bash
-git diff -- src/services/habitReminder.ts src/services/reminderService.ts test/services/habitReminder.test.ts test/services/reminderService.test.ts
+npx vitest run test/tabs/DesktopTodoDock.test.ts test/mobile/MobileTodoDock.test.ts
 ```
 
-Expected: Diff shows only the helper refactor, habit Cron scheduling, and aligned tests described in the spec.
+Expected: PASS，确认两端都已不再维护本地跨天轮询。
 
-- [ ] **Step 4: Commit the verification pass if test fixes were needed**
+- [ ] **Step 3: 跑一组 store 回归测试**
 
-If the verification steps required no further edits, do nothing. If small fixes were required, commit them with:
+Run:
 
 ```bash
-git add src/services/habitReminder.ts src/services/reminderService.ts test/services/habitReminder.test.ts test/services/reminderService.test.ts
-git commit -m "test(reminder): cover habit croner alignment"
+npx vitest run test/stores/projectStore.test.ts
+```
+
+Expected: PASS，确认 `currentDate` 作为统一日期源不会破坏现有 store 行为。
+
+- [ ] **Step 4: 如组件测试基建允许，再跑全量测试**
+
+Run:
+
+```bash
+npm test
+```
+
+Expected: PASS；如果全量太重，至少保留前 3 步结果作为本轮交付依据。
+
+- [ ] **Step 5: 视差异决定是否补一个收尾提交**
+
+如果前面步骤没有新增修复，则不需要额外提交；若验证中产生小修正，再执行：
+
+```bash
+git add src/services/reminderService.ts src/stores/projectStore.ts src/tabs/DesktopTodoDock.vue src/mobile/MobileTodoDock.vue test/services/reminderService.test.ts test/tabs/DesktopTodoDock.test.ts test/mobile/MobileTodoDock.test.ts
+git commit -m "test(reminder): cover midnight date alignment"
 ```
 
 ## Self-Review
 
 - Spec coverage:
-  - Helper role change is covered by Task 1.
-  - Habit Cron scheduling, catch-up, cleanup, and reminder-time changes are covered by Task 2.
-  - Focused verification across helper, service, parser, and store tests is covered by Task 3.
+  - 习惯提醒 Cron 化已在既有实现基础上保留，并由 Task 1 补齐零点推进。
+  - `projectStore.currentDate` 成为唯一日期源由 Task 1/2/3 共同覆盖。
+  - Desktop/Mobile TodoDock 去掉本地轮询由 Task 2/3 覆盖。
+  - 零点推进后提醒与视图同步刷新由 Task 1 和 Task 3 的测试共同覆盖。
 - Placeholder scan:
-  - No `TBD`/`TODO` placeholders remain.
-  - Every code-changing step includes concrete code or commands.
+  - 没有 `TBD` / `TODO` / “后续补上” 之类占位语。
+  - 每个任务都给了明确文件、测试命令和最小实现方向。
 - Type consistency:
-  - `HabitReminderEntry`, `habitScheduledJobs`, `getHabitReminderEntries`, and `triggerHabitNotification` are named consistently across all tasks.
+  - `midnightRefreshJob`、`scheduleMidnightRefresh()`、`handleMidnightRefresh()`、`projectStore.currentDate` 在整份计划中命名一致。

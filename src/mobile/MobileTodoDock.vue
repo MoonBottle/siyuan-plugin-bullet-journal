@@ -126,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import MobileFilterBar from './components/todo/MobileFilterBar.vue';
 import MobileTodoList from './components/todo/MobileTodoList.vue';
 import MobileBottomNav from './components/todo/MobileBottomNav.vue';
@@ -149,6 +149,7 @@ import { updateBlockContent } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { buildViewDebugContext } from '@/utils/viewDebug';
+import { buildCompletedTodoDateRange, buildTodoDateRange, type TodoDateFilterType } from '@/utils/todoDateFilter';
 import { t } from '@/i18n';
 import type { Item, Project, Task, ItemStatus, PriorityLevel } from '@/types/models';
 import dayjs from '@/utils/dayjs';
@@ -162,7 +163,7 @@ const { state: detailState, openItem, openProject, openTask } = useItemDetail();
 const state = reactive({
   searchQuery: '',
   selectedGroup: '',
-  dateFilter: 'today' as 'today' | 'week' | 'all' | 'custom',
+  dateFilter: 'today' as TodoDateFilterType,
   dateRange: null as { start: string; end: string } | null,
   selectedPriorities: [] as PriorityLevel[],
   showFilterDrawer: false,
@@ -179,19 +180,7 @@ const state = reactive({
   showPomodoroDrawer: false,
   showHabitView: false,
 });
-
-const todayDate = ref(dayjs().format('YYYY-MM-DD'));
-let dateCheckTimer: ReturnType<typeof setInterval> | null = null;
-
-const startDateCheck = () => {
-  dateCheckTimer = setInterval(() => {
-    const newDate = dayjs().format('YYYY-MM-DD');
-    if (newDate !== todayDate.value) {
-      todayDate.value = newDate;
-      applyFilters();
-    }
-  }, 60_000);
-};
+const currentDate = computed(() => projectStore.currentDate);
 
 // Selected project and task refs for detail drawers
 const selectedProject = ref<Project | null>(null);
@@ -346,31 +335,28 @@ const handleCreateItem = (taskId: string, projectId?: string) => {
 };
 
 const applyFilters = () => {
-  // Apply date filter
-  if (state.dateFilter === 'today') {
-    state.dateRange = { start: '1970-01-01', end: todayDate.value };
-  } else if (state.dateFilter === 'week') {
-    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
-    state.dateRange = { start: '1970-01-01', end: nextWeek };
-  } else if (state.dateFilter === 'all') {
-    state.dateRange = null;
-  }
-  // Custom date range is already set by the drawer
-  
+  state.dateRange = buildTodoDateRange(
+    state.dateFilter,
+    currentDate.value,
+    state.dateRange?.start ?? dayjs().format('YYYY-MM-DD'),
+    state.dateRange?.end ?? dayjs().add(7, 'day').format('YYYY-MM-DD'),
+  );
+
   showMessage(t('mobile.filter.applied') || '筛选已应用');
 };
 
 const completedDateRange = computed(() => {
-  if (state.dateFilter === 'all') return null;
-  if (state.dateFilter === 'today') {
-    return { start: todayDate.value, end: todayDate.value };
-  }
-  if (state.dateFilter === 'week') {
-    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
-    return { start: todayDate.value, end: nextWeek };
-  }
-  return state.dateRange;
+  return buildCompletedTodoDateRange(state.dateFilter, currentDate.value, state.dateRange);
 });
+
+watch(
+  () => projectStore.currentDate,
+  () => {
+    if (state.dateFilter === 'today' || state.dateFilter === 'week') {
+      applyFilters();
+    }
+  }
+);
 
 const handleOpenPomodoro = (item: Item) => {
   // Open pomodoro drawer with preselected item
@@ -470,15 +456,10 @@ onMounted(async () => {
   }
 
   applyFilters();
-  startDateCheck();
 });
 
 onUnmounted(() => {
   console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('MobileTodoDock', plugin));
-  if (dateCheckTimer) {
-    clearInterval(dateCheckTimer);
-    dateCheckTimer = null;
-  }
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }

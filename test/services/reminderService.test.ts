@@ -83,15 +83,27 @@ describe('ReminderService', () => {
       expect(mockNotificationRequestPermission).toHaveBeenCalled();
     });
 
+    it('启动时应挂载下一次零点刷新 job', () => {
+      vi.setSystemTime(new Date('2026-04-07T10:30:00'));
+      const projectStore = makeStore([], []);
+
+      service.start({} as any, projectStore as any);
+
+      expect((service as any).midnightRefreshJob).toBeTruthy();
+    });
+
     it('启动和停止后应清理所有 job', () => {
       vi.setSystemTime(new Date('2026-04-07T06:00:00'));
       const projectStore = makeStore([], [
         mkHabit({ name: '冥想', reminder: { type: 'absolute', time: '07:00' } }),
       ]);
       service.start({} as any, projectStore as any);
+      const midnightJob = (service as any).midnightRefreshJob;
       service.stop();
       expect((service as any).scheduledJobs.size).toBe(0);
       expect((service as any).habitScheduledJobs.size).toBe(0);
+      expect(midnightJob.stop).toHaveBeenCalled();
+      expect((service as any).midnightRefreshJob).toBeNull();
     });
   });
 
@@ -298,6 +310,22 @@ describe('ReminderService', () => {
       const oldJob = Array.from(oldJobs.values())[0] as any;
       expect(oldJob.stop).toHaveBeenCalled();
       expect((service as any).habitScheduledJobs.size).toBe(1);
+    });
+
+    it('零点 job 触发后应推进 currentDate 并重建调度', () => {
+      vi.setSystemTime(new Date('2026-04-07T23:59:59'));
+      const projectStore = makeStore([], []) as any;
+      const rebuildSpy = vi.spyOn(service as any, 'rebuildSchedule');
+
+      service.start({} as any, projectStore);
+      rebuildSpy.mockClear();
+
+      vi.setSystemTime(new Date('2026-04-08T00:00:01'));
+      (service as any).handleMidnightRefresh();
+
+      expect(projectStore.currentDate).toBe('2026-04-08');
+      expect(rebuildSpy).toHaveBeenCalledTimes(1);
+      expect((service as any).midnightRefreshJob).toBeTruthy();
     });
   });
 

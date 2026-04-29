@@ -160,6 +160,7 @@ import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { buildViewDebugContext } from '@/utils/viewDebug';
+import { buildCompletedTodoDateRange, buildTodoDateRange, type TodoDateFilterType } from '@/utils/todoDateFilter';
 import type { PriorityLevel } from '@/types/models';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import { defaultTodoSortRules } from '@/settings';
@@ -183,23 +184,10 @@ const searchQuery = ref('');
 const selectedPriorities = ref<PriorityLevel[]>([]);
 const showSortPanel = ref(false);
 
-// 日期筛选类型：today | week | all | custom
-type DateFilterType = 'today' | 'week' | 'all' | 'custom';
-const dateFilterType = ref<DateFilterType>('today');
+const dateFilterType = ref<TodoDateFilterType>('today');
 const startDate = ref(dayjs().format('YYYY-MM-DD'));
 const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
-
-const todayDate = ref(dayjs().format('YYYY-MM-DD'));
-let dateCheckTimer: ReturnType<typeof setInterval> | null = null;
-
-const startDateCheck = () => {
-  dateCheckTimer = setInterval(() => {
-    const newDate = dayjs().format('YYYY-MM-DD');
-    if (newDate !== todayDate.value) {
-      todayDate.value = newDate;
-    }
-  }, 60_000);
-};
+const currentDate = computed(() => projectStore.currentDate);
 
 const priorityOptions = [
   { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
@@ -230,28 +218,16 @@ const sortDirectionOptions = [
 ];
 
 const dateRange = computed(() => {
-  if (dateFilterType.value === 'all') return null;
-  if (dateFilterType.value === 'today') {
-    return { start: '1970-01-01', end: todayDate.value };
-  }
-  if (dateFilterType.value === 'week') {
-    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
-    return { start: '1970-01-01', end: nextWeek };
-  }
-  // custom
-  return { start: startDate.value, end: endDate.value };
+  return buildTodoDateRange(
+    dateFilterType.value,
+    currentDate.value,
+    startDate.value,
+    endDate.value,
+  );
 });
 
 const completedDateRange = computed(() => {
-  if (dateFilterType.value === 'all') return null;
-  if (dateFilterType.value === 'today') {
-    return { start: todayDate.value, end: todayDate.value };
-  }
-  if (dateFilterType.value === 'week') {
-    const nextWeek = dayjs(todayDate.value).add(6, 'day').format('YYYY-MM-DD');
-    return { start: todayDate.value, end: nextWeek };
-  }
-  return { start: startDate.value, end: endDate.value };
+  return buildCompletedTodoDateRange(dateFilterType.value, currentDate.value, dateRange.value);
 });
 
 const dateFilterLabel = computed(() => {
@@ -271,7 +247,7 @@ function togglePriority(priority: PriorityLevel) {
   }
 }
 
-function onDateFilterChange(type: DateFilterType) {
+function onDateFilterChange(type: TodoDateFilterType) {
   dateFilterType.value = type;
   if (type === 'custom') {
     // 默认设置为今天到一周后
@@ -503,16 +479,10 @@ onMounted(async () => {
   } catch {
     // 忽略
   }
-
-  startDateCheck();
 });
 
 onUnmounted(() => {
   console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('DesktopTodoDock', plugin));
-  if (dateCheckTimer) {
-    clearInterval(dateCheckTimer);
-    dateCheckTimer = null;
-  }
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }

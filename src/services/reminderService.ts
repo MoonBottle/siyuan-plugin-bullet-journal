@@ -11,6 +11,7 @@ import { useProjectStore } from '@/stores';
 import { calculateReminderTime } from '@/parser/reminderParser';
 import { showSystemNotification } from '@/utils/notification';
 import { getHabitReminderEntries } from '@/services/habitReminder';
+import dayjs from '@/utils/dayjs';
 
 type ProjectStoreType = ReturnType<typeof useProjectStore>;
 const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
@@ -31,6 +32,7 @@ export class ReminderService {
   private projectStore: ProjectStoreType | null = null;
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
   private visibilityHandler: (() => void) | null = null;
+  private midnightRefreshJob: Cron | null = null;
 
   /**
    * 启动提醒服务
@@ -41,6 +43,7 @@ export class ReminderService {
     this.requestNotificationPermission();
     this.setupVisibilityListener();
     this.rebuildSchedule();
+    this.scheduleMidnightRefresh();
 
     console.log('[ReminderService] Started with croner');
   }
@@ -245,6 +248,43 @@ export class ReminderService {
       job.stop();
     }
     this.habitScheduledJobs.clear();
+    if (this.midnightRefreshJob) {
+      this.midnightRefreshJob.stop();
+      this.midnightRefreshJob = null;
+    }
+  }
+
+  /**
+   * 调度下一次零点刷新
+   */
+  private scheduleMidnightRefresh(): void {
+    if (this.midnightRefreshJob) {
+      this.midnightRefreshJob.stop();
+      this.midnightRefreshJob = null;
+    }
+
+    const nextMidnight = new Date();
+    nextMidnight.setHours(24, 0, 0, 0);
+    this.midnightRefreshJob = new Cron(nextMidnight, () => {
+      this.handleMidnightRefresh();
+    });
+  }
+
+  /**
+   * 零点推进日期并重建调度
+   */
+  private handleMidnightRefresh(): void {
+    if (!this.projectStore) return;
+
+    const nextDate = dayjs().format('YYYY-MM-DD');
+    if (typeof (this.projectStore as any).setCurrentDate === 'function') {
+      (this.projectStore as any).setCurrentDate(nextDate);
+    } else {
+      this.projectStore.currentDate = nextDate;
+    }
+
+    this.rebuildSchedule();
+    this.scheduleMidnightRefresh();
   }
 
   /**

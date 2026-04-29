@@ -980,6 +980,13 @@ export const useProjectStore = defineStore('project', {
     },
 
     /**
+     * 更新当前日期（供零点调度推进统一日期源）
+     */
+    setCurrentDate(newDate: string) {
+      this.currentDate = newDate;
+    },
+
+    /**
      * 获取甘特图数据
      * @param groupId 可选，按该分组过滤；空则全部
      */
