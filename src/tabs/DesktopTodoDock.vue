@@ -13,7 +13,20 @@
       >
         <svg><use :xlink:href="todoSidebar?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
       </span>
-      <span class="block__icon b3-tooltips b3-tooltips__sw" :aria-label="t('common').more" @click="handleMoreClick">
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        data-testid="todo-dock-refresh-button"
+        :aria-label="t('common').refresh"
+        @click="handleRefresh"
+      >
+        <svg><use xlink:href="#iconRefresh"></use></svg>
+      </span>
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        data-testid="todo-dock-more-button"
+        :aria-label="t('common').more"
+        @click="handleMoreClick"
+      >
         <svg><use xlink:href="#iconMore"></use></svg>
       </span>
     </div>
@@ -375,18 +388,6 @@ const handleMoreClick = (event: MouseEvent) => {
   const rect = target.getBoundingClientRect();
 
   const menu = new Menu('bullet-journal-more-menu');
-
-  // 刷新选项
-  menu.addItem({
-    icon: 'iconRefresh',
-    label: t('common').refresh,
-    click: () => {
-      handleRefresh();
-    },
-  });
-
-  // 分隔线
-  menu.addSeparator();
 
   // 隐藏/显示已完成选项
   const hideCompleted = projectStore.hideCompleted;

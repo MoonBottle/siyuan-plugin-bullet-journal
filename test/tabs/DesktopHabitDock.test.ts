@@ -123,6 +123,7 @@ function mountDock() {
     groupId: '',
   } as any];
   projectStore.currentDate = '2026-04-30';
+  projectStore.refresh = vi.fn().mockResolvedValue(undefined) as any;
   settingsStore.scanMode = 'folder';
   settingsStore.directories = [];
 
@@ -183,6 +184,17 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     expect(openDocumentAtLine).toHaveBeenCalledWith('doc-1', undefined, 'habit-1');
+    mounted.unmount();
+  });
+
+  it('refresh button calls projectStore.refresh', async () => {
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-dock-refresh-button"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.projectStore.refresh).toHaveBeenCalled();
     mounted.unmount();
   });
 

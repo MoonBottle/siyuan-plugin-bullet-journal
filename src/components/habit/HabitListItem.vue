@@ -16,7 +16,7 @@
           🔥 {{ t('habit').streakDays.replace('{n}', String(stats.currentStreak)) }}
         </span>
       </div>
-      <div v-if="periodState.isCompleted" class="habit-list-item__period-status">
+      <div v-if="showPeriodCompletedStatus" class="habit-list-item__period-status">
         {{ periodCompletedText }}
       </div>
 
@@ -102,6 +102,14 @@ const periodCompletedText = computed(() => {
   return props.periodState.periodType === 'day'
     ? t('habit').todayChecked
     : t('habit').periodCompleted;
+});
+
+const showPeriodCompletedStatus = computed(() => {
+  if (!props.periodState.isCompleted) {
+    return false;
+  }
+
+  return !(props.habit.type === 'binary' && props.periodState.periodType === 'day');
 });
 
 const dayCurrentValue = computed(() => {

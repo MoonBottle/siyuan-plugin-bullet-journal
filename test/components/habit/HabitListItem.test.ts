@@ -302,4 +302,41 @@ describe('HabitListItem', () => {
 
     mounted.unmount();
   });
+
+  it('binary daily completed state shows 已打卡 only once', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-10',
+      hasRecord: true,
+      isCompleted: true,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-10',
+      periodEnd: '2026-04-10',
+      requiredCount: 1,
+      completedCount: 1,
+      remainingCount: 0,
+      isCompleted: true,
+      eligibleToday: true,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState });
+
+    await nextTick();
+
+    const text = mounted.container.textContent || '';
+    const matches = text.match(/已打卡/g) || [];
+    expect(matches).toHaveLength(1);
+
+    mounted.unmount();
+  });
 });

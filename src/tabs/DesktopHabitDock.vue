@@ -13,6 +13,14 @@
         <span class="fn__flex-1 fn__space"></span>
         <button
           class="block__icon"
+          data-testid="habit-dock-refresh-button"
+          :aria-label="t('common').refresh"
+          @click="refreshHabits"
+        >
+          <svg><use xlink:href="#iconRefresh"></use></svg>
+        </button>
+        <button
+          class="block__icon"
           data-testid="habit-detail-open-doc"
           :aria-label="t('todo').openDoc"
           @click="handleOpenSelectedHabitDoc"
@@ -29,6 +37,14 @@
           {{ t('habit').title }}
         </div>
         <span class="fn__flex-1 fn__space"></span>
+        <button
+          class="block__icon"
+          data-testid="habit-dock-refresh-button"
+          :aria-label="t('common').refresh"
+          @click="refreshHabits"
+        >
+          <svg><use xlink:href="#iconRefresh"></use></svg>
+        </button>
       </template>
     </div>
 
