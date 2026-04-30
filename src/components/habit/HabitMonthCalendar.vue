@@ -12,14 +12,48 @@
       <div
         v-for="(cell, i) in calendarCells"
         :key="i"
+        :data-testid="cell.date ? `habit-month-cell-${cell.date}` : undefined"
         :class="['habit-month-calendar__cell', {
           'habit-month-calendar__cell--empty': !cell.date,
-          'habit-month-calendar__cell--today': cell.date === currentDate,
           'habit-month-calendar__cell--completed': cell.status === 'completed',
           'habit-month-calendar__cell--partial': cell.status === 'partial',
         }]"
       >
-        <span v-if="cell.date" class="habit-month-calendar__day-num">{{ cell.dayNum }}</span>
+        <template v-if="cell.date">
+          <span
+            :class="['habit-month-calendar__day-num', {
+              'habit-month-calendar__day-num--today': cell.date === currentDate,
+            }]"
+          >
+            {{ cell.dayNum }}
+          </span>
+          <div class="habit-month-calendar__marker">
+            <span
+              v-if="cell.status === 'completed'"
+              class="habit-month-calendar__check"
+              data-testid="habit-month-check"
+            >
+              ✓
+            </span>
+            <svg
+              v-else-if="cell.status === 'partial'"
+              class="habit-month-calendar__progress-ring"
+              data-testid="habit-month-progress-ring"
+              :data-progress="String(cell.progress)"
+              viewBox="0 0 24 24"
+            >
+              <circle class="habit-month-calendar__progress-track" cx="12" cy="12" r="8" />
+              <circle
+                class="habit-month-calendar__progress-value"
+                cx="12"
+                cy="12"
+                r="8"
+                :stroke-dasharray="`${cell.progress * progressCircumference} ${progressCircumference}`"
+              />
+            </svg>
+            <span v-else class="habit-month-calendar__empty-dot"></span>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -58,6 +92,14 @@ function nextMonth() {
 }
 
 type CellStatus = 'completed' | 'partial' | 'none' | null;
+type CalendarCell = {
+  date: string;
+  dayNum: number;
+  status: CellStatus;
+  progress: number;
+};
+
+const progressCircumference = 2 * Math.PI * 8;
 
 const calendarCells = computed(() => {
   const firstDay = dayjs(viewMonth.value + '-01');
@@ -67,17 +109,18 @@ const calendarCells = computed(() => {
   const offset = startDow - 1; // 偏移量（周一开始）
 
   const daysInMonth = firstDay.daysInMonth();
-  const cells: { date: string; dayNum: number; status: CellStatus }[] = [];
+  const cells: CalendarCell[] = [];
 
   // 前面的空白
   for (let i = 0; i < offset; i++) {
-    cells.push({ date: '', dayNum: 0, status: null });
+    cells.push({ date: '', dayNum: 0, status: null, progress: 0 });
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
     const date = viewMonth.value + '-' + String(d).padStart(2, '0');
     const records = props.habit.records.filter(r => r.date === date);
     let status: CellStatus = 'none';
+    let progress = 0;
 
     if (records.length > 0) {
       if (props.habit.type === 'binary') {
@@ -85,11 +128,19 @@ const calendarCells = computed(() => {
       } else {
         // 计数型：检查是否达标
         const anyCompleted = records.some(r => isRecordCompleted(r, props.habit));
-        status = anyCompleted ? 'completed' : 'partial';
+        if (anyCompleted) {
+          status = 'completed';
+          progress = 1;
+        } else {
+          status = 'partial';
+          const bestCurrentValue = records.reduce((maxValue, record) => Math.max(maxValue, record.currentValue ?? 0), 0);
+          const targetValue = props.habit.target || records[0]?.targetValue || 0;
+          progress = targetValue > 0 ? Math.min(bestCurrentValue / targetValue, 1) : 0;
+        }
       }
     }
 
-    cells.push({ date, dayNum: d, status });
+    cells.push({ date, dayNum: d, status, progress });
   }
 
   return cells;
@@ -154,30 +205,78 @@ const calendarCells = computed(() => {
 .habit-month-calendar__cell {
   aspect-ratio: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   border-radius: 4px;
   font-size: 12px;
+  padding: 4px 0;
+  box-sizing: border-box;
 }
 
 .habit-month-calendar__cell--empty {
   background: transparent;
 }
 
-.habit-month-calendar__cell--today {
-  outline: 2px solid var(--b3-theme-primary);
-  outline-offset: -2px;
-}
-
-.habit-month-calendar__cell--completed {
-  background: var(--b3-theme-primary-light);
-}
-
-.habit-month-calendar__cell--partial {
-  background: var(--b3-theme-primary-lightest);
-}
-
 .habit-month-calendar__day-num {
   color: var(--b3-theme-on-surface);
+  margin-bottom: 6px;
+}
+
+.habit-month-calendar__day-num--today {
+  color: var(--b3-theme-primary);
+  font-weight: 600;
+}
+
+.habit-month-calendar__marker {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.habit-month-calendar__check,
+.habit-month-calendar__empty-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.habit-month-calendar__check {
+  background: var(--b3-theme-primary-light);
+  color: var(--b3-theme-on-primary);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.habit-month-calendar__empty-dot {
+  background: var(--b3-theme-surface-lighter);
+  opacity: 0.7;
+}
+
+.habit-month-calendar__progress-ring {
+  width: 24px;
+  height: 24px;
+  transform: rotate(-90deg);
+}
+
+.habit-month-calendar__progress-track,
+.habit-month-calendar__progress-value {
+  fill: none;
+  stroke-width: 3;
+}
+
+.habit-month-calendar__progress-track {
+  stroke: var(--b3-theme-surface-lighter);
+  opacity: 0.9;
+}
+
+.habit-month-calendar__progress-value {
+  stroke: var(--b3-theme-primary);
+  stroke-linecap: round;
 }
 </style>
