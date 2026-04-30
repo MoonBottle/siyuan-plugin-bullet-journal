@@ -4,7 +4,10 @@
     <div class="block__icons">
       <template v-if="selectedHabit">
         <button class="block__icon" @click="selectedHabit = null" :aria-label="t('habit').backToList">
-          <svg><use xlink:href="#iconLeft"></use></svg>
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+            @mouseleave="hideIconTooltip"
+          ><use xlink:href="#iconLeft"></use></svg>
         </button>
         <div class="block__logo" data-testid="habit-detail-header">{{ selectedHabit.name }}</div>
         <span class="fn__flex-1 fn__space"></span>
@@ -14,7 +17,10 @@
           :aria-label="t('todo').openDoc"
           @click="handleOpenSelectedHabitDoc"
         >
-          <svg><use xlink:href="#iconFile"></use></svg>
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('todo').openDoc)"
+            @mouseleave="hideIconTooltip"
+          ><use xlink:href="#iconFile"></use></svg>
         </button>
       </template>
       <template v-else>
@@ -130,7 +136,7 @@ import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitCountInput from '@/components/habit/HabitCountInput.vue';
-import { showHabitRecordEditDialog, showMessage } from '@/utils/dialog';
+import { hideIconTooltip, showHabitRecordEditDialog, showIconTooltip, showMessage } from '@/utils/dialog';
 import type { CheckInRecord, Habit } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 
@@ -311,6 +317,10 @@ async function handleEditRecord(record: CheckInRecord) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.block__icons .block__icon {
+  opacity: 1;
 }
 
 .habit-detail__target {
