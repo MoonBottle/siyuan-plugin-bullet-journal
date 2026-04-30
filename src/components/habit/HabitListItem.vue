@@ -125,8 +125,8 @@ const progressPercent = computed(() => {
 <style scoped>
 .habit-list-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 12px;
   padding: 12px;
   margin-bottom: 8px;
   background: var(--b3-theme-background);
@@ -147,13 +147,14 @@ const progressPercent = computed(() => {
 .habit-list-item__main {
   flex: 1;
   min-width: 0;
+  min-height: 56px;
 }
 
 .habit-list-item__header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .habit-list-item__period-status {
@@ -178,6 +179,7 @@ const progressPercent = computed(() => {
 
 .habit-list-item__status {
   font-size: 12px;
+  line-height: 1.4;
 }
 
 .habit-list-item__checked {
@@ -192,20 +194,21 @@ const progressPercent = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 2px;
 }
 
 .habit-list-item__progress-bar {
   flex: 1;
-  height: 6px;
+  height: 8px;
   background: var(--b3-theme-surface-lighter);
-  border-radius: 3px;
+  border-radius: 999px;
   overflow: hidden;
 }
 
 .habit-list-item__progress-fill {
   height: 100%;
   background: var(--b3-theme-primary);
-  border-radius: 3px;
+  border-radius: 999px;
   transition: width 0.3s ease;
 }
 
@@ -218,15 +221,17 @@ const progressPercent = computed(() => {
 .habit-list-item__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .habit-calendar-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 50%;
   background: transparent;
@@ -242,15 +247,17 @@ const progressPercent = computed(() => {
 }
 
 .habit-calendar-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   fill: currentColor;
 }
 
 .habit-check-btn {
-  padding: 4px 12px;
+  min-width: 60px;
+  height: 32px;
+  padding: 0 14px;
   border: 1px solid var(--b3-theme-primary);
-  border-radius: 12px;
+  border-radius: 16px;
   background: transparent;
   color: var(--b3-theme-primary);
   font-size: 12px;
@@ -276,9 +283,11 @@ const progressPercent = computed(() => {
 }
 
 .habit-increment-btn {
-  padding: 4px 10px;
+  min-width: 52px;
+  height: 32px;
+  padding: 0 12px;
   border: 1px solid var(--b3-theme-primary);
-  border-radius: 12px;
+  border-radius: 16px;
   background: transparent;
   color: var(--b3-theme-primary);
   font-size: 12px;
