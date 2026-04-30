@@ -3,7 +3,7 @@
     <!-- 顶栏 -->
     <div class="block__icons">
       <template v-if="selectedHabit">
-        <button class="block__icon" @click="selectedHabit = null" :aria-label="t('habit').backToList">
+        <button class="block__icon" @click="handleBackToList" :aria-label="t('habit').backToList">
           <svg
             @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
             @mouseleave="hideIconTooltip"
@@ -211,11 +211,17 @@ async function handleOpenHabitDoc(habit: Habit) {
 }
 
 async function handleOpenSelectedHabitDoc() {
+  hideIconTooltip();
   if (!selectedHabit.value?.docId) {
     return;
   }
 
   await openDocumentAtLine(selectedHabit.value.docId, undefined, selectedHabit.value.blockId);
+}
+
+function handleBackToList() {
+  hideIconTooltip();
+  selectedHabit.value = null;
 }
 
 async function handleCountChange(newValue: number) {
