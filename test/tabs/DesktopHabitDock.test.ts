@@ -8,6 +8,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
+import { eventBus, Events } from '@/utils/eventBus';
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
@@ -219,6 +220,18 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')).toBeNull();
+    mounted.unmount();
+  });
+
+  it('reacts to data refresh events automatically', async () => {
+    const mounted = mountDock();
+    vi.mocked(mounted.projectStore.refresh).mockClear();
+
+    eventBus.emit(Events.DATA_REFRESH);
+    await nextTick();
+    await nextTick();
+
+    expect(mounted.projectStore.refresh).toHaveBeenCalledTimes(1);
     mounted.unmount();
   });
 });

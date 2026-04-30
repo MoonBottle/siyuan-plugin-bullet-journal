@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -142,7 +142,7 @@ import {
   setCheckInValue,
 } from '@/services/habitService';
 import { t } from '@/i18n';
-import { usePlugin } from '@/main';
+import { getCurrentPlugin, usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
 import HabitListItem from '@/components/habit/HabitListItem.vue';
@@ -153,6 +153,9 @@ import HabitCountInput from '@/components/habit/HabitCountInput.vue';
 import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
 import type { Habit } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import { buildViewDebugContext } from '@/utils/viewDebug';
 
 const plugin = usePlugin();
 const store = useProjectStore();
@@ -251,6 +254,54 @@ async function handleCountChange(newValue: number) {
     await refreshHabits();
   }
 }
+
+const handleDataRefresh = async () => {
+  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('DesktopHabitDock', plugin));
+  await refreshHabits();
+};
+
+let unsubscribeRefresh: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+
+onMounted(() => {
+  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('DesktopHabitDock', plugin));
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: () => {
+        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
+          ...buildViewDebugContext('DesktopHabitDock', plugin),
+          data: { type: 'DATA_REFRESH' },
+        });
+        return handleDataRefresh();
+      },
+      viewName: 'DesktopHabitDock',
+    });
+  } catch {
+    // ignore
+  }
+});
+
+onUnmounted(() => {
+  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('DesktopHabitDock', plugin));
+  if (unsubscribeRefresh) {
+    unsubscribeRefresh();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
+  }
+});
 </script>
 
 <style scoped>
