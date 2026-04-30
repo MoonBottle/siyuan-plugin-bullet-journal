@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import dayjs from '@/utils/dayjs';
 import { t } from '@/i18n';
 import type { Habit, HabitStats } from '@/types/models';
@@ -70,9 +70,20 @@ const props = defineProps<{
   habit: Habit;
   stats?: HabitStats;
   currentDate: string;
+  viewMonth?: string;
 }>();
 
-const viewMonth = ref(props.currentDate.substring(0, 7));
+const emit = defineEmits<{
+  'update:viewMonth': [value: string];
+}>();
+
+const viewMonth = ref(props.viewMonth || props.currentDate.substring(0, 7));
+
+watch(() => props.viewMonth, (value) => {
+  if (value && value !== viewMonth.value) {
+    viewMonth.value = value;
+  }
+});
 
 const weekDayLabels = computed(() => t('calendar').weekDays);
 
@@ -84,11 +95,13 @@ const title = computed(() => {
 function prevMonth() {
   const d = dayjs(viewMonth.value + '-01').subtract(1, 'month');
   viewMonth.value = d.format('YYYY-MM');
+  emit('update:viewMonth', viewMonth.value);
 }
 
 function nextMonth() {
   const d = dayjs(viewMonth.value + '-01').add(1, 'month');
   viewMonth.value = d.format('YYYY-MM');
+  emit('update:viewMonth', viewMonth.value);
 }
 
 type CellStatus = 'completed' | 'partial' | 'none' | null;

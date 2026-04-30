@@ -856,6 +856,7 @@
     "completionRate": "Completion Rate",
     "monthlyCheckins": "Monthly",
     "totalCheckins": "Total",
+    "monthlyCheckinLog": "{month} Check-in Log",
     "currentStreak": "Current Streak",
     "longestStreak": "Longest Streak",
     "noHabits": "No Habits",

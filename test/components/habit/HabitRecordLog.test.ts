@@ -4,6 +4,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp, nextTick } from 'vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import type { Habit } from '@/types/models';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+
+vi.mock('@/utils/fileUtils', () => ({
+  openDocumentAtLine: vi.fn(),
+}));
 
 function mountComponent(props: Record<string, unknown>) {
   const container = document.createElement('div');
@@ -22,13 +27,12 @@ function mountComponent(props: Record<string, unknown>) {
 }
 
 afterEach(() => {
+  vi.clearAllMocks();
   document.body.innerHTML = '';
 });
 
 describe('HabitRecordLog', () => {
-  it('点击编辑和删除按钮时应触发对应事件', async () => {
-    const onEditRecord = vi.fn();
-    const onDeleteRecord = vi.fn();
+  it('shows month-specific title and filters records by view month', async () => {
     const habit: Habit = {
       name: '喝水',
       type: 'count',
@@ -40,12 +44,22 @@ describe('HabitRecordLog', () => {
       frequency: { type: 'daily' },
       records: [
         {
-          content: '喝水 4/8杯',
-          date: '2026-04-10',
+          content: '喝水',
+          date: '2026-04-30',
           docId: 'doc-1',
           blockId: 'record-1',
           habitId: 'habit-1',
-          currentValue: 4,
+          currentValue: 8,
+          targetValue: 8,
+          unit: '杯',
+        },
+        {
+          content: '喝水',
+          date: '2026-03-31',
+          docId: 'doc-1',
+          blockId: 'record-2',
+          habitId: 'habit-1',
+          currentValue: 6,
           targetValue: 8,
           unit: '杯',
         },
@@ -54,23 +68,83 @@ describe('HabitRecordLog', () => {
 
     const mounted = mountComponent({
       habit,
-      onEditRecord,
-      onDeleteRecord,
+      viewMonth: '2026-04',
     });
 
     await nextTick();
 
-    const editButton = mounted.container.querySelector('[data-action="edit-record"]');
-    const deleteButton = mounted.container.querySelector('[data-action="delete-record"]');
+    expect(mounted.container.textContent).toContain('4 月打卡日志');
+    expect(mounted.container.textContent).toContain('4/30');
+    expect(mounted.container.textContent).not.toContain('3/31');
 
-    expect(editButton).not.toBeNull();
-    expect(deleteButton).not.toBeNull();
+    mounted.unmount();
+  });
 
-    editButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    deleteButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  it('opens the record block when clicking a log row', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [
+        {
+          content: '早起',
+          date: '2026-04-10',
+          docId: 'doc-2',
+          blockId: 'record-10',
+          habitId: 'habit-1',
+        },
+      ],
+    };
 
-    expect(onEditRecord).toHaveBeenCalledTimes(1);
-    expect(onDeleteRecord).toHaveBeenCalledTimes(1);
+    const mounted = mountComponent({
+      habit,
+      viewMonth: '2026-04',
+    });
+
+    await nextTick();
+
+    const row = mounted.container.querySelector('[data-testid="habit-record-log-item-record-10"]');
+    expect(row).not.toBeNull();
+
+    row?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(openDocumentAtLine).toHaveBeenCalledWith('doc-2', undefined, 'record-10');
+
+    mounted.unmount();
+  });
+
+  it('does not render edit or delete actions', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [
+        {
+          content: '早起',
+          date: '2026-04-10',
+          docId: 'doc-1',
+          blockId: 'record-10',
+          habitId: 'habit-1',
+        },
+      ],
+    };
+
+    const mounted = mountComponent({
+      habit,
+      viewMonth: '2026-04',
+    });
+
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-action="edit-record"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-action="delete-record"]')).toBeNull();
 
     mounted.unmount();
   });

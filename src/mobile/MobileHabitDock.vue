@@ -80,13 +80,14 @@
             :habit="state.selectedHabit"
             :stats="selectedStats"
             :current-date="currentDate"
+            :view-month="state.selectedViewMonth"
+            @update:view-month="state.selectedViewMonth = $event"
           />
 
           <!-- 打卡日志 -->
           <HabitRecordLog
             :habit="state.selectedHabit"
-            @edit-record="handleEditRecord"
-            @delete-record="handleDeleteRecord"
+            :view-month="state.selectedViewMonth"
           />
         </div>
       </div>
@@ -102,10 +103,7 @@ import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
 import {
   checkIn,
   checkInCount,
-  deleteCheckIn,
-  getCheckInMarkdown,
   setCheckInValue,
-  updateCheckInMarkdown,
 } from '@/services/habitService';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
@@ -117,8 +115,7 @@ import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitCountInput from '@/components/habit/HabitCountInput.vue';
-import { showHabitRecordEditDialog, showMessage } from '@/utils/dialog';
-import type { CheckInRecord, Habit } from '@/types/models';
+import type { Habit } from '@/types/models';
 
 const plugin = usePlugin();
 const projectStore = useProjectStore();
@@ -126,6 +123,7 @@ const settingsStore = useSettingsStore();
 
 const state = reactive({
   selectedDate: dayjs().format('YYYY-MM-DD'),
+  selectedViewMonth: dayjs().format('YYYY-MM'),
   showHabitDetail: false,
   selectedHabit: null as Habit | null,
 });
@@ -157,6 +155,7 @@ const selectedDayState = computed(() => {
 });
 
 function openHabitDetail(habit: Habit) {
+  state.selectedViewMonth = currentDate.value.substring(0, 7);
   state.selectedHabit = habit;
   state.showHabitDetail = true;
 }
@@ -198,30 +197,6 @@ async function handleCountChange(newValue: number) {
 const handleDataRefresh = async () => {
   await refreshHabits();
 };
-
-async function handleDeleteRecord(record: CheckInRecord) {
-  const success = await deleteCheckIn(record);
-  if (success) {
-    await refreshHabits();
-  }
-}
-
-async function handleEditRecord(record: CheckInRecord) {
-  const currentMarkdown = await getCheckInMarkdown(record);
-  if (!currentMarkdown) {
-    showMessage(t('habit').recordLoadFailed, 'error');
-    return;
-  }
-
-  showHabitRecordEditDialog(currentMarkdown, async (nextMarkdown) => {
-    const success = await updateCheckInMarkdown(record, nextMarkdown);
-    if (success) {
-      await refreshHabits();
-    } else {
-      showMessage(t('habit').recordUpdateFailed, 'error');
-    }
-  });
-}
 
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;

@@ -83,13 +83,14 @@
             :habit="selectedHabit"
             :stats="selectedStats"
             :current-date="currentDate"
+            :view-month="selectedViewMonth"
+            @update:view-month="selectedViewMonth = $event"
           />
 
           <!-- 打卡日志 -->
           <HabitRecordLog
             :habit="selectedHabit"
-            @edit-record="handleEditRecord"
-            @delete-record="handleDeleteRecord"
+            :view-month="selectedViewMonth"
           />
         </div>
       </template>
@@ -114,7 +115,7 @@
             @check-in="handleCheckIn"
             @increment="handleIncrement"
             @open-doc="handleOpenHabitDoc"
-            @open-calendar="selectedHabit = $event"
+            @open-calendar="handleOpenHabitDetail"
           />
         </div>
 
@@ -138,10 +139,7 @@ import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
 import {
   checkIn,
   checkInCount,
-  deleteCheckIn,
-  getCheckInMarkdown,
   setCheckInValue,
-  updateCheckInMarkdown,
 } from '@/services/habitService';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
@@ -152,8 +150,8 @@ import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitCountInput from '@/components/habit/HabitCountInput.vue';
-import { hideIconTooltip, showHabitRecordEditDialog, showIconTooltip, showMessage } from '@/utils/dialog';
-import type { CheckInRecord, Habit } from '@/types/models';
+import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
+import type { Habit } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 
 const plugin = usePlugin();
@@ -161,6 +159,7 @@ const store = useProjectStore();
 const settingsStore = useSettingsStore();
 
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
+const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
 const selectedHabit = ref<Habit | null>(null);
 const currentDate = computed(() => store.currentDate);
 
@@ -235,6 +234,11 @@ async function handleOpenSelectedHabitDoc() {
   await openDocumentAtLine(selectedHabit.value.docId, undefined, selectedHabit.value.blockId);
 }
 
+function handleOpenHabitDetail(habit: Habit) {
+  selectedViewMonth.value = currentDate.value.substring(0, 7);
+  selectedHabit.value = habit;
+}
+
 function handleBackToList() {
   hideIconTooltip();
   selectedHabit.value = null;
@@ -246,30 +250,6 @@ async function handleCountChange(newValue: number) {
   if (success) {
     await refreshHabits();
   }
-}
-
-async function handleDeleteRecord(record: CheckInRecord) {
-  const success = await deleteCheckIn(record);
-  if (success) {
-    await refreshHabits();
-  }
-}
-
-async function handleEditRecord(record: CheckInRecord) {
-  const currentMarkdown = await getCheckInMarkdown(record);
-  if (!currentMarkdown) {
-    showMessage(t('habit').recordLoadFailed, 'error');
-    return;
-  }
-
-  showHabitRecordEditDialog(currentMarkdown, async (nextMarkdown) => {
-    const success = await updateCheckInMarkdown(record, nextMarkdown);
-    if (success) {
-      await refreshHabits();
-    } else {
-      showMessage(t('habit').recordUpdateFailed, 'error');
-    }
-  });
 }
 </script>
 

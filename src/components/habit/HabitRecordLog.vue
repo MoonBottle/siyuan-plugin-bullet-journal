@@ -1,14 +1,16 @@
 <template>
   <div class="habit-record-log">
-    <div class="habit-record-log__header">{{ t('habit').totalCheckins }}</div>
-    <div v-if="sortedRecords.length === 0" class="habit-record-log__empty">
+    <div class="habit-record-log__header">{{ headerTitle }}</div>
+    <div v-if="monthlyRecords.length === 0" class="habit-record-log__empty">
       {{ t('habit').noHabits }}
     </div>
     <div v-else class="habit-record-log__list">
       <div
-        v-for="record in sortedRecords"
+        v-for="record in monthlyRecords"
         :key="record.blockId"
         class="habit-record-log__item"
+        :data-testid="`habit-record-log-item-${record.blockId}`"
+        @click="handleOpenRecord(record)"
       >
         <div class="habit-record-log__date">{{ formatDate(record.date) }}</div>
         <div class="habit-record-log__content">
@@ -17,22 +19,6 @@
             {{ record.currentValue }}/{{ habit.target || record.targetValue || 0 }}{{ habit.unit || record.unit || '' }}
           </span>
           <span v-if="isCompleted(record)" class="habit-record-log__check">✅</span>
-        </div>
-        <div class="habit-record-log__actions">
-          <button
-            class="habit-record-log__action"
-            data-action="edit-record"
-            @click.stop="emit('edit-record', record)"
-          >
-            编辑
-          </button>
-          <button
-            class="habit-record-log__action habit-record-log__action--danger"
-            data-action="delete-record"
-            @click.stop="emit('delete-record', record)"
-          >
-            删除
-          </button>
         </div>
       </div>
     </div>
@@ -45,26 +31,38 @@ import dayjs from '@/utils/dayjs';
 import { t } from '@/i18n';
 import { isRecordCompleted } from '@/utils/habitStatsUtils';
 import type { Habit, CheckInRecord } from '@/types/models';
+import { openDocumentAtLine } from '@/utils/fileUtils';
 
 const props = defineProps<{
   habit: Habit;
+  viewMonth: string;
 }>();
 
-const emit = defineEmits<{
-  'edit-record': [record: CheckInRecord];
-  'delete-record': [record: CheckInRecord];
-}>();
-
-const sortedRecords = computed(() => {
-  return [...(props.habit.records || [])].sort((a, b) => b.date.localeCompare(a.date));
+const monthlyRecords = computed(() => {
+  return [...(props.habit.records || [])]
+    .filter(record => record.date.startsWith(`${props.viewMonth}-`))
+    .sort((a, b) => b.date.localeCompare(a.date));
 });
 
 function isCompleted(record: CheckInRecord): boolean {
   return isRecordCompleted(record, props.habit);
 }
 
+const headerTitle = computed(() => {
+  const month = dayjs(`${props.viewMonth}-01`).format('M');
+  return t('habit').monthlyCheckinLog.replace('{month}', month);
+});
+
 function formatDate(date: string): string {
   return dayjs(date).format('M/D');
+}
+
+async function handleOpenRecord(record: CheckInRecord) {
+  if (!record.docId || !record.blockId) {
+    return;
+  }
+
+  await openDocumentAtLine(record.docId, undefined, record.blockId);
 }
 </script>
 
@@ -101,6 +99,7 @@ function formatDate(date: string): string {
   padding: 6px 8px;
   border-radius: 6px;
   background: var(--b3-theme-surface-lighter);
+  cursor: pointer;
 }
 
 .habit-record-log__date {
@@ -133,24 +132,5 @@ function formatDate(date: string): string {
 
 .habit-record-log__check {
   font-size: 12px;
-}
-
-.habit-record-log__actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.habit-record-log__action {
-  border: none;
-  background: transparent;
-  color: var(--b3-theme-on-surface-light);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 2px 4px;
-}
-
-.habit-record-log__action--danger {
-  color: var(--b3-theme-error);
 }
 </style>
