@@ -9,7 +9,7 @@
         class="form-input"
         data-testid="habit-name-input"
         :placeholder="t('habit').namePlaceholder || '输入习惯名'"
-        @keyup.enter="handleSave"
+        @keyup.enter="handleNameEnter"
       />
     </div>
 
@@ -173,6 +173,8 @@ const emit = defineEmits<{
   'cancel': [];
 }>();
 
+const initialEnterGuardUntil = Date.now() + 300;
+
 const form = reactive({
   name: props.initialData?.name || '',
   startDate: props.initialData?.startDate || dayjs().format('YYYY-MM-DD'),
@@ -264,6 +266,13 @@ function handleSave() {
 
   const markdown = buildMarkdown();
   emit('save', markdown);
+}
+
+function handleNameEnter() {
+  if (Date.now() < initialEnterGuardUntil) {
+    return;
+  }
+  handleSave();
 }
 </script>
 

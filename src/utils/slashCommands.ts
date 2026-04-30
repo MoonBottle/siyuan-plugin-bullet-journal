@@ -705,11 +705,12 @@ export function getActionHandler(
       };
     case 'createHabit':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-
-        const text = nodeElement?.textContent?.trim() || '';
+        const blockText = nodeElement?.textContent || '';
+        const text = processLineText(blockText, filter).trim();
         const parsedHabit = parseHabitLine(text);
         const parsedRecord = parseHabitRecordLine(text, '');
+
+        deleteSlashCommandContent(protyle, filter);
 
         if (parsedRecord) {
           showMessage(t('slash').checkIn || '打卡', 2000, 'info');

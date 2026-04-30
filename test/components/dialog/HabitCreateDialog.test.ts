@@ -153,4 +153,30 @@ describe('HabitCreateDialog', () => {
     focusSpy.mockRestore();
     rafSpy.mockRestore();
   });
+
+  it('打开后立即收到一次 Enter keyup 不应立刻保存', async () => {
+    vi.useFakeTimers();
+    const mounted = mountDialog({
+      initialData: {
+        name: '喝水',
+        startDate: '2026-04-01',
+        frequency: { type: 'daily' },
+      },
+    });
+
+    const nameInput = getByTestId(mounted.container, 'habit-name-input');
+    nameInput.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+    await nextTick();
+
+    expect(mounted.getSavedMarkdown()).toBe('');
+
+    vi.advanceTimersByTime(400);
+    nameInput.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+    await nextTick();
+
+    expect(mounted.getSavedMarkdown()).toBe('喝水 🎯2026-04-01 🔄每天');
+
+    mounted.unmount();
+    vi.useRealTimers();
+  });
 });

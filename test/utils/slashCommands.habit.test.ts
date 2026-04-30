@@ -136,6 +136,23 @@ describe('habit slash commands', () => {
     }));
   });
 
+  it('/xg 即使编辑器事务尚未回写 DOM 也应进入编辑模式', () => {
+    const showSpy = vi.mocked(showHabitCreateDialog);
+    vi.mocked(processLineText).mockImplementation((text: string) => text.replace('/xg', ''));
+    const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-stale-dom');
+    node.textContent = '喝水 🎯2026-04-01 8杯 ⏰09:00 🔄每天/xg​';
+
+    handler({} as any, node);
+
+    expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
+      name: '喝水',
+      target: 8,
+      unit: '杯',
+    }));
+  });
+
   it('/xg 在 record 行上不应打开习惯编辑', () => {
     const showSpy = vi.mocked(showHabitCreateDialog);
     const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
