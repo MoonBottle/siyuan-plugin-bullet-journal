@@ -6,15 +6,24 @@
         <button class="block__icon" @click="selectedHabit = null" :aria-label="t('habit').backToList">
           <svg><use xlink:href="#iconLeft"></use></svg>
         </button>
-        <div class="block__logo">{{ selectedHabit.name }}</div>
+        <div class="block__logo" data-testid="habit-detail-header">{{ selectedHabit.name }}</div>
+        <span class="fn__flex-1 fn__space"></span>
+        <button
+          class="block__icon"
+          data-testid="habit-detail-open-doc"
+          :aria-label="t('todo').openDoc"
+          @click="handleOpenSelectedHabitDoc"
+        >
+          <svg><use xlink:href="#iconFile"></use></svg>
+        </button>
       </template>
       <template v-else>
         <div class="block__logo">
           <svg class="block__logoicon"><use xlink:href="#iconCheck"></use></svg>
           {{ t('habit').title }}
         </div>
+        <span class="fn__flex-1 fn__space"></span>
       </template>
-      <span class="fn__flex-1 fn__space"></span>
     </div>
 
     <div class="fn__flex-1 fn__flex-column habit-dock-body">
@@ -82,7 +91,8 @@
             :stats="habitStatsMap.get(habit.blockId)"
             @check-in="handleCheckIn"
             @increment="handleIncrement"
-            @click="selectedHabit = $event"
+            @open-doc="handleOpenHabitDoc"
+            @open-calendar="selectedHabit = $event"
           />
         </div>
 
@@ -122,6 +132,7 @@ import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitCountInput from '@/components/habit/HabitCountInput.vue';
 import { showHabitRecordEditDialog, showMessage } from '@/utils/dialog';
 import type { CheckInRecord, Habit } from '@/types/models';
+import { openDocumentAtLine } from '@/utils/fileUtils';
 
 const plugin = usePlugin();
 const store = useProjectStore();
@@ -183,6 +194,22 @@ async function handleIncrement(habit: Habit) {
   if (success) {
     await refreshHabits();
   }
+}
+
+async function handleOpenHabitDoc(habit: Habit) {
+  if (!habit.docId) {
+    return;
+  }
+
+  await openDocumentAtLine(habit.docId, undefined, habit.blockId);
+}
+
+async function handleOpenSelectedHabitDoc() {
+  if (!selectedHabit.value?.docId) {
+    return;
+  }
+
+  await openDocumentAtLine(selectedHabit.value.docId, undefined, selectedHabit.value.blockId);
 }
 
 async function handleCountChange(newValue: number) {

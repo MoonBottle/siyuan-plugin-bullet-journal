@@ -4,9 +4,12 @@
       'habit-list-item--completed': isCompleted,
       'habit-list-item--count': habit.type === 'count'
     }]"
-    @click="emit('click', habit)"
   >
-    <div class="habit-list-item__main">
+    <div
+      class="habit-list-item__main"
+      data-testid="habit-list-item-main"
+      @click="emit('open-doc', habit)"
+    >
       <div class="habit-list-item__header">
         <span class="habit-list-item__name">{{ habit.name }}</span>
         <span v-if="stats" class="habit-list-item__streak">
@@ -38,11 +41,21 @@
     </div>
 
     <div class="habit-list-item__actions">
+      <button
+        class="habit-calendar-btn"
+        data-testid="habit-list-item-calendar"
+        :aria-label="t('habit').title"
+        @click.stop="emit('open-calendar', habit)"
+      >
+        <svg><use xlink:href="#iconCalendar"></use></svg>
+      </button>
+
       <!-- 二元型打卡按钮 -->
       <button
         v-if="habit.type === 'binary'"
         :class="['habit-check-btn', { 'habit-check-btn--done': dayState.isCompleted }]"
         :disabled="dayState.isCompleted"
+        data-testid="habit-list-item-check-in"
         @click.stop="emit('check-in', habit)"
       >
         {{ dayState.isCompleted ? '✅' : t('habit').checkIn }}
@@ -53,6 +66,7 @@
         v-else
         class="habit-increment-btn"
         :disabled="dayState.isCompleted"
+        data-testid="habit-list-item-increment"
         @click.stop="emit('increment', habit)"
       >
         {{ t('habit').addOne }}
@@ -76,8 +90,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   'check-in': [habit: Habit];
   'increment': [habit: Habit];
-  'click': [habit: Habit];
+  'open-doc': [habit: Habit];
+  'open-calendar': [habit: Habit];
 }>();
+
+const isCompleted = computed(() => {
+  return props.dayState.isCompleted;
+});
 
 const periodCompletedText = computed(() => {
   return props.periodState.periodType === 'day'
@@ -189,6 +208,32 @@ const progressPercent = computed(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.habit-calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--b3-theme-on-surface-light);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.habit-calendar-btn:hover {
+  border-color: var(--b3-theme-primary);
+  color: var(--b3-theme-primary);
+}
+
+.habit-calendar-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
 }
 
 .habit-check-btn {
