@@ -255,6 +255,11 @@ function findHabitAndRecordByRecordBlockId(blockId?: string): { habit: Habit; re
   return null;
 }
 
+function notifyHabitDataRefresh(): void {
+  eventBus.emit(Events.DATA_REFRESH);
+  broadcastDataRefresh();
+}
+
 /**
  * 创建斜杠命令
  */
@@ -791,7 +796,10 @@ export function getActionHandler(
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            await checkInCount(matchedRecord.habit, currentDate, 1);
+            const success = await checkInCount(matchedRecord.habit, currentDate, 1);
+            if (success) {
+              notifyHabitDataRefresh();
+            }
             return;
           }
 
@@ -816,7 +824,10 @@ export function getActionHandler(
                 unit: parsedRecord.unit,
               }],
             };
-            await checkInCount(habit, currentDate, 1);
+            const success = await checkInCount(habit, currentDate, 1);
+            if (success) {
+              notifyHabitDataRefresh();
+            }
             return;
           }
 
@@ -824,31 +835,41 @@ export function getActionHandler(
           return;
         }
 
-        const habit: Habit = matchedHabit ?? {
-          name: parsedHabit.name || text,
-          docId: '',
-          blockId,
-          type: parsedHabit.type || 'binary',
-          startDate: parsedHabit.startDate || dayjs().format('YYYY-MM-DD'),
-          durationDays: parsedHabit.durationDays,
-          endDate: parsedHabit.endDate,
-          target: parsedHabit.target,
-          unit: parsedHabit.unit,
-          frequency: parsedHabit.frequency,
-          reminder: parsedHabit.reminder,
-          records: [],
-        };
+        if (!matchedHabit) {
+          showMessage('习惯数据未就绪，请稍后重试', 2000, 'info');
+          return;
+        }
 
+        const habit: Habit = matchedHabit;
         const todayRecord = habit.records.find(record => record.date === currentDate);
         if (todayRecord) {
+          if (habit.type === 'count') {
+            const targetValue = todayRecord.targetValue ?? habit.target ?? 0;
+            const currentValue = todayRecord.currentValue ?? 0;
+            if (currentValue >= targetValue) {
+              showMessage(t('habit').targetReached || '已达标', 2000, 'info');
+              return;
+            }
+            const success = await checkInCount(habit, currentDate, 1);
+            if (success) {
+              notifyHabitDataRefresh();
+            }
+            return;
+          }
           showMessage(t('habit').todayChecked || '今天已打卡', 2000, 'info');
           return;
         }
 
         if (habit.type === 'count') {
-          await checkInCount(habit, currentDate, 1);
+          const success = await checkInCount(habit, currentDate, 1);
+          if (success) {
+            notifyHabitDataRefresh();
+          }
         } else {
-          await checkIn(habit, currentDate);
+          const success = await checkIn(habit, currentDate);
+          if (success) {
+            notifyHabitDataRefresh();
+          }
         }
       };
     default:

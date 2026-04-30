@@ -75,6 +75,7 @@ import { checkIn, checkInCount } from '@/services/habitService';
 import { processLineText } from '@/utils/slashCommandUtils';
 import { useProjectStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
+import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
 
 const projectStoreMock = {
   getHabits: vi.fn(() => []),
@@ -191,6 +192,15 @@ describe('habit slash commands', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-1');
     node.textContent = '早起 🎯2026-04-01 🔄每天';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'block-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [],
+    }]);
 
     await handler({} as any, node);
 
@@ -203,6 +213,17 @@ describe('habit slash commands', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-2');
     node.textContent = '喝水 🎯2026-04-01 8杯 🔄每天';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '喝水',
+      docId: 'doc-1',
+      blockId: 'block-2',
+      type: 'count',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      records: [],
+    }]);
 
     await handler({} as any, node);
 
@@ -210,6 +231,83 @@ describe('habit slash commands', () => {
       blockId: 'block-2',
       type: 'count',
     }), '2026-04-30', 1);
+  });
+
+  it('/dk 成功打卡后应立即触发数据刷新，避免定义行连续打卡产生重复 record', async () => {
+    const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-2');
+    node.textContent = '喝水 🎯2026-04-01 8杯 🔄每天';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '喝水',
+      docId: 'doc-1',
+      blockId: 'block-2',
+      type: 'count',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      records: [],
+    }]);
+
+    await handler({} as any, node);
+
+    expect(vi.mocked(eventBus.emit)).toHaveBeenCalledWith(Events.DATA_REFRESH);
+    expect(vi.mocked(broadcastDataRefresh)).toHaveBeenCalled();
+  });
+
+  it('/dk 在计数型习惯定义行上应基于 store 中同 habit 当日 record 做 +1，而不是创建重复 record', async () => {
+    const checkInCountSpy = vi.mocked(checkInCount);
+    const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-3');
+    node.textContent = '喝水 🎯2026-04-01 8杯 🔄每天';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '喝水',
+      docId: 'doc-1',
+      blockId: 'block-3',
+      type: 'count',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '喝水',
+        date: '2026-04-30',
+        docId: 'doc-1',
+        blockId: 'record-today-3',
+        habitId: 'block-3',
+        currentValue: 1,
+        targetValue: 8,
+        unit: '杯',
+      }],
+    }]);
+
+    await handler({} as any, node);
+
+    expect(checkInCountSpy).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-3',
+      records: [expect.objectContaining({
+        blockId: 'record-today-3',
+        currentValue: 1,
+      })],
+    }), '2026-04-30', 1);
+  });
+
+  it('/dk 在定义行未命中 store 中的 habit 时不应直接写 record', async () => {
+    const messageSpy = vi.mocked(showMessage);
+    const checkInSpy = vi.mocked(checkIn);
+    const checkInCountSpy = vi.mocked(checkInCount);
+    const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'missing-habit');
+    node.textContent = '喝水 🎯2026-04-01 8杯 🔄每天';
+
+    await handler({} as any, node);
+
+    expect(messageSpy).toHaveBeenCalled();
+    expect(checkInSpy).not.toHaveBeenCalled();
+    expect(checkInCountSpy).not.toHaveBeenCalled();
   });
 
   it('/dk 在今天的二元打卡记录上应提示已打卡', async () => {
