@@ -857,6 +857,7 @@
     "monthlyCheckins": "Monthly",
     "totalCheckins": "Total",
     "monthlyCheckinLog": "{month} Check-in Log",
+    "noMonthlyCheckinLog": "No check-in records for this month",
     "currentStreak": "Current Streak",
     "longestStreak": "Longest Streak",
     "noHabits": "No Habits",

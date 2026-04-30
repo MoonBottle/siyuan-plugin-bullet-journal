@@ -2,7 +2,7 @@
   <div class="habit-record-log">
     <div class="habit-record-log__header">{{ headerTitle }}</div>
     <div v-if="monthlyRecords.length === 0" class="habit-record-log__empty">
-      {{ t('habit').noHabits }}
+      {{ t('habit').noMonthlyCheckinLog }}
     </div>
     <div v-else class="habit-record-log__list">
       <div
@@ -89,17 +89,28 @@ async function handleOpenRecord(record: CheckInRecord) {
 .habit-record-log__list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  background: var(--b3-theme-background);
+  border-radius: var(--b3-border-radius);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  overflow: hidden;
 }
 
 .habit-record-log__item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: var(--b3-theme-surface-lighter);
+  padding: 10px 12px;
   cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid var(--b3-theme-surface-lighter);
+}
+
+.habit-record-log__item:hover {
+  background: var(--b3-theme-surface-lighter);
+}
+
+.habit-record-log__item:last-child {
+  border-bottom: none;
 }
 
 .habit-record-log__date {

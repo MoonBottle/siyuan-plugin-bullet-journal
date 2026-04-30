@@ -162,10 +162,13 @@ const calendarCells = computed(() => {
 
 <style scoped>
 .habit-month-calendar {
-  padding: 6px 0;
+  padding: 12px;
   width: 100%;
   min-width: 0;
   overflow: hidden;
+  background: var(--b3-theme-background);
+  border-radius: var(--b3-border-radius);
+  border: 1px solid var(--b3-theme-surface-lighter);
 }
 
 .habit-month-calendar__header {

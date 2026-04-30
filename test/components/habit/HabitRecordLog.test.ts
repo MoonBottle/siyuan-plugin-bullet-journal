@@ -148,4 +148,27 @@ describe('HabitRecordLog', () => {
 
     mounted.unmount();
   });
+
+  it('shows empty state text for the current month when there are no records', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [],
+    };
+
+    const mounted = mountComponent({
+      habit,
+      viewMonth: '2026-04',
+    });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('本月暂无打卡记录');
+
+    mounted.unmount();
+  });
 });

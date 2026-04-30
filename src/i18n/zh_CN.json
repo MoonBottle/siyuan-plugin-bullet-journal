@@ -898,6 +898,7 @@
     "monthlyCheckins": "月打卡",
     "totalCheckins": "总打卡",
     "monthlyCheckinLog": "{month} 月打卡日志",
+    "noMonthlyCheckinLog": "本月暂无打卡记录",
     "currentStreak": "当前连续",
     "longestStreak": "最长连续",
     "noHabits": "暂无习惯",

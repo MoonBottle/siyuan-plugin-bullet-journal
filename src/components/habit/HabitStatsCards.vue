@@ -44,8 +44,9 @@ const percentFormatter = new Intl.NumberFormat(undefined, {
 }
 
 .habit-stats-card {
-  background: var(--b3-theme-surface-lighter);
-  border-radius: 8px;
+  background: var(--b3-theme-background);
+  border-radius: var(--b3-border-radius);
+  border: 1px solid var(--b3-theme-surface-lighter);
   padding: 10px 12px;
   text-align: center;
 }
