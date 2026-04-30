@@ -127,8 +127,11 @@ const progressPercent = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--b3-theme-surface-lighter);
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
   cursor: pointer;
   transition: background 0.15s ease;
 }
