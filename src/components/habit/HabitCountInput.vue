@@ -5,7 +5,16 @@
       :disabled="currentValue <= 0"
       @click="emit('change', Math.max(0, currentValue - 1))"
     >−</button>
-    <span class="habit-count-input__value">{{ currentValue }}</span>
+    <input
+      :value="draftValue"
+      type="number"
+      min="0"
+      class="habit-count-input__field"
+      data-testid="habit-count-direct-input"
+      @input="handleInput"
+      @keydown.enter.prevent="commitDraft"
+      @blur="commitDraft"
+    />
     <button
       class="habit-count-input__btn habit-count-input__btn--plus"
       @click="emit('change', currentValue + 1)"
@@ -14,7 +23,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { ref, watch } from 'vue';
+
+const props = defineProps<{
   currentValue: number;
   target?: number;
 }>();
@@ -22,6 +33,28 @@ defineProps<{
 const emit = defineEmits<{
   'change': [value: number];
 }>();
+
+const draftValue = ref(String(props.currentValue));
+
+watch(() => props.currentValue, (value) => {
+  draftValue.value = String(value);
+});
+
+function handleInput(event: Event) {
+  draftValue.value = (event.target as HTMLInputElement).value;
+}
+
+function commitDraft() {
+  const nextValue = Number(draftValue.value);
+  if (!Number.isFinite(nextValue) || nextValue < 0 || !Number.isInteger(nextValue)) {
+    draftValue.value = String(props.currentValue);
+    return;
+  }
+
+  if (nextValue !== props.currentValue) {
+    emit('change', nextValue);
+  }
+}
 </script>
 
 <style scoped>
@@ -57,10 +90,23 @@ const emit = defineEmits<{
   cursor: default;
 }
 
-.habit-count-input__value {
+.habit-count-input__field {
+  width: 52px;
+  min-width: 52px;
+  height: 28px;
+  padding: 4px 6px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 6px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface);
   font-size: 16px;
   font-weight: 600;
-  min-width: 28px;
   text-align: center;
+  box-sizing: border-box;
+}
+
+.habit-count-input__field:focus {
+  outline: none;
+  border-color: var(--b3-theme-primary);
 }
 </style>
