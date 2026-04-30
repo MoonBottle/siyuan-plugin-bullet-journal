@@ -19,22 +19,22 @@
 
     <div class="fn__flex-1 fn__flex-column habit-dock-body">
       <!-- 详情视图 -->
-      <template v-if="selectedHabit && selectedStats">
+      <template v-if="selectedHabit && selectedStats && selectedDayState && selectedPeriodState">
         <div class="habit-detail fn__flex-1 fn__flex-column">
           <!-- 今日进度 -->
           <div class="habit-detail__today">
             <div class="habit-detail__today-label">{{ t('habit').todayProgress }}</div>
             <div v-if="selectedHabit.type === 'binary'" class="habit-detail__today-binary">
               <button
-                :class="['habit-check-btn-lg', { 'habit-check-btn-lg--done': selectedStats.isPeriodCompleted }]"
+                :class="['habit-check-btn-lg', { 'habit-check-btn-lg--done': selectedDayState.isCompleted }]"
                 @click="handleCheckIn(selectedHabit)"
               >
-                {{ selectedStats.isPeriodCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
+                {{ selectedDayState.isCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
               </button>
             </div>
             <div v-else class="habit-detail__today-count">
               <HabitCountInput
-                :current-value="todayCurrentValue"
+                :current-value="selectedDayState.currentValue || 0"
                 :target="selectedHabit.target"
                 @change="handleCountChange"
               />
@@ -55,7 +55,11 @@
           />
 
           <!-- 打卡日志 -->
-          <HabitRecordLog :habit="selectedHabit" />
+          <HabitRecordLog
+            :habit="selectedHabit"
+            @edit-record="handleEditRecord"
+            @delete-record="handleDeleteRecord"
+          />
         </div>
       </template>
 
@@ -73,9 +77,9 @@
             v-for="habit in habits"
             :key="habit.blockId"
             :habit="habit"
+            :day-state="habitDayStateMap.get(habit.blockId)!"
+            :period-state="habitPeriodStateMap.get(habit.blockId)!"
             :stats="habitStatsMap.get(habit.blockId)"
-            :selected-date="selectedDate"
-            :current-date="currentDate"
             @check-in="handleCheckIn"
             @increment="handleIncrement"
             @click="selectedHabit = $event"
@@ -95,10 +99,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
 import { useProjectStore } from '@/stores/projectStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
-import { checkIn, checkInCount } from '@/services/habitService';
+import { checkIn, checkInCount, deleteCheckIn, setCheckInValue } from '@/services/habitService';
 import { t } from '@/i18n';
+import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
 import HabitListItem from '@/components/habit/HabitListItem.vue';
@@ -106,9 +113,12 @@ import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitCountInput from '@/components/habit/HabitCountInput.vue';
-import type { Habit, HabitStats } from '@/types/models';
+import { showMessage } from '@/utils/dialog';
+import type { CheckInRecord, Habit } from '@/types/models';
 
+const plugin = usePlugin();
 const store = useProjectStore();
+const settingsStore = useSettingsStore();
 
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 const selectedHabit = ref<Habit | null>(null);
@@ -120,36 +130,90 @@ const habitStatsMap = computed(() => {
   return calculateAllHabitStats(habits.value, currentDate.value);
 });
 
+const habitDayStateMap = computed(() => {
+  return new Map(habits.value.map(habit => [habit.blockId, getHabitDayState(habit, selectedDate.value)]));
+});
+
+const habitPeriodStateMap = computed(() => {
+  return new Map(habits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, selectedDate.value)]));
+});
+
 const selectedStats = computed(() => {
   if (!selectedHabit.value) return null;
   return habitStatsMap.value.get(selectedHabit.value.blockId);
 });
 
-const todayCurrentValue = computed(() => {
-  if (!selectedHabit.value || selectedHabit.value.type !== 'count') return 0;
-  const todayRecord = selectedHabit.value.records.find(r => r.date === selectedDate.value);
-  return todayRecord?.currentValue ?? 0;
+const selectedDayState = computed(() => {
+  if (!selectedHabit.value) return null;
+  return getHabitDayState(selectedHabit.value, selectedDate.value);
 });
+
+const selectedPeriodState = computed(() => {
+  if (!selectedHabit.value) return null;
+  return getHabitPeriodState(selectedHabit.value, selectedDate.value);
+});
+
+function syncSelectedHabit() {
+  if (!selectedHabit.value) return;
+  selectedHabit.value = habits.value.find(habit => habit.blockId === selectedHabit.value?.blockId) ?? null;
+}
+
+async function refreshHabits() {
+  if (!plugin) return;
+  await store.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  syncSelectedHabit();
+}
 
 async function handleCheckIn(habit: Habit) {
   const success = await checkIn(habit, selectedDate.value);
   if (success) {
-    console.log('[HabitDock] Check-in successful');
+    await refreshHabits();
   }
 }
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, selectedDate.value, 1);
   if (success) {
-    console.log('[HabitDock] Increment successful');
+    await refreshHabits();
   }
 }
 
 async function handleCountChange(newValue: number) {
-  if (!selectedHabit.value) return;
-  const success = await checkInCount(selectedHabit.value, selectedDate.value, newValue);
+  if (!selectedHabit.value || selectedHabit.value.type !== 'count') return;
+  const success = await setCheckInValue(selectedHabit.value, selectedDate.value, newValue);
   if (success) {
-    console.log('[HabitDock] Count change successful');
+    await refreshHabits();
+  }
+}
+
+async function handleDeleteRecord(record: CheckInRecord) {
+  const success = await deleteCheckIn(record);
+  if (success) {
+    await refreshHabits();
+  }
+}
+
+async function handleEditRecord(record: CheckInRecord) {
+  if (!selectedHabit.value) return;
+
+  if (selectedHabit.value.type !== 'count') {
+    showMessage('当前仅支持编辑计数型打卡', 'info');
+    return;
+  }
+
+  const currentValue = record.currentValue ?? 0;
+  const input = window.prompt('请输入新的打卡值', String(currentValue));
+  if (input === null) return;
+
+  const nextValue = Number(input);
+  if (!Number.isFinite(nextValue) || nextValue < 0) {
+    showMessage('请输入有效的非负数字', 'error');
+    return;
+  }
+
+  const success = await setCheckInValue(selectedHabit.value, record.date, nextValue);
+  if (success) {
+    await refreshHabits();
   }
 }
 </script>

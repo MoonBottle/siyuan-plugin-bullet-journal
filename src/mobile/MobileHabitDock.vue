@@ -19,9 +19,9 @@
           v-for="habit in habits"
           :key="habit.blockId"
           :habit="habit"
+          :day-state="habitDayStateMap.get(habit.blockId)!"
+          :period-state="habitPeriodStateMap.get(habit.blockId)!"
           :stats="habitStatsMap.get(habit.blockId)"
-          :selected-date="state.selectedDate"
-          :current-date="currentDate"
           @check-in="handleCheckIn"
           @increment="handleIncrement"
           @click="openHabitDetail"
@@ -48,21 +48,21 @@
         </div>
 
         <!-- 详情内容 -->
-        <div class="mobile-habit-detail__body" v-if="state.selectedHabit && selectedStats">
+        <div class="mobile-habit-detail__body" v-if="state.selectedHabit && selectedStats && selectedDayState">
           <!-- 今日进度 -->
           <div class="mobile-habit-detail__today">
             <div class="mobile-habit-detail__today-label">{{ t('habit').todayProgress }}</div>
             <div v-if="state.selectedHabit.type === 'binary'" class="mobile-habit-detail__today-binary">
               <button
-                :class="['mobile-check-btn', { 'mobile-check-btn--done': selectedStats.isPeriodCompleted }]"
+                :class="['mobile-check-btn', { 'mobile-check-btn--done': selectedDayState.isCompleted }]"
                 @click="handleCheckIn(state.selectedHabit!)"
               >
-                {{ selectedStats.isPeriodCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
+                {{ selectedDayState.isCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
               </button>
             </div>
             <div v-else class="mobile-habit-detail__today-count">
               <HabitCountInput
-                :current-value="todayCurrentValue"
+                :current-value="selectedDayState.currentValue || 0"
                 :target="state.selectedHabit.target"
                 @change="handleCountChange"
               />
@@ -83,7 +83,11 @@
           />
 
           <!-- 打卡日志 -->
-          <HabitRecordLog :habit="state.selectedHabit" />
+          <HabitRecordLog
+            :habit="state.selectedHabit"
+            @edit-record="handleEditRecord"
+            @delete-record="handleDeleteRecord"
+          />
         </div>
       </div>
     </template>
@@ -92,9 +96,10 @@
 
 <script setup lang="ts">
 import { reactive, computed, onMounted, onUnmounted } from 'vue';
+import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
-import { checkIn, checkInCount } from '@/services/habitService';
+import { checkIn, checkInCount, deleteCheckIn, setCheckInValue } from '@/services/habitService';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
@@ -105,7 +110,8 @@ import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitCountInput from '@/components/habit/HabitCountInput.vue';
-import type { Habit, HabitStats } from '@/types/models';
+import { showMessage } from '@/utils/dialog';
+import type { CheckInRecord, Habit } from '@/types/models';
 
 const plugin = usePlugin();
 const projectStore = useProjectStore();
@@ -125,15 +131,22 @@ const habitStatsMap = computed(() => {
   return calculateAllHabitStats(habits.value, currentDate.value);
 });
 
+const habitDayStateMap = computed(() => {
+  return new Map(habits.value.map(habit => [habit.blockId, getHabitDayState(habit, state.selectedDate)]));
+});
+
+const habitPeriodStateMap = computed(() => {
+  return new Map(habits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, state.selectedDate)]));
+});
+
 const selectedStats = computed(() => {
   if (!state.selectedHabit) return null;
   return habitStatsMap.value.get(state.selectedHabit.blockId);
 });
 
-const todayCurrentValue = computed(() => {
-  if (!state.selectedHabit || state.selectedHabit.type !== 'count') return 0;
-  const todayRecord = state.selectedHabit.records.find(r => r.date === state.selectedDate);
-  return todayRecord?.currentValue ?? 0;
+const selectedDayState = computed(() => {
+  if (!state.selectedHabit) return null;
+  return getHabitDayState(state.selectedHabit, state.selectedDate);
 });
 
 function openHabitDetail(habit: Habit) {
@@ -141,33 +154,73 @@ function openHabitDetail(habit: Habit) {
   state.showHabitDetail = true;
 }
 
+function syncSelectedHabit() {
+  if (!state.selectedHabit) return;
+  state.selectedHabit = habits.value.find(habit => habit.blockId === state.selectedHabit?.blockId) ?? null;
+}
+
+async function refreshHabits() {
+  if (!plugin) return;
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  syncSelectedHabit();
+}
+
 async function handleCheckIn(habit: Habit) {
   const success = await checkIn(habit, state.selectedDate);
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  if (success) {
+    await refreshHabits();
   }
 }
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, state.selectedDate, 1);
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  if (success) {
+    await refreshHabits();
   }
 }
 
 async function handleCountChange(newValue: number) {
-  if (!state.selectedHabit) return;
-  const success = await checkInCount(state.selectedHabit, state.selectedDate, newValue);
-  if (success && plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  if (!state.selectedHabit || state.selectedHabit.type !== 'count') return;
+  const success = await setCheckInValue(state.selectedHabit, state.selectedDate, newValue);
+  if (success) {
+    await refreshHabits();
   }
 }
 
 // 数据刷新（打卡后触发）
 const handleDataRefresh = async () => {
-  if (!plugin) return;
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  await refreshHabits();
 };
+
+async function handleDeleteRecord(record: CheckInRecord) {
+  const success = await deleteCheckIn(record);
+  if (success) {
+    await refreshHabits();
+  }
+}
+
+async function handleEditRecord(record: CheckInRecord) {
+  if (!state.selectedHabit) return;
+
+  if (state.selectedHabit.type !== 'count') {
+    showMessage('当前仅支持编辑计数型打卡', 'info');
+    return;
+  }
+
+  const input = window.prompt('请输入新的打卡值', String(record.currentValue ?? 0));
+  if (input === null) return;
+
+  const nextValue = Number(input);
+  if (!Number.isFinite(nextValue) || nextValue < 0) {
+    showMessage('请输入有效的非负数字', 'error');
+    return;
+  }
+
+  const success = await setCheckInValue(state.selectedHabit, record.date, nextValue);
+  if (success) {
+    await refreshHabits();
+  }
+}
 
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;

@@ -18,6 +18,22 @@
           </span>
           <span v-if="isCompleted(record)" class="habit-record-log__check">✅</span>
         </div>
+        <div class="habit-record-log__actions">
+          <button
+            class="habit-record-log__action"
+            data-action="edit-record"
+            @click.stop="emit('edit-record', record)"
+          >
+            编辑
+          </button>
+          <button
+            class="habit-record-log__action habit-record-log__action--danger"
+            data-action="delete-record"
+            @click.stop="emit('delete-record', record)"
+          >
+            删除
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -32,6 +48,11 @@ import type { Habit, CheckInRecord } from '@/types/models';
 
 const props = defineProps<{
   habit: Habit;
+}>();
+
+const emit = defineEmits<{
+  'edit-record': [record: CheckInRecord];
+  'delete-record': [record: CheckInRecord];
 }>();
 
 const sortedRecords = computed(() => {
@@ -112,5 +133,24 @@ function formatDate(date: string): string {
 
 .habit-record-log__check {
   font-size: 12px;
+}
+
+.habit-record-log__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.habit-record-log__action {
+  border: none;
+  background: transparent;
+  color: var(--b3-theme-on-surface-light);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.habit-record-log__action--danger {
+  color: var(--b3-theme-error);
 }
 </style>

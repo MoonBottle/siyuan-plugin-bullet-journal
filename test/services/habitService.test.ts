@@ -7,7 +7,7 @@ vi.mock('@/api', () => ({
   deleteBlock: vi.fn(),
 }));
 
-import { checkIn, checkInCount, setCheckInValue, deleteCheckIn, buildCheckInMarkdown } from '@/services/habitService';
+import { checkIn, checkInCount, setCheckInValue, deleteCheckIn, buildCheckInMarkdown, findInsertAfterBlockId } from '@/services/habitService';
 import type { Habit, CheckInRecord } from '@/types/models';
 import { insertBlock, updateBlock, deleteBlock } from '@/api';
 
@@ -211,6 +211,37 @@ describe('setCheckInValue', () => {
       '喝水 6/8杯 📅2026-04-07',
       'record-2026-04-07'
     );
+  });
+
+  it('setCheckInValue 应把值设为目标值，而不是在现有值上累加', async () => {
+    const writer = vi.fn().mockResolvedValue(true);
+    const habit = mkHabit({
+      name: '喝水',
+      type: 'count',
+      target: 8,
+      unit: '杯',
+      records: [mkRecord('2026-04-07', { currentValue: 3, targetValue: 8, unit: '杯' })]
+    });
+
+    const result = await setCheckInValue(habit, '2026-04-07', 4, writer);
+
+    expect(result).toBe(true);
+    expect(writer).toHaveBeenCalledWith('喝水 4/8杯 📅2026-04-07', 'record-2026-04-07');
+  });
+});
+
+describe('findInsertAfterBlockId', () => {
+  it('应为历史补打卡选择最近的前序 record', () => {
+    const habit = mkHabit({
+      records: [
+        mkRecord('2026-04-05', { blockId: 'r5' }),
+        mkRecord('2026-04-07', { blockId: 'r7' }),
+      ],
+      blockId: 'habit-1',
+    });
+
+    expect(findInsertAfterBlockId(habit, '2026-04-06')).toBe('r5');
+    expect(findInsertAfterBlockId(habit, '2026-04-04')).toBe('habit-1');
   });
 });
 

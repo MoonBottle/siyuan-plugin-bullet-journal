@@ -5,7 +5,7 @@
 import type { Plugin } from 'siyuan';
 import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel, HabitFrequency } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
@@ -337,6 +337,13 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     bodyEl.appendChild(container);
   }
 
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
   return dialog;
 }
 
@@ -524,6 +531,13 @@ export function showEventDetailModal(
   if (bodyEl) {
     bodyEl.appendChild(container);
   }
+
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
 
   return dialog;
 }
@@ -1182,11 +1196,22 @@ export function showPrioritySettingDialog(
  * 显示习惯创建弹框
  */
 export function showHabitCreateDialog(
-  onSave: (markdown: string) => void
+  onSave: (markdown: string) => void,
+  initialData?: Partial<{
+    name: string;
+    startDate: string;
+    durationDays?: number;
+    type: 'binary' | 'count';
+    target?: number;
+    unit?: string;
+    reminder?: Pick<ReminderConfig, 'type' | 'time'>;
+    frequency?: HabitFrequency;
+  }>,
 ): Dialog {
   const container = document.createElement('div');
 
   const app = createApp(HabitCreateDialog, {
+    initialData,
     onSave: (markdown: string) => {
       onSave(markdown);
       dialog.destroy();
@@ -1212,6 +1237,13 @@ export function showHabitCreateDialog(
   if (bodyEl) {
     bodyEl.appendChild(container);
   }
+
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
 
   return dialog;
 }

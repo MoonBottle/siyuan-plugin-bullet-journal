@@ -133,6 +133,7 @@ describe('calculateHabitStats', () => {
       records: []
     });
     const stats = calculateHabitStats(habit, '2026-04-07');
+    expect(stats.isEnded).toBe(true);
     expect(stats.isCompleted).toBe(true);
   });
 
@@ -144,7 +145,21 @@ describe('calculateHabitStats', () => {
       records: []
     });
     const stats = calculateHabitStats(habit, '2026-04-07');
+    expect(stats.isEnded).toBe(false);
     expect(stats.isCompleted).toBe(false);
+  });
+
+  it('weekly 完成率应按周数透传领域层结果', () => {
+    const habit = mkHabit({
+      name: '周报',
+      frequency: { type: 'weekly' },
+      records: [
+        mkRecord('2026-04-03'),
+        mkRecord('2026-04-08')
+      ]
+    });
+    const stats = calculateHabitStats(habit, '2026-04-20');
+    expect(stats.completionRate).toBeCloseTo(2 / 4, 5);
   });
 
   it('本周完成率', () => {

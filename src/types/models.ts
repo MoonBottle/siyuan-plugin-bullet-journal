@@ -175,6 +175,25 @@ export interface Habit {
   pomodoros?: PomodoroRecord[];  // 番茄钟记录
 }
 
+export interface HabitDayState {
+  date: string;
+  hasRecord: boolean;
+  isCompleted: boolean;
+  currentValue?: number;
+  targetValue?: number;
+}
+
+export interface HabitPeriodState {
+  periodType: 'day' | 'interval' | 'week';
+  periodStart: string;
+  periodEnd: string;
+  requiredCount: number;
+  completedCount: number;
+  remainingCount: number;
+  isCompleted: boolean;
+  eligibleToday: boolean;
+}
+
 // 习惯统计（纯计算，不持久化）
 export interface HabitStats {
   habitId: string;
@@ -187,8 +206,9 @@ export interface HabitStats {
   weeklyCompletionRate: number;  // 本周完成率 (0-1)
   totalValue?: number;           // 累计值（计数型）
   averageValue?: number;         // 日均值（计数型）
-  isCompleted: boolean;          // 习惯是否已结束
-  isPeriodCompleted: boolean;    // 当期是否已达标
+  isEnded?: boolean;             // 习惯是否已结束
+  isCompleted?: boolean;         // 兼容旧字段，后续清理
+  isPeriodCompleted?: boolean;   // 兼容旧字段，后续清理
 }
 
 // 重复规则类型

@@ -70,6 +70,28 @@ describe('getHabitReminderTime', () => {
     const habit = mkHabit({ name: '早起' });
     expect(getHabitReminderTime(habit, '2026-04-07')).toBeNull();
   });
+
+  it('相对提醒的正偏移应表示提前', () => {
+    const habit = mkHabit({
+      name: '早起',
+      reminder: { type: 'relative', offsetMinutes: 30 }
+    });
+    const result = getHabitReminderTime(habit, '2026-04-07');
+    expect(result).not.toBeNull();
+    expect(result!.getHours()).toBe(8);
+    expect(result!.getMinutes()).toBe(30);
+  });
+
+  it('相对提醒 0 偏移应保留为基准时间', () => {
+    const habit = mkHabit({
+      name: '早起',
+      reminder: { type: 'relative', offsetMinutes: 0 }
+    });
+    const result = getHabitReminderTime(habit, '2026-04-07');
+    expect(result).not.toBeNull();
+    expect(result!.getHours()).toBe(9);
+    expect(result!.getMinutes()).toBe(0);
+  });
 });
 
 describe('getHabitReminderEntries', () => {
@@ -102,6 +124,35 @@ describe('getHabitReminderEntries', () => {
     });
 
     expect(getHabitReminderEntries([habit], '2026-04-07')).toHaveLength(0);
+  });
+
+  it('weekly 未达标时周内每天都生成 reminder entry', () => {
+    const habit = mkHabit({
+      name: '周报',
+      frequency: { type: 'weekly' },
+      reminder: { type: 'absolute', time: '09:00' },
+      records: [],
+    });
+
+    expect(getHabitReminderEntries([habit], '2026-04-08')).toHaveLength(1);
+    expect(getHabitReminderEntries([habit], '2026-04-10')).toHaveLength(1);
+  });
+
+  it('weekly 达标后当周不再生成 reminder entry', () => {
+    const habit = mkHabit({
+      name: '周报',
+      frequency: { type: 'weekly' },
+      reminder: { type: 'absolute', time: '09:00' },
+      records: [{
+        content: '周报',
+        date: '2026-04-08',
+        docId: 'doc-1',
+        blockId: 'record-1',
+        habitId: 'habit-1',
+      }],
+    });
+
+    expect(getHabitReminderEntries([habit], '2026-04-10')).toHaveLength(0);
   });
 
   it('非打卡日不生成 entry', () => {

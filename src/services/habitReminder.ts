@@ -1,12 +1,7 @@
-/**
- * 习惯提醒服务
- * 检查需要提醒的习惯，根据频率规则判断今天是否应为打卡日
- * 集成到 ReminderService 的 checkReminders 中
- */
-
 import dayjs from '@/utils/dayjs';
-import type { Habit, HabitFrequency } from '@/types/models';
-import { calculateHabitStats } from '@/utils/habitStatsUtils';
+import { getHabitPeriodState } from '@/domain/habit/habitCompletion';
+import { isDateEligibleForHabit } from '@/domain/habit/habitPeriod';
+import type { Habit } from '@/types/models';
 
 export interface HabitReminderEntry {
   habit: Habit;
@@ -14,60 +9,8 @@ export interface HabitReminderEntry {
   key: string;
 }
 
-/**
- * 判断指定日期是否是习惯的打卡日
- */
 export function isCheckInDay(habit: Habit, date: string): boolean {
-  const frequency = habit.frequency;
-  if (!frequency) return true; // 无频率规则默认每天
-
-  const startDate = habit.startDate;
-  if (date < startDate) return false; // 还没开始
-
-  // 如果习惯已结束
-  if (habit.durationDays) {
-    const endDate = dayjs(startDate).add(habit.durationDays - 1, 'day').format('YYYY-MM-DD');
-    if (date > endDate) return false;
-  }
-
-  return isFrequencyDay(frequency, startDate, date);
-}
-
-/**
- * 根据频率规则判断指定日期是否是打卡日
- */
-function isFrequencyDay(frequency: HabitFrequency, startDate: string, date: string): boolean {
-  const d = dayjs(date);
-  const start = dayjs(startDate);
-  const daysSinceStart = d.diff(start, 'day');
-
-  switch (frequency.type) {
-    case 'daily':
-      return true;
-
-    case 'every_n_days': {
-      const interval = frequency.interval || 2;
-      return daysSinceStart % interval === 0;
-    }
-
-    case 'weekly':
-      // 每周一次，默认在开始日打卡，之后每隔7天
-      return daysSinceStart % 7 === 0;
-
-    case 'n_per_week':
-      // 每周N天：简化为均匀分布
-      return true; // 无法精确判断，默认都算打卡日
-
-    case 'weekly_days': {
-      const daysOfWeek = frequency.daysOfWeek || [];
-      if (daysOfWeek.length === 0) return false;
-      // dayjs day(): 0=Sun, 1=Mon, ..., 6=Sat
-      return daysOfWeek.includes(d.day());
-    }
-
-    default:
-      return true;
-  }
+  return isDateEligibleForHabit(habit, date);
 }
 
 /**
@@ -78,17 +21,20 @@ export function getHabitReminderTime(habit: Habit, date: string): Date | null {
   if (!habit.reminder) return null;
 
   const reminder = habit.reminder;
+  const day = dayjs(date);
   let timeStr: string | null = null;
 
   if (reminder.type === 'absolute' && reminder.time) {
     timeStr = reminder.time;
-  } else if (reminder.type === 'relative' && reminder.offsetMinutes) {
-    // 相对时间默认按 09:00 + offset 处理
-    const baseHour = 9;
-    const totalMinutes = baseHour * 60 + reminder.offsetMinutes;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }
+  else if (reminder.type === 'relative' && reminder.offsetMinutes !== undefined) {
+    return day
+      .hour(9)
+      .minute(0)
+      .second(0)
+      .millisecond(0)
+      .subtract(reminder.offsetMinutes, 'minute')
+      .toDate();
   }
 
   if (!timeStr) return null;
@@ -96,8 +42,7 @@ export function getHabitReminderTime(habit: Habit, date: string): Date | null {
   const [hours, minutes] = timeStr.split(':').map(Number);
   if (isNaN(hours) || isNaN(minutes)) return null;
 
-  const d = dayjs(date);
-  return d.hour(hours).minute(minutes).second(0).millisecond(0).toDate();
+  return day.hour(hours).minute(minutes).second(0).millisecond(0).toDate();
 }
 
 /**
@@ -110,13 +55,16 @@ export function getHabitReminderEntries(
   const entries: HabitReminderEntry[] = [];
 
   for (const habit of habits) {
-    if (!isCheckInDay(habit, currentDate)) continue;
+    if (!isDateEligibleForHabit(habit, currentDate))
+      continue;
 
-    const stats = calculateHabitStats(habit, currentDate);
-    if (stats.isPeriodCompleted) continue;
+    const periodState = getHabitPeriodState(habit, currentDate);
+    if (periodState.isCompleted)
+      continue;
 
     const reminderTime = getHabitReminderTime(habit, currentDate);
-    if (!reminderTime) continue;
+    if (!reminderTime)
+      continue;
 
     const reminderTimestamp = reminderTime.getTime();
     entries.push({

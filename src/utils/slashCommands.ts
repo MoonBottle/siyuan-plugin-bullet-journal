@@ -23,12 +23,24 @@ import {
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
-import type { Item, ProjectDirectory, PriorityLevel } from '@/types/models';
+import type { Habit, Item, ProjectDirectory, PriorityLevel } from '@/types/models';
+import { parseCheckInRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
+import { checkIn, checkInCount } from '@/services/habitService';
+
+function parseHabitRecordLine(line: string, habitId: string) {
+  const parsedRecord = parseCheckInRecordLine(line, habitId);
+  if (!parsedRecord) {
+    return null;
+  }
+
+  const hasHabitRecordMarkers = line.includes('✅') || /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(line);
+  return hasHabitRecordMarkers ? parsedRecord : null;
+}
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
@@ -557,7 +569,7 @@ async function viewDetail(nodeElement: HTMLElement) {
  * 获取动作处理器
  * 每个 handler 内部封装 delete + 业务逻辑（需要时）
  */
-function getActionHandler(
+export function getActionHandler(
   action: CustomSlashCommand['action'],
   config: SlashCommandConfig,
   filter: string[]
@@ -704,19 +716,97 @@ function getActionHandler(
     case 'createHabit':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
+        const text = nodeElement?.textContent?.trim() || '';
+        const parsedHabit = parseHabitLine(text);
+        const parsedRecord = parseHabitRecordLine(text, '');
+
+        if (parsedRecord) {
+          showMessage(t('slash').checkIn || '打卡', 2000, 'info');
+          return;
+        }
+
         showHabitCreateDialog((markdown) => {
-          // Insert habit definition line at current cursor position
           const blockId = nodeElement?.getAttribute?.('data-node-id');
-          if (blockId) {
+          if (!blockId) {
+            return;
+          }
+
+          if (parsedHabit) {
+            updateBlock('markdown', markdown, blockId);
+          } else {
             insertBlock('markdown', markdown, undefined, blockId);
           }
-        });
+        }, parsedHabit || undefined);
       };
     case 'checkIn':
-      return (protyle, nodeElement) => {
+      return async (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
-        // TODO: 调用 habitService.checkIn（Task 8 实现后完善）
-        console.log('[SlashCommand] checkIn: placeholder');
+        const text = nodeElement?.textContent?.trim() || '';
+        const blockId = nodeElement?.getAttribute?.('data-node-id');
+        const parsedHabit = parseHabitLine(text);
+        const parsedRecord = parseHabitRecordLine(text, blockId || '');
+        const currentDate = dayjs().format('YYYY-MM-DD');
+
+        if (!parsedHabit || !blockId) {
+          if (!parsedRecord) {
+            config.openHabitDock();
+            return;
+          }
+
+          if (parsedRecord.date !== currentDate) {
+            config.openHabitDock();
+            return;
+          }
+
+          if (parsedRecord.currentValue !== undefined) {
+            const habit: Habit = {
+              name: parsedRecord.content || text,
+              docId: parsedRecord.docId || '',
+              blockId: parsedRecord.habitId || blockId || '',
+              type: 'count',
+              startDate: parsedRecord.date,
+              target: parsedRecord.targetValue,
+              unit: parsedRecord.unit,
+              frequency: { type: 'daily' },
+              records: [{
+                content: parsedRecord.content || text,
+                date: parsedRecord.date,
+                docId: parsedRecord.docId || '',
+                blockId: blockId || '',
+                habitId: parsedRecord.habitId || blockId || '',
+                currentValue: parsedRecord.currentValue,
+                targetValue: parsedRecord.targetValue,
+                unit: parsedRecord.unit,
+              }],
+            };
+            await checkInCount(habit, currentDate, 1);
+            return;
+          }
+
+          showMessage(t('habit').todayChecked || '今天已打卡', 2000, 'info');
+          return;
+        }
+
+        const habit: Habit = {
+          name: parsedHabit.name || text,
+          docId: '',
+          blockId,
+          type: parsedHabit.type || 'binary',
+          startDate: parsedHabit.startDate || dayjs().format('YYYY-MM-DD'),
+          durationDays: parsedHabit.durationDays,
+          endDate: parsedHabit.endDate,
+          target: parsedHabit.target,
+          unit: parsedHabit.unit,
+          frequency: parsedHabit.frequency,
+          reminder: parsedHabit.reminder,
+          records: [],
+        };
+
+        if (habit.type === 'count') {
+          await checkInCount(habit, currentDate, 1);
+        } else {
+          await checkIn(habit, currentDate);
+        }
       };
     default:
       return () => {};

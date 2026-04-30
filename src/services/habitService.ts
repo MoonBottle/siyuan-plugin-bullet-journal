@@ -6,6 +6,28 @@ import { insertBlock, updateBlock, deleteBlock, getBlockKramdown } from '@/api';
 import type { Habit, CheckInRecord } from '@/types/models';
 import type { BlockWriter } from '@/utils/fileUtils';
 
+export function findInsertAfterBlockId(habit: Habit, date: string): string {
+  const sortedRecords = [...habit.records].sort((a, b) => a.date.localeCompare(b.date));
+  if (sortedRecords.length === 0) {
+    return habit.lastBlockId || habit.blockId;
+  }
+
+  let previousId = habit.blockId;
+
+  for (const record of sortedRecords) {
+    if (record.date > date)
+      break;
+    previousId = record.blockId;
+  }
+
+  const latestRecord = sortedRecords[sortedRecords.length - 1];
+  if (date >= latestRecord.date) {
+    return habit.lastBlockId || previousId;
+  }
+
+  return previousId;
+}
+
 /**
  * 构建二元型打卡记录行 Markdown
  */
@@ -44,7 +66,7 @@ export async function checkIn(
   }
 
   const markdown = buildCheckInMarkdown(habit, date);
-  const previousId = habit.lastBlockId || habit.blockId;
+  const previousId = findInsertAfterBlockId(habit, date);
 
   try {
     if (writer) {
@@ -89,7 +111,7 @@ export async function checkInCount(
   const completed = value >= target;
   const markdown = `${habit.name} ${value}/${target}${unit} 📅${date}${completed ? ' ✅' : ''}`;
 
-  const previousId = habit.lastBlockId || habit.blockId;
+  const previousId = findInsertAfterBlockId(habit, date);
 
   try {
     if (writer) {
@@ -141,7 +163,7 @@ export async function setCheckInValue(
   const unit = habit.unit ?? '';
   const completed = value >= target;
   const markdown = `${habit.name} ${value}/${target}${unit} 📅${date}${completed ? ' ✅' : ''}`;
-  const previousId = habit.lastBlockId || habit.blockId;
+  const previousId = findInsertAfterBlockId(habit, date);
 
   try {
     if (writer) {

@@ -13,23 +13,26 @@
           🔥 {{ t('habit').streakDays.replace('{n}', String(stats.currentStreak)) }}
         </span>
       </div>
+      <div v-if="periodState.isCompleted" class="habit-list-item__period-status">
+        {{ periodCompletedText }}
+      </div>
 
       <!-- 二元型 -->
       <div v-if="habit.type === 'binary'" class="habit-list-item__status">
-        <span v-if="isCompleted" class="habit-list-item__checked">{{ t('habit').todayChecked }}</span>
+        <span v-if="dayState.isCompleted" class="habit-list-item__checked">{{ t('habit').todayChecked }}</span>
         <span v-else class="habit-list-item__unchecked">{{ t('habit').todayUnchecked }}</span>
       </div>
 
       <!-- 计数型 -->
       <div v-else class="habit-list-item__progress">
         <div class="habit-list-item__progress-bar">
-          <div
+        <div
             class="habit-list-item__progress-fill"
             :style="{ width: progressPercent + '%' }"
           ></div>
         </div>
         <span class="habit-list-item__progress-text">
-          {{ todayCurrentValue }}/{{ habit.target || 0 }}{{ habit.unit || '' }}
+          {{ dayCurrentValue }}/{{ habit.target || 0 }}{{ habit.unit || '' }}
         </span>
       </div>
     </div>
@@ -38,18 +41,18 @@
       <!-- 二元型打卡按钮 -->
       <button
         v-if="habit.type === 'binary'"
-        :class="['habit-check-btn', { 'habit-check-btn--done': isCompleted }]"
-        :disabled="isCompleted"
+        :class="['habit-check-btn', { 'habit-check-btn--done': dayState.isCompleted }]"
+        :disabled="dayState.isCompleted"
         @click.stop="emit('check-in', habit)"
       >
-        {{ isCompleted ? '✅' : t('habit').checkIn }}
+        {{ dayState.isCompleted ? '✅' : t('habit').checkIn }}
       </button>
 
       <!-- 计数型 +1 按钮 -->
       <button
         v-else
         class="habit-increment-btn"
-        :disabled="isCompleted"
+        :disabled="dayState.isCompleted"
         @click.stop="emit('increment', habit)"
       >
         {{ t('habit').addOne }}
@@ -61,13 +64,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { t } from '@/i18n';
-import type { Habit, HabitStats } from '@/types/models';
+import type { Habit, HabitDayState, HabitPeriodState, HabitStats } from '@/types/models';
 
 const props = defineProps<{
   habit: Habit;
+  dayState: HabitDayState;
+  periodState: HabitPeriodState;
   stats?: HabitStats;
-  selectedDate: string;
-  currentDate: string;
 }>();
 
 const emit = defineEmits<{
@@ -76,19 +79,19 @@ const emit = defineEmits<{
   'click': [habit: Habit];
 }>();
 
-const isCompleted = computed(() => {
-  return props.stats?.isPeriodCompleted ?? false;
+const periodCompletedText = computed(() => {
+  return props.periodState.periodType === 'day'
+    ? t('habit').todayChecked
+    : t('habit').periodCompleted;
 });
 
-const todayCurrentValue = computed(() => {
-  if (props.habit.type !== 'count') return 0;
-  const todayRecord = props.habit.records.find(r => r.date === props.selectedDate);
-  return todayRecord?.currentValue ?? 0;
+const dayCurrentValue = computed(() => {
+  return props.dayState.currentValue ?? 0;
 });
 
 const progressPercent = computed(() => {
   if (!props.habit.target) return 0;
-  return Math.min((todayCurrentValue.value / props.habit.target) * 100, 100);
+  return Math.min((dayCurrentValue.value / props.habit.target) * 100, 100);
 });
 </script>
 
@@ -120,6 +123,12 @@ const progressPercent = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 4px;
+}
+
+.habit-list-item__period-status {
+  font-size: 11px;
+  color: var(--b3-theme-primary);
   margin-bottom: 4px;
 }
 

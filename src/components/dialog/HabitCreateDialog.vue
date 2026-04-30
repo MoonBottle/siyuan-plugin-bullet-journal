@@ -7,6 +7,7 @@
         v-model="form.name"
         type="text"
         class="form-input"
+        data-testid="habit-name-input"
         :placeholder="t('habit').namePlaceholder || '输入习惯名'"
         @keyup.enter="handleSave"
       />
@@ -19,6 +20,7 @@
         v-model="form.startDate"
         type="date"
         class="form-input"
+        data-testid="habit-start-date-input"
       />
     </div>
 
@@ -30,6 +32,7 @@
         type="number"
         min="0"
         class="form-input"
+        data-testid="habit-duration-input"
         :placeholder="t('habit').durationPlaceholder || '留空表示不限制'"
       />
     </div>
@@ -40,12 +43,14 @@
       <div class="type-toggle">
         <button
           :class="['type-btn', { active: form.type === 'binary' }]"
+          data-testid="habit-type-binary-button"
           @click="form.type = 'binary'"
         >
           {{ t('habit').typeBinary || '二元型' }}
         </button>
         <button
           :class="['type-btn', { active: form.type === 'count' }]"
+          data-testid="habit-type-count-button"
           @click="form.type = 'count'"
         >
           {{ t('habit').typeCount || '计数型' }}
@@ -62,15 +67,28 @@
           type="number"
           min="1"
           class="form-input target-input"
+          data-testid="habit-target-input"
           :placeholder="'8'"
         />
         <input
           v-model="form.unit"
           type="text"
           class="form-input unit-input"
+          data-testid="habit-unit-input"
           :placeholder="t('habit').unitPlaceholder || '杯'"
         />
       </div>
+    </div>
+
+    <!-- 提醒时间 -->
+    <div class="form-group">
+      <label class="form-label">{{ t('habit').reminderLabel || '提醒时间（可选）' }}</label>
+      <input
+        v-model="form.reminderTime"
+        type="time"
+        class="form-input"
+        data-testid="habit-reminder-time-input"
+      />
     </div>
 
     <!-- 频率 -->
@@ -81,6 +99,7 @@
           v-for="opt in frequencyOptions"
           :key="opt.value"
           :class="['freq-btn', { active: form.frequencyType === opt.value }]"
+          :data-testid="`habit-frequency-${opt.value}-button`"
           @click="selectFrequency(opt.value)"
         >
           {{ opt.label }}
@@ -93,6 +112,7 @@
           type="number"
           min="2"
           class="form-input small-input"
+          data-testid="habit-interval-input"
         />
         <span class="freq-detail-label">{{ t('habit').daysInterval || '天间隔' }}</span>
       </div>
@@ -104,6 +124,7 @@
           min="1"
           max="7"
           class="form-input small-input"
+          data-testid="habit-days-per-week-input"
         />
         <span class="freq-detail-label">{{ t('habit').daysPerWeekLabel || '天/周' }}</span>
       </div>
@@ -132,7 +153,7 @@
 import { reactive, computed } from 'vue';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
-import type { HabitFrequency } from '@/types/models';
+import type { HabitFrequency, ReminderConfig } from '@/types/models';
 
 const props = defineProps<{
   initialData?: Partial<{
@@ -142,6 +163,7 @@ const props = defineProps<{
     type: 'binary' | 'count';
     target?: number;
     unit?: string;
+    reminder?: Pick<ReminderConfig, 'type' | 'time'>;
     frequency?: HabitFrequency;
   }>;
 }>();
@@ -158,6 +180,7 @@ const form = reactive({
   type: props.initialData?.type || 'binary' as 'binary' | 'count',
   target: props.initialData?.target ?? 1,
   unit: props.initialData?.unit || '',
+  reminderTime: props.initialData?.reminder?.time || '',
   frequencyType: (props.initialData?.frequency?.type || 'daily') as HabitFrequency['type'],
   interval: props.initialData?.frequency?.interval ?? 2,
   daysPerWeek: props.initialData?.frequency?.daysPerWeek ?? 3,
@@ -200,6 +223,10 @@ function buildMarkdown(): string {
     line += ` ${form.target}${form.unit || ''}`;
   }
 
+  if (form.reminderTime) {
+    line += ` ⏰${form.reminderTime}`;
+  }
+
   // 频率
   switch (form.frequencyType) {
     case 'daily':
@@ -228,7 +255,13 @@ function buildMarkdown(): string {
 }
 
 function handleSave() {
-  if (!form.name.trim()) return;
+  if (!form.name.trim())
+    return;
+  if (form.type === 'count' && (!Number.isFinite(form.target) || form.target <= 0))
+    return;
+  if (form.frequencyType === 'weekly_days' && form.daysOfWeek.length === 0)
+    return;
+
   const markdown = buildMarkdown();
   emit('save', markdown);
 }
