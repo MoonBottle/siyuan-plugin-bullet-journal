@@ -248,6 +248,20 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
 }
 
 /**
+ * 解析严格意义上的习惯打卡记录行
+ * 需要先满足基础记录格式，再满足习惯记录标记（✅ 或 N/M单位）
+ */
+export function parseHabitRecordLine(line: string, habitId: string): Partial<CheckInRecord> | null {
+  const parsedRecord = parseCheckInRecordLine(line, habitId);
+  if (!parsedRecord) {
+    return null;
+  }
+
+  const hasHabitRecordMarkers = line.includes('✅') || /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(line);
+  return hasHabitRecordMarkers ? parsedRecord : null;
+}
+
+/**
  * 计算结束日期
  * @param startDate 开始日期 YYYY-MM-DD
  * @param durationDays 持续天数

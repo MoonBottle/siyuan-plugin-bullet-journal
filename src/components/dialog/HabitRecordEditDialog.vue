@@ -8,6 +8,13 @@
         rows="4"
         data-testid="habit-record-markdown-input"
       />
+      <div
+        v-if="errorMessage"
+        class="form-error"
+        data-testid="habit-record-error"
+      >
+        {{ errorMessage }}
+      </div>
     </div>
 
     <div class="form-actions">
@@ -20,6 +27,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { t } from '@/i18n';
+import { parseHabitRecordLine } from '@/parser/habitParser';
 
 const props = defineProps<{
   initialMarkdown: string;
@@ -31,12 +39,25 @@ const emit = defineEmits<{
 }>();
 
 const markdown = ref(props.initialMarkdown);
+const errorMessage = ref('');
+
+function isHabitRecordMarkdown(value: string): boolean {
+  return !!parseHabitRecordLine(value, 'habit-record-edit');
+}
 
 function handleSave() {
   const value = markdown.value.trim();
-  if (!value)
+  if (!value) {
+    errorMessage.value = t('habit').recordEmptyError;
     return;
+  }
 
+  if (!isHabitRecordMarkdown(value)) {
+    errorMessage.value = t('habit').recordFormatError;
+    return;
+  }
+
+  errorMessage.value = '';
   emit('save', value);
 }
 </script>
@@ -77,6 +98,11 @@ function handleSave() {
 .form-textarea:focus {
   outline: none;
   border-color: var(--b3-theme-primary);
+}
+
+.form-error {
+  color: var(--b3-theme-error);
+  font-size: 12px;
 }
 
 .form-actions {

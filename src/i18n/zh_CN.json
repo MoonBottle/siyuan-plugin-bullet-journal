@@ -928,6 +928,8 @@
     "recordEditLabel": "记录内容",
     "recordLoadFailed": "无法读取打卡记录内容",
     "recordUpdateFailed": "更新打卡记录失败",
+    "recordEmptyError": "打卡记录内容不能为空",
+    "recordFormatError": "请输入有效的打卡记录格式",
     "createSuccess": "习惯已创建",
     "createFailed": "创建习惯失败"
   }

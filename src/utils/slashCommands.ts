@@ -24,23 +24,13 @@ import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { TAB_TYPES, SLASH_COMMAND_FILTERS } from '@/constants';
 import dayjs from 'dayjs';
 import type { Habit, Item, ProjectDirectory, PriorityLevel } from '@/types/models';
-import { parseCheckInRecordLine, parseHabitLine } from '@/parser/habitParser';
+import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
 import { checkIn, checkInCount } from '@/services/habitService';
-
-function parseHabitRecordLine(line: string, habitId: string) {
-  const parsedRecord = parseCheckInRecordLine(line, habitId);
-  if (!parsedRecord) {
-    return null;
-  }
-
-  const hasHabitRecordMarkers = line.includes('✅') || /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(line);
-  return hasHabitRecordMarkers ? parsedRecord : null;
-}
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange

@@ -85,6 +85,25 @@ describe('HabitRecordEditDialog', () => {
     mounted.unmount();
   });
 
+  it('缺少打卡记录格式时不应保存', async () => {
+    const mounted = mountDialog({
+      initialMarkdown: '喝水 4/8杯 📅2026-04-10',
+    });
+
+    await setTextareaValue(
+      getByTestId(mounted.container, 'habit-record-markdown-input'),
+      '普通事项 @2026-04-10',
+    );
+
+    mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.getSavedMarkdown()).toBe('');
+    expect(getByTestId(mounted.container, 'habit-record-error').textContent).toContain('打卡记录');
+
+    mounted.unmount();
+  });
+
   it('showHabitRecordEditDialog 打开后应把焦点交给编辑框', async () => {
     const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {
       callback(0);

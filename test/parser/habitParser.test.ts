@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseHabitLine, parseCheckInRecordLine } from '@/parser/habitParser';
+import { parseHabitLine, parseCheckInRecordLine, parseHabitRecordLine } from '@/parser/habitParser';
 import type { Habit, CheckInRecord } from '@/types/models';
 
 describe('parseHabitLine', () => {
@@ -121,5 +121,24 @@ describe('parseCheckInRecordLine', () => {
   it('无日期不识别为记录', () => {
     const result = parseCheckInRecordLine('喝水 3/8杯', 'habit-block-1');
     expect(result).toBeNull();
+  });
+});
+
+describe('parseHabitRecordLine', () => {
+  it('普通带日期事项不应识别为习惯打卡记录', () => {
+    const result = parseHabitRecordLine('普通事项 @2026-04-06', 'habit-block-1');
+    expect(result).toBeNull();
+  });
+
+  it('带完成标记的二元记录应识别为习惯打卡记录', () => {
+    const result = parseHabitRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result!.date).toBe('2026-04-06');
+  });
+
+  it('带计数进度的记录应识别为习惯打卡记录', () => {
+    const result = parseHabitRecordLine('喝水 3/8杯 📅2026-04-06', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result!.currentValue).toBe(3);
   });
 });
