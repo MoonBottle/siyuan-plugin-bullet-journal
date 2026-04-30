@@ -86,12 +86,6 @@ const weekDays = computed(() => {
 
 .habit-week-bar__day--today .habit-week-bar__date {
   background: var(--b3-theme-primary-lightest);
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .habit-week-bar__day--selected {
@@ -101,8 +95,6 @@ const weekDays = computed(() => {
 
 .habit-week-bar__day--selected .habit-week-bar__date {
   background: transparent;
-  width: auto;
-  height: auto;
 }
 
 .habit-week-bar__weekday {
@@ -113,5 +105,13 @@ const weekDays = computed(() => {
 .habit-week-bar__date {
   font-size: 14px;
   font-weight: 500;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  line-height: 1;
+  box-sizing: border-box;
 }
 </style>
