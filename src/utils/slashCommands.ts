@@ -706,6 +706,7 @@ export function getActionHandler(
     case 'createHabit':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
+
         const text = nodeElement?.textContent?.trim() || '';
         const parsedHabit = parseHabitLine(text);
         const parsedRecord = parseHabitRecordLine(text, '');

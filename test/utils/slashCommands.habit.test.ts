@@ -71,6 +71,7 @@ vi.mock('@/utils/protyleWriterDom', () => ({
 
 import { showHabitCreateDialog } from '@/utils/dialog';
 import { checkIn, checkInCount } from '@/services/habitService';
+import { processLineText } from '@/utils/slashCommandUtils';
 import { getActionHandler } from '@/utils/slashCommands';
 
 describe('habit slash commands', () => {
@@ -79,6 +80,7 @@ describe('habit slash commands', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(processLineText).mockImplementation((text: string) => text);
   });
 
   it('/xg 在习惯行上应进入编辑模式', () => {
@@ -93,6 +95,39 @@ describe('habit slash commands', () => {
     node.textContent = '喝水 🎯2026-04-01 8杯 ⏰09:00 🔄每天';
 
     handler({} as any, node);
+
+    expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
+      name: '喝水',
+      target: 8,
+      unit: '杯',
+    }));
+  });
+
+  it('/xg 删除命令后即使残留零宽字符也应进入编辑模式', () => {
+    const showSpy = vi.mocked(showHabitCreateDialog);
+    vi.mocked(processLineText).mockImplementation((text: string) => text.replace('/xg', ''));
+    const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-zwsp');
+    const textNode = document.createTextNode('喝水 🎯2026-04-01 8杯 ⏰09:00 🔄每天/xg​');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
 
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
       name: '喝水',

@@ -17,6 +17,10 @@ const ENGLISH_DAY_MAP: Record<string, number> = {
   'fri': 5, 'sat': 6, 'sun': 0,
 };
 
+function normalizeHabitText(value: string): string {
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+}
+
 /**
  * 判断是否为习惯行（包含 🎯 标记）
  */
@@ -29,7 +33,7 @@ export function isHabitLine(line: string): boolean {
  * @param freqStr 频率字符串（🔄 后面的内容）
  */
 export function parseHabitFrequency(freqStr: string): HabitFrequency | null {
-  const str = freqStr.trim();
+  const str = normalizeHabitText(freqStr);
 
   // 每天 / daily
   if (str === '每天' || str === 'daily') {
@@ -90,32 +94,34 @@ export function parseHabitFrequency(freqStr: string): HabitFrequency | null {
  * @returns Partial<Habit> | null（不是习惯行时返回 null）
  */
 export function parseHabitLine(line: string): Partial<Habit> | null {
+  const normalizedLine = normalizeHabitText(line);
+
   // 必须包含 🎯 标记
-  if (!line.includes('🎯')) {
+  if (!normalizedLine.includes('🎯')) {
     return null;
   }
 
   // 必须包含 🔄 频率标记
-  if (!line.includes('🔄')) {
+  if (!normalizedLine.includes('🔄')) {
     return null;
   }
 
   // 提取习惯名（🎯 前面的文本）
-  const targetIndex = line.indexOf('🎯');
-  const name = line.substring(0, targetIndex).trim();
+  const targetIndex = normalizedLine.indexOf('🎯');
+  const name = normalizedLine.substring(0, targetIndex).trim();
   if (!name) {
     return null;
   }
 
   // 解析开始日期 (🎯YYYY-MM-DD)
-  const startDateMatch = line.match(/🎯(\d{4}-\d{2}-\d{2})/);
+  const startDateMatch = normalizedLine.match(/🎯(\d{4}-\d{2}-\d{2})/);
   if (!startDateMatch) {
     return null;
   }
   const startDate = startDateMatch[1];
 
   // 解析坚持天数 (坚持N天)
-  const durationMatch = line.match(/坚持(\d+)天/);
+  const durationMatch = normalizedLine.match(/坚持(\d+)天/);
   const durationDays = durationMatch ? parseInt(durationMatch[1], 10) : undefined;
 
   // 计算结束日期: startDate + durationDays - 1
@@ -125,7 +131,7 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
   }
 
   // 在 🎯 之后、🔄 之前查找 target+unit
-  const afterTarget = line.substring(targetIndex);
+  const afterTarget = normalizedLine.substring(targetIndex);
   const freqIndex = afterTarget.indexOf('🔄');
   const beforeFreq = freqIndex >= 0 ? afterTarget.substring(0, freqIndex) : afterTarget;
 
@@ -150,7 +156,7 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
   }
 
   // 解析频率 (🔄后面的内容)
-  const freqMatch = line.match(/🔄(.+?)$/);
+  const freqMatch = normalizedLine.match(/🔄(.+?)$/);
   if (!freqMatch) {
     return null;
   }
@@ -160,7 +166,7 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
   }
 
   // 解析提醒（可选，复用 parseReminderFromLine）
-  const reminder = parseReminderFromLine(line);
+  const reminder = parseReminderFromLine(normalizedLine);
 
   const result: Partial<Habit> = {
     name,
@@ -193,8 +199,10 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
  * @param habitId 所属习惯的 blockId
  */
 export function parseCheckInRecordLine(line: string, habitId: string): Partial<CheckInRecord> | null {
+  const normalizedLine = normalizeHabitText(line);
+
   // 必须包含日期标记（📅 或 @）
-  const dateMatch = line.match(/📅(\d{4}-\d{2}-\d{2})/) || line.match(/@(\d{4}-\d{2}-\d{2})/);
+  const dateMatch = normalizedLine.match(/📅(\d{4}-\d{2}-\d{2})/) || normalizedLine.match(/@(\d{4}-\d{2}-\d{2})/);
   if (!dateMatch) {
     return null;
   }
@@ -202,7 +210,7 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   const date = dateMatch[1];
 
   // 解析计数格式 N/M单位 (如 3/8杯)
-  const countMatch = line.match(/(\d+)\/(\d+)([a-zA-Z\u4e00-\u9fff]+)/);
+  const countMatch = normalizedLine.match(/(\d+)\/(\d+)([a-zA-Z\u4e00-\u9fff]+)/);
   let currentValue: number | undefined;
   let targetValue: number | undefined;
   let unit: string | undefined;
@@ -214,7 +222,7 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   }
 
   // 提取内容（移除所有标记后的文本）
-  let content = line
+  let content = normalizedLine
     .replace(/📅\d{4}-\d{2}-\d{2}/g, '')
     .replace(/@\d{4}-\d{2}-\d{2}/g, '')
     .replace(/✅/g, '')
@@ -252,12 +260,13 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
  * 需要先满足基础记录格式，再满足习惯记录标记（✅ 或 N/M单位）
  */
 export function parseHabitRecordLine(line: string, habitId: string): Partial<CheckInRecord> | null {
-  const parsedRecord = parseCheckInRecordLine(line, habitId);
+  const normalizedLine = normalizeHabitText(line);
+  const parsedRecord = parseCheckInRecordLine(normalizedLine, habitId);
   if (!parsedRecord) {
     return null;
   }
 
-  const hasHabitRecordMarkers = line.includes('✅') || /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(line);
+  const hasHabitRecordMarkers = normalizedLine.includes('✅') || /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(normalizedLine);
   return hasHabitRecordMarkers ? parsedRecord : null;
 }
 

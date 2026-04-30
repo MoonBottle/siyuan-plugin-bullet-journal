@@ -79,6 +79,13 @@ describe('parseHabitLine', () => {
     expect(result!.frequency?.type).toBe('weekly_days');
     expect(result!.frequency?.daysOfWeek).toEqual([1, 3, 5]);
   });
+
+  it('行尾带零宽字符时仍应识别习惯频率', () => {
+    const result = parseHabitLine('测试 🎯2026-04-30 ⏰09:26 🔄每天​');
+    expect(result).not.toBeNull();
+    expect(result!.frequency?.type).toBe('daily');
+    expect(result!.reminder?.time).toBe('09:26');
+  });
 });
 
 describe('parseCheckInRecordLine', () => {
