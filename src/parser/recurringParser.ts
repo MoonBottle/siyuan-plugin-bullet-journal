@@ -11,6 +11,7 @@
 
 import type { RepeatRule, EndCondition, RepeatRuleType } from '@/types/models';
 import { t } from '@/i18n';
+import { getNextChinaWorkday } from '@/services/chinaWorkdayService';
 
 // 重复规则类型映射（解析用）
 const REPEAT_RULE_MAP: Record<string, RepeatRuleType> = {
@@ -232,10 +233,7 @@ export function getNextOccurrenceDate(
       break;
 
     case 'workday':
-      do {
-        date.setDate(date.getDate() + 1);
-      } while (date.getDay() === 0 || date.getDay() === 6);
-      break;
+      return getNextChinaWorkday(currentDate);
 
     default:
       date.setDate(date.getDate() + 1);

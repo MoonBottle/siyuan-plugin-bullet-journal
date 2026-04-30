@@ -34,6 +34,7 @@ import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
 import { reminderService } from '@/services/reminderService';
 import { createNextOccurrence, shouldCreateNextOccurrence } from '@/services/recurringService';
+import { initializeChinaWorkdayCalendar, refreshChinaWorkdayCalendar } from '@/services/chinaWorkdayService';
 import { CleanupManager } from '@/utils/cleanupManager';
 
 let PluginInfo = {
@@ -147,6 +148,9 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 加载设置
     await this.loadSettings();
+
+    await initializeChinaWorkdayCalendar(this);
+    void refreshChinaWorkdayCalendar();
 
     // 创建唯一 Pinia 实例，供所有 Tab/Dock 复用，避免多实例导致 store 不同步
     const pinia = createPinia();
