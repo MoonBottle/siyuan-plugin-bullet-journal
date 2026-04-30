@@ -281,6 +281,7 @@ async function handleEditRecord(record: CheckInRecord) {
 .habit-dock-body {
   padding: 0 8px;
   overflow: hidden;
+  min-width: 0;
 }
 
 .habit-list {
@@ -291,6 +292,7 @@ async function handleEditRecord(record: CheckInRecord) {
 .habit-detail {
   overflow-y: auto;
   padding: 4px 0;
+  min-width: 0;
 }
 
 .habit-detail__today {

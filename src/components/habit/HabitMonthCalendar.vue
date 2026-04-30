@@ -150,6 +150,9 @@ const calendarCells = computed(() => {
 <style scoped>
 .habit-month-calendar {
   padding: 8px 0;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .habit-month-calendar__header {
@@ -185,21 +188,26 @@ const calendarCells = computed(() => {
 
 .habit-month-calendar__weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   text-align: center;
   margin-bottom: 4px;
+  width: 100%;
+  min-width: 0;
 }
 
 .habit-month-calendar__weekday {
   font-size: 10px;
   color: var(--b3-theme-on-surface-light);
   padding: 2px 0;
+  min-width: 0;
 }
 
 .habit-month-calendar__days {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
+  width: 100%;
+  min-width: 0;
 }
 
 .habit-month-calendar__cell {
@@ -212,6 +220,8 @@ const calendarCells = computed(() => {
   font-size: 12px;
   padding: 4px 0;
   box-sizing: border-box;
+  min-width: 0;
+  cursor: default;
 }
 
 .habit-month-calendar__cell--empty {
@@ -221,6 +231,7 @@ const calendarCells = computed(() => {
 .habit-month-calendar__day-num {
   color: var(--b3-theme-on-surface);
   margin-bottom: 6px;
+  cursor: default;
 }
 
 .habit-month-calendar__day-num--today {
@@ -234,6 +245,7 @@ const calendarCells = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: default;
 }
 
 .habit-month-calendar__check,
@@ -244,6 +256,7 @@ const calendarCells = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: default;
 }
 
 .habit-month-calendar__check {
@@ -262,12 +275,14 @@ const calendarCells = computed(() => {
   width: 24px;
   height: 24px;
   transform: rotate(-90deg);
+  cursor: default;
 }
 
 .habit-month-calendar__progress-track,
 .habit-month-calendar__progress-value {
   fill: none;
   stroke-width: 3;
+  cursor: default;
 }
 
 .habit-month-calendar__progress-track {
