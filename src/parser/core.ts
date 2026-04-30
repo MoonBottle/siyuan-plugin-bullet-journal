@@ -5,6 +5,8 @@
 import type { Project, Task, Item, PomodoroRecord, Habit, CheckInRecord, Link } from '@/types/models';
 import { LineParser, createLink, isStandaloneBlockRefLine, parseBlockRefs } from './lineParser';
 import { parseHabitLine, parseCheckInRecordLine, isHabitLine } from './habitParser';
+import { processLineText } from '@/utils/stringUtils';
+import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
 export interface KramdownBlock {
   content: string;
@@ -287,8 +289,9 @@ export function parseKramdown(
 
     // 解析习惯行（包含 🎯 标记）
     const cleanedContent = stripListAndBlockAttr(content);
-    if (isHabitLine(cleanedContent)) {
-      const habit = parseHabitLine(cleanedContent);
+    const cleanedContentWithoutSlash = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
+    if (isHabitLine(cleanedContentWithoutSlash)) {
+      const habit = parseHabitLine(cleanedContentWithoutSlash);
       if (habit) {
         // 先保存当前任务
         if (currentTask) {
@@ -308,8 +311,8 @@ export function parseKramdown(
     }
 
     // 解析打卡记录（在当前习惯下，包含 📅 或 @ 日期的行）
-    if (currentHabit && (content.includes('@') || content.includes('📅')) && !(content.includes('#任务') || content.includes('#task') || content.includes('📋')) && !isHabitLine(cleanedContent)) {
-      const record = parseCheckInRecordLine(cleanedContent, currentHabit.blockId);
+    if (currentHabit && (content.includes('@') || content.includes('📅')) && !(content.includes('#任务') || content.includes('#task') || content.includes('📋')) && !isHabitLine(cleanedContentWithoutSlash)) {
+      const record = parseCheckInRecordLine(cleanedContentWithoutSlash, currentHabit.blockId);
       if (record) {
         record.docId = docId;
         record.blockId = block.blockId;
