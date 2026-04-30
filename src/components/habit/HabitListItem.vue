@@ -13,7 +13,7 @@
       <div class="habit-list-item__header">
         <span class="habit-list-item__name">{{ habit.name }}</span>
         <span v-if="stats" class="habit-list-item__streak">
-          🔥 {{ t('habit').streakDays.replace('{n}', String(stats.currentStreak)) }}
+          {{ t('habit').streakDays.replace('{n}', String(stats.currentStreak)) }}
         </span>
       </div>
       <div v-if="showPeriodCompletedStatus" class="habit-list-item__period-status">
@@ -58,7 +58,7 @@
         data-testid="habit-list-item-check-in"
         @click.stop="emit('check-in', habit)"
       >
-        {{ dayState.isCompleted ? '✅' : t('habit').checkIn }}
+        {{ dayState.isCompleted ? t('habit').completed : t('habit').checkIn }}
       </button>
 
       <!-- 计数型 +1 按钮 -->
@@ -133,15 +133,12 @@ const progressPercent = computed(() => {
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .habit-list-item:hover {
-  background: var(--b3-theme-surface-lighter);
-}
-
-.habit-list-item--completed {
-  opacity: 0.7;
+  border-color: rgba(128, 162, 255, 0.28);
+  box-shadow: 0 0 0 1px rgba(128, 162, 255, 0.08);
 }
 
 .habit-list-item__main {
@@ -244,6 +241,8 @@ const progressPercent = computed(() => {
 .habit-calendar-btn:hover {
   border-color: var(--b3-theme-primary);
   color: var(--b3-theme-primary);
+  background: rgba(128, 162, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(128, 162, 255, 0.12);
 }
 
 .habit-calendar-btn svg {
@@ -253,7 +252,7 @@ const progressPercent = computed(() => {
 }
 
 .habit-check-btn {
-  min-width: 60px;
+  min-width: 72px;
   height: 32px;
   padding: 0 14px;
   border: 1px solid var(--b3-theme-primary);
@@ -272,18 +271,20 @@ const progressPercent = computed(() => {
 }
 
 .habit-check-btn--done {
-  border-color: transparent;
-  background: transparent;
+  border-color: var(--b3-theme-surface-lighter);
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface-light);
   cursor: default;
+  opacity: 1;
 }
 
 .habit-check-btn:disabled {
-  opacity: 0.6;
+  opacity: 1;
   cursor: default;
 }
 
 .habit-increment-btn {
-  min-width: 52px;
+  min-width: 72px;
   height: 32px;
   padding: 0 12px;
   border: 1px solid var(--b3-theme-primary);

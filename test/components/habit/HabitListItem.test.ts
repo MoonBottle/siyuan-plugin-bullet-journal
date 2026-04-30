@@ -339,4 +339,57 @@ describe('HabitListItem', () => {
 
     mounted.unmount();
   });
+
+  it('completed habit uses plain text without emoji in streak and action button', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-10',
+      hasRecord: true,
+      isCompleted: true,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-10',
+      periodEnd: '2026-04-10',
+      requiredCount: 1,
+      completedCount: 1,
+      remainingCount: 0,
+      isCompleted: true,
+      eligibleToday: true,
+    };
+    const stats: HabitStats = {
+      habitId: habit.blockId,
+      totalCheckins: 1,
+      monthlyCheckins: 1,
+      completionRate: 1,
+      weeklyCompletionRate: 1,
+      monthlyCompletionRate: 1,
+      currentStreak: 3,
+      longestStreak: 3,
+      isEnded: false,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, stats });
+
+    await nextTick();
+
+    const text = mounted.container.textContent || '';
+    expect(text).toContain('连续3天');
+    expect(text).not.toContain('🔥');
+    expect(text).not.toContain('✅');
+
+    const button = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
+    expect(button).not.toBeNull();
+    expect(button?.textContent).toContain('已完成');
+
+    mounted.unmount();
+  });
 });

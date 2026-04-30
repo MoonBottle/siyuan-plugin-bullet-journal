@@ -55,10 +55,12 @@ const weekDays = computed(() => {
 <style scoped>
 .habit-week-bar {
   display: flex;
-  gap: 2px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--b3-theme-surface-lighter);
-  margin-bottom: 4px;
+  gap: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
 }
 
 .habit-week-bar__day {
@@ -66,10 +68,10 @@ const weekDays = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 4px 0;
-  border: none;
-  border-radius: 8px;
+  gap: 4px;
+  padding: 6px 0;
+  border: 1px solid transparent;
+  border-radius: 12px;
   background: transparent;
   color: var(--b3-theme-on-surface);
   cursor: pointer;
@@ -77,41 +79,46 @@ const weekDays = computed(() => {
 }
 
 .habit-week-bar__day:hover {
-  background: var(--b3-theme-surface-lighter);
+  background: rgba(128, 162, 255, 0.08);
 }
 
 .habit-week-bar__day--today {
   color: var(--b3-theme-primary);
+  border-color: rgba(128, 162, 255, 0.25);
+  background: rgba(128, 162, 255, 0.06);
 }
 
 .habit-week-bar__day--today .habit-week-bar__date {
-  background: var(--b3-theme-primary-lightest);
+  background: transparent;
 }
 
 .habit-week-bar__day--selected {
-  background: var(--b3-theme-primary-light);
-  color: var(--b3-theme-on-primary);
+  background: var(--b3-theme-primary-lightest);
+  border-color: rgba(128, 162, 255, 0.35);
+  color: var(--b3-theme-primary);
 }
 
 .habit-week-bar__day--selected .habit-week-bar__date {
-  background: transparent;
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
 }
 
 .habit-week-bar__weekday {
   font-size: 10px;
-  opacity: 0.6;
+  color: var(--b3-theme-on-surface-light);
 }
 
 .habit-week-bar__date {
   font-size: 14px;
   font-weight: 500;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 10px;
   line-height: 1;
   box-sizing: border-box;
+  transition: all 0.15s ease;
 }
 </style>
