@@ -103,7 +103,14 @@ import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompl
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
-import { checkIn, checkInCount, deleteCheckIn, setCheckInValue } from '@/services/habitService';
+import {
+  checkIn,
+  checkInCount,
+  deleteCheckIn,
+  getCheckInMarkdown,
+  setCheckInValue,
+  updateCheckInMarkdown,
+} from '@/services/habitService';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
@@ -194,24 +201,22 @@ async function handleDeleteRecord(record: CheckInRecord) {
 }
 
 async function handleEditRecord(record: CheckInRecord) {
-  if (!selectedHabit.value) return;
-
-  if (selectedHabit.value.type !== 'count') {
-    showMessage('当前仅支持编辑计数型打卡', 'info');
+  const currentMarkdown = await getCheckInMarkdown(record);
+  if (!currentMarkdown) {
+    showMessage('无法读取打卡记录内容', 'error');
     return;
   }
 
-  const currentValue = record.currentValue ?? 0;
-  const input = window.prompt('请输入新的打卡值', String(currentValue));
+  const input = window.prompt('编辑打卡记录', currentMarkdown);
   if (input === null) return;
 
-  const nextValue = Number(input);
-  if (!Number.isFinite(nextValue) || nextValue < 0) {
-    showMessage('请输入有效的非负数字', 'error');
+  const nextMarkdown = input.trim();
+  if (!nextMarkdown) {
+    showMessage('打卡记录内容不能为空', 'error');
     return;
   }
 
-  const success = await setCheckInValue(selectedHabit.value, record.date, nextValue);
+  const success = await updateCheckInMarkdown(record, nextMarkdown);
   if (success) {
     await refreshHabits();
   }

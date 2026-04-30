@@ -190,3 +190,23 @@ export async function deleteCheckIn(record: CheckInRecord): Promise<boolean> {
     return false;
   }
 }
+
+export async function getCheckInMarkdown(record: CheckInRecord): Promise<string | null> {
+  try {
+    const result = await getBlockKramdown(record.blockId);
+    return result?.kramdown ?? null;
+  } catch (error) {
+    console.error('[HabitService] getCheckInMarkdown failed:', error);
+    return null;
+  }
+}
+
+export async function updateCheckInMarkdown(record: CheckInRecord, markdown: string): Promise<boolean> {
+  try {
+    await updateBlock('markdown', markdown, record.blockId);
+    return true;
+  } catch (error) {
+    console.error('[HabitService] updateCheckInMarkdown failed:', error);
+    return false;
+  }
+}

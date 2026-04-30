@@ -7,9 +7,18 @@ vi.mock('@/api', () => ({
   deleteBlock: vi.fn(),
 }));
 
-import { checkIn, checkInCount, setCheckInValue, deleteCheckIn, buildCheckInMarkdown, findInsertAfterBlockId } from '@/services/habitService';
+import {
+  checkIn,
+  checkInCount,
+  setCheckInValue,
+  deleteCheckIn,
+  buildCheckInMarkdown,
+  findInsertAfterBlockId,
+  getCheckInMarkdown,
+  updateCheckInMarkdown,
+} from '@/services/habitService';
 import type { Habit, CheckInRecord } from '@/types/models';
-import { insertBlock, updateBlock, deleteBlock } from '@/api';
+import { deleteBlock, getBlockKramdown, insertBlock, updateBlock } from '@/api';
 
 function mkHabit(overrides: Partial<Habit>): Habit {
   return {
@@ -257,5 +266,44 @@ describe('deleteCheckIn', () => {
     const result = await deleteCheckIn(record);
     expect(result).toBe(true);
     expect(deleteBlock).toHaveBeenCalledWith('record-2026-04-07');
+  });
+});
+
+describe('getCheckInMarkdown', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('应返回记录块的 kramdown 原文', async () => {
+    const record = mkRecord('2026-04-07');
+    (getBlockKramdown as any).mockResolvedValue({
+      id: 'record-2026-04-07',
+      kramdown: '早起 📅2026-04-07 ✅',
+    });
+
+    const result = await getCheckInMarkdown(record);
+
+    expect(result).toBe('早起 📅2026-04-07 ✅');
+    expect(getBlockKramdown).toHaveBeenCalledWith('record-2026-04-07');
+  });
+});
+
+describe('updateCheckInMarkdown', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('应更新记录块 markdown', async () => {
+    const record = mkRecord('2026-04-07');
+    (updateBlock as any).mockResolvedValue([{ doOperations: [] }]);
+
+    const result = await updateCheckInMarkdown(record, '早起 📅2026-04-07 ✅ #补签');
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '早起 📅2026-04-07 ✅ #补签',
+      'record-2026-04-07',
+    );
   });
 });
