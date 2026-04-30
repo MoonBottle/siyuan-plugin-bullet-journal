@@ -149,7 +149,7 @@ const calendarCells = computed(() => {
 
 <style scoped>
 .habit-month-calendar {
-  padding: 8px 0;
+  padding: 6px 0;
   width: 100%;
   min-width: 0;
   overflow: hidden;
@@ -160,7 +160,7 @@ const calendarCells = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .habit-month-calendar__nav {
@@ -190,7 +190,7 @@ const calendarCells = computed(() => {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   text-align: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   width: 100%;
   min-width: 0;
 }
@@ -198,7 +198,7 @@ const calendarCells = computed(() => {
 .habit-month-calendar__weekday {
   font-size: 10px;
   color: var(--b3-theme-on-surface-light);
-  padding: 2px 0;
+  padding: 1px 0;
   min-width: 0;
 }
 
@@ -211,14 +211,14 @@ const calendarCells = computed(() => {
 }
 
 .habit-month-calendar__cell {
-  aspect-ratio: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   border-radius: 4px;
   font-size: 12px;
-  padding: 4px 0;
+  min-height: 44px;
+  padding: 2px 0;
   box-sizing: border-box;
   min-width: 0;
   cursor: default;
@@ -230,7 +230,8 @@ const calendarCells = computed(() => {
 
 .habit-month-calendar__day-num {
   color: var(--b3-theme-on-surface);
-  margin-bottom: 6px;
+  line-height: 1.1;
+  margin-bottom: 3px;
   cursor: default;
 }
 
@@ -240,8 +241,8 @@ const calendarCells = computed(() => {
 }
 
 .habit-month-calendar__marker {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -250,8 +251,8 @@ const calendarCells = computed(() => {
 
 .habit-month-calendar__check,
 .habit-month-calendar__empty-dot {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
@@ -262,7 +263,7 @@ const calendarCells = computed(() => {
 .habit-month-calendar__check {
   background: var(--b3-theme-primary-light);
   color: var(--b3-theme-on-primary);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -272,8 +273,8 @@ const calendarCells = computed(() => {
 }
 
 .habit-month-calendar__progress-ring {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   transform: rotate(-90deg);
   cursor: default;
 }
