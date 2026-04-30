@@ -52,46 +52,50 @@
       <!-- 详情视图 -->
       <template v-if="selectedHabit && selectedStats && selectedDayState && selectedPeriodState">
         <div class="habit-detail fn__flex-1 fn__flex-column">
-          <!-- 今日进度 -->
-          <div class="habit-detail__today">
-            <div class="habit-detail__today-label">{{ t('habit').todayProgress }}</div>
-            <div v-if="selectedHabit.type === 'binary'" class="habit-detail__today-binary">
-              <button
-                :class="['habit-check-btn-lg', { 'habit-check-btn-lg--done': selectedDayState.isCompleted }]"
-                @click="handleCheckIn(selectedHabit)"
-              >
-                {{ selectedDayState.isCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
-              </button>
+          <div class="habit-detail__header">
+            <!-- 今日进度 -->
+            <div class="habit-detail__today">
+              <div class="habit-detail__today-label">{{ t('habit').todayProgress }}</div>
+              <div v-if="selectedHabit.type === 'binary'" class="habit-detail__today-binary">
+                <button
+                  :class="['habit-check-btn-lg', { 'habit-check-btn-lg--done': selectedDayState.isCompleted }]"
+                  @click="handleCheckIn(selectedHabit)"
+                >
+                  {{ selectedDayState.isCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
+                </button>
+              </div>
+              <div v-else class="habit-detail__today-count">
+                <HabitCountInput
+                  :current-value="selectedDayState.currentValue || 0"
+                  :target="selectedHabit.target"
+                  @change="handleCountChange"
+                />
+                <span class="habit-detail__target">
+                  {{ t('habit').target.replace('{target}', String(selectedHabit.target || 0)).replace('{unit}', selectedHabit.unit || '') }}
+                </span>
+              </div>
             </div>
-            <div v-else class="habit-detail__today-count">
-              <HabitCountInput
-                :current-value="selectedDayState.currentValue || 0"
-                :target="selectedHabit.target"
-                @change="handleCountChange"
-              />
-              <span class="habit-detail__target">
-                {{ t('habit').target.replace('{target}', String(selectedHabit.target || 0)).replace('{unit}', selectedHabit.unit || '') }}
-              </span>
-            </div>
+
+            <!-- 统计卡片 -->
+            <HabitStatsCards :stats="selectedStats" />
           </div>
 
-          <!-- 统计卡片 -->
-          <HabitStatsCards :stats="selectedStats" />
+          <div class="habit-detail__content" data-testid="habit-detail-content">
+            <!-- 月历 -->
+            <HabitMonthCalendar
+              :habit="selectedHabit"
+              :stats="selectedStats"
+              :current-date="currentDate"
+              :view-month="selectedViewMonth"
+              @update:view-month="selectedViewMonth = $event"
+            />
 
-          <!-- 月历 -->
-          <HabitMonthCalendar
-            :habit="selectedHabit"
-            :stats="selectedStats"
-            :current-date="currentDate"
-            :view-month="selectedViewMonth"
-            @update:view-month="selectedViewMonth = $event"
-          />
-
-          <!-- 打卡日志 -->
-          <HabitRecordLog
-            :habit="selectedHabit"
-            :view-month="selectedViewMonth"
-          />
+            <!-- 打卡日志 -->
+            <HabitRecordLog
+              :habit="selectedHabit"
+              :view-month="selectedViewMonth"
+            />
+          </div>
         </div>
       </template>
 
@@ -156,6 +160,7 @@ import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { buildViewDebugContext } from '@/utils/viewDebug';
+import { consumePendingHabitDockTarget, type HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
 
 const plugin = usePlugin();
 const store = useProjectStore();
@@ -242,6 +247,18 @@ function handleOpenHabitDetail(habit: Habit) {
   selectedHabit.value = habit;
 }
 
+function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
+  const habit = habits.value.find(item => item.blockId === target.habitId);
+  if (!habit) {
+    return false;
+  }
+  const targetDate = target.date || currentDate.value;
+  selectedDate.value = targetDate;
+  selectedViewMonth.value = targetDate.substring(0, 7);
+  selectedHabit.value = habit;
+  return true;
+}
+
 function handleBackToList() {
   hideIconTooltip();
   selectedHabit.value = null;
@@ -261,12 +278,19 @@ const handleDataRefresh = async () => {
 };
 
 let unsubscribeRefresh: (() => void) | null = null;
+let unsubscribeHabitNavigate: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 onMounted(() => {
   console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('DesktopHabitDock', plugin));
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
+
+  const pendingTarget = consumePendingHabitDockTarget();
+  if (pendingTarget) {
+    applyHabitDockNavigation(pendingTarget);
+  }
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -293,6 +317,9 @@ onUnmounted(() => {
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }
+  if (unsubscribeHabitNavigate) {
+    unsubscribeHabitNavigate();
+  }
   if (refreshChannelGuard) {
     refreshChannelGuard.dispose();
     refreshChannelGuard = null;
@@ -307,23 +334,46 @@ onUnmounted(() => {
 <style scoped>
 .habit-dock-container {
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .habit-dock-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 0 8px;
   overflow: hidden;
+  min-height: 0;
   min-width: 0;
 }
 
 .habit-list {
+  flex: 1;
   overflow-y: auto;
   padding: 4px 0;
+  min-height: 0;
+  min-width: 0;
 }
 
 .habit-detail {
-  overflow-y: auto;
-  padding: 4px 0;
+  overflow: hidden;
+  padding: 4px 0 0;
+  min-height: 0;
   min-width: 0;
+}
+
+.habit-detail__header {
+  flex: 0 0 auto;
+  padding-bottom: 8px;
+}
+
+.habit-detail__content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
 }
 
 .habit-detail__today {

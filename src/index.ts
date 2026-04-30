@@ -29,6 +29,7 @@ import { type SettingsData, defaultSettings, defaultChatHistory, defaultPomodoro
 import { loadActivePomodoro, loadPendingCompletion, loadActiveBreak, removeActiveBreak, removeActivePomodoro, removePendingCompletion } from '@/utils/pomodoroStorage';
 import { showPomodoroCompleteDialog, showPomodoroTimerDialog, showConfirmDialog, showSettingsDialog } from '@/utils/dialog';
 import { createSlashCommands, type SlashCommandConfig } from '@/utils/slashCommands';
+import { setPendingHabitDockTarget, type HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
 import { reminderService } from '@/services/reminderService';
@@ -2385,8 +2386,8 @@ export default class TaskAssistantPlugin extends Plugin {
       openTodoDock: () => {
         this.openTodoDock();
       },
-      openHabitDock: () => {
-        this.openHabitDock();
+      openHabitDock: (target?: HabitDockNavigationTarget) => {
+        this.openHabitDock(target);
       },
       customSlashCommands: settings.customSlashCommands || []
     };
@@ -2408,11 +2409,17 @@ export default class TaskAssistantPlugin extends Plugin {
     }
   }
 
-  private openHabitDock() {
+  private openHabitDock(target?: HabitDockNavigationTarget) {
     try {
+      if (target) {
+        setPendingHabitDockTarget(target);
+      }
       const rightDock = (window as any).siyuan?.layout?.rightDock;
       if (rightDock) {
         rightDock.toggleModel(`${this.name}${DOCK_TYPES.HABIT}`, true);
+      }
+      if (target) {
+        eventBus.emit(Events.HABIT_DOCK_NAVIGATE, target);
       }
     } catch (error) {
       console.error('[Task Assistant] Failed to open habit dock:', error);

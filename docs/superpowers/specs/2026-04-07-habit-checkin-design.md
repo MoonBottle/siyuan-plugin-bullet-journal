@@ -888,6 +888,8 @@ getHabitMonthCalendarData(habitId, yearMonth) → CalendarData[]
 | 59 | 今日 record（计数型） | 已达标 | 提示已达标 |
 | 60 | 历史 record | - | 打开 Dock，定位到该习惯详情 |
 
+说明：历史 record 的“定位到该习惯详情”依赖当前数据已被解析进 `projectStore`，能够通过 record blockId 反查到所属 habit；若反查失败，则至少打开 Habit Dock，不阻塞用户进入习惯视图。
+
 ### 12.7 /xg 斜杠命令行为
 
 | # | 触发行 | 期望行为 |

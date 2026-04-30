@@ -108,6 +108,7 @@ import {
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { consumePendingHabitDockTarget, type HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
 import dayjs from '@/utils/dayjs';
 import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
 import HabitListItem from '@/components/habit/HabitListItem.vue';
@@ -160,6 +161,19 @@ function openHabitDetail(habit: Habit) {
   state.showHabitDetail = true;
 }
 
+function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
+  const habit = habits.value.find(item => item.blockId === target.habitId);
+  if (!habit) {
+    return false;
+  }
+  const targetDate = target.date || currentDate.value;
+  state.selectedDate = targetDate;
+  state.selectedViewMonth = targetDate.substring(0, 7);
+  state.selectedHabit = habit;
+  state.showHabitDetail = true;
+  return true;
+}
+
 function syncSelectedHabit() {
   if (!state.selectedHabit) return;
   state.selectedHabit = habits.value.find(habit => habit.blockId === state.selectedHabit?.blockId) ?? null;
@@ -199,12 +213,18 @@ const handleDataRefresh = async () => {
 };
 
 let unsubscribeRefresh: (() => void) | null = null;
+let unsubscribeHabitNavigate: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 onMounted(async () => {
   // 不需要重复加载，projectStore 已在 MobileTodoDock 中初始化
   // 只监听数据刷新事件
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
+  const pendingTarget = consumePendingHabitDockTarget();
+  if (pendingTarget) {
+    applyHabitDockNavigation(pendingTarget);
+  }
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
     refreshChannel.onmessage = () => handleDataRefresh();
@@ -213,6 +233,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (unsubscribeRefresh) unsubscribeRefresh();
+  if (unsubscribeHabitNavigate) unsubscribeHabitNavigate();
   if (refreshChannel) { refreshChannel.close(); refreshChannel = null; }
 });
 </script>

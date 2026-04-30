@@ -7,7 +7,7 @@ import { showMessage } from 'siyuan';
 import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
-import { usePomodoroStore, useSettingsStore } from '@/stores';
+import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog } from '@/utils/dialog';
 import { insertBlock } from '@/api';
 import { usePlugin } from '@/main';
@@ -31,6 +31,8 @@ import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
 import { checkIn, checkInCount } from '@/services/habitService';
+import type { CheckInRecord } from '@/types/models';
+import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
@@ -223,8 +225,34 @@ export interface SlashCommandConfig {
   openCustomTab: (tabType: string, options?: { initialDate?: string; initialView?: string }) => void;
   openPomodoroDock: () => void;
   openTodoDock: () => void;
-  openHabitDock: () => void;
+  openHabitDock: (target?: HabitDockNavigationTarget) => void;
   customSlashCommands?: CustomSlashCommand[];
+}
+
+function getAllHabits(): Habit[] {
+  try {
+    const pinia = getSharedPinia() || undefined;
+    const projectStore = useProjectStore(pinia as any);
+    return projectStore.getHabits('');
+  } catch {
+    return [];
+  }
+}
+
+function findHabitByDefinitionBlockId(blockId?: string): Habit | null {
+  if (!blockId) return null;
+  return getAllHabits().find(habit => habit.blockId === blockId) ?? null;
+}
+
+function findHabitAndRecordByRecordBlockId(blockId?: string): { habit: Habit; record: CheckInRecord } | null {
+  if (!blockId) return null;
+  for (const habit of getAllHabits()) {
+    const record = habit.records.find(item => item.blockId === blockId);
+    if (record) {
+      return { habit, record };
+    }
+  }
+  return null;
 }
 
 /**
@@ -738,6 +766,8 @@ export function getActionHandler(
         const parsedHabit = parseHabitLine(text);
         const parsedRecord = parseHabitRecordLine(text, blockId || '');
         const currentDate = dayjs().format('YYYY-MM-DD');
+        const matchedHabit = parsedHabit ? findHabitByDefinitionBlockId(blockId) : null;
+        const matchedRecord = parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null;
 
         if (!parsedHabit || !blockId) {
           if (!parsedRecord) {
@@ -745,8 +775,23 @@ export function getActionHandler(
             return;
           }
 
-          if (parsedRecord.date !== currentDate) {
-            config.openHabitDock();
+          if (matchedRecord && matchedRecord.record.date !== currentDate) {
+            config.openHabitDock({
+              habitId: matchedRecord.habit.blockId,
+              date: matchedRecord.record.date,
+              recordBlockId: matchedRecord.record.blockId,
+            });
+            return;
+          }
+
+          if (matchedRecord?.habit.type === 'count') {
+            const targetValue = matchedRecord.record.targetValue ?? matchedRecord.habit.target ?? 0;
+            const currentValue = matchedRecord.record.currentValue ?? 0;
+            if (currentValue >= targetValue) {
+              showMessage(t('habit').targetReached || '已达标', 2000, 'info');
+              return;
+            }
+            await checkInCount(matchedRecord.habit, currentDate, 1);
             return;
           }
 
@@ -779,7 +824,7 @@ export function getActionHandler(
           return;
         }
 
-        const habit: Habit = {
+        const habit: Habit = matchedHabit ?? {
           name: parsedHabit.name || text,
           docId: '',
           blockId,
@@ -793,6 +838,12 @@ export function getActionHandler(
           reminder: parsedHabit.reminder,
           records: [],
         };
+
+        const todayRecord = habit.records.find(record => record.date === currentDate);
+        if (todayRecord) {
+          showMessage(t('habit').todayChecked || '今天已打卡', 2000, 'info');
+          return;
+        }
 
         if (habit.type === 'count') {
           await checkInCount(habit, currentDate, 1);

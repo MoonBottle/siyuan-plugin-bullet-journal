@@ -890,6 +890,7 @@
     "todayChecked": "已打卡",
     "todayUnchecked": "待打卡",
     "periodCompleted": "本周已达标",
+    "targetReached": "已达标",
     "streakDays": "连续{n}天",
     "checkIn": "打卡",
     "addOne": "+1",

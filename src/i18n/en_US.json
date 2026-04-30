@@ -849,6 +849,7 @@
     "todayChecked": "Checked in",
     "todayUnchecked": "Pending",
     "periodCompleted": "Completed this period",
+    "targetReached": "Target reached",
     "streakDays": "{n} day streak",
     "checkIn": "Check In",
     "addOne": "+1",

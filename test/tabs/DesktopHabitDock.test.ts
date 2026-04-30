@@ -234,4 +234,23 @@ describe('DesktopHabitDock', () => {
     expect(mounted.projectStore.refresh).toHaveBeenCalledTimes(1);
     mounted.unmount();
   });
+
+  it('keeps the detail header outside the scrollable content region', async () => {
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    const detail = mounted.container.querySelector('.habit-detail');
+    const header = mounted.container.querySelector('.habit-detail__header');
+    const content = mounted.container.querySelector('[data-testid="habit-detail-content"]');
+
+    expect(detail).not.toBeNull();
+    expect(header).not.toBeNull();
+    expect(content).not.toBeNull();
+    expect(content?.parentElement).toBe(detail);
+    expect(header?.parentElement).toBe(detail);
+    mounted.unmount();
+  });
 });
