@@ -924,6 +924,10 @@
     "freqWeeklyDays": "指定周几",
     "daysInterval": "天间隔",
     "daysPerWeekLabel": "天/周",
+    "recordEditTitle": "编辑打卡记录",
+    "recordEditLabel": "记录内容",
+    "recordLoadFailed": "无法读取打卡记录内容",
+    "recordUpdateFailed": "更新打卡记录失败",
     "createSuccess": "习惯已创建",
     "createFailed": "创建习惯失败"
   }

@@ -17,6 +17,7 @@ import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
 import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue';
+import HabitRecordEditDialog from '@/components/dialog/HabitRecordEditDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
@@ -1240,6 +1241,50 @@ export function showHabitCreateDialog(
 
   requestAnimationFrame(() => {
     const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
+}
+
+export function showHabitRecordEditDialog(
+  initialMarkdown: string,
+  onSave: (markdown: string) => void,
+): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(HabitRecordEditDialog, {
+    initialMarkdown,
+    onSave: (markdown: string) => {
+      onSave(markdown);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('habit').recordEditTitle,
+    content: '',
+    width: '520px',
+    destroyCallback: () => {
+      app.unmount();
+    },
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('textarea, input, button, [tabindex]:not([tabindex="-1"])') as HTMLElement;
     if (focusableEl) {
       focusableEl.focus();
     }

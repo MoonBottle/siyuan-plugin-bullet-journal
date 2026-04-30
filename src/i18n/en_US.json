@@ -883,6 +883,10 @@
     "freqWeeklyDays": "Specific days",
     "daysInterval": "day interval",
     "daysPerWeekLabel": "days/week",
+    "recordEditTitle": "Edit Check-in Record",
+    "recordEditLabel": "Record Content",
+    "recordLoadFailed": "Failed to load check-in record",
+    "recordUpdateFailed": "Failed to update check-in record",
     "createSuccess": "Habit created",
     "createFailed": "Failed to create habit"
   }

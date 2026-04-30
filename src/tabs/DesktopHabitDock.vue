@@ -120,7 +120,7 @@ import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitCountInput from '@/components/habit/HabitCountInput.vue';
-import { showMessage } from '@/utils/dialog';
+import { showHabitRecordEditDialog, showMessage } from '@/utils/dialog';
 import type { CheckInRecord, Habit } from '@/types/models';
 
 const plugin = usePlugin();
@@ -203,23 +203,18 @@ async function handleDeleteRecord(record: CheckInRecord) {
 async function handleEditRecord(record: CheckInRecord) {
   const currentMarkdown = await getCheckInMarkdown(record);
   if (!currentMarkdown) {
-    showMessage('无法读取打卡记录内容', 'error');
+    showMessage(t('habit').recordLoadFailed, 'error');
     return;
   }
 
-  const input = window.prompt('编辑打卡记录', currentMarkdown);
-  if (input === null) return;
-
-  const nextMarkdown = input.trim();
-  if (!nextMarkdown) {
-    showMessage('打卡记录内容不能为空', 'error');
-    return;
-  }
-
-  const success = await updateCheckInMarkdown(record, nextMarkdown);
-  if (success) {
-    await refreshHabits();
-  }
+  showHabitRecordEditDialog(currentMarkdown, async (nextMarkdown) => {
+    const success = await updateCheckInMarkdown(record, nextMarkdown);
+    if (success) {
+      await refreshHabits();
+    } else {
+      showMessage(t('habit').recordUpdateFailed, 'error');
+    }
+  });
 }
 </script>
 
