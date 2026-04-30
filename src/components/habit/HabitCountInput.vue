@@ -61,13 +61,13 @@ function commitDraft() {
 .habit-count-input {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .habit-count-input__btn {
   width: 28px;
   height: 28px;
-  border: 1px solid var(--b3-theme-surface-lighter);
+  border: 1px solid transparent;
   border-radius: 6px;
   background: var(--b3-theme-surface-lighter);
   color: var(--b3-theme-on-surface);

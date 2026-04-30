@@ -279,9 +279,12 @@ async function handleCountChange(newValue: number) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--b3-theme-surface-lighter);
-  margin-bottom: 4px;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
 }
 
 .habit-detail__today-label {
@@ -321,6 +324,8 @@ async function handleCountChange(newValue: number) {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .block__icons .block__icon {

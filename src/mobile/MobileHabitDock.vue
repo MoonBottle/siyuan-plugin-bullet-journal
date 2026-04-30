@@ -321,9 +321,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--b3-theme-surface-lighter);
+  gap: 12px;
+  padding: 12px;
   margin-bottom: 8px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
 }
 
 .mobile-habit-detail__today-label {
@@ -351,6 +354,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .mobile-habit-detail__target {
