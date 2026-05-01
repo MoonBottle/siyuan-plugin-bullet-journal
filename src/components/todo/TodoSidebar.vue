@@ -1,5 +1,8 @@
 <template>
-  <div class="todo-sidebar">
+  <div
+    class="todo-sidebar"
+    :class="{ 'todo-sidebar--embedded': displayMode === 'embedded' }"
+  >
     <div class="todo-content">
       <SyLoading v-if="loading" :text="t('common').loading" />
 
@@ -479,12 +482,16 @@ const props = withDefaults(defineProps<{
   dateRange?: { start: string; end: string } | null;
   completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
+  includeNoPriority?: boolean;
+  displayMode?: 'default' | 'embedded';
 }>(), {
   groupId: '',
   searchQuery: '',
   dateRange: null,
   completedDateRange: null,
   priorities: () => [],
+  includeNoPriority: false,
+  displayMode: 'default',
 });
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
@@ -570,6 +577,7 @@ const completedItems = computed(() => {
     searchQuery: props.searchQuery,
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
   });
 });
 
@@ -580,6 +588,7 @@ const abandonedItems = computed(() => {
     searchQuery: props.searchQuery,
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
   });
 });
 
@@ -590,6 +599,7 @@ const filteredItems = computed(() => {
     searchQuery: props.searchQuery,
     dateRange: props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
   });
 });
 
@@ -604,7 +614,8 @@ const hasActiveFilters = computed(() => {
   return props.groupId || // 选择了特定分组
          props.searchQuery?.trim() || 
          props.dateRange || 
-         props.priorities.length > 0;
+         props.priorities.length > 0 ||
+         (props.includeNoPriority && hasAnyItemsRaw.value);
 });
 
 // 只包含待办状态的事项（已完成和已放弃单独分组）
@@ -974,6 +985,10 @@ const handleCreateExample = async () => {
 <style lang="scss" scoped>
 .todo-sidebar {
   height: 100%;
+
+  &--embedded {
+    height: auto;
+  }
 }
 
 .todo-content {

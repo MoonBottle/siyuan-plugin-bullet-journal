@@ -129,6 +129,31 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
 
   return 0;
 }
+
+type TodoFilterParams = {
+  groupId: string;
+  searchQuery?: string;
+  dateRange?: { start: string; end: string } | null;
+  priorities?: PriorityLevel[];
+  includeNoPriority?: boolean;
+};
+
+function shouldApplyPriorityFilter(params: TodoFilterParams): boolean {
+  return Boolean(
+    params.includeNoPriority
+    || (params.priorities && params.priorities.length > 0),
+  );
+}
+
+function matchesPriorityFilter(item: Item, params: TodoFilterParams): boolean {
+  const matchesDefinedPriority = Boolean(
+    item.priority
+    && params.priorities?.includes(item.priority),
+  );
+  const matchesNoPriority = params.includeNoPriority && item.priority === undefined;
+  return Boolean(matchesDefinedPriority || matchesNoPriority);
+}
+
 import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
 
@@ -334,12 +359,7 @@ export const useProjectStore = defineStore('project', {
     },
 
     // 按分组获取过滤和排序后的事项（支持搜索、日期筛选、优先级筛选）
-    getFilteredAndSortedItems: (state) => (params: {
-      groupId: string;
-      searchQuery?: string;
-      dateRange?: { start: string; end: string } | null;
-      priorities?: PriorityLevel[];
-    }) => {
+    getFilteredAndSortedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
         (state as any).items as Item[],
@@ -366,10 +386,8 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 4. 应用优先级筛选
-      if (params.priorities && params.priorities.length > 0) {
-        items = items.filter(item => 
-          item.priority && params.priorities!.includes(item.priority)
-        );
+      if (shouldApplyPriorityFilter(params)) {
+        items = items.filter(item => matchesPriorityFilter(item, params));
       }
 
       // 5. 根据设置过滤已完成和已放弃的事项
@@ -392,12 +410,7 @@ export const useProjectStore = defineStore('project', {
     },
 
     // 按分组获取过滤和排序后的已完成事项（支持搜索、日期筛选、优先级筛选）
-    getFilteredCompletedItems: (state) => (params: {
-      groupId: string;
-      searchQuery?: string;
-      dateRange?: { start: string; end: string } | null;
-      priorities?: PriorityLevel[];
-    }) => {
+    getFilteredCompletedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
         (state as any).items as Item[],
@@ -427,10 +440,8 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 5. 应用优先级筛选
-      if (params.priorities && params.priorities.length > 0) {
-        items = items.filter(item => 
-          item.priority && params.priorities!.includes(item.priority)
-        );
+      if (shouldApplyPriorityFilter(params)) {
+        items = items.filter(item => matchesPriorityFilter(item, params));
       }
 
       // 6. 按配置排序
@@ -445,12 +456,7 @@ export const useProjectStore = defineStore('project', {
     },
 
     // 按分组获取过滤和排序后的已放弃事项（支持搜索、日期筛选、优先级筛选）
-    getFilteredAbandonedItems: (state) => (params: {
-      groupId: string;
-      searchQuery?: string;
-      dateRange?: { start: string; end: string } | null;
-      priorities?: PriorityLevel[];
-    }) => {
+    getFilteredAbandonedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
         (state as any).items as Item[],
@@ -480,10 +486,8 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 5. 应用优先级筛选
-      if (params.priorities && params.priorities.length > 0) {
-        items = items.filter(item => 
-          item.priority && params.priorities!.includes(item.priority)
-        );
+      if (shouldApplyPriorityFilter(params)) {
+        items = items.filter(item => matchesPriorityFilter(item, params));
       }
 
       // 6. 按配置排序

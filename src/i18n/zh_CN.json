@@ -74,6 +74,16 @@
     "startTime": "开始日期",
     "endTime": "结束日期"
   },
+  "quadrant": {
+    "title": "四象限",
+    "placeholder": "四象限视图即将推出",
+    "panels": {
+      "high": "重要且紧急",
+      "medium": "重要不紧急",
+      "low": "紧急不重要",
+      "none": "不紧急不重要"
+    }
+  },
   "project": {
     "title": "项目列表",
     "taskCount": "任务数",

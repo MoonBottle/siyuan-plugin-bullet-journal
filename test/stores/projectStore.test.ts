@@ -321,6 +321,49 @@ describe('projectStore 事项排序规则', () => {
     setActivePinia(createPinia());
   });
 
+  it('includeNoPriority 为 true 时仅返回无优先级事项', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-04-25', 'no-priority-a', { startDateTime: '2026-04-25 08:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'high-priority', { priority: 'high', startDateTime: '2026-04-25 09:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'no-priority-b', { startDateTime: '2026-04-25 10:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-04-25',
+      projects: [createMockProject(items)],
+    });
+
+    const result = store.getFilteredAndSortedItems({
+      groupId: '',
+      includeNoPriority: true,
+    });
+
+    expect(result.map(item => item.blockId)).toEqual(['no-priority-a', 'no-priority-b']);
+  });
+
+  it('priorities 与 includeNoPriority 可组合筛选', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-04-25', 'no-priority', { startDateTime: '2026-04-25 08:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'high-priority', { priority: 'high', startDateTime: '2026-04-25 09:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'medium-priority', { priority: 'medium', startDateTime: '2026-04-25 10:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-04-25',
+      projects: [createMockProject(items)],
+    });
+
+    const result = store.getFilteredAndSortedItems({
+      groupId: '',
+      priorities: ['high'],
+      includeNoPriority: true,
+    });
+
+    expect(result.map(item => item.blockId)).toEqual(['high-priority', 'no-priority']);
+  });
+
   it('默认按优先级再按时间排序', () => {
     const store = useProjectStore();
     const settingsStore = useSettingsStore();

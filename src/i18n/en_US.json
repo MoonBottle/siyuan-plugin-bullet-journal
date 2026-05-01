@@ -74,6 +74,16 @@
     "startTime": "Start Date",
     "endTime": "End Date"
   },
+  "quadrant": {
+    "title": "Quadrant",
+    "placeholder": "Quadrant view is coming soon",
+    "panels": {
+      "high": "Important & Urgent",
+      "medium": "Important, Not Urgent",
+      "low": "Urgent, Not Important",
+      "none": "Neither Urgent nor Important"
+    }
+  },
   "project": {
     "title": "Projects",
     "taskCount": "Tasks",
