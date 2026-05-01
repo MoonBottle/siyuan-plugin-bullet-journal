@@ -8,7 +8,7 @@
     <div
       class="habit-list-item__main"
       data-testid="habit-list-item-main"
-      @click="emit('open-doc', habit)"
+      @click="handleMainClick"
     >
       <div class="habit-list-item__header">
         <span class="habit-list-item__name">{{ habit.name }}</span>
@@ -42,6 +42,7 @@
 
     <div class="habit-list-item__actions">
       <button
+        v-if="!isMobile"
         class="habit-calendar-btn"
         data-testid="habit-list-item-calendar"
         :aria-label="t('habit').title"
@@ -85,14 +86,18 @@ const props = defineProps<{
   dayState: HabitDayState;
   periodState: HabitPeriodState;
   stats?: HabitStats;
+  isMobile?: boolean;
 }>();
 
 const emit = defineEmits<{
   'check-in': [habit: Habit];
   'increment': [habit: Habit];
   'open-doc': [habit: Habit];
+  'open-detail': [habit: Habit];
   'open-calendar': [habit: Habit];
 }>();
+
+const isMobile = computed(() => props.isMobile === true);
 
 const isCompleted = computed(() => {
   return props.dayState.isCompleted;
@@ -120,6 +125,15 @@ const progressPercent = computed(() => {
   if (!props.habit.target) return 0;
   return Math.min((dayCurrentValue.value / props.habit.target) * 100, 100);
 });
+
+function handleMainClick() {
+  if (isMobile.value) {
+    emit('open-detail', props.habit);
+    return;
+  }
+
+  emit('open-doc', props.habit);
+}
 </script>
 
 <style scoped>

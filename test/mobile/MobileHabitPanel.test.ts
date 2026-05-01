@@ -10,6 +10,8 @@ const {
   settingsStore,
   eventBusOn,
   consumePendingHabitDockTarget,
+  dayStateByHabitId,
+  checkIn,
 } = vi.hoisted(() => {
   const habits = [
     {
@@ -45,6 +47,19 @@ const {
     },
     eventBusOn: vi.fn(() => vi.fn()),
     consumePendingHabitDockTarget: vi.fn(() => null),
+    dayStateByHabitId: {
+      'habit-1': {
+        hasRecord: false,
+        isCompleted: false,
+        currentValue: 0,
+      },
+      'habit-2': {
+        hasRecord: false,
+        isCompleted: false,
+        currentValue: 0,
+      },
+    },
+    checkIn: vi.fn(),
   };
 });
 
@@ -97,11 +112,7 @@ vi.mock('@/utils/habitStatsUtils', () => ({
 }));
 
 vi.mock('@/domain/habit/habitCompletion', () => ({
-  getHabitDayState: vi.fn(() => ({
-    hasRecord: false,
-    isCompleted: false,
-    currentValue: 0,
-  })),
+  getHabitDayState: vi.fn((habit: { blockId: string }) => dayStateByHabitId[habit.blockId]),
   getHabitPeriodState: vi.fn(() => ({
     isCompleted: false,
     completedCount: 0,
@@ -115,7 +126,7 @@ vi.mock('@/domain/habit/habitCompletion', () => ({
 }));
 
 vi.mock('@/services/habitService', () => ({
-  checkIn: vi.fn(),
+  checkIn,
   checkInCount: vi.fn(),
   setCheckInValue: vi.fn(),
 }));
@@ -152,15 +163,20 @@ vi.mock('@/components/habit/HabitListItem.vue', () => ({
         type: Object,
         required: true,
       },
+      isMobile: {
+        type: Boolean,
+        default: false,
+      },
     },
-    emits: ['click'],
+    emits: ['click', 'open-detail'],
     setup(props, { emit }) {
       return () =>
         h(
           'button',
           {
             'data-testid': `habit-list-item-${(props.habit as { blockId: string }).blockId}`,
-            onClick: () => emit('click', props.habit),
+            'data-mobile': String((props as { isMobile: boolean }).isMobile),
+            onClick: () => emit('open-detail', props.habit),
           },
           (props.habit as { name: string }).name,
         );
@@ -180,8 +196,14 @@ vi.mock('@/components/habit/HabitStatsCards.vue', () => ({
 vi.mock('@/components/habit/HabitMonthCalendar.vue', () => ({
   default: defineComponent({
     name: 'HabitMonthCalendarStub',
-    setup() {
-      return () => h('div', { 'data-testid': 'habit-month-calendar' }, 'calendar');
+    props: {
+      viewMonth: {
+        type: String,
+        default: '',
+      },
+    },
+    setup(props) {
+      return () => h('div', { 'data-testid': 'habit-month-calendar' }, props.viewMonth);
     },
   }),
 }));
@@ -189,8 +211,14 @@ vi.mock('@/components/habit/HabitMonthCalendar.vue', () => ({
 vi.mock('@/components/habit/HabitRecordLog.vue', () => ({
   default: defineComponent({
     name: 'HabitRecordLogStub',
-    setup() {
-      return () => h('div', { 'data-testid': 'habit-record-log' }, 'log');
+    props: {
+      viewMonth: {
+        type: String,
+        default: '',
+      },
+    },
+    setup(props) {
+      return () => h('div', { 'data-testid': 'habit-record-log' }, props.viewMonth);
     },
   }),
 }));
@@ -200,6 +228,49 @@ vi.mock('@/components/habit/HabitCountInput.vue', () => ({
     name: 'HabitCountInputStub',
     setup() {
       return () => h('div', { 'data-testid': 'habit-count-input' }, 'count');
+    },
+  }),
+}));
+
+vi.mock('@/mobile/components/habit/MobileHabitDetailSheet.vue', () => ({
+  default: defineComponent({
+    name: 'MobileHabitDetailSheetStub',
+    props: {
+      open: {
+        type: Boolean,
+        default: false,
+      },
+      habit: {
+        type: Object,
+        default: null,
+      },
+      selectedDate: {
+        type: String,
+        default: '',
+      },
+      viewMonth: {
+        type: String,
+        default: '',
+      },
+    },
+    emits: ['close', 'update:viewMonth'],
+    setup(props, { emit, slots }) {
+      return () => props.open
+        ? h('div', { 'data-testid': 'habit-detail-sheet-stub' }, [
+            h('div', { 'data-testid': 'habit-detail-sheet-name' }, (props.habit as { name?: string } | null)?.name ?? ''),
+            h('div', { 'data-testid': 'habit-detail-sheet-date' }, props.selectedDate),
+            h('div', { 'data-testid': 'habit-detail-sheet-month' }, props.viewMonth),
+            h('button', {
+              'data-testid': 'habit-detail-sheet-close',
+              onClick: () => emit('close'),
+            }, 'close'),
+            h('button', {
+              'data-testid': 'habit-detail-sheet-update-month',
+              onClick: () => emit('update:viewMonth', '2026-06'),
+            }, 'month'),
+            slots.default?.(),
+          ])
+        : null;
     },
   }),
 }));
@@ -220,9 +291,25 @@ function mountPanel() {
   };
 }
 
+function resetDayState() {
+  dayStateByHabitId['habit-1'] = {
+    hasRecord: false,
+    isCompleted: false,
+    currentValue: 0,
+  };
+  dayStateByHabitId['habit-2'] = {
+    hasRecord: false,
+    isCompleted: false,
+    currentValue: 0,
+  };
+}
+
 afterEach(() => {
   document.body.innerHTML = '';
+  resetDayState();
   vi.clearAllMocks();
+  projectStore.currentDate = '2026-05-01';
+  consumePendingHabitDockTarget.mockReturnValue(null);
 });
 
 describe('MobileHabitPanel', () => {
@@ -231,13 +318,121 @@ describe('MobileHabitPanel', () => {
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="habit-panel"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="habit-week-bar"]')).not.toBeNull();
+    const weekBarWrap = mounted.container.querySelector('[data-testid="habit-week-bar-wrap"]');
+    expect(weekBarWrap).not.toBeNull();
+    expect(weekBarWrap?.querySelector('[data-testid="habit-week-bar"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')?.textContent).toContain('Read');
     expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-2"]')?.textContent).toContain('Water');
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')?.getAttribute('data-mobile')).toBe('true');
     expect(mounted.container.querySelector('.mobile-bottom-nav')).toBeNull();
     expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
     expect(eventBusOn).toHaveBeenCalledTimes(2);
     expect(consumePendingHabitDockTarget).toHaveBeenCalledTimes(1);
+
+    mounted.unmount();
+  });
+
+  it('opens the sheet while keeping the list rendered when a habit item is selected', async () => {
+    const mounted = mountPanel();
+    await nextTick();
+
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    expect(item).not.toBeNull();
+
+    item?.click();
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-week-bar-wrap"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-stub"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-name"]')?.textContent).toBe('Read');
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-month"]')?.textContent).toBe('2026-05');
+
+    mounted.unmount();
+  });
+
+  it('opens the pending target habit in the sheet with the target month/date', async () => {
+    consumePendingHabitDockTarget.mockReturnValue({
+      habitId: 'habit-2',
+      date: '2026-04-15',
+    });
+
+    const mounted = mountPanel();
+    await nextTick();
+
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-stub"]')).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-name"]')?.textContent).toBe('Water');
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-date"]')?.textContent).toBe('2026-04-15');
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-month"]')?.textContent).toBe('2026-04');
+    expect(mounted.container.querySelector('[data-testid="habit-week-bar-wrap"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('closes the sheet and accepts view-month updates from the sheet host', async () => {
+    const mounted = mountPanel();
+    await nextTick();
+
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    item?.click();
+    await nextTick();
+
+    const updateMonth = document.body.querySelector('[data-testid="habit-detail-sheet-update-month"]') as HTMLButtonElement | null;
+    updateMonth?.click();
+    await nextTick();
+
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-month"]')?.textContent).toBe('2026-06');
+    expect(mounted.container.querySelector('[data-testid="habit-month-calendar"]')?.textContent).toBe('2026-06');
+    expect(mounted.container.querySelector('[data-testid="habit-record-log"]')?.textContent).toBe('2026-06');
+
+    const closeButton = document.body.querySelector('[data-testid="habit-detail-sheet-close"]') as HTMLButtonElement | null;
+    closeButton?.click();
+    await nextTick();
+
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-stub"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('disables the binary detail action once completed and does not re-trigger check-in', async () => {
+    dayStateByHabitId['habit-1'] = {
+      hasRecord: true,
+      isCompleted: true,
+      currentValue: 1,
+    };
+
+    const mounted = mountPanel();
+    await nextTick();
+
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    item?.click();
+    await nextTick();
+
+    const detailButton = document.body.querySelector('.mobile-check-btn') as HTMLButtonElement | null;
+    expect(detailButton).not.toBeNull();
+    expect(detailButton?.disabled).toBe(true);
+
+    detailButton?.click();
+    await nextTick();
+
+    expect(checkIn).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('initializes selected date from projectStore.currentDate when store date differs from local today', async () => {
+    projectStore.currentDate = '2026-04-20';
+
+    const mounted = mountPanel();
+    await nextTick();
+
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    item?.click();
+    await nextTick();
+
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-date"]')?.textContent).toBe('2026-04-20');
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-month"]')?.textContent).toBe('2026-04');
 
     mounted.unmount();
   });
