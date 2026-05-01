@@ -844,56 +844,50 @@ const handleActionTooltipLeave = () => {
   hideIconTooltip();
 };
 
-const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
-  const payload = getItemHoverPayload(item, event);
-  if (!payload) return;
-
+function shouldSuppressHoverEndForAnchor(anchorEl: HTMLElement, event: MouseEvent) {
   const relatedTarget = event.relatedTarget;
-  const anchorRect = payload.anchorEl?.getBoundingClientRect();
-  const pointerStillInsideAnchor = !!(
-    relatedTarget
-    && anchorRect
+  if (relatedTarget instanceof Node && anchorEl.contains(relatedTarget)) {
+    return true;
+  }
+
+  const anchorRect = anchorEl.getBoundingClientRect();
+  return (
+    !!relatedTarget
     && event.clientX >= anchorRect.left
     && event.clientX <= anchorRect.right
     && event.clientY >= anchorRect.top
     && event.clientY <= anchorRect.bottom
   );
-  if (
-    payload.anchorEl
-    && relatedTarget instanceof Node
-    && payload.anchorEl.contains(relatedTarget)
-  ) {
-    return;
+}
+
+function shouldSuppressHoverEndAfterFrame(anchorEl: HTMLElement, event: MouseEvent) {
+  if (anchorEl.matches(':hover')) {
+    return true;
   }
 
-  if (pointerStillInsideAnchor) {
+  const elementUnderPointer = typeof document.elementFromPoint === 'function'
+    ? document.elementFromPoint(event.clientX, event.clientY)
+    : null;
+  if (elementUnderPointer instanceof Node && anchorEl.contains(elementUnderPointer)) {
+    return true;
+  }
+
+  return (
+    elementUnderPointer instanceof HTMLElement
+    && !!elementUnderPointer.closest('.block__popover')
+  );
+}
+
+const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
+  const payload = getItemHoverPayload(item, event);
+  if (!payload) return;
+
+  if (shouldSuppressHoverEndForAnchor(payload.anchorEl, event)) {
     return;
   }
 
   window.requestAnimationFrame(() => {
-    const anchorStillHovered = payload.anchorEl.matches(':hover');
-    const elementUnderPointer = typeof document.elementFromPoint === 'function'
-      ? document.elementFromPoint(event.clientX, event.clientY)
-      : null;
-    const pointerWithinAnchorTree = !!(
-      payload.anchorEl
-      && elementUnderPointer instanceof Node
-      && payload.anchorEl.contains(elementUnderPointer)
-    );
-    const pointerWithinNativePopover = !!(
-      elementUnderPointer instanceof HTMLElement
-      && elementUnderPointer.closest('.block__popover')
-    );
-
-    if (anchorStillHovered) {
-      return;
-    }
-
-    if (pointerWithinAnchorTree) {
-      return;
-    }
-
-    if (pointerWithinNativePopover) {
+    if (shouldSuppressHoverEndAfterFrame(payload.anchorEl, event)) {
       return;
     }
 
@@ -914,7 +908,6 @@ const openDetail = (item: Item) => {
 
 // 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
 const openCalendar = (item: Item) => {
-  console.log('[Task Assistant] openCalendar', item.date);
   if (plugin && (plugin as any).openCustomTab) {
     (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
   }

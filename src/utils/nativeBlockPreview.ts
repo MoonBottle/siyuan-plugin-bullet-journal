@@ -24,7 +24,6 @@ type OpenNativeBlockPreviewOptions = {
   onHoverChange?: (hovered: boolean) => void;
   onPanelDestroyed?: (payload: {
     initiatedByController: boolean;
-    panelId?: string;
     blockId: string;
     anchorEl: HTMLElement;
   }) => void;
@@ -164,7 +163,7 @@ export function createNativeBlockPreviewController() {
       );
     };
 
-    const updateHovered = (hovered: boolean, event: MouseEvent | null) => {
+    const updateHovered = (hovered: boolean) => {
       if (lastHovered === hovered) {
         return;
       }
@@ -173,11 +172,11 @@ export function createNativeBlockPreviewController() {
     };
 
     const handlePointerMove = (event: MouseEvent) => {
-      updateHovered(isPointerWithinPanel(event), event);
+      updateHovered(isPointerWithinPanel(event));
     };
 
     const handleWindowBlur = () => {
-      updateHovered(false, null);
+      updateHovered(false);
     };
 
     document.addEventListener('mousemove', handlePointerMove, true);
@@ -220,7 +219,6 @@ export function createNativeBlockPreviewController() {
       finally {
         options.onPanelDestroyed?.({
           initiatedByController: controllerClosing,
-          panelId: panel.id,
           blockId: options.blockId,
           anchorEl: options.anchorEl,
         });
