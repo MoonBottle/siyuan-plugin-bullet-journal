@@ -102,10 +102,13 @@ const skipBreak = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
   padding: 24px 16px 32px;
   background: var(--b3-theme-background);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 // 顶部标题
@@ -131,10 +134,11 @@ const skipBreak = async () => {
 // 计时器区域
 .timer-section {
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 0;
+  padding: 32px 0 24px;
 }
 
 .breathing-circle {
@@ -206,7 +210,9 @@ const skipBreak = async () => {
 
 // 操作区域
 .action-section {
-  padding-top: 32px;
+  margin-top: auto;
+  padding-top: 24px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
 .skip-btn {

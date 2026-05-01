@@ -133,6 +133,20 @@ afterEach(() => {
 });
 
 describe('MobilePomodoroPanel', () => {
+  it('keeps the break view inside the panel surface when break mode is active', async () => {
+    pomodoroStore.isBreakActive = true;
+
+    const mounted = mountPanel({ blockId: 'item-123' });
+    await nextTick();
+
+    const surface = mounted.container.querySelector('.mobile-pomodoro-panel__surface');
+    expect(surface).not.toBeNull();
+    expect(surface?.querySelector('[data-testid="pomodoro-break"]')).not.toBeNull();
+
+    mounted.unmount();
+    pomodoroStore.isBreakActive = false;
+  });
+
   it('forwards the initial block id into the starter path without drawer shell artifacts', async () => {
     const mounted = mountPanel({ blockId: 'item-123' });
     await nextTick();
