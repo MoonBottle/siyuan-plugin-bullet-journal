@@ -35,6 +35,22 @@ describe('workbenchStorage', () => {
     expect(settings).toEqual(createEmptyWorkbenchSettings());
   });
 
+  it('loadWorkbenchSettings normalizes invalid top-level fields', async () => {
+    const plugin = createMockPlugin({
+      entries: { broken: true },
+      dashboards: 'invalid',
+      activeEntryId: 123,
+    }) as any;
+
+    const settings = await loadWorkbenchSettings(plugin);
+
+    expect(settings).toEqual({
+      entries: [],
+      dashboards: [],
+      activeEntryId: null,
+    });
+  });
+
   it('saveWorkbenchSettings writes to workbench.json', async () => {
     const plugin = createMockPlugin(null) as any;
     const settings: WorkbenchSettings = {
