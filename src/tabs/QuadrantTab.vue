@@ -77,25 +77,15 @@
       </section>
     </div>
 
-    <BlockFocusPreviewPopover
-      :visible="preview.isOpen.value"
-      :block-id="preview.activeBlockId.value"
-      :anchor-el="preview.anchorEl.value"
-      :is-root-document-block="previewIsRootDocumentBlock"
-      @loading-change="preview.setLoading"
-      @error-change="preview.setError"
-      @popover-hover="preview.markPopoverHovered"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Menu } from 'siyuan';
-import { getCurrentPlugin, usePlugin } from '@/main';
+import { getCurrentPlugin, useApp, usePlugin } from '@/main';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import type { PriorityLevel } from '@/types/models';
-import BlockFocusPreviewPopover from '@/components/preview/BlockFocusPreviewPopover.vue';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
@@ -103,6 +93,7 @@ import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
 import { updateBlockPriority } from '@/utils/fileUtils';
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 
 type QuadrantConfig = {
@@ -119,6 +110,7 @@ type QuadrantDragPayload = {
 };
 
 const plugin = usePlugin() as any;
+const app = useApp();
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
@@ -132,6 +124,7 @@ const preview = useBlockFocusPreview({
   showDelayMs: 180,
   hideDelayMs: 120,
 });
+const nativePreview = createNativeBlockPreviewController();
 
 const quadrants: QuadrantConfig[] = [
   {
@@ -188,16 +181,6 @@ const panelCounts = computed(() => {
       includeNoPriority: quadrant.includeNoPriority,
     }).length;
   });
-});
-
-const previewIsRootDocumentBlock = computed(() => {
-  const blockId = preview.activeBlockId.value;
-  if (!blockId) {
-    return false;
-  }
-
-  const item = projectStore.getItemByBlockId?.(blockId);
-  return !!item?.docId && item.docId === blockId;
 });
 
 function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebar> | null) {
@@ -392,6 +375,26 @@ let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
+watch(
+  () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
+  ([isOpen, blockId, anchorEl]) => {
+    if (!isOpen || !blockId || !anchorEl || !app) {
+      nativePreview.close();
+      return;
+    }
+
+    nativePreview.open({
+      app,
+      blockId,
+      anchorEl,
+      onHoverChange: preview.markPopoverHovered,
+    });
+  },
+  {
+    flush: 'post',
+  },
+);
+
 onMounted(() => {
   settingsStore.loadFromPlugin();
   syncSelectedGroupWithDefault();
@@ -417,6 +420,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   preview.dispose();
+  nativePreview.close();
 
   if (unsubscribeRefresh) {
     unsubscribeRefresh();

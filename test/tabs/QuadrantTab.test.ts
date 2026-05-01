@@ -8,7 +8,8 @@ import { initI18n } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 
 const todoSidebarProps = vi.fn();
-const blockFocusPreviewPopoverProps = vi.fn();
+const nativePreviewOpen = vi.fn();
+const nativePreviewClose = vi.fn();
 const mockRefresh = vi.fn(() => Promise.resolve());
 const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
 const mockShowMessage = vi.fn();
@@ -38,6 +39,7 @@ const mockGetFilteredAndSortedItems = vi.fn((filters?: {
 });
 
 const mockPlugin = { name: 'plugin' };
+const mockApp = { name: 'app' };
 const mockSettingsStore = {
   scanMode: 'all',
   directories: [],
@@ -77,6 +79,7 @@ const mockProjectStore = {
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => mockPlugin),
+  useApp: vi.fn(() => mockApp),
   getCurrentPlugin: vi.fn(() => mockPlugin),
 }));
 
@@ -176,29 +179,11 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
   }),
 }));
 
-vi.mock('@/components/preview/BlockFocusPreviewPopover.vue', () => ({
-  default: defineComponent({
-    name: 'BlockFocusPreviewPopoverStub',
-    props: {
-      blockId: { type: String, default: '' },
-      anchorEl: { type: Object, default: null },
-      visible: { type: Boolean, default: false },
-      isRootDocumentBlock: { type: Boolean, default: false },
-    },
-    setup(props) {
-      watchEffect(() => {
-        blockFocusPreviewPopoverProps({
-          blockId: props.blockId,
-          anchorEl: props.anchorEl,
-          visible: props.visible,
-          isRootDocumentBlock: props.isRootDocumentBlock,
-        });
-      });
-
-      return () => props.visible
-        ? h('div', { class: 'block-focus-preview-popover', 'data-testid': 'preview-popover-stub' })
-        : null;
-    },
+vi.mock('@/utils/nativeBlockPreview', () => ({
+  createNativeBlockPreviewController: () => ({
+    open: nativePreviewOpen,
+    close: nativePreviewClose,
+    isOpen: vi.fn(() => false),
   }),
 }));
 
@@ -613,10 +598,7 @@ describe('QuadrantTab', () => {
     vi.runAllTimers();
     await nextTick();
 
-    expect(mounted.container.querySelector('.block-focus-preview-popover')).toBeNull();
-    expect(blockFocusPreviewPopoverProps).not.toHaveBeenCalledWith(expect.objectContaining({
-      visible: true,
-    }));
+    expect(nativePreviewOpen).not.toHaveBeenCalled();
 
     mounted.unmount();
     vi.useRealTimers();
@@ -639,9 +621,11 @@ describe('QuadrantTab', () => {
     vi.advanceTimersByTime(180);
     await nextTick();
 
-    expect(blockFocusPreviewPopoverProps).toHaveBeenCalledWith(expect.objectContaining({
-      visible: true,
+    expect(nativePreviewOpen).toHaveBeenCalledWith(expect.objectContaining({
+      app: mockApp,
       blockId: 'block-1',
+      anchorEl,
+      onHoverChange: expect.any(Function),
     }));
 
     sidebarProps.onItemDragStart?.({
@@ -651,7 +635,7 @@ describe('QuadrantTab', () => {
     });
     await nextTick();
 
-    expect(mounted.container.querySelector('.block-focus-preview-popover')).toBeNull();
+    expect(nativePreviewClose).toHaveBeenCalled();
 
     mounted.unmount();
     vi.useRealTimers();
