@@ -1,10 +1,12 @@
 <template>
   <section class="mobile-todo-panel" data-testid="todo-panel">
-    <MobileFilterBar
-      v-model:search="state.searchQuery"
-      :has-active-filters="hasActiveFilters"
-      @open-filter="state.showFilterDrawer = true"
-    />
+    <div class="mobile-filter-bar-shell">
+      <MobileFilterBar
+        v-model:search="state.searchQuery"
+        :has-active-filters="hasActiveFilters"
+        @open-filter="state.showFilterDrawer = true"
+      />
+    </div>
 
     <MobileTodoList
       :group-id="state.selectedGroup"
@@ -456,5 +458,13 @@ defineExpose({
   background: var(--b3-theme-surface);
   overflow: hidden;
   position: relative;
+}
+
+.mobile-filter-bar-shell {
+  padding: 12px 16px;
+  background: var(--b3-theme-surface);
+  border-bottom: 1px solid var(--b3-border-color);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 </style>
