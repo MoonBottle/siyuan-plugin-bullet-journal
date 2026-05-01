@@ -263,6 +263,7 @@ describe('TodoSidebar', () => {
       cancelable: true,
     });
     card?.dispatchEvent(mouseLeaveEvent);
+    await new Promise(resolve => window.requestAnimationFrame(() => resolve(undefined)));
 
     expect(onItemHoverEnd).toHaveBeenCalledTimes(1);
     expect(onItemHoverEnd).toHaveBeenCalledWith({
@@ -297,5 +298,216 @@ describe('TodoSidebar', () => {
 
     mounted.unmount();
     pendingItem.blockId = originalBlockId;
+  });
+
+  it('does not emit hover-end when the pointer moves to a child inside the same card', async () => {
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    const child = document.createElement('span');
+    card?.appendChild(child);
+
+    const mouseLeaveEvent = new MouseEvent('mouseleave', {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(mouseLeaveEvent, 'relatedTarget', {
+      value: child,
+      configurable: true,
+    });
+
+    card?.dispatchEvent(mouseLeaveEvent);
+
+    expect(onItemHoverEnd).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('does not emit hover-end when mouseleave fires but the pointer is still inside the same card bounds', async () => {
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    card!.getBoundingClientRect = vi.fn(() => ({
+      x: 0,
+      y: 100,
+      width: 240,
+      height: 120,
+      top: 100,
+      left: 0,
+      right: 240,
+      bottom: 220,
+      toJSON: () => ({}),
+    } as DOMRect));
+
+    const outsideTarget = document.createElement('div');
+    outsideTarget.className = 'section-label clickable';
+    document.body.appendChild(outsideTarget);
+
+    const mouseLeaveEvent = new MouseEvent('mouseleave', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 120,
+      clientY: 180,
+    });
+    Object.defineProperty(mouseLeaveEvent, 'relatedTarget', {
+      value: outsideTarget,
+      configurable: true,
+    });
+
+    card?.dispatchEvent(mouseLeaveEvent);
+
+    expect(onItemHoverEnd).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('does not emit hover-end when mouseleave fires but the card still matches :hover on the next frame', async () => {
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    const originalMatches = card!.matches.bind(card!);
+    vi.spyOn(card!, 'matches').mockImplementation((selector: string) => {
+      if (selector === ':hover') {
+        return true;
+      }
+      return originalMatches(selector);
+    });
+
+    const mouseLeaveEvent = new MouseEvent('mouseleave', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    card?.dispatchEvent(mouseLeaveEvent);
+    await new Promise(resolve => window.requestAnimationFrame(() => resolve(undefined)));
+
+    expect(onItemHoverEnd).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('does not emit hover-end when elementFromPoint resolves to a descendant inside the same card', async () => {
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    const button = document.createElement('span');
+    button.className = 'block__icon';
+    card?.appendChild(button);
+
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(button);
+
+    const originalMatches = card!.matches.bind(card!);
+    vi.spyOn(card!, 'matches').mockImplementation((selector: string) => {
+      if (selector === ':hover') {
+        return false;
+      }
+      return originalMatches(selector);
+    });
+
+    const outsideTarget = document.createElement('div');
+    outsideTarget.className = 'quadrant-panel__header';
+    document.body.appendChild(outsideTarget);
+
+    const mouseLeaveEvent = new MouseEvent('mouseleave', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 80,
+      clientY: 120,
+    });
+    Object.defineProperty(mouseLeaveEvent, 'relatedTarget', {
+      value: outsideTarget,
+      configurable: true,
+    });
+
+    card?.dispatchEvent(mouseLeaveEvent);
+    await new Promise(resolve => window.requestAnimationFrame(() => resolve(undefined)));
+
+    expect(onItemHoverEnd).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('does not emit hover-end when elementFromPoint resolves inside a native block popover', async () => {
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    const popover = document.createElement('div');
+    popover.className = 'block__popover block__popover--open';
+    const popoverContent = document.createElement('div');
+    popoverContent.className = 'fn__flex-1';
+    popover.appendChild(popoverContent);
+    document.body.appendChild(popover);
+
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(popoverContent);
+
+    const originalMatches = card!.matches.bind(card!);
+    vi.spyOn(card!, 'matches').mockImplementation((selector: string) => {
+      if (selector === ':hover') {
+        return false;
+      }
+      return originalMatches(selector);
+    });
+
+    const outsideTarget = document.createElement('div');
+    outsideTarget.className = 'quadrant-panel__header';
+    document.body.appendChild(outsideTarget);
+
+    const mouseLeaveEvent = new MouseEvent('mouseleave', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 80,
+      clientY: 120,
+    });
+    Object.defineProperty(mouseLeaveEvent, 'relatedTarget', {
+      value: outsideTarget,
+      configurable: true,
+    });
+
+    card?.dispatchEvent(mouseLeaveEvent);
+    await new Promise(resolve => window.requestAnimationFrame(() => resolve(undefined)));
+
+    expect(onItemHoverEnd).not.toHaveBeenCalled();
+
+    mounted.unmount();
   });
 });

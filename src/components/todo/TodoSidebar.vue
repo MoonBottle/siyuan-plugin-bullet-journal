@@ -70,40 +70,48 @@
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').complete"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').startFocusAria"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').migrateToToday"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToToday)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleMigrateToday(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').abandon"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -151,40 +159,48 @@
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').complete"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').startFocusAria"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').migrateToTomorrow"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').abandon"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -232,40 +248,48 @@
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').complete"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').startFocusAria"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').migrateToTomorrow"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').abandon"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -320,40 +344,48 @@
                   <template #footer>
                     <div class="item-actions-hover">
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').complete"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="handleDone(item)"
                       >
                         <svg><use xlink:href="#iconCheck"></use></svg>
                       </span>
                       <span
                         v-if="!pomodoroStore.isFocusing"
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').startFocusAria"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="openPomodoroDialog(item)"
                       >
                         <svg><use xlink:href="#iconClock"></use></svg>
                       </span>
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').migrateToTomorrow"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="handleMigrate(item)"
                       >
                         <svg><use xlink:href="#iconForward"></use></svg>
                       </span>
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').abandon"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="handleAbandon(item)"
                       >
                         <svg><use xlink:href="#iconCloseRound"></use></svg>
                       </span>
                     </div>
                     <div class="item-actions-fixed">
-                      <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                      <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                         <svg><use xlink:href="#iconInfo"></use></svg>
                       </span>
-                      <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                      <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                         <svg><use xlink:href="#iconCalendar"></use></svg>
                       </span>
                     </div>
@@ -402,10 +434,10 @@
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -452,10 +484,10 @@
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -476,7 +508,7 @@ import Card from '@/components/common/Card.vue';
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { updateBlockPriority } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
@@ -802,10 +834,116 @@ const handleItemHoverStart = (item: Item, event: MouseEvent) => {
   props.onItemHoverStart?.(payload, event);
 };
 
+const handleActionTooltipEnter = (event: MouseEvent, text: string) => {
+  const el = event.currentTarget as HTMLElement | null;
+  if (!el || !text) return;
+  showIconTooltip(el, text);
+};
+
+const handleActionTooltipLeave = () => {
+  hideIconTooltip();
+};
+
 const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
   const payload = getItemHoverPayload(item, event);
   if (!payload) return;
-  props.onItemHoverEnd?.(payload, event);
+
+  const relatedTarget = event.relatedTarget;
+  const anchorRect = payload.anchorEl?.getBoundingClientRect();
+  const pointerStillInsideAnchor = !!(
+    relatedTarget
+    && anchorRect
+    && event.clientX >= anchorRect.left
+    && event.clientX <= anchorRect.right
+    && event.clientY >= anchorRect.top
+    && event.clientY <= anchorRect.bottom
+  );
+  if (
+    payload.anchorEl
+    && relatedTarget instanceof Node
+    && payload.anchorEl.contains(relatedTarget)
+  ) {
+    console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because relatedTarget is inside anchor', {
+      itemId: item.id,
+      blockId: item.blockId,
+      relatedTarget: relatedTarget instanceof HTMLElement ? relatedTarget.outerHTML.slice(0, 200) : String(relatedTarget),
+    });
+    return;
+  }
+
+  if (pointerStillInsideAnchor) {
+    console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because pointer is still inside anchor bounds', {
+      itemId: item.id,
+      blockId: item.blockId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      rect: anchorRect
+        ? {
+            left: anchorRect.left,
+            top: anchorRect.top,
+            right: anchorRect.right,
+            bottom: anchorRect.bottom,
+          }
+        : null,
+      relatedTarget: relatedTarget instanceof HTMLElement ? relatedTarget.outerHTML.slice(0, 200) : String(relatedTarget),
+    });
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    const anchorStillHovered = payload.anchorEl.matches(':hover');
+    const elementUnderPointer = typeof document.elementFromPoint === 'function'
+      ? document.elementFromPoint(event.clientX, event.clientY)
+      : null;
+    const pointerWithinAnchorTree = !!(
+      payload.anchorEl
+      && elementUnderPointer instanceof Node
+      && payload.anchorEl.contains(elementUnderPointer)
+    );
+    const pointerWithinNativePopover = !!(
+      elementUnderPointer instanceof HTMLElement
+      && elementUnderPointer.closest('.block__popover')
+    );
+    console.warn('[QuadrantPreviewDebug][sidebar] hover-end raf check', {
+      itemId: item.id,
+      blockId: item.blockId,
+      anchorStillHovered,
+      pointerWithinAnchorTree,
+      pointerWithinNativePopover,
+      elementUnderPointer: elementUnderPointer instanceof HTMLElement ? elementUnderPointer.outerHTML.slice(0, 200) : String(elementUnderPointer),
+      relatedTarget: relatedTarget instanceof HTMLElement ? relatedTarget.outerHTML.slice(0, 200) : String(relatedTarget),
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+
+    if (anchorStillHovered) {
+      return;
+    }
+
+    if (pointerWithinAnchorTree) {
+      console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because elementFromPoint is inside anchor', {
+        itemId: item.id,
+        blockId: item.blockId,
+        elementUnderPointer: elementUnderPointer instanceof HTMLElement ? elementUnderPointer.outerHTML.slice(0, 200) : String(elementUnderPointer),
+      });
+      return;
+    }
+
+    if (pointerWithinNativePopover) {
+      console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because elementFromPoint is inside native popover', {
+        itemId: item.id,
+        blockId: item.blockId,
+        elementUnderPointer: elementUnderPointer instanceof HTMLElement ? elementUnderPointer.outerHTML.slice(0, 200) : String(elementUnderPointer),
+      });
+      return;
+    }
+
+    console.warn('[QuadrantPreviewDebug][sidebar] emit hover-end', {
+      itemId: item.id,
+      blockId: item.blockId,
+    });
+    props.onItemHoverEnd?.(payload, event);
+  });
 };
 
 // 打开事项所在文档

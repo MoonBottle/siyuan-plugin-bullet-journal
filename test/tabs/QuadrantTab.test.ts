@@ -72,8 +72,12 @@ const mockProjectStore = {
   getFilteredAndSortedItems: mockGetFilteredAndSortedItems,
   getItemByBlockId: vi.fn((blockId: string) => ({
     id: `item-for-${blockId}`,
+    content: `item-for-${blockId}`,
+    date: '2026-05-01',
+    lineNumber: 1,
     blockId,
     docId: 'doc-1',
+    status: 'pending',
   })),
 };
 
@@ -92,13 +96,21 @@ vi.mock('siyuan', () => ({
   }),
 }));
 
-vi.mock('@/utils/dialog', () => ({
-  showMessage: mockShowMessage,
-}));
+vi.mock('@/utils/dialog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/dialog')>();
+  return {
+    ...actual,
+    showMessage: mockShowMessage,
+  };
+});
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockPriority: mockUpdateBlockPriority,
-}));
+vi.mock('@/utils/fileUtils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/fileUtils')>();
+  return {
+    ...actual,
+    updateBlockPriority: mockUpdateBlockPriority,
+  };
+});
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
@@ -256,8 +268,12 @@ describe('QuadrantTab', () => {
     mockProjectStore.hideAbandoned = false;
     mockProjectStore.getItemByBlockId.mockReturnValue({
       id: 'item-1',
+      content: 'item-for-block-1',
+      date: '2026-05-01',
+      lineNumber: 1,
       blockId: 'block-1',
       docId: 'doc-1',
+      status: 'pending',
     });
     (globalThis as any).BroadcastChannel = vi.fn(function () {
       return {
@@ -618,7 +634,7 @@ describe('QuadrantTab', () => {
       anchorEl,
     });
 
-    vi.advanceTimersByTime(180);
+    vi.advanceTimersByTime(120);
     await nextTick();
 
     expect(nativePreviewOpen).toHaveBeenCalledWith(expect.objectContaining({

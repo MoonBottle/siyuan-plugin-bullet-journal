@@ -121,8 +121,9 @@ const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebar> | null>>([]);
 const draggedItem = ref<QuadrantDragPayload | null>(null);
 const activeDropQuadrant = ref<string | null>(null);
 const preview = useBlockFocusPreview({
-  showDelayMs: 180,
-  hideDelayMs: 120,
+  showDelayMs: 0,
+  hideDelayMs: 300,
+  popoverLeaveGraceMs: 220,
 });
 const nativePreview = createNativeBlockPreviewController();
 
@@ -375,6 +376,30 @@ let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
+function handleNativePreviewDestroyed({ initiatedByController }: { initiatedByController: boolean }) {
+  const blockId = preview.activeBlockId.value;
+  const itemId = preview.activeItemId.value;
+  const anchorEl = preview.anchorEl.value;
+
+  preview.forceClose();
+
+  if (
+    initiatedByController
+    || !blockId
+    || !itemId
+    || !anchorEl
+    || !anchorEl.matches(':hover')
+  ) {
+    return;
+  }
+
+  preview.showNow({
+    blockId,
+    itemId,
+    anchorEl,
+  });
+}
+
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
@@ -385,9 +410,11 @@ watch(
 
     nativePreview.open({
       app,
+      plugin,
       blockId,
       anchorEl,
       onHoverChange: preview.markPopoverHovered,
+      onPanelDestroyed: handleNativePreviewDestroyed,
     });
   },
   {

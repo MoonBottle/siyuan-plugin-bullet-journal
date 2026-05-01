@@ -59,6 +59,61 @@ describe('useBlockFocusPreview', () => {
     expect(preview.activeBlockId.value).toBe('block-1');
   });
 
+  it('keeps the preview open during a transient popover leave within the grace window', async () => {
+    const preview = useBlockFocusPreview({
+      showDelayMs: 0,
+      hideDelayMs: 100,
+      popoverLeaveGraceMs: 120,
+    });
+    const anchorEl = document.createElement('div');
+
+    preview.showNow({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    });
+    await nextTick();
+
+    preview.scheduleHide();
+    preview.markPopoverHovered(true);
+    preview.markPopoverHovered(false);
+
+    vi.advanceTimersByTime(119);
+    await nextTick();
+
+    expect(preview.isOpen.value).toBe(true);
+    expect(preview.activeBlockId.value).toBe('block-1');
+  });
+
+  it('closes after the popover leave grace elapses and the trigger is no longer hovered', async () => {
+    const preview = useBlockFocusPreview({
+      showDelayMs: 0,
+      hideDelayMs: 100,
+      popoverLeaveGraceMs: 120,
+    });
+    const anchorEl = document.createElement('div');
+
+    preview.showNow({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    });
+    await nextTick();
+
+    preview.scheduleHide();
+    preview.markPopoverHovered(true);
+    preview.markPopoverHovered(false);
+
+    vi.advanceTimersByTime(120);
+    await nextTick();
+    expect(preview.isOpen.value).toBe(true);
+
+    vi.advanceTimersByTime(100);
+    await nextTick();
+    expect(preview.isOpen.value).toBe(false);
+    expect(preview.activeBlockId.value).toBe('');
+  });
+
   it('suppresses opening while drag is active', async () => {
     const preview = useBlockFocusPreview({ showDelayMs: 0, hideDelayMs: 0 });
     const anchorEl = document.createElement('div');
@@ -112,5 +167,32 @@ describe('useBlockFocusPreview', () => {
 
     expect(preview.isOpen.value).toBe(false);
     expect(preview.activeBlockId.value).toBe('');
+  });
+
+  it('can force close and reopen the same payload after native panel teardown', async () => {
+    const preview = useBlockFocusPreview({ showDelayMs: 0, hideDelayMs: 100 });
+    const anchorEl = document.createElement('div');
+
+    const payload = {
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    };
+
+    preview.showNow(payload);
+    await nextTick();
+
+    expect(preview.isOpen.value).toBe(true);
+
+    preview.forceClose();
+    await nextTick();
+
+    expect(preview.isOpen.value).toBe(false);
+
+    preview.showNow(payload);
+    await nextTick();
+
+    expect(preview.isOpen.value).toBe(true);
+    expect(preview.activeBlockId.value).toBe('block-1');
   });
 });
