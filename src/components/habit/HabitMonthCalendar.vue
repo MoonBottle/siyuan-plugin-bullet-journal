@@ -1,11 +1,11 @@
 <template>
   <div class="habit-month-calendar">
-    <div class="habit-month-calendar__header">
-      <button class="habit-month-calendar__nav" @click="prevMonth">‹</button>
-      <span class="habit-month-calendar__title">{{ title }}</span>
-      <button class="habit-month-calendar__nav" @click="nextMonth">›</button>
-    </div>
     <div class="habit-month-calendar__grid">
+      <div class="habit-month-calendar__header">
+        <button class="habit-month-calendar__nav habit-month-calendar__nav--prev" @click="prevMonth">‹</button>
+        <span class="habit-month-calendar__title">{{ title }}</span>
+        <button class="habit-month-calendar__nav habit-month-calendar__nav--next" @click="nextMonth">›</button>
+      </div>
       <div class="habit-month-calendar__weekdays">
         <span v-for="d in weekDayLabels" :key="d" class="habit-month-calendar__weekday">{{ d }}</span>
       </div>
@@ -175,10 +175,9 @@ const calendarCells = computed(() => {
 }
 
 .habit-month-calendar__header {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   align-items: center;
-  justify-content: center;
-  gap: 12px;
   margin-bottom: 6px;
 }
 
@@ -194,15 +193,27 @@ const calendarCells = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  justify-self: center;
 }
 
 .habit-month-calendar__nav:hover {
   background: var(--b3-theme-surface-light);
 }
 
+.habit-month-calendar__nav--prev {
+  grid-column: 3;
+}
+
+.habit-month-calendar__nav--next {
+  grid-column: 5;
+}
+
 .habit-month-calendar__title {
+  grid-column: 4;
+  justify-self: center;
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .habit-month-calendar__grid {
