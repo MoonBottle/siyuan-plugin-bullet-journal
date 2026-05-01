@@ -11,7 +11,7 @@ describe('MobileTodoList layout', () => {
       'utf-8',
     );
 
-    expect(source).toContain('padding: 8px 16px 24px');
+    expect(source).toContain('padding: 4px 16px 16px');
   });
 
   it('renders completed items with a checkmark indicator instead of a cross', () => {
@@ -22,5 +22,17 @@ describe('MobileTodoList layout', () => {
 
     expect(source).toContain('&.completed::after');
     expect(source).not.toContain('linear-gradient(45deg');
+  });
+
+  it('uses tighter vertical spacing across section groups and rows', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/mobile/components/todo/MobileTodoList.vue'),
+      'utf-8',
+    );
+
+    expect(source).toContain('gap: 8px');
+    expect(source).toContain('padding: 10px 16px');
+    expect(source).toContain('padding: 8px 16px');
+    expect(source).toContain('padding: 0');
   });
 });

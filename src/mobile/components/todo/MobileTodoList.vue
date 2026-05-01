@@ -573,7 +573,7 @@ onUnmounted(() => {
 }
 
 .todo-content {
-  padding: 8px 16px 24px;
+  padding: 4px 16px 16px;
   min-height: 100%;
   box-sizing: border-box;
 }
@@ -666,7 +666,7 @@ onUnmounted(() => {
 .todo-sections {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .todo-section {
@@ -680,7 +680,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 10px 16px;
   cursor: pointer;
   user-select: none;
   background: var(--b3-theme-background);
@@ -790,7 +790,7 @@ onUnmounted(() => {
 }
 
 .section-content {
-  padding: 4px 0;
+  padding: 0;
 }
 
 // Todo items
@@ -798,7 +798,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 12px 16px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid var(--b3-border-color);

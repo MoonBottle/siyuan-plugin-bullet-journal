@@ -44,8 +44,11 @@ describe('MobileFilterBar', () => {
       resolve(process.cwd(), 'src/mobile/components/todo/MobileFilterBar.vue'),
       'utf-8',
     );
-    expect(source).toContain('padding: 10px 0');
+    expect(source).toContain('padding: 8px 0');
     expect(source).toContain('background: var(--b3-theme-background)');
+    expect(source).toContain('padding: 7px 12px');
+    expect(source).toContain('width: 36px');
+    expect(source).toContain('height: 36px');
 
     mounted.unmount();
   });

@@ -12,8 +12,9 @@ describe('MobileTodoPanel layout', () => {
     );
 
     expect(source).toContain('class="mobile-filter-bar-shell"');
-    expect(source).toContain('padding: 8px 16px');
+    expect(source).toContain('padding: 0 16px');
     expect(source).toContain('background: var(--b3-theme-surface)');
+    expect(source).not.toContain('border-bottom: 1px solid var(--b3-border-color)');
     expect(source).not.toContain('background: var(--b3-theme-background)');
   });
 });
