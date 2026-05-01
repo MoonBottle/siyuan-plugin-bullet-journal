@@ -8,6 +8,7 @@ import { initI18n } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 
 const todoSidebarProps = vi.fn();
+const blockFocusPreviewPopoverProps = vi.fn();
 const mockRefresh = vi.fn(() => Promise.resolve());
 const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
 const mockShowMessage = vi.fn();
@@ -67,6 +68,11 @@ const mockProjectStore = {
     mockProjectStore.hideAbandoned = !mockProjectStore.hideAbandoned;
   }),
   getFilteredAndSortedItems: mockGetFilteredAndSortedItems,
+  getItemByBlockId: vi.fn((blockId: string) => ({
+    id: `item-for-${blockId}`,
+    blockId,
+    docId: 'doc-1',
+  })),
 };
 
 vi.mock('@/main', () => ({
@@ -141,6 +147,8 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
       enableDrag: { type: Boolean, default: false },
       onItemDragStart: { type: Function, default: undefined },
       onItemDragEnd: { type: Function, default: undefined },
+      onItemHoverStart: { type: Function, default: undefined },
+      onItemHoverEnd: { type: Function, default: undefined },
     },
     setup(props, { expose }) {
       watchEffect(() => {
@@ -153,6 +161,8 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
           enableDrag: props.enableDrag,
           onItemDragStart: props.onItemDragStart,
           onItemDragEnd: props.onItemDragEnd,
+          onItemHoverStart: props.onItemHoverStart,
+          onItemHoverEnd: props.onItemHoverEnd,
         });
       });
 
@@ -162,6 +172,32 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
       });
 
       return () => h('div', { 'data-testid': 'todo-sidebar-stub' });
+    },
+  }),
+}));
+
+vi.mock('@/components/preview/BlockFocusPreviewPopover.vue', () => ({
+  default: defineComponent({
+    name: 'BlockFocusPreviewPopoverStub',
+    props: {
+      blockId: { type: String, default: '' },
+      anchorEl: { type: Object, default: null },
+      visible: { type: Boolean, default: false },
+      isRootDocumentBlock: { type: Boolean, default: false },
+    },
+    setup(props) {
+      watchEffect(() => {
+        blockFocusPreviewPopoverProps({
+          blockId: props.blockId,
+          anchorEl: props.anchorEl,
+          visible: props.visible,
+          isRootDocumentBlock: props.isRootDocumentBlock,
+        });
+      });
+
+      return () => props.visible
+        ? h('div', { class: 'block-focus-preview-popover', 'data-testid': 'preview-popover-stub' })
+        : null;
     },
   }),
 }));
@@ -209,6 +245,11 @@ function mountQuadrantTab() {
   });
 }
 
+function getLatestTodoSidebarProps() {
+  const calls = todoSidebarProps.mock.calls;
+  return calls[calls.length - 1]?.[0];
+}
+
 describe('QuadrantTab', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -228,6 +269,11 @@ describe('QuadrantTab', () => {
     mockProjectStore.loading = false;
     mockProjectStore.hideCompleted = false;
     mockProjectStore.hideAbandoned = false;
+    mockProjectStore.getItemByBlockId.mockReturnValue({
+      id: 'item-1',
+      blockId: 'block-1',
+      docId: 'doc-1',
+    });
     (globalThis as any).BroadcastChannel = vi.fn(function () {
       return {
         onmessage: null,
@@ -256,6 +302,8 @@ describe('QuadrantTab', () => {
       enableDrag: true,
       onItemDragStart: expect.any(Function),
       onItemDragEnd: expect.any(Function),
+      onItemHoverStart: expect.any(Function),
+      onItemHoverEnd: expect.any(Function),
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(2, expect.objectContaining({
       priorities: ['medium'],
@@ -264,6 +312,8 @@ describe('QuadrantTab', () => {
       enableDrag: true,
       onItemDragStart: expect.any(Function),
       onItemDragEnd: expect.any(Function),
+      onItemHoverStart: expect.any(Function),
+      onItemHoverEnd: expect.any(Function),
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(3, expect.objectContaining({
       priorities: ['low'],
@@ -272,6 +322,8 @@ describe('QuadrantTab', () => {
       enableDrag: true,
       onItemDragStart: expect.any(Function),
       onItemDragEnd: expect.any(Function),
+      onItemHoverStart: expect.any(Function),
+      onItemHoverEnd: expect.any(Function),
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(4, expect.objectContaining({
       priorities: [],
@@ -280,6 +332,8 @@ describe('QuadrantTab', () => {
       enableDrag: true,
       onItemDragStart: expect.any(Function),
       onItemDragEnd: expect.any(Function),
+      onItemHoverStart: expect.any(Function),
+      onItemHoverEnd: expect.any(Function),
     }));
 
     expect(mockGetFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
@@ -523,6 +577,84 @@ describe('QuadrantTab', () => {
     expect(mediumPanel.classList.contains('quadrant-panel--drop-active')).toBe(false);
 
     mounted.unmount();
+  });
+
+  it('passes hover preview callbacks into embedded todo sidebars', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const sidebarProps = getLatestTodoSidebarProps();
+
+    expect(sidebarProps.onItemHoverStart).toBeTypeOf('function');
+    expect(sidebarProps.onItemHoverEnd).toBeTypeOf('function');
+
+    mounted.unmount();
+  });
+
+  it('suppresses preview opening while drag is active', async () => {
+    vi.useFakeTimers();
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const sidebarProps = getLatestTodoSidebarProps();
+    const anchorEl = document.createElement('div');
+
+    sidebarProps.onItemDragStart?.({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      priority: 'high',
+    });
+    sidebarProps.onItemHoverStart?.({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    });
+
+    vi.runAllTimers();
+    await nextTick();
+
+    expect(mounted.container.querySelector('.block-focus-preview-popover')).toBeNull();
+    expect(blockFocusPreviewPopoverProps).not.toHaveBeenCalledWith(expect.objectContaining({
+      visible: true,
+    }));
+
+    mounted.unmount();
+    vi.useRealTimers();
+  });
+
+  it('closes an open preview when dragging starts after hover activation', async () => {
+    vi.useFakeTimers();
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const sidebarProps = getLatestTodoSidebarProps();
+    const anchorEl = document.createElement('div');
+
+    sidebarProps.onItemHoverStart?.({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    });
+
+    vi.advanceTimersByTime(180);
+    await nextTick();
+
+    expect(blockFocusPreviewPopoverProps).toHaveBeenCalledWith(expect.objectContaining({
+      visible: true,
+      blockId: 'block-1',
+    }));
+
+    sidebarProps.onItemDragStart?.({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      priority: 'high',
+    });
+    await nextTick();
+
+    expect(mounted.container.querySelector('.block-focus-preview-popover')).toBeNull();
+
+    mounted.unmount();
+    vi.useRealTimers();
   });
 
   it('shows and clears active drop state during dragover and dragleave', async () => {

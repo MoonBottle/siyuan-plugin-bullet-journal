@@ -53,6 +53,8 @@
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
               @dragstart="handleItemDragStart(item, $event)"
               @dragend="handleItemDragEnd(item, $event)"
             >
@@ -132,6 +134,8 @@
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
               @dragstart="handleItemDragStart(item, $event)"
               @dragend="handleItemDragEnd(item, $event)"
             >
@@ -211,6 +215,8 @@
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
               @dragstart="handleItemDragStart(item, $event)"
               @dragend="handleItemDragEnd(item, $event)"
             >
@@ -297,6 +303,8 @@
                   :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
                   @click="openItem(item)"
                   @contextmenu="handleContextMenu($event, item)"
+                  @mouseenter="handleItemHoverStart(item, $event)"
+                  @mouseleave="handleItemHoverEnd(item, $event)"
                   @dragstart="handleItemDragStart(item, $event)"
                   @dragend="handleItemDragEnd(item, $event)"
                 >
@@ -378,6 +386,8 @@
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
               @dragstart="handleItemDragStart(item, $event)"
               @dragend="handleItemDragEnd(item, $event)"
             >
@@ -426,6 +436,8 @@
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
               @dragstart="handleItemDragStart(item, $event)"
               @dragend="handleItemDragEnd(item, $event)"
             >
@@ -484,6 +496,12 @@ type TodoSidebarDragPayload = {
   priority?: PriorityLevel;
 };
 
+type TodoSidebarHoverPayload = {
+  blockId: string;
+  itemId: string;
+  anchorEl: HTMLElement;
+};
+
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
   // 优先级 emoji
@@ -523,6 +541,8 @@ const props = withDefaults(defineProps<{
   enableDrag?: boolean;
   onItemDragStart?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
   onItemDragEnd?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
+  onItemHoverStart?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
+  onItemHoverEnd?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
 }>(), {
   groupId: '',
   searchQuery: '',
@@ -534,6 +554,8 @@ const props = withDefaults(defineProps<{
   enableDrag: false,
   onItemDragStart: undefined,
   onItemDragEnd: undefined,
+  onItemHoverStart: undefined,
+  onItemHoverEnd: undefined,
 });
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
@@ -744,6 +766,19 @@ const getItemDraggable = (item: Item): boolean => {
   return !!props.enableDrag && !!item.blockId;
 };
 
+const getItemHoverPayload = (item: Item, event: MouseEvent): TodoSidebarHoverPayload | null => {
+  if (!item.blockId) return null;
+
+  const anchorEl = event.currentTarget as HTMLElement | null;
+  if (!anchorEl) return null;
+
+  return {
+    blockId: item.blockId,
+    itemId: item.id,
+    anchorEl,
+  };
+};
+
 const handleItemDragStart = (item: Item, event: DragEvent) => {
   const payload = getItemDragPayload(item);
   if (!props.enableDrag || !payload) return;
@@ -759,6 +794,18 @@ const handleItemDragEnd = (item: Item, event: DragEvent) => {
   const payload = getItemDragPayload(item);
   if (!props.enableDrag || !payload) return;
   props.onItemDragEnd?.(payload, event);
+};
+
+const handleItemHoverStart = (item: Item, event: MouseEvent) => {
+  const payload = getItemHoverPayload(item, event);
+  if (!payload) return;
+  props.onItemHoverStart?.(payload, event);
+};
+
+const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
+  const payload = getItemHoverPayload(item, event);
+  if (!payload) return;
+  props.onItemHoverEnd?.(payload, event);
 };
 
 // 打开事项所在文档

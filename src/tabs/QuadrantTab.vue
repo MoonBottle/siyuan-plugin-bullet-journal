@@ -69,11 +69,23 @@
             :enable-drag="true"
             :on-item-drag-start="handleItemDragStart"
             :on-item-drag-end="handleItemDragEnd"
+            :on-item-hover-start="preview.scheduleShow"
+            :on-item-hover-end="preview.scheduleHide"
             display-mode="embedded"
           />
         </div>
       </section>
     </div>
+
+    <BlockFocusPreviewPopover
+      :visible="preview.isOpen.value"
+      :block-id="preview.activeBlockId.value"
+      :anchor-el="preview.anchorEl.value"
+      :is-root-document-block="previewIsRootDocumentBlock"
+      @loading-change="preview.setLoading"
+      @error-change="preview.setError"
+      @popover-hover="preview.markPopoverHovered"
+    />
   </div>
 </template>
 
@@ -83,8 +95,10 @@ import { Menu } from 'siyuan';
 import { getCurrentPlugin, usePlugin } from '@/main';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import type { PriorityLevel } from '@/types/models';
+import BlockFocusPreviewPopover from '@/components/preview/BlockFocusPreviewPopover.vue';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
@@ -114,6 +128,10 @@ const searchQuery = ref('');
 const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebar> | null>>([]);
 const draggedItem = ref<QuadrantDragPayload | null>(null);
 const activeDropQuadrant = ref<string | null>(null);
+const preview = useBlockFocusPreview({
+  showDelayMs: 180,
+  hideDelayMs: 120,
+});
 
 const quadrants: QuadrantConfig[] = [
   {
@@ -172,6 +190,16 @@ const panelCounts = computed(() => {
   });
 });
 
+const previewIsRootDocumentBlock = computed(() => {
+  const blockId = preview.activeBlockId.value;
+  if (!blockId) {
+    return false;
+  }
+
+  const item = projectStore.getItemByBlockId?.(blockId);
+  return !!item?.docId && item.docId === blockId;
+});
+
 function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebar> | null) {
   sidebarRefs.value[index] = instance;
 }
@@ -198,11 +226,13 @@ function parseDragPayload(raw: string | undefined): QuadrantDragPayload | null {
 
 function handleItemDragStart(payload: QuadrantDragPayload) {
   draggedItem.value = payload;
+  preview.setDragActive(true);
 }
 
 function handleItemDragEnd() {
   draggedItem.value = null;
   activeDropQuadrant.value = null;
+  preview.setDragActive(false);
 }
 
 function handleQuadrantDragOver(event: DragEvent, quadrant: QuadrantConfig) {
@@ -386,6 +416,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  preview.dispose();
+
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }

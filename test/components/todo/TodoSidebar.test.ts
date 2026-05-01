@@ -230,4 +230,72 @@ describe('TodoSidebar', () => {
 
     mounted.unmount();
   });
+
+  it('emits hover payload with the card element as anchor for embedded cards', async () => {
+    const onItemHoverStart = vi.fn();
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      onItemHoverStart,
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    const mouseEnterEvent = new MouseEvent('mouseenter', {
+      bubbles: true,
+      cancelable: true,
+    });
+    card?.dispatchEvent(mouseEnterEvent);
+
+    expect(onItemHoverStart).toHaveBeenCalledTimes(1);
+    expect(onItemHoverStart).toHaveBeenCalledWith({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl: card,
+    }, mouseEnterEvent);
+
+    const mouseLeaveEvent = new MouseEvent('mouseleave', {
+      bubbles: true,
+      cancelable: true,
+    });
+    card?.dispatchEvent(mouseLeaveEvent);
+
+    expect(onItemHoverEnd).toHaveBeenCalledTimes(1);
+    expect(onItemHoverEnd).toHaveBeenCalledWith({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl: card,
+    }, mouseLeaveEvent);
+
+    mounted.unmount();
+  });
+
+  it('does not emit hover callbacks for items without a blockId', async () => {
+    const originalBlockId = pendingItem.blockId;
+    delete pendingItem.blockId;
+
+    const onItemHoverStart = vi.fn();
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      onItemHoverStart,
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    card?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    card?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+
+    expect(onItemHoverStart).not.toHaveBeenCalled();
+    expect(onItemHoverEnd).not.toHaveBeenCalled();
+
+    mounted.unmount();
+    pendingItem.blockId = originalBlockId;
+  });
 });
