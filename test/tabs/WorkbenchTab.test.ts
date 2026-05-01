@@ -1,11 +1,76 @@
 // @vitest-environment happy-dom
 
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createApp, h, nextTick } from 'vue';
-import { describe, expect, it } from 'vitest';
+import { createApp, nextTick } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initI18n } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
+
+const mockPlugin = { name: 'plugin' };
+const mockLoad = vi.fn(() => Promise.resolve());
+const mockCreateDashboardEntry = vi.fn(() => Promise.resolve({
+  id: 'entry-created-dashboard',
+  type: 'dashboard',
+  title: 'New Dashboard',
+  icon: 'iconLayout',
+  order: 2,
+  dashboardId: 'dashboard-created',
+}));
+const mockCreateViewEntry = vi.fn(() => Promise.resolve({
+  id: 'entry-created-view',
+  type: 'view',
+  title: 'Todo',
+  icon: 'iconList',
+  order: 2,
+  viewType: 'todo',
+}));
+const mockSetActiveEntry = vi.fn(() => Promise.resolve());
+
+vi.mock('@/main', () => ({
+  usePlugin: vi.fn(() => mockPlugin),
+}));
+
+vi.mock('@/stores', async () => {
+  const actual = await vi.importActual<typeof import('@/stores')>('@/stores');
+  return {
+    ...actual,
+    useWorkbenchStore: () => ({
+      entries: [
+        {
+          id: 'entry-dashboard',
+          type: 'dashboard',
+          title: 'Planning Board',
+          icon: 'iconLayout',
+          order: 0,
+          dashboardId: 'dashboard-1',
+        },
+        {
+          id: 'entry-todo',
+          type: 'view',
+          title: 'Todo',
+          icon: 'iconList',
+          order: 1,
+          viewType: 'todo',
+        },
+      ],
+      activeEntryId: 'entry-dashboard',
+      activeEntry: {
+        id: 'entry-dashboard',
+        type: 'dashboard',
+        title: 'Planning Board',
+        icon: 'iconLayout',
+        order: 0,
+        dashboardId: 'dashboard-1',
+      },
+      load: mockLoad,
+      createDashboardEntry: mockCreateDashboardEntry,
+      createViewEntry: mockCreateViewEntry,
+      setActiveEntry: mockSetActiveEntry,
+    }),
+  };
+});
 
 describe('Workbench tab constants', () => {
   it('exposes workbench tab type', () => {
@@ -13,30 +78,88 @@ describe('Workbench tab constants', () => {
   });
 });
 
-describe('WorkbenchTab placeholder', () => {
-  it('exists and mounts cleanly with the localized title', async () => {
-    const componentPath = resolve(process.cwd(), 'src/tabs/WorkbenchTab.vue');
-    expect(existsSync(componentPath)).toBe(true);
-
+describe('WorkbenchTab shell', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
     initI18n('en_US');
-    const { default: WorkbenchTab } = await import('@/tabs/WorkbenchTab.vue');
+    vi.clearAllMocks();
+    mockCreateDashboardEntry.mockResolvedValue({
+      id: 'entry-created-dashboard',
+      type: 'dashboard',
+      title: 'New Dashboard',
+      icon: 'iconLayout',
+      order: 2,
+      dashboardId: 'dashboard-created',
+    });
+    mockCreateViewEntry.mockResolvedValue({
+      id: 'entry-created-view',
+      type: 'view',
+      title: 'Todo',
+      icon: 'iconList',
+      order: 2,
+      viewType: 'todo',
+    });
+  });
 
+  async function mountWorkbenchTab() {
+    const { default: WorkbenchTab } = await import('@/tabs/WorkbenchTab.vue');
     const container = document.createElement('div');
     document.body.appendChild(container);
 
-    const app = createApp({
-      render() {
-        return h(WorkbenchTab);
-      },
-    });
-
+    const app = createApp(WorkbenchTab);
+    app.use(createPinia());
     app.mount(container);
     await nextTick();
 
-    expect(container.textContent).toContain('Workbench');
+    return {
+      container,
+      app,
+      unmount() {
+        app.unmount();
+        container.remove();
+      },
+    };
+  }
 
-    app.unmount();
-    container.remove();
+  it('renders sidebar and content host and loads store on mount', async () => {
+    const mounted = await mountWorkbenchTab();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-content-host"]')).not.toBeNull();
+    expect(mockLoad).toHaveBeenCalledWith(mockPlugin);
+
+    mounted.unmount();
+  });
+
+  it('sidebar actions create dashboard and todo view entries', async () => {
+    const mounted = await mountWorkbenchTab();
+
+    (mounted.container.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement)
+      .click();
+    await nextTick();
+
+    (mounted.container.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement)
+      .click();
+    await nextTick();
+
+    expect(mockCreateDashboardEntry).toHaveBeenCalledWith('New Dashboard');
+    expect(mockCreateViewEntry).toHaveBeenCalledWith('todo');
+
+    mounted.unmount();
+  });
+
+  it('selecting an entry updates active state and content title', async () => {
+    const mounted = await mountWorkbenchTab();
+
+    const todoEntry = mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement;
+    todoEntry.click();
+    await nextTick();
+
+    expect(mockSetActiveEntry).toHaveBeenCalledWith('entry-todo');
+    expect(todoEntry.getAttribute('data-active')).toBe('true');
+    expect(mounted.container.querySelector('[data-testid="workbench-content-title"]')?.textContent).toContain('Todo');
+
+    mounted.unmount();
   });
 });
 
