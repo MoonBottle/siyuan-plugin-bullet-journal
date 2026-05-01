@@ -2,7 +2,7 @@
   <div class="hk-work-tab quadrant-tab">
     <div class="block__icons quadrant-toolbar">
       <div class="block__logo">
-        <svg class="block__logoicon"><use xlink:href="#iconGrid"></use></svg>
+        <svg class="block__logoicon"><use xlink:href="#iconLayout"></use></svg>
         {{ t('quadrant').title }}
       </div>
 

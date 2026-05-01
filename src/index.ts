@@ -1259,7 +1259,7 @@ export default class TaskAssistantPlugin extends Plugin {
         });
         if (!this.isMobile) {
           menu.addItem({
-            icon: "iconGrid",
+            icon: "iconLayout",
             label: t("quadrant").title,
             click: () => {
               this.openCustomTab(TAB_TYPES.QUADRANT);
@@ -1490,7 +1490,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const icons: Record<string, string> = {
       [TAB_TYPES.CALENDAR]: "iconCalendar",
       [TAB_TYPES.GANTT]: "iconGraph",
-      [TAB_TYPES.QUADRANT]: "iconGrid",
+      [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconFolder",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",
     };
