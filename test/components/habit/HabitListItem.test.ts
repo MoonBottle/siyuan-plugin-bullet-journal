@@ -496,7 +496,7 @@ describe('HabitListItem', () => {
     mounted.unmount();
   });
 
-  it('binary daily completed state shows 已打卡 only once', async () => {
+  it('binary daily completed state does not render redundant checked copy', async () => {
     const habit: Habit = {
       name: '早起',
       type: 'binary',
@@ -527,8 +527,87 @@ describe('HabitListItem', () => {
     await nextTick();
 
     const text = mounted.container.textContent || '';
-    const matches = text.match(/已打卡/g) || [];
-    expect(matches).toHaveLength(1);
+    expect(text).not.toContain('已打卡');
+    expect(text).toContain('已完成');
+
+    mounted.unmount();
+  });
+
+  it('binary pending state does not render unchecked helper copy', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-10',
+      hasRecord: false,
+      isCompleted: false,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-10',
+      periodEnd: '2026-04-10',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState });
+
+    await nextTick();
+
+    const text = mounted.container.textContent || '';
+    expect(text).not.toContain('未打卡');
+    expect(text).toContain('打卡');
+
+    mounted.unmount();
+  });
+
+  it('count daily completed state keeps progress only without redundant checked copy', async () => {
+    const habit: Habit = {
+      name: '喝水',
+      type: 'count',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-10',
+      hasRecord: true,
+      isCompleted: true,
+      currentValue: 8,
+      targetValue: 8,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-10',
+      periodEnd: '2026-04-10',
+      requiredCount: 1,
+      completedCount: 1,
+      remainingCount: 0,
+      isCompleted: true,
+      eligibleToday: true,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState });
+
+    await nextTick();
+
+    const text = mounted.container.textContent || '';
+    expect(text).not.toContain('已打卡');
+    expect(text).toContain('8/8杯');
+    expect(text).toContain('+1');
 
     mounted.unmount();
   });

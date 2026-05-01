@@ -20,14 +20,7 @@
         {{ periodCompletedText }}
       </div>
 
-      <!-- 二元型 -->
-      <div v-if="habit.type === 'binary'" class="habit-list-item__status">
-        <span v-if="dayState.isCompleted" class="habit-list-item__checked">{{ t('habit').todayChecked }}</span>
-        <span v-else class="habit-list-item__unchecked">{{ t('habit').todayUnchecked }}</span>
-      </div>
-
-      <!-- 计数型 -->
-      <div v-else class="habit-list-item__progress">
+      <div v-if="habit.type !== 'binary'" class="habit-list-item__progress">
         <div class="habit-list-item__progress-bar">
         <div
             class="habit-list-item__progress-fill"
@@ -114,7 +107,7 @@ const showPeriodCompletedStatus = computed(() => {
     return false;
   }
 
-  return !(props.habit.type === 'binary' && props.periodState.periodType === 'day');
+  return props.periodState.periodType !== 'day';
 });
 
 const dayCurrentValue = computed(() => {
@@ -186,19 +179,6 @@ function handleMainClick() {
   font-size: 11px;
   color: var(--b3-theme-on-surface-light);
   white-space: nowrap;
-}
-
-.habit-list-item__status {
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.habit-list-item__checked {
-  color: var(--b3-theme-primary);
-}
-
-.habit-list-item__unchecked {
-  color: var(--b3-theme-on-surface-light);
 }
 
 .habit-list-item__progress {
