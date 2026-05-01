@@ -11,6 +11,7 @@
       <HabitWeekBar
         v-model="state.selectedDate"
         :current-date="currentDate"
+        :habits="habits"
       />
 
       <!-- 习惯列表 -->
