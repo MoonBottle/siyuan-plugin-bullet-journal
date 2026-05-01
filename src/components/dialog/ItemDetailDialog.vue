@@ -171,7 +171,7 @@
 
     <!-- 底部按钮 -->
     <div class="dialog-footer">
-      <button class="b3-button b3-button--outline" @click="handleClose">
+      <button class="b3-button b3-button--outline" data-initial-focus @click="handleClose">
         {{ t('common').cancel }}
       </button>
       <button class="b3-button b3-button--outline" @click="handleOpenCalendar">

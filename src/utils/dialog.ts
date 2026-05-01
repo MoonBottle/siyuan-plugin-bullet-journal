@@ -125,6 +125,16 @@ export function hideIconTooltip(): void {
   if (tip) tip.classList.remove('visible');
 }
 
+function focusDialogInitialElement(dialogElement: HTMLElement): void {
+  const focusableEl
+    = dialogElement.querySelector('[data-initial-focus]') as HTMLElement | null
+      ?? dialogElement.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement | null;
+
+  if (focusableEl) {
+    focusableEl.focus();
+  }
+}
+
 function formatLinkDisplay(name: string): { display: string; tooltipAttr: string } {
   const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   if (!name || name.length <= LINK_NAME_MAX_LEN) {
@@ -339,10 +349,7 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
   }
 
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
-    if (focusableEl) {
-      focusableEl.focus();
-    }
+    focusDialogInitialElement(dialog.element);
   });
 
   return dialog;
@@ -534,10 +541,7 @@ export function showEventDetailModal(
   }
 
   requestAnimationFrame(() => {
-    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
-    if (focusableEl) {
-      focusableEl.focus();
-    }
+    focusDialogInitialElement(dialog.element);
   });
 
   return dialog;
