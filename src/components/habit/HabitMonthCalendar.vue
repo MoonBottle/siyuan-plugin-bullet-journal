@@ -5,55 +5,57 @@
       <span class="habit-month-calendar__title">{{ title }}</span>
       <button class="habit-month-calendar__nav" @click="nextMonth">›</button>
     </div>
-    <div class="habit-month-calendar__weekdays">
-      <span v-for="d in weekDayLabels" :key="d" class="habit-month-calendar__weekday">{{ d }}</span>
-    </div>
-    <div class="habit-month-calendar__days">
-      <div
-        v-for="(cell, i) in calendarCells"
-        :key="i"
-        :data-testid="cell.date ? `habit-month-cell-${cell.date}` : undefined"
-        :class="['habit-month-calendar__cell', {
-          'habit-month-calendar__cell--empty': !cell.date,
-          'habit-month-calendar__cell--completed': cell.status === 'completed',
-          'habit-month-calendar__cell--partial': cell.status === 'partial',
-        }]"
-      >
-        <template v-if="cell.date">
-          <span
-            :class="['habit-month-calendar__day-num', {
-              'habit-month-calendar__day-num--today': cell.date === currentDate,
-            }]"
-          >
-            {{ cell.dayNum }}
-          </span>
-          <div class="habit-month-calendar__marker">
+    <div class="habit-month-calendar__grid">
+      <div class="habit-month-calendar__weekdays">
+        <span v-for="d in weekDayLabels" :key="d" class="habit-month-calendar__weekday">{{ d }}</span>
+      </div>
+      <div class="habit-month-calendar__days">
+        <div
+          v-for="(cell, i) in calendarCells"
+          :key="i"
+          :data-testid="cell.date ? `habit-month-cell-${cell.date}` : undefined"
+          :class="['habit-month-calendar__cell', {
+            'habit-month-calendar__cell--empty': !cell.date,
+            'habit-month-calendar__cell--completed': cell.status === 'completed',
+            'habit-month-calendar__cell--partial': cell.status === 'partial',
+          }]"
+        >
+          <template v-if="cell.date">
             <span
-              v-if="cell.status === 'completed'"
-              class="habit-month-calendar__check"
-              data-testid="habit-month-check"
+              :class="['habit-month-calendar__day-num', {
+                'habit-month-calendar__day-num--today': cell.date === currentDate,
+              }]"
             >
-              ✓
+              {{ cell.dayNum }}
             </span>
-            <svg
-              v-else-if="cell.status === 'partial'"
-              class="habit-month-calendar__progress-ring"
-              data-testid="habit-month-progress-ring"
-              :data-progress="String(cell.progress)"
-              viewBox="0 0 24 24"
-            >
-              <circle class="habit-month-calendar__progress-track" cx="12" cy="12" r="8" />
-              <circle
-                class="habit-month-calendar__progress-value"
-                cx="12"
-                cy="12"
-                r="8"
-                :stroke-dasharray="`${cell.progress * progressCircumference} ${progressCircumference}`"
-              />
-            </svg>
-            <span v-else class="habit-month-calendar__empty-dot"></span>
-          </div>
-        </template>
+            <div class="habit-month-calendar__marker">
+              <span
+                v-if="cell.status === 'completed'"
+                class="habit-month-calendar__check"
+                data-testid="habit-month-check"
+              >
+                ✓
+              </span>
+              <svg
+                v-else-if="cell.status === 'partial'"
+                class="habit-month-calendar__progress-ring"
+                data-testid="habit-month-progress-ring"
+                :data-progress="String(cell.progress)"
+                viewBox="0 0 24 24"
+              >
+                <circle class="habit-month-calendar__progress-track" cx="12" cy="12" r="8" />
+                <circle
+                  class="habit-month-calendar__progress-value"
+                  cx="12"
+                  cy="12"
+                  r="8"
+                  :stroke-dasharray="`${cell.progress * progressCircumference} ${progressCircumference}`"
+                />
+              </svg>
+              <span v-else class="habit-month-calendar__empty-dot"></span>
+            </div>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -164,6 +166,7 @@ const calendarCells = computed(() => {
 .habit-month-calendar {
   padding: 12px;
   width: 100%;
+  box-sizing: border-box;
   min-width: 0;
   overflow: hidden;
   background: var(--b3-theme-background);
@@ -200,6 +203,11 @@ const calendarCells = computed(() => {
 .habit-month-calendar__title {
   font-size: 14px;
   font-weight: 500;
+}
+
+.habit-month-calendar__grid {
+  width: min(100%, 336px);
+  margin: 0 auto;
 }
 
 .habit-month-calendar__weekdays {
