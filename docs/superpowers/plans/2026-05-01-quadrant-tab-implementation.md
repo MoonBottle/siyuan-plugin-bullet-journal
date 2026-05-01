@@ -4,7 +4,7 @@
 
 **Goal:** Add a desktop-only top-level Quadrant Tab that reuses Todo cards, maps the four quadrants to existing priority levels, and keeps behavior aligned with Todo Dock.
 
-**Architecture:** Reuse the existing `TodoSidebar` as the list renderer and extend its filtering surface just enough to express the fourth quadrant (`priority === undefined`) plus a compact display mode. Register a new desktop tab in `src/index.ts`, wire it into the top-bar menu, and keep filtering, sorting, and refresh behavior on the existing `projectStore` / `settingsStore` path.
+**Architecture:** Reuse the existing `TodoSidebar` as the list renderer and extend its filtering surface just enough to express the fourth quadrant (`priority === undefined`) plus a compact display mode. Register a new desktop tab in `src/index.ts`, wire it into the top-bar menu, keep filtering, sorting, and refresh behavior on the existing `projectStore` / `settingsStore` path, and add desktop-only cross-quadrant drag-and-drop that updates priority through the existing `updateBlockPriority()` path.
 
 **Tech Stack:** Vue 3, Pinia, TypeScript, Vitest, SiYuan plugin tab registration APIs
 
@@ -21,6 +21,8 @@
 - Modify: `src/i18n/zh_CN.json`
 - Modify: `src/i18n/en_US.json`
 - Modify: `test/stores/projectStore.test.ts`
+- Modify: `test/tabs/QuadrantTab.test.ts`
+- Create or Modify: `test/components/todo/TodoSidebar.test.ts`
 
 ### Responsibility boundaries
 
@@ -31,13 +33,15 @@
 - `src/stores/projectStore.ts`
   - Extend Todo filtering APIs so callers can explicitly request “items without priority”.
 - `src/components/todo/TodoSidebar.vue`
-  - Accept the new filter props and a compact/embedded display mode without changing existing Todo Dock behavior.
+  - Accept the new filter props, a compact/embedded display mode, and optional drag-source hooks without changing existing Todo Dock behavior.
 - `src/tabs/QuadrantTab.vue`
-  - Compose toolbar + four quadrants, pass shared search/group filters and quadrant-specific priority filters into `TodoSidebar`.
+  - Compose toolbar + four quadrants, pass shared search/group filters and quadrant-specific priority filters into `TodoSidebar`, and own quadrant-level drop behavior plus priority updates.
 - `test/stores/projectStore.test.ts`
   - Prove the new “priority undefined” filter path behaves correctly.
 - `test/tabs/QuadrantTab.test.ts`
-  - Prove the tab renders four quadrants and passes the expected filters to each `TodoSidebar`.
+  - Prove the tab renders four quadrants, passes the expected filters to each `TodoSidebar`, and maps cross-quadrant drops to the correct priority updates.
+- `test/components/todo/TodoSidebar.test.ts`
+  - Prove Todo cards can act as drag sources and emit the expected minimal payload.
 
 ---
 
@@ -818,6 +822,311 @@ git commit -m "test: verify quadrant tab integration"
 
 ---
 
+### Task 7: Add cross-quadrant drag-and-drop priority updates
+
+**Files:**
+- Modify: `src/tabs/QuadrantTab.vue`
+- Modify: `src/components/todo/TodoSidebar.vue`
+- Create or Modify: `test/components/todo/TodoSidebar.test.ts`
+- Modify: `test/tabs/QuadrantTab.test.ts`
+
+- [ ] **Step 1: Write the failing TodoSidebar drag-source test**
+
+In `test/components/todo/TodoSidebar.test.ts`, add a focused test that proves embedded mode cards can emit drag metadata when drag support is enabled:
+
+```ts
+it('emits drag-start payload for draggable items when drag support is enabled', async () => {
+  const onItemDragStart = vi.fn();
+  const mounted = await mountTodoSidebar({
+    displayMode: 'embedded',
+    enableDrag: true,
+    onItemDragStart,
+  }, {
+    todayItems: [
+      mkItem('2026-05-01', 'item-a', {
+        blockId: 'block-a',
+        content: 'Write docs',
+        priority: 'medium',
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+    ],
+  });
+
+  const draggableCard = mounted.container.querySelector('[data-item-block-id="block-a"]');
+  expect(draggableCard).not.toBeNull();
+
+  draggableCard?.dispatchEvent(new DragEvent('dragstart', { bubbles: true }));
+  await nextTick();
+
+  expect(onItemDragStart).toHaveBeenCalledWith(expect.objectContaining({
+    blockId: 'block-a',
+    priority: 'medium',
+  }), expect.any(DragEvent));
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npx vitest run test/components/todo/TodoSidebar.test.ts -t "emits drag-start payload"`
+
+Expected: FAIL because `TodoSidebar` does not yet expose drag-source hooks.
+
+- [ ] **Step 3: Implement the minimal TodoSidebar drag-source support**
+
+Extend `TodoSidebar.vue` props with optional drag configuration:
+
+```ts
+const props = withDefaults(defineProps<{
+  // existing props...
+  enableDrag?: boolean;
+  onItemDragStart?: (payload: { blockId: string; itemId: string; priority?: PriorityLevel }, event: DragEvent) => void;
+  onItemDragEnd?: (payload: { blockId: string; itemId: string; priority?: PriorityLevel }, event: DragEvent) => void;
+}>(), {
+  enableDrag: false,
+});
+```
+
+Add helpers:
+
+```ts
+function getDragPayload(item: Item) {
+  return {
+    blockId: item.blockId || '',
+    itemId: item.id,
+    priority: item.priority,
+  };
+}
+
+function handleItemDragStart(item: Item, event: DragEvent) {
+  if (!props.enableDrag || !item.blockId) return;
+  const payload = getDragPayload(item);
+  event.dataTransfer?.setData('application/json', JSON.stringify(payload));
+  event.dataTransfer?.setData('text/plain', item.blockId);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+  props.onItemDragStart?.(payload, event);
+}
+
+function handleItemDragEnd(item: Item, event: DragEvent) {
+  if (!props.enableDrag || !item.blockId) return;
+  props.onItemDragEnd?.(getDragPayload(item), event);
+}
+```
+
+Apply the attributes to each card root:
+
+```vue
+<Card
+  :data-item-block-id="item.blockId"
+  :draggable="enableDrag && !!item.blockId"
+  @dragstart="handleItemDragStart(item, $event)"
+  @dragend="handleItemDragEnd(item, $event)"
+>
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `npx vitest run test/components/todo/TodoSidebar.test.ts -t "emits drag-start payload"`
+
+Expected: PASS.
+
+- [ ] **Step 5: Write the failing QuadrantTab drop mapping tests**
+
+Extend `test/tabs/QuadrantTab.test.ts` with focused drop behavior tests:
+
+```ts
+it('maps a drop on the no-priority quadrant to updateBlockPriority(undefined)', async () => {
+  const mounted = await mountQuadrantTab();
+  await nextTick();
+
+  const dropTarget = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[3] as HTMLElement;
+  const event = new Event('drop', { bubbles: true }) as DragEvent;
+  Object.defineProperty(event, 'dataTransfer', {
+    value: {
+      getData: (type: string) => type === 'application/json'
+        ? JSON.stringify({ blockId: 'block-a', itemId: 'item-a', priority: 'medium' })
+        : '',
+    },
+  });
+
+  dropTarget.dispatchEvent(event);
+  await nextTick();
+
+  expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-a', undefined);
+});
+```
+
+```ts
+it('ignores drops into the same priority quadrant', async () => {
+  const mounted = await mountQuadrantTab();
+  await nextTick();
+
+  const highPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[0] as HTMLElement;
+  const event = new Event('drop', { bubbles: true }) as DragEvent;
+  Object.defineProperty(event, 'dataTransfer', {
+    value: {
+      getData: () => JSON.stringify({ blockId: 'block-a', itemId: 'item-a', priority: 'high' }),
+    },
+  });
+
+  highPanel.dispatchEvent(event);
+  await nextTick();
+
+  expect(mockUpdateBlockPriority).not.toHaveBeenCalled();
+});
+```
+
+- [ ] **Step 6: Run tests to verify they fail**
+
+Run: `npx vitest run test/tabs/QuadrantTab.test.ts -t "drop"`
+
+Expected: FAIL because `QuadrantTab` does not yet expose drop handlers or call `updateBlockPriority`.
+
+- [ ] **Step 7: Implement minimal QuadrantTab drop behavior**
+
+Add drag state to `src/tabs/QuadrantTab.vue`:
+
+```ts
+type QuadrantDragPayload = {
+  blockId: string;
+  itemId: string;
+  priority?: PriorityLevel;
+};
+
+const draggedItem = ref<QuadrantDragPayload | null>(null);
+const activeDropQuadrant = ref<string | null>(null);
+```
+
+Add mapping and handlers:
+
+```ts
+function getQuadrantPriority(quadrant: QuadrantConfig): PriorityLevel | undefined {
+  if (quadrant.includeNoPriority) return undefined;
+  return quadrant.priorities[0];
+}
+
+function parseDragPayload(raw: string | undefined): QuadrantDragPayload | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as QuadrantDragPayload;
+  } catch {
+    return null;
+  }
+}
+
+function handleItemDragStart(payload: QuadrantDragPayload) {
+  draggedItem.value = payload;
+}
+
+function handleItemDragEnd() {
+  draggedItem.value = null;
+  activeDropQuadrant.value = null;
+}
+
+function handleQuadrantDragOver(event: DragEvent, quadrant: QuadrantConfig) {
+  event.preventDefault();
+  activeDropQuadrant.value = quadrant.key;
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+}
+
+function handleQuadrantDragLeave(quadrantKey: string) {
+  if (activeDropQuadrant.value === quadrantKey) {
+    activeDropQuadrant.value = null;
+  }
+}
+
+async function handleQuadrantDrop(event: DragEvent, quadrant: QuadrantConfig) {
+  event.preventDefault();
+  const payload = draggedItem.value ?? parseDragPayload(event.dataTransfer?.getData('application/json'));
+  activeDropQuadrant.value = null;
+
+  if (!payload?.blockId) return;
+
+  const targetPriority = getQuadrantPriority(quadrant);
+  if (payload.priority === targetPriority) {
+    draggedItem.value = null;
+    return;
+  }
+
+  const success = await updateBlockPriority(payload.blockId, targetPriority);
+  draggedItem.value = null;
+
+  if (!success || !plugin) {
+    showMessage(t('todo').priority.updateFailed || '优先级更新失败');
+    return;
+  }
+
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+}
+```
+
+Wire the quadrant panel and embedded list:
+
+```vue
+<section
+  :class="{ 'quadrant-panel--drop-active': activeDropQuadrant === quadrant.key }"
+  @dragover="handleQuadrantDragOver($event, quadrant)"
+  @dragleave="handleQuadrantDragLeave(quadrant.key)"
+  @drop="handleQuadrantDrop($event, quadrant)"
+>
+```
+
+```vue
+<TodoSidebar
+  enable-drag
+  :on-item-drag-start="handleItemDragStart"
+  :on-item-drag-end="handleItemDragEnd"
+/>
+```
+
+- [ ] **Step 8: Run tests to verify they pass**
+
+Run: `npx vitest run test/components/todo/TodoSidebar.test.ts test/tabs/QuadrantTab.test.ts`
+
+Expected: PASS, including the new drag-source and drop-mapping assertions.
+
+- [ ] **Step 9: Add minimal visual feedback styling**
+
+In `src/tabs/QuadrantTab.vue`, add an active-drop state:
+
+```scss
+.quadrant-panel {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &.quadrant-panel--drop-active {
+    border-color: var(--b3-theme-primary);
+    background-color: var(--b3-theme-primary-lightest);
+  }
+}
+```
+
+In `src/components/todo/TodoSidebar.vue`, add a lightweight cursor affordance:
+
+```scss
+[draggable='true'] {
+  cursor: grab;
+}
+```
+
+- [ ] **Step 10: Run the focused regression suite**
+
+Run: `npx vitest run test/components/todo/TodoSidebar.test.ts test/tabs/QuadrantTab.test.ts test/stores/projectStore.test.ts`
+
+Expected: PASS.
+
+- [ ] **Step 11: Commit**
+
+```bash
+git add src/tabs/QuadrantTab.vue src/components/todo/TodoSidebar.vue test/components/todo/TodoSidebar.test.ts test/tabs/QuadrantTab.test.ts
+git commit -m "feat(quadrant): support drag-to-change priority"
+```
+
+---
+
 ## Self-review
 
 ### Spec coverage
@@ -827,6 +1136,7 @@ git commit -m "test: verify quadrant tab integration"
 - Reuse of Todo cards via `TodoSidebar`: covered in Task 3 and Task 4.
 - Shared visibility settings (`hideCompleted`, `hideAbandoned`, `showLinks`, `showReminderAndRecurring`): covered in Task 5.
 - Refresh behavior via existing event bus / broadcast channel path: covered in Task 5.
+- Cross-quadrant drag-and-drop priority changes: covered in Task 7.
 - Regression checks for Todo Dock stability: covered in Task 6.
 
 No spec gaps found.
@@ -841,4 +1151,4 @@ No spec gaps found.
 - The new filter flag is consistently named `includeNoPriority`.
 - The new sidebar mode is consistently named `displayMode` with `'default' | 'embedded'`.
 - The top-level tab key is consistently named `TAB_TYPES.QUADRANT`.
-
+- Drag payload fields are consistently named `blockId`, `itemId`, and `priority`.
