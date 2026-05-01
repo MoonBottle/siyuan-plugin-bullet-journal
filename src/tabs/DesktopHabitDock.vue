@@ -50,7 +50,7 @@
 
     <div class="fn__flex-1 fn__flex-column habit-dock-body">
       <!-- 详情视图 -->
-      <template v-if="selectedHabit && selectedStats && selectedPeriodState">
+      <template v-if="selectedHabit && displaySelectedStats">
         <div class="habit-detail fn__flex-1 fn__flex-column">
           <div class="habit-detail__header">
           </div>
@@ -59,14 +59,14 @@
             <!-- 月历 -->
             <HabitMonthCalendar
               :habit="selectedHabit"
-              :stats="selectedStats"
+              :stats="displaySelectedStats"
               :current-date="currentDate"
               :view-month="selectedViewMonth"
               @update:view-month="selectedViewMonth = $event"
             />
 
             <!-- 统计卡片 -->
-            <HabitStatsCards :stats="selectedStats" />
+            <HabitStatsCards :stats="displaySelectedStats" />
 
             <!-- 打卡日志 -->
             <HabitRecordLog
@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -132,7 +132,7 @@ import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
-import type { Habit } from '@/types/models';
+import type { Habit, HabitStats } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
@@ -146,6 +146,7 @@ const settingsStore = useSettingsStore();
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
 const selectedHabit = ref<Habit | null>(null);
+const selectedStatsCache = ref<HabitStats | null>(null);
 const currentDate = computed(() => store.currentDate);
 
 const habits = computed(() => store.getHabits(''));
@@ -167,10 +168,13 @@ const selectedStats = computed(() => {
   return habitStatsMap.value.get(selectedHabit.value.blockId);
 });
 
-const selectedPeriodState = computed(() => {
-  if (!selectedHabit.value) return null;
-  return getHabitPeriodState(selectedHabit.value, selectedDate.value);
-});
+const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value);
+
+watch(selectedStats, (value) => {
+  if (value) {
+    selectedStatsCache.value = value;
+  }
+}, { immediate: true });
 
 function syncSelectedHabit() {
   if (!selectedHabit.value) return;
@@ -185,16 +189,14 @@ async function refreshHabits() {
 
 async function handleCheckIn(habit: Habit) {
   const success = await checkIn(habit, selectedDate.value);
-  if (success) {
-    await refreshHabits();
-  }
+  if (success)
+    selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
 }
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, selectedDate.value, 1);
-  if (success) {
-    await refreshHabits();
-  }
+  if (success)
+    selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
 }
 
 async function handleOpenHabitDoc(habit: Habit) {
@@ -217,6 +219,7 @@ async function handleOpenSelectedHabitDoc() {
 function handleOpenHabitDetail(habit: Habit) {
   selectedViewMonth.value = currentDate.value.substring(0, 7);
   selectedHabit.value = habit;
+  selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
@@ -228,6 +231,7 @@ function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
   selectedDate.value = targetDate;
   selectedViewMonth.value = targetDate.substring(0, 7);
   selectedHabit.value = habit;
+  selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
   return true;
 }
 

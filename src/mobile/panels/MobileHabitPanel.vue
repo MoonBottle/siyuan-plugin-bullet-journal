@@ -41,21 +41,21 @@
       :habit="state.selectedHabit"
       :selected-date="state.selectedDate"
       :view-month="state.selectedViewMonth"
-      :stats="selectedStats"
+      :stats="displaySelectedStats"
       @close="handleCloseHabitDetail"
       @update:view-month="state.selectedViewMonth = $event"
     >
-      <div v-if="state.selectedHabit && selectedStats" class="mobile-habit-detail__body">
+      <div v-if="state.selectedHabit && displaySelectedStats" class="mobile-habit-detail__body">
 
         <HabitMonthCalendar
           :habit="state.selectedHabit"
-          :stats="selectedStats"
+          :stats="displaySelectedStats"
           :current-date="currentDate"
           :view-month="state.selectedViewMonth"
           @update:view-month="state.selectedViewMonth = $event"
         />
 
-        <HabitStatsCards :stats="selectedStats" />
+        <HabitStatsCards :stats="displaySelectedStats" />
 
         <HabitRecordLog
           :habit="state.selectedHabit"
@@ -82,7 +82,7 @@ import {
   checkInCount,
 } from '@/services/habitService';
 import { useProjectStore, useSettingsStore } from '@/stores';
-import type { Habit } from '@/types/models';
+import type { Habit, HabitStats } from '@/types/models';
 import {
   eventBus,
   Events,
@@ -105,6 +105,7 @@ const state = reactive({
   selectedViewMonth: initialDate.substring(0, 7),
   showHabitDetail: false,
   selectedHabit: null as Habit | null,
+  selectedStatsCache: null as HabitStats | null,
 });
 
 const currentDate = computed(() => projectStore.currentDate);
@@ -129,6 +130,14 @@ const selectedStats = computed(() => {
   return habitStatsMap.value.get(state.selectedHabit.blockId);
 });
 
+const displaySelectedStats = computed(() => selectedStats.value ?? state.selectedStatsCache);
+
+watch(selectedStats, (value) => {
+  if (value) {
+    state.selectedStatsCache = value;
+  }
+}, { immediate: true });
+
 watch(currentDate, (nextDate, previousDate) => {
   if (!nextDate) {
     return;
@@ -147,6 +156,7 @@ watch(currentDate, (nextDate, previousDate) => {
 function openHabitDetail(habit: Habit) {
   state.selectedViewMonth = state.selectedDate.substring(0, 7);
   state.selectedHabit = habit;
+  state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
   state.showHabitDetail = true;
 }
 
@@ -160,6 +170,7 @@ function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
   state.selectedDate = targetDate;
   state.selectedViewMonth = targetDate.substring(0, 7);
   state.selectedHabit = habit;
+  state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
   state.showHabitDetail = true;
   return true;
 }
@@ -190,16 +201,14 @@ async function handleCheckIn(habit: Habit) {
   }
 
   const success = await checkIn(habit, state.selectedDate);
-  if (success) {
-    await refreshHabits();
-  }
+  if (success)
+    state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
 }
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, state.selectedDate, 1);
-  if (success) {
-    await refreshHabits();
-  }
+  if (success)
+    state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
 }
 
 const handleDataRefresh = async () => {

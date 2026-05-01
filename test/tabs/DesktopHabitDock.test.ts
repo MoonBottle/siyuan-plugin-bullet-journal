@@ -10,12 +10,25 @@ import type { Habit } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events } from '@/utils/eventBus';
 
+const {
+  checkIn,
+  checkInCount,
+} = vi.hoisted(() => ({
+  checkIn: vi.fn(),
+  checkInCount: vi.fn(),
+}));
+
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
 }));
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
+}));
+
+vi.mock('@/services/habitService', () => ({
+  checkIn,
+  checkInCount,
 }));
 
 vi.mock('@/components/habit/HabitWeekBar.vue', () => ({
@@ -149,6 +162,8 @@ describe('DesktopHabitDock', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
+    checkIn.mockResolvedValue(false);
+    checkInCount.mockResolvedValue(false);
   });
 
   it('opening a list item document uses openDocumentAtLine', async () => {
@@ -210,6 +225,20 @@ describe('DesktopHabitDock', () => {
     mounted.unmount();
   });
 
+  it('does not manually refresh the store after binary check-in succeeds', async () => {
+    checkIn.mockResolvedValue(true);
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-check-in"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(checkIn).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-01');
+    expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
   it('increment action does not enter detail mode', async () => {
     const mounted = mountDock();
     mounted.projectStore.projects[0].habits = [createHabit({ type: 'count', target: 8, unit: '杯' })];
@@ -220,6 +249,22 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')).toBeNull();
+    mounted.unmount();
+  });
+
+  it('does not manually refresh the store after count increment succeeds', async () => {
+    checkInCount.mockResolvedValue(true);
+    const mounted = mountDock();
+    mounted.projectStore.projects[0].habits = [createHabit({ type: 'count', target: 8, unit: '杯' })];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-increment"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(checkInCount).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-01', 1);
+    expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
+
     mounted.unmount();
   });
 

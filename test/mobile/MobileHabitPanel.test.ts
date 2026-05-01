@@ -12,6 +12,7 @@ const {
   consumePendingHabitDockTarget,
   dayStateByHabitId,
   checkIn,
+  checkInCount,
 } = vi.hoisted(() => {
   const habits = [
     {
@@ -60,6 +61,7 @@ const {
       },
     },
     checkIn: vi.fn(),
+    checkInCount: vi.fn(),
   };
 });
 
@@ -127,7 +129,7 @@ vi.mock('@/domain/habit/habitCompletion', () => ({
 
 vi.mock('@/services/habitService', () => ({
   checkIn,
-  checkInCount: vi.fn(),
+  checkInCount,
   setCheckInValue: vi.fn(),
 }));
 
@@ -168,18 +170,27 @@ vi.mock('@/components/habit/HabitListItem.vue', () => ({
         default: false,
       },
     },
-    emits: ['click', 'open-detail'],
+    emits: ['click', 'open-detail', 'check-in', 'increment'],
     setup(props, { emit }) {
-      return () =>
+      return () => h('div', { 'data-testid': `habit-list-item-${(props.habit as { blockId: string }).blockId}` }, [
         h(
           'button',
           {
-            'data-testid': `habit-list-item-${(props.habit as { blockId: string }).blockId}`,
+            'data-testid': `habit-list-item-open-${(props.habit as { blockId: string }).blockId}`,
             'data-mobile': String((props as { isMobile: boolean }).isMobile),
             onClick: () => emit('open-detail', props.habit),
           },
           (props.habit as { name: string }).name,
-        );
+        ),
+        h('button', {
+          'data-testid': `habit-list-item-check-in-${(props.habit as { blockId: string }).blockId}`,
+          onClick: () => emit('check-in', props.habit),
+        }, 'check-in'),
+        h('button', {
+          'data-testid': `habit-list-item-increment-${(props.habit as { blockId: string }).blockId}`,
+          onClick: () => emit('increment', props.habit),
+        }, 'increment'),
+      ]);
     },
   }),
 }));
@@ -310,6 +321,8 @@ afterEach(() => {
   vi.clearAllMocks();
   projectStore.currentDate = '2026-05-01';
   consumePendingHabitDockTarget.mockReturnValue(null);
+  checkIn.mockResolvedValue(false);
+  checkInCount.mockResolvedValue(false);
 });
 
 describe('MobileHabitPanel', () => {
@@ -321,9 +334,9 @@ describe('MobileHabitPanel', () => {
     const weekBarWrap = mounted.container.querySelector('[data-testid="habit-week-bar-wrap"]');
     expect(weekBarWrap).not.toBeNull();
     expect(weekBarWrap?.querySelector('[data-testid="habit-week-bar"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')?.textContent).toContain('Read');
-    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-2"]')?.textContent).toContain('Water');
-    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')?.getAttribute('data-mobile')).toBe('true');
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]')?.textContent).toContain('Read');
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-2"]')?.textContent).toContain('Water');
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]')?.getAttribute('data-mobile')).toBe('true');
     expect(mounted.container.querySelector('.mobile-bottom-nav')).toBeNull();
     expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
     expect(eventBusOn).toHaveBeenCalledTimes(2);
@@ -336,13 +349,13 @@ describe('MobileHabitPanel', () => {
     const mounted = mountPanel();
     await nextTick();
 
-    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]') as HTMLButtonElement | null;
     expect(item).not.toBeNull();
 
     item?.click();
     await nextTick();
 
-    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="habit-week-bar-wrap"]')).not.toBeNull();
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-stub"]')).not.toBeNull();
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-name"]')?.textContent).toBe('Read');
@@ -373,7 +386,7 @@ describe('MobileHabitPanel', () => {
     const mounted = mountPanel();
     await nextTick();
 
-    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]') as HTMLButtonElement | null;
     item?.click();
     await nextTick();
 
@@ -390,7 +403,7 @@ describe('MobileHabitPanel', () => {
     await nextTick();
 
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-stub"]')).toBeNull();
-    expect(mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -399,7 +412,7 @@ describe('MobileHabitPanel', () => {
     const mounted = mountPanel();
     await nextTick();
 
-    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]') as HTMLButtonElement | null;
     item?.click();
     await nextTick();
 
@@ -424,7 +437,7 @@ describe('MobileHabitPanel', () => {
     const mounted = mountPanel();
     await nextTick();
 
-    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]') as HTMLButtonElement | null;
     item?.click();
     await nextTick();
 
@@ -443,12 +456,42 @@ describe('MobileHabitPanel', () => {
     const mounted = mountPanel();
     await nextTick();
 
-    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]') as HTMLButtonElement | null;
     item?.click();
     await nextTick();
 
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-date"]')?.textContent).toBe('2026-04-20');
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-month"]')?.textContent).toBe('2026-04');
+
+    mounted.unmount();
+  });
+
+  it('does not manually refresh the store after binary check-in succeeds', async () => {
+    checkIn.mockResolvedValue(true);
+    const mounted = mountPanel();
+    await nextTick();
+
+    const button = mounted.container.querySelector('[data-testid="habit-list-item-check-in-habit-1"]') as HTMLButtonElement | null;
+    button?.click();
+    await nextTick();
+
+    expect(checkIn).toHaveBeenCalledWith(habits[0], '2026-05-01');
+    expect(projectStore.refresh).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('does not manually refresh the store after count increment succeeds', async () => {
+    checkInCount.mockResolvedValue(true);
+    const mounted = mountPanel();
+    await nextTick();
+
+    const button = mounted.container.querySelector('[data-testid="habit-list-item-increment-habit-2"]') as HTMLButtonElement | null;
+    button?.click();
+    await nextTick();
+
+    expect(checkInCount).toHaveBeenCalledWith(habits[1], '2026-05-01', 1);
+    expect(projectStore.refresh).not.toHaveBeenCalled();
 
     mounted.unmount();
   });
