@@ -170,7 +170,7 @@ const weekDays = computed(() => {
 .habit-week-bar {
   display: flex;
   gap: 6px;
-  padding: 8px;
+  padding: 6px 8px;
   margin-bottom: 8px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);
@@ -183,8 +183,8 @@ const weekDays = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 6px 0;
+  gap: 2px;
+  padding: 4px 0;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
@@ -210,6 +210,7 @@ const weekDays = computed(() => {
 .habit-week-bar__weekday {
   font-size: 10px;
   color: var(--b3-theme-on-surface-light);
+  line-height: 1.1;
 }
 
 .habit-week-bar__weekday--today,
@@ -221,7 +222,7 @@ const weekDays = computed(() => {
   font-size: 14px;
   font-weight: 500;
   width: 30px;
-  height: 30px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -238,7 +239,7 @@ const weekDays = computed(() => {
 
 .habit-week-bar__marker {
   width: 20px;
-  height: 20px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
