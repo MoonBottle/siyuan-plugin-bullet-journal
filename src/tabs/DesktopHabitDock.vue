@@ -50,34 +50,9 @@
 
     <div class="fn__flex-1 fn__flex-column habit-dock-body">
       <!-- 详情视图 -->
-      <template v-if="selectedHabit && selectedStats && selectedDayState && selectedPeriodState">
+      <template v-if="selectedHabit && selectedStats && selectedPeriodState">
         <div class="habit-detail fn__flex-1 fn__flex-column">
           <div class="habit-detail__header">
-            <!-- 今日进度 -->
-            <div class="habit-detail__today">
-              <div class="habit-detail__today-label">{{ t('habit').todayProgress }}</div>
-              <div v-if="selectedHabit.type === 'binary'" class="habit-detail__today-binary">
-                <button
-                  :class="['habit-check-btn-lg', { 'habit-check-btn-lg--done': selectedDayState.isCompleted }]"
-                  @click="handleCheckIn(selectedHabit)"
-                >
-                  {{ selectedDayState.isCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
-                </button>
-              </div>
-              <div v-else class="habit-detail__today-count">
-                <HabitCountInput
-                  :current-value="selectedDayState.currentValue || 0"
-                  :target="selectedHabit.target"
-                  @change="handleCountChange"
-                />
-                <span class="habit-detail__target">
-                  {{ t('habit').target.replace('{target}', String(selectedHabit.target || 0)).replace('{unit}', selectedHabit.unit || '') }}
-                </span>
-              </div>
-            </div>
-
-            <!-- 统计卡片 -->
-            <HabitStatsCards :stats="selectedStats" />
           </div>
 
           <div class="habit-detail__content" data-testid="habit-detail-content">
@@ -89,6 +64,9 @@
               :view-month="selectedViewMonth"
               @update:view-month="selectedViewMonth = $event"
             />
+
+            <!-- 统计卡片 -->
+            <HabitStatsCards :stats="selectedStats" />
 
             <!-- 打卡日志 -->
             <HabitRecordLog
@@ -144,7 +122,6 @@ import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
 import {
   checkIn,
   checkInCount,
-  setCheckInValue,
 } from '@/services/habitService';
 import { t } from '@/i18n';
 import { getCurrentPlugin, usePlugin } from '@/main';
@@ -154,7 +131,6 @@ import HabitListItem from '@/components/habit/HabitListItem.vue';
 import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
-import HabitCountInput from '@/components/habit/HabitCountInput.vue';
 import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
 import type { Habit } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
@@ -189,11 +165,6 @@ const habitPeriodStateMap = computed(() => {
 const selectedStats = computed(() => {
   if (!selectedHabit.value) return null;
   return habitStatsMap.value.get(selectedHabit.value.blockId);
-});
-
-const selectedDayState = computed(() => {
-  if (!selectedHabit.value) return null;
-  return getHabitDayState(selectedHabit.value, selectedDate.value);
 });
 
 const selectedPeriodState = computed(() => {
@@ -263,14 +234,6 @@ function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
 function handleBackToList() {
   hideIconTooltip();
   selectedHabit.value = null;
-}
-
-async function handleCountChange(newValue: number) {
-  if (!selectedHabit.value || selectedHabit.value.type !== 'count') return;
-  const success = await setCheckInValue(selectedHabit.value, selectedDate.value, newValue);
-  if (success) {
-    await refreshHabits();
-  }
 }
 
 const handleDataRefresh = async () => {
@@ -366,7 +329,7 @@ onUnmounted(() => {
 
 .habit-detail__header {
   flex: 0 0 auto;
-  padding-bottom: 8px;
+  padding-bottom: 0;
 }
 
 .habit-detail__content {
@@ -375,68 +338,13 @@ onUnmounted(() => {
   min-width: 0;
   overflow-y: auto;
   padding-bottom: 4px;
-}
-
-.habit-detail__today {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  margin-bottom: 8px;
-  background: var(--b3-theme-background);
-  border: 1px solid var(--b3-theme-surface-lighter);
-  border-radius: var(--b3-border-radius);
-}
-
-.habit-detail__today-label {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.habit-detail__today-binary {
-  display: flex;
-  align-items: center;
-}
-
-.habit-check-btn-lg {
-  padding: 6px 16px;
-  border: 1px solid var(--b3-theme-primary);
-  border-radius: 14px;
-  background: transparent;
-  color: var(--b3-theme-primary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.habit-check-btn-lg:hover {
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
-}
-
-.habit-check-btn-lg--done {
-  border-color: transparent;
-  background: var(--b3-theme-primary-lightest);
-  color: var(--b3-theme-primary);
-  cursor: default;
-}
-
-.habit-detail__today-count {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .block__icons .block__icon {
   opacity: 1;
-}
-
-.habit-detail__target {
-  font-size: 12px;
-  color: var(--b3-theme-on-surface-light);
 }
 
 .habit-empty {

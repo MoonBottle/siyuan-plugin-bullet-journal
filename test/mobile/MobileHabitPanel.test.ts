@@ -395,7 +395,26 @@ describe('MobileHabitPanel', () => {
     mounted.unmount();
   });
 
-  it('disables the binary detail action once completed and does not re-trigger check-in', async () => {
+  it('renders month calendar above stats cards and removes the today progress block in detail sheet', async () => {
+    const mounted = mountPanel();
+    await nextTick();
+
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]') as HTMLButtonElement | null;
+    item?.click();
+    await nextTick();
+
+    const detailBody = mounted.container.querySelector('.mobile-habit-detail__body');
+    const calendar = mounted.container.querySelector('[data-testid="habit-month-calendar"]');
+    const stats = mounted.container.querySelector('[data-testid="habit-stats-cards"]');
+
+    expect(mounted.container.querySelector('.mobile-habit-detail__today')).toBeNull();
+    expect(detailBody?.firstElementChild).toBe(calendar);
+    expect(detailBody?.children[1]).toBe(stats);
+
+    mounted.unmount();
+  });
+
+  it('does not render the old today-progress action in detail sheet or re-trigger check-in', async () => {
     dayStateByHabitId['habit-1'] = {
       hasRecord: true,
       isCompleted: true,
@@ -410,10 +429,7 @@ describe('MobileHabitPanel', () => {
     await nextTick();
 
     const detailButton = document.body.querySelector('.mobile-check-btn') as HTMLButtonElement | null;
-    expect(detailButton).not.toBeNull();
-    expect(detailButton?.disabled).toBe(true);
-
-    detailButton?.click();
+    expect(detailButton).toBeNull();
     await nextTick();
 
     expect(checkIn).not.toHaveBeenCalled();

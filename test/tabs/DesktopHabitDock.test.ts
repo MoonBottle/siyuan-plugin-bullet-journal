@@ -253,4 +253,22 @@ describe('DesktopHabitDock', () => {
     expect(header?.parentElement).toBe(detail);
     mounted.unmount();
   });
+
+  it('renders month calendar above stats cards and removes the today progress block in detail mode', async () => {
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    const content = mounted.container.querySelector('[data-testid="habit-detail-content"]');
+    const calendar = mounted.container.querySelector('[data-testid="habit-month-calendar-stub"]');
+    const stats = mounted.container.querySelector('[data-testid="habit-stats-stub"]');
+
+    expect(mounted.container.querySelector('.habit-detail__today')).toBeNull();
+    expect(content?.firstElementChild).toBe(calendar);
+    expect(content?.children[1]).toBe(stats);
+
+    mounted.unmount();
+  });
 });

@@ -45,31 +45,7 @@
       @close="handleCloseHabitDetail"
       @update:view-month="state.selectedViewMonth = $event"
     >
-      <div v-if="state.selectedHabit && selectedStats && selectedDayState" class="mobile-habit-detail__body">
-        <div class="mobile-habit-detail__today">
-          <div class="mobile-habit-detail__today-label">{{ t('habit').todayProgress }}</div>
-          <div v-if="state.selectedHabit.type === 'binary'" class="mobile-habit-detail__today-binary">
-            <button
-              :class="['mobile-check-btn', { 'mobile-check-btn--done': selectedDayState.isCompleted }]"
-              :disabled="selectedDayState.isCompleted"
-              @click="handleCheckIn(state.selectedHabit)"
-            >
-              {{ selectedDayState.isCompleted ? '✅ ' + t('habit').todayChecked : t('habit').checkIn }}
-            </button>
-          </div>
-          <div v-else class="mobile-habit-detail__today-count">
-            <HabitCountInput
-              :current-value="selectedDayState.currentValue || 0"
-              :target="state.selectedHabit.target"
-              @change="handleCountChange"
-            />
-            <span class="mobile-habit-detail__target">
-              {{ t('habit').target.replace('{target}', String(state.selectedHabit.target || 0)).replace('{unit}', state.selectedHabit.unit || '') }}
-            </span>
-          </div>
-        </div>
-
-        <HabitStatsCards :stats="selectedStats" />
+      <div v-if="state.selectedHabit && selectedStats" class="mobile-habit-detail__body">
 
         <HabitMonthCalendar
           :habit="state.selectedHabit"
@@ -78,6 +54,8 @@
           :view-month="state.selectedViewMonth"
           @update:view-month="state.selectedViewMonth = $event"
         />
+
+        <HabitStatsCards :stats="selectedStats" />
 
         <HabitRecordLog
           :habit="state.selectedHabit"
@@ -90,7 +68,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, watch } from 'vue';
-import HabitCountInput from '@/components/habit/HabitCountInput.vue';
 import HabitListItem from '@/components/habit/HabitListItem.vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
@@ -103,7 +80,6 @@ import { usePlugin } from '@/main';
 import {
   checkIn,
   checkInCount,
-  setCheckInValue,
 } from '@/services/habitService';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import type { Habit } from '@/types/models';
@@ -151,13 +127,6 @@ const selectedStats = computed(() => {
     return null;
 
   return habitStatsMap.value.get(state.selectedHabit.blockId);
-});
-
-const selectedDayState = computed(() => {
-  if (!state.selectedHabit)
-    return null;
-
-  return getHabitDayState(state.selectedHabit, state.selectedDate);
 });
 
 watch(currentDate, (nextDate, previousDate) => {
@@ -228,16 +197,6 @@ async function handleCheckIn(habit: Habit) {
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, state.selectedDate, 1);
-  if (success) {
-    await refreshHabits();
-  }
-}
-
-async function handleCountChange(newValue: number) {
-  if (!state.selectedHabit || state.selectedHabit.type !== 'count')
-    return;
-
-  const success = await setCheckInValue(state.selectedHabit, state.selectedDate, newValue);
   if (success) {
     await refreshHabits();
   }
@@ -346,51 +305,5 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.mobile-habit-detail__today {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-  padding: 12px;
-  border: 1px solid var(--b3-theme-surface-lighter);
-  border-radius: var(--b3-border-radius);
-  background: var(--b3-theme-background);
-}
-
-.mobile-habit-detail__today-label {
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.mobile-check-btn {
-  padding: 8px 20px;
-  border: 1px solid var(--b3-theme-primary);
-  border-radius: 16px;
-  background: transparent;
-  color: var(--b3-theme-primary);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.mobile-check-btn--done {
-  border-color: transparent;
-  background: var(--b3-theme-primary-lightest);
-  color: var(--b3-theme-primary);
-}
-
-.mobile-habit-detail__today-count {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.mobile-habit-detail__target {
-  font-size: 13px;
-  color: var(--b3-theme-on-surface-light);
 }
 </style>

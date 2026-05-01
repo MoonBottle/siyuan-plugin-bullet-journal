@@ -2,7 +2,6 @@
   <section class="mobile-more-panel" data-testid="more-panel">
     <header class="mobile-more-panel__header">
       <h2 class="mobile-more-panel__title">{{ t('settings').title }}</h2>
-      <p class="mobile-more-panel__subtitle">{{ t('mobile.settings.view') || '视图设置' }}</p>
     </header>
 
     <div class="mobile-more-panel__section">
@@ -105,12 +104,6 @@ const version = computed(() => plugin?.manifest?.version || fallbackVersion);
   font-size: 22px;
   font-weight: 700;
   color: var(--b3-theme-on-background, #111827);
-}
-
-.mobile-more-panel__subtitle {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: var(--b3-theme-on-surface, #6b7280);
 }
 
 .mobile-more-panel__section + .mobile-more-panel__section {

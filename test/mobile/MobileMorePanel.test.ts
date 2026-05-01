@@ -58,6 +58,7 @@ describe('MobileMorePanel', () => {
     expect(mounted.container.querySelector('[data-testid="more-toggle-hide-completed"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="more-toggle-hide-abandoned"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="more-open-plugin-settings"]')).toBeNull();
+    expect(mounted.container.querySelector('.mobile-more-panel__subtitle')).toBeNull();
     expect(mounted.container.textContent).toContain('设置');
     expect(mounted.container.querySelector('[data-testid="more-version"]')?.textContent).toContain('v9.9.9');
 
