@@ -9,7 +9,7 @@
       type="button"
       @click="emit('update:activeTab', tab.value)"
     >
-      {{ tab.label }}
+      <span class="mobile-bottom-tab-bar__label">{{ tab.label }}</span>
     </button>
   </nav>
 </template>
@@ -48,14 +48,27 @@ const tabs: Array<{ value: MobileMainTab, label: string }> = [
 }
 
 .mobile-bottom-tab-bar__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 56px;
+  margin: 6px 8px;
+  padding: 0 12px;
   border: 0;
+  border-radius: 12px;
   background: transparent;
   color: var(--b3-theme-on-surface, #222);
   font-size: 12px;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.mobile-bottom-tab-bar__label {
+  line-height: 1;
 }
 
 .mobile-bottom-tab-bar__button--active {
+  background: color-mix(in srgb, var(--b3-theme-primary, #8f7aea) 10%, transparent);
+  color: var(--b3-theme-primary, #8f7aea);
   font-weight: 600;
 }
 </style>

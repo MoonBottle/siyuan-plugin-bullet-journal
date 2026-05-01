@@ -91,12 +91,15 @@ describe('MobileMainShell', () => {
     expect(mounted.container.querySelector('[data-testid="todo-panel"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="pomodoro-panel"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-todo"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
 
     (mounted.container.querySelector('[data-testid="mobile-tab-habit"]') as HTMLButtonElement | null)?.click();
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="habit-panel"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-todo"]')?.className).not.toContain('mobile-bottom-tab-bar__button--active');
 
     (mounted.container.querySelector('[data-testid="mobile-tab-todo"]') as HTMLButtonElement | null)?.click();
     await nextTick();
@@ -108,6 +111,7 @@ describe('MobileMainShell', () => {
     expect(pomodoroPanel).not.toBeNull();
     expect(pomodoroPanel?.getAttribute('data-block-id')).toBe('item-1');
     expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
 
     mounted.unmount();
   });

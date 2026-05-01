@@ -83,12 +83,14 @@ describe('MobileMainShell navigation handling', () => {
 
     expect(mounted.container.querySelector('[data-testid="habit-panel"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="todo-panel"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
 
     eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: 'pomodoro' });
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="pomodoro-panel"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="habit-panel"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
 
     mounted.unmount();
   });
