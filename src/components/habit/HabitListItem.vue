@@ -47,23 +47,69 @@
       <!-- 二元型打卡按钮 -->
       <button
         v-if="habit.type === 'binary'"
-        :class="['habit-check-btn', { 'habit-check-btn--done': dayState.isCompleted }]"
+        :class="['habit-action-btn', {
+          'habit-action-btn--done': dayState.isCompleted,
+          'habit-action-btn--binary': true,
+        }]"
         :disabled="dayState.isCompleted"
         data-testid="habit-list-item-check-in"
+        :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').checkIn"
         @click.stop="emit('check-in', habit)"
       >
-        {{ dayState.isCompleted ? t('habit').completed : t('habit').checkIn }}
+        <span
+          v-if="dayState.isCompleted"
+          class="habit-action-btn__check"
+          data-testid="habit-action-check"
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
+          </svg>
+        </span>
+        <span
+          v-else
+          class="habit-action-btn__empty"
+          data-testid="habit-action-empty"
+        ></span>
       </button>
 
       <!-- 计数型 +1 按钮 -->
       <button
         v-else
-        class="habit-increment-btn"
+        :class="['habit-action-btn', {
+          'habit-action-btn--done': dayState.isCompleted,
+          'habit-action-btn--count': true,
+        }]"
         :disabled="dayState.isCompleted"
         data-testid="habit-list-item-increment"
+        :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').addOne"
         @click.stop="emit('increment', habit)"
       >
-        {{ t('habit').addOne }}
+        <span
+          v-if="dayState.isCompleted"
+          class="habit-action-btn__check"
+          data-testid="habit-action-check"
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
+          </svg>
+        </span>
+        <svg
+          v-else
+          class="habit-action-btn__progress-ring"
+          data-testid="habit-action-progress-ring"
+          :data-progress="String(actionProgress)"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <circle class="habit-action-btn__progress-track" cx="12" cy="12" r="8" />
+          <circle
+            class="habit-action-btn__progress-value"
+            cx="12"
+            cy="12"
+            r="8"
+            :stroke-dasharray="`${actionProgress * progressCircumference} ${progressCircumference}`"
+          />
+        </svg>
       </button>
     </div>
   </div>
@@ -114,10 +160,14 @@ const dayCurrentValue = computed(() => {
   return props.dayState.currentValue ?? 0;
 });
 
+const progressCircumference = 2 * Math.PI * 8;
+
 const progressPercent = computed(() => {
   if (!props.habit.target) return 0;
   return Math.min((dayCurrentValue.value / props.habit.target) * 100, 100);
 });
+
+const actionProgress = computed(() => progressPercent.value / 100);
 
 function handleMainClick() {
   if (isMobile.value) {
@@ -221,8 +271,8 @@ function handleMainClick() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 50%;
   background: transparent;
@@ -240,65 +290,78 @@ function handleMainClick() {
 }
 
 .habit-calendar-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 12px;
+  height: 12px;
   fill: currentColor;
 }
 
-.habit-check-btn {
-  min-width: 72px;
-  height: 32px;
-  padding: 0 14px;
-  border: 1px solid var(--b3-theme-primary);
-  border-radius: 16px;
+.habit-action-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
   background: transparent;
   color: var(--b3-theme-primary);
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.habit-check-btn:hover:not(:disabled) {
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
+.habit-action-btn:hover:not(:disabled) {
+  transform: scale(1.04);
 }
 
-.habit-check-btn--done {
-  border-color: var(--b3-theme-surface-lighter);
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-surface-light);
-  cursor: default;
-  opacity: 1;
-}
-
-.habit-check-btn:disabled {
-  opacity: 1;
+.habit-action-btn:disabled {
   cursor: default;
 }
 
-.habit-increment-btn {
-  min-width: 72px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--b3-theme-primary);
-  border-radius: 16px;
-  background: transparent;
-  color: var(--b3-theme-primary);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
+.habit-action-btn__empty,
+.habit-action-btn__check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.habit-increment-btn:hover:not(:disabled) {
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
+.habit-action-btn__empty {
+  background: #dedee3;
 }
 
-.habit-increment-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
+.habit-action-btn__check {
+  background: #5b7cff;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(91, 124, 255, 0.22);
+}
+
+.habit-action-btn__check svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.habit-action-btn__progress-ring {
+  width: 20px;
+  height: 20px;
+  transform: rotate(-90deg);
+}
+
+.habit-action-btn__progress-track,
+.habit-action-btn__progress-value {
+  fill: none;
+  stroke-width: 3;
+}
+
+.habit-action-btn__progress-track {
+  stroke: #dedee3;
+}
+
+.habit-action-btn__progress-value {
+  stroke: #5b7cff;
+  stroke-linecap: round;
 }
 </style>

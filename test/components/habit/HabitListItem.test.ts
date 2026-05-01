@@ -487,11 +487,11 @@ describe('HabitListItem', () => {
     await nextTick();
 
     expect(mounted.container.textContent).toContain('本周已达标');
-    expect(mounted.container.textContent).toContain('打卡');
 
     const button = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
     expect(button).not.toBeNull();
     expect(button?.disabled).toBe(false);
+    expect(button?.querySelector('[data-testid="habit-action-empty"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -528,7 +528,7 @@ describe('HabitListItem', () => {
 
     const text = mounted.container.textContent || '';
     expect(text).not.toContain('已打卡');
-    expect(text).toContain('已完成');
+    expect(mounted.container.querySelector('[data-testid="habit-action-check"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -565,7 +565,7 @@ describe('HabitListItem', () => {
 
     const text = mounted.container.textContent || '';
     expect(text).not.toContain('未打卡');
-    expect(text).toContain('打卡');
+    expect(mounted.container.querySelector('[data-testid="habit-action-empty"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -607,12 +607,12 @@ describe('HabitListItem', () => {
     const text = mounted.container.textContent || '';
     expect(text).not.toContain('已打卡');
     expect(text).toContain('8/8杯');
-    expect(text).toContain('+1');
+    expect(mounted.container.querySelector('[data-testid="habit-action-check"]')).not.toBeNull();
 
     mounted.unmount();
   });
 
-  it('completed habit uses plain text without emoji in streak and action button', async () => {
+  it('completed habit uses icon-only action button without emoji text', async () => {
     const habit: Habit = {
       name: '早起',
       type: 'binary',
@@ -660,7 +660,53 @@ describe('HabitListItem', () => {
 
     const button = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
     expect(button).not.toBeNull();
-    expect(button?.textContent).toContain('已完成');
+    expect(button?.textContent?.trim()).toBe('');
+    expect(button?.querySelector('[data-testid="habit-action-check"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('count pending state renders a progress ring action with current ratio', async () => {
+    const habit: Habit = {
+      name: '喝水',
+      type: 'count',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-10',
+      hasRecord: true,
+      isCompleted: false,
+      currentValue: 3,
+      targetValue: 8,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-10',
+      periodEnd: '2026-04-10',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState });
+
+    await nextTick();
+
+    const button = mounted.container.querySelector('[data-testid="habit-list-item-increment"]') as HTMLButtonElement | null;
+    const ring = mounted.container.querySelector('[data-testid="habit-action-progress-ring"]') as SVGElement | null;
+
+    expect(button).not.toBeNull();
+    expect(button?.textContent?.trim()).toBe('');
+    expect(ring).not.toBeNull();
+    expect(ring?.getAttribute('data-progress')).toBe('0.375');
 
     mounted.unmount();
   });
