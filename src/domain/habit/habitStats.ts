@@ -180,10 +180,13 @@ export function calculateHabitStats(habit: Habit, currentDate: string): HabitSta
   const overallWindow = countExpectedAndCompletedForRange(habit, habit.startDate, currentDate);
   const weekStart = dayjs(currentDate).startOf('isoWeek').format('YYYY-MM-DD');
   const monthStart = `${currentMonth}-01`;
+  const monthEnd = dayjs(currentDate).endOf('month').format('YYYY-MM-DD');
+  const habitEndDate = getHabitEndDate(habit);
+  const monthlyWindowEnd = habitEndDate && habitEndDate < monthEnd ? habitEndDate : monthEnd;
   const monthlyWindow = countExpectedAndCompletedForRange(
     habit,
     habit.startDate > monthStart ? habit.startDate : monthStart,
-    currentDate,
+    monthlyWindowEnd,
   );
   const weeklyWindow = countExpectedAndCompletedForRange(
     habit,

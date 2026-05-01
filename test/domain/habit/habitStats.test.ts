@@ -84,4 +84,15 @@ describe('calculateHabitStats', () => {
     expect(stats.monthlyCompletionRate).toBe(0);
     expect(stats.weeklyCompletionRate).toBe(0);
   });
+
+  it('daily 的本月完成率应按整月窗口计算，而不是截至今天', () => {
+    const habit = mkHabit({
+      frequency: { type: 'daily' },
+      startDate: '2026-05-01',
+      records: [mkRecord('2026-05-01')],
+    });
+    const stats = calculateHabitStats(habit, '2026-05-01');
+
+    expect(stats.monthlyCompletionRate).toBeCloseTo(1 / 31, 5);
+  });
 });
