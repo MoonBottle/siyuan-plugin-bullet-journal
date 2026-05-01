@@ -461,7 +461,7 @@ defineExpose({
 }
 
 .mobile-filter-bar-shell {
-  padding: 12px 16px;
+  padding: 8px 16px;
   background: var(--b3-theme-surface);
   border-bottom: 1px solid var(--b3-border-color);
   flex-shrink: 0;

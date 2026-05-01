@@ -12,7 +12,7 @@ describe('MobileTodoPanel layout', () => {
     );
 
     expect(source).toContain('class="mobile-filter-bar-shell"');
-    expect(source).toContain('padding: 12px 16px');
+    expect(source).toContain('padding: 8px 16px');
     expect(source).toContain('background: var(--b3-theme-surface)');
     expect(source).not.toContain('background: var(--b3-theme-background)');
   });

@@ -578,7 +578,7 @@ onUnmounted(() => {
 }
 
 .todo-content {
-  padding: 12px 16px 24px;
+  padding: 8px 16px 24px;
   min-height: 100%;
   box-sizing: border-box;
 }
