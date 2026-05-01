@@ -6,6 +6,7 @@
 export const TAB_TYPES = {
   CALENDAR: 'bullet-journal-calendar',
   GANTT: 'bullet-journal-gantt',
+  WORKBENCH: 'bullet-journal-workbench',
   QUADRANT: 'bullet-journal-quadrant',
   PROJECT: 'bullet-journal-project',
   POMODORO_STATS: 'bullet-journal-pomodoro-stats'

@@ -74,6 +74,11 @@
     "startTime": "开始日期",
     "endTime": "结束日期"
   },
+  "workbench": {
+    "title": "工作台",
+    "newDashboard": "新建仪表盘",
+    "newView": "新建视图"
+  },
   "quadrant": {
     "title": "四象限",
     "placeholder": "四象限视图即将推出",

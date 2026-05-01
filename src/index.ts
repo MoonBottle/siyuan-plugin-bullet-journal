@@ -32,6 +32,7 @@ import { useConversationStorage } from "@/services/conversationStorageService";
 import { useSkillService } from "@/services/skillService";
 import CalendarTab from "@/tabs/CalendarTab.vue";
 import GanttTab from "@/tabs/GanttTab.vue";
+import WorkbenchTab from "@/tabs/WorkbenchTab.vue";
 import QuadrantTab from "@/tabs/QuadrantTab.vue";
 import ProjectTab from "@/tabs/ProjectTab.vue";
 import DesktopTodoDock from "@/tabs/DesktopTodoDock.vue";
@@ -1025,6 +1026,29 @@ export default class TaskAssistantPlugin extends Plugin {
       });
     }
 
+    // 工作台视图 Tab（桌面端专用）
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.WORKBENCH,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(WorkbenchTab);
+            app.use(pinia);
+            app.mount(this.element);
+          } catch (error) {
+            console.error(
+              "[Task Assistant] Failed to mount WorkbenchTab:",
+              error,
+            );
+          }
+        },
+        destroy() {
+          this.element.innerHTML = "";
+        },
+      });
+    }
+
     // 四象限视图 Tab（桌面端专用）
     if (!this.isMobile) {
       this.addTab({
@@ -1259,6 +1283,13 @@ export default class TaskAssistantPlugin extends Plugin {
         });
         if (!this.isMobile) {
           menu.addItem({
+            icon: "iconPanel",
+            label: t("workbench").title,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.WORKBENCH);
+            },
+          });
+          menu.addItem({
             icon: "iconLayout",
             label: t("quadrant").title,
             click: () => {
@@ -1490,6 +1521,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const icons: Record<string, string> = {
       [TAB_TYPES.CALENDAR]: "iconCalendar",
       [TAB_TYPES.GANTT]: "iconGraph",
+      [TAB_TYPES.WORKBENCH]: "iconPanel",
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconFolder",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",
@@ -1504,6 +1536,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const titles: Record<string, string> = {
       [TAB_TYPES.CALENDAR]: t("calendar").title,
       [TAB_TYPES.GANTT]: t("gantt").title,
+      [TAB_TYPES.WORKBENCH]: t("workbench").title,
       [TAB_TYPES.QUADRANT]: t("quadrant").title,
       [TAB_TYPES.PROJECT]: t("project").title,
       [TAB_TYPES.POMODORO_STATS]: t("pomodoroStats").statsTitle,

@@ -74,6 +74,11 @@
     "startTime": "Start Date",
     "endTime": "End Date"
   },
+  "workbench": {
+    "title": "Workbench",
+    "newDashboard": "New Dashboard",
+    "newView": "New View"
+  },
   "quadrant": {
     "title": "Quadrant",
     "placeholder": "Quadrant view is coming soon",
