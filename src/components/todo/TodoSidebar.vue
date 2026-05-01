@@ -863,30 +863,10 @@ const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
     && relatedTarget instanceof Node
     && payload.anchorEl.contains(relatedTarget)
   ) {
-    console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because relatedTarget is inside anchor', {
-      itemId: item.id,
-      blockId: item.blockId,
-      relatedTarget: relatedTarget instanceof HTMLElement ? relatedTarget.outerHTML.slice(0, 200) : String(relatedTarget),
-    });
     return;
   }
 
   if (pointerStillInsideAnchor) {
-    console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because pointer is still inside anchor bounds', {
-      itemId: item.id,
-      blockId: item.blockId,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      rect: anchorRect
-        ? {
-            left: anchorRect.left,
-            top: anchorRect.top,
-            right: anchorRect.right,
-            bottom: anchorRect.bottom,
-          }
-        : null,
-      relatedTarget: relatedTarget instanceof HTMLElement ? relatedTarget.outerHTML.slice(0, 200) : String(relatedTarget),
-    });
     return;
   }
 
@@ -904,44 +884,19 @@ const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
       elementUnderPointer instanceof HTMLElement
       && elementUnderPointer.closest('.block__popover')
     );
-    console.warn('[QuadrantPreviewDebug][sidebar] hover-end raf check', {
-      itemId: item.id,
-      blockId: item.blockId,
-      anchorStillHovered,
-      pointerWithinAnchorTree,
-      pointerWithinNativePopover,
-      elementUnderPointer: elementUnderPointer instanceof HTMLElement ? elementUnderPointer.outerHTML.slice(0, 200) : String(elementUnderPointer),
-      relatedTarget: relatedTarget instanceof HTMLElement ? relatedTarget.outerHTML.slice(0, 200) : String(relatedTarget),
-      clientX: event.clientX,
-      clientY: event.clientY,
-    });
 
     if (anchorStillHovered) {
       return;
     }
 
     if (pointerWithinAnchorTree) {
-      console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because elementFromPoint is inside anchor', {
-        itemId: item.id,
-        blockId: item.blockId,
-        elementUnderPointer: elementUnderPointer instanceof HTMLElement ? elementUnderPointer.outerHTML.slice(0, 200) : String(elementUnderPointer),
-      });
       return;
     }
 
     if (pointerWithinNativePopover) {
-      console.warn('[QuadrantPreviewDebug][sidebar] skip hover-end because elementFromPoint is inside native popover', {
-        itemId: item.id,
-        blockId: item.blockId,
-        elementUnderPointer: elementUnderPointer instanceof HTMLElement ? elementUnderPointer.outerHTML.slice(0, 200) : String(elementUnderPointer),
-      });
       return;
     }
 
-    console.warn('[QuadrantPreviewDebug][sidebar] emit hover-end', {
-      itemId: item.id,
-      blockId: item.blockId,
-    });
     props.onItemHoverEnd?.(payload, event);
   });
 };

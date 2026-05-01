@@ -10,6 +10,7 @@ import { TAB_TYPES } from '@/constants';
 const todoSidebarProps = vi.fn();
 const nativePreviewOpen = vi.fn();
 const nativePreviewClose = vi.fn();
+const nativePreviewOpenCalls: Array<Record<string, any>> = [];
 const mockRefresh = vi.fn(() => Promise.resolve());
 const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
 const mockShowMessage = vi.fn();
@@ -193,7 +194,10 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
 
 vi.mock('@/utils/nativeBlockPreview', () => ({
   createNativeBlockPreviewController: () => ({
-    open: nativePreviewOpen,
+    open: (options: Record<string, any>) => {
+      nativePreviewOpen(options);
+      nativePreviewOpenCalls.push(options);
+    },
     close: nativePreviewClose,
     isOpen: vi.fn(() => false),
   }),
@@ -252,6 +256,7 @@ describe('QuadrantTab', () => {
     document.body.innerHTML = '';
     initI18n('en_US');
     vi.clearAllMocks();
+    nativePreviewOpenCalls.length = 0;
     mockSettingsStore.scanMode = 'all';
     mockSettingsStore.directories = [];
     mockSettingsStore.defaultGroup = '';
@@ -655,6 +660,48 @@ describe('QuadrantTab', () => {
 
     mounted.unmount();
     vi.useRealTimers();
+  });
+
+  it('does not let a stale panel destruction callback clear a newer preview target', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const sidebarProps = getLatestTodoSidebarProps();
+    const anchorA = document.createElement('div');
+    const anchorB = document.createElement('div');
+
+    sidebarProps.onItemHoverStart?.({
+      blockId: 'block-a',
+      itemId: 'item-a',
+      anchorEl: anchorA,
+    });
+    await nextTick();
+
+    sidebarProps.onItemHoverStart?.({
+      blockId: 'block-b',
+      itemId: 'item-b',
+      anchorEl: anchorB,
+    });
+    await nextTick();
+
+    expect(nativePreviewOpenCalls).toHaveLength(2);
+
+    const firstDestroy = nativePreviewOpenCalls[0].onPanelDestroyed as ((payload: {
+      initiatedByController: boolean;
+      blockId: string;
+      anchorEl: HTMLElement;
+    }) => void);
+
+    firstDestroy({
+      initiatedByController: false,
+      blockId: 'block-a',
+      anchorEl: anchorA,
+    });
+    await nextTick();
+
+    expect(nativePreviewClose).not.toHaveBeenCalled();
+
+    mounted.unmount();
   });
 
   it('shows and clears active drop state during dragover and dragleave', async () => {

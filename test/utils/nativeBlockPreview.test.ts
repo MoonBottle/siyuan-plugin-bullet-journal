@@ -360,7 +360,11 @@ describe('createNativeBlockPreviewController', () => {
     });
 
     panel.destroy?.();
-    expect(onPanelDestroyed).toHaveBeenLastCalledWith({ initiatedByController: false });
+    expect(onPanelDestroyed).toHaveBeenLastCalledWith(expect.objectContaining({
+      initiatedByController: false,
+      blockId: 'block-1',
+      anchorEl: expect.any(HTMLElement),
+    }));
 
     controller.open({
       app: { name: 'app' } as any,
@@ -370,7 +374,11 @@ describe('createNativeBlockPreviewController', () => {
     });
     controller.close();
 
-    expect(onPanelDestroyed).toHaveBeenLastCalledWith({ initiatedByController: true });
+    expect(onPanelDestroyed).toHaveBeenLastCalledWith(expect.objectContaining({
+      initiatedByController: true,
+      blockId: 'block-2',
+      anchorEl: expect.any(HTMLElement),
+    }));
   });
 
   it('makes destroy idempotent for panels discovered through the decorated-anchor fallback path', async () => {

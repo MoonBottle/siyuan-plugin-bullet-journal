@@ -376,27 +376,39 @@ let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
-function handleNativePreviewDestroyed({ initiatedByController }: { initiatedByController: boolean }) {
-  const blockId = preview.activeBlockId.value;
-  const itemId = preview.activeItemId.value;
-  const anchorEl = preview.anchorEl.value;
+function handleNativePreviewDestroyed({
+  initiatedByController,
+  blockId,
+  anchorEl,
+}: {
+  initiatedByController: boolean;
+  blockId: string;
+  anchorEl: HTMLElement;
+}) {
+  const activeBlockId = preview.activeBlockId.value;
+  const activeItemId = preview.activeItemId.value;
+  const activeAnchorEl = preview.anchorEl.value;
+
+  if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
+    return;
+  }
 
   preview.forceClose();
 
   if (
     initiatedByController
-    || !blockId
-    || !itemId
-    || !anchorEl
+    || !activeBlockId
+    || !activeItemId
+    || !activeAnchorEl
     || !anchorEl.matches(':hover')
   ) {
     return;
   }
 
   preview.showNow({
-    blockId,
-    itemId,
-    anchorEl,
+    blockId: activeBlockId,
+    itemId: activeItemId,
+    anchorEl: activeAnchorEl,
   });
 }
 

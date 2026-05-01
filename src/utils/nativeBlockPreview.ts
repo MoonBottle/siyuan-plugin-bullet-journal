@@ -22,36 +22,15 @@ type OpenNativeBlockPreviewOptions = {
   blockId: string;
   anchorEl: HTMLElement;
   onHoverChange?: (hovered: boolean) => void;
-  onPanelDestroyed?: (payload: { initiatedByController: boolean }) => void;
+  onPanelDestroyed?: (payload: {
+    initiatedByController: boolean;
+    panelId?: string;
+    blockId: string;
+    anchorEl: HTMLElement;
+  }) => void;
 };
 
 type NativeBlockPanelCtor = new (options: Record<string, unknown>) => NativeBlockPanelInstance;
-
-function describeElement(element: HTMLElement | null | undefined) {
-  if (!element) return 'null';
-  if (!(element instanceof HTMLElement)) {
-    const anyElement = element as unknown as { nodeName?: string };
-    return anyElement?.nodeName?.toLowerCase?.() || String(element);
-  }
-
-  const className = typeof element.className === 'string'
-    ? element.className.trim().replace(/\s+/g, '.')
-    : '';
-  const dataType = element.getAttribute('data-type') || '';
-  const dataId = element.getAttribute('data-id') || '';
-
-  return [
-    element.tagName.toLowerCase(),
-    element.id ? `#${element.id}` : '',
-    className ? `.${className}` : '',
-    dataType ? `[data-type=${dataType}]` : '',
-    dataId ? `[data-id=${dataId}]` : '',
-  ].join('');
-}
-
-function debugLog(message: string, payload: Record<string, unknown> = {}) {
-  console.warn('[QuadrantPreviewDebug][native]', message, payload);
-}
 
 function ensureBlockPanelsRegistry(): NativeBlockPanelInstance[] {
   if (!window.siyuan.blockPanels) {
@@ -148,11 +127,6 @@ export function createNativeBlockPreviewController() {
 
     const previousPin = element.getAttribute('data-pin');
     element.setAttribute('data-pin', 'true');
-    debugLog('pinPanelForController', {
-      panelId: panel.id,
-      panelEl: describeElement(element),
-      previousPin,
-    });
 
     restorePinnedState = () => {
       if (!panel.element) {
@@ -195,13 +169,6 @@ export function createNativeBlockPreviewController() {
         return;
       }
       lastHovered = hovered;
-      debugLog(hovered ? 'panel pointer entered active zone' : 'panel pointer left active zone', {
-        panelId: panel.id,
-        panelEl: describeElement(element),
-        target: describeElement(event?.target as HTMLElement | null),
-        clientX: event?.clientX ?? null,
-        clientY: event?.clientY ?? null,
-      });
       onHoverChange(hovered);
     };
 
@@ -224,11 +191,6 @@ export function createNativeBlockPreviewController() {
 
   function releaseCurrentPanel(panel: NativeBlockPanelInstance) {
     if (currentPanel === panel) {
-      debugLog('releaseCurrentPanel', {
-        panelId: panel.id,
-        currentBlockId,
-        currentAnchorEl: describeElement(currentAnchorEl),
-      });
       detachHoverListeners();
       clearPinnedState();
       currentPanel = null;
@@ -237,7 +199,7 @@ export function createNativeBlockPreviewController() {
 
   function makeDestroyIdempotent(
     panel: NativeBlockPanelInstance,
-    onPanelDestroyed?: (payload: { initiatedByController: boolean }) => void,
+    options: Pick<OpenNativeBlockPreviewOptions, 'blockId' | 'anchorEl' | 'onPanelDestroyed'>,
   ) {
     const originalDestroy = panel.destroy?.bind(panel);
     if (!originalDestroy) {
@@ -246,13 +208,6 @@ export function createNativeBlockPreviewController() {
 
     let destroyed = false;
     panel.destroy = () => {
-      debugLog('panel.destroy invoked', {
-        panelId: panel.id,
-        destroyed,
-        currentBlockId,
-        currentAnchorEl: describeElement(currentAnchorEl),
-        stack: new Error().stack,
-      });
       if (destroyed) {
         releaseCurrentPanel(panel);
         return;
@@ -263,7 +218,12 @@ export function createNativeBlockPreviewController() {
         originalDestroy();
       }
       finally {
-        onPanelDestroyed?.({ initiatedByController: controllerClosing });
+        options.onPanelDestroyed?.({
+          initiatedByController: controllerClosing,
+          panelId: panel.id,
+          blockId: options.blockId,
+          anchorEl: options.anchorEl,
+        });
         releaseCurrentPanel(panel);
       }
     };
@@ -272,10 +232,6 @@ export function createNativeBlockPreviewController() {
   function registerPanel(panel: NativeBlockPanelInstance) {
     const panels = ensureBlockPanelsRegistry();
     if (!panels.includes(panel)) {
-      debugLog('registerPanel', {
-        panelId: panel.id,
-        targetElement: describeElement(panel.targetElement),
-      });
       panels.push(panel);
     }
   }
@@ -290,16 +246,8 @@ export function createNativeBlockPreviewController() {
     anchorEl.setAttribute('data-id', blockId);
     anchorEl.setAttribute('aria-label', previousAriaLabel || 'block-ref');
     anchorEl.removeAttribute('prevent-popover');
-    debugLog('decorateAnchorAsBlockRef', {
-      blockId,
-      anchorEl: describeElement(anchorEl),
-    });
 
     restoreAnchorAttrs = () => {
-      debugLog('restoreAnchorAttrs', {
-        blockId,
-        anchorEl: describeElement(anchorEl),
-      });
       if (previousDataType === null) {
         anchorEl.removeAttribute('data-type');
       }
@@ -332,11 +280,6 @@ export function createNativeBlockPreviewController() {
 
   function suppressDescendantTooltips(anchorEl: HTMLElement) {
     const tooltipElements = Array.from(anchorEl.querySelectorAll('.b3-tooltips'));
-    debugLog('suppressDescendantTooltips', {
-      anchorEl: describeElement(anchorEl),
-      count: tooltipElements.length,
-      elements: tooltipElements.map(element => describeElement(element as HTMLElement)),
-    });
     const restores = tooltipElements.map((element) => {
       const tooltipEl = element as HTMLElement;
       const previousAriaLabel = tooltipEl.getAttribute('aria-label');
@@ -356,25 +299,12 @@ export function createNativeBlockPreviewController() {
     });
 
     restoreSuppressedDescendantTooltips = () => {
-      debugLog('restoreDescendantTooltips', {
-        anchorEl: describeElement(anchorEl),
-        count: restores.length,
-      });
       restores.forEach(restore => restore());
     };
   }
 
   function dispatchAnchorMouseOver(anchorEl: HTMLElement) {
     const rect = anchorEl.getBoundingClientRect();
-    debugLog('dispatchAnchorMouseOver', {
-      anchorEl: describeElement(anchorEl),
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height,
-      },
-    });
     anchorEl.dispatchEvent(new MouseEvent('mouseover', {
       bubbles: true,
       cancelable: true,
@@ -390,8 +320,9 @@ export function createNativeBlockPreviewController() {
 
   function watchAnchorPanel(
     anchorEl: HTMLElement,
+    blockId: string,
     onHoverChange?: (hovered: boolean) => void,
-    onPanelDestroyed?: (payload: { initiatedByController: boolean }) => void,
+    onPanelDestroyed?: OpenNativeBlockPreviewOptions['onPanelDestroyed'],
   ) {
     let attempts = 0;
     const maxAttempts = 20;
@@ -400,21 +331,16 @@ export function createNativeBlockPreviewController() {
       findPanelTimer = null;
 
       if (currentAnchorEl !== anchorEl) {
-        debugLog('watchAnchorPanel aborted', {
-          anchorEl: describeElement(anchorEl),
-          currentAnchorEl: describeElement(currentAnchorEl),
-        });
         return;
       }
 
       const panel = findPanelByTarget(anchorEl);
       if (panel?.element) {
-        debugLog('watchAnchorPanel resolved panel', {
-          panelId: panel.id,
-          anchorEl: describeElement(anchorEl),
-          panelEl: describeElement(panel.element),
+        makeDestroyIdempotent(panel, {
+          blockId,
+          anchorEl,
+          onPanelDestroyed,
         });
-        makeDestroyIdempotent(panel, onPanelDestroyed);
         currentPanel = panel;
         attachHoverListeners(panel, onHoverChange);
         return;
@@ -422,10 +348,6 @@ export function createNativeBlockPreviewController() {
 
       attempts += 1;
       if (attempts >= maxAttempts) {
-        debugLog('watchAnchorPanel exhausted', {
-          anchorEl: describeElement(anchorEl),
-          attempts,
-        });
         return;
       }
 
@@ -440,11 +362,6 @@ export function createNativeBlockPreviewController() {
       return false;
     }
 
-    debugLog('open using plugin.addFloatLayer', {
-      blockId: options.blockId,
-      anchorEl: describeElement(options.anchorEl),
-    });
-
     const panelsBefore = new Set(ensureBlockPanelsRegistry());
 
     options.plugin.addFloatLayer({
@@ -458,26 +375,19 @@ export function createNativeBlockPreviewController() {
       ?? findPanelByTarget(options.anchorEl);
 
     if (newPanel) {
-      makeDestroyIdempotent(newPanel, options.onPanelDestroyed);
+      makeDestroyIdempotent(newPanel, options);
       pinPanelForController(newPanel);
       attachHoverListeners(newPanel, options.onHoverChange);
       currentPanel = newPanel;
     }
     else {
-      watchAnchorPanel(options.anchorEl, options.onHoverChange, options.onPanelDestroyed);
+      watchAnchorPanel(options.anchorEl, options.blockId, options.onHoverChange, options.onPanelDestroyed);
     }
 
     return true;
   }
 
   function open(options: OpenNativeBlockPreviewOptions) {
-    debugLog('open requested', {
-      blockId: options.blockId,
-      anchorEl: describeElement(options.anchorEl),
-      currentBlockId,
-      currentAnchorEl: describeElement(currentAnchorEl),
-      hasCurrentPanel: !!currentPanel,
-    });
     if (
       currentPanel
       && currentBlockId === options.blockId
@@ -497,36 +407,24 @@ export function createNativeBlockPreviewController() {
 
     const panelCtor = resolveBlockPanelCtor();
     if (panelCtor) {
-      debugLog('open using BlockPanel ctor', {
-        blockId: options.blockId,
-      });
       const panel = instantiateBlockPanel(panelCtor, options);
-      makeDestroyIdempotent(panel, options.onPanelDestroyed);
+      makeDestroyIdempotent(panel, options);
       registerPanel(panel);
       pinPanelForController(panel);
       attachHoverListeners(panel, options.onHoverChange);
       currentPanel = panel;
     }
     else {
-      debugLog('open using decorated-anchor fallback', {
-        blockId: options.blockId,
-        anchorEl: describeElement(options.anchorEl),
-      });
       decorateAnchorAsBlockRef(options.anchorEl, options.blockId);
       suppressDescendantTooltips(options.anchorEl);
       dispatchAnchorMouseOver(options.anchorEl);
-      watchAnchorPanel(options.anchorEl, options.onHoverChange, options.onPanelDestroyed);
+      watchAnchorPanel(options.anchorEl, options.blockId, options.onHoverChange, options.onPanelDestroyed);
     }
 
     return currentPanel;
   }
 
   function close() {
-    debugLog('close requested', {
-      currentBlockId,
-      currentAnchorEl: describeElement(currentAnchorEl),
-      hasCurrentPanel: !!currentPanel,
-    });
     controllerClosing = true;
     try {
       clearFindPanelTimer();
