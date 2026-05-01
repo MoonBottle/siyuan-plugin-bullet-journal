@@ -4,14 +4,6 @@
       <h1 class="workbench-tab__title">
         {{ t('workbench').title }}
       </h1>
-      <div class="workbench-tab__actions">
-        <button class="b3-button b3-button--outline" type="button">
-          {{ t('workbench').newDashboard }}
-        </button>
-        <button class="b3-button b3-button--outline" type="button">
-          {{ t('workbench').newView }}
-        </button>
-      </div>
     </header>
   </div>
 </template>
@@ -28,7 +20,7 @@ import { t } from '@/i18n';
 .workbench-tab__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -37,11 +29,5 @@ import { t } from '@/i18n';
   margin: 0;
   font-size: 20px;
   color: var(--b3-theme-on-background);
-}
-
-.workbench-tab__actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 </style>
