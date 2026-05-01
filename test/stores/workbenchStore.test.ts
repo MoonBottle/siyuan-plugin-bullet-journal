@@ -88,6 +88,24 @@ describe('workbenchStore', () => {
     expect(store.activeEntry).toEqual(entry);
   });
 
+  it('falls back stale activeEntryId to first remaining entry on load', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    const first = createEntry({ id: 'entry-1', order: 0 });
+    const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' });
+
+    mockLoadWorkbenchSettings.mockResolvedValueOnce({
+      entries: [first, second],
+      dashboards: [],
+      activeEntryId: 'missing-entry',
+    } satisfies WorkbenchSettings);
+
+    await store.load(plugin);
+
+    expect(store.activeEntryId).toBe(first.id);
+    expect(store.activeEntry).toEqual(first);
+  });
+
   it('createDashboardEntry creates dashboard and entry together, activates it, and persists when plugin is bound', async () => {
     const plugin = createPlugin();
     const store = useWorkbenchStore();
@@ -261,5 +279,36 @@ describe('workbenchStore', () => {
     expect(store.activeEntryId).toBe(second.id);
     expect(store.activeEntry).toEqual(second);
     expect(mockSaveWorkbenchSettings).not.toHaveBeenCalled();
+  });
+
+  it('setActiveEntry persists when plugin is bound', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    const first = createEntry({ id: 'entry-1', order: 0 });
+    const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' });
+
+    store.bindPlugin(plugin);
+    store.entries = [first, second];
+    store.activeEntryId = first.id;
+
+    await store.setActiveEntry(second.id);
+
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
+      entries: [first, second],
+      dashboards: [],
+      activeEntryId: second.id,
+    });
+  });
+
+  it('exposes save failure state when persistence returns false', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    mockSaveWorkbenchSettings.mockResolvedValueOnce(false);
+
+    await store.createViewEntry('todo');
+
+    expect(store.saveState).toBe('error');
+    expect(store.saveError).toBe('Failed to save workbench settings');
   });
 });

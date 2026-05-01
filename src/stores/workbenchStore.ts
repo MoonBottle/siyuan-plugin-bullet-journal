@@ -7,7 +7,6 @@ import type {
   WorkbenchViewType,
 } from '@/types/workbench';
 import {
-  createEmptyWorkbenchSettings,
   loadWorkbenchSettings,
   saveWorkbenchSettings,
 } from '@/utils/workbenchStorage';
@@ -68,6 +67,8 @@ export const useWorkbenchStore = defineStore('workbench', () => {
   const dashboards = ref<WorkbenchDashboard[]>([]);
   const activeEntryId = ref<string | null>(null);
   const boundPlugin = ref<WorkbenchPlugin>(null);
+  const saveState = ref<'idle' | 'saved' | 'error'>('idle');
+  const saveError = ref<string | null>(null);
 
   const activeEntry = computed(() => {
     return entries.value.find(entry => entry.id === activeEntryId.value) ?? null;
@@ -86,7 +87,23 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       return;
     }
 
-    await saveWorkbenchSettings(boundPlugin.value, getSettingsSnapshot());
+    try {
+      const success = await saveWorkbenchSettings(boundPlugin.value, getSettingsSnapshot());
+      if (!success) {
+        saveState.value = 'error';
+        saveError.value = 'Failed to save workbench settings';
+        return;
+      }
+
+      saveState.value = 'saved';
+      saveError.value = null;
+    }
+    catch (error) {
+      saveState.value = 'error';
+      saveError.value = error instanceof Error
+        ? error.message
+        : 'Failed to save workbench settings';
+    }
   }
 
   function bindPlugin(plugin: WorkbenchPlugin): void {
@@ -204,6 +221,8 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     dashboards,
     activeEntryId,
     activeEntry,
+    saveState,
+    saveError,
     bindPlugin,
     load,
     createDashboardEntry,
