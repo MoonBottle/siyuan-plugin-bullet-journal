@@ -36,8 +36,9 @@ vi.mock('@/stores', async () => {
   const actual = await vi.importActual<typeof import('@/stores')>('@/stores');
   return {
     ...actual,
-    useWorkbenchStore: () => ({
-      entries: [
+    useWorkbenchStore: () => {
+      const store = {
+        entries: [
         {
           id: 'entry-dashboard',
           type: 'dashboard',
@@ -54,21 +55,31 @@ vi.mock('@/stores', async () => {
           order: 1,
           viewType: 'todo',
         },
-      ],
-      activeEntryId: 'entry-dashboard',
-      activeEntry: {
-        id: 'entry-dashboard',
-        type: 'dashboard',
-        title: 'Planning Board',
-        icon: 'iconLayout',
-        order: 0,
-        dashboardId: 'dashboard-1',
-      },
-      load: mockLoad,
-      createDashboardEntry: mockCreateDashboardEntry,
-      createViewEntry: mockCreateViewEntry,
-      setActiveEntry: mockSetActiveEntry,
-    }),
+        ],
+        activeEntryId: 'entry-dashboard',
+        get activeEntry() {
+          return store.entries.find((entry: any) => entry.id === store.activeEntryId) ?? null;
+        },
+        load: mockLoad,
+        createDashboardEntry: async (...args: any[]) => {
+          const entry = await mockCreateDashboardEntry(...args);
+          store.entries = [...store.entries, entry];
+          store.activeEntryId = entry.id;
+          return entry;
+        },
+        createViewEntry: async (...args: any[]) => {
+          const entry = await mockCreateViewEntry(...args);
+          store.entries = [...store.entries, entry];
+          store.activeEntryId = entry.id;
+          return entry;
+        },
+        setActiveEntry: async (id: string) => {
+          mockSetActiveEntry(id);
+          store.activeEntryId = id;
+        },
+      };
+      return store;
+    },
   };
 });
 
@@ -185,11 +196,13 @@ describe('Workbench registration', () => {
       title: 'Workbench',
       newDashboard: 'New Dashboard',
       newView: 'New View',
+      emptyState: 'Select a workbench item',
     });
     expect(zh.workbench).toMatchObject({
       title: '工作台',
       newDashboard: '新建仪表盘',
       newView: '新建视图',
+      emptyState: '请选择一个工作台条目',
     });
   });
 });

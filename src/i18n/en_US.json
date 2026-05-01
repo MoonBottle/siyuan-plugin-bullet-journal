@@ -77,7 +77,8 @@
   "workbench": {
     "title": "Workbench",
     "newDashboard": "New Dashboard",
-    "newView": "New View"
+    "newView": "New View",
+    "emptyState": "Select a workbench item"
   },
   "quadrant": {
     "title": "Quadrant",

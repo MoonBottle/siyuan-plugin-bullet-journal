@@ -77,7 +77,8 @@
   "workbench": {
     "title": "工作台",
     "newDashboard": "新建仪表盘",
-    "newView": "新建视图"
+    "newView": "新建视图",
+    "emptyState": "请选择一个工作台条目"
   },
   "quadrant": {
     "title": "四象限",

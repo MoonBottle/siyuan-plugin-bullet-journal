@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted } from 'vue';
 import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue';
 import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue';
 import { t } from '@/i18n';
@@ -22,30 +22,23 @@ import type { WorkbenchViewType } from '@/types/workbench';
 
 const plugin = usePlugin();
 const workbenchStore = useWorkbenchStore();
-const currentActiveEntryId = ref<string | null>(workbenchStore.activeEntryId);
-
-const currentActiveEntry = computed(() => {
-  return workbenchStore.entries.find(entry => entry.id === currentActiveEntryId.value) ?? null;
-});
+const currentActiveEntryId = computed(() => workbenchStore.activeEntryId);
+const currentActiveEntry = computed(() => workbenchStore.activeEntry);
 
 async function handleSelect(id: string) {
-  currentActiveEntryId.value = id;
   await workbenchStore.setActiveEntry(id);
 }
 
 async function handleCreateDashboard() {
-  const entry = await workbenchStore.createDashboardEntry(t('workbench').newDashboard);
-  currentActiveEntryId.value = entry.id;
+  await workbenchStore.createDashboardEntry(t('workbench').newDashboard);
 }
 
 async function handleCreateView(viewType: WorkbenchViewType) {
-  const entry = await workbenchStore.createViewEntry(viewType);
-  currentActiveEntryId.value = entry.id;
+  await workbenchStore.createViewEntry(viewType);
 }
 
 onMounted(async () => {
   await workbenchStore.load(plugin);
-  currentActiveEntryId.value = workbenchStore.activeEntryId;
 });
 </script>
 

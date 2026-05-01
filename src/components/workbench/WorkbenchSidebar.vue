@@ -15,7 +15,7 @@
         type="button"
         @click="emit('create-view', 'todo')"
       >
-        Todo
+        {{ t('todo').title }}
       </button>
     </div>
 
@@ -29,7 +29,9 @@
         type="button"
         @click="emit('select', entry.id)"
       >
-        <span class="workbench-sidebar__entry-icon">{{ entry.icon }}</span>
+        <span class="workbench-sidebar__entry-icon" aria-hidden="true">
+          <svg><use :xlink:href="`#${entry.icon}`"></use></svg>
+        </span>
         <span class="workbench-sidebar__entry-title">{{ entry.title }}</span>
       </button>
     </div>
@@ -95,8 +97,17 @@ const emit = defineEmits<{
 }
 
 .workbench-sidebar__entry-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   color: var(--b3-theme-on-surface);
-  font-size: 12px;
+}
+
+.workbench-sidebar__entry-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .workbench-sidebar__entry-title {

@@ -6,12 +6,13 @@
       </h2>
     </template>
     <div v-else class="workbench-content-host__empty" data-testid="workbench-content-empty">
-      Select a workbench item
+      {{ t('workbench').emptyState }}
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { t } from '@/i18n';
 import type { WorkbenchEntry } from '@/types/workbench';
 
 defineProps<{
