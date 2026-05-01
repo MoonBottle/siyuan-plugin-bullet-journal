@@ -29,7 +29,7 @@ const tabs: Array<{ value: MobileMainTab, label: string }> = [
   { value: 'todo', label: '待办' },
   { value: 'pomodoro', label: '番茄钟' },
   { value: 'habit', label: '习惯打卡' },
-  { value: 'more', label: '更多' },
+  { value: 'more', label: '设置' },
 ];
 </script>
 

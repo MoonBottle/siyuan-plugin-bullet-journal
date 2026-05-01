@@ -66,7 +66,7 @@ vi.mock('@/mobile/panels/MobileMorePanel.vue', () => ({
   default: defineComponent({
     name: 'MobileMorePanelStub',
     setup() {
-      return () => h('div', { 'data-testid': 'more-panel' }, 'more');
+      return () => h('div', { 'data-testid': 'more-panel' }, 'settings');
     },
   }),
 }));

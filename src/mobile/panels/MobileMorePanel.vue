@@ -1,8 +1,8 @@
 <template>
   <section class="mobile-more-panel" data-testid="more-panel">
     <header class="mobile-more-panel__header">
-      <h2 class="mobile-more-panel__title">{{ t('common').more }}</h2>
-      <p class="mobile-more-panel__subtitle">{{ t('settings').title }}</p>
+      <h2 class="mobile-more-panel__title">{{ t('settings').title }}</h2>
+      <p class="mobile-more-panel__subtitle">{{ t('mobile.settings.view') || '视图设置' }}</p>
     </header>
 
     <div class="mobile-more-panel__section">
@@ -60,23 +60,6 @@
         {{ t('mobile.settings.about') || '关于' }}
       </div>
 
-      <button
-        class="mobile-more-panel__item"
-        data-testid="more-open-plugin-settings"
-        type="button"
-        @click="openPluginSettings"
-      >
-        <div class="mobile-more-panel__item-copy">
-          <span class="mobile-more-panel__item-title">
-            {{ t('settings').title }}
-          </span>
-          <span class="mobile-more-panel__item-value">
-            {{ t('todo').detail }}
-          </span>
-        </div>
-        <span class="mobile-more-panel__chevron">›</span>
-      </button>
-
       <div class="mobile-more-panel__item mobile-more-panel__item--static">
         <div class="mobile-more-panel__item-copy">
           <span class="mobile-more-panel__item-title">
@@ -93,18 +76,16 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import PluginInfo from '@/../plugin.json';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import { useProjectStore } from '@/stores';
 
 const projectStore = useProjectStore();
 const plugin = usePlugin();
+const fallbackVersion = PluginInfo.version || '0.12.8';
 
-const version = computed(() => plugin?.manifest?.version || '0.12.2');
-
-function openPluginSettings() {
-  plugin?.openSetting?.();
-}
+const version = computed(() => plugin?.manifest?.version || fallbackVersion);
 </script>
 
 <style lang="scss" scoped>
@@ -213,11 +194,5 @@ function openPluginSettings() {
 
 .mobile-more-panel__switch--active .mobile-more-panel__switch-thumb {
   transform: translateX(18px);
-}
-
-.mobile-more-panel__chevron {
-  font-size: 18px;
-  line-height: 1;
-  color: var(--b3-theme-on-surface, #9ca3af);
 }
 </style>

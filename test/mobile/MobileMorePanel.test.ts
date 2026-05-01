@@ -33,19 +33,16 @@ function mountPanel(pinia: Pinia) {
 }
 
 describe('MobileMorePanel', () => {
-  const openSetting = vi.fn();
   let pinia: Pinia;
 
   beforeEach(() => {
     document.body.innerHTML = '';
     pinia = createPinia();
     setActivePinia(pinia);
-    openSetting.mockReset();
     vi.mocked(usePlugin).mockReturnValue({
       manifest: {
         version: '9.9.9',
       },
-      openSetting,
     } as any);
   });
 
@@ -54,19 +51,31 @@ describe('MobileMorePanel', () => {
     vi.clearAllMocks();
   });
 
-  it('renders settings content instead of placeholder text only', async () => {
+  it('renders a lightweight settings panel without nested settings entry', async () => {
     const mounted = mountPanel(pinia);
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="more-toggle-hide-completed"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="more-toggle-hide-abandoned"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="more-open-plugin-settings"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="more-version"]')?.textContent).toContain('9.9.9');
+    expect(mounted.container.querySelector('[data-testid="more-open-plugin-settings"]')).toBeNull();
+    expect(mounted.container.textContent).toContain('设置');
+    expect(mounted.container.querySelector('[data-testid="more-version"]')?.textContent).toContain('v9.9.9');
 
     mounted.unmount();
   });
 
-  it('toggles project store filters and opens plugin settings', async () => {
+  it('falls back to the plugin.json version when runtime plugin metadata is unavailable', async () => {
+    vi.mocked(usePlugin).mockReturnValue(null);
+
+    const mounted = mountPanel(pinia);
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="more-version"]')?.textContent).toContain('v0.12.8');
+
+    mounted.unmount();
+  });
+
+  it('toggles project store filters without exposing plugin settings entry', async () => {
     const mounted = mountPanel(pinia);
     const projectStore = useProjectStore(pinia);
     await nextTick();
@@ -80,10 +89,7 @@ describe('MobileMorePanel', () => {
 
     expect(projectStore.hideCompleted).toBe(true);
     expect(projectStore.hideAbandoned).toBe(true);
-
-    (mounted.container.querySelector('[data-testid="more-open-plugin-settings"]') as HTMLButtonElement).click();
-
-    expect(openSetting).toHaveBeenCalledTimes(1);
+    expect(mounted.container.querySelector('[data-testid="more-open-plugin-settings"]')).toBeNull();
 
     mounted.unmount();
   });
