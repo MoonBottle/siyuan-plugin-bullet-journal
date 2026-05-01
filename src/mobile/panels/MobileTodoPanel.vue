@@ -131,12 +131,26 @@ const plugin = usePlugin();
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 const { openItem, openProject, openTask } = useItemDetail();
+const initialCurrentDate = projectStore.currentDate || dayjs().format('YYYY-MM-DD');
+
+function buildDateRangeForFilter(
+  dateFilter: TodoDateFilterType,
+  currentDateValue: string,
+  currentRange: { start: string, end: string } | null,
+) {
+  return buildTodoDateRange(
+    dateFilter,
+    currentDateValue,
+    currentRange?.start ?? currentDateValue,
+    currentRange?.end ?? dayjs(currentDateValue).add(7, 'day').format('YYYY-MM-DD'),
+  );
+}
 
 const state = reactive({
   searchQuery: '',
   selectedGroup: '',
   dateFilter: 'today' as TodoDateFilterType,
-  dateRange: null as { start: string, end: string } | null,
+  dateRange: buildDateRangeForFilter('today', initialCurrentDate, null) as { start: string, end: string } | null,
   selectedPriorities: [] as PriorityLevel[],
   showFilterDrawer: false,
   showActionDrawer: false,
@@ -284,15 +298,12 @@ const handleCreateItem = (taskId: string, projectId?: string) => {
   state.showQuickCreate = true;
 };
 
-const applyFilters = () => {
-  state.dateRange = buildTodoDateRange(
-    state.dateFilter,
-    currentDate.value,
-    state.dateRange?.start ?? dayjs().format('YYYY-MM-DD'),
-    state.dateRange?.end ?? dayjs().add(7, 'day').format('YYYY-MM-DD'),
-  );
+const applyFilters = (options: { silent?: boolean } = {}) => {
+  state.dateRange = buildDateRangeForFilter(state.dateFilter, currentDate.value, state.dateRange);
 
-  showMessage(t('mobile.filter.applied') || '筛选已应用');
+  if (!options.silent) {
+    showMessage(t('mobile.filter.applied') || '筛选已应用');
+  }
 };
 
 const completedDateRange = computed(() => {
@@ -303,7 +314,7 @@ watch(
   () => projectStore.currentDate,
   () => {
     if (state.dateFilter === 'today' || state.dateFilter === 'week') {
-      applyFilters();
+      applyFilters({ silent: true });
     }
   },
 );
@@ -411,7 +422,7 @@ onMounted(async () => {
     // Ignore BroadcastChannel failures on unsupported environments.
   }
 
-  applyFilters();
+  applyFilters({ silent: true });
 });
 
 onUnmounted(() => {

@@ -96,14 +96,20 @@ function handleSkipBreak() {
 
 <style lang="scss" scoped>
 .mobile-pomodoro-panel {
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
   height: 100%;
+  min-height: 0;
   background: var(--b3-theme-surface, #fff);
+  overflow: hidden;
 }
 
 .mobile-pomodoro-panel__surface {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

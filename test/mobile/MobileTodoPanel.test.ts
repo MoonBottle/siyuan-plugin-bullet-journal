@@ -8,10 +8,15 @@ const {
   mockLoadFromPlugin,
   mockRefresh,
   mockShowMessage,
+  mockBuildTodoDateRange,
 } = vi.hoisted(() => ({
   mockLoadFromPlugin: vi.fn(),
   mockRefresh: vi.fn(async () => {}),
   mockShowMessage: vi.fn(),
+  mockBuildTodoDateRange: vi.fn(() => ({
+    start: '2026-05-01',
+    end: '2026-05-01',
+  })),
 }));
 
 vi.mock('@/mobile/components/todo/MobileFilterBar.vue', () => ({
@@ -26,8 +31,17 @@ vi.mock('@/mobile/components/todo/MobileFilterBar.vue', () => ({
 vi.mock('@/mobile/components/todo/MobileTodoList.vue', () => ({
   default: defineComponent({
     name: 'MobileTodoListStub',
-    setup() {
-      return () => h('div', { 'data-testid': 'todo-list' }, 'list');
+    props: {
+      dateRange: {
+        type: Object,
+        default: null,
+      },
+    },
+    setup(props) {
+      return () => h('div', {
+        'data-testid': 'todo-list',
+        'data-date-range': props.dateRange ? JSON.stringify(props.dateRange) : '',
+      }, 'list');
     },
   }),
 }));
@@ -204,7 +218,7 @@ vi.mock('@/utils/viewDebug', () => ({
 
 vi.mock('@/utils/todoDateFilter', () => ({
   buildCompletedTodoDateRange: vi.fn(() => null),
-  buildTodoDateRange: vi.fn(() => null),
+  buildTodoDateRange: mockBuildTodoDateRange,
 }));
 
 vi.mock('@/i18n', () => ({
@@ -296,6 +310,17 @@ describe('MobileTodoPanel', () => {
         payload: { blockId: 'detail-item' },
       },
     ]);
+
+    mounted.unmount();
+  });
+
+  it('initializes with an active date range and does not announce filters on mount', async () => {
+    const mounted = mountPanel();
+    await nextTick();
+
+    expect(mockBuildTodoDateRange).toHaveBeenCalled();
+    expect(mounted.container.querySelector('[data-testid="todo-list"]')?.getAttribute('data-date-range')).toContain('2026-05-01');
+    expect(mockShowMessage).not.toHaveBeenCalledWith('Filters applied');
 
     mounted.unmount();
   });

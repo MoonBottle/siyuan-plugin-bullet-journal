@@ -146,4 +146,24 @@ describe('MobilePomodoroPanel', () => {
 
     mounted.unmount();
   });
+
+  it('keeps the completion view inside the panel surface when pending completion arrives', async () => {
+    const mounted = mountPanel({ blockId: 'item-123' });
+    await nextTick();
+
+    const completionHandler = eventBusOn.mock.calls[0]?.[1];
+    expect(typeof completionHandler).toBe('function');
+
+    completionHandler?.({
+      durationMinutes: 0,
+      itemContent: '测试事项',
+    });
+    await nextTick();
+
+    const surface = mounted.container.querySelector('.mobile-pomodoro-panel__surface');
+    expect(surface).not.toBeNull();
+    expect(surface?.querySelector('[data-testid="pomodoro-complete"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
 });

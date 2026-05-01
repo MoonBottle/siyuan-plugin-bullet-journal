@@ -2,16 +2,17 @@
   <div class="mobile-main-shell" data-testid="mobile-main-shell">
     <main class="mobile-main-shell__content">
       <MobileTodoPanel
-        v-if="activeTab === 'todo'"
+        v-if="hasMountedTodoPanel"
+        v-show="activeTab === 'todo'"
         ref="todoPanelRef"
         @open-pomodoro="handleOpenPomodoro"
       />
       <MobilePomodoroPanel
-        v-else-if="activeTab === 'pomodoro'"
+        v-if="activeTab === 'pomodoro'"
         :initial-context="pomodoroContext"
       />
       <MobileHabitPanel v-else-if="activeTab === 'habit'" />
-      <MobileMorePanel v-else />
+      <MobileMorePanel v-else-if="activeTab === 'more'" />
     </main>
 
     <MobileCreateFab
@@ -49,8 +50,12 @@ type PomodoroLaunchContext = {
 const activeTab = ref<MobileMainShellTab>('todo');
 const pomodoroContext = ref<PomodoroLaunchContext | null>(null);
 const todoPanelRef = ref<InstanceType<typeof MobileTodoPanel> | null>(null);
+const hasMountedTodoPanel = ref(true);
 
 function navigateToTab(tab: MobileMainShellTab) {
+  if (tab === 'todo') {
+    hasMountedTodoPanel.value = true;
+  }
   activeTab.value = tab;
 }
 

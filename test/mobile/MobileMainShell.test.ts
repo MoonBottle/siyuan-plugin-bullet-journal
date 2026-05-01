@@ -1,14 +1,22 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick, onMounted } from 'vue';
 import MobileMainShell from '@/mobile/MobileMainShell.vue';
+
+const { todoPanelMountCount } = vi.hoisted(() => ({
+  todoPanelMountCount: { value: 0 },
+}));
 
 vi.mock('@/mobile/panels/MobileTodoPanel.vue', () => ({
   default: defineComponent({
     name: 'MobileTodoPanelStub',
     emits: ['open-pomodoro'],
     setup(_, { emit }) {
+      onMounted(() => {
+        todoPanelMountCount.value += 1;
+      });
+
       return () => h('div', { 'data-testid': 'todo-panel' }, [
         h(
           'button',
@@ -81,6 +89,7 @@ function mountShell() {
 
 afterEach(() => {
   document.body.innerHTML = '';
+  todoPanelMountCount.value = 0;
 });
 
 describe('MobileMainShell', () => {
@@ -92,6 +101,7 @@ describe('MobileMainShell', () => {
     expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="pomodoro-panel"]')).toBeNull();
     expect(mounted.container.querySelector('[data-testid="mobile-tab-todo"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
+    expect(todoPanelMountCount.value).toBe(1);
 
     (mounted.container.querySelector('[data-testid="mobile-tab-habit"]') as HTMLButtonElement | null)?.click();
     await nextTick();
@@ -103,6 +113,8 @@ describe('MobileMainShell', () => {
 
     (mounted.container.querySelector('[data-testid="mobile-tab-todo"]') as HTMLButtonElement | null)?.click();
     await nextTick();
+
+    expect(todoPanelMountCount.value).toBe(1);
 
     (mounted.container.querySelector('[data-testid="todo-open-pomodoro"]') as HTMLButtonElement | null)?.click();
     await nextTick();
