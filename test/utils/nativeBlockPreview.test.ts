@@ -124,7 +124,7 @@ describe('createNativeBlockPreviewController', () => {
     }));
   });
 
-  it('uses a proxy block-ref anchor when BlockPanel is not available at runtime', async () => {
+  it('decorates the real anchor as a block-ref trigger when BlockPanel is not available at runtime', async () => {
     vi.resetModules();
     siyuanExports.BlockPanel = undefined;
 
@@ -149,13 +149,13 @@ describe('createNativeBlockPreviewController', () => {
       anchorEl,
     });
 
-    const proxyEl = document.body.querySelector('.native-block-preview-proxy') as HTMLElement | null;
-    expect(proxyEl).not.toBeNull();
-    expect(proxyEl?.getAttribute('data-type')).toBe('block-ref');
-    expect(proxyEl?.getAttribute('data-id')).toBe('block-1');
+    expect(anchorEl.getAttribute('data-type')).toBe('block-ref');
+    expect(anchorEl.getAttribute('data-id')).toBe('block-1');
+    expect(anchorEl.getAttribute('aria-label')).toBe('block-ref');
 
     controller.close();
-    expect(document.body.querySelector('.native-block-preview-proxy')).toBeNull();
+    expect(anchorEl.hasAttribute('data-type')).toBe(false);
+    expect(anchorEl.hasAttribute('data-id')).toBe(false);
   });
 
   it('does not call native destroy twice after the panel was already closed by native UI', async () => {
@@ -190,7 +190,7 @@ describe('createNativeBlockPreviewController', () => {
     expect(blockPanelCtor).toHaveBeenCalledTimes(2);
   });
 
-  it('makes destroy idempotent for panels discovered through the proxy fallback path', async () => {
+  it('makes destroy idempotent for panels discovered through the decorated-anchor fallback path', async () => {
     vi.resetModules();
     siyuanExports.BlockPanel = undefined;
 
@@ -222,8 +222,7 @@ describe('createNativeBlockPreviewController', () => {
       anchorEl,
     });
 
-    const proxyEl = document.body.querySelector('.native-block-preview-proxy') as HTMLElement;
-    nativePanel.targetElement = proxyEl;
+    nativePanel.targetElement = anchorEl;
     (window as any).siyuan.blockPanels.push(nativePanel);
 
     await new Promise(resolve => setTimeout(resolve, 0));

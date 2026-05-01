@@ -68,7 +68,7 @@ function instantiateBlockPanel(panelCtor: NativeBlockPanelCtor, options: OpenNat
 
 export function createNativeBlockPreviewController() {
   let currentPanel: NativeBlockPanelInstance | null = null;
-  let currentProxyEl: HTMLElement | null = null;
+  let restoreAnchorAttrs: (() => void) | null = null;
   let cleanupHoverListeners: (() => void) | null = null;
   let findPanelTimer: ReturnType<typeof window.setTimeout> | null = null;
   let currentBlockId = '';
@@ -77,6 +77,11 @@ export function createNativeBlockPreviewController() {
   function detachHoverListeners() {
     cleanupHoverListeners?.();
     cleanupHoverListeners = null;
+  }
+
+  function clearAnchorDecoration() {
+    restoreAnchorAttrs?.();
+    restoreAnchorAttrs = null;
   }
 
   function clearFindPanelTimer() {
@@ -141,36 +146,56 @@ export function createNativeBlockPreviewController() {
     }
   }
 
-  function createProxyAnchor(anchorEl: HTMLElement, blockId: string) {
-    const rect = anchorEl.getBoundingClientRect();
-    const proxyEl = document.createElement('span');
-    proxyEl.className = 'native-block-preview-proxy';
-    proxyEl.setAttribute('data-type', 'block-ref');
-    proxyEl.setAttribute('data-id', blockId);
-    proxyEl.setAttribute('aria-hidden', 'true');
-    proxyEl.setAttribute('style', [
-      'position:fixed',
-      `left:${rect.left}px`,
-      `top:${rect.top}px`,
-      `width:${Math.max(rect.width, 1)}px`,
-      `height:${Math.max(rect.height, 1)}px`,
-      'opacity:0',
-      'pointer-events:none',
-      'z-index:-1',
-    ].join(';'));
-    document.body.appendChild(proxyEl);
-    return proxyEl;
+  function decorateAnchorAsBlockRef(anchorEl: HTMLElement, blockId: string) {
+    const previousDataType = anchorEl.getAttribute('data-type');
+    const previousDataId = anchorEl.getAttribute('data-id');
+    const previousAriaLabel = anchorEl.getAttribute('aria-label');
+    const hadPreventPopover = anchorEl.hasAttribute('prevent-popover');
+
+    anchorEl.setAttribute('data-type', 'block-ref');
+    anchorEl.setAttribute('data-id', blockId);
+    anchorEl.setAttribute('aria-label', previousAriaLabel || 'block-ref');
+    anchorEl.removeAttribute('prevent-popover');
+
+    restoreAnchorAttrs = () => {
+      if (previousDataType === null) {
+        anchorEl.removeAttribute('data-type');
+      }
+      else {
+        anchorEl.setAttribute('data-type', previousDataType);
+      }
+
+      if (previousDataId === null) {
+        anchorEl.removeAttribute('data-id');
+      }
+      else {
+        anchorEl.setAttribute('data-id', previousDataId);
+      }
+
+      if (previousAriaLabel === null) {
+        anchorEl.removeAttribute('aria-label');
+      }
+      else {
+        anchorEl.setAttribute('aria-label', previousAriaLabel);
+      }
+
+      if (hadPreventPopover) {
+        anchorEl.setAttribute('prevent-popover', 'true');
+      }
+      else {
+        anchorEl.removeAttribute('prevent-popover');
+      }
+    };
   }
 
-  function dispatchProxyMouseOver(proxyEl: HTMLElement, anchorEl: HTMLElement) {
+  function dispatchAnchorMouseOver(anchorEl: HTMLElement) {
     const rect = anchorEl.getBoundingClientRect();
-    proxyEl.dispatchEvent(new MouseEvent('mouseover', {
+    anchorEl.dispatchEvent(new MouseEvent('mouseover', {
       bubbles: true,
       cancelable: true,
       clientX: rect.left + Math.min(rect.width / 2, 8),
       clientY: rect.top + Math.min(rect.height / 2, 8),
       view: window,
-      relatedTarget: anchorEl,
     }));
   }
 
@@ -178,18 +203,18 @@ export function createNativeBlockPreviewController() {
     return ensureBlockPanelsRegistry().find(panel => panel?.targetElement === targetElement) ?? null;
   }
 
-  function watchProxyPanel(proxyEl: HTMLElement, onHoverChange?: (hovered: boolean) => void) {
+  function watchAnchorPanel(anchorEl: HTMLElement, onHoverChange?: (hovered: boolean) => void) {
     let attempts = 0;
     const maxAttempts = 20;
 
     const poll = () => {
       findPanelTimer = null;
 
-      if (currentProxyEl !== proxyEl) {
+      if (currentAnchorEl !== anchorEl) {
         return;
       }
 
-      const panel = findPanelByTarget(proxyEl);
+      const panel = findPanelByTarget(anchorEl);
       if (panel?.element) {
         makeDestroyIdempotent(panel);
         currentPanel = panel;
@@ -228,10 +253,9 @@ export function createNativeBlockPreviewController() {
       currentPanel = panel;
     }
     else {
-      const proxyEl = createProxyAnchor(options.anchorEl, options.blockId);
-      currentProxyEl = proxyEl;
-      dispatchProxyMouseOver(proxyEl, options.anchorEl);
-      watchProxyPanel(proxyEl, options.onHoverChange);
+      decorateAnchorAsBlockRef(options.anchorEl, options.blockId);
+      dispatchAnchorMouseOver(options.anchorEl);
+      watchAnchorPanel(options.anchorEl, options.onHoverChange);
     }
 
     currentBlockId = options.blockId;
@@ -243,9 +267,8 @@ export function createNativeBlockPreviewController() {
     clearFindPanelTimer();
     detachHoverListeners();
     currentPanel?.destroy?.();
-    currentProxyEl?.remove();
+    clearAnchorDecoration();
     currentPanel = null;
-    currentProxyEl = null;
     currentBlockId = '';
     currentAnchorEl = null;
   }
