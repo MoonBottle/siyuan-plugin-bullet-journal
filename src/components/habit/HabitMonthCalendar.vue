@@ -176,9 +176,10 @@ const calendarCells = computed(() => {
 
 .habit-month-calendar__header {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
   align-items: center;
-  margin-bottom: 6px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .habit-month-calendar__nav {
@@ -193,7 +194,7 @@ const calendarCells = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  justify-self: center;
+  padding: 0;
 }
 
 .habit-month-calendar__nav:hover {
@@ -201,15 +202,14 @@ const calendarCells = computed(() => {
 }
 
 .habit-month-calendar__nav--prev {
-  grid-column: 3;
+  justify-self: start;
 }
 
 .habit-month-calendar__nav--next {
-  grid-column: 5;
+  justify-self: end;
 }
 
 .habit-month-calendar__title {
-  grid-column: 4;
   justify-self: center;
   font-size: 14px;
   font-weight: 500;
