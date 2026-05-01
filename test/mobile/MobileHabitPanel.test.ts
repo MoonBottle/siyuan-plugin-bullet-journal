@@ -111,6 +111,14 @@ vi.mock('@/utils/habitStatsUtils', () => ({
       longestStreak: 3,
     },
   ]))),
+  calculateHabitStats: vi.fn((habit: { blockId: string }) => ({
+    habitId: habit.blockId,
+    monthlyCheckins: 1,
+    totalCheckins: 2,
+    monthlyCompletionRate: 0.5,
+    currentStreak: 1,
+    longestStreak: 3,
+  })),
 }));
 
 vi.mock('@/domain/habit/habitCompletion', () => ({

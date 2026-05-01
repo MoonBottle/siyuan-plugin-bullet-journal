@@ -12,7 +12,22 @@ function getUniqueRecordDates(habit: Habit): string[] {
   return Array.from(new Set(habit.records.map(record => record.date))).sort();
 }
 
-function getCompletedDates(habit: Habit, startDate?: string, endDate?: string): string[] {
+function getCompletedRecordDates(habit: Habit, startDate?: string, endDate?: string): string[] {
+  return getUniqueRecordDates(habit).filter((date) => {
+    if (startDate && date < startDate)
+      return false;
+    if (endDate && date > endDate)
+      return false;
+
+    const records = habit.records.filter(record => record.date === date);
+    if (habit.type === 'binary')
+      return records.length > 0;
+
+    return records.some(record => isHabitRecordCompleted(record, habit));
+  });
+}
+
+function getEligibleCompletedDates(habit: Habit, startDate?: string, endDate?: string): string[] {
   return getUniqueRecordDates(habit).filter((date) => {
     if (startDate && date < startDate)
       return false;
@@ -106,7 +121,7 @@ function getBestValueByDate(habit: Habit, date: string): number {
 }
 
 function getCompletedCountInDateRange(habit: Habit, start: string, end: string): number {
-  return getCompletedDates(habit, start, end).length;
+  return getEligibleCompletedDates(habit, start, end).length;
 }
 
 function countExpectedAndCompletedForRange(habit: Habit, start: string, end: string): CompletionWindow {
@@ -169,18 +184,18 @@ function getActiveRequiredCount(
   return fallbackRequiredCount;
 }
 
-export function calculateHabitStats(habit: Habit, currentDate: string): HabitStats {
-  const completedDates = getCompletedDates(habit);
-  const totalCheckins = completedDates.length;
-  const currentMonth = currentDate.slice(0, 7);
-  const monthlyCheckins = completedDates.filter(date => date.startsWith(currentMonth)).length;
+export function calculateHabitStats(habit: Habit, currentDate: string, viewMonth?: string): HabitStats {
+  const completedRecordDates = getCompletedRecordDates(habit);
+  const totalCheckins = completedRecordDates.length;
+  const targetMonth = viewMonth ?? currentDate.slice(0, 7);
+  const monthlyCheckins = completedRecordDates.filter(date => date.startsWith(targetMonth)).length;
 
   const { currentStreak, longestStreak } = calculateStreaks(habit, currentDate);
 
   const overallWindow = countExpectedAndCompletedForRange(habit, habit.startDate, currentDate);
   const weekStart = dayjs(currentDate).startOf('isoWeek').format('YYYY-MM-DD');
-  const monthStart = `${currentMonth}-01`;
-  const monthEnd = dayjs(currentDate).endOf('month').format('YYYY-MM-DD');
+  const monthStart = `${targetMonth}-01`;
+  const monthEnd = dayjs(`${targetMonth}-01`).endOf('month').format('YYYY-MM-DD');
   const habitEndDate = getHabitEndDate(habit);
   const monthlyWindowEnd = habitEndDate && habitEndDate < monthEnd ? habitEndDate : monthEnd;
   const monthlyWindow = countExpectedAndCompletedForRange(

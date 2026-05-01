@@ -51,6 +51,33 @@ vi.mock('@/components/habit/HabitStatsCards.vue', () => ({
   }),
 }));
 
+vi.mock('@/utils/habitStatsUtils', () => ({
+  calculateAllHabitStats: vi.fn(() => new Map([
+    ['habit-1', {
+      habitId: 'habit-1',
+      monthlyCheckins: 1,
+      totalCheckins: 1,
+      completionRate: 1,
+      weeklyCompletionRate: 1,
+      monthlyCompletionRate: 1,
+      currentStreak: 1,
+      longestStreak: 1,
+      isEnded: false,
+    }],
+  ])),
+  calculateHabitStats: vi.fn((habit: { blockId: string }) => ({
+    habitId: habit.blockId,
+    monthlyCheckins: 1,
+    totalCheckins: 1,
+    completionRate: 1,
+    weeklyCompletionRate: 1,
+    monthlyCompletionRate: 1,
+    currentStreak: 1,
+    longestStreak: 1,
+    isEnded: false,
+  })),
+}));
+
 vi.mock('@/components/habit/HabitMonthCalendar.vue', () => ({
   default: defineComponent({
     name: 'HabitMonthCalendarStub',

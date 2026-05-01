@@ -88,7 +88,7 @@ import {
   Events,
   DATA_REFRESH_CHANNEL,
 } from '@/utils/eventBus';
-import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
+import { calculateAllHabitStats, calculateHabitStats } from '@/utils/habitStatsUtils';
 import {
   consumePendingHabitDockTarget,
   type HabitDockNavigationTarget,
@@ -127,7 +127,7 @@ const selectedStats = computed(() => {
   if (!state.selectedHabit)
     return null;
 
-  return habitStatsMap.value.get(state.selectedHabit.blockId);
+  return calculateHabitStats(state.selectedHabit, currentDate.value, state.selectedViewMonth);
 });
 
 const displaySelectedStats = computed(() => selectedStats.value ?? state.selectedStatsCache);
@@ -156,7 +156,7 @@ watch(currentDate, (nextDate, previousDate) => {
 function openHabitDetail(habit: Habit) {
   state.selectedViewMonth = state.selectedDate.substring(0, 7);
   state.selectedHabit = habit;
-  state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
+  state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
   state.showHabitDetail = true;
 }
 
@@ -170,7 +170,7 @@ function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
   state.selectedDate = targetDate;
   state.selectedViewMonth = targetDate.substring(0, 7);
   state.selectedHabit = habit;
-  state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
+  state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
   state.showHabitDetail = true;
   return true;
 }
@@ -202,13 +202,13 @@ async function handleCheckIn(habit: Habit) {
 
   const success = await checkIn(habit, state.selectedDate);
   if (success)
-    state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
 }
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, state.selectedDate, 1);
   if (success)
-    state.selectedStatsCache = habitStatsMap.value.get(habit.blockId) ?? state.selectedStatsCache;
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
 }
 
 const handleDataRefresh = async () => {

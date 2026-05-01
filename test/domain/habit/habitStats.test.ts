@@ -59,8 +59,19 @@ describe('calculateHabitStats', () => {
     });
     const stats = calculateHabitStats(habit, '2026-04-12');
 
-    expect(stats.totalCheckins).toBe(0);
+    expect(stats.totalCheckins).toBe(1);
     expect(stats.completionRate).toBe(0);
+  });
+
+  it('详情查看历史月份时 monthlyCheckins 应按选中月份统计', () => {
+    const habit = mkHabit({
+      frequency: { type: 'daily' },
+      records: [mkRecord('2026-04-18'), mkRecord('2026-04-19'), mkRecord('2026-04-30')],
+    });
+    const stats = calculateHabitStats(habit, '2026-05-01', '2026-04');
+
+    expect(stats.monthlyCheckins).toBe(3);
+    expect(stats.totalCheckins).toBe(3);
   });
 
   it('当前周期未完成时 currentStreak 应归零', () => {

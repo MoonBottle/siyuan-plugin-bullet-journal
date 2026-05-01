@@ -118,7 +118,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { calculateAllHabitStats } from '@/utils/habitStatsUtils';
+import { calculateAllHabitStats, calculateHabitStats } from '@/utils/habitStatsUtils';
 import {
   checkIn,
   checkInCount,
@@ -165,7 +165,7 @@ const habitPeriodStateMap = computed(() => {
 
 const selectedStats = computed(() => {
   if (!selectedHabit.value) return null;
-  return habitStatsMap.value.get(selectedHabit.value.blockId);
+  return calculateHabitStats(selectedHabit.value, currentDate.value, selectedViewMonth.value);
 });
 
 const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value);
@@ -190,13 +190,13 @@ async function refreshHabits() {
 async function handleCheckIn(habit: Habit) {
   const success = await checkIn(habit, selectedDate.value);
   if (success)
-    selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
+    selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
 }
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, selectedDate.value, 1);
   if (success)
-    selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
+    selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
 }
 
 async function handleOpenHabitDoc(habit: Habit) {
@@ -219,7 +219,7 @@ async function handleOpenSelectedHabitDoc() {
 function handleOpenHabitDetail(habit: Habit) {
   selectedViewMonth.value = currentDate.value.substring(0, 7);
   selectedHabit.value = habit;
-  selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
+  selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
@@ -231,7 +231,7 @@ function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
   selectedDate.value = targetDate;
   selectedViewMonth.value = targetDate.substring(0, 7);
   selectedHabit.value = habit;
-  selectedStatsCache.value = habitStatsMap.value.get(habit.blockId) ?? selectedStatsCache.value;
+  selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
   return true;
 }
 
