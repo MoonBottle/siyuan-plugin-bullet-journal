@@ -206,8 +206,8 @@ const calendarCells = computed(() => {
 }
 
 .habit-month-calendar__grid {
-  width: min(100%, 336px);
-  margin: 0 auto;
+  width: 100%;
+  min-width: 0;
 }
 
 .habit-month-calendar__weekdays {
