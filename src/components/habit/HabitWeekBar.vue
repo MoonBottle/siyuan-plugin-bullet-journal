@@ -32,19 +32,14 @@ const emit = defineEmits<{
 const weekDayLabels = computed(() => t('calendar').weekDays);
 
 const weekDays = computed(() => {
-  const selected = dayjs(props.modelValue);
-  const monday = selected.startOf('week').add(1, 'day'); // 周一开始
-  // 如果 selected 是周日，需要往前推
-  const actualMonday = selected.day() === 0
-    ? monday.subtract(1, 'week')
-    : monday;
-
+  const windowStart = dayjs(props.currentDate).subtract(6, 'day');
   const days = [];
   for (let i = 0; i < 7; i++) {
-    const d = actualMonday.add(i, 'day');
+    const d = windowStart.add(i, 'day');
+    const weekdayIndex = d.day() === 0 ? 6 : d.day() - 1;
     days.push({
       date: d.format('YYYY-MM-DD'),
-      weekday: weekDayLabels.value[i] || '',
+      weekday: weekDayLabels.value[weekdayIndex] || '',
       dayNum: d.format('D'),
     });
   }

@@ -14,7 +14,9 @@
     </div>
     <div class="habit-stats-card">
       <div class="habit-stats-card__value">
-        {{ stats?.currentStreak ?? 0 }}<span class="habit-stats-card__sub">/ {{ stats?.longestStreak ?? 0 }}</span>
+        <span>{{ stats?.currentStreak ?? 0 }}</span>
+        <span class="habit-stats-card__separator"> / </span>
+        <span class="habit-stats-card__secondary">{{ stats?.longestStreak ?? 0 }}</span>
       </div>
       <div class="habit-stats-card__label">{{ t('habit').currentStreak }} / {{ t('habit').longestStreak }}</div>
     </div>
@@ -58,9 +60,18 @@ const percentFormatter = new Intl.NumberFormat(undefined, {
   line-height: 1.2;
 }
 
-.habit-stats-card__sub {
-  font-size: 13px;
+.habit-stats-card__separator,
+.habit-stats-card__secondary {
+  font-size: inherit;
+}
+
+.habit-stats-card__separator {
   font-weight: 400;
+  color: var(--b3-theme-on-surface-light);
+}
+
+.habit-stats-card__secondary {
+  font-weight: 500;
   color: var(--b3-theme-on-surface-light);
 }
 
