@@ -124,6 +124,8 @@ type WorkbenchSettings = {
 - `dashboards` 保存仪表盘定义和 widget 布局
 - `activeEntryId` 保存上次激活条目
 
+该对象作为完整工作台配置整体持久化，不拆散挂入 `settingsStore`。
+
 ### 4.2 左栏条目模型
 
 ```ts
@@ -315,7 +317,7 @@ type WorkbenchWidgetDefinition = {
 
 ### 7.1 `workbenchStore` 的职责
 
-尽管持久化仍走插件设置，但运行时状态不建议直接塞进 `settingsStore` 内部逻辑。建议新增独立 `workbenchStore`，负责：
+工作台运行时状态不建议直接塞进 `settingsStore` 内部逻辑。建议新增独立 `workbenchStore`，负责：
 
 - 读取和写回工作台配置
 - 管理当前激活条目
@@ -323,7 +325,7 @@ type WorkbenchWidgetDefinition = {
 - 创建 / 删除 widget
 - 更新 widget 布局
 
-`settingsStore` 只负责“最终配置从插件设置存取”，不负责承载全部运行态操作。
+`settingsStore` 不承载工作台配置本体。工作台配置的加载、缓存、写回由 `workbenchStore` 配合独立持久化文件完成。
 
 ### 7.2 视图适配策略
 
@@ -339,13 +341,28 @@ type WorkbenchWidgetDefinition = {
 
 ## 八、持久化设计
 
-工作台配置首版保存在插件设置中，与其他插件设置一并保存。
+工作台配置首版单独存为一个独立 JSON 文件，而不是并入插件主设置对象。
 
-选择插件设置而不是文档存储，原因是：
+建议文件名：
 
-- 首版实现快
-- 不需要定义新的块结构或序列化协议
-- 工作台本质上是 UI 组织配置，不直接参与任务解析数据链
+- `workbench.json`
+
+建议通过插件现有持久化接口读写，例如：
+
+- `plugin.loadData('workbench.json')`
+- `plugin.saveData('workbench.json', content)`
+
+这样工作台配置与 `settings`、`ai-chat-history`、`active-pomodoro.json` 一样，成为独立的插件存储单元。
+
+选择“独立工作台 JSON 文件”而不是“插件 settings 主对象”或“文档存储”，原因是：
+
+- 工作台配置体量会持续增长，独立文件更利于隔离
+- 避免 `settingsStore` 继续膨胀成杂项配置容器
+- 降低保存工作台布局时误触发整份 settings 重写的耦合
+- 更适合后续做导入导出、备份、迁移
+- 仍然保留实现简单的优势，不需要定义新的块结构或文档协议
+
+工作台本质上是 UI 组织配置，不直接参与任务解析数据链，因此保持在插件存储层是合理的。
 
 后续如果要支持分享、导入导出、可见文档化配置，再考虑迁移到文档或混合存储。
 
