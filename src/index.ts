@@ -73,6 +73,9 @@ import {
   setPendingHabitDockTarget,
   type HabitDockNavigationTarget,
 } from "@/utils/habitDockNavigation";
+import {
+  setPendingMobileMainShellTabTarget,
+} from "@/utils/mobileMainShellNavigation";
 import { createExampleDocument } from "@/utils/exampleDocUtils";
 import { dirtyDocTracker } from "@/utils/dirtyDocTracker";
 import { reminderService } from "@/services/reminderService";
@@ -2167,7 +2170,13 @@ export default class TaskAssistantPlugin extends Plugin {
     try {
       const rightDock = (window as any).siyuan?.layout?.rightDock;
       if (rightDock) {
-        rightDock.toggleModel(`${this.name}${DOCK_TYPES.POMODORO}`, true);
+        if (this.isMobile) {
+          setPendingMobileMainShellTabTarget({ tab: "pomodoro" });
+          rightDock.toggleModel(`${this.name}${DOCK_TYPES.TODO}`, true);
+          eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: "pomodoro" });
+        } else {
+          rightDock.toggleModel(`${this.name}${DOCK_TYPES.POMODORO}`, true);
+        }
       }
     } catch (error) {
       console.error("[Task Assistant] Failed to open pomodoro dock:", error);
@@ -2182,11 +2191,21 @@ export default class TaskAssistantPlugin extends Plugin {
     try {
       const rightDock = (window as any).siyuan?.layout?.rightDock;
       if (rightDock) {
-        rightDock.toggleModel(
-          `${this.name}${DOCK_TYPES.POMODORO}`,
-          false,
-          true,
-        );
+        if (this.isMobile) {
+          setPendingMobileMainShellTabTarget({ tab: "pomodoro" });
+          rightDock.toggleModel(
+            `${this.name}${DOCK_TYPES.TODO}`,
+            false,
+            true,
+          );
+          eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: "pomodoro" });
+        } else {
+          rightDock.toggleModel(
+            `${this.name}${DOCK_TYPES.POMODORO}`,
+            false,
+            true,
+          );
+        }
       }
     } catch (error) {
       console.error("[Task Assistant] Failed to toggle pomodoro dock:", error);
@@ -2772,7 +2791,13 @@ export default class TaskAssistantPlugin extends Plugin {
     try {
       const rightDock = (window as any).siyuan?.layout?.rightDock;
       if (rightDock) {
+        if (this.isMobile) {
+          setPendingMobileMainShellTabTarget({ tab: "todo" });
+        }
         rightDock.toggleModel(`${this.name}${DOCK_TYPES.TODO}`, true);
+        if (this.isMobile) {
+          eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: "todo" });
+        }
       }
     } catch (error) {
       console.error("[Task Assistant] Failed to open todo dock:", error);
@@ -2781,12 +2806,21 @@ export default class TaskAssistantPlugin extends Plugin {
 
   private openHabitDock(target?: HabitDockNavigationTarget) {
     try {
-      if (target) {
-        setPendingHabitDockTarget(target);
-      }
       const rightDock = (window as any).siyuan?.layout?.rightDock;
       if (rightDock) {
-        rightDock.toggleModel(`${this.name}${DOCK_TYPES.HABIT}`, true);
+        if (this.isMobile) {
+          setPendingMobileMainShellTabTarget({ tab: "habit" });
+          if (target) {
+            setPendingHabitDockTarget(target);
+          }
+          rightDock.toggleModel(`${this.name}${DOCK_TYPES.TODO}`, true);
+          eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: "habit" });
+        } else {
+          if (target) {
+            setPendingHabitDockTarget(target);
+          }
+          rightDock.toggleModel(`${this.name}${DOCK_TYPES.HABIT}`, true);
+        }
       }
       if (target) {
         eventBus.emit(Events.HABIT_DOCK_NAVIGATE, target);
