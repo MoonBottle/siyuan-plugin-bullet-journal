@@ -157,4 +157,87 @@ describe('createNativeBlockPreviewController', () => {
     controller.close();
     expect(document.body.querySelector('.native-block-preview-proxy')).toBeNull();
   });
+
+  it('does not call native destroy twice after the panel was already closed by native UI', async () => {
+    const panel = {
+      id: 'panel-1',
+      element: document.createElement('div'),
+      destroy: blockPanelDestroy,
+    };
+    blockPanelCtor.mockReturnValue(panel);
+
+    const { createNativeBlockPreviewController } = await import('@/utils/nativeBlockPreview');
+    const controller = createNativeBlockPreviewController();
+    const firstAnchorEl = document.createElement('div');
+    const secondAnchorEl = document.createElement('div');
+
+    controller.open({
+      app: { name: 'app' } as any,
+      blockId: 'block-1',
+      anchorEl: firstAnchorEl,
+    });
+
+    panel.destroy?.();
+    expect(blockPanelDestroy).toHaveBeenCalledTimes(1);
+
+    controller.open({
+      app: { name: 'app' } as any,
+      blockId: 'block-2',
+      anchorEl: secondAnchorEl,
+    });
+
+    expect(blockPanelDestroy).toHaveBeenCalledTimes(1);
+    expect(blockPanelCtor).toHaveBeenCalledTimes(2);
+  });
+
+  it('makes destroy idempotent for panels discovered through the proxy fallback path', async () => {
+    vi.resetModules();
+    siyuanExports.BlockPanel = undefined;
+
+    const { createNativeBlockPreviewController } = await import('@/utils/nativeBlockPreview');
+    const controller = createNativeBlockPreviewController();
+    const anchorEl = document.createElement('div');
+    anchorEl.getBoundingClientRect = vi.fn(() => ({
+      x: 20,
+      y: 40,
+      width: 120,
+      height: 24,
+      top: 40,
+      left: 20,
+      right: 140,
+      bottom: 64,
+      toJSON: () => ({}),
+    } as DOMRect));
+
+    const nativePanel = {
+      id: 'native-panel-1',
+      element: document.createElement('div'),
+      targetElement: null as HTMLElement | null,
+      destroy: blockPanelDestroy,
+    };
+
+    controller.open({
+      app: { name: 'app' } as any,
+      blockId: 'block-1',
+      anchorEl,
+    });
+
+    const proxyEl = document.body.querySelector('.native-block-preview-proxy') as HTMLElement;
+    nativePanel.targetElement = proxyEl;
+    (window as any).siyuan.blockPanels.push(nativePanel);
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 60));
+
+    nativePanel.destroy?.();
+    expect(blockPanelDestroy).toHaveBeenCalledTimes(1);
+
+    controller.open({
+      app: { name: 'app' } as any,
+      blockId: 'block-2',
+      anchorEl,
+    });
+
+    expect(blockPanelDestroy).toHaveBeenCalledTimes(1);
+  });
 });

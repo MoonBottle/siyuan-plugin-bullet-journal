@@ -104,6 +104,36 @@ export function createNativeBlockPreviewController() {
     };
   }
 
+  function releaseCurrentPanel(panel: NativeBlockPanelInstance) {
+    if (currentPanel === panel) {
+      detachHoverListeners();
+      currentPanel = null;
+    }
+  }
+
+  function makeDestroyIdempotent(panel: NativeBlockPanelInstance) {
+    const originalDestroy = panel.destroy?.bind(panel);
+    if (!originalDestroy) {
+      return;
+    }
+
+    let destroyed = false;
+    panel.destroy = () => {
+      if (destroyed) {
+        releaseCurrentPanel(panel);
+        return;
+      }
+
+      destroyed = true;
+      try {
+        originalDestroy();
+      }
+      finally {
+        releaseCurrentPanel(panel);
+      }
+    };
+  }
+
   function registerPanel(panel: NativeBlockPanelInstance) {
     const panels = ensureBlockPanelsRegistry();
     if (!panels.includes(panel)) {
@@ -161,6 +191,7 @@ export function createNativeBlockPreviewController() {
 
       const panel = findPanelByTarget(proxyEl);
       if (panel?.element) {
+        makeDestroyIdempotent(panel);
         currentPanel = panel;
         attachHoverListeners(panel, onHoverChange);
         return;
@@ -191,6 +222,7 @@ export function createNativeBlockPreviewController() {
     const panelCtor = resolveBlockPanelCtor();
     if (panelCtor) {
       const panel = instantiateBlockPanel(panelCtor, options);
+      makeDestroyIdempotent(panel);
       registerPanel(panel);
       attachHoverListeners(panel, options.onHoverChange);
       currentPanel = panel;
