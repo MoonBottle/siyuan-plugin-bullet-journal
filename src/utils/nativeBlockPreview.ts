@@ -125,18 +125,50 @@ export function createNativeBlockPreviewController() {
     }
 
     const previousPin = element.getAttribute('data-pin');
+    const controllerPinAttr = 'data-bj-controller-pin';
     element.setAttribute('data-pin', 'true');
+    element.setAttribute(controllerPinAttr, 'true');
 
-    restorePinnedState = () => {
-      if (!panel.element) {
+    const releaseControllerPin = () => {
+      const activeElement = panel.element;
+      if (!activeElement) {
         return;
       }
+
+      activeElement.removeAttribute(controllerPinAttr);
       if (previousPin === null) {
-        panel.element.removeAttribute('data-pin');
+        activeElement.removeAttribute('data-pin');
       }
       else {
-        panel.element.setAttribute('data-pin', previousPin);
+        activeElement.setAttribute('data-pin', previousPin);
       }
+    };
+
+    const handlePinClickCapture = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const pinButton = target.closest('[data-type="pin"]');
+      if (!pinButton || !panel.element?.contains(pinButton)) {
+        return;
+      }
+
+      if (panel.element.getAttribute(controllerPinAttr) !== 'true') {
+        return;
+      }
+
+      releaseControllerPin();
+      restorePinnedState = null;
+      panel.element.removeEventListener('click', handlePinClickCapture, true);
+    };
+
+    element.addEventListener('click', handlePinClickCapture, true);
+
+    restorePinnedState = () => {
+      panel.element?.removeEventListener('click', handlePinClickCapture, true);
+      releaseControllerPin();
     };
   }
 

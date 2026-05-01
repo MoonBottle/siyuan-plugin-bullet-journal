@@ -86,6 +86,75 @@ describe('createNativeBlockPreviewController', () => {
     expect(blockPanelDestroy).toHaveBeenCalledTimes(1);
   });
 
+  it('releases the controller pin before the first native pin click so one click pins the preview', async () => {
+    const panelElement = document.createElement('div');
+    panelElement.innerHTML = `
+      <div class="block__icons">
+        <span
+          data-type="pin"
+          class="block__icon"
+          aria-label="pin"
+        >
+          <svg><use xlink:href="#iconPin"></use></svg>
+        </span>
+      </div>
+    `;
+
+    panelElement.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const pinButton = target?.closest('[data-type="pin"]') as HTMLElement | null;
+      if (!pinButton) {
+        return;
+      }
+
+      const iconUse = pinButton.querySelector('use');
+      if (!iconUse) {
+        return;
+      }
+
+      if (panelElement.getAttribute('data-pin') === 'true') {
+        pinButton.setAttribute('aria-label', 'pin');
+        iconUse.setAttribute('xlink:href', '#iconPin');
+        panelElement.setAttribute('data-pin', 'false');
+      }
+      else {
+        pinButton.setAttribute('aria-label', 'unpin');
+        iconUse.setAttribute('xlink:href', '#iconUnpin');
+        panelElement.setAttribute('data-pin', 'true');
+      }
+    });
+
+    const panel = {
+      id: 'panel-1',
+      element: panelElement,
+      destroy: blockPanelDestroy,
+    };
+    blockPanelCtor.mockReturnValue(panel);
+
+    const { createNativeBlockPreviewController } = await import('@/utils/nativeBlockPreview');
+    const controller = createNativeBlockPreviewController();
+
+    controller.open({
+      app: { name: 'app' } as any,
+      blockId: 'block-1',
+      anchorEl: document.createElement('div'),
+    });
+
+    const pinButton = panelElement.querySelector('[data-type="pin"]') as HTMLElement | null;
+    const pinIconUse = pinButton?.querySelector('use') ?? null;
+    expect(pinButton).not.toBeNull();
+    expect(pinIconUse).not.toBeNull();
+
+    pinIconUse?.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    }));
+
+    expect(panelElement.getAttribute('data-pin')).toBe('true');
+    expect(pinButton?.getAttribute('aria-label')).toBe('unpin');
+    expect(pinButton?.querySelector('use')?.getAttribute('xlink:href')).toBe('#iconUnpin');
+  });
+
   it('does not report panel hover false when mouseleave fires but the pointer is still within the panel on the next frame', async () => {
     const panelElement = document.createElement('div');
     const panelChild = document.createElement('span');
