@@ -48,8 +48,13 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
@@ -122,8 +127,13 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
@@ -196,8 +206,13 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
@@ -277,8 +292,13 @@
                   :show-header="true"
                   :show-footer="true"
                   :clickable="true"
+                  :draggable="getItemDraggable(item)"
+                  :data-testid="`todo-sidebar-card-${item.id}`"
+                  :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
                   @click="openItem(item)"
                   @contextmenu="handleContextMenu($event, item)"
+                  @dragstart="handleItemDragStart(item, $event)"
+                  @dragend="handleItemDragEnd(item, $event)"
                 >
                   <template #header>
                     <div class="item-header-left">
@@ -353,8 +373,13 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
@@ -396,8 +421,13 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
               @click="openItem(item)"
               @contextmenu="handleContextMenu($event, item)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
@@ -448,6 +478,12 @@ import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 
+type TodoSidebarDragPayload = {
+  blockId: string;
+  itemId: string;
+  priority?: PriorityLevel;
+};
+
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
   // 优先级 emoji
@@ -484,6 +520,9 @@ const props = withDefaults(defineProps<{
   priorities?: PriorityLevel[];
   includeNoPriority?: boolean;
   displayMode?: 'default' | 'embedded';
+  enableDrag?: boolean;
+  onItemDragStart?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
+  onItemDragEnd?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
 }>(), {
   groupId: '',
   searchQuery: '',
@@ -492,6 +531,9 @@ const props = withDefaults(defineProps<{
   priorities: () => [],
   includeNoPriority: false,
   displayMode: 'default',
+  enableDrag: false,
+  onItemDragStart: undefined,
+  onItemDragEnd: undefined,
 });
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
@@ -687,6 +729,36 @@ const formatDateLabel = (date: string): string => {
 // 格式化时间
 const formatTime = (item: Item): string => {
   return formatTimeRange(item.startDateTime, item.endDateTime);
+};
+
+const getItemDragPayload = (item: Item): TodoSidebarDragPayload | null => {
+  if (!item.blockId) return null;
+  return {
+    blockId: item.blockId,
+    itemId: item.id,
+    priority: item.priority,
+  };
+};
+
+const getItemDraggable = (item: Item): boolean => {
+  return !!props.enableDrag && !!item.blockId;
+};
+
+const handleItemDragStart = (item: Item, event: DragEvent) => {
+  const payload = getItemDragPayload(item);
+  if (!props.enableDrag || !payload) return;
+  event.dataTransfer?.setData('application/json', JSON.stringify(payload));
+  event.dataTransfer?.setData('text/plain', payload.blockId);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+  props.onItemDragStart?.(payload, event);
+};
+
+const handleItemDragEnd = (item: Item, event: DragEvent) => {
+  const payload = getItemDragPayload(item);
+  if (!props.enableDrag || !payload) return;
+  props.onItemDragEnd?.(payload, event);
 };
 
 // 打开事项所在文档
@@ -1196,5 +1268,9 @@ const handleCreateExample = async () => {
       height: 14px;
     }
   }
+}
+
+.todo-card--drag-source {
+  cursor: grab;
 }
 </style>

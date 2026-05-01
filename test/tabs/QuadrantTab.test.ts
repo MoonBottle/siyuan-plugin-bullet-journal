@@ -9,6 +9,8 @@ import { TAB_TYPES } from '@/constants';
 
 const todoSidebarProps = vi.fn();
 const mockRefresh = vi.fn(() => Promise.resolve());
+const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
+const mockShowMessage = vi.fn();
 const mockLoadFromPlugin = vi.fn();
 const mockSaveToPlugin = vi.fn();
 const mockEventBusOn = vi.fn(() => () => {});
@@ -82,7 +84,11 @@ vi.mock('siyuan', () => ({
 }));
 
 vi.mock('@/utils/dialog', () => ({
-  showMessage: vi.fn(),
+  showMessage: mockShowMessage,
+}));
+
+vi.mock('@/utils/fileUtils', () => ({
+  updateBlockPriority: mockUpdateBlockPriority,
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -132,6 +138,9 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
       priorities: { type: Array, default: () => [] },
       includeNoPriority: { type: Boolean, default: false },
       displayMode: { type: String, default: 'default' },
+      enableDrag: { type: Boolean, default: false },
+      onItemDragStart: { type: Function, default: undefined },
+      onItemDragEnd: { type: Function, default: undefined },
     },
     setup(props, { expose }) {
       watchEffect(() => {
@@ -141,6 +150,9 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
           priorities: [...props.priorities],
           includeNoPriority: props.includeNoPriority,
           displayMode: props.displayMode,
+          enableDrag: props.enableDrag,
+          onItemDragStart: props.onItemDragStart,
+          onItemDragEnd: props.onItemDragEnd,
         });
       });
 
@@ -153,6 +165,30 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
     },
   }),
 }));
+
+function createDropEvent(payload?: Record<string, unknown>) {
+  const event = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
+  Object.defineProperty(event, 'dataTransfer', {
+    value: {
+      dropEffect: 'none',
+      getData: (type: string) => type === 'application/json' && payload
+        ? JSON.stringify(payload)
+        : '',
+    },
+  });
+  return event;
+}
+
+function createDragOverEvent() {
+  const event = new Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
+  Object.defineProperty(event, 'dataTransfer', {
+    value: {
+      dropEffect: 'none',
+      getData: () => '',
+    },
+  });
+  return event;
+}
 
 function mountQuadrantTab() {
   const container = document.createElement('div');
@@ -217,21 +253,33 @@ describe('QuadrantTab', () => {
       priorities: ['high'],
       includeNoPriority: false,
       displayMode: 'embedded',
+      enableDrag: true,
+      onItemDragStart: expect.any(Function),
+      onItemDragEnd: expect.any(Function),
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(2, expect.objectContaining({
       priorities: ['medium'],
       includeNoPriority: false,
       displayMode: 'embedded',
+      enableDrag: true,
+      onItemDragStart: expect.any(Function),
+      onItemDragEnd: expect.any(Function),
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(3, expect.objectContaining({
       priorities: ['low'],
       includeNoPriority: false,
       displayMode: 'embedded',
+      enableDrag: true,
+      onItemDragStart: expect.any(Function),
+      onItemDragEnd: expect.any(Function),
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(4, expect.objectContaining({
       priorities: [],
       includeNoPriority: true,
       displayMode: 'embedded',
+      enableDrag: true,
+      onItemDragStart: expect.any(Function),
+      onItemDragEnd: expect.any(Function),
     }));
 
     expect(mockGetFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
@@ -414,6 +462,129 @@ describe('QuadrantTab', () => {
     expect(todoSidebarProps).toHaveBeenLastCalledWith(expect.objectContaining({
       groupId: 'group-b',
     }));
+
+    mounted.unmount();
+  });
+
+  it('maps a drop on the no-priority quadrant to updateBlockPriority(undefined) and refreshes', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const dropTarget = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[3] as HTMLElement;
+    dropTarget.dispatchEvent(createDropEvent({
+      blockId: 'block-a',
+      itemId: 'item-a',
+      priority: 'medium',
+    }));
+    await nextTick();
+
+    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-a', undefined);
+    expect(mockRefresh).toHaveBeenCalledWith(mockPlugin, 'all', []);
+
+    mounted.unmount();
+  });
+
+  it('ignores drops into the same priority quadrant', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const highPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[0] as HTMLElement;
+    highPanel.dispatchEvent(createDropEvent({
+      blockId: 'block-a',
+      itemId: 'item-a',
+      priority: 'high',
+    }));
+    await nextTick();
+
+    expect(mockUpdateBlockPriority).not.toHaveBeenCalled();
+    expect(mockRefresh).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('uses TodoSidebar drag callbacks as the first payload source for drops', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const { onItemDragStart, onItemDragEnd } = todoSidebarProps.mock.calls[0][0];
+    onItemDragStart({
+      blockId: 'block-b',
+      itemId: 'item-b',
+      priority: 'low',
+    });
+
+    const mediumPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[1] as HTMLElement;
+    mediumPanel.dispatchEvent(createDropEvent());
+    await nextTick();
+
+    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-b', 'medium');
+
+    onItemDragEnd();
+    expect(mediumPanel.classList.contains('quadrant-panel--drop-active')).toBe(false);
+
+    mounted.unmount();
+  });
+
+  it('shows and clears active drop state during dragover and dragleave', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const lowPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[2] as HTMLElement;
+    const dragOverEvent = createDragOverEvent();
+    lowPanel.dispatchEvent(dragOverEvent);
+    await nextTick();
+
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+    expect((dragOverEvent.dataTransfer as DataTransfer).dropEffect).toBe('move');
+    expect(lowPanel.classList.contains('quadrant-panel--drop-active')).toBe(true);
+
+    lowPanel.dispatchEvent(new Event('dragleave', { bubbles: true }));
+    await nextTick();
+
+    expect(lowPanel.classList.contains('quadrant-panel--drop-active')).toBe(false);
+
+    mounted.unmount();
+  });
+
+  it('keeps active drop state when dragleave moves to a child inside the same panel', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const lowPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[2] as HTMLElement;
+    lowPanel.dispatchEvent(createDragOverEvent());
+    await nextTick();
+
+    const child = lowPanel.querySelector('.quadrant-panel__body') as HTMLElement;
+    const dragLeaveEvent = new Event('dragleave', { bubbles: true }) as DragEvent;
+    Object.defineProperty(dragLeaveEvent, 'relatedTarget', {
+      value: child,
+      configurable: true,
+    });
+
+    lowPanel.dispatchEvent(dragLeaveEvent);
+    await nextTick();
+
+    expect(lowPanel.classList.contains('quadrant-panel--drop-active')).toBe(true);
+
+    mounted.unmount();
+  });
+
+  it('shows a failure message and does not refresh when priority update fails', async () => {
+    mockUpdateBlockPriority.mockResolvedValueOnce(false);
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const mediumPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[1] as HTMLElement;
+    mediumPanel.dispatchEvent(createDropEvent({
+      blockId: 'block-c',
+      itemId: 'item-c',
+      priority: 'low',
+    }));
+    await nextTick();
+
+    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-c', 'medium');
+    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(mockShowMessage).toHaveBeenCalled();
 
     mounted.unmount();
   });

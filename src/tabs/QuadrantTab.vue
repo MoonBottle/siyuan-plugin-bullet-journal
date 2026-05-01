@@ -48,7 +48,11 @@
         v-for="(quadrant, index) in quadrants"
         :key="quadrant.key"
         class="quadrant-panel"
+        :class="{ 'quadrant-panel--drop-active': activeDropQuadrant === quadrant.key }"
         data-testid="quadrant-panel"
+        @dragover="handleQuadrantDragOver($event, quadrant)"
+        @dragleave="handleQuadrantDragLeave($event, quadrant.key)"
+        @drop="handleQuadrantDrop($event, quadrant)"
       >
         <header class="quadrant-panel__header">
           <h2 class="quadrant-panel__title">{{ t(quadrant.titleKey) }}</h2>
@@ -62,6 +66,9 @@
             :search-query="searchQuery"
             :priorities="quadrant.priorities"
             :include-no-priority="quadrant.includeNoPriority"
+            :enable-drag="true"
+            :on-item-drag-start="handleItemDragStart"
+            :on-item-drag-end="handleItemDragEnd"
             display-mode="embedded"
           />
         </div>
@@ -81,6 +88,7 @@ import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
+import { updateBlockPriority } from '@/utils/fileUtils';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 
 type QuadrantConfig = {
@@ -88,6 +96,12 @@ type QuadrantConfig = {
   titleKey: string;
   priorities: PriorityLevel[];
   includeNoPriority: boolean;
+};
+
+type QuadrantDragPayload = {
+  blockId: string;
+  itemId: string;
+  priority?: PriorityLevel;
 };
 
 const plugin = usePlugin() as any;
@@ -98,6 +112,8 @@ const selectedGroup = ref(settingsStore.defaultGroup || '');
 const isSelectedGroupDefaultDriven = ref(true);
 const searchQuery = ref('');
 const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebar> | null>>([]);
+const draggedItem = ref<QuadrantDragPayload | null>(null);
+const activeDropQuadrant = ref<string | null>(null);
 
 const quadrants: QuadrantConfig[] = [
   {
@@ -158,6 +174,88 @@ const panelCounts = computed(() => {
 
 function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebar> | null) {
   sidebarRefs.value[index] = instance;
+}
+
+function getQuadrantPriority(quadrant: QuadrantConfig): PriorityLevel | undefined {
+  if (quadrant.includeNoPriority) {
+    return undefined;
+  }
+  return quadrant.priorities[0];
+}
+
+function parseDragPayload(raw: string | undefined): QuadrantDragPayload | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as QuadrantDragPayload;
+  }
+  catch {
+    return null;
+  }
+}
+
+function handleItemDragStart(payload: QuadrantDragPayload) {
+  draggedItem.value = payload;
+}
+
+function handleItemDragEnd() {
+  draggedItem.value = null;
+  activeDropQuadrant.value = null;
+}
+
+function handleQuadrantDragOver(event: DragEvent, quadrant: QuadrantConfig) {
+  event.preventDefault();
+  activeDropQuadrant.value = quadrant.key;
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+}
+
+function handleQuadrantDragLeave(event: DragEvent, quadrantKey: string) {
+  const currentTarget = event.currentTarget;
+  const relatedTarget = event.relatedTarget;
+
+  if (
+    currentTarget instanceof HTMLElement
+    && relatedTarget instanceof Node
+    && currentTarget.contains(relatedTarget)
+  ) {
+    return;
+  }
+
+  if (activeDropQuadrant.value === quadrantKey) {
+    activeDropQuadrant.value = null;
+  }
+}
+
+async function handleQuadrantDrop(event: DragEvent, quadrant: QuadrantConfig) {
+  event.preventDefault();
+
+  const payload = draggedItem.value ?? parseDragPayload(event.dataTransfer?.getData('application/json'));
+  activeDropQuadrant.value = null;
+
+  if (!payload?.blockId) {
+    return;
+  }
+
+  const targetPriority = getQuadrantPriority(quadrant);
+  if (payload.priority === targetPriority) {
+    draggedItem.value = null;
+    return;
+  }
+
+  const success = await updateBlockPriority(payload.blockId, targetPriority);
+  draggedItem.value = null;
+
+  if (!success || !plugin) {
+    showMessage(t('common').actionFailed, 'error');
+    return;
+  }
+
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 }
 
 function syncSelectedGroupWithDefault() {
@@ -364,6 +462,12 @@ onUnmounted(() => {
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);
   overflow: hidden;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &.quadrant-panel--drop-active {
+    border-color: var(--b3-theme-primary);
+    background: var(--b3-theme-primary-lightest);
+  }
 }
 
 .quadrant-panel__header {

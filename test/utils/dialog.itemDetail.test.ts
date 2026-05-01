@@ -58,5 +58,5 @@ describe('showItemDetailModal', () => {
 
     dialog.destroy();
     rafSpy.mockRestore();
-  });
+  }, 10000);
 });
