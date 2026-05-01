@@ -146,4 +146,25 @@ describe('HabitWeekBar', () => {
 
     mounted.unmount();
   });
+
+  it('highlights today and selected text without applying a filled date pill', async () => {
+    const mounted = mountWeekBar({
+      modelValue: '2026-04-30',
+      currentDate: '2026-05-01',
+    });
+
+    await nextTick();
+
+    const today = mounted.container.querySelector('[data-testid="habit-week-day-2026-05-01"]');
+    const selected = mounted.container.querySelector('[data-testid="habit-week-day-2026-04-30"]');
+
+    expect(today?.querySelector('.habit-week-bar__weekday')?.classList.contains('habit-week-bar__weekday--today')).toBe(true);
+    expect(today?.querySelector('.habit-week-bar__date')?.classList.contains('habit-week-bar__date--today')).toBe(true);
+
+    expect(selected?.querySelector('.habit-week-bar__weekday')?.classList.contains('habit-week-bar__weekday--selected')).toBe(true);
+    expect(selected?.querySelector('.habit-week-bar__date')?.classList.contains('habit-week-bar__date--selected')).toBe(true);
+    expect(selected?.querySelector('.habit-week-bar__date')?.classList.contains('habit-week-bar__date--selected-pill')).toBe(false);
+
+    mounted.unmount();
+  });
 });

@@ -10,8 +10,22 @@
       }]"
       @click="emit('update:modelValue', day.date)"
     >
-      <span class="habit-week-bar__weekday">{{ day.weekday }}</span>
-      <span class="habit-week-bar__date">{{ day.dayNum }}</span>
+      <span
+        :class="['habit-week-bar__weekday', {
+          'habit-week-bar__weekday--today': day.date === currentDate,
+          'habit-week-bar__weekday--selected': day.date === modelValue,
+        }]"
+      >
+        {{ day.weekday }}
+      </span>
+      <span
+        :class="['habit-week-bar__date', {
+          'habit-week-bar__date--today': day.date === currentDate,
+          'habit-week-bar__date--selected': day.date === modelValue,
+        }]"
+      >
+        {{ day.dayNum }}
+      </span>
       <span class="habit-week-bar__marker">
         <span
           v-if="day.status === 'completed'"
@@ -184,29 +198,23 @@ const weekDays = computed(() => {
 }
 
 .habit-week-bar__day--today {
-  color: var(--b3-theme-primary);
   border-color: rgba(128, 162, 255, 0.25);
   background: rgba(128, 162, 255, 0.06);
-}
-
-.habit-week-bar__day--today .habit-week-bar__date {
-  background: transparent;
 }
 
 .habit-week-bar__day--selected {
   background: var(--b3-theme-primary-lightest);
   border-color: rgba(128, 162, 255, 0.35);
-  color: var(--b3-theme-primary);
-}
-
-.habit-week-bar__day--selected .habit-week-bar__date {
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
 }
 
 .habit-week-bar__weekday {
   font-size: 10px;
   color: var(--b3-theme-on-surface-light);
+}
+
+.habit-week-bar__weekday--today,
+.habit-week-bar__weekday--selected {
+  color: var(--b3-theme-primary);
 }
 
 .habit-week-bar__date {
@@ -221,6 +229,11 @@ const weekDays = computed(() => {
   line-height: 1;
   box-sizing: border-box;
   transition: all 0.15s ease;
+}
+
+.habit-week-bar__date--today,
+.habit-week-bar__date--selected {
+  color: var(--b3-theme-primary);
 }
 
 .habit-week-bar__marker {
