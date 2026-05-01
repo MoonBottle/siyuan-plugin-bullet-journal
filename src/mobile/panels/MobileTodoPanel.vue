@@ -16,6 +16,7 @@
       :priorities="state.selectedPriorities"
       :has-active-filters="hasActiveFilters"
       @item-click="openItemDetail"
+      @item-complete="handleQuickComplete"
       @item-long-press="handleQuickComplete"
       @refresh="handleRefresh"
     />

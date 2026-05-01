@@ -13,4 +13,14 @@ describe('MobileTodoList layout', () => {
 
     expect(source).toContain('padding: 8px 16px 24px');
   });
+
+  it('renders completed items with a checkmark indicator instead of a cross', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/mobile/components/todo/MobileTodoList.vue'),
+      'utf-8',
+    );
+
+    expect(source).toContain('&.completed::after');
+    expect(source).not.toContain('linear-gradient(45deg');
+  });
 });
