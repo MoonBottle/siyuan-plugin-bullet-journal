@@ -80,6 +80,7 @@ const focusDetailRangeOffset = ref(0);
 .workbench-widget-pomodoro-stats__content :deep(.chart-card),
 .workbench-widget-pomodoro-stats__content :deep(.heatmap-card),
 .workbench-widget-pomodoro-stats__content :deep(.focus-detail-section) {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -103,5 +104,32 @@ const focusDetailRangeOffset = ref(0);
   flex: 1;
   min-width: 0;
   min-height: 0;
+}
+
+.workbench-widget-pomodoro-stats__content :deep(.focus-trend-chart .chart-container),
+.workbench-widget-pomodoro-stats__content :deep(.best-focus-time-chart .chart-container) {
+  height: auto;
+}
+
+.workbench-widget-pomodoro-stats__content :deep(.focus-trend-chart canvas),
+.workbench-widget-pomodoro-stats__content :deep(.best-focus-time-chart canvas) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.workbench-widget-pomodoro-stats__content :deep(.focus-timeline-chart .timeline-container) {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+.workbench-widget-pomodoro-stats__content :deep(.focus-timeline-chart .y-axis) {
+  top: 1px;
+  bottom: 20px;
+  height: auto;
+}
+
+.workbench-widget-pomodoro-stats__content :deep(.focus-timeline-chart .x-axis) {
+  flex-shrink: 0;
 }
 </style>
