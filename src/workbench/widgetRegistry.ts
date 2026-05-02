@@ -2,12 +2,14 @@ import { t } from '@/i18n';
 import type {
   WorkbenchCalendarWidgetConfig,
   WorkbenchHabitWeekWidgetConfig,
+  WorkbenchQuadrantWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchWidgetInstance,
   WorkbenchWidgetType,
 } from '@/types/workbench';
 import { openCalendarWidgetConfigDialog } from '@/workbench/calendarWidgetConfigDialog';
 import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
+import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
 type WorkbenchWidgetConfigContext = {
@@ -62,7 +64,24 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       icon: 'iconLayout',
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: (): WorkbenchQuadrantWidgetConfig => ({
+        quadrant: 'high',
+      }),
+      openConfigDialog: ({ widget, onUpdateConfig }) => {
+        const quadrantConfig = widget.config as WorkbenchQuadrantWidgetConfig;
+        openQuadrantWidgetConfigDialog({
+          initialConfig: {
+            groupId: quadrantConfig.groupId,
+            quadrant: quadrantConfig.quadrant ?? 'high',
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              groupId: nextConfig.groupId,
+              quadrant: nextConfig.quadrant ?? 'high',
+            });
+          },
+        });
+      },
     },
     habitWeek: {
       type: 'habitWeek',

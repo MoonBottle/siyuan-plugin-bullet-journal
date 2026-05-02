@@ -1,55 +1,96 @@
 <template>
-  <div class="workbench-widget-summary" data-testid="workbench-widget-quadrant-summary">
-    <div v-for="quadrant in quadrants" :key="quadrant.key" class="workbench-widget-summary__row">
-      <span>{{ quadrant.label }}</span>
-      <strong>{{ quadrant.count }}</strong>
+  <div class="workbench-widget-quadrant" data-testid="workbench-widget-quadrant">
+    <div class="workbench-widget-quadrant__meta">
+      <span>{{ openItemsCount }}</span>
+      <span>{{ t(quadrant.titleKey) }}</span>
+    </div>
+    <div class="workbench-widget-quadrant__content" data-testid="workbench-widget-quadrant-content">
+      <TodoSidebar
+        :group-id="quadrantConfig.groupId ?? ''"
+        :priorities="quadrant.priorities"
+        :include-no-priority="quadrant.includeNoPriority"
+        display-mode="embedded"
+        preview-trigger-mode="click"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import { t } from '@/i18n';
-import type { PriorityLevel } from '@/types/models';
+import type { WorkbenchQuadrantWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
+import { getQuadrantDefinition } from '@/utils/quadrant';
 import { useSafeProjectStore } from './useSafeProjectStore';
 
-const projectStore = useSafeProjectStore();
+const props = defineProps<{
+  widget?: WorkbenchWidgetInstance;
+}>();
 
-function getCount(priorities: PriorityLevel[]) {
+const projectStore = useSafeProjectStore();
+const quadrantConfig = computed(() => {
+  return (props.widget?.config ?? {}) as WorkbenchQuadrantWidgetConfig;
+});
+const quadrant = computed(() => getQuadrantDefinition(quadrantConfig.value.quadrant));
+
+const openItemsCount = computed(() => {
   if (!projectStore) {
     return 0;
   }
 
   return projectStore.getFilteredAndSortedItems({
-    groupId: '',
-    priorities,
+    groupId: quadrantConfig.value.groupId ?? '',
+    priorities: quadrant.value.priorities.length > 0 ? quadrant.value.priorities : undefined,
+    includeNoPriority: quadrant.value.includeNoPriority,
   }).filter(item => item.status !== 'completed' && item.status !== 'abandoned').length;
-}
-
-const quadrants = computed(() => {
-  return [
-    { key: 'q1', label: t('quadrant').panels.high, count: getCount(['p1']) },
-    { key: 'q2', label: t('quadrant').panels.medium, count: getCount(['p2']) },
-    { key: 'q3', label: t('quadrant').panels.low, count: getCount(['p3']) },
-    { key: 'q4', label: t('quadrant').panels.none, count: getCount(['p4']) },
-  ];
 });
 </script>
 
 <style lang="scss" scoped>
-.workbench-widget-summary {
+.workbench-widget-quadrant {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.workbench-widget-summary__row {
+.workbench-widget-quadrant__meta {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--b3-border-color);
-  color: var(--b3-theme-on-background);
+  align-items: baseline;
+  gap: 8px;
+  color: var(--b3-theme-on-surface);
+  flex-shrink: 0;
+
+  span:first-child {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--b3-theme-on-background);
+  }
+}
+
+.workbench-widget-quadrant__content {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workbench-widget-quadrant__content :deep(.todo-sidebar) {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.workbench-widget-quadrant__content :deep(.todo-content) {
+  min-height: 0;
+}
+
+.workbench-widget-quadrant__content :deep(.todo-list) {
+  min-height: 0;
 }
 </style>

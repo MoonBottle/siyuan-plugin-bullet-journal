@@ -26,8 +26,15 @@ export type WorkbenchWidgetType =
   | 'miniCalendar'
   | 'pomodoroStats';
 
+export type WorkbenchQuadrantKey = 'high' | 'medium' | 'low' | 'none';
+
 export interface WorkbenchTodoListWidgetConfig {
   preset?: TodoViewPreset;
+}
+
+export interface WorkbenchQuadrantWidgetConfig {
+  groupId?: string;
+  quadrant?: WorkbenchQuadrantKey;
 }
 
 export interface WorkbenchCalendarWidgetConfig {

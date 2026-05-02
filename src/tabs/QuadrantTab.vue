@@ -96,6 +96,7 @@ import { showMessage } from '@/utils/dialog';
 import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
 import { updateBlockPriority } from '@/utils/fileUtils';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
+import { QUADRANT_DEFINITIONS } from '@/utils/quadrant';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 
 type QuadrantConfig = {
@@ -129,32 +130,7 @@ const preview = useBlockFocusPreview({
 });
 const nativePreview = createNativeBlockPreviewController();
 
-const quadrants: QuadrantConfig[] = [
-  {
-    key: 'high',
-    titleKey: 'quadrant.panels.high',
-    priorities: ['high'],
-    includeNoPriority: false,
-  },
-  {
-    key: 'medium',
-    titleKey: 'quadrant.panels.medium',
-    priorities: ['medium'],
-    includeNoPriority: false,
-  },
-  {
-    key: 'low',
-    titleKey: 'quadrant.panels.low',
-    priorities: ['low'],
-    includeNoPriority: false,
-  },
-  {
-    key: 'none',
-    titleKey: 'quadrant.panels.none',
-    priorities: [],
-    includeNoPriority: true,
-  },
-];
+const quadrants: QuadrantConfig[] = QUADRANT_DEFINITIONS;
 
 const groupOptions = computed(() => {
   const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
