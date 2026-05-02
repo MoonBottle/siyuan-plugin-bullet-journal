@@ -1283,7 +1283,7 @@ export default class TaskAssistantPlugin extends Plugin {
         });
         if (!this.isMobile) {
           menu.addItem({
-            icon: "iconPanel",
+            icon: "iconWorkspace",
             label: t("workbench").title,
             click: () => {
               this.openCustomTab(TAB_TYPES.WORKBENCH);
@@ -1521,7 +1521,7 @@ export default class TaskAssistantPlugin extends Plugin {
     const icons: Record<string, string> = {
       [TAB_TYPES.CALENDAR]: "iconCalendar",
       [TAB_TYPES.GANTT]: "iconGraph",
-      [TAB_TYPES.WORKBENCH]: "iconPanel",
+      [TAB_TYPES.WORKBENCH]: "iconWorkspace",
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconFolder",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",

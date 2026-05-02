@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
+import { initI18n } from '@/i18n';
 import type {
   WorkbenchDashboard,
   WorkbenchEntry,
@@ -68,6 +69,7 @@ function createDashboard(overrides: Partial<WorkbenchDashboard> = {}): Workbench
 describe('workbenchStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    initI18n('en_US');
     vi.clearAllMocks();
     mockLoadWorkbenchSettings.mockResolvedValue({
       entries: [],
@@ -127,7 +129,7 @@ describe('workbenchStore', () => {
     expect(store.dashboards).toHaveLength(1);
     expect(entry.type).toBe('dashboard');
     expect(entry.title).toBe('My Dashboard');
-    expect(entry.icon).toBe('iconLayout');
+    expect(entry.icon).toBe('iconBoard');
     expect(entry.dashboardId).toBe(store.dashboards[0].id);
     expect(store.dashboards[0]).toEqual(expect.objectContaining({
       id: entry.dashboardId,
@@ -145,12 +147,12 @@ describe('workbenchStore', () => {
 
   it.each([
     ['todo', 'Todo', 'iconList'],
-    ['habit', 'Habit', 'iconCheck'],
-    ['quadrant', 'Quadrant', 'iconGrid'],
-    ['pomodoroStats', 'Pomodoro Stats', 'iconClock'],
+    ['habit', 'Habit Check-in', 'iconCheck'],
+    ['quadrant', 'Quadrant', 'iconLayout'],
+    ['pomodoroStats', 'Focus Statistics', 'iconClock'],
     ['calendar', 'Calendar', 'iconCalendar'],
-    ['gantt', 'Gantt', 'iconAlignCenter'],
-    ['project', 'Project', 'iconFiles'],
+    ['gantt', 'Gantt Chart', 'iconGraph'],
+    ['project', 'Projects', 'iconFolder'],
   ] satisfies Array<[WorkbenchViewType, string, string]>)(
     'createViewEntry creates %s view metadata and activates it',
     async (viewType, title, icon) => {

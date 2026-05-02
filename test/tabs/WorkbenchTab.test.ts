@@ -14,7 +14,7 @@ const mockCreateDashboardEntry = vi.fn(() => Promise.resolve({
   id: 'entry-created-dashboard',
   type: 'dashboard',
   title: 'New Dashboard',
-  icon: 'iconLayout',
+  icon: 'iconBoard',
   order: 2,
   dashboardId: 'dashboard-created',
 }));
@@ -43,7 +43,7 @@ vi.mock('@/stores', async () => {
           id: 'entry-dashboard',
           type: 'dashboard',
           title: 'Planning Board',
-          icon: 'iconLayout',
+          icon: 'iconBoard',
           order: 0,
           dashboardId: 'dashboard-1',
         },
@@ -113,7 +113,7 @@ describe('WorkbenchTab shell', () => {
       id: 'entry-created-dashboard',
       type: 'dashboard',
       title: 'New Dashboard',
-      icon: 'iconLayout',
+      icon: 'iconBoard',
       order: 2,
       dashboardId: 'dashboard-created',
     });
@@ -220,9 +220,9 @@ describe('Workbench registration', () => {
       /if\s*\(!this\.isMobile\)\s*\{\s*this\.addTab\(\{\s*type:\s*TAB_TYPES\.WORKBENCH,/s,
     );
     expect(indexSource).toMatch(
-      /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconPanel",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\);/s,
+      /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconWorkspace",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\);/s,
     );
-    expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*"iconPanel"/);
+    expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*"iconWorkspace"/);
     expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*t\("workbench"\)\.title/);
   });
 

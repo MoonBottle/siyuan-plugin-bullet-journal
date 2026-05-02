@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+import { t } from '@/i18n';
 import type {
   WorkbenchDashboard,
   WorkbenchEntry,
@@ -20,38 +21,42 @@ type ViewEntryDefinition = {
   icon: string;
 };
 
-const DASHBOARD_ICON = 'iconLayout';
+const DASHBOARD_ICON = 'iconBoard';
 
-const VIEW_ENTRY_DEFINITIONS: Record<WorkbenchViewType, ViewEntryDefinition> = {
-  calendar: {
-    title: 'Calendar',
-    icon: 'iconCalendar',
-  },
-  gantt: {
-    title: 'Gantt',
-    icon: 'iconAlignCenter',
-  },
-  quadrant: {
-    title: 'Quadrant',
-    icon: 'iconGrid',
-  },
-  project: {
-    title: 'Project',
-    icon: 'iconFiles',
-  },
-  todo: {
-    title: 'Todo',
-    icon: 'iconList',
-  },
-  habit: {
-    title: 'Habit',
-    icon: 'iconCheck',
-  },
-  pomodoroStats: {
-    title: 'Pomodoro Stats',
-    icon: 'iconClock',
-  },
-};
+function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinition {
+  const definitions: Record<WorkbenchViewType, ViewEntryDefinition> = {
+    calendar: {
+      title: t('calendar').title,
+      icon: 'iconCalendar',
+    },
+    gantt: {
+      title: t('gantt').title,
+      icon: 'iconGraph',
+    },
+    quadrant: {
+      title: t('quadrant').title,
+      icon: 'iconLayout',
+    },
+    project: {
+      title: t('project').title,
+      icon: 'iconFolder',
+    },
+    todo: {
+      title: t('todo').title,
+      icon: 'iconList',
+    },
+    habit: {
+      title: t('habit').title,
+      icon: 'iconCheck',
+    },
+    pomodoroStats: {
+      title: t('pomodoroStats').statsTitle,
+      icon: 'iconClock',
+    },
+  };
+
+  return definitions[viewType];
+}
 
 function createId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -148,7 +153,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
   }
 
   async function createViewEntry(viewType: WorkbenchViewType): Promise<WorkbenchEntry> {
-    const definition = VIEW_ENTRY_DEFINITIONS[viewType];
+    const definition = getViewEntryDefinition(viewType);
     const entry: WorkbenchEntry = {
       id: createId('entry'),
       type: 'view',
