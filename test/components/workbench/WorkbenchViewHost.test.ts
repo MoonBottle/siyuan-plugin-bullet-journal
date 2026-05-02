@@ -11,9 +11,9 @@ vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   },
 }));
 
-vi.mock('@/tabs/DesktopHabitDock.vue', () => ({
+vi.mock('@/components/workbench/view/WorkbenchHabitView.vue', () => ({
   default: {
-    template: '<div data-testid="desktop-habit-dock-mock">Desktop Habit</div>',
+    template: '<div data-testid="workbench-habit-view-mock">Workbench Habit</div>',
   },
 }));
 
@@ -94,7 +94,7 @@ describe('WorkbenchViewHost', () => {
     });
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-habit"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="desktop-habit-dock-mock"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-view-mock"]')).not.toBeNull();
 
     mounted.unmount();
   });

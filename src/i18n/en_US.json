@@ -83,6 +83,8 @@
     "delete": "Delete",
     "deleteConfirm": "Delete \"{name}\"?",
     "emptyState": "Select a workbench item",
+    "habitDetailEmptyTitle": "Select a habit from the left",
+    "habitDetailEmptyDesc": "Pick a habit to view its calendar, stats, and check-in log here",
     "dashboardPlaceholder": "Dashboard canvas coming next",
     "unsupportedView": "Unsupported workbench view"
   },

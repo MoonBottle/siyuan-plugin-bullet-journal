@@ -4,7 +4,7 @@
       <DesktopTodoDock />
     </div>
     <div v-else-if="viewType === 'habit'" class="workbench-view-host__surface" data-testid="workbench-view-habit">
-      <DesktopHabitDock />
+      <WorkbenchHabitView />
     </div>
     <div v-else-if="viewType === 'quadrant'" class="workbench-view-host__surface" data-testid="workbench-view-quadrant">
       <QuadrantTab />
@@ -24,8 +24,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import DesktopHabitDock from '@/tabs/DesktopHabitDock.vue';
 import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
+import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue';
 import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
 import QuadrantTab from '@/tabs/QuadrantTab.vue';
 import { t } from '@/i18n';

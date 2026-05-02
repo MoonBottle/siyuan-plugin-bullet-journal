@@ -260,7 +260,7 @@ describe('DesktopHabitDock', () => {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(checkIn).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-01');
+    expect(checkIn).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-02');
     expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
 
     mounted.unmount();
@@ -289,7 +289,7 @@ describe('DesktopHabitDock', () => {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(checkInCount).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-01', 1);
+    expect(checkInCount).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-02', 1);
     expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
 
     mounted.unmount();
