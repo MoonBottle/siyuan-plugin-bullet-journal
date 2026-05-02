@@ -35,11 +35,13 @@ defineProps<{
 .workbench-content-host {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   background: var(--b3-theme-background);
+  overflow-y: auto;
 }
 
 .workbench-content-host__title {

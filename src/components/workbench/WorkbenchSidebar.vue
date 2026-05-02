@@ -56,13 +56,17 @@ const emit = defineEmits<{
 
 <style lang="scss" scoped>
 .workbench-sidebar {
+  flex: 0 0 240px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 240px;
+  height: 100%;
+  min-height: 0;
   padding: 16px;
   border-right: 1px solid var(--b3-border-color);
   background: var(--b3-theme-surface);
+  overflow: hidden;
 }
 
 .workbench-sidebar__actions {
@@ -72,9 +76,12 @@ const emit = defineEmits<{
 }
 
 .workbench-sidebar__entries {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-y: auto;
 }
 
 .workbench-sidebar__entry {

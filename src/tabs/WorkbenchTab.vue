@@ -73,13 +73,16 @@ onMounted(async () => {
   height: 100%;
   min-height: 0;
   background: var(--b3-theme-background);
+  overflow: hidden;
 }
 
 .workbench-tab__main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .workbench-tab__toolbar {
