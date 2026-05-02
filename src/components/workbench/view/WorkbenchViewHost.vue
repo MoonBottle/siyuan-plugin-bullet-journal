@@ -7,7 +7,7 @@
       <WorkbenchHabitView />
     </div>
     <div v-else-if="viewType === 'quadrant'" class="workbench-view-host__surface" data-testid="workbench-view-quadrant">
-      <QuadrantTab />
+      <QuadrantTab :embedded="true" />
     </div>
     <div v-else-if="viewType === 'pomodoroStats'" class="workbench-view-host__surface" data-testid="workbench-view-pomodoro-stats">
       <PomodoroStatsTab :embedded="true" />

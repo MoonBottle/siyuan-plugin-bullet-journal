@@ -7,6 +7,7 @@ import type { WorkbenchEntry } from '@/types/workbench';
 
 const desktopTodoDockProps = vi.fn();
 const pomodoroStatsTabProps = vi.fn();
+const quadrantTabProps = vi.fn();
 
 vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   default: {
@@ -29,6 +30,13 @@ vi.mock('@/components/workbench/view/WorkbenchHabitView.vue', () => ({
 
 vi.mock('@/tabs/QuadrantTab.vue', () => ({
   default: {
+    props: ['embedded'],
+    setup(props: any) {
+      quadrantTabProps({
+        embedded: props.embedded,
+      });
+      return {};
+    },
     template: '<div data-testid="quadrant-tab-mock">Quadrant</div>',
   },
 }));
@@ -104,6 +112,9 @@ describe('WorkbenchViewHost', () => {
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-quadrant"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="quadrant-tab-mock"]')).not.toBeNull();
+    expect(quadrantTabProps).toHaveBeenCalledWith(expect.objectContaining({
+      embedded: true,
+    }));
 
     mounted.unmount();
   });

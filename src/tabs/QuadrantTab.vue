@@ -1,7 +1,7 @@
 <template>
   <div class="hk-work-tab quadrant-tab">
     <div class="block__icons quadrant-toolbar">
-      <div class="block__logo">
+      <div v-if="showHeaderTitle" class="block__logo">
         <svg class="block__logoicon"><use xlink:href="#iconLayout"></use></svg>
         {{ t('quadrant').title }}
       </div>
@@ -99,6 +99,12 @@ import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { QUADRANT_DEFINITIONS } from '@/utils/quadrant';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 
+const props = withDefaults(defineProps<{
+  embedded?: boolean;
+}>(), {
+  embedded: false,
+});
+
 type QuadrantConfig = {
   key: string;
   titleKey: string;
@@ -129,6 +135,7 @@ const preview = useBlockFocusPreview({
   popoverLeaveGraceMs: 220,
 });
 const nativePreview = createNativeBlockPreviewController();
+const showHeaderTitle = computed(() => !props.embedded);
 
 const quadrants: QuadrantConfig[] = QUADRANT_DEFINITIONS;
 

@@ -1,28 +1,15 @@
 <template>
   <div ref="tabRootRef" class="hk-work-tab calendar-tab">
     <div class="block__icons">
-      <!-- 导航按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').prev" @click="handlePrev">
-        <svg><use xlink:href="#iconLeft"></use></svg>
-      </span>
-      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').next" @click="handleNext">
-        <svg><use xlink:href="#iconRight"></use></svg>
-      </span>
-      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').today" @click="handleToday">
-        <svg><use xlink:href="#iconCalendar"></use></svg>
-      </span>
-      <!-- 返回按钮（drill-down 时显示，返回上一个点击进入的视图） -->
-      <span
-        v-if="previousViewStack.length > 0"
-        class="block__icon b3-tooltips b3-tooltips__se"
-        :aria-label="t('calendarNav').back"
-        @click="handleBack"
-      >
-        <svg><use xlink:href="#iconUndo"></use></svg>
-      </span>
-      <!-- 日期显示 -->
-      <span class="date-title">{{ currentTitle }}</span>
-      <span v-if="showDayTotalDuration" class="date-duration">{{ dayTotalDurationLabel }}</span>
+      <CalendarDayHeader
+        :title="currentTitle"
+        :duration-label="showDayTotalDuration ? dayTotalDurationLabel : ''"
+        :show-back="previousViewStack.length > 0"
+        @prev="handlePrev"
+        @next="handleNext"
+        @today="handleToday"
+        @back="handleBack"
+      />
       <span class="fn__flex-1 fn__space"></span>
       <!-- 视图切换 -->
       <SySelect v-model="currentView" :options="viewOptions" />
@@ -64,6 +51,7 @@ import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import CalendarDayHeader from '@/components/calendar/CalendarDayHeader.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import { DataConverter } from '@/utils/dataConverter';
 import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
@@ -402,20 +390,6 @@ watch(currentView, (newView) => {
   .refresh-btn {
     margin-left: 6px;
   }
-}
-
-.date-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-  margin-left: 12px;
-}
-
-.date-duration {
-  font-size: 13px;
-  color: var(--b3-theme-on-surface-light);
-  margin-left: 10px;
-  white-space: nowrap;
 }
 
 .tab-content {
