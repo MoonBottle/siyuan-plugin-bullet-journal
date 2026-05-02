@@ -377,4 +377,32 @@ describe('workbenchStore', () => {
       activeEntryId: null,
     });
   });
+
+  it('updateWidgetLayout updates widget layout and persists', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard({
+      widgets: [
+        {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: {},
+        },
+      ],
+    });
+
+    store.dashboards = [dashboard];
+
+    await store.updateWidgetLayout(dashboard.id, 'widget-1', { x: 2, y: 1, w: 4, h: 3 });
+
+    expect(store.dashboards[0].widgets[0].layout).toEqual({ x: 2, y: 1, w: 4, h: 3 });
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
+      entries: [],
+      dashboards: store.dashboards,
+      activeEntryId: null,
+    });
+  });
 });

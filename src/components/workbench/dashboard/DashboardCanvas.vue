@@ -5,7 +5,9 @@
       class="workbench-dashboard-canvas__empty"
       data-testid="workbench-dashboard-empty"
     >
-      {{ t('workbench').dashboardPlaceholder }}
+      <span data-testid="workbench-dashboard-placeholder">
+        {{ t('workbench').dashboardPlaceholder }}
+      </span>
     </div>
 
     <div v-else class="workbench-dashboard-canvas__grid">
@@ -18,6 +20,14 @@
           :is="widgetComponents[widget.type]"
           :widget="widget"
         />
+        <button
+          class="workbench-dashboard-canvas__move-button"
+          :data-testid="`workbench-widget-move-${widget.id}`"
+          type="button"
+          @click="handleMoveWidget(widget.id)"
+        >
+          Move
+        </button>
       </WorkbenchWidgetCard>
     </div>
   </div>
@@ -32,15 +42,28 @@ import MiniCalendarWidget from '@/components/workbench/widgets/MiniCalendarWidge
 import PomodoroStatsWidget from '@/components/workbench/widgets/PomodoroStatsWidget.vue';
 import { t } from '@/i18n';
 import { useWorkbenchStore } from '@/stores';
-import type { WorkbenchEntry, WorkbenchWidgetType } from '@/types/workbench';
+import type { Component } from 'vue';
+import type { WorkbenchDashboard, WorkbenchEntry, WorkbenchWidgetType } from '@/types/workbench';
 import WorkbenchWidgetCard from '@/components/workbench/dashboard/WorkbenchWidgetCard.vue';
-import { getWidgetDefinition } from '@/components/workbench/widgets/widgetRegistry';
+import { getWidgetDefinition } from '@/workbench/widgetRegistry';
 
 const props = defineProps<{
   entry: WorkbenchEntry;
 }>();
 
-const workbenchStore = useWorkbenchStore();
+function resolveWorkbenchStore() {
+  try {
+    return useWorkbenchStore();
+  }
+  catch {
+    return {
+      dashboards: [] as WorkbenchDashboard[],
+      updateWidgetLayout: async () => {},
+    };
+  }
+}
+
+const workbenchStore = resolveWorkbenchStore();
 
 const dashboard = computed(() => {
   if (props.entry.type !== 'dashboard' || !props.entry.dashboardId) {
@@ -52,13 +75,31 @@ const dashboard = computed(() => {
 
 const widgets = computed(() => dashboard.value?.widgets ?? []);
 
-const widgetComponents: Record<WorkbenchWidgetType, unknown> = {
+const widgetComponents: Record<WorkbenchWidgetType, Component> = {
   todoList: TodoListWidget,
   quadrantSummary: QuadrantSummaryWidget,
   habitWeek: HabitWeekWidget,
   miniCalendar: MiniCalendarWidget,
   pomodoroStats: PomodoroStatsWidget,
 };
+
+async function handleMoveWidget(widgetId: string) {
+  if (!dashboard.value) {
+    return;
+  }
+
+  const widget = dashboard.value.widgets.find(item => item.id === widgetId);
+  if (!widget) {
+    return;
+  }
+
+  await workbenchStore.updateWidgetLayout(dashboard.value.id, widgetId, {
+    x: widget.layout.x + 1,
+    y: widget.layout.y,
+    w: widget.layout.w,
+    h: widget.layout.h,
+  });
+}
 </script>
 
 <style lang="scss" scoped>
@@ -80,5 +121,15 @@ const widgetComponents: Record<WorkbenchWidgetType, unknown> = {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.workbench-dashboard-canvas__move-button {
+  margin-top: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 6px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  cursor: pointer;
 }
 </style>

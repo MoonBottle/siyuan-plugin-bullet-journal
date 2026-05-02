@@ -1,11 +1,16 @@
 <template>
   <div class="workbench-view-host" data-testid="workbench-view-host">
-    <div
-      v-if="supportedView"
-      class="workbench-view-host__placeholder"
-      :data-testid="`workbench-view-${supportedView.testId}`"
-    >
-      {{ supportedView.title }}
+    <div v-if="viewType === 'todo'" class="workbench-view-host__surface" data-testid="workbench-view-todo">
+      <DesktopTodoDock />
+    </div>
+    <div v-else-if="viewType === 'habit'" class="workbench-view-host__surface" data-testid="workbench-view-habit">
+      <DesktopHabitDock />
+    </div>
+    <div v-else-if="viewType === 'quadrant'" class="workbench-view-host__surface" data-testid="workbench-view-quadrant">
+      <QuadrantTab />
+    </div>
+    <div v-else-if="viewType === 'pomodoroStats'" class="workbench-view-host__surface" data-testid="workbench-view-pomodoro-stats">
+      <PomodoroStatsTab />
     </div>
     <div
       v-else
@@ -19,49 +24,34 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import DesktopHabitDock from '@/tabs/DesktopHabitDock.vue';
+import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
+import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
+import QuadrantTab from '@/tabs/QuadrantTab.vue';
 import { t } from '@/i18n';
 import type { WorkbenchEntry } from '@/types/workbench';
-
-type SupportedViewMeta = {
-  title: string;
-  testId: string;
-};
 
 const props = defineProps<{
   entry: WorkbenchEntry;
 }>();
 
 const viewType = computed(() => props.entry.viewType);
-
-const supportedViewMap: Record<string, SupportedViewMeta> = {
-  todo: {
-    title: t('todo').title,
-    testId: 'todo',
-  },
-  habit: {
-    title: t('habit').title,
-    testId: 'habit',
-  },
-  quadrant: {
-    title: t('quadrant').title,
-    testId: 'quadrant',
-  },
-  pomodoroStats: {
-    title: t('pomodoroStats').statsTitle,
-    testId: 'pomodoro-stats',
-  },
-};
-
-const supportedView = computed<SupportedViewMeta | null>(() => {
-  return viewType.value ? supportedViewMap[viewType.value] ?? null : null;
-});
 </script>
 
 <style lang="scss" scoped>
 .workbench-view-host {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.workbench-view-host__surface {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .workbench-view-host__placeholder {

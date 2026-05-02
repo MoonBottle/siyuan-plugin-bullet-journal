@@ -1,9 +1,33 @@
 // @vitest-environment happy-dom
 
 import { createApp, nextTick } from 'vue';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initI18n } from '@/i18n';
 import type { WorkbenchEntry } from '@/types/workbench';
+
+vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
+  default: {
+    template: '<div data-testid="desktop-todo-dock-mock">Desktop Todo</div>',
+  },
+}));
+
+vi.mock('@/tabs/DesktopHabitDock.vue', () => ({
+  default: {
+    template: '<div data-testid="desktop-habit-dock-mock">Desktop Habit</div>',
+  },
+}));
+
+vi.mock('@/tabs/QuadrantTab.vue', () => ({
+  default: {
+    template: '<div data-testid="quadrant-tab-mock">Quadrant</div>',
+  },
+}));
+
+vi.mock('@/tabs/PomodoroStatsTab.vue', () => ({
+  default: {
+    template: '<div data-testid="pomodoro-stats-tab-mock">Pomodoro Stats</div>',
+  },
+}));
 
 function createViewEntry(viewType: WorkbenchEntry['viewType']): WorkbenchEntry {
   return {
@@ -46,6 +70,7 @@ describe('WorkbenchViewHost', () => {
     });
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="desktop-todo-dock-mock"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -57,6 +82,7 @@ describe('WorkbenchViewHost', () => {
     });
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-quadrant"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="quadrant-tab-mock"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -68,6 +94,7 @@ describe('WorkbenchViewHost', () => {
     });
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-habit"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="desktop-habit-dock-mock"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -79,6 +106,7 @@ describe('WorkbenchViewHost', () => {
     });
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-pomodoro-stats"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="pomodoro-stats-tab-mock"]')).not.toBeNull();
 
     mounted.unmount();
   });

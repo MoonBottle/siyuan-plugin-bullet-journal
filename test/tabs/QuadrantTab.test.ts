@@ -774,11 +774,11 @@ describe('QuadrantTab', () => {
 });
 
 describe('TaskAssistantPlugin top bar', () => {
-  it('only includes Quadrant in the top-bar menu on desktop', async () => {
+  it('includes Quadrant in the desktop top-bar menu', async () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconGrid",\s*label:\s*t\("quadrant"\)\.title,/s,
+      /menu\.addItem\(\{\s*icon:\s*"iconLayout",\s*label:\s*t\("quadrant"\)\.title,/s,
     );
   });
 });

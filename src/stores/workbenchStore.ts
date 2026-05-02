@@ -268,6 +268,35 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     await persist();
   }
 
+  async function updateWidgetLayout(
+    dashboardId: string,
+    widgetId: string,
+    layout: { x: number; y: number; w: number; h: number },
+  ): Promise<void> {
+    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    if (!dashboard) {
+      return;
+    }
+
+    dashboards.value = dashboards.value.map(item => (
+      item.id === dashboardId
+        ? {
+            ...item,
+            widgets: item.widgets.map(widget => (
+              widget.id === widgetId
+                ? {
+                    ...widget,
+                    layout,
+                  }
+                : widget
+            )),
+          }
+        : item
+    ));
+
+    await persist();
+  }
+
   return {
     entries,
     dashboards,
@@ -284,5 +313,6 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     setActiveEntry,
     addWidget,
     removeWidget,
+    updateWidgetLayout,
   };
 });

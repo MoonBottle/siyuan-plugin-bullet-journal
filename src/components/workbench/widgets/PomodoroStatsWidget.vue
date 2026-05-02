@@ -1,29 +1,35 @@
 <template>
-  <div class="workbench-widget workbench-widget--pomodoro-stats" data-testid="workbench-widget-pomodoro-stats">
-    <span class="workbench-widget__label">{{ displayTitle }}</span>
+  <div class="workbench-widget-pomodoro-stats" data-testid="workbench-widget-pomodoro-stats">
+    <div class="workbench-widget-pomodoro-stats__meta">
+      <span>{{ pomodoroCount }}</span>
+      <span>{{ t('pomodoroStats').statsTitle }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import { t } from '@/i18n';
-import type { WorkbenchWidgetInstance } from '@/types/workbench';
+import { useSafeProjectStore } from './useSafeProjectStore';
 
-const props = defineProps<{
-  widget: WorkbenchWidgetInstance;
-}>();
+const projectStore = useSafeProjectStore();
 
-const displayTitle = computed(() => props.widget.title || t('pomodoroStats').statsTitle);
+const pomodoroCount = computed(() => {
+  return projectStore?.getTotalPomodoros('') ?? 0;
+});
 </script>
 
 <style lang="scss" scoped>
-.workbench-widget {
+.workbench-widget-pomodoro-stats__meta {
   display: flex;
-  align-items: center;
-  min-height: 72px;
-}
+  align-items: baseline;
+  gap: 8px;
+  color: var(--b3-theme-on-surface);
 
-.workbench-widget__label {
-  color: var(--b3-theme-on-background);
+  span:first-child {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--b3-theme-on-background);
+  }
 }
 </style>

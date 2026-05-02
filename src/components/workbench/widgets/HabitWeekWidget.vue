@@ -1,29 +1,23 @@
 <template>
-  <div class="workbench-widget workbench-widget--habit-week" data-testid="workbench-widget-habit-week">
-    <span class="workbench-widget__label">{{ displayTitle }}</span>
+  <div class="workbench-widget-habit-week" data-testid="workbench-widget-habit-week">
+    <HabitWeekBar :habits="habits" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { t } from '@/i18n';
-import type { WorkbenchWidgetInstance } from '@/types/workbench';
+import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
+import { useSafeProjectStore } from './useSafeProjectStore';
 
-const props = defineProps<{
-  widget: WorkbenchWidgetInstance;
-}>();
+const projectStore = useSafeProjectStore();
 
-const displayTitle = computed(() => props.widget.title || t('habit').title);
+const habits = computed(() => {
+  return projectStore?.getHabits('') ?? [];
+});
 </script>
 
 <style lang="scss" scoped>
-.workbench-widget {
-  display: flex;
-  align-items: center;
-  min-height: 72px;
-}
-
-.workbench-widget__label {
-  color: var(--b3-theme-on-background);
+.workbench-widget-habit-week {
+  min-height: 0;
 }
 </style>

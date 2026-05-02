@@ -7,6 +7,7 @@ import type { WorkbenchDashboard, WorkbenchEntry } from '@/types/workbench';
 
 const mockWorkbenchStore = {
   dashboards: [] as WorkbenchDashboard[],
+  updateWidgetLayout: vi.fn(() => Promise.resolve()),
 };
 
 vi.mock('@/stores', async () => {
@@ -51,6 +52,7 @@ describe('DashboardCanvas', () => {
   beforeEach(() => {
     initI18n('en_US');
     mockWorkbenchStore.dashboards = [];
+    mockWorkbenchStore.updateWidgetLayout.mockClear();
   });
 
   it('renders widgets for selected dashboard', async () => {
@@ -140,6 +142,40 @@ describe('DashboardCanvas', () => {
     });
 
     expect(mounted.container.querySelector('[data-testid="workbench-dashboard-empty"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('updates widget layout through the temporary move action', async () => {
+    mockWorkbenchStore.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+            config: {},
+          },
+        ],
+      },
+    ];
+
+    const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
+    const mounted = await mountComponent(DashboardCanvas, {
+      entry: createDashboardEntry(),
+    });
+
+    (mounted.container.querySelector('[data-testid="workbench-widget-move-widget-1"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mockWorkbenchStore.updateWidgetLayout).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
+      x: 1,
+      y: 0,
+      w: 6,
+      h: 4,
+    });
 
     mounted.unmount();
   });
