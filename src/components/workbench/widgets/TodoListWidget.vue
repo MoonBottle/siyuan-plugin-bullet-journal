@@ -12,24 +12,38 @@
         :completed-date-range="todoState.completedDateRange.value"
         :priorities="todoState.selectedPriorities.value"
         display-mode="embedded"
+        preview-trigger-mode="click"
+        :on-item-preview-click="handleItemPreviewClick"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
 import TodoContentPane from '@/components/todo/TodoContentPane.vue';
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { useTodoViewState } from '@/composables/useTodoViewState';
 import { t } from '@/i18n';
+import { useApp, usePlugin } from '@/main';
 import type { WorkbenchTodoListWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
+import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { useSafeProjectStore } from './useSafeProjectStore';
 
 const props = defineProps<{
   widget?: WorkbenchWidgetInstance;
 }>();
 
+const app = useApp();
+const plugin = usePlugin() as any;
 const projectStore = useSafeProjectStore();
+const preview = useBlockFocusPreview({
+  showDelayMs: 0,
+  hideDelayMs: 300,
+  popoverLeaveGraceMs: 220,
+});
+const nativePreview = createNativeBlockPreviewController();
 const todoConfig = computed(() => {
   return (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig;
 });
@@ -51,6 +65,90 @@ const openItemsCount = computed(() => {
       ? todoState.selectedPriorities.value
       : undefined,
   }).filter(item => item.status !== 'completed' && item.status !== 'abandoned').length;
+});
+
+function handleItemPreviewClick(payload: TodoSidebarHoverPayload) {
+  preview.showNow(payload);
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!preview.isOpen.value) {
+    return;
+  }
+
+  if (nativePreview.containsTarget(event.target)) {
+    return;
+  }
+
+  preview.forceClose();
+}
+
+function handleNativePreviewDestroyed({
+  initiatedByController,
+  blockId,
+  anchorEl,
+}: {
+  initiatedByController: boolean;
+  blockId: string;
+  anchorEl: HTMLElement;
+}) {
+  const activeBlockId = preview.activeBlockId.value;
+  const activeItemId = preview.activeItemId.value;
+  const activeAnchorEl = preview.anchorEl.value;
+
+  if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
+    return;
+  }
+
+  preview.forceClose();
+
+  if (
+    initiatedByController
+    || !activeBlockId
+    || !activeItemId
+    || !activeAnchorEl
+    || !anchorEl.matches(':hover')
+  ) {
+    return;
+  }
+
+  preview.showNow({
+    blockId: activeBlockId,
+    itemId: activeItemId,
+    anchorEl: activeAnchorEl,
+  });
+}
+
+watch(
+  () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
+  ([isOpen, blockId, anchorEl]) => {
+    if (!isOpen || !blockId || !anchorEl || !app) {
+      nativePreview.close();
+      return;
+    }
+
+    nativePreview.open({
+      app,
+      plugin,
+      blockId,
+      anchorEl,
+      onHoverChange: preview.markPopoverHovered,
+      onPanelDestroyed: handleNativePreviewDestroyed,
+    });
+  },
+  {
+    flush: 'post',
+  },
+);
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  nativePreview.close();
+  preview.dispose();
 });
 </script>
 

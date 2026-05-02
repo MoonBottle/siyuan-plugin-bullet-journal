@@ -528,7 +528,7 @@ type TodoSidebarDragPayload = {
   priority?: PriorityLevel;
 };
 
-type TodoSidebarHoverPayload = {
+export type TodoSidebarHoverPayload = {
   blockId: string;
   itemId: string;
   anchorEl: HTMLElement;

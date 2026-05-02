@@ -8,6 +8,8 @@
       :completed-date-range="completedDateRange"
       :priorities="priorities"
       :display-mode="displayMode"
+      :preview-trigger-mode="previewTriggerMode"
+      :on-item-preview-click="onItemPreviewClick"
     />
   </div>
 </template>
@@ -17,6 +19,7 @@ import { computed, ref } from 'vue';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import type { PriorityLevel } from '@/types/models';
 import type { TodoDateRange } from '@/utils/todoDateFilter';
+import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
 
 const props = withDefaults(defineProps<{
   groupId: string;
@@ -25,10 +28,13 @@ const props = withDefaults(defineProps<{
   completedDateRange?: TodoDateRange | null;
   priorities: PriorityLevel[];
   displayMode?: 'default' | 'embedded';
+  previewTriggerMode?: 'hover' | 'click';
+  onItemPreviewClick?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
 }>(), {
   dateRange: null,
   completedDateRange: null,
   displayMode: 'default',
+  previewTriggerMode: 'hover',
 });
 
 const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
