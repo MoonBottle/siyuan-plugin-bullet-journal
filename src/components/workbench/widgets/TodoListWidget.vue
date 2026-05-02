@@ -10,6 +10,7 @@
       :date-range="todoState.dateRange.value"
       :completed-date-range="todoState.completedDateRange.value"
       :priorities="todoState.selectedPriorities.value"
+      :max-items="previewCount"
       display-mode="embedded"
     />
   </div>
@@ -30,6 +31,14 @@ const props = defineProps<{
 const projectStore = useSafeProjectStore();
 const todoConfig = computed(() => {
   return (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig;
+});
+const previewCount = computed(() => {
+  const value = Number(todoConfig.value.previewCount ?? 5);
+  if (!Number.isFinite(value)) {
+    return 5;
+  }
+
+  return Math.min(Math.max(Math.round(value), 1), 20);
 });
 const todoState = useTodoViewState({
   preset: todoConfig.value.preset,

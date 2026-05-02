@@ -4,7 +4,7 @@ import type {
   WorkbenchWidgetInstance,
   WorkbenchWidgetType,
 } from '@/types/workbench';
-import { showInputDialog } from '@/utils/dialog';
+import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
 type WorkbenchWidgetConfigContext = {
   widget: WorkbenchWidgetInstance;
@@ -49,28 +49,18 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       }),
       openConfigDialog: ({ widget, onUpdateConfig }) => {
         const todoConfig = widget.config as WorkbenchTodoListWidgetConfig;
-        const currentValue = clampPreviewCount(Number(todoConfig.previewCount ?? 5));
-        showInputDialog(
-          t('workbench').configure,
-          t('workbench').todoWidgetPreviewCountPrompt,
-          String(currentValue),
-          async (nextValue) => {
-            const parsedValue = Number(nextValue);
-            if (!nextValue || Number.isNaN(parsedValue)) {
-              return;
-            }
-
-            const previewCount = clampPreviewCount(parsedValue);
-            if (previewCount === currentValue) {
-              return;
-            }
-
+        openTodoWidgetConfigDialog({
+          initialConfig: {
+            previewCount: clampPreviewCount(Number(todoConfig.previewCount ?? 5)),
+            preset: todoConfig.preset ?? {},
+          },
+          onConfirm: async (nextConfig) => {
             await onUpdateConfig({
-              ...todoConfig,
-              previewCount,
+              previewCount: clampPreviewCount(Number(nextConfig.previewCount ?? 5)),
+              preset: nextConfig.preset ?? {},
             });
           },
-        );
+        });
       },
     },
     quadrantSummary: {

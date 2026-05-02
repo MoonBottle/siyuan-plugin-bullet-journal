@@ -571,6 +571,7 @@ const props = withDefaults(defineProps<{
   completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
   includeNoPriority?: boolean;
+  maxItems?: number;
   displayMode?: 'default' | 'embedded';
   previewTriggerMode?: TodoSidebarPreviewTriggerMode;
   enableDrag?: boolean;
@@ -586,6 +587,7 @@ const props = withDefaults(defineProps<{
   completedDateRange: null,
   priorities: () => [],
   includeNoPriority: false,
+  maxItems: undefined,
   displayMode: 'default',
   previewTriggerMode: 'hover',
   enableDrag: false,
@@ -722,7 +724,12 @@ const hasActiveFilters = computed(() => {
 
 // 只包含待办状态的事项（已完成和已放弃单独分组）
 const pendingItems = computed(() => {
-  return filteredItems.value.filter(item => item.status === 'pending');
+  const items = filteredItems.value.filter(item => item.status === 'pending');
+  if (!props.maxItems || props.maxItems < 1) {
+    return items;
+  }
+
+  return items.slice(0, props.maxItems);
 });
 
 // 今日待办事项

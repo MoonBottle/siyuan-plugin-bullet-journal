@@ -34,6 +34,7 @@
       />
 
       <button
+        v-if="showSortTrigger"
         class="sort-trigger b3-tooltips b3-tooltips__n"
         :aria-label="t('todo.sortSettings')"
         @click="$emit('toggle-sort-panel')"
@@ -147,6 +148,7 @@ defineProps<{
   startDate: string;
   endDate: string;
   showSortPanel: boolean;
+  showSortTrigger?: boolean;
   sortRules: TodoSortRule[];
   groupOptions: SelectOption[];
   dateFilterOptions: SelectOption[];

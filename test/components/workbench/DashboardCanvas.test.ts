@@ -10,14 +10,20 @@ import type { WorkbenchEntry } from '@/types/workbench';
 const {
   mockShowInputDialog,
   mockShowConfirmDialog,
+  mockOpenTodoWidgetConfigDialog,
 } = vi.hoisted(() => ({
   mockShowInputDialog: vi.fn(),
   mockShowConfirmDialog: vi.fn(),
+  mockOpenTodoWidgetConfigDialog: vi.fn(),
 }));
 
 vi.mock('@/utils/dialog', () => ({
   showInputDialog: mockShowInputDialog,
   showConfirmDialog: mockShowConfirmDialog,
+}));
+
+vi.mock('@/workbench/todoWidgetConfigDialog', () => ({
+  openTodoWidgetConfigDialog: mockOpenTodoWidgetConfigDialog,
 }));
 
 vi.mock('@/components/workbench/widgets/TodoListWidget.vue', () => ({
@@ -253,7 +259,7 @@ describe('DashboardCanvas', () => {
     mounted.unmount();
   });
 
-  it('opens widget configure action and persists todo preview count updates', async () => {
+  it('opens todo widget configure dialog and persists preset filters with preview count', async () => {
     const store = useWorkbenchStore();
     store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
     store.dashboards = [
@@ -266,7 +272,12 @@ describe('DashboardCanvas', () => {
             type: 'todoList',
             title: 'Todo List',
             layout: { x: 0, y: 0, w: 6, h: 4 },
-            config: { previewCount: 5 },
+            config: {
+              previewCount: 5,
+              preset: {
+                groupId: 'group-a',
+              },
+            },
           },
         ],
       },
@@ -285,16 +296,34 @@ describe('DashboardCanvas', () => {
     await nextTick();
     (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click();
 
-    expect(mockShowInputDialog).toHaveBeenCalledWith(
-      'Configure',
-      'Enter the number of todo items to preview (1-20)',
-      '5',
-      expect.any(Function),
-    );
+    expect(mockShowInputDialog).not.toHaveBeenCalled();
+    expect(mockOpenTodoWidgetConfigDialog).toHaveBeenCalledWith({
+      initialConfig: {
+        previewCount: 5,
+        preset: {
+          groupId: 'group-a',
+        },
+      },
+      onConfirm: expect.any(Function),
+    });
 
-    const configureCallback = mockShowInputDialog.mock.calls[0][3];
-    await configureCallback('8');
-    expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', { previewCount: 8 });
+    const configureOptions = mockOpenTodoWidgetConfigDialog.mock.calls[0][0];
+    await configureOptions.onConfirm({
+      previewCount: 8,
+      preset: {
+        groupId: 'group-b',
+        dateFilterType: 'today',
+        priorities: ['high'],
+      },
+    });
+    expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
+      previewCount: 8,
+      preset: {
+        groupId: 'group-b',
+        dateFilterType: 'today',
+        priorities: ['high'],
+      },
+    });
 
     mounted.unmount();
   });

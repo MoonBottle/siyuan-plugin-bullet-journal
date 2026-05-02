@@ -10,18 +10,19 @@ import { useProjectStore } from '@/stores';
 vi.mock('@/components/todo/TodoContentPane.vue', () => ({
   default: defineComponent({
     name: 'TodoContentPaneStub',
-    props: ['groupId', 'searchQuery', 'dateRange', 'completedDateRange', 'priorities', 'displayMode'],
+    props: ['groupId', 'searchQuery', 'dateRange', 'completedDateRange', 'priorities', 'displayMode', 'maxItems'],
     setup(props) {
       return () => h('div', {
         'data-testid': 'todo-content-pane-stub',
         'data-group-id': props.groupId,
         'data-display-mode': props.displayMode,
+        'data-max-items': String(props.maxItems ?? ''),
       });
     },
   }),
 }));
 
-async function mountWidget(widgetConfig: Record<string, unknown>, pinia: Pinia) {
+async function mountWidget(widgetConfig: Record<string, unknown>, pinia: Pinia, onOpenTodoView?: ReturnType<typeof vi.fn>) {
   const { default: TodoListWidget } = await import('@/components/workbench/widgets/TodoListWidget.vue');
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -34,6 +35,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>, pinia: Pinia) 
       layout: { x: 0, y: 0, w: 6, h: 4 },
       config: widgetConfig,
     },
+    onOpenTodoView,
   });
 
   app.use(pinia);
@@ -77,7 +79,28 @@ describe('TodoListWidget', () => {
     expect(mounted.container.querySelector('[data-testid="todo-content-pane-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-group-id="group-a"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-display-mode="embedded"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-max-items="5"]')).not.toBeNull();
     expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('does not emit navigation events when clicking the widget surface', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-02';
+    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+    const onOpenTodoView = vi.fn();
+
+    const mounted = await mountWidget({
+      previewCount: 5,
+      preset: {},
+    }, pinia, onOpenTodoView);
+
+    (mounted.container.querySelector('[data-testid="workbench-widget-todo-list"]') as HTMLDivElement).click();
+
+    expect(onOpenTodoView).not.toHaveBeenCalled();
 
     mounted.unmount();
   });

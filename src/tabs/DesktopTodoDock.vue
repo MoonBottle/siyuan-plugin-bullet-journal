@@ -74,10 +74,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import dayjs from 'dayjs';
 import { Menu } from 'siyuan';
 import { getCurrentPlugin, usePlugin } from '@/main';
-import { useSettingsStore, useProjectStore } from '@/stores';
+import { useProjectStore, useSettingsStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import TodoContentPane from '@/components/todo/TodoContentPane.vue';
@@ -90,25 +89,22 @@ import type { PriorityLevel } from '@/types/models';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import { defaultTodoSortRules } from '@/settings';
 import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
+import dayjs from '@/utils/dayjs';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const todoContentPane = ref<InstanceType<typeof TodoContentPane> | null>(null);
-
 const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
-
 watch(selectedGroup, (val) => {
   settingsStore.todoDock.selectedGroup = val;
   settingsStore.saveToPlugin();
 });
 
-// 搜索和筛选状态
 const searchQuery = ref('');
 const selectedPriorities = ref<PriorityLevel[]>([]);
 const showSortPanel = ref(false);
-
 const dateFilterType = ref<TodoDateFilterType>('today');
 const startDate = ref(dayjs().format('YYYY-MM-DD'));
 const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
