@@ -9,10 +9,12 @@ const {
   mockMenuAddItem,
   mockMenuOpen,
   mockShowConfirmDialog,
+  mockShowInputDialog,
 } = vi.hoisted(() => ({
   mockMenuAddItem: vi.fn(),
   mockMenuOpen: vi.fn(),
   mockShowConfirmDialog: vi.fn((_title, _message, callback) => callback?.()),
+  mockShowInputDialog: vi.fn((_title, _message, defaultValue, callback) => callback?.(defaultValue)),
 }));
 
 vi.mock('siyuan', () => ({
@@ -24,6 +26,7 @@ vi.mock('siyuan', () => ({
 
 vi.mock('@/utils/dialog', () => ({
   showConfirmDialog: mockShowConfirmDialog,
+  showInputDialog: mockShowInputDialog,
 }));
 
 const entries: WorkbenchEntry[] = [
@@ -149,12 +152,7 @@ describe('WorkbenchSidebar', () => {
 
   it('opens context menu and emits rename entry when choosing rename', async () => {
     const mounted = await mountSidebar();
-    const promptMock = vi.fn(() => 'Renamed Todo');
-    Object.defineProperty(window, 'prompt', {
-      value: promptMock,
-      writable: true,
-      configurable: true,
-    });
+    mockShowInputDialog.mockImplementationOnce((_title, _message, _defaultValue, callback) => callback?.('Renamed Todo'));
 
     (mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement)
       .dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 12, clientY: 24 }));
@@ -165,7 +163,12 @@ describe('WorkbenchSidebar', () => {
     const renameConfig = mockMenuAddItem.mock.calls[0][0];
     renameConfig.click();
 
-    expect(promptMock).toHaveBeenCalled();
+    expect(mockShowInputDialog).toHaveBeenCalledWith(
+      'Rename',
+      'Enter a new name',
+      'Todo',
+      expect.any(Function),
+    );
     expect(mounted.onRenameEntry).toHaveBeenCalledWith('entry-todo', 'Renamed Todo');
     mounted.unmount();
   });

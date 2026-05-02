@@ -80,7 +80,7 @@
 import { ref } from 'vue';
 import { Menu } from 'siyuan';
 import { t } from '@/i18n';
-import { showConfirmDialog } from '@/utils/dialog';
+import { showConfirmDialog, showInputDialog } from '@/utils/dialog';
 import type { WorkbenchEntry, WorkbenchViewType } from '@/types/workbench';
 
 defineProps<{
@@ -121,12 +121,18 @@ function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
     icon: 'iconEdit',
     label: t('workbench').rename,
     click: () => {
-      const nextTitle = window.prompt(t('workbench').renamePrompt, entry.title)?.trim();
-      if (!nextTitle || nextTitle === entry.title) {
-        return;
-      }
+      showInputDialog(
+        t('workbench').rename,
+        t('workbench').renamePrompt,
+        entry.title,
+        (nextTitle) => {
+          if (!nextTitle || nextTitle === entry.title) {
+            return;
+          }
 
-      emit('rename-entry', entry.id, nextTitle);
+          emit('rename-entry', entry.id, nextTitle);
+        },
+      );
     },
   });
   menu.addItem({

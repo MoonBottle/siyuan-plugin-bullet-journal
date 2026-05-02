@@ -1253,6 +1253,81 @@ export function showHabitCreateDialog(
   return dialog;
 }
 
+/**
+ * 单输入框弹框
+ */
+export function showInputDialog(
+  title: string,
+  message: string,
+  defaultValue: string,
+  onConfirm: (value: string) => void,
+  onCancel?: () => void,
+): Dialog {
+  let content = '<div class="sy-dialog-content">';
+  content += `<div class="sy-dialog-message">${message}</div>`;
+  content += `
+    <div class="sy-dialog-input-wrap">
+      <input
+        class="b3-text-field fn__block sy-dialog-input"
+        data-role="input"
+        type="text"
+        value="${defaultValue.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}"
+      >
+    </div>
+  `;
+  content += `
+    <div class="sy-dialog-footer">
+      ${createButtons([
+        { text: t('common').cancel, class: 'b3-button--cancel', action: 'cancel' },
+        { text: t('common').confirm, class: 'b3-button--text', action: 'confirm' },
+      ])}
+    </div>
+  `;
+  content += '</div>';
+
+  const dialog = createDialog({
+    title,
+    content,
+    width: '420px',
+  });
+
+  const element = dialog.element;
+  const inputEl = element.querySelector('[data-role="input"]') as HTMLInputElement | null;
+
+  const handleConfirm = () => {
+    const nextValue = inputEl?.value.trim() ?? '';
+    onConfirm(nextValue);
+    dialog.destroy();
+  };
+
+  element.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const action = (e.currentTarget as HTMLElement).dataset.action;
+
+      if (action === 'confirm') {
+        handleConfirm();
+      } else if (action === 'cancel') {
+        onCancel?.();
+        dialog.destroy();
+      }
+    });
+  });
+
+  inputEl?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleConfirm();
+    }
+  });
+
+  requestAnimationFrame(() => {
+    inputEl?.focus();
+    inputEl?.select();
+  });
+
+  return dialog;
+}
+
 export function showHabitRecordEditDialog(
   initialMarkdown: string,
   onSave: (markdown: string) => void,
