@@ -80,9 +80,18 @@ const openItemsCount = computed(() => {
 }
 
 .workbench-widget-todo-list__content {
+  display: flex;
   flex: 1;
   width: 100%;
   min-height: 0;
   overflow: hidden;
+}
+
+.workbench-widget-todo-list__content :deep(.todo-dock-content) {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 </style>
