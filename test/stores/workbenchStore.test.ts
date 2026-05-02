@@ -20,6 +20,16 @@ vi.mock('@/utils/workbenchStorage', () => ({
   saveWorkbenchSettings: mockSaveWorkbenchSettings,
 }));
 
+vi.mock('@/workbench/widgetRegistry', () => ({
+  getWidgetDefinition: (type: string) => ({
+    type,
+    name: type === 'todoList' ? 'Todo List' : type,
+    icon: 'iconList',
+    defaultSize: { w: 6, h: 4 },
+    createDefaultConfig: () => ({ source: 'default-config' }),
+  }),
+}));
+
 import { useWorkbenchStore } from '@/stores/workbenchStore';
 
 type MockPlugin = {
@@ -310,5 +320,61 @@ describe('workbenchStore', () => {
 
     expect(store.saveState).toBe('error');
     expect(store.saveError).toBe('Failed to save workbench settings');
+  });
+
+  it('addWidget creates widget using registry defaults and persists', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard();
+
+    store.dashboards = [dashboard];
+
+    await store.addWidget(dashboard.id, 'todoList');
+
+    expect(store.dashboards[0].widgets).toHaveLength(1);
+    expect(store.dashboards[0].widgets[0]).toEqual(expect.objectContaining({
+      type: 'todoList',
+      layout: expect.objectContaining({
+        x: 0,
+        y: 0,
+        w: 6,
+        h: 4,
+      }),
+      config: { source: 'default-config' },
+    }));
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
+      entries: [],
+      dashboards: store.dashboards,
+      activeEntryId: null,
+    });
+  });
+
+  it('removeWidget removes widget from dashboard and persists', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard({
+      widgets: [
+        {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: {},
+        },
+      ],
+    });
+
+    store.dashboards = [dashboard];
+
+    await store.removeWidget(dashboard.id, 'widget-1');
+
+    expect(store.dashboards[0].widgets).toEqual([]);
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
+      entries: [],
+      dashboards: store.dashboards,
+      activeEntryId: null,
+    });
   });
 });

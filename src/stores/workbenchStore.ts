@@ -5,11 +5,13 @@ import type {
   WorkbenchEntry,
   WorkbenchSettings,
   WorkbenchViewType,
+  WorkbenchWidgetType,
 } from '@/types/workbench';
 import {
   loadWorkbenchSettings,
   saveWorkbenchSettings,
 } from '@/utils/workbenchStorage';
+import { getWidgetDefinition } from '@/workbench/widgetRegistry';
 
 type WorkbenchPlugin = Parameters<typeof loadWorkbenchSettings>[0];
 
@@ -216,6 +218,56 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     await persist();
   }
 
+  async function addWidget(dashboardId: string, type: WorkbenchWidgetType): Promise<void> {
+    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    if (!dashboard) {
+      return;
+    }
+
+    const definition = getWidgetDefinition(type);
+    const nextWidget = {
+      id: createId('widget'),
+      type,
+      title: definition.name,
+      layout: {
+        x: 0,
+        y: dashboard.widgets.length,
+        w: definition.defaultSize.w,
+        h: definition.defaultSize.h,
+      },
+      config: definition.createDefaultConfig(),
+    };
+
+    dashboards.value = dashboards.value.map(item => (
+      item.id === dashboardId
+        ? {
+            ...item,
+            widgets: [...item.widgets, nextWidget],
+          }
+        : item
+    ));
+
+    await persist();
+  }
+
+  async function removeWidget(dashboardId: string, widgetId: string): Promise<void> {
+    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    if (!dashboard) {
+      return;
+    }
+
+    dashboards.value = dashboards.value.map(item => (
+      item.id === dashboardId
+        ? {
+            ...item,
+            widgets: item.widgets.filter(widget => widget.id !== widgetId),
+          }
+        : item
+    ));
+
+    await persist();
+  }
+
   return {
     entries,
     dashboards,
@@ -230,5 +282,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     renameEntry,
     deleteEntry,
     setActiveEntry,
+    addWidget,
+    removeWidget,
   };
 });
