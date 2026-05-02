@@ -10,7 +10,7 @@
         :key="record.blockId"
         class="habit-record-log__item"
         :data-testid="`habit-record-log-item-${record.blockId}`"
-        @click="handleOpenRecord(record)"
+        @click="handleOpenRecord(record, $event)"
       >
         <div class="habit-record-log__date">{{ formatDate(record.date) }}</div>
         <div class="habit-record-log__content">
@@ -33,9 +33,17 @@ import { isRecordCompleted } from '@/utils/habitStatsUtils';
 import type { Habit, CheckInRecord } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 
+export type HabitRecordLogPreviewPayload = {
+  blockId: string;
+  docId: string;
+  anchorEl: HTMLElement;
+};
+
 const props = defineProps<{
   habit: Habit;
   viewMonth: string;
+  previewTriggerMode?: 'document' | 'preview';
+  onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void;
 }>();
 
 const monthlyRecords = computed(() => {
@@ -57,8 +65,17 @@ function formatDate(date: string): string {
   return dayjs(date).format('M/D');
 }
 
-async function handleOpenRecord(record: CheckInRecord) {
+async function handleOpenRecord(record: CheckInRecord, event: MouseEvent) {
   if (!record.docId || !record.blockId) {
+    return;
+  }
+
+  if (props.previewTriggerMode === 'preview') {
+    props.onRecordPreviewClick?.({
+      blockId: record.blockId,
+      docId: record.docId,
+      anchorEl: event.currentTarget as HTMLElement,
+    }, event);
     return;
   }
 

@@ -50,6 +50,8 @@
         <HabitRecordLog
           :habit="selectedHabit"
           :view-month="viewMonth"
+          :preview-trigger-mode="recordPreviewTriggerMode"
+          :on-record-preview-click="onRecordPreviewClick"
         />
       </div>
     </template>
@@ -72,6 +74,7 @@ import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
 import { t } from '@/i18n';
 import type { Habit, HabitStats } from '@/types/models';
+import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue';
 
 const props = withDefaults(defineProps<{
   selectedHabit: Habit | null;
@@ -89,6 +92,8 @@ const props = withDefaults(defineProps<{
   emptyTestId?: string;
   refreshButtonTestId?: string;
   openDocButtonTestId?: string;
+  recordPreviewTriggerMode?: 'document' | 'preview';
+  onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void;
 }>(), {
   stats: null,
   showHeader: true,
@@ -100,6 +105,7 @@ const props = withDefaults(defineProps<{
   emptyTestId: '',
   refreshButtonTestId: '',
   openDocButtonTestId: '',
+  recordPreviewTriggerMode: 'document',
 });
 
 const emit = defineEmits<{

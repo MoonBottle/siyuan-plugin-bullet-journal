@@ -32,6 +32,8 @@
         empty-test-id="workbench-habit-empty-detail"
         refresh-button-test-id="workbench-habit-refresh-button"
         open-doc-button-test-id="workbench-habit-open-doc"
+        record-preview-trigger-mode="preview"
+        :on-record-preview-click="handleRecordPreviewClick"
         @refresh="refreshHabits"
         @open-doc="openSelectedHabitDoc"
         @update:view-month="selectedViewMonth = $event"
@@ -41,16 +43,26 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue';
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue';
 import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
 import { t } from '@/i18n';
-import { usePlugin } from '@/main';
+import { useApp, usePlugin } from '@/main';
+import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 
 const plugin = usePlugin();
+const app = useApp();
+const preview = useBlockFocusPreview({
+  showDelayMs: 0,
+  hideDelayMs: 300,
+  popoverLeaveGraceMs: 220,
+});
+const nativePreview = createNativeBlockPreviewController();
 const {
   selectedDate,
   selectedViewMonth,
@@ -67,6 +79,62 @@ const {
   incrementHabit,
   openSelectedHabitDoc,
 } = useHabitWorkspace();
+
+function handleRecordPreviewClick(payload: HabitRecordLogPreviewPayload) {
+  preview.showNow({
+    blockId: payload.blockId,
+    itemId: payload.blockId,
+    anchorEl: payload.anchorEl,
+  });
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!preview.isOpen.value) {
+    return;
+  }
+
+  if (nativePreview.containsTarget(event.target)) {
+    return;
+  }
+
+  preview.forceClose();
+}
+
+function handleNativePreviewDestroyed({
+  initiatedByController,
+  blockId,
+  anchorEl,
+}: {
+  initiatedByController: boolean;
+  blockId: string;
+  anchorEl: HTMLElement;
+}) {
+  const activeBlockId = preview.activeBlockId.value;
+  const activeItemId = preview.activeItemId.value;
+  const activeAnchorEl = preview.anchorEl.value;
+
+  if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
+    return;
+  }
+
+  preview.forceClose();
+
+  if (
+    initiatedByController
+    || !activeBlockId
+    || !activeItemId
+    || !activeAnchorEl
+    || !anchorEl.matches(':hover')
+  ) {
+    return;
+  }
+
+  preview.showNow({
+    blockId: activeBlockId,
+    itemId: activeItemId,
+    anchorEl: activeAnchorEl,
+  });
+}
 
 const handleDataRefresh = async () => {
   await refreshHabits();
@@ -92,6 +160,8 @@ onMounted(() => {
   catch {
     // ignore
   }
+
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
 });
 
 onUnmounted(() => {
@@ -106,7 +176,33 @@ onUnmounted(() => {
     refreshChannel.close();
     refreshChannel = null;
   }
+
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  nativePreview.close();
+  preview.dispose();
 });
+
+watch(
+  () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
+  ([isOpen, blockId, anchorEl]) => {
+    if (!isOpen || !blockId || !anchorEl || !app) {
+      nativePreview.close();
+      return;
+    }
+
+    nativePreview.open({
+      app,
+      plugin,
+      blockId,
+      anchorEl,
+      onHoverChange: preview.markPopoverHovered,
+      onPanelDestroyed: handleNativePreviewDestroyed,
+    });
+  },
+  {
+    flush: 'post',
+  },
+);
 </script>
 
 <style scoped>

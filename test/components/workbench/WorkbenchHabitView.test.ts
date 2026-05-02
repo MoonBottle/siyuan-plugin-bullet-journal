@@ -8,8 +8,11 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
 
+const habitRecordLogProps = vi.fn();
+
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
+  useApp: vi.fn(() => ({})),
 }));
 
 vi.mock('@/services/habitService', () => ({
@@ -76,9 +79,23 @@ vi.mock('@/components/habit/HabitMonthCalendar.vue', () => ({
 vi.mock('@/components/habit/HabitRecordLog.vue', () => ({
   default: defineComponent({
     name: 'HabitRecordLogStub',
-    setup() {
+    props: ['previewTriggerMode', 'onRecordPreviewClick'],
+    setup(props) {
+      habitRecordLogProps({
+        previewTriggerMode: props.previewTriggerMode,
+        onRecordPreviewClick: props.onRecordPreviewClick,
+      });
       return () => h('div', { 'data-testid': 'habit-record-log-stub' });
     },
+  }),
+}));
+
+vi.mock('@/utils/nativeBlockPreview', () => ({
+  createNativeBlockPreviewController: () => ({
+    open: vi.fn(),
+    close: vi.fn(),
+    containsTarget: vi.fn(() => false),
+    isOpen: vi.fn(() => false),
   }),
 }));
 
@@ -175,6 +192,10 @@ describe('WorkbenchHabitView', () => {
     expect(mounted.container.querySelector('[data-testid="habit-month-calendar-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="habit-stats-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="habit-record-log-stub"]')).not.toBeNull();
+    expect(habitRecordLogProps).toHaveBeenCalledWith(expect.objectContaining({
+      previewTriggerMode: 'preview',
+      onRecordPreviewClick: expect.any(Function),
+    }));
 
     mounted.unmount();
   });

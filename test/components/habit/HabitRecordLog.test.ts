@@ -117,6 +117,51 @@ describe('HabitRecordLog', () => {
     mounted.unmount();
   });
 
+  it('uses preview callback instead of opening document when preview mode is enabled', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [
+        {
+          content: '早起',
+          date: '2026-04-10',
+          docId: 'doc-2',
+          blockId: 'record-10',
+          habitId: 'habit-1',
+        },
+      ],
+    };
+    const onRecordPreviewClick = vi.fn();
+
+    const mounted = mountComponent({
+      habit,
+      viewMonth: '2026-04',
+      previewTriggerMode: 'preview',
+      onRecordPreviewClick,
+    });
+
+    await nextTick();
+
+    const row = mounted.container.querySelector('[data-testid="habit-record-log-item-record-10"]');
+    expect(row).not.toBeNull();
+
+    row?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(onRecordPreviewClick).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'record-10',
+      docId: 'doc-2',
+      anchorEl: row,
+    }), expect.any(MouseEvent));
+    expect(openDocumentAtLine).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
   it('does not render edit or delete actions', async () => {
     const habit: Habit = {
       name: '早起',
