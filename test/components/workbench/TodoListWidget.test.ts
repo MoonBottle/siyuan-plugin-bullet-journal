@@ -10,13 +10,12 @@ import { useProjectStore } from '@/stores';
 vi.mock('@/components/todo/TodoContentPane.vue', () => ({
   default: defineComponent({
     name: 'TodoContentPaneStub',
-    props: ['groupId', 'searchQuery', 'dateRange', 'completedDateRange', 'priorities', 'displayMode', 'maxItems'],
+    props: ['groupId', 'searchQuery', 'dateRange', 'completedDateRange', 'priorities', 'displayMode'],
     setup(props) {
       return () => h('div', {
         'data-testid': 'todo-content-pane-stub',
         'data-group-id': props.groupId,
         'data-display-mode': props.displayMode,
-        'data-max-items': String(props.maxItems ?? ''),
       });
     },
   }),
@@ -68,7 +67,6 @@ describe('TodoListWidget', () => {
     ])) as any;
 
     const mounted = await mountWidget({
-      previewCount: 5,
       preset: {
         groupId: 'group-a',
         dateFilterType: 'today',
@@ -79,7 +77,6 @@ describe('TodoListWidget', () => {
     expect(mounted.container.querySelector('[data-testid="todo-content-pane-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-group-id="group-a"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-display-mode="embedded"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-max-items="5"]')).not.toBeNull();
     expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull();
 
     mounted.unmount();
@@ -94,7 +91,6 @@ describe('TodoListWidget', () => {
     const onOpenTodoView = vi.fn();
 
     const mounted = await mountWidget({
-      previewCount: 5,
       preset: {},
     }, pinia, onOpenTodoView);
 

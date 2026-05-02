@@ -25,17 +25,6 @@
     />
 
     <div class="todo-widget-config-dialog__footer">
-      <label class="todo-widget-config-dialog__preview">
-        <span>{{ t('workbench').todoWidgetPreviewCountLabel }}</span>
-        <input
-          v-model.number="previewCount"
-          class="b3-text-field"
-          type="number"
-          min="1"
-          max="20"
-        >
-      </label>
-
       <div class="todo-widget-config-dialog__actions">
         <button class="b3-button b3-button--cancel" type="button" @click="onCancel">
           {{ t('common').cancel }}
@@ -79,8 +68,6 @@ const dateFilterType = todoState.dateFilterType;
 const startDate = todoState.startDate;
 const endDate = todoState.endDate;
 
-const previewCount = ref(clampPreviewCount(props.initialConfig.previewCount ?? 5));
-
 const groupOptions = computed(() => [
   { value: '', label: t('settings').projectGroups.allGroups },
   ...settingsStore.groups.map(group => ({
@@ -101,14 +88,6 @@ const priorityOptions = [
   { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji },
   { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji },
 ];
-
-function clampPreviewCount(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 5;
-  }
-
-  return Math.min(Math.max(Math.round(value), 1), 20);
-}
 
 function togglePriority(priority: PriorityLevel) {
   const index = selectedPriorities.value.indexOf(priority);
@@ -135,7 +114,6 @@ function getEmptyFieldOptions() {
 
 function handleConfirm() {
   props.onConfirm({
-    previewCount: clampPreviewCount(Number(previewCount.value)),
     preset: {
       groupId: selectedGroup.value || undefined,
       searchQuery: searchQuery.value.trim() || undefined,
@@ -160,22 +138,8 @@ function handleConfirm() {
 
 .todo-widget-config-dialog__footer {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
-}
-
-.todo-widget-config-dialog__preview {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 120px;
-  color: var(--b3-theme-on-surface);
-  font-size: 13px;
-
-  input {
-    width: 100%;
-  }
 }
 
 .todo-widget-config-dialog__actions {

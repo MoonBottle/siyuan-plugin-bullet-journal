@@ -27,14 +27,6 @@ export type WorkbenchWidgetDefinition = {
   openConfigDialog?: (context: WorkbenchWidgetConfigContext) => void;
 };
 
-function clampPreviewCount(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 5;
-  }
-
-  return Math.min(Math.max(Math.round(value), 1), 20);
-}
-
 function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefinition> {
   return {
     todoList: {
@@ -44,19 +36,16 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
       createDefaultConfig: (): WorkbenchTodoListWidgetConfig => ({
-        previewCount: 5,
         preset: {},
       }),
       openConfigDialog: ({ widget, onUpdateConfig }) => {
         const todoConfig = widget.config as WorkbenchTodoListWidgetConfig;
         openTodoWidgetConfigDialog({
           initialConfig: {
-            previewCount: clampPreviewCount(Number(todoConfig.previewCount ?? 5)),
             preset: todoConfig.preset ?? {},
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
-              previewCount: clampPreviewCount(Number(nextConfig.previewCount ?? 5)),
               preset: nextConfig.preset ?? {},
             });
           },

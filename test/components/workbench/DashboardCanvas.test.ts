@@ -259,7 +259,7 @@ describe('DashboardCanvas', () => {
     mounted.unmount();
   });
 
-  it('opens todo widget configure dialog and persists preset filters with preview count', async () => {
+  it('opens todo widget configure dialog and persists preset filters', async () => {
     const store = useWorkbenchStore();
     store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
     store.dashboards = [
@@ -273,7 +273,6 @@ describe('DashboardCanvas', () => {
             title: 'Todo List',
             layout: { x: 0, y: 0, w: 6, h: 4 },
             config: {
-              previewCount: 5,
               preset: {
                 groupId: 'group-a',
               },
@@ -299,7 +298,6 @@ describe('DashboardCanvas', () => {
     expect(mockShowInputDialog).not.toHaveBeenCalled();
     expect(mockOpenTodoWidgetConfigDialog).toHaveBeenCalledWith({
       initialConfig: {
-        previewCount: 5,
         preset: {
           groupId: 'group-a',
         },
@@ -309,7 +307,6 @@ describe('DashboardCanvas', () => {
 
     const configureOptions = mockOpenTodoWidgetConfigDialog.mock.calls[0][0];
     await configureOptions.onConfirm({
-      previewCount: 8,
       preset: {
         groupId: 'group-b',
         dateFilterType: 'today',
@@ -317,7 +314,6 @@ describe('DashboardCanvas', () => {
       },
     });
     expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
-      previewCount: 8,
       preset: {
         groupId: 'group-b',
         dateFilterType: 'today',

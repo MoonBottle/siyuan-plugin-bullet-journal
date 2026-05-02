@@ -82,8 +82,6 @@
     "renamePrompt": "Enter a new name",
     "configure": "Configure",
     "widgetRenamePrompt": "Enter a widget name",
-    "todoWidgetPreviewCountLabel": "Items to show",
-    "todoWidgetPreviewCountPrompt": "Enter the number of todo items to preview (1-20)",
     "delete": "Delete",
     "deleteConfirm": "Delete \"{name}\"?",
     "widgetDeleteConfirm": "Delete widget \"{name}\"?",

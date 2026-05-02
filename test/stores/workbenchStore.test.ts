@@ -520,16 +520,16 @@ describe('workbenchStore', () => {
           type: 'todoList',
           title: 'Todo List',
           layout: { x: 0, y: 0, w: 6, h: 4 },
-          config: { previewCount: 5 },
+          config: { preset: { groupId: 'group-a' } },
         },
       ],
     });
 
     store.dashboards = [dashboard];
 
-    await store.updateWidgetConfig(dashboard.id, 'widget-1', { previewCount: 8 });
+    await store.updateWidgetConfig(dashboard.id, 'widget-1', { preset: { groupId: 'group-b' } });
 
-    expect(store.dashboards[0].widgets[0].config).toEqual({ previewCount: 8 });
+    expect(store.dashboards[0].widgets[0].config).toEqual({ preset: { groupId: 'group-b' } });
     expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
       entries: [],
       dashboards: store.dashboards,
@@ -537,7 +537,7 @@ describe('workbenchStore', () => {
     });
   });
 
-  it('updateWidgetConfig persists todo preset and preview count together', async () => {
+  it('updateWidgetConfig persists todo preset config', async () => {
     const plugin = createPlugin();
     const store = useWorkbenchStore();
     store.bindPlugin(plugin);
@@ -549,7 +549,6 @@ describe('workbenchStore', () => {
           title: 'Todo List',
           layout: { x: 0, y: 0, w: 6, h: 4 },
           config: {
-            previewCount: 5,
             preset: {},
           },
         },
@@ -559,7 +558,6 @@ describe('workbenchStore', () => {
     store.dashboards = [dashboard];
 
     await store.updateWidgetConfig(dashboard.id, 'widget-1', {
-      previewCount: 7,
       preset: {
         groupId: 'group-a',
         dateFilterType: 'today',
@@ -568,7 +566,6 @@ describe('workbenchStore', () => {
     });
 
     expect(store.dashboards[0].widgets[0].config).toEqual({
-      previewCount: 7,
       preset: {
         groupId: 'group-a',
         dateFilterType: 'today',

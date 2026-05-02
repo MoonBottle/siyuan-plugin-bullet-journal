@@ -7,7 +7,6 @@
       :date-range="dateRange"
       :completed-date-range="completedDateRange"
       :priorities="priorities"
-      :max-items="maxItems"
       :display-mode="displayMode"
     />
   </div>
@@ -25,12 +24,10 @@ const props = withDefaults(defineProps<{
   dateRange?: TodoDateRange | null;
   completedDateRange?: TodoDateRange | null;
   priorities: PriorityLevel[];
-  maxItems?: number;
   displayMode?: 'default' | 'embedded';
 }>(), {
   dateRange: null,
   completedDateRange: null,
-  maxItems: undefined,
   displayMode: 'default',
 });
 

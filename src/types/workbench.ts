@@ -27,7 +27,6 @@ export type WorkbenchWidgetType =
   | 'pomodoroStats';
 
 export interface WorkbenchTodoListWidgetConfig {
-  previewCount?: number;
   preset?: TodoViewPreset;
 }
 
