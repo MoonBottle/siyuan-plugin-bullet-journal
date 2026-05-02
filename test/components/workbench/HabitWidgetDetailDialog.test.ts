@@ -15,7 +15,6 @@ const eventHandlers = new Map<string, () => void | Promise<void>>();
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
   useApp: vi.fn(() => ({})),
-  getCurrentPlugin: vi.fn(() => ({})),
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -28,13 +27,6 @@ vi.mock('@/utils/eventBus', () => ({
   Events: {
     DATA_REFRESH: 'data:refresh',
   },
-  DATA_REFRESH_CHANNEL: 'habit-refresh-channel',
-}));
-
-vi.mock('@/utils/refreshChannelGuard', () => ({
-  createRefreshChannelGuard: vi.fn(() => ({
-    dispose: vi.fn(),
-  })),
 }));
 
 vi.mock('@/utils/nativeBlockPreview', () => ({
