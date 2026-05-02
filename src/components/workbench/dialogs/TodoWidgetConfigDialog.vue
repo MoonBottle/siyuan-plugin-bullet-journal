@@ -1,5 +1,5 @@
 <template>
-  <div class="todo-widget-config-dialog">
+  <WorkbenchConfigDialogLayout>
     <div class="todo-widget-config-dialog__body">
       <TodoFilterBar
         :selected-group="selectedGroup"
@@ -26,7 +26,7 @@
       />
     </div>
 
-    <div class="todo-widget-config-dialog__footer">
+    <template #footer>
       <div class="todo-widget-config-dialog__actions">
         <button class="b3-button b3-button--cancel" type="button" @click="onCancel">
           {{ t('common').cancel }}
@@ -35,13 +35,14 @@
           {{ t('common').confirm }}
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </WorkbenchConfigDialogLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import TodoFilterBar from '@/components/todo/TodoFilterBar.vue';
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
 import { useTodoViewState } from '@/composables/useTodoViewState';
 import { t } from '@/i18n';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
@@ -131,13 +132,6 @@ function handleConfirm() {
 </script>
 
 <style lang="scss" scoped>
-.todo-widget-config-dialog {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 16px 20px 20px;
-}
-
 .todo-widget-config-dialog__body {
   padding: 0;
 }
@@ -146,15 +140,6 @@ function handleConfirm() {
   padding: 0;
   background: transparent;
   border-radius: 0;
-}
-
-.todo-widget-config-dialog__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--b3-border-color);
 }
 
 .todo-widget-config-dialog__actions {

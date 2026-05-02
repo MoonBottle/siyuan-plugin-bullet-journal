@@ -1,5 +1,5 @@
 <template>
-  <div class="calendar-widget-config-dialog">
+  <WorkbenchConfigDialogLayout>
     <div class="calendar-widget-config-dialog__body">
       <div class="calendar-widget-config-dialog__field">
         <label class="calendar-widget-config-dialog__label">
@@ -24,20 +24,21 @@
       </div>
     </div>
 
-    <div class="calendar-widget-config-dialog__footer">
+    <template #footer>
       <button class="b3-button b3-button--cancel" type="button" @click="onCancel">
         {{ t('common').cancel }}
       </button>
       <button class="b3-button b3-button--text" type="button" @click="handleConfirm">
         {{ t('common').confirm }}
       </button>
-    </div>
-  </div>
+    </template>
+  </WorkbenchConfigDialogLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
 import { t } from '@/i18n';
 import { useSettingsStore } from '@/stores';
 import type { WorkbenchCalendarWidgetConfig } from '@/types/workbench';
@@ -73,13 +74,6 @@ function handleConfirm() {
 </script>
 
 <style lang="scss" scoped>
-.calendar-widget-config-dialog {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 16px 20px 20px;
-}
-
 .calendar-widget-config-dialog__body {
   display: flex;
   flex-direction: column;
@@ -97,14 +91,5 @@ function handleConfirm() {
   font-size: 13px;
   font-weight: 500;
   color: var(--b3-theme-on-background);
-}
-
-.calendar-widget-config-dialog__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--b3-border-color);
 }
 </style>
