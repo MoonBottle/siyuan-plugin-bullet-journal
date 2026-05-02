@@ -33,15 +33,14 @@ export function findInsertAfterBlockId(habit: Habit, date: string): string {
  */
 export function buildCheckInMarkdown(habit: Habit, date: string, currentValue?: number): string {
   if (habit.type === 'binary') {
-    return `${habit.name} 📅${date} ✅`;
+    return `${habit.name} 📅${date}`;
   }
 
   // 计数型
   const target = habit.target ?? 0;
   const unit = habit.unit ?? '';
   const value = currentValue ?? 0;
-  const completed = value >= target;
-  return `${habit.name} ${value}/${target}${unit} 📅${date}${completed ? ' ✅' : ''}`;
+  return `${habit.name} ${value}/${target}${unit} 📅${date}`;
 }
 
 /**
@@ -105,11 +104,8 @@ export async function checkInCount(
   }
 
   // 创建新记录
-  const target = habit.target ?? 0;
-  const unit = habit.unit ?? '';
   const value = incrementBy;
-  const completed = value >= target;
-  const markdown = `${habit.name} ${value}/${target}${unit} 📅${date}${completed ? ' ✅' : ''}`;
+  const markdown = buildCheckInMarkdown(habit, date, value);
 
   const previousId = findInsertAfterBlockId(habit, date);
 
@@ -140,10 +136,7 @@ export async function setCheckInValue(
 
   if (existingRecord) {
     // 更新现有记录 block
-    const target = habit.target ?? existingRecord.targetValue ?? 0;
-    const unit = habit.unit ?? existingRecord.unit ?? '';
-    const completed = value >= target;
-    const markdown = `${habit.name} ${value}/${target}${unit} 📅${date}${completed ? ' ✅' : ''}`;
+    const markdown = buildCheckInMarkdown(habit, date, value);
 
     try {
       if (writer) {
@@ -159,10 +152,7 @@ export async function setCheckInValue(
   }
 
   // 创建新记录
-  const target = habit.target ?? 0;
-  const unit = habit.unit ?? '';
-  const completed = value >= target;
-  const markdown = `${habit.name} ${value}/${target}${unit} 📅${date}${completed ? ' ✅' : ''}`;
+  const markdown = buildCheckInMarkdown(habit, date, value);
   const previousId = findInsertAfterBlockId(habit, date);
 
   try {

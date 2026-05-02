@@ -89,8 +89,8 @@ describe('parseHabitLine', () => {
 });
 
 describe('parseCheckInRecordLine', () => {
-  it('二元型打卡：早起 📅2026-04-06 ✅', () => {
-    const result = parseCheckInRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1');
+  it('二元型打卡：早起 📅2026-04-06', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06', 'habit-block-1');
     expect(result).not.toBeNull();
     expect(result!.content).toBe('早起');
     expect(result!.date).toBe('2026-04-06');
@@ -105,15 +105,15 @@ describe('parseCheckInRecordLine', () => {
     expect(result!.unit).toBe('杯');
   });
 
-  it('计数型达标：喝水 8/8杯 📅2026-04-06 ✅', () => {
-    const result = parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06 ✅', 'habit-block-1');
+  it('计数型达标：喝水 8/8杯 📅2026-04-06', () => {
+    const result = parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06', 'habit-block-1');
     expect(result).not.toBeNull();
     expect(result!.currentValue).toBe(8);
     expect(result!.targetValue).toBe(8);
   });
 
-  it('使用@日期：早起 @2026-04-06 ✅', () => {
-    const result = parseCheckInRecordLine('早起 @2026-04-06 ✅', 'habit-block-1');
+  it('使用@日期：早起 @2026-04-06', () => {
+    const result = parseCheckInRecordLine('早起 @2026-04-06', 'habit-block-1');
     expect(result).not.toBeNull();
     expect(result!.date).toBe('2026-04-06');
   });

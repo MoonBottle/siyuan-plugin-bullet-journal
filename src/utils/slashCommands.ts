@@ -740,18 +740,19 @@ export function getActionHandler(
       return (protyle, nodeElement) => {
         const blockText = nodeElement?.textContent || '';
         const text = processLineText(blockText, filter).trim();
+        const blockId = nodeElement?.getAttribute?.('data-node-id') || '';
         const parsedHabit = parseHabitLine(text);
-        const parsedRecord = parseHabitRecordLine(text, '');
+        const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
+        const parsedRecord = parseHabitRecordLine(text, blockId);
 
         deleteSlashCommandContent(protyle, filter);
 
-        if (parsedRecord) {
+        if (matchedRecord || parsedRecord) {
           showMessage(t('slash').checkIn || '打卡', 2000, 'info');
           return;
         }
 
         showHabitCreateDialog((markdown) => {
-          const blockId = nodeElement?.getAttribute?.('data-node-id');
           if (!blockId) {
             return;
           }
@@ -769,41 +770,43 @@ export function getActionHandler(
         const text = nodeElement?.textContent?.trim() || '';
         const blockId = nodeElement?.getAttribute?.('data-node-id');
         const parsedHabit = parseHabitLine(text);
+        const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
         const parsedRecord = parseHabitRecordLine(text, blockId || '');
         const currentDate = dayjs().format('YYYY-MM-DD');
         const matchedHabit = parsedHabit ? findHabitByDefinitionBlockId(blockId) : null;
-        const matchedRecord = parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null;
+        const activeRecordMatch = matchedRecord ?? (parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null);
+        const isRecordContext = Boolean(activeRecordMatch || parsedRecord);
 
         if (!parsedHabit || !blockId) {
-          if (!parsedRecord) {
+          if (!isRecordContext) {
             config.openHabitDock();
             return;
           }
 
-          if (matchedRecord && matchedRecord.record.date !== currentDate) {
+          if (activeRecordMatch && activeRecordMatch.record.date !== currentDate) {
             config.openHabitDock({
-              habitId: matchedRecord.habit.blockId,
-              date: matchedRecord.record.date,
-              recordBlockId: matchedRecord.record.blockId,
+              habitId: activeRecordMatch.habit.blockId,
+              date: activeRecordMatch.record.date,
+              recordBlockId: activeRecordMatch.record.blockId,
             });
             return;
           }
 
-          if (matchedRecord?.habit.type === 'count') {
-            const targetValue = matchedRecord.record.targetValue ?? matchedRecord.habit.target ?? 0;
-            const currentValue = matchedRecord.record.currentValue ?? 0;
+          if (activeRecordMatch?.habit.type === 'count') {
+            const targetValue = activeRecordMatch.record.targetValue ?? activeRecordMatch.habit.target ?? 0;
+            const currentValue = activeRecordMatch.record.currentValue ?? 0;
             if (currentValue >= targetValue) {
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            const success = await checkInCount(matchedRecord.habit, currentDate, 1);
+            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1);
             if (success) {
               notifyHabitDataRefresh();
             }
             return;
           }
 
-          if (parsedRecord.currentValue !== undefined) {
+          if (parsedRecord?.currentValue !== undefined) {
             const habit: Habit = {
               name: parsedRecord.content || text,
               docId: parsedRecord.docId || '',

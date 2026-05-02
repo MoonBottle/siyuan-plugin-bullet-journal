@@ -1161,7 +1161,7 @@ describe('parseKramdown 习惯打卡解析', () => {
 {: id="doc-block" type="doc" }
 早起 🎯2026-04-01 坚持30天 🔄每天
 {: id="20260401000000-abcdef" }
-早起 📅2026-04-06 ✅
+早起 📅2026-04-06
 {: id="20260406000000-ghijkl" }`;
     const result = parseKramdown(kramdown, 'doc-1');
     expect(result).not.toBeNull();
@@ -1198,7 +1198,7 @@ describe('parseKramdown 习惯打卡解析', () => {
 {: id="doc-block" type="doc" }
 早起 🎯2026-04-01 🔄每天
 {: id="h1-block" }
-早起 📅2026-04-06 ✅
+早起 📅2026-04-06
 {: id="r1-block" }
 喝水 🎯2026-04-01 8杯 🔄每天
 {: id="h2-block" }

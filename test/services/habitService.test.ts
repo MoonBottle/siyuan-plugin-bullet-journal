@@ -45,10 +45,10 @@ function mkRecord(date: string, overrides?: Partial<CheckInRecord>): CheckInReco
 }
 
 describe('buildCheckInMarkdown', () => {
-  it('二元型：习惯名 📅日期 ✅', () => {
+  it('二元型：习惯名 📅日期', () => {
     const habit = mkHabit({ name: '早起', type: 'binary' });
     const md = buildCheckInMarkdown(habit, '2026-04-07');
-    expect(md).toBe('早起 📅2026-04-07 ✅');
+    expect(md).toBe('早起 📅2026-04-07');
   });
 
   it('计数型未达标：习惯名 N/M单位 📅日期', () => {
@@ -57,10 +57,10 @@ describe('buildCheckInMarkdown', () => {
     expect(md).toBe('喝水 3/8杯 📅2026-04-07');
   });
 
-  it('计数型达标：习惯名 N/M单位 📅日期 ✅', () => {
+  it('计数型达标：习惯名 N/M单位 📅日期', () => {
     const habit = mkHabit({ name: '喝水', type: 'count', target: 8, unit: '杯' });
     const md = buildCheckInMarkdown(habit, '2026-04-07', 8);
-    expect(md).toBe('喝水 8/8杯 📅2026-04-07 ✅');
+    expect(md).toBe('喝水 8/8杯 📅2026-04-07');
   });
 });
 
@@ -77,7 +77,7 @@ describe('checkIn', () => {
     expect(result).toBe(true);
     expect(insertBlock).toHaveBeenCalledWith(
       'markdown',
-      '早起 📅2026-04-07 ✅',
+      '早起 📅2026-04-07',
       undefined,
       'habit-1'
     );
@@ -107,7 +107,7 @@ describe('checkIn', () => {
     expect(result).toBe(true);
     expect(insertBlock).toHaveBeenCalledWith(
       'markdown',
-      '早起 📅2026-04-07 ✅',
+      '早起 📅2026-04-07',
       undefined,
       'last-block-id'
     );
@@ -158,7 +158,7 @@ describe('checkInCount', () => {
     );
   });
 
-  it('#23: 计数型达标 — 追加 ✅', async () => {
+  it('#23: 计数型达标 — 更新值但不追加 ✅', async () => {
     const habit = mkHabit({
       name: '喝水',
       type: 'count',
@@ -172,7 +172,7 @@ describe('checkInCount', () => {
     expect(result).toBe(true);
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
-      '喝水 8/8杯 📅2026-04-07 ✅',
+      '喝水 8/8杯 📅2026-04-07',
       'record-2026-04-07'
     );
   });
@@ -278,12 +278,12 @@ describe('getCheckInMarkdown', () => {
     const record = mkRecord('2026-04-07');
     (getBlockKramdown as any).mockResolvedValue({
       id: 'record-2026-04-07',
-      kramdown: '早起 📅2026-04-07 ✅',
+      kramdown: '早起 📅2026-04-07',
     });
 
     const result = await getCheckInMarkdown(record);
 
-    expect(result).toBe('早起 📅2026-04-07 ✅');
+    expect(result).toBe('早起 📅2026-04-07');
     expect(getBlockKramdown).toHaveBeenCalledWith('record-2026-04-07');
   });
 });
@@ -297,12 +297,12 @@ describe('updateCheckInMarkdown', () => {
     const record = mkRecord('2026-04-07');
     (updateBlock as any).mockResolvedValue([{ doOperations: [] }]);
 
-    const result = await updateCheckInMarkdown(record, '早起 📅2026-04-07 ✅ #补签');
+    const result = await updateCheckInMarkdown(record, '早起 📅2026-04-07 #补签');
 
     expect(result).toBe(true);
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
-      '早起 📅2026-04-07 ✅ #补签',
+      '早起 📅2026-04-07 #补签',
       'record-2026-04-07',
     );
   });

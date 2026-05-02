@@ -18,7 +18,6 @@
           <span v-if="habit.type === 'count' && record.currentValue !== undefined" class="habit-record-log__count">
             {{ record.currentValue }}/{{ habit.target || record.targetValue || 0 }}{{ habit.unit || record.unit || '' }}
           </span>
-          <span v-if="isCompleted(record)" class="habit-record-log__check">✅</span>
         </div>
       </div>
     </div>
@@ -29,7 +28,6 @@
 import { computed } from 'vue';
 import dayjs from '@/utils/dayjs';
 import { t } from '@/i18n';
-import { isRecordCompleted } from '@/utils/habitStatsUtils';
 import type { Habit, CheckInRecord } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 
@@ -51,10 +49,6 @@ const monthlyRecords = computed(() => {
     .filter(record => record.date.startsWith(`${props.viewMonth}-`))
     .sort((a, b) => b.date.localeCompare(a.date));
 });
-
-function isCompleted(record: CheckInRecord): boolean {
-  return isRecordCompleted(record, props.habit);
-}
 
 const headerTitle = computed(() => {
   const month = dayjs(`${props.viewMonth}-01`).format('M');
@@ -158,7 +152,4 @@ async function handleOpenRecord(record: CheckInRecord, event: MouseEvent) {
   white-space: nowrap;
 }
 
-.habit-record-log__check {
-  font-size: 12px;
-}
 </style>

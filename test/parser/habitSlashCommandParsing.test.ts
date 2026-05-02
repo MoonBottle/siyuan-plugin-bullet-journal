@@ -28,7 +28,7 @@ describe('习惯行斜杠命令输入中的解析稳定性', () => {
 {: id="doc-block" type="doc" }
 早起 🎯2026-04-19 🔄每天
 {: id="habit-block" }
-早起 📅2026-04-30 ✅/dk
+早起 📅2026-04-30/dk
 {: id="record-block" }
 `;
 

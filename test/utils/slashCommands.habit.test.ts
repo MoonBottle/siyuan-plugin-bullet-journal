@@ -168,6 +168,53 @@ describe('habit slash commands', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'record-1');
     node.textContent = '喝水 3/8杯 📅2026-04-30';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '喝水',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'count',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '喝水',
+        date: '2026-04-30',
+        docId: 'doc-1',
+        blockId: 'record-1',
+        habitId: 'habit-1',
+        currentValue: 3,
+        targetValue: 8,
+        unit: '杯',
+      }],
+    }]);
+
+    handler({} as any, node);
+
+    expect(showSpy).not.toHaveBeenCalled();
+  });
+
+  it('/xg 在无 ✅ 的二元 record 行上也不应打开习惯编辑', () => {
+    const showSpy = vi.mocked(showHabitCreateDialog);
+    const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'record-binary');
+    node.textContent = '早起 📅2026-04-30';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'habit-binary',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '早起',
+        date: '2026-04-30',
+        docId: 'doc-1',
+        blockId: 'record-binary',
+        habitId: 'habit-binary',
+      }],
+    }]);
 
     handler({} as any, node);
 
@@ -315,7 +362,22 @@ describe('habit slash commands', () => {
     const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'record-2');
-    node.textContent = '早起 📅2026-04-30 ✅';
+    node.textContent = '早起 📅2026-04-30';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '早起',
+        date: '2026-04-30',
+        docId: 'doc-1',
+        blockId: 'record-2',
+        habitId: 'habit-1',
+      }],
+    }]);
 
     await handler({} as any, node);
 
@@ -375,7 +437,7 @@ describe('habit slash commands', () => {
     const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'record-5');
-    node.textContent = '喝水 8/8杯 📅2026-04-30 ✅';
+    node.textContent = '喝水 8/8杯 📅2026-04-30';
     projectStoreMock.getHabits.mockReturnValue([{
       name: '喝水',
       docId: 'doc-1',
@@ -408,7 +470,7 @@ describe('habit slash commands', () => {
     const handler = getActionHandler('checkIn', { openHabitDock } as any, ['/dk']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'record-3');
-    node.textContent = '早起 📅2026-04-29 ✅';
+    node.textContent = '早起 📅2026-04-29';
     projectStoreMock.getHabits.mockReturnValue([{
       name: '早起',
       docId: 'doc-1',

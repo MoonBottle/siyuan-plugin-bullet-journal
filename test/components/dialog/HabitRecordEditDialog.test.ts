@@ -74,13 +74,31 @@ describe('HabitRecordEditDialog', () => {
 
     await setTextareaValue(
       getByTestId(mounted.container, 'habit-record-markdown-input'),
-      '喝水 5/8杯 📅2026-04-10 ✅',
+      '喝水 5/8杯 📅2026-04-10',
     );
 
     mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mounted.getSavedMarkdown()).toBe('喝水 5/8杯 📅2026-04-10 ✅');
+    expect(mounted.getSavedMarkdown()).toBe('喝水 5/8杯 📅2026-04-10');
+
+    mounted.unmount();
+  });
+
+  it('二元型记录无 ✅ 时也应允许保存', async () => {
+    const mounted = mountDialog({
+      initialMarkdown: '早起 📅2026-04-10',
+    });
+
+    await setTextareaValue(
+      getByTestId(mounted.container, 'habit-record-markdown-input'),
+      '早起 📅2026-04-10',
+    );
+
+    mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.getSavedMarkdown()).toBe('早起 📅2026-04-10');
 
     mounted.unmount();
   });
@@ -92,7 +110,7 @@ describe('HabitRecordEditDialog', () => {
 
     await setTextareaValue(
       getByTestId(mounted.container, 'habit-record-markdown-input'),
-      '普通事项 @2026-04-10',
+      '普通事项',
     );
 
     mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));

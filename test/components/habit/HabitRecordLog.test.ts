@@ -76,6 +76,7 @@ describe('HabitRecordLog', () => {
     expect(mounted.container.textContent).toContain('4 月打卡日志');
     expect(mounted.container.textContent).toContain('4/30');
     expect(mounted.container.textContent).not.toContain('3/31');
+    expect(mounted.container.textContent).not.toContain('✅');
 
     mounted.unmount();
   });

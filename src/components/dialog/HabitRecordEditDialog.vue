@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { t } from '@/i18n';
-import { parseHabitRecordLine } from '@/parser/habitParser';
+import { parseCheckInRecordLine } from '@/parser/habitParser';
 
 const props = defineProps<{
   initialMarkdown: string;
@@ -42,7 +42,7 @@ const markdown = ref(props.initialMarkdown);
 const errorMessage = ref('');
 
 function isHabitRecordMarkdown(value: string): boolean {
-  return !!parseHabitRecordLine(value, 'habit-record-edit');
+  return !!parseCheckInRecordLine(value, 'habit-record-edit');
 }
 
 function handleSave() {
