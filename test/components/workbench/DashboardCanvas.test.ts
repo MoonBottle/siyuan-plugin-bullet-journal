@@ -105,9 +105,18 @@ vi.mock('grid-layout-plus', () => ({
   GridLayout: defineComponent({
     name: 'GridLayoutStub',
     props: ['layout'],
-    emits: ['layout-updated'],
+    emits: ['layout-updated', 'update:layout'],
     setup(props, { emit, slots }) {
       return () => h('div', { 'data-testid': 'grid-layout-stub' }, [
+        h('button', {
+          type: 'button',
+          'data-testid': 'grid-layout-emit-update-layout-changed',
+          onClick: () => emit('update:layout', (props.layout as any[]).map((item, index) => ({
+            ...item,
+            x: index === 0 ? Number(item.x) + 2 : Number(item.x),
+            w: index === 0 ? Number(item.w) + 1 : Number(item.w),
+          }))),
+        }),
         h('button', {
           type: 'button',
           'data-testid': 'grid-layout-emit-updated',
@@ -447,6 +456,45 @@ describe('DashboardCanvas', () => {
       { id: 'widget-1', x: 3, y: 1, w: 4, h: 3 },
       { id: 'widget-2', x: 6, y: 1, w: 6, h: 4 },
     ]);
+
+    mounted.unmount();
+  });
+
+  it('keeps the rendered grid layout in sync with GridLayout update:layout events', async () => {
+    const store = useWorkbenchStore();
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            title: 'Todo List',
+            layout: { x: 2, y: 1, w: 4, h: 3 },
+            config: {},
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    expect(mounted.container.innerHTML).toContain('data-x="2"');
+    expect(mounted.container.innerHTML).toContain('data-w="4"');
+
+    (mounted.container.querySelector('[data-testid="grid-layout-emit-update-layout-changed"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mounted.container.innerHTML).toContain('data-x="4"');
+    expect(mounted.container.innerHTML).toContain('data-w="5"');
 
     mounted.unmount();
   });

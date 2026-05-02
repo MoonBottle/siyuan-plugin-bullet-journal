@@ -24,7 +24,7 @@
     <GridLayout
       v-else
       class="workbench-dashboard-canvas__layout"
-      :layout="gridLayout"
+      v-model:layout="liveLayout"
       :col-num="WORKBENCH_GRID_COLUMNS"
       :row-height="WORKBENCH_GRID_ROW_HEIGHT"
       :margin="WORKBENCH_GRID_MARGIN"
@@ -34,35 +34,36 @@
       :use-css-transforms="true"
       :prevent-collision="false"
       data-testid="workbench-dashboard-layout"
+      @update:layout="handleLayoutModelUpdate"
       @layout-updated="handleLayoutUpdated"
     >
       <GridItem
-        v-for="widget in orderedWidgets"
-        :key="widget.id"
-        :x="normalizeLayout(widget).x"
-        :y="normalizeLayout(widget).y"
-        :w="normalizeLayout(widget).w"
-        :h="normalizeLayout(widget).h"
-        :min-w="getWidgetDefinition(widget.type).minSize.w"
-        :min-h="getWidgetDefinition(widget.type).minSize.h"
+        v-for="item in renderedWidgets"
+        :key="item.id"
+        :x="item.layout.x"
+        :y="item.layout.y"
+        :w="item.layout.w"
+        :h="item.layout.h"
+        :min-w="getWidgetDefinition(item.widget.type).minSize.w"
+        :min-h="getWidgetDefinition(item.widget.type).minSize.h"
         :max-w="WORKBENCH_GRID_COLUMNS"
-        :i="widget.id"
+        :i="item.id"
         :drag-allow-from="'.workbench-widget-card__drag'"
         :drag-ignore-from="'.workbench-widget-card__menu-trigger, .workbench-widget-card__menu, button, a, input, textarea, select'"
         :resize-ignore-from="'.workbench-widget-card__menu-trigger, .workbench-widget-card__menu, button, a, input, textarea, select'"
-        :data-testid="`workbench-widget-grid-item-${widget.id}`"
+        :data-testid="`workbench-widget-grid-item-${item.id}`"
       >
         <WorkbenchWidgetCard
-          :title="widget.title || getWidgetDefinition(widget.type).name"
-          :show-configure="Boolean(getWidgetDefinition(widget.type).openConfigDialog)"
-          :data-testid="`workbench-widget-card-${widget.id}`"
-          @configure="handleConfigureWidget(widget.id)"
-          @rename="handleRenameWidget(widget.id)"
-          @delete="handleDeleteWidget(widget.id)"
+          :title="item.widget.title || getWidgetDefinition(item.widget.type).name"
+          :show-configure="Boolean(getWidgetDefinition(item.widget.type).openConfigDialog)"
+          :data-testid="`workbench-widget-card-${item.id}`"
+          @configure="handleConfigureWidget(item.id)"
+          @rename="handleRenameWidget(item.id)"
+          @delete="handleDeleteWidget(item.id)"
         >
           <component
-            :is="widgetComponents[widget.type]"
-            :widget="widget"
+            :is="widgetComponents[item.widget.type]"
+            :widget="item.widget"
           />
         </WorkbenchWidgetCard>
       </GridItem>
@@ -71,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { GridItem, GridLayout } from 'grid-layout-plus';
 import type { Layout } from 'grid-layout-plus';
 import WorkbenchWidgetCard from '@/components/workbench/dashboard/WorkbenchWidgetCard.vue';
@@ -128,28 +129,28 @@ const dashboard = computed(() => {
 });
 
 const widgets = computed(() => dashboard.value?.widgets ?? []);
-const orderedWidgets = computed(() => {
-  return [...widgets.value].sort((left, right) => {
-    if (left.layout.y !== right.layout.y) {
-      return left.layout.y - right.layout.y;
-    }
+const widgetMap = computed(() => new Map(widgets.value.map(widget => [widget.id, widget])));
+const liveLayout = ref<Layout>([]);
+const renderedWidgets = computed(() => {
+  return liveLayout.value
+    .map((item) => {
+      const widget = widgetMap.value.get(String(item.i));
+      if (!widget) {
+        return null;
+      }
 
-    return left.layout.x - right.layout.x;
-  });
-});
-
-const gridLayout = computed<Layout>(() => {
-  return orderedWidgets.value.map(widget => {
-    const layout = normalizeLayout(widget);
-
-    return {
-      i: widget.id,
-      x: layout.x,
-      y: layout.y,
-      w: layout.w,
-      h: layout.h,
-    };
-  });
+      return {
+        id: widget.id,
+        widget,
+        layout: {
+          x: item.x,
+          y: item.y,
+          w: item.w,
+          h: item.h,
+        },
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 });
 
 const widgetComponents: Record<WorkbenchWidgetType, Component> = {
@@ -162,6 +163,47 @@ const widgetComponents: Record<WorkbenchWidgetType, Component> = {
 
 function normalizeLayout(widget: WorkbenchWidgetInstance) {
   return normalizeWidgetLayout(widget.layout);
+}
+
+function toLayoutModel(widget: WorkbenchWidgetInstance) {
+  const layout = normalizeLayout(widget);
+
+  return {
+    i: widget.id,
+    x: layout.x,
+    y: layout.y,
+    w: layout.w,
+    h: layout.h,
+  };
+}
+
+watch(
+  widgets,
+  (nextWidgets) => {
+    liveLayout.value = [...nextWidgets]
+      .map(toLayoutModel)
+      .sort((left, right) => {
+        if (left.y !== right.y) {
+          return left.y - right.y;
+        }
+
+        return left.x - right.x;
+      });
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
+function handleLayoutModelUpdate(layout: Layout) {
+  liveLayout.value = layout.map(item => ({
+    i: String(item.i),
+    x: item.x,
+    y: item.y,
+    w: item.w,
+    h: item.h,
+  }));
 }
 
 async function handleLayoutUpdated(layout: Layout) {
