@@ -6,12 +6,13 @@
         <span class="workbench-widget-card__drag" aria-hidden="true">::</span>
         <div class="workbench-widget-card__menu-wrap">
           <button
-            class="workbench-widget-card__menu-trigger"
+            class="workbench-widget-card__menu-trigger block__icon b3-tooltips b3-tooltips__sw"
             data-testid="workbench-widget-menu-trigger"
             type="button"
+            :aria-label="t('common').more"
             @click="toggleMenu"
           >
-            ...
+            <svg><use xlink:href="#iconMore"></use></svg>
           </button>
           <div
             v-if="isMenuOpen"
@@ -133,12 +134,17 @@ function handleDelete() {
 }
 
 .workbench-widget-card__menu-trigger {
-  padding: 2px 8px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 6px;
-  background: var(--b3-theme-background);
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--b3-theme-on-background);
   cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 
 .workbench-widget-card__menu {
