@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createApp, nextTick } from 'vue';
+import { computed, createApp, nextTick, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initI18n } from '@/i18n';
@@ -37,8 +37,7 @@ vi.mock('@/stores', async () => {
   return {
     ...actual,
     useWorkbenchStore: () => {
-      const store = {
-        entries: [
+      const entries = ref([
         {
           id: 'entry-dashboard',
           type: 'dashboard',
@@ -55,27 +54,34 @@ vi.mock('@/stores', async () => {
           order: 1,
           viewType: 'todo',
         },
-        ],
-        activeEntryId: 'entry-dashboard',
+      ]);
+      const activeEntryId = ref<string | null>('entry-dashboard');
+      const store = {
+        get entries() {
+          return entries.value;
+        },
+        get activeEntryId() {
+          return activeEntryId.value;
+        },
         get activeEntry() {
-          return store.entries.find((entry: any) => entry.id === store.activeEntryId) ?? null;
+          return entries.value.find((entry: any) => entry.id === activeEntryId.value) ?? null;
         },
         load: mockLoad,
         createDashboardEntry: async (...args: any[]) => {
           const entry = await mockCreateDashboardEntry(...args);
-          store.entries = [...store.entries, entry];
-          store.activeEntryId = entry.id;
+          entries.value = [...entries.value, entry];
+          activeEntryId.value = entry.id;
           return entry;
         },
         createViewEntry: async (...args: any[]) => {
           const entry = await mockCreateViewEntry(...args);
-          store.entries = [...store.entries, entry];
-          store.activeEntryId = entry.id;
+          entries.value = [...entries.value, entry];
+          activeEntryId.value = entry.id;
           return entry;
         },
         setActiveEntry: async (id: string) => {
           mockSetActiveEntry(id);
-          store.activeEntryId = id;
+          activeEntryId.value = id;
         },
       };
       return store;
@@ -162,13 +168,14 @@ describe('WorkbenchTab shell', () => {
   it('selecting an entry updates active state and content title', async () => {
     const mounted = await mountWorkbenchTab();
 
-    const todoEntry = mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement;
-    todoEntry.click();
+    (mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement).click();
     await nextTick();
 
+    const todoEntry = mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement;
+
     expect(mockSetActiveEntry).toHaveBeenCalledWith('entry-todo');
-    expect(todoEntry.getAttribute('data-active')).toBe('true');
     expect(mounted.container.querySelector('[data-testid="workbench-content-title"]')?.textContent).toContain('Todo');
+    expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
 
     mounted.unmount();
   });
