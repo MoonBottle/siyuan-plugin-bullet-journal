@@ -78,6 +78,10 @@
     "title": "Workbench",
     "newDashboard": "New Dashboard",
     "newView": "New View",
+    "rename": "Rename",
+    "renamePrompt": "Enter a new name",
+    "delete": "Delete",
+    "deleteConfirm": "Delete \"{name}\"?",
     "emptyState": "Select a workbench item",
     "dashboardPlaceholder": "Dashboard canvas coming next",
     "unsupportedView": "Unsupported workbench view"

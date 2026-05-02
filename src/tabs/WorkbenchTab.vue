@@ -6,6 +6,8 @@
       @select="handleSelect"
       @create-dashboard="handleCreateDashboard"
       @create-view="handleCreateView"
+      @rename-entry="handleRenameEntry"
+      @delete-entry="handleDeleteEntry"
     />
     <section class="workbench-tab__main">
       <div
@@ -51,6 +53,14 @@ async function handleCreateDashboard() {
 
 async function handleCreateView(viewType: WorkbenchViewType) {
   await workbenchStore.createViewEntry(viewType);
+}
+
+async function handleRenameEntry(id: string, title: string) {
+  await workbenchStore.renameEntry(id, title);
+}
+
+async function handleDeleteEntry(id: string) {
+  await workbenchStore.deleteEntry(id);
 }
 
 async function handleAddTodoWidget() {

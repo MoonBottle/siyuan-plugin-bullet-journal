@@ -9,11 +9,13 @@
         :data-active="entry.id === activeEntryId ? 'true' : 'false'"
         type="button"
         @click="emit('select', entry.id)"
+        @contextmenu="handleEntryContextMenu(entry, $event)"
       >
         <span class="workbench-sidebar__entry-icon" aria-hidden="true">
           <svg><use :xlink:href="`#${entry.icon}`"></use></svg>
         </span>
         <span class="workbench-sidebar__entry-title">{{ entry.title }}</span>
+        <span class="workbench-sidebar__entry-more" aria-hidden="true">...</span>
       </button>
     </div>
 
@@ -76,7 +78,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { Menu } from 'siyuan';
 import { t } from '@/i18n';
+import { showConfirmDialog } from '@/utils/dialog';
 import type { WorkbenchEntry, WorkbenchViewType } from '@/types/workbench';
 
 defineProps<{
@@ -88,6 +92,8 @@ const emit = defineEmits<{
   (event: 'select', id: string): void;
   (event: 'create-dashboard'): void;
   (event: 'create-view', viewType: WorkbenchViewType): void;
+  (event: 'rename-entry', id: string, title: string): void;
+  (event: 'delete-entry', id: string): void;
 }>();
 
 const isCreateMenuOpen = ref(false);
@@ -104,6 +110,40 @@ function handleCreateDashboard() {
 function handleCreateView(viewType: WorkbenchViewType) {
   isCreateMenuOpen.value = false;
   emit('create-view', viewType);
+}
+
+function handleEntryContextMenu(entry: WorkbenchEntry, event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const menu = new Menu('workbench-entry-menu');
+  menu.addItem({
+    icon: 'iconEdit',
+    label: t('workbench').rename,
+    click: () => {
+      const nextTitle = window.prompt(t('workbench').renamePrompt, entry.title)?.trim();
+      if (!nextTitle || nextTitle === entry.title) {
+        return;
+      }
+
+      emit('rename-entry', entry.id, nextTitle);
+    },
+  });
+  menu.addItem({
+    icon: 'iconTrashcan',
+    label: t('workbench').delete,
+    click: () => {
+      showConfirmDialog(
+        t('workbench').delete,
+        t('workbench').deleteConfirm.replace('{name}', entry.title),
+        () => emit('delete-entry', entry.id),
+      );
+    },
+  });
+  menu.open({
+    x: event.clientX,
+    y: event.clientY,
+  });
 }
 </script>
 
@@ -217,5 +257,11 @@ function handleCreateView(viewType: WorkbenchViewType) {
 .workbench-sidebar__entry-title {
   flex: 1;
   min-width: 0;
+}
+
+.workbench-sidebar__entry-more {
+  flex-shrink: 0;
+  color: var(--b3-theme-on-surface);
+  letter-spacing: 0;
 }
 </style>

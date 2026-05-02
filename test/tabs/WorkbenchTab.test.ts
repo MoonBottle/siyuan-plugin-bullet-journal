@@ -160,7 +160,15 @@ describe('WorkbenchTab shell', () => {
   it('sidebar actions create dashboard and todo view entries', async () => {
     const mounted = await mountWorkbenchTab();
 
+    (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement)
+      .click();
+    await nextTick();
+
     (mounted.container.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement)
+      .click();
+    await nextTick();
+
+    (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement)
       .click();
     await nextTick();
 
