@@ -1,9 +1,11 @@
 import { t } from '@/i18n';
 import type {
+  WorkbenchCalendarWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchWidgetInstance,
   WorkbenchWidgetType,
 } from '@/types/workbench';
+import { openCalendarWidgetConfigDialog } from '@/workbench/calendarWidgetConfigDialog';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
 type WorkbenchWidgetConfigContext = {
@@ -74,7 +76,24 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       icon: 'iconCalendar',
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: (): WorkbenchCalendarWidgetConfig => ({
+        view: 'timeGridDay',
+      }),
+      openConfigDialog: ({ widget, onUpdateConfig }) => {
+        const calendarConfig = widget.config as WorkbenchCalendarWidgetConfig;
+        openCalendarWidgetConfigDialog({
+          initialConfig: {
+            groupId: calendarConfig.groupId,
+            view: 'timeGridDay',
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              groupId: nextConfig.groupId,
+              view: 'timeGridDay',
+            });
+          },
+        });
+      },
     },
     pomodoroStats: {
       type: 'pomodoroStats',

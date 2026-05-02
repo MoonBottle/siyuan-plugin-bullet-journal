@@ -11,10 +11,12 @@ const {
   mockShowInputDialog,
   mockShowConfirmDialog,
   mockOpenTodoWidgetConfigDialog,
+  mockOpenCalendarWidgetConfigDialog,
 } = vi.hoisted(() => ({
   mockShowInputDialog: vi.fn(),
   mockShowConfirmDialog: vi.fn(),
   mockOpenTodoWidgetConfigDialog: vi.fn(),
+  mockOpenCalendarWidgetConfigDialog: vi.fn(),
 }));
 
 vi.mock('@/utils/dialog', () => ({
@@ -24,6 +26,10 @@ vi.mock('@/utils/dialog', () => ({
 
 vi.mock('@/workbench/todoWidgetConfigDialog', () => ({
   openTodoWidgetConfigDialog: mockOpenTodoWidgetConfigDialog,
+}));
+
+vi.mock('@/workbench/calendarWidgetConfigDialog', () => ({
+  openCalendarWidgetConfigDialog: mockOpenCalendarWidgetConfigDialog,
 }));
 
 vi.mock('@/components/workbench/widgets/TodoListWidget.vue', () => ({
@@ -328,6 +334,62 @@ describe('DashboardCanvas', () => {
         dateFilterType: 'today',
         priorities: ['high'],
       },
+    });
+
+    mounted.unmount();
+  });
+
+  it('opens calendar widget configure dialog and persists group/day config', async () => {
+    const store = useWorkbenchStore();
+    store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'miniCalendar',
+            title: 'Calendar',
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+            config: {
+              groupId: 'group-a',
+              view: 'timeGridDay',
+            },
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click();
+    await nextTick();
+    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click();
+
+    expect(mockOpenCalendarWidgetConfigDialog).toHaveBeenCalledWith({
+      initialConfig: {
+        groupId: 'group-a',
+        view: 'timeGridDay',
+      },
+      onConfirm: expect.any(Function),
+    });
+
+    const configureOptions = mockOpenCalendarWidgetConfigDialog.mock.calls[0][0];
+    await configureOptions.onConfirm({
+      groupId: 'group-b',
+      view: 'timeGridDay',
+    });
+    expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
+      groupId: 'group-b',
+      view: 'timeGridDay',
     });
 
     mounted.unmount();

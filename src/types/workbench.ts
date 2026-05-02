@@ -30,6 +30,11 @@ export interface WorkbenchTodoListWidgetConfig {
   preset?: TodoViewPreset;
 }
 
+export interface WorkbenchCalendarWidgetConfig {
+  groupId?: string;
+  view?: 'timeGridDay';
+}
+
 export interface WorkbenchWidgetInstance {
   id: string;
   type: WorkbenchWidgetType;
