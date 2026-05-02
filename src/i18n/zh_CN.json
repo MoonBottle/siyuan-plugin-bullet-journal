@@ -78,7 +78,9 @@
     "title": "工作台",
     "newDashboard": "新建仪表盘",
     "newView": "新建视图",
-    "emptyState": "请选择一个工作台条目"
+    "emptyState": "请选择一个工作台条目",
+    "dashboardPlaceholder": "仪表盘画布将在下一步接入",
+    "unsupportedView": "暂不支持该工作台视图"
   },
   "quadrant": {
     "title": "四象限",

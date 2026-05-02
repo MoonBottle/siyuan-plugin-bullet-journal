@@ -10,7 +10,7 @@
         class="workbench-content-host__placeholder"
         data-testid="workbench-dashboard-placeholder"
       >
-        Dashboard canvas coming next
+        {{ t('workbench').dashboardPlaceholder }}
       </div>
       <WorkbenchViewHost
         v-else

@@ -61,6 +61,28 @@ describe('WorkbenchViewHost', () => {
     mounted.unmount();
   });
 
+  it('habit view entry renders workbench habit host', async () => {
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+    const mounted = await mountComponent(WorkbenchViewHost, {
+      entry: createViewEntry('habit'),
+    });
+
+    expect(mounted.container.querySelector('[data-testid="workbench-view-habit"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('pomodoro stats view entry renders workbench pomodoro stats host', async () => {
+    const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
+    const mounted = await mountComponent(WorkbenchViewHost, {
+      entry: createViewEntry('pomodoroStats'),
+    });
+
+    expect(mounted.container.querySelector('[data-testid="workbench-view-pomodoro-stats"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
   it('unsupported view entry renders unsupported placeholder', async () => {
     const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
     const mounted = await mountComponent(WorkbenchViewHost, {
