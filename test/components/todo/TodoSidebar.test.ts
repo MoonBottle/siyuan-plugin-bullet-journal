@@ -565,4 +565,18 @@ describe('TodoSidebar', () => {
 
     mounted.unmount();
   });
+
+  it('renders priority emoji before project name and keeps status emoji in content line', async () => {
+    const mounted = mountSidebar({});
+
+    await nextTick();
+
+    const projectEl = mounted.container.querySelector('.item-project') as HTMLSpanElement | null;
+    const contentEl = mounted.container.querySelector('.item-content') as HTMLDivElement | null;
+
+    expect(projectEl?.textContent?.trim()).toBe('🔥项目A');
+    expect(contentEl?.textContent?.trim()).toBe('⏳ 处理优先级');
+
+    mounted.unmount();
+  });
 });

@@ -62,10 +62,13 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
@@ -151,10 +154,13 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
@@ -240,10 +246,13 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
@@ -336,10 +345,13 @@
                     <div class="item-header-left">
                       <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                     </div>
-                    <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                    <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                      <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                      <span v-if="item.project">{{ item.project.name }}</span>
+                    </span>
                   </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-                  <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+                  <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
                   <TodoItemMeta :item="item" />
                   <template #footer>
                     <div class="item-actions-hover">
@@ -427,10 +439,13 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
@@ -477,10 +492,13 @@
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
@@ -537,32 +555,33 @@ export type TodoSidebarHoverPayload = {
 
 type TodoSidebarPreviewTriggerMode = 'hover' | 'click';
 
+const getPriorityEmoji = (item: Item): string => {
+  if (item.priority === 'high') return '🔥';
+  if (item.priority === 'medium') return '🌱';
+  if (item.priority === 'low') return '🍃';
+  return '';
+};
+
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
-  // 优先级 emoji
-  let priorityEmoji = '';
-  if (item.priority === 'high') priorityEmoji = '🔥 ';
-  else if (item.priority === 'medium') priorityEmoji = '🌱 ';
-  else if (item.priority === 'low') priorityEmoji = '🍃 ';
-  
   // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    return priorityEmoji + '🍅 ';
+    return '🍅';
   }
-  if (item.status === 'completed') return priorityEmoji + '✅ ';
-  if (item.status === 'abandoned') return priorityEmoji + '❌ ';
+  if (item.status === 'completed') return '✅';
+  if (item.status === 'abandoned') return '❌';
   const todayStr = dayjs().format('YYYY-MM-DD');
   if (item.dateRangeStart && item.dateRangeEnd) {
     const rangeStatus = getDateRangeStatus(item, todayStr);
-    if (rangeStatus) return priorityEmoji + dateRangeStatusToEmoji(rangeStatus);
+    if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
   }
   if (!item.dateRangeStart && !item.dateRangeEnd && item.date) {
     const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
-    if (timeStatus) return priorityEmoji + dateRangeStatusToEmoji(timeStatus);
+    if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
   }
   const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
-  if (isExpired) return priorityEmoji + '⚠️ ';
-  return priorityEmoji + '⏳ ';
+  if (isExpired) return '⚠️';
+  return '⏳';
 };
 
 const props = withDefaults(defineProps<{
@@ -1386,13 +1405,19 @@ const handleCreateExample = async () => {
 }
 
 .item-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--b3-theme-on-surface);
-  opacity: 0.6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 0;
   max-width: 50%;
+}
+
+.item-priority {
+  flex-shrink: 0;
 }
 
 .item-task {

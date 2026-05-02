@@ -98,7 +98,6 @@ const handleContextMenu = (event: MouseEvent) => {
 
   // 状态样式
   &.status-completed {
-    opacity: 0.6;
     border-left: 3px solid var(--b3-theme-success);
 
     :deep(.card-content) {
@@ -107,7 +106,6 @@ const handleContextMenu = (event: MouseEvent) => {
   }
 
   &.status-abandoned {
-    opacity: 0.5;
     border-left: 3px solid var(--b3-theme-on-surface);
 
     :deep(.card-content) {
