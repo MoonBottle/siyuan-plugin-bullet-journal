@@ -5,6 +5,7 @@
       :stats="displaySelectedStats"
       :current-date="currentDate"
       :view-month="selectedViewMonth"
+      :show-header="false"
       :empty-title="t('workbench').habitDetailEmptyTitle"
       :empty-desc="t('workbench').habitDetailEmptyDesc"
       header-test-id="habit-widget-detail-header"

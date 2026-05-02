@@ -53,11 +53,12 @@ vi.mock('@/composables/useHabitWorkspace', () => ({
 vi.mock('@/components/habit/HabitWorkspaceDetailPane.vue', () => ({
   default: defineComponent({
     name: 'HabitWorkspaceDetailPaneStub',
-    props: ['recordPreviewTriggerMode', 'onRecordPreviewClick'],
+    props: ['recordPreviewTriggerMode', 'onRecordPreviewClick', 'showHeader'],
     setup(props) {
       habitWorkspaceDetailPaneProps({
         recordPreviewTriggerMode: props.recordPreviewTriggerMode,
         onRecordPreviewClick: props.onRecordPreviewClick,
+        showHeader: props.showHeader,
       });
       return () => h('div', { 'data-testid': 'habit-workspace-detail-pane-stub' });
     },
@@ -102,6 +103,7 @@ describe('HabitWidgetDetailDialog', () => {
     expect(habitWorkspaceDetailPaneProps).toHaveBeenCalledWith(expect.objectContaining({
       recordPreviewTriggerMode: 'preview',
       onRecordPreviewClick: expect.any(Function),
+      showHeader: false,
     }));
 
     mounted.unmount();
