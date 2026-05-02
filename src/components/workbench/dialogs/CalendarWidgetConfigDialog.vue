@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
 import { t } from '@/i18n';
@@ -52,6 +52,12 @@ const props = defineProps<{
 const settingsStore = useSettingsStore();
 const selectedGroup = ref(props.initialConfig.groupId ?? '');
 const selectedView = ref<'timeGridDay'>('timeGridDay');
+
+onMounted(() => {
+  if (!settingsStore.loaded) {
+    settingsStore.loadFromPlugin();
+  }
+});
 
 const groupOptions = computed(() => [
   { value: '', label: t('settings').projectGroups.allGroups },

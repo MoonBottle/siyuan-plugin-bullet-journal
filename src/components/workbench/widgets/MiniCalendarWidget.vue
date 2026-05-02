@@ -3,14 +3,18 @@
     <CalendarView
       :events="events"
       :initial-view="view"
+      @event-drop="handleEventDrop"
+      @event-resize="handleEventResize"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
+import { useSettingsStore } from '@/stores';
 import type { WorkbenchCalendarWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
+import { persistCalendarEventChange } from '@/utils/calendarEventChange';
 import { useSafeProjectStore } from './useSafeProjectStore';
 
 const props = defineProps<{
@@ -18,6 +22,7 @@ const props = defineProps<{
 }>();
 
 const projectStore = useSafeProjectStore();
+const settingsStore = useSettingsStore();
 const calendarConfig = computed(() => {
   return (props.widget?.config ?? {}) as WorkbenchCalendarWidgetConfig;
 });
@@ -27,6 +32,20 @@ const groupId = computed(() => calendarConfig.value.groupId ?? '');
 
 const events = computed(() => {
   return projectStore?.getFilteredCalendarEvents(groupId.value) ?? [];
+});
+
+async function handleEventDrop(eventInfo: any) {
+  await persistCalendarEventChange(eventInfo, 'move');
+}
+
+async function handleEventResize(eventInfo: any) {
+  await persistCalendarEventChange(eventInfo, 'resize');
+}
+
+onMounted(() => {
+  if (!settingsStore.loaded) {
+    settingsStore.loadFromPlugin();
+  }
 });
 </script>
 

@@ -64,12 +64,13 @@ import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vu
 import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
-import { useWorkbenchStore } from '@/stores';
+import { useSettingsStore, useWorkbenchStore } from '@/stores';
 import type { WorkbenchViewType, WorkbenchWidgetType } from '@/types/workbench';
 import { getWidgetRegistry } from '@/workbench/widgetRegistry';
 
 const plugin = usePlugin();
 const workbenchStore = useWorkbenchStore();
+const settingsStore = useSettingsStore();
 const currentActiveEntryId = computed(() => workbenchStore.activeEntryId);
 const currentActiveEntry = computed(() => workbenchStore.activeEntry);
 const isDashboardActive = computed(() => currentActiveEntry.value?.type === 'dashboard');
@@ -114,6 +115,9 @@ async function handleAddWidget(type: WorkbenchWidgetType) {
 }
 
 onMounted(async () => {
+  if (!settingsStore.loaded) {
+    settingsStore.loadFromPlugin();
+  }
   await workbenchStore.load(plugin);
 });
 </script>
