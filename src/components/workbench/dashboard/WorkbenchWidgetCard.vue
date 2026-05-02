@@ -92,13 +92,17 @@ function handleDelete() {
 
 <style lang="scss" scoped>
 .workbench-widget-card {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
+  min-height: 0;
   padding: 16px;
   border: 1px solid var(--b3-border-color);
   border-radius: 8px;
   background: var(--b3-theme-surface);
+  overflow: hidden;
 }
 
 .workbench-widget-card__header {
@@ -170,6 +174,13 @@ function handleDelete() {
 }
 
 .workbench-widget-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
   color: var(--b3-theme-on-background);
 }
 </style>

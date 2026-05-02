@@ -1211,10 +1211,23 @@ const handleCreateExample = async () => {
 
 <style lang="scss" scoped>
 .todo-sidebar {
+  width: 100%;
   height: 100%;
+  min-height: 0;
 
   &--embedded {
-    height: auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  &--embedded .todo-content {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
   }
 }
 

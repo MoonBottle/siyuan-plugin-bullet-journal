@@ -4,14 +4,16 @@
       <span>{{ openItemsCount }}</span>
       <span>{{ t('todo').title }}</span>
     </div>
-    <TodoContentPane
-      :group-id="todoState.selectedGroup.value"
-      :search-query="todoState.searchQuery.value"
-      :date-range="todoState.dateRange.value"
-      :completed-date-range="todoState.completedDateRange.value"
-      :priorities="todoState.selectedPriorities.value"
-      display-mode="embedded"
-    />
+    <div class="workbench-widget-todo-list__content" data-testid="workbench-todo-widget-content">
+      <TodoContentPane
+        :group-id="todoState.selectedGroup.value"
+        :search-query="todoState.searchQuery.value"
+        :date-range="todoState.dateRange.value"
+        :completed-date-range="todoState.completedDateRange.value"
+        :priorities="todoState.selectedPriorities.value"
+        display-mode="embedded"
+      />
+    </div>
   </div>
 </template>
 
@@ -57,7 +59,10 @@ const openItemsCount = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
+  height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .workbench-widget-todo-list__meta {
@@ -65,11 +70,19 @@ const openItemsCount = computed(() => {
   align-items: baseline;
   gap: 8px;
   color: var(--b3-theme-on-surface);
+  flex-shrink: 0;
 
   span:first-child {
     font-size: 24px;
     font-weight: 600;
     color: var(--b3-theme-on-background);
   }
+}
+
+.workbench-widget-todo-list__content {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

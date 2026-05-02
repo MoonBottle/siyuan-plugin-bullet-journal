@@ -75,6 +75,7 @@ describe('TodoListWidget', () => {
     }, pinia);
 
     expect(mounted.container.querySelector('[data-testid="todo-content-pane-stub"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-content"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-group-id="group-a"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-display-mode="embedded"]')).not.toBeNull();
     expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull();
