@@ -14,9 +14,10 @@
         :key="widget.id"
         :title="widget.title || getWidgetDefinition(widget.type).name"
       >
-        <div :data-testid="`widget-${widget.type}`">
-          {{ widget.title || getWidgetDefinition(widget.type).name }}
-        </div>
+        <component
+          :is="widgetComponents[widget.type]"
+          :widget="widget"
+        />
       </WorkbenchWidgetCard>
     </div>
   </div>
@@ -24,11 +25,16 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import TodoListWidget from '@/components/workbench/widgets/TodoListWidget.vue';
+import QuadrantSummaryWidget from '@/components/workbench/widgets/QuadrantSummaryWidget.vue';
+import HabitWeekWidget from '@/components/workbench/widgets/HabitWeekWidget.vue';
+import MiniCalendarWidget from '@/components/workbench/widgets/MiniCalendarWidget.vue';
+import PomodoroStatsWidget from '@/components/workbench/widgets/PomodoroStatsWidget.vue';
 import { t } from '@/i18n';
 import { useWorkbenchStore } from '@/stores';
-import type { WorkbenchEntry } from '@/types/workbench';
+import type { WorkbenchEntry, WorkbenchWidgetType } from '@/types/workbench';
 import WorkbenchWidgetCard from '@/components/workbench/dashboard/WorkbenchWidgetCard.vue';
-import { getWidgetDefinition } from '@/workbench/widgetRegistry';
+import { getWidgetDefinition } from '@/components/workbench/widgets/widgetRegistry';
 
 const props = defineProps<{
   entry: WorkbenchEntry;
@@ -45,6 +51,14 @@ const dashboard = computed(() => {
 });
 
 const widgets = computed(() => dashboard.value?.widgets ?? []);
+
+const widgetComponents: Record<WorkbenchWidgetType, unknown> = {
+  todoList: TodoListWidget,
+  quadrantSummary: QuadrantSummaryWidget,
+  habitWeek: HabitWeekWidget,
+  miniCalendar: MiniCalendarWidget,
+  pomodoroStats: PomodoroStatsWidget,
+};
 </script>
 
 <style lang="scss" scoped>

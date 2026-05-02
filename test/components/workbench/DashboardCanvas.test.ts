@@ -88,6 +88,32 @@ describe('DashboardCanvas', () => {
     mounted.unmount();
   });
 
+  it('renders TodoListWidget when widget.type is todoList', async () => {
+    mockWorkbenchStore.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+            config: {},
+          },
+        ],
+      },
+    ];
+
+    const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
+    const mounted = await mountComponent(DashboardCanvas, {
+      entry: createDashboardEntry(),
+    });
+
+    expect(mounted.container.querySelector('[data-testid="workbench-widget-todo-list"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
   it('renders empty state when dashboard is missing', async () => {
     const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
     const mounted = await mountComponent(DashboardCanvas, {

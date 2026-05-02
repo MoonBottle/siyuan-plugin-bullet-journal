@@ -27,6 +27,7 @@ const mockCreateViewEntry = vi.fn(() => Promise.resolve({
   viewType: 'todo',
 }));
 const mockSetActiveEntry = vi.fn(() => Promise.resolve());
+const mockAddWidget = vi.fn(() => Promise.resolve());
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => mockPlugin),
@@ -66,6 +67,13 @@ vi.mock('@/stores', async () => {
         get activeEntry() {
           return entries.value.find((entry: any) => entry.id === activeEntryId.value) ?? null;
         },
+        dashboards: [
+          {
+            id: 'dashboard-1',
+            title: 'Planning Board',
+            widgets: [],
+          },
+        ],
         load: mockLoad,
         createDashboardEntry: async (...args: any[]) => {
           const entry = await mockCreateDashboardEntry(...args);
@@ -83,6 +91,7 @@ vi.mock('@/stores', async () => {
           mockSetActiveEntry(id);
           activeEntryId.value = id;
         },
+        addWidget: mockAddWidget,
       };
       return store;
     },
@@ -176,6 +185,20 @@ describe('WorkbenchTab shell', () => {
     expect(mockSetActiveEntry).toHaveBeenCalledWith('entry-todo');
     expect(mounted.container.querySelector('[data-testid="workbench-content-title"]')?.textContent).toContain('Todo');
     expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('shows add todoList widget action for active dashboard and wires it to the store', async () => {
+    const mounted = await mountWorkbenchTab();
+
+    const addWidgetButton = mounted.container.querySelector('[data-testid="workbench-add-todo-widget"]') as HTMLButtonElement;
+    expect(addWidgetButton).not.toBeNull();
+
+    addWidgetButton.click();
+    await nextTick();
+
+    expect(mockAddWidget).toHaveBeenCalledWith('dashboard-1', 'todoList');
 
     mounted.unmount();
   });
