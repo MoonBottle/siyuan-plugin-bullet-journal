@@ -14,8 +14,6 @@ import {
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit, HabitStats } from '@/types/models';
-import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
-import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import dayjs from '@/utils/dayjs';
 import {
@@ -36,7 +34,6 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
   const selectedHabitId = ref<string | null>(null);
   const selectedStatsCache = ref<HabitStats | null>(null);
-  let pendingRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   const currentDate = computed(() => projectStore.currentDate);
   const groupId = computed(() => toValue(options.groupId) ?? '');
@@ -115,20 +112,6 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     syncSelectedHabit();
   }
 
-  function notifyHabitDataRefresh(habit: Habit) {
-    dirtyDocTracker.markDirty([habit.docId]);
-
-    if (pendingRefreshTimer) {
-      clearTimeout(pendingRefreshTimer);
-    }
-
-    pendingRefreshTimer = setTimeout(() => {
-      pendingRefreshTimer = null;
-      eventBus.emit(Events.DATA_REFRESH);
-      broadcastDataRefresh();
-    }, 180);
-  }
-
   async function checkInHabit(habit: Habit) {
     const success = await checkIn(habit, selectedDate.value);
     if (!success) {
@@ -139,7 +122,6 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
       selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
       syncSelectedHabit();
     }
-    notifyHabitDataRefresh(habit);
   }
 
   async function incrementHabit(habit: Habit) {
@@ -152,7 +134,6 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
       selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
       syncSelectedHabit();
     }
-    notifyHabitDataRefresh(habit);
   }
 
   async function openHabitDoc(habit: Habit) {
