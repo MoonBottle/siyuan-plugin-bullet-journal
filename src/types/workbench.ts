@@ -35,6 +35,10 @@ export interface WorkbenchCalendarWidgetConfig {
   view?: 'timeGridDay';
 }
 
+export interface WorkbenchHabitWeekWidgetConfig {
+  groupId?: string;
+}
+
 export interface WorkbenchWidgetInstance {
   id: string;
   type: WorkbenchWidgetType;

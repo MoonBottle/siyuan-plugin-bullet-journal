@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import DesktopHabitDock from '@/tabs/DesktopHabitDock.vue';
+import { initI18n } from '@/i18n';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
@@ -187,6 +188,7 @@ function mountDock() {
 
 describe('DesktopHabitDock', () => {
   beforeEach(() => {
+    initI18n('en_US');
     vi.clearAllMocks();
     document.body.innerHTML = '';
     checkIn.mockResolvedValue(false);
@@ -212,6 +214,22 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')?.textContent).toContain('喝水');
+    mounted.unmount();
+  });
+
+  it('back button returns detail mode to the list mode shell', async () => {
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-detail-back-button"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-week-bar-stub"]')).not.toBeNull();
     mounted.unmount();
   });
 
@@ -316,12 +334,15 @@ describe('DesktopHabitDock', () => {
 
     const detail = mounted.container.querySelector('.habit-detail');
     const header = mounted.container.querySelector('.habit-detail__header');
+    const pane = mounted.container.querySelector('.habit-workspace-detail-pane');
     const content = mounted.container.querySelector('[data-testid="habit-detail-content"]');
 
     expect(detail).not.toBeNull();
     expect(header).not.toBeNull();
+    expect(pane).not.toBeNull();
     expect(content).not.toBeNull();
-    expect(content?.parentElement).toBe(detail);
+    expect(pane?.parentElement).toBe(detail);
+    expect(content?.parentElement).toBe(pane);
     expect(header?.parentElement).toBe(detail);
     mounted.unmount();
   });

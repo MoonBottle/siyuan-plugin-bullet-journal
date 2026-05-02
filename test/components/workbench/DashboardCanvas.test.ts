@@ -12,11 +12,13 @@ const {
   mockShowConfirmDialog,
   mockOpenTodoWidgetConfigDialog,
   mockOpenCalendarWidgetConfigDialog,
+  mockOpenHabitWidgetConfigDialog,
 } = vi.hoisted(() => ({
   mockShowInputDialog: vi.fn(),
   mockShowConfirmDialog: vi.fn(),
   mockOpenTodoWidgetConfigDialog: vi.fn(),
   mockOpenCalendarWidgetConfigDialog: vi.fn(),
+  mockOpenHabitWidgetConfigDialog: vi.fn(),
 }));
 
 vi.mock('@/utils/dialog', () => ({
@@ -30,6 +32,10 @@ vi.mock('@/workbench/todoWidgetConfigDialog', () => ({
 
 vi.mock('@/workbench/calendarWidgetConfigDialog', () => ({
   openCalendarWidgetConfigDialog: mockOpenCalendarWidgetConfigDialog,
+}));
+
+vi.mock('@/workbench/habitWidgetConfigDialog', () => ({
+  openHabitWidgetConfigDialog: mockOpenHabitWidgetConfigDialog,
 }));
 
 vi.mock('@/components/workbench/widgets/TodoListWidget.vue', () => ({
@@ -390,6 +396,58 @@ describe('DashboardCanvas', () => {
     expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
       groupId: 'group-b',
       view: 'timeGridDay',
+    });
+
+    mounted.unmount();
+  });
+
+  it('opens habit widget configure dialog and persists group config', async () => {
+    const store = useWorkbenchStore();
+    store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'habitWeek',
+            title: 'Habit Week',
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+            config: {
+              groupId: 'group-a',
+            },
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click();
+    await nextTick();
+    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click();
+
+    expect(mockOpenHabitWidgetConfigDialog).toHaveBeenCalledWith({
+      initialConfig: {
+        groupId: 'group-a',
+      },
+      onConfirm: expect.any(Function),
+    });
+
+    const configureOptions = mockOpenHabitWidgetConfigDialog.mock.calls[0][0];
+    await configureOptions.onConfirm({
+      groupId: 'group-b',
+    });
+    expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
+      groupId: 'group-b',
     });
 
     mounted.unmount();

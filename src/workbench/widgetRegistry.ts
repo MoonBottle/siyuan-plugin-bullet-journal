@@ -1,11 +1,13 @@
 import { t } from '@/i18n';
 import type {
   WorkbenchCalendarWidgetConfig,
+  WorkbenchHabitWeekWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchWidgetInstance,
   WorkbenchWidgetType,
 } from '@/types/workbench';
 import { openCalendarWidgetConfigDialog } from '@/workbench/calendarWidgetConfigDialog';
+import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
 type WorkbenchWidgetConfigContext = {
@@ -68,7 +70,20 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       icon: 'iconCheck',
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({}),
+      openConfigDialog: ({ widget, onUpdateConfig }) => {
+        const habitConfig = widget.config as WorkbenchHabitWeekWidgetConfig;
+        openHabitWidgetConfigDialog({
+          initialConfig: {
+            groupId: habitConfig.groupId,
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              groupId: nextConfig.groupId,
+            });
+          },
+        });
+      },
     },
     miniCalendar: {
       type: 'miniCalendar',

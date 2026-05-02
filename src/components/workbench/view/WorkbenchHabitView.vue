@@ -1,197 +1,72 @@
 <template>
   <div class="workbench-habit-view" data-testid="workbench-habit-view">
     <aside class="workbench-habit-view__sidebar">
-      <HabitWeekBar
-        v-model="selectedDate"
+      <HabitWorkspaceListPane
+        :selected-date="selectedDate"
         :current-date="currentDate"
         :habits="habits"
+        :habit-stats-map="habitStatsMap"
+        :habit-day-state-map="habitDayStateMap"
+        :habit-period-state-map="habitPeriodStateMap"
+        :active-habit-id="selectedHabit?.blockId"
+        item-open-behavior="detail"
+        item-test-id-prefix="workbench-habit-item-"
+        @update:selected-date="selectedDate = $event"
+        @check-in="checkInHabit"
+        @increment="incrementHabit"
+        @select-habit="selectHabit"
       />
-
-      <div v-if="habits.length > 0" class="workbench-habit-view__list">
-        <div
-          v-for="habit in habits"
-          :key="habit.blockId"
-          :class="['workbench-habit-view__list-item', {
-            'workbench-habit-view__list-item--active': selectedHabit?.blockId === habit.blockId,
-          }]"
-          :data-testid="`workbench-habit-item-${habit.blockId}`"
-        >
-          <HabitListItem
-            :habit="habit"
-            :day-state="habitDayStateMap.get(habit.blockId)!"
-            :period-state="habitPeriodStateMap.get(habit.blockId)!"
-            :stats="habitStatsMap.get(habit.blockId)"
-            :is-mobile="true"
-            @check-in="handleCheckIn"
-            @increment="handleIncrement"
-            @open-detail="handleSelectHabit"
-          />
-        </div>
-      </div>
-
-      <div v-else class="workbench-habit-view__empty-list">
-        <div class="workbench-habit-view__empty-icon">🎯</div>
-        <div class="workbench-habit-view__empty-title">{{ t('habit').noHabits }}</div>
-        <div class="workbench-habit-view__empty-desc">{{ t('habit').noHabitsDesc }}</div>
-      </div>
     </aside>
 
     <section class="workbench-habit-view__detail">
-      <template v-if="selectedHabit && displaySelectedStats">
-        <div class="workbench-habit-view__detail-header">
-          <div class="workbench-habit-view__detail-title" data-testid="workbench-habit-detail-header">
-            {{ selectedHabit.name }}
-          </div>
-          <div class="workbench-habit-view__detail-actions">
-            <button
-              class="block__icon"
-              data-testid="workbench-habit-refresh-button"
-              :aria-label="t('common').refresh"
-              @click="refreshHabits"
-            >
-              <svg><use xlink:href="#iconRefresh"></use></svg>
-            </button>
-            <button
-              class="block__icon"
-              data-testid="workbench-habit-open-doc"
-              :aria-label="t('todo').openDoc"
-              @click="handleOpenSelectedHabitDoc"
-            >
-              <svg><use xlink:href="#iconFile"></use></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="workbench-habit-view__detail-content" data-testid="workbench-habit-detail-content">
-          <HabitMonthCalendar
-            :habit="selectedHabit"
-            :stats="displaySelectedStats"
-            :current-date="currentDate"
-            :view-month="selectedViewMonth"
-            @update:view-month="selectedViewMonth = $event"
-          />
-
-          <HabitStatsCards :stats="displaySelectedStats" />
-
-          <HabitRecordLog
-            :habit="selectedHabit"
-            :view-month="selectedViewMonth"
-          />
-        </div>
-      </template>
-
-      <div v-else class="workbench-habit-view__empty-detail" data-testid="workbench-habit-empty-detail">
-        <div class="workbench-habit-view__empty-detail-title">{{ t('workbench').habitDetailEmptyTitle }}</div>
-        <div class="workbench-habit-view__empty-detail-desc">{{ t('workbench').habitDetailEmptyDesc }}</div>
-      </div>
+      <HabitWorkspaceDetailPane
+        class="workbench-habit-view__detail-pane"
+        :selected-habit="selectedHabit"
+        :stats="displaySelectedStats"
+        :current-date="currentDate"
+        :view-month="selectedViewMonth"
+        :empty-title="t('workbench').habitDetailEmptyTitle"
+        :empty-desc="t('workbench').habitDetailEmptyDesc"
+        header-test-id="workbench-habit-detail-header"
+        content-test-id="workbench-habit-detail-content"
+        empty-test-id="workbench-habit-empty-detail"
+        refresh-button-test-id="workbench-habit-refresh-button"
+        open-doc-button-test-id="workbench-habit-open-doc"
+        @refresh="refreshHabits"
+        @open-doc="openSelectedHabitDoc"
+        @update:view-month="selectedViewMonth = $event"
+      />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
-import HabitListItem from '@/components/habit/HabitListItem.vue';
-import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
-import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
-import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
-import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
+import { onMounted, onUnmounted } from 'vue';
+import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue';
+import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue';
+import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
-import {
-  checkIn,
-  checkInCount,
-} from '@/services/habitService';
-import { useProjectStore } from '@/stores/projectStore';
-import { useSettingsStore } from '@/stores/settingsStore';
-import type { Habit, HabitStats } from '@/types/models';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import dayjs from '@/utils/dayjs';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
-import { calculateAllHabitStats, calculateHabitStats } from '@/utils/habitStatsUtils';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 
 const plugin = usePlugin();
-const store = useProjectStore();
-const settingsStore = useSettingsStore();
-
-const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
-const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
-const selectedHabit = ref<Habit | null>(null);
-const selectedStatsCache = ref<HabitStats | null>(null);
-const currentDate = computed(() => store.currentDate);
-
-const habits = computed(() => store.getHabits(''));
-
-const habitStatsMap = computed(() => {
-  return calculateAllHabitStats(habits.value, currentDate.value);
-});
-
-const habitDayStateMap = computed(() => {
-  return new Map(habits.value.map(habit => [habit.blockId, getHabitDayState(habit, selectedDate.value)]));
-});
-
-const habitPeriodStateMap = computed(() => {
-  return new Map(habits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, selectedDate.value)]));
-});
-
-const selectedStats = computed(() => {
-  if (!selectedHabit.value) return null;
-  return calculateHabitStats(selectedHabit.value, currentDate.value, selectedViewMonth.value);
-});
-
-const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value);
-
-watch(selectedStats, (value) => {
-  if (value) {
-    selectedStatsCache.value = value;
-  }
-}, { immediate: true });
-
-function syncSelectedHabit() {
-  if (!selectedHabit.value) return;
-  selectedHabit.value = habits.value.find(habit => habit.blockId === selectedHabit.value?.blockId) ?? null;
-}
-
-async function refreshHabits() {
-  if (!plugin) return;
-  await store.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
-  syncSelectedHabit();
-}
-
-function handleSelectHabit(habit: Habit) {
-  selectedViewMonth.value = currentDate.value.substring(0, 7);
-  selectedHabit.value = habit;
-  selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-}
-
-async function handleCheckIn(habit: Habit) {
-  const success = await checkIn(habit, selectedDate.value);
-  if (success) {
-    if (selectedHabit.value?.blockId === habit.blockId) {
-      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-      syncSelectedHabit();
-    }
-  }
-}
-
-async function handleIncrement(habit: Habit) {
-  const success = await checkInCount(habit, selectedDate.value, 1);
-  if (success) {
-    if (selectedHabit.value?.blockId === habit.blockId) {
-      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-      syncSelectedHabit();
-    }
-  }
-}
-
-async function handleOpenSelectedHabitDoc() {
-  if (!selectedHabit.value?.docId) {
-    return;
-  }
-
-  await openDocumentAtLine(selectedHabit.value.docId, undefined, selectedHabit.value.blockId);
-}
+const {
+  selectedDate,
+  selectedViewMonth,
+  selectedHabit,
+  currentDate,
+  habits,
+  habitStatsMap,
+  habitDayStateMap,
+  habitPeriodStateMap,
+  displaySelectedStats,
+  refreshHabits,
+  selectHabit,
+  checkInHabit,
+  incrementHabit,
+  openSelectedHabitDoc,
+} = useHabitWorkspace();
 
 const handleDataRefresh = async () => {
   await refreshHabits();
@@ -260,87 +135,7 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.workbench-habit-view__list {
-  flex: 1;
+.workbench-habit-view__detail-pane {
   min-height: 0;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.workbench-habit-view__list-item {
-  border-radius: 10px;
-}
-
-.workbench-habit-view__list-item--active :deep(.habit-list-item) {
-  border-color: var(--b3-theme-primary);
-  box-shadow: 0 0 0 1px rgba(128, 162, 255, 0.18);
-  background: var(--b3-theme-primary-lightest);
-}
-
-.workbench-habit-view__empty-list,
-.workbench-habit-view__empty-detail {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: var(--b3-theme-on-surface-light);
-  padding: 24px;
-}
-
-.workbench-habit-view__empty-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
-}
-
-.workbench-habit-view__empty-title,
-.workbench-habit-view__empty-detail-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--b3-theme-on-background);
-  margin-bottom: 6px;
-}
-
-.workbench-habit-view__empty-desc,
-.workbench-habit-view__empty-detail-desc {
-  font-size: 12px;
-}
-
-.workbench-habit-view__detail-header {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--b3-border-color);
-}
-
-.workbench-habit-view__detail-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-}
-
-.workbench-habit-view__detail-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.workbench-habit-view__detail-actions .block__icon {
-  opacity: 1;
-}
-
-.workbench-habit-view__detail-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 </style>

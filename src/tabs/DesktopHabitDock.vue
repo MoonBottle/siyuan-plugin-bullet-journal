@@ -3,7 +3,12 @@
     <!-- 顶栏 -->
     <div class="block__icons">
       <template v-if="selectedHabit">
-        <button class="block__icon" @click="handleBackToList" :aria-label="t('habit').backToList">
+        <button
+          class="block__icon"
+          data-testid="habit-detail-back-button"
+          :aria-label="t('habit').backToList"
+          @click="handleBackToList"
+        >
           <svg
             @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
             @mouseleave="hideIconTooltip"
@@ -50,198 +55,93 @@
 
     <div class="fn__flex-1 fn__flex-column habit-dock-body">
       <!-- 详情视图 -->
-      <template v-if="selectedHabit && displaySelectedStats">
+      <template v-if="selectedHabit">
         <div class="habit-detail fn__flex-1 fn__flex-column">
-          <div class="habit-detail__header">
-          </div>
-
-          <div class="habit-detail__content" data-testid="habit-detail-content">
-            <!-- 月历 -->
-            <HabitMonthCalendar
-              :habit="selectedHabit"
-              :stats="displaySelectedStats"
-              :current-date="currentDate"
-              :view-month="selectedViewMonth"
-              @update:view-month="selectedViewMonth = $event"
-            />
-
-            <!-- 统计卡片 -->
-            <HabitStatsCards :stats="displaySelectedStats" />
-
-            <!-- 打卡日志 -->
-            <HabitRecordLog
-              :habit="selectedHabit"
-              :view-month="selectedViewMonth"
-            />
-          </div>
+          <div class="habit-detail__header"></div>
+          <HabitWorkspaceDetailPane
+            :selected-habit="selectedHabit"
+            :stats="displaySelectedStats"
+            :current-date="currentDate"
+            :view-month="selectedViewMonth"
+            :show-header="false"
+            :show-refresh-action="false"
+            :show-open-doc-action="false"
+            :empty-title="t('workbench').habitDetailEmptyTitle"
+            :empty-desc="t('workbench').habitDetailEmptyDesc"
+            content-test-id="habit-detail-content"
+            @update:view-month="selectedViewMonth = $event"
+          />
         </div>
       </template>
 
       <!-- 列表视图 -->
       <template v-else>
-        <!-- 周日期行 -->
-        <HabitWeekBar
-          v-model="selectedDate"
+        <HabitWorkspaceListPane
+          :selected-date="selectedDate"
           :current-date="currentDate"
           :habits="habits"
+          :habit-stats-map="habitStatsMap"
+          :habit-day-state-map="habitDayStateMap"
+          :habit-period-state-map="habitPeriodStateMap"
+          @update:selected-date="selectedDate = $event"
+          @check-in="checkInHabit"
+          @increment="incrementHabit"
+          @open-doc="openHabitDoc"
+          @select-habit="selectHabit"
         />
-
-        <!-- 习惯列表 -->
-        <div class="habit-list fn__flex-1" v-if="habits.length > 0">
-          <HabitListItem
-            v-for="habit in habits"
-            :key="habit.blockId"
-            :habit="habit"
-            :day-state="habitDayStateMap.get(habit.blockId)!"
-            :period-state="habitPeriodStateMap.get(habit.blockId)!"
-            :stats="habitStatsMap.get(habit.blockId)"
-            @check-in="handleCheckIn"
-            @increment="handleIncrement"
-            @open-doc="handleOpenHabitDoc"
-            @open-calendar="handleOpenHabitDetail"
-          />
-        </div>
-
-        <!-- 空状态 -->
-        <div class="habit-empty" v-else>
-          <div class="habit-empty__icon">🎯</div>
-          <div class="habit-empty__title">{{ t('habit').noHabits }}</div>
-          <div class="habit-empty__desc">{{ t('habit').noHabitsDesc }}</div>
-        </div>
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
-import { useProjectStore } from '@/stores/projectStore';
-import { useSettingsStore } from '@/stores/settingsStore';
-import { calculateAllHabitStats, calculateHabitStats } from '@/utils/habitStatsUtils';
-import {
-  checkIn,
-  checkInCount,
-} from '@/services/habitService';
+import { onMounted, onUnmounted } from 'vue';
+import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPane.vue';
+import HabitWorkspaceListPane from '@/components/habit/HabitWorkspaceListPane.vue';
+import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
 import { t } from '@/i18n';
 import { getCurrentPlugin, usePlugin } from '@/main';
-import dayjs from '@/utils/dayjs';
-import HabitWeekBar from '@/components/habit/HabitWeekBar.vue';
-import HabitListItem from '@/components/habit/HabitListItem.vue';
-import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
-import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
-import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
-import type { Habit, HabitStats } from '@/types/models';
-import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import { buildViewDebugContext } from '@/utils/viewDebug';
 import { consumePendingHabitDockTarget, type HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
 
 const plugin = usePlugin();
-const store = useProjectStore();
-const settingsStore = useSettingsStore();
-
-const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
-const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
-const selectedHabit = ref<Habit | null>(null);
-const selectedStatsCache = ref<HabitStats | null>(null);
-const currentDate = computed(() => store.currentDate);
-
-const habits = computed(() => store.getHabits(''));
-
-const habitStatsMap = computed(() => {
-  return calculateAllHabitStats(habits.value, currentDate.value);
-});
-
-const habitDayStateMap = computed(() => {
-  return new Map(habits.value.map(habit => [habit.blockId, getHabitDayState(habit, selectedDate.value)]));
-});
-
-const habitPeriodStateMap = computed(() => {
-  return new Map(habits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, selectedDate.value)]));
-});
-
-const selectedStats = computed(() => {
-  if (!selectedHabit.value) return null;
-  return calculateHabitStats(selectedHabit.value, currentDate.value, selectedViewMonth.value);
-});
-
-const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value);
-
-watch(selectedStats, (value) => {
-  if (value) {
-    selectedStatsCache.value = value;
-  }
-}, { immediate: true });
-
-function syncSelectedHabit() {
-  if (!selectedHabit.value) return;
-  selectedHabit.value = habits.value.find(habit => habit.blockId === selectedHabit.value?.blockId) ?? null;
-}
-
-async function refreshHabits() {
-  if (!plugin) return;
-  await store.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
-  syncSelectedHabit();
-}
-
-async function handleCheckIn(habit: Habit) {
-  const success = await checkIn(habit, selectedDate.value);
-  if (success)
-    selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-}
-
-async function handleIncrement(habit: Habit) {
-  const success = await checkInCount(habit, selectedDate.value, 1);
-  if (success)
-    selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-}
-
-async function handleOpenHabitDoc(habit: Habit) {
-  if (!habit.docId) {
-    return;
-  }
-
-  await openDocumentAtLine(habit.docId, undefined, habit.blockId);
-}
+const {
+  selectedDate,
+  selectedViewMonth,
+  selectedHabit,
+  currentDate,
+  habits,
+  habitStatsMap,
+  habitDayStateMap,
+  habitPeriodStateMap,
+  displaySelectedStats,
+  refreshHabits,
+  selectHabit,
+  selectHabitById,
+  clearSelectedHabit,
+  checkInHabit,
+  incrementHabit,
+  openHabitDoc,
+  openSelectedHabitDoc,
+} = useHabitWorkspace();
 
 async function handleOpenSelectedHabitDoc() {
   hideIconTooltip();
-  if (!selectedHabit.value?.docId) {
-    return;
-  }
-
-  await openDocumentAtLine(selectedHabit.value.docId, undefined, selectedHabit.value.blockId);
-}
-
-function handleOpenHabitDetail(habit: Habit) {
-  selectedViewMonth.value = currentDate.value.substring(0, 7);
-  selectedHabit.value = habit;
-  selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
+  await openSelectedHabitDoc();
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
-  const habit = habits.value.find(item => item.blockId === target.habitId);
-  if (!habit) {
-    return false;
-  }
-  const targetDate = target.date || currentDate.value;
-  selectedDate.value = targetDate;
-  selectedViewMonth.value = targetDate.substring(0, 7);
-  selectedHabit.value = habit;
-  selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
-  return true;
+  return selectHabitById(target.habitId, target.date || currentDate.value);
 }
 
 function handleBackToList() {
   hideIconTooltip();
-  selectedHabit.value = null;
+  clearSelectedHabit();
 }
 
 const handleDataRefresh = async () => {
-  console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('DesktopHabitDock', plugin));
   await refreshHabits();
 };
 
@@ -251,7 +151,6 @@ let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 onMounted(() => {
-  console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('DesktopHabitDock', plugin));
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
   unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
 
@@ -266,13 +165,7 @@ onMounted(() => {
       channel: refreshChannel,
       plugin,
       getCurrentPlugin,
-      onRefresh: () => {
-        console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
-          ...buildViewDebugContext('DesktopHabitDock', plugin),
-          data: { type: 'DATA_REFRESH' },
-        });
-        return handleDataRefresh();
-      },
+      onRefresh: () => handleDataRefresh(),
       viewName: 'DesktopHabitDock',
     });
   } catch {
@@ -281,7 +174,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  console.log('[Task Assistant][ViewLifecycle] onUnmounted:', buildViewDebugContext('DesktopHabitDock', plugin));
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
   }
@@ -309,17 +201,8 @@ onUnmounted(() => {
 .habit-dock-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   padding: 8px;
   overflow: hidden;
-  min-height: 0;
-  min-width: 0;
-}
-
-.habit-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 0;
   min-height: 0;
   min-width: 0;
 }
@@ -333,46 +216,9 @@ onUnmounted(() => {
 
 .habit-detail__header {
   flex: 0 0 auto;
-  padding-bottom: 0;
-}
-
-.habit-detail__content {
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  overflow-y: auto;
-  padding-bottom: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .block__icons .block__icon {
   opacity: 1;
-}
-
-.habit-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--b3-theme-on-surface-light);
-}
-
-.habit-empty__icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.habit-empty__title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.habit-empty__desc {
-  font-size: 12px;
-  opacity: 0.6;
 }
 </style>

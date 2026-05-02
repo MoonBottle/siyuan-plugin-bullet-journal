@@ -178,4 +178,14 @@ describe('WorkbenchHabitView', () => {
 
     mounted.unmount();
   });
+
+  it('keeps the workbench habit layout in a two-column shell', async () => {
+    const mounted = await mountView();
+    const root = mounted.container.querySelector('[data-testid="workbench-habit-view"]');
+
+    expect(root?.querySelector('.workbench-habit-view__sidebar')).not.toBeNull();
+    expect(root?.querySelector('.workbench-habit-view__detail')).not.toBeNull();
+
+    mounted.unmount();
+  });
 });
