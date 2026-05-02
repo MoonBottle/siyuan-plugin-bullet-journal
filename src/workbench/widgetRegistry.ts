@@ -2,6 +2,7 @@ import { t } from '@/i18n';
 import type {
   WorkbenchCalendarWidgetConfig,
   WorkbenchHabitWeekWidgetConfig,
+  WorkbenchPomodoroStatsWidgetConfig,
   WorkbenchQuadrantWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchWidgetInstance,
@@ -9,6 +10,7 @@ import type {
 } from '@/types/workbench';
 import { openCalendarWidgetConfigDialog } from '@/workbench/calendarWidgetConfigDialog';
 import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
+import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
 import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
@@ -135,7 +137,22 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       icon: 'iconClock',
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
-      createDefaultConfig: () => ({}),
+      createDefaultConfig: (): WorkbenchPomodoroStatsWidgetConfig => ({
+        section: 'overview',
+      }),
+      openConfigDialog: ({ widget, onUpdateConfig }) => {
+        const pomodoroConfig = widget.config as WorkbenchPomodoroStatsWidgetConfig;
+        openPomodoroWidgetConfigDialog({
+          initialConfig: {
+            section: pomodoroConfig.section ?? 'overview',
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({
+              section: nextConfig.section ?? 'overview',
+            });
+          },
+        });
+      },
     },
   };
 }

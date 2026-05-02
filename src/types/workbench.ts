@@ -27,6 +27,13 @@ export type WorkbenchWidgetType =
   | 'pomodoroStats';
 
 export type WorkbenchQuadrantKey = 'high' | 'medium' | 'low' | 'none';
+export type WorkbenchPomodoroStatsSectionKey =
+  | 'overview'
+  | 'annualHeatmap'
+  | 'focusDetail'
+  | 'focusTrend'
+  | 'focusTimeline'
+  | 'bestFocusTime';
 
 export interface WorkbenchTodoListWidgetConfig {
   preset?: TodoViewPreset;
@@ -44,6 +51,10 @@ export interface WorkbenchCalendarWidgetConfig {
 
 export interface WorkbenchHabitWeekWidgetConfig {
   groupId?: string;
+}
+
+export interface WorkbenchPomodoroStatsWidgetConfig {
+  section?: WorkbenchPomodoroStatsSectionKey;
 }
 
 export interface WorkbenchWidgetInstance {

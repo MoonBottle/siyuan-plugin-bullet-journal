@@ -14,6 +14,7 @@ const {
   mockOpenQuadrantWidgetConfigDialog,
   mockOpenCalendarWidgetConfigDialog,
   mockOpenHabitWidgetConfigDialog,
+  mockOpenPomodoroWidgetConfigDialog,
 } = vi.hoisted(() => ({
   mockShowInputDialog: vi.fn(),
   mockShowConfirmDialog: vi.fn(),
@@ -21,6 +22,7 @@ const {
   mockOpenQuadrantWidgetConfigDialog: vi.fn(),
   mockOpenCalendarWidgetConfigDialog: vi.fn(),
   mockOpenHabitWidgetConfigDialog: vi.fn(),
+  mockOpenPomodoroWidgetConfigDialog: vi.fn(),
 }));
 
 vi.mock('@/utils/dialog', () => ({
@@ -42,6 +44,10 @@ vi.mock('@/workbench/calendarWidgetConfigDialog', () => ({
 
 vi.mock('@/workbench/habitWidgetConfigDialog', () => ({
   openHabitWidgetConfigDialog: mockOpenHabitWidgetConfigDialog,
+}));
+
+vi.mock('@/workbench/pomodoroWidgetConfigDialog', () => ({
+  openPomodoroWidgetConfigDialog: mockOpenPomodoroWidgetConfigDialog,
 }));
 
 vi.mock('@/components/workbench/widgets/TodoListWidget.vue', () => ({
@@ -510,6 +516,59 @@ describe('DashboardCanvas', () => {
     });
     expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
       groupId: 'group-b',
+    });
+
+    mounted.unmount();
+  });
+
+  it('opens pomodoro stats widget configure dialog and persists section config', async () => {
+    const store = useWorkbenchStore();
+    store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'pomodoroStats',
+            title: 'Focus Stats',
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+            config: {
+              section: 'focusTrend',
+            },
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click();
+    await nextTick();
+    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click();
+
+    expect(mockOpenPomodoroWidgetConfigDialog).toHaveBeenCalledWith({
+      initialConfig: {
+        section: 'focusTrend',
+      },
+      onConfirm: expect.any(Function),
+    });
+
+    const configureOptions = mockOpenPomodoroWidgetConfigDialog.mock.calls[0][0];
+    await configureOptions.onConfirm({
+      section: 'annualHeatmap',
+    });
+
+    expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
+      section: 'annualHeatmap',
     });
 
     mounted.unmount();

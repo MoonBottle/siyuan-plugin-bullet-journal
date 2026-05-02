@@ -7,6 +7,27 @@ import { initI18n } from '@/i18n';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import type { Item } from '@/types/models';
 
+const todoSidebarProps = vi.fn();
+const nativePreviewOpen = vi.fn();
+const nativePreviewClose = vi.fn();
+const nativePreviewContainsTarget = vi.fn(() => false);
+const mockPlugin = { name: 'plugin' };
+const mockApp = { name: 'app' };
+
+vi.mock('@/main', () => ({
+  usePlugin: vi.fn(() => mockPlugin),
+  useApp: vi.fn(() => mockApp),
+}));
+
+vi.mock('@/utils/nativeBlockPreview', () => ({
+  createNativeBlockPreviewController: () => ({
+    open: nativePreviewOpen,
+    close: nativePreviewClose,
+    containsTarget: nativePreviewContainsTarget,
+    isOpen: vi.fn(() => false),
+  }),
+}));
+
 vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   default: defineComponent({
     name: 'SySelectStub',
@@ -34,8 +55,22 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
 vi.mock('@/components/todo/TodoSidebar.vue', () => ({
   default: defineComponent({
     name: 'TodoSidebarStub',
-    props: ['groupId', 'priorities', 'includeNoPriority'],
+    props: [
+      'groupId',
+      'priorities',
+      'includeNoPriority',
+      'previewTriggerMode',
+      'onItemPreviewClick',
+    ],
     setup(props) {
+      todoSidebarProps({
+        groupId: props.groupId,
+        priorities: props.priorities,
+        includeNoPriority: props.includeNoPriority,
+        previewTriggerMode: props.previewTriggerMode,
+        onItemPreviewClick: props.onItemPreviewClick,
+      });
+
       return () => h('div', {
         'data-testid': 'quadrant-widget-todo-sidebar',
         'data-group-id': props.groupId,
@@ -227,6 +262,38 @@ describe('QuadrantSummaryWidget', () => {
     expect(sidebar?.getAttribute('data-group-id')).toBe('group-b');
     expect(sidebar?.getAttribute('data-priorities')).toBe('[]');
     expect(sidebar?.getAttribute('data-include-no-priority')).toBe('true');
+
+    mounted.unmount();
+  });
+
+  it('wires click-trigger preview callbacks and opens native preview from card clicks', async () => {
+    const mounted = await mountWidget({
+      groupId: 'group-b',
+      quadrant: 'none',
+    });
+
+    const sidebarPropsCall = todoSidebarProps.mock.calls.at(-1)?.[0];
+    expect(sidebarPropsCall.previewTriggerMode).toBe('click');
+    expect(sidebarPropsCall.onItemPreviewClick).toBeTypeOf('function');
+
+    const anchorEl = document.createElement('div');
+    document.body.appendChild(anchorEl);
+
+    sidebarPropsCall.onItemPreviewClick({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    });
+    await nextTick();
+
+    expect(nativePreviewOpen).toHaveBeenCalledWith(expect.objectContaining({
+      app: mockApp,
+      plugin: mockPlugin,
+      blockId: 'block-1',
+      anchorEl,
+      onHoverChange: expect.any(Function),
+      onPanelDestroyed: expect.any(Function),
+    }));
 
     mounted.unmount();
   });
