@@ -148,6 +148,7 @@ describe('WorkbenchContentHost routing', () => {
       } satisfies WorkbenchEntry,
     });
     expect(dashboardMounted.container.querySelector('[data-testid="workbench-dashboard-placeholder"]')).not.toBeNull();
+    expect(dashboardMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull();
     dashboardMounted.unmount();
 
     const viewMounted = await mountComponent(WorkbenchContentHost, {
@@ -155,6 +156,7 @@ describe('WorkbenchContentHost routing', () => {
     });
     expect(viewMounted.container.querySelector('[data-testid="workbench-view-host"]')).not.toBeNull();
     expect(viewMounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
+    expect(viewMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull();
     viewMounted.unmount();
   });
 });

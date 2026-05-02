@@ -10,38 +10,71 @@
       @delete-entry="handleDeleteEntry"
     />
     <section class="workbench-tab__main">
-      <div
-        v-if="isDashboardActive"
-        class="workbench-tab__toolbar"
-      >
-        <button
-          class="workbench-tab__toolbar-button"
-          data-testid="workbench-add-todo-widget"
-          type="button"
-          @click="handleAddTodoWidget"
-        >
-          {{ t('todo').title }}
-        </button>
+      <div v-if="currentActiveEntry" class="workbench-tab__toolbar">
+        <div class="workbench-tab__toolbar-title-group">
+          <h2 class="workbench-tab__toolbar-title" data-testid="workbench-toolbar-title">
+            {{ currentActiveEntry.title }}
+          </h2>
+        </div>
+
+        <div v-if="isDashboardActive" class="workbench-tab__toolbar-actions">
+          <div class="workbench-tab__toolbar-menu-wrap">
+            <button
+              class="workbench-tab__toolbar-button"
+              data-testid="workbench-add-widget-trigger"
+              type="button"
+              @click="toggleWidgetMenu"
+            >
+              {{ t('workbench').addWidget }}
+            </button>
+
+            <div
+              v-if="isWidgetMenuOpen"
+              class="workbench-tab__toolbar-menu"
+              data-testid="workbench-widget-menu"
+            >
+              <button
+                v-for="definition in widgetDefinitions"
+                :key="definition.type"
+                class="workbench-tab__toolbar-menu-item"
+                :data-testid="`workbench-add-widget-${definition.type}`"
+                type="button"
+                @click="handleAddWidget(definition.type)"
+              >
+                <span class="workbench-tab__toolbar-menu-icon" aria-hidden="true">
+                  <svg><use :xlink:href="`#${definition.icon}`"></use></svg>
+                </span>
+                <span>{{ definition.name }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <WorkbenchContentHost :active-entry="currentActiveEntry" />
+      <WorkbenchContentHost
+        :active-entry="currentActiveEntry"
+        @request-add-widget="openWidgetMenu"
+      />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue';
 import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import { useWorkbenchStore } from '@/stores';
-import type { WorkbenchViewType } from '@/types/workbench';
+import type { WorkbenchViewType, WorkbenchWidgetType } from '@/types/workbench';
+import { getWidgetRegistry } from '@/workbench/widgetRegistry';
 
 const plugin = usePlugin();
 const workbenchStore = useWorkbenchStore();
 const currentActiveEntryId = computed(() => workbenchStore.activeEntryId);
 const currentActiveEntry = computed(() => workbenchStore.activeEntry);
 const isDashboardActive = computed(() => currentActiveEntry.value?.type === 'dashboard');
+const isWidgetMenuOpen = ref(false);
+const widgetDefinitions = computed(() => Object.values(getWidgetRegistry()));
 
 async function handleSelect(id: string) {
   await workbenchStore.setActiveEntry(id);
@@ -63,12 +96,21 @@ async function handleDeleteEntry(id: string) {
   await workbenchStore.deleteEntry(id);
 }
 
-async function handleAddTodoWidget() {
+function toggleWidgetMenu() {
+  isWidgetMenuOpen.value = !isWidgetMenuOpen.value;
+}
+
+function openWidgetMenu() {
+  isWidgetMenuOpen.value = true;
+}
+
+async function handleAddWidget(type: WorkbenchWidgetType) {
   if (currentActiveEntry.value?.type !== 'dashboard' || !currentActiveEntry.value.dashboardId) {
     return;
   }
 
-  await workbenchStore.addWidget(currentActiveEntry.value.dashboardId, 'todoList');
+  await workbenchStore.addWidget(currentActiveEntry.value.dashboardId, type);
+  isWidgetMenuOpen.value = false;
 }
 
 onMounted(async () => {
@@ -97,8 +139,31 @@ onMounted(async () => {
 
 .workbench-tab__toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 16px 24px 0;
+  flex-shrink: 0;
+}
+
+.workbench-tab__toolbar-title-group {
+  min-width: 0;
+}
+
+.workbench-tab__toolbar-title {
+  margin: 0;
+  font-size: 20px;
+  color: var(--b3-theme-on-background);
+}
+
+.workbench-tab__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.workbench-tab__toolbar-menu-wrap {
+  position: relative;
 }
 
 .workbench-tab__toolbar-button {
@@ -108,5 +173,53 @@ onMounted(async () => {
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-background);
   cursor: pointer;
+}
+
+.workbench-tab__toolbar-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  min-width: 220px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  background: var(--b3-theme-surface);
+  box-shadow: var(--b3-dialog-shadow);
+}
+
+.workbench-tab__toolbar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  text-align: left;
+  cursor: pointer;
+}
+
+.workbench-tab__toolbar-menu-item:hover {
+  border-color: var(--b3-border-color);
+  background: var(--b3-theme-background);
+}
+
+.workbench-tab__toolbar-menu-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.workbench-tab__toolbar-menu-icon svg {
+  width: 16px;
+  height: 16px;
 }
 </style>

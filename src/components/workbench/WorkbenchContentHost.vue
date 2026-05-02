@@ -1,13 +1,10 @@
 <template>
   <section class="workbench-content-host" data-testid="workbench-content-host">
     <template v-if="activeEntry">
-      <h2 class="workbench-content-host__title" data-testid="workbench-content-title">
-        {{ activeEntry.title }}
-      </h2>
-
       <DashboardCanvas
         v-if="activeEntry.type === 'dashboard'"
         :entry="activeEntry"
+        @request-add-widget="emit('request-add-widget')"
       />
       <WorkbenchViewHost
         v-else
@@ -29,6 +26,10 @@ import type { WorkbenchEntry } from '@/types/workbench';
 defineProps<{
   activeEntry: WorkbenchEntry | null;
 }>();
+
+const emit = defineEmits<{
+  (event: 'request-add-widget'): void;
+}>();
 </script>
 
 <style lang="scss" scoped>
@@ -39,15 +40,8 @@ defineProps<{
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   background: var(--b3-theme-background);
   overflow-y: auto;
-}
-
-.workbench-content-host__title {
-  margin: 0;
-  font-size: 20px;
-  color: var(--b3-theme-on-background);
 }
 
 .workbench-content-host__empty {

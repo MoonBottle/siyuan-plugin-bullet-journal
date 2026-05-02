@@ -2,7 +2,41 @@
   <article class="workbench-widget-card" data-testid="workbench-widget-card">
     <header class="workbench-widget-card__header">
       <span class="workbench-widget-card__title">{{ title }}</span>
-      <span class="workbench-widget-card__drag" aria-hidden="true">::</span>
+      <div class="workbench-widget-card__controls">
+        <span class="workbench-widget-card__drag" aria-hidden="true">::</span>
+        <div class="workbench-widget-card__menu-wrap">
+          <button
+            class="workbench-widget-card__menu-trigger"
+            data-testid="workbench-widget-menu-trigger"
+            type="button"
+            @click="toggleMenu"
+          >
+            ...
+          </button>
+          <div
+            v-if="isMenuOpen"
+            class="workbench-widget-card__menu"
+            data-testid="workbench-widget-menu"
+          >
+            <button
+              class="workbench-widget-card__menu-item"
+              data-testid="workbench-widget-rename"
+              type="button"
+              @click="handleRename"
+            >
+              {{ t('workbench').rename }}
+            </button>
+            <button
+              class="workbench-widget-card__menu-item"
+              data-testid="workbench-widget-delete"
+              type="button"
+              @click="handleDelete"
+            >
+              {{ t('workbench').delete }}
+            </button>
+          </div>
+        </div>
+      </div>
     </header>
     <div class="workbench-widget-card__body">
       <slot />
@@ -11,9 +45,33 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
+import { t } from '@/i18n';
+
 defineProps<{
   title: string;
 }>();
+
+const emit = defineEmits<{
+  (event: 'rename'): void;
+  (event: 'delete'): void;
+}>();
+
+const isMenuOpen = ref(false);
+
+function toggleMenu() {
+  isMenuOpen.value = !isMenuOpen.value;
+}
+
+function handleRename() {
+  isMenuOpen.value = false;
+  emit('rename');
+}
+
+function handleDelete() {
+  isMenuOpen.value = false;
+  emit('delete');
+}
 </script>
 
 <style lang="scss" scoped>
@@ -39,9 +97,60 @@ defineProps<{
   color: var(--b3-theme-on-background);
 }
 
+.workbench-widget-card__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .workbench-widget-card__drag {
   color: var(--b3-theme-on-surface);
   letter-spacing: 0;
+}
+
+.workbench-widget-card__menu-wrap {
+  position: relative;
+}
+
+.workbench-widget-card__menu-trigger {
+  padding: 2px 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 6px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  cursor: pointer;
+}
+
+.workbench-widget-card__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  min-width: 120px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  background: var(--b3-theme-surface);
+  box-shadow: var(--b3-dialog-shadow);
+}
+
+.workbench-widget-card__menu-item {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  text-align: left;
+  cursor: pointer;
+}
+
+.workbench-widget-card__menu-item:hover {
+  border-color: var(--b3-border-color);
+  background: var(--b3-theme-background);
 }
 
 .workbench-widget-card__body {

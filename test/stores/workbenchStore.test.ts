@@ -11,9 +11,17 @@ import type {
 const {
   mockLoadWorkbenchSettings,
   mockSaveWorkbenchSettings,
+  mockGetWidgetDefinition,
 } = vi.hoisted(() => ({
   mockLoadWorkbenchSettings: vi.fn(),
   mockSaveWorkbenchSettings: vi.fn(),
+  mockGetWidgetDefinition: vi.fn((type: string) => ({
+    type,
+    name: type === 'todoList' ? 'Todo List' : type,
+    icon: 'iconList',
+    defaultSize: { w: 6, h: 4 },
+    createDefaultConfig: () => ({ source: 'default-config' }),
+  })),
 }));
 
 vi.mock('@/utils/workbenchStorage', () => ({
@@ -22,13 +30,7 @@ vi.mock('@/utils/workbenchStorage', () => ({
 }));
 
 vi.mock('@/workbench/widgetRegistry', () => ({
-  getWidgetDefinition: (type: string) => ({
-    type,
-    name: type === 'todoList' ? 'Todo List' : type,
-    icon: 'iconList',
-    defaultSize: { w: 6, h: 4 },
-    createDefaultConfig: () => ({ source: 'default-config' }),
-  }),
+  getWidgetDefinition: mockGetWidgetDefinition,
 }));
 
 import { useWorkbenchStore } from '@/stores/workbenchStore';
@@ -380,6 +382,34 @@ describe('workbenchStore', () => {
     });
   });
 
+  it('renameWidget updates widget title and persists', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard({
+      widgets: [
+        {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: {},
+        },
+      ],
+    });
+
+    store.dashboards = [dashboard];
+
+    await store.renameWidget(dashboard.id, 'widget-1', 'Today Todos');
+
+    expect(store.dashboards[0].widgets[0].title).toBe('Today Todos');
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
+      entries: [],
+      dashboards: store.dashboards,
+      activeEntryId: null,
+    });
+  });
+
   it('updateWidgetLayout updates widget layout and persists', async () => {
     const plugin = createPlugin();
     const store = useWorkbenchStore();
@@ -401,6 +431,48 @@ describe('workbenchStore', () => {
     await store.updateWidgetLayout(dashboard.id, 'widget-1', { x: 2, y: 1, w: 4, h: 3 });
 
     expect(store.dashboards[0].widgets[0].layout).toEqual({ x: 2, y: 1, w: 4, h: 3 });
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
+      entries: [],
+      dashboards: store.dashboards,
+      activeEntryId: null,
+    });
+  });
+
+  it('updateWidgetLayouts batch updates widget layouts and persists once', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard({
+      widgets: [
+        {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: {},
+        },
+        {
+          id: 'widget-2',
+          type: 'habitWeek',
+          title: 'Habit Week',
+          layout: { x: 6, y: 0, w: 6, h: 4 },
+          config: {},
+        },
+      ],
+    });
+
+    store.dashboards = [dashboard];
+
+    await store.updateWidgetLayouts(dashboard.id, [
+      { id: 'widget-1', x: 1, y: 2, w: 5, h: 3 },
+      { id: 'widget-2', x: 6, y: 2, w: 6, h: 5 },
+    ]);
+
+    expect(store.dashboards[0].widgets.map(widget => widget.layout)).toEqual([
+      { x: 1, y: 2, w: 5, h: 3 },
+      { x: 6, y: 2, w: 6, h: 5 },
+    ]);
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledTimes(1);
     expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
       entries: [],
       dashboards: store.dashboards,

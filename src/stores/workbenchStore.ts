@@ -273,6 +273,31 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     await persist();
   }
 
+  async function renameWidget(dashboardId: string, widgetId: string, title: string): Promise<void> {
+    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    if (!dashboard) {
+      return;
+    }
+
+    dashboards.value = dashboards.value.map(item => (
+      item.id === dashboardId
+        ? {
+            ...item,
+            widgets: item.widgets.map(widget => (
+              widget.id === widgetId
+                ? {
+                    ...widget,
+                    title,
+                  }
+                : widget
+            )),
+          }
+        : item
+    ));
+
+    await persist();
+  }
+
   async function updateWidgetLayout(
     dashboardId: string,
     widgetId: string,
@@ -302,6 +327,44 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     await persist();
   }
 
+  async function updateWidgetLayouts(
+    dashboardId: string,
+    layouts: Array<{ id: string; x: number; y: number; w: number; h: number }>,
+  ): Promise<void> {
+    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    if (!dashboard) {
+      return;
+    }
+
+    const layoutMap = new Map(layouts.map(layout => [layout.id, layout]));
+
+    dashboards.value = dashboards.value.map(item => (
+      item.id === dashboardId
+        ? {
+            ...item,
+            widgets: item.widgets.map(widget => {
+              const nextLayout = layoutMap.get(widget.id);
+              if (!nextLayout) {
+                return widget;
+              }
+
+              return {
+                ...widget,
+                layout: {
+                  x: nextLayout.x,
+                  y: nextLayout.y,
+                  w: nextLayout.w,
+                  h: nextLayout.h,
+                },
+              };
+            }),
+          }
+        : item
+    ));
+
+    await persist();
+  }
+
   return {
     entries,
     dashboards,
@@ -318,6 +381,8 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     setActiveEntry,
     addWidget,
     removeWidget,
+    renameWidget,
     updateWidgetLayout,
+    updateWidgetLayouts,
   };
 });

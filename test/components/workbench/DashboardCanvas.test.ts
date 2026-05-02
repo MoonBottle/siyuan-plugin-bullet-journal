@@ -1,40 +1,138 @@
 // @vitest-environment happy-dom
 
-import { createApp, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createPinia, getActivePinia, setActivePinia } from 'pinia';
 import { initI18n } from '@/i18n';
-import type { WorkbenchDashboard, WorkbenchEntry } from '@/types/workbench';
+import { useWorkbenchStore } from '@/stores/workbenchStore';
+import type { WorkbenchEntry } from '@/types/workbench';
 
-const mockWorkbenchStore = {
-  dashboards: [] as WorkbenchDashboard[],
-  updateWidgetLayout: vi.fn(() => Promise.resolve()),
-};
+const {
+  mockShowInputDialog,
+  mockShowConfirmDialog,
+} = vi.hoisted(() => ({
+  mockShowInputDialog: vi.fn(),
+  mockShowConfirmDialog: vi.fn(),
+}));
 
-vi.mock('@/stores', async () => {
-  const actual = await vi.importActual<typeof import('@/stores')>('@/stores');
-  return {
-    ...actual,
-    useWorkbenchStore: () => mockWorkbenchStore,
-  };
-});
+vi.mock('@/utils/dialog', () => ({
+  showInputDialog: mockShowInputDialog,
+  showConfirmDialog: mockShowConfirmDialog,
+}));
 
-function createDashboardEntry(overrides: Partial<WorkbenchEntry> = {}): WorkbenchEntry {
-  return {
-    id: 'entry-dashboard',
-    type: 'dashboard',
-    title: 'Planning Board',
-    icon: 'iconLayout',
-    order: 0,
-    dashboardId: 'dashboard-1',
-    ...overrides,
-  };
-}
+vi.mock('@/components/workbench/widgets/TodoListWidget.vue', () => ({
+  default: defineComponent({
+    name: 'TodoListWidgetStub',
+    props: {
+      widget: {
+        type: Object,
+        required: false,
+      },
+    },
+    setup() {
+      return () => h('div', 'todo widget');
+    },
+  }),
+}));
 
-async function mountComponent(component: any, props: Record<string, unknown>) {
+vi.mock('@/components/workbench/widgets/QuadrantSummaryWidget.vue', () => ({
+  default: defineComponent({
+    name: 'QuadrantSummaryWidgetStub',
+    props: {
+      widget: {
+        type: Object,
+        required: false,
+      },
+    },
+    setup() {
+      return () => h('div', 'quadrant widget');
+    },
+  }),
+}));
+
+vi.mock('@/components/workbench/widgets/HabitWeekWidget.vue', () => ({
+  default: defineComponent({
+    name: 'HabitWeekWidgetStub',
+    props: {
+      widget: {
+        type: Object,
+        required: false,
+      },
+    },
+    setup() {
+      return () => h('div', 'habit widget');
+    },
+  }),
+}));
+
+vi.mock('@/components/workbench/widgets/MiniCalendarWidget.vue', () => ({
+  default: defineComponent({
+    name: 'MiniCalendarWidgetStub',
+    props: {
+      widget: {
+        type: Object,
+        required: false,
+      },
+    },
+    setup() {
+      return () => h('div', 'calendar widget');
+    },
+  }),
+}));
+
+vi.mock('@/components/workbench/widgets/PomodoroStatsWidget.vue', () => ({
+  default: defineComponent({
+    name: 'PomodoroStatsWidgetStub',
+    props: {
+      widget: {
+        type: Object,
+        required: false,
+      },
+    },
+    setup() {
+      return () => h('div', 'pomodoro widget');
+    },
+  }),
+}));
+
+vi.mock('grid-layout-plus', () => ({
+  GridLayout: defineComponent({
+    name: 'GridLayoutStub',
+    props: ['layout'],
+    emits: ['layout-updated'],
+    setup(props, { emit, slots }) {
+      return () => h('div', { 'data-testid': 'grid-layout-stub' }, [
+        h('button', {
+          type: 'button',
+          'data-testid': 'grid-layout-emit-updated',
+          onClick: () => emit('layout-updated', props.layout),
+        }),
+        slots.default?.(),
+      ]);
+    },
+  }),
+  GridItem: defineComponent({
+    name: 'GridItemStub',
+    props: ['x', 'y', 'w', 'h', 'i'],
+    setup(props, { slots }) {
+      return () => h('div', {
+        'data-testid': `grid-item-stub-${props.i}`,
+        'data-x': String(props.x),
+        'data-y': String(props.y),
+        'data-w': String(props.w),
+        'data-h': String(props.h),
+      }, slots.default?.());
+    },
+  }),
+}));
+
+async function mountCanvas(entry: WorkbenchEntry) {
+  const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
   const container = document.createElement('div');
   document.body.appendChild(container);
 
-  const app = createApp(component, props);
+  const app = createApp(DashboardCanvas, { entry });
+  app.use(getActivePinia()!);
   app.mount(container);
   await nextTick();
 
@@ -50,85 +148,15 @@ async function mountComponent(component: any, props: Record<string, unknown>) {
 
 describe('DashboardCanvas', () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     initI18n('en_US');
-    mockWorkbenchStore.dashboards = [];
-    mockWorkbenchStore.updateWidgetLayout.mockClear();
+    document.body.innerHTML = '';
+    vi.clearAllMocks();
   });
 
-  it('renders widgets for selected dashboard', async () => {
-    mockWorkbenchStore.dashboards = [
-      {
-        id: 'dashboard-1',
-        title: 'Planning Board',
-        widgets: [
-          {
-            id: 'widget-1',
-            type: 'todoList',
-            title: 'My Todos',
-            layout: { x: 0, y: 0, w: 6, h: 4 },
-            config: {},
-          },
-          {
-            id: 'widget-2',
-            type: 'quadrantSummary',
-            layout: { x: 6, y: 0, w: 6, h: 4 },
-            config: {},
-          },
-        ],
-      },
-    ];
-
-    const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
-    const mounted = await mountComponent(DashboardCanvas, {
-      entry: createDashboardEntry(),
-    });
-
-    expect(mounted.container.querySelector('[data-testid="workbench-dashboard-canvas"]')).not.toBeNull();
-    expect(mounted.container.querySelectorAll('[data-testid="workbench-widget-card"]')).toHaveLength(2);
-    expect(mounted.container.textContent).toContain('My Todos');
-
-    mounted.unmount();
-  });
-
-  it('renders TodoListWidget when widget.type is todoList', async () => {
-    mockWorkbenchStore.dashboards = [
-      {
-        id: 'dashboard-1',
-        title: 'Planning Board',
-        widgets: [
-          {
-            id: 'widget-1',
-            type: 'todoList',
-            layout: { x: 0, y: 0, w: 6, h: 4 },
-            config: {},
-          },
-        ],
-      },
-    ];
-
-    const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
-    const mounted = await mountComponent(DashboardCanvas, {
-      entry: createDashboardEntry(),
-    });
-
-    expect(mounted.container.querySelector('[data-testid="workbench-widget-todo-list"]')).not.toBeNull();
-
-    mounted.unmount();
-  });
-
-  it('renders empty state when dashboard is missing', async () => {
-    const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
-    const mounted = await mountComponent(DashboardCanvas, {
-      entry: createDashboardEntry(),
-    });
-
-    expect(mounted.container.querySelector('[data-testid="workbench-dashboard-empty"]')).not.toBeNull();
-
-    mounted.unmount();
-  });
-
-  it('renders empty state when dashboard has no widgets', async () => {
-    mockWorkbenchStore.dashboards = [
+  it('renders empty dashboard guidance with add-widget action', async () => {
+    const store = useWorkbenchStore();
+    store.dashboards = [
       {
         id: 'dashboard-1',
         title: 'Planning Board',
@@ -136,18 +164,28 @@ describe('DashboardCanvas', () => {
       },
     ];
 
-    const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
-    const mounted = await mountComponent(DashboardCanvas, {
-      entry: createDashboardEntry(),
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
     });
 
     expect(mounted.container.querySelector('[data-testid="workbench-dashboard-empty"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-dashboard-placeholder"]')?.textContent)
+      .toContain('This dashboard has no widgets yet');
+    expect(mounted.container.querySelector('[data-testid="workbench-dashboard-add-widget-empty"]')).not.toBeNull();
 
     mounted.unmount();
   });
 
-  it('updates widget layout through the temporary move action', async () => {
-    mockWorkbenchStore.dashboards = [
+  it('opens rename and delete widget actions from widget card menu', async () => {
+    const store = useWorkbenchStore();
+    store.renameWidget = vi.fn().mockResolvedValue(undefined) as any;
+    store.removeWidget = vi.fn().mockResolvedValue(undefined) as any;
+    store.dashboards = [
       {
         id: 'dashboard-1',
         title: 'Planning Board',
@@ -155,6 +193,7 @@ describe('DashboardCanvas', () => {
           {
             id: 'widget-1',
             type: 'todoList',
+            title: 'Todo List',
             layout: { x: 0, y: 0, w: 6, h: 4 },
             config: {},
           },
@@ -162,52 +201,124 @@ describe('DashboardCanvas', () => {
       },
     ];
 
-    const { default: DashboardCanvas } = await import('@/components/workbench/dashboard/DashboardCanvas.vue');
-    const mounted = await mountComponent(DashboardCanvas, {
-      entry: createDashboardEntry(),
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
     });
 
-    (mounted.container.querySelector('[data-testid="workbench-widget-move-widget-1"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click();
+    await nextTick();
+    (mounted.container.querySelector('[data-testid="workbench-widget-rename"]') as HTMLButtonElement).click();
+
+    expect(mockShowInputDialog).toHaveBeenCalledWith(
+      'Rename',
+      'Enter a widget name',
+      'Todo List',
+      expect.any(Function),
+    );
+
+    const renameCallback = mockShowInputDialog.mock.calls[0][3];
+    await renameCallback('Today Todos');
+    expect(store.renameWidget).toHaveBeenCalledWith('dashboard-1', 'widget-1', 'Today Todos');
+
+    (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click();
+    await nextTick();
+    (mounted.container.querySelector('[data-testid="workbench-widget-delete"]') as HTMLButtonElement).click();
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledWith(
+      'Delete',
+      'Delete widget "Todo List"?',
+      expect.any(Function),
+    );
+
+    const deleteCallback = mockShowConfirmDialog.mock.calls[0][2];
+    await deleteCallback();
+    expect(store.removeWidget).toHaveBeenCalledWith('dashboard-1', 'widget-1');
+
+    mounted.unmount();
+  });
+
+  it('applies widget layout coordinates to rendered grid placement', async () => {
+    const store = useWorkbenchStore();
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            title: 'Todo List',
+            layout: { x: 2, y: 1, w: 4, h: 3 },
+            config: {},
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    expect(mounted.container.innerHTML).toContain('data-x="2"');
+    expect(mounted.container.innerHTML).toContain('data-y="1"');
+    expect(mounted.container.innerHTML).toContain('data-w="4"');
+    expect(mounted.container.innerHTML).toContain('data-h="3"');
+
+    mounted.unmount();
+  });
+
+  it('persists updated widget layouts after grid layout update event', async () => {
+    const store = useWorkbenchStore();
+    store.updateWidgetLayouts = vi.fn().mockResolvedValue(undefined) as any;
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            title: 'Todo List',
+            layout: { x: 2, y: 1, w: 4, h: 3 },
+            config: {},
+          },
+          {
+            id: 'widget-2',
+            type: 'habitWeek',
+            title: 'Habit Week',
+            layout: { x: 6, y: 1, w: 6, h: 4 },
+            config: {},
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    (mounted.container.querySelector('[data-testid="grid-layout-emit-updated"]') as HTMLButtonElement).click();
     await nextTick();
 
-    expect(mockWorkbenchStore.updateWidgetLayout).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
-      x: 1,
-      y: 0,
-      w: 6,
-      h: 4,
-    });
-
-    mounted.unmount();
-  });
-});
-
-describe('WorkbenchContentHost dashboard routing', () => {
-  beforeEach(() => {
-    initI18n('en_US');
-    mockWorkbenchStore.dashboards = [
-      {
-        id: 'dashboard-1',
-        title: 'Planning Board',
-        widgets: [
-          {
-            id: 'widget-1',
-            type: 'todoList',
-            layout: { x: 0, y: 0, w: 6, h: 4 },
-            config: {},
-          },
-        ],
-      },
-    ];
-  });
-
-  it('routes dashboard entries to DashboardCanvas', async () => {
-    const { default: WorkbenchContentHost } = await import('@/components/workbench/WorkbenchContentHost.vue');
-    const mounted = await mountComponent(WorkbenchContentHost, {
-      activeEntry: createDashboardEntry(),
-    });
-
-    expect(mounted.container.querySelector('[data-testid="workbench-dashboard-canvas"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="workbench-widget-card"]')).not.toBeNull();
+    expect(store.updateWidgetLayouts).toHaveBeenCalledWith('dashboard-1', [
+      { id: 'widget-1', x: 2, y: 1, w: 4, h: 3 },
+      { id: 'widget-2', x: 6, y: 1, w: 6, h: 4 },
+    ]);
 
     mounted.unmount();
   });

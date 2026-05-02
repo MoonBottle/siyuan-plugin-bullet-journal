@@ -188,10 +188,8 @@ describe('WorkbenchTab shell', () => {
     (mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement).click();
     await nextTick();
 
-    const todoEntry = mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement;
-
     expect(mockSetActiveEntry).toHaveBeenCalledWith('entry-todo');
-    expect(mounted.container.querySelector('[data-testid="workbench-content-title"]')?.textContent).toContain('Todo');
+    expect(mounted.container.querySelector('[data-testid="workbench-toolbar-title"]')?.textContent).toContain('Todo');
     expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
 
     mounted.unmount();
@@ -200,13 +198,35 @@ describe('WorkbenchTab shell', () => {
   it('shows add todoList widget action for active dashboard and wires it to the store', async () => {
     const mounted = await mountWorkbenchTab();
 
-    const addWidgetButton = mounted.container.querySelector('[data-testid="workbench-add-todo-widget"]') as HTMLButtonElement;
+    const addWidgetTrigger = mounted.container.querySelector('[data-testid="workbench-add-widget-trigger"]') as HTMLButtonElement;
+    expect(addWidgetTrigger).not.toBeNull();
+
+    addWidgetTrigger.click();
+    await nextTick();
+
+    const addWidgetButton = mounted.container.querySelector('[data-testid="workbench-add-widget-todoList"]') as HTMLButtonElement;
     expect(addWidgetButton).not.toBeNull();
 
     addWidgetButton.click();
     await nextTick();
 
     expect(mockAddWidget).toHaveBeenCalledWith('dashboard-1', 'todoList');
+
+    mounted.unmount();
+  });
+
+  it('opens widget menu with all first-batch widget types for active dashboard', async () => {
+    const mounted = await mountWorkbenchTab();
+
+    (mounted.container.querySelector('[data-testid="workbench-add-widget-trigger"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-widget-menu"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-todoList"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-quadrantSummary"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-habitWeek"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-miniCalendar"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-add-widget-pomodoroStats"]')).not.toBeNull();
 
     mounted.unmount();
   });
@@ -234,12 +254,14 @@ describe('Workbench registration', () => {
       title: 'Workbench',
       newDashboard: 'New Dashboard',
       newView: 'New View',
+      addWidget: 'Add Widget',
       emptyState: 'Select a workbench item',
     });
     expect(zh.workbench).toMatchObject({
       title: '工作台',
       newDashboard: '新建仪表盘',
       newView: '新建视图',
+      addWidget: '添加组件',
       emptyState: '请选择一个工作台条目',
     });
   });
