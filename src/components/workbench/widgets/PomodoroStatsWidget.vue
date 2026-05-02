@@ -81,13 +81,27 @@ const focusDetailRangeOffset = ref(0);
 .workbench-widget-pomodoro-stats__content :deep(.heatmap-card),
 .workbench-widget-pomodoro-stats__content :deep(.focus-detail-section) {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  min-width: 0;
   min-height: 0;
 }
 
 .workbench-widget-pomodoro-stats__content :deep(.stats-overview) {
   width: 100%;
+  min-height: 0;
+}
+
+.workbench-widget-pomodoro-stats__content :deep(.chart-header),
+.workbench-widget-pomodoro-stats__content :deep(.chart-subtitle-row) {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.workbench-widget-pomodoro-stats__content :deep(.chart-container) {
+  flex: 1;
+  min-width: 0;
   min-height: 0;
 }
 </style>
