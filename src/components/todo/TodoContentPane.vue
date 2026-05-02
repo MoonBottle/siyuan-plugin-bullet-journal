@@ -4,6 +4,7 @@
       ref="todoSidebar"
       :group-id="groupId"
       :search-query="searchQuery"
+      :sort-rules="sortRules"
       :date-range="dateRange"
       :completed-date-range="completedDateRange"
       :priorities="priorities"
@@ -17,6 +18,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
+import type { TodoSortRule } from '@/settings';
 import type { PriorityLevel } from '@/types/models';
 import type { TodoDateRange } from '@/utils/todoDateFilter';
 import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
@@ -24,6 +26,7 @@ import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue'
 const props = withDefaults(defineProps<{
   groupId: string;
   searchQuery: string;
+  sortRules?: TodoSortRule[];
   dateRange?: TodoDateRange | null;
   completedDateRange?: TodoDateRange | null;
   priorities: PriorityLevel[];

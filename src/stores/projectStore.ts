@@ -136,7 +136,19 @@ type TodoFilterParams = {
   dateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
   includeNoPriority?: boolean;
+  sortRules?: TodoSortRule[];
 };
+
+function resolveTodoSortRules(params: TodoFilterParams): TodoSortRule[] {
+  if (Array.isArray(params.sortRules) && params.sortRules.length > 0) {
+    return params.sortRules;
+  }
+
+  const settingsStore = useSettingsStore();
+  return Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+    ? settingsStore.todoDock.sortRules
+    : defaultTodoSortRules;
+}
 
 function shouldApplyPriorityFilter(params: TodoFilterParams): boolean {
   return Boolean(
@@ -399,12 +411,7 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 6. 按配置排序
-      const settingsStore = useSettingsStore();
-      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
-        ? settingsStore.todoDock.sortRules
-        : defaultTodoSortRules;
-
-      items.sort((a, b) => compareTodoItems(a, b, sortRules));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
     },
@@ -445,12 +452,7 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 6. 按配置排序
-      const settingsStore = useSettingsStore();
-      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
-        ? settingsStore.todoDock.sortRules
-        : defaultTodoSortRules;
-
-      items.sort((a, b) => compareTodoItems(a, b, sortRules));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
     },
@@ -491,12 +493,7 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 6. 按配置排序
-      const settingsStore = useSettingsStore();
-      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
-        ? settingsStore.todoDock.sortRules
-        : defaultTodoSortRules;
-
-      items.sort((a, b) => compareTodoItems(a, b, sortRules));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
     },

@@ -514,6 +514,7 @@ import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
+import type { TodoSortRule } from '@/settings';
 import type { Item, PriorityLevel } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
@@ -567,6 +568,7 @@ const getStatusEmoji = (item: Item): string => {
 const props = withDefaults(defineProps<{
   groupId?: string;
   searchQuery?: string;
+  sortRules?: TodoSortRule[];
   dateRange?: { start: string; end: string } | null;
   completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
@@ -582,6 +584,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   groupId: '',
   searchQuery: '',
+  sortRules: () => [],
   dateRange: null,
   completedDateRange: null,
   priorities: () => [],
@@ -680,6 +683,7 @@ const completedItems = computed(() => {
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
     includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
   });
 });
 
@@ -691,6 +695,7 @@ const abandonedItems = computed(() => {
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
     includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
   });
 });
 
@@ -702,6 +707,7 @@ const filteredItems = computed(() => {
     dateRange: props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
     includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
   });
 });
 

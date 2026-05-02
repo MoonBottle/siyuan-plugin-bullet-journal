@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp, defineComponent, h, ref } from 'vue';
 import { initI18n } from '@/i18n';
 
-async function mountFilterBar() {
+async function mountFilterBar(extraProps: Record<string, unknown> = {}) {
   const { default: TodoFilterBar } = await import('@/components/todo/TodoFilterBar.vue');
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -37,6 +37,7 @@ async function mountFilterBar() {
           { value: 'desc', label: 'Desc' },
         ],
         availableFieldOptions: () => [],
+        ...extraProps,
       });
     },
   }));
@@ -65,6 +66,18 @@ describe('TodoFilterBar', () => {
     expect(mounted.container.querySelector('.group-select')).not.toBeNull();
     expect(mounted.container.querySelector('.date-filter-select')).not.toBeNull();
     expect(mounted.container.querySelectorAll('.priority-btn')).toHaveLength(3);
+
+    mounted.unmount();
+  });
+
+  it('can explicitly hide the search row for config-only contexts', async () => {
+    const mounted = await mountFilterBar({
+      showSearch: false,
+    });
+
+    expect(mounted.container.querySelector('.search-input')).toBeNull();
+    expect(mounted.container.querySelector('.group-select')).not.toBeNull();
+    expect(mounted.container.querySelector('.date-filter-select')).not.toBeNull();
 
     mounted.unmount();
   });

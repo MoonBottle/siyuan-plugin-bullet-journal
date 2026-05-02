@@ -444,4 +444,34 @@ describe('projectStore 事项排序规则', () => {
     const result = store.getFilteredAndSortedItems({ groupId: '' });
     expect(result.map(item => item.blockId)).toEqual(['reminder-later', 'reminder-earlier', 'no-reminder']);
   });
+
+  it('允许调用方传入排序规则覆盖 dock 默认排序', () => {
+    const store = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.todoDock.sortRules = [
+      { field: 'priority', direction: 'asc' },
+      { field: 'time', direction: 'asc' },
+    ];
+
+    const items = [
+      mkItem('2026-04-25', 'high-0900', { priority: 'high', startDateTime: '2026-04-25 09:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'medium-0800', { priority: 'medium', startDateTime: '2026-04-25 08:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+      mkItem('2026-04-25', 'low-0700', { priority: 'low', startDateTime: '2026-04-25 07:00:00', dateRangeStart: undefined, dateRangeEnd: undefined }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-04-25',
+      projects: [createMockProject(items)],
+    });
+
+    const result = store.getFilteredAndSortedItems({
+      groupId: '',
+      sortRules: [
+        { field: 'time', direction: 'asc' },
+        { field: 'priority', direction: 'desc' },
+      ],
+    });
+
+    expect(result.map(item => item.blockId)).toEqual(['low-0700', 'medium-0800', 'high-0900']);
+  });
 });

@@ -4,10 +4,30 @@
       <span>{{ openItemsCount }}</span>
       <span>{{ t('todo').title }}</span>
     </div>
+    <div class="workbench-widget-todo-list__search">
+      <svg class="workbench-widget-todo-list__search-icon"><use xlink:href="#iconSearch"></use></svg>
+      <input
+        v-model="searchQuery"
+        type="text"
+        :placeholder="t('todo').searchPlaceholder"
+        class="workbench-widget-todo-list__search-input"
+        data-testid="workbench-todo-widget-search"
+      />
+      <button
+        v-if="searchQuery"
+        type="button"
+        class="workbench-widget-todo-list__search-clear"
+        data-testid="workbench-todo-widget-search-clear"
+        @click="searchQuery = ''"
+      >
+        <svg><use xlink:href="#iconClose"></use></svg>
+      </button>
+    </div>
     <div class="workbench-widget-todo-list__content" data-testid="workbench-todo-widget-content">
       <TodoContentPane
         :group-id="todoState.selectedGroup.value"
-        :search-query="todoState.searchQuery.value"
+        :search-query="searchQuery"
+        :sort-rules="presetSortRules"
         :date-range="todoState.dateRange.value"
         :completed-date-range="todoState.completedDateRange.value"
         :priorities="todoState.selectedPriorities.value"
@@ -20,12 +40,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import TodoContentPane from '@/components/todo/TodoContentPane.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { useTodoViewState } from '@/composables/useTodoViewState';
 import { t } from '@/i18n';
 import { useApp, usePlugin } from '@/main';
+import type { TodoSortRule } from '@/settings';
 import type { WorkbenchTodoListWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
 import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
@@ -51,6 +72,11 @@ const todoState = useTodoViewState({
   preset: todoConfig.value.preset,
   persistToSettings: false,
 });
+const searchQuery = ref('');
+const presetSortRules = computed<TodoSortRule[] | undefined>(() => {
+  const sortRules = todoConfig.value.preset?.sortRules;
+  return Array.isArray(sortRules) && sortRules.length > 0 ? sortRules : undefined;
+});
 
 const openItemsCount = computed(() => {
   if (!projectStore) {
@@ -59,7 +85,8 @@ const openItemsCount = computed(() => {
 
   return projectStore.getFilteredAndSortedItems({
     groupId: todoState.selectedGroup.value,
-    searchQuery: todoState.searchQuery.value,
+    searchQuery: searchQuery.value,
+    sortRules: presetSortRules.value,
     dateRange: todoState.dateRange.value,
     priorities: todoState.selectedPriorities.value.length > 0
       ? todoState.selectedPriorities.value
@@ -174,6 +201,55 @@ onUnmounted(() => {
     font-size: 24px;
     font-weight: 600;
     color: var(--b3-theme-on-background);
+  }
+}
+
+.workbench-widget-todo-list__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: var(--b3-border-radius);
+  flex-shrink: 0;
+}
+
+.workbench-widget-todo-list__search-icon {
+  width: 14px;
+  height: 14px;
+  fill: var(--b3-theme-on-surface);
+  opacity: 0.5;
+}
+
+.workbench-widget-todo-list__search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  outline: none;
+  color: var(--b3-theme-on-background);
+}
+
+.workbench-widget-todo-list__search-clear {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.4;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
   }
 }
 

@@ -34,6 +34,7 @@ vi.mock('@/components/todo/TodoContentPane.vue', () => ({
     props: [
       'groupId',
       'searchQuery',
+      'sortRules',
       'dateRange',
       'completedDateRange',
       'priorities',
@@ -42,18 +43,22 @@ vi.mock('@/components/todo/TodoContentPane.vue', () => ({
       'onItemPreviewClick',
     ],
     setup(props) {
-      todoContentPaneProps({
-        groupId: props.groupId,
-        displayMode: props.displayMode,
-        previewTriggerMode: props.previewTriggerMode,
-        onItemPreviewClick: props.onItemPreviewClick,
-      });
-
       return () => h('div', {
         'data-testid': 'todo-content-pane-stub',
         'data-group-id': props.groupId,
         'data-display-mode': props.displayMode,
-      });
+        'data-search-query': props.searchQuery,
+      }, (() => {
+        todoContentPaneProps({
+          groupId: props.groupId,
+          searchQuery: props.searchQuery,
+          sortRules: props.sortRules,
+          displayMode: props.displayMode,
+          previewTriggerMode: props.previewTriggerMode,
+          onItemPreviewClick: props.onItemPreviewClick,
+        });
+        return [];
+      })());
     },
   }),
 }));
@@ -114,14 +119,68 @@ describe('TodoListWidget', () => {
 
     expect(mounted.container.querySelector('[data-testid="todo-content-pane-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-content"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-search"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-group-id="group-a"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-display-mode="embedded"]')).not.toBeNull();
     expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull();
     const contentProps = todoContentPaneProps.mock.calls.at(-1)?.[0];
+    expect(contentProps.searchQuery).toBe('');
+    expect(contentProps.sortRules).toEqual(undefined);
     expect(contentProps.previewTriggerMode).toBe('click');
     expect(contentProps.onItemPreviewClick).toBeTypeOf('function');
 
     mounted.unmount();
+  });
+
+  it('applies widget-local search input instead of persisting search through preset config', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-02';
+    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+
+    const mounted = await mountWidget({
+      preset: {
+        groupId: 'group-a',
+        searchQuery: 'legacy preset search',
+      },
+    }, pinia);
+
+    const searchInput = mounted.container.querySelector('[data-testid="workbench-todo-widget-search"]') as HTMLInputElement;
+    expect(searchInput.value).toBe('');
+
+    searchInput.value = 'runtime search';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await nextTick();
+
+    const contentProps = todoContentPaneProps.mock.calls.at(-1)?.[0];
+    expect(contentProps.searchQuery).toBe('runtime search');
+
+    mounted.unmount();
+  });
+
+  it('passes widget preset sort rules into the shared todo content pane', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-02';
+    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+
+    await mountWidget({
+      preset: {
+        groupId: 'group-a',
+        sortRules: [
+          { field: 'time', direction: 'asc' },
+          { field: 'priority', direction: 'desc' },
+        ],
+      },
+    }, pinia);
+
+    const contentProps = todoContentPaneProps.mock.calls.at(-1)?.[0];
+    expect(contentProps.sortRules).toEqual([
+      { field: 'time', direction: 'asc' },
+      { field: 'priority', direction: 'desc' },
+    ]);
   });
 
   it('does not emit navigation events when clicking the widget surface', async () => {

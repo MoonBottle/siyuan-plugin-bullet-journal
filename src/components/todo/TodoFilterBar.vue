@@ -1,6 +1,6 @@
 <template>
   <div class="todo-filter-card">
-    <div class="search-row">
+    <div v-if="showSearch" class="search-row">
       <div class="search-box">
         <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
         <input
@@ -140,7 +140,7 @@ type SelectOption = {
   label: string;
 };
 
-defineProps<{
+withDefaults(defineProps<{
   selectedGroup: string;
   searchQuery: string;
   dateFilterType: TodoDateFilterType;
@@ -149,13 +149,17 @@ defineProps<{
   endDate: string;
   showSortPanel: boolean;
   showSortTrigger?: boolean;
+  showSearch?: boolean;
   sortRules: TodoSortRule[];
   groupOptions: SelectOption[];
   dateFilterOptions: SelectOption[];
   priorityOptions: Array<{ value: PriorityLevel; emoji: string }>;
   sortDirectionOptions: Array<{ value: TodoSortDirection; label: string }>;
   availableFieldOptions: (index: number) => Array<{ value: TodoSortField; label: string }>;
-}>();
+}>(), {
+  showSearch: true,
+  showSortTrigger: true,
+});
 
 const emit = defineEmits<{
   (event: 'update:selectedGroup', value: string): void;

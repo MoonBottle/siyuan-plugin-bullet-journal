@@ -3,26 +3,32 @@
     <div class="todo-widget-config-dialog__body">
       <TodoFilterBar
         :selected-group="selectedGroup"
-        :search-query="searchQuery"
+        search-query=""
         :date-filter-type="dateFilterType"
         :selected-priorities="selectedPriorities"
         :start-date="startDate"
         :end-date="endDate"
-        :show-sort-panel="false"
-        :show-sort-trigger="false"
-        :sort-rules="[]"
+        :show-sort-panel="showSortPanel"
+        :show-search="false"
+        :sort-rules="sortRules"
         :group-options="groupOptions"
         :date-filter-options="dateFilterOptions"
         :priority-options="priorityOptions"
-        :sort-direction-options="[]"
-        :available-field-options="getEmptyFieldOptions"
+        :sort-direction-options="sortDirectionOptions"
+        :available-field-options="availableFieldOptions"
         @update:selected-group="selectedGroup = $event"
-        @update:search-query="searchQuery = $event"
         @update:date-filter-type="dateFilterType = $event"
         @change:date-filter-type="handleDateFilterChange"
         @update:start-date="startDate = $event"
         @update:end-date="endDate = $event"
         @toggle-priority="togglePriority"
+        @toggle-sort-panel="showSortPanel = !showSortPanel"
+        @update-sort-field="updateSortField"
+        @update-sort-direction="updateSortDirection"
+        @move-sort-rule="moveSortRule"
+        @remove-sort-rule="removeSortRule"
+        @add-sort-rule="addSortRule"
+        @reset-sort-rules="resetSortRules"
       />
     </div>
 
@@ -41,6 +47,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { defaultTodoSortRules } from '@/settings';
+import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
 import TodoFilterBar from '@/components/todo/TodoFilterBar.vue';
 import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
 import { useTodoViewState } from '@/composables/useTodoViewState';
@@ -65,11 +73,16 @@ const todoState = useTodoViewState({
 });
 
 const selectedGroup = todoState.selectedGroup;
-const searchQuery = todoState.searchQuery;
 const selectedPriorities = todoState.selectedPriorities;
 const dateFilterType = todoState.dateFilterType;
 const startDate = todoState.startDate;
 const endDate = todoState.endDate;
+const showSortPanel = ref(false);
+const sortRules = ref<TodoSortRule[]>(
+  props.initialConfig.preset?.sortRules?.length
+    ? props.initialConfig.preset.sortRules.map(rule => ({ ...rule }))
+    : [...defaultTodoSortRules],
+);
 
 const groupOptions = computed(() => [
   { value: '', label: t('settings').projectGroups.allGroups },
@@ -92,6 +105,21 @@ const priorityOptions = [
   { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji },
 ];
 
+const sortFieldOptions = [
+  { value: 'priority' as TodoSortField, label: t('todo.sortFields.priority') },
+  { value: 'time' as TodoSortField, label: t('todo.sortFields.time') },
+  { value: 'date' as TodoSortField, label: t('todo.sortFields.date') },
+  { value: 'reminderTime' as TodoSortField, label: t('todo.sortFields.reminderTime') },
+  { value: 'project' as TodoSortField, label: t('todo.sortFields.project') },
+  { value: 'task' as TodoSortField, label: t('todo.sortFields.task') },
+  { value: 'content' as TodoSortField, label: t('todo.sortFields.content') },
+];
+
+const sortDirectionOptions = [
+  { value: 'asc' as TodoSortDirection, label: t('todo.sortDirection.asc') },
+  { value: 'desc' as TodoSortDirection, label: t('todo.sortDirection.desc') },
+];
+
 function togglePriority(priority: PriorityLevel) {
   const index = selectedPriorities.value.indexOf(priority);
   if (index > -1) {
@@ -111,20 +139,84 @@ function handleDateFilterChange(type: TodoDateFilterType) {
   endDate.value = dayjs().add(7, 'day').format('YYYY-MM-DD');
 }
 
-function getEmptyFieldOptions() {
-  return [];
+function availableFieldOptions(index: number) {
+  const usedFields = new Set(
+    sortRules.value
+      .filter((_, ruleIndex) => ruleIndex !== index)
+      .map(rule => rule.field),
+  );
+
+  return sortFieldOptions.filter(option =>
+    option.value === sortRules.value[index]?.field || !usedFields.has(option.value),
+  );
+}
+
+function updateSortField(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    field: value as TodoSortField,
+  };
+  sortRules.value = nextRules;
+}
+
+function updateSortDirection(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    direction: value as TodoSortDirection,
+  };
+  sortRules.value = nextRules;
+}
+
+function addSortRule() {
+  const usedFields = new Set(sortRules.value.map(rule => rule.field));
+  const nextField = sortFieldOptions.find(option => !usedFields.has(option.value));
+  if (!nextField) {
+    return;
+  }
+
+  sortRules.value = [
+    ...sortRules.value,
+    { field: nextField.value, direction: 'asc' },
+  ];
+}
+
+function moveSortRule(index: number, delta: number) {
+  const targetIndex = index + delta;
+  if (targetIndex < 0 || targetIndex >= sortRules.value.length) {
+    return;
+  }
+
+  const nextRules = [...sortRules.value];
+  [nextRules[index], nextRules[targetIndex]] = [nextRules[targetIndex], nextRules[index]];
+  sortRules.value = nextRules;
+}
+
+function removeSortRule(index: number) {
+  if (sortRules.value.length <= 1) {
+    return;
+  }
+
+  sortRules.value = sortRules.value.filter((_, ruleIndex) => ruleIndex !== index);
+}
+
+function resetSortRules() {
+  sortRules.value = [...defaultTodoSortRules];
 }
 
 function handleConfirm() {
   props.onConfirm({
     preset: {
       groupId: selectedGroup.value || undefined,
-      searchQuery: searchQuery.value.trim() || undefined,
       dateFilterType: dateFilterType.value,
       startDate: startDate.value || undefined,
       endDate: endDate.value || undefined,
       priorities: selectedPriorities.value.length > 0
         ? [...selectedPriorities.value]
+        : undefined,
+      sortRules: sortRules.value.length > 0
+        ? sortRules.value.map(rule => ({ ...rule }))
         : undefined,
     },
   });
