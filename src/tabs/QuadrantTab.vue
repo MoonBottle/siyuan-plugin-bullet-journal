@@ -66,11 +66,13 @@
             :search-query="searchQuery"
             :priorities="quadrant.priorities"
             :include-no-priority="quadrant.includeNoPriority"
+            preview-trigger-mode="click"
             :enable-drag="true"
             :on-item-drag-start="handleItemDragStart"
             :on-item-drag-end="handleItemDragEnd"
             :on-item-hover-start="preview.scheduleShow"
             :on-item-hover-end="preview.scheduleHide"
+            :on-item-preview-click="handleItemPreviewClick"
             display-mode="embedded"
           />
         </div>
@@ -217,6 +219,26 @@ function handleItemDragEnd() {
   draggedItem.value = null;
   activeDropQuadrant.value = null;
   preview.setDragActive(false);
+}
+
+function handleItemPreviewClick(payload: {
+  blockId: string;
+  itemId: string;
+  anchorEl: HTMLElement;
+}) {
+  preview.showNow(payload);
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!preview.isOpen.value) {
+    return;
+  }
+
+  if (nativePreview.containsTarget(event.target)) {
+    return;
+  }
+
+  preview.forceClose();
 }
 
 function handleQuadrantDragOver(event: DragEvent, quadrant: QuadrantConfig) {
@@ -455,11 +477,14 @@ onMounted(() => {
   catch {
     // Ignore unsupported contexts.
   }
+
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
 });
 
 onUnmounted(() => {
   preview.dispose();
   nativePreview.close();
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
 
   if (unsubscribeRefresh) {
     unsubscribeRefresh();

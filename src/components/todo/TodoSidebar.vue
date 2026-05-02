@@ -51,7 +51,7 @@
               :draggable="getItemDraggable(item)"
               :data-testid="`todo-sidebar-card-${item.id}`"
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
-              @click="openItem(item)"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
               @mouseenter="handleItemHoverStart(item, $event)"
               @mouseleave="handleItemHoverEnd(item, $event)"
@@ -140,7 +140,7 @@
               :draggable="getItemDraggable(item)"
               :data-testid="`todo-sidebar-card-${item.id}`"
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
-              @click="openItem(item)"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
               @mouseenter="handleItemHoverStart(item, $event)"
               @mouseleave="handleItemHoverEnd(item, $event)"
@@ -229,7 +229,7 @@
               :draggable="getItemDraggable(item)"
               :data-testid="`todo-sidebar-card-${item.id}`"
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
-              @click="openItem(item)"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
               @mouseenter="handleItemHoverStart(item, $event)"
               @mouseleave="handleItemHoverEnd(item, $event)"
@@ -325,7 +325,7 @@
                   :draggable="getItemDraggable(item)"
                   :data-testid="`todo-sidebar-card-${item.id}`"
                   :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
-                  @click="openItem(item)"
+                  @click="handleItemPreviewClick(item, $event)"
                   @contextmenu="handleContextMenu($event, item)"
                   @mouseenter="handleItemHoverStart(item, $event)"
                   @mouseleave="handleItemHoverEnd(item, $event)"
@@ -416,7 +416,7 @@
               :draggable="getItemDraggable(item)"
               :data-testid="`todo-sidebar-card-${item.id}`"
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
-              @click="openItem(item)"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
               @mouseenter="handleItemHoverStart(item, $event)"
               @mouseleave="handleItemHoverEnd(item, $event)"
@@ -466,7 +466,7 @@
               :draggable="getItemDraggable(item)"
               :data-testid="`todo-sidebar-card-${item.id}`"
               :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
-              @click="openItem(item)"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
               @mouseenter="handleItemHoverStart(item, $event)"
               @mouseleave="handleItemHoverEnd(item, $event)"
@@ -534,6 +534,8 @@ type TodoSidebarHoverPayload = {
   anchorEl: HTMLElement;
 };
 
+type TodoSidebarPreviewTriggerMode = 'hover' | 'click';
+
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
   // 优先级 emoji
@@ -570,11 +572,13 @@ const props = withDefaults(defineProps<{
   priorities?: PriorityLevel[];
   includeNoPriority?: boolean;
   displayMode?: 'default' | 'embedded';
+  previewTriggerMode?: TodoSidebarPreviewTriggerMode;
   enableDrag?: boolean;
   onItemDragStart?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
   onItemDragEnd?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
   onItemHoverStart?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
   onItemHoverEnd?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
+  onItemPreviewClick?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
 }>(), {
   groupId: '',
   searchQuery: '',
@@ -583,11 +587,13 @@ const props = withDefaults(defineProps<{
   priorities: () => [],
   includeNoPriority: false,
   displayMode: 'default',
+  previewTriggerMode: 'hover',
   enableDrag: false,
   onItemDragStart: undefined,
   onItemDragEnd: undefined,
   onItemHoverStart: undefined,
   onItemHoverEnd: undefined,
+  onItemPreviewClick: undefined,
 });
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
@@ -829,9 +835,24 @@ const handleItemDragEnd = (item: Item, event: DragEvent) => {
 };
 
 const handleItemHoverStart = (item: Item, event: MouseEvent) => {
+  if (props.previewTriggerMode !== 'hover') return;
   const payload = getItemHoverPayload(item, event);
   if (!payload) return;
   props.onItemHoverStart?.(payload, event);
+};
+
+const handleItemPreviewClick = (item: Item, event: MouseEvent) => {
+  if (props.previewTriggerMode !== 'click') {
+    openItem(item);
+    return;
+  }
+
+  const payload = getItemHoverPayload(item, event);
+  if (!payload) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  props.onItemPreviewClick?.(payload, event);
 };
 
 const handleActionTooltipEnter = (event: MouseEvent, text: string) => {
@@ -879,6 +900,7 @@ function shouldSuppressHoverEndAfterFrame(anchorEl: HTMLElement, event: MouseEve
 }
 
 const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
+  if (props.previewTriggerMode !== 'hover') return;
   const payload = getItemHoverPayload(item, event);
   if (!payload) return;
 

@@ -476,9 +476,22 @@ export function createNativeBlockPreviewController() {
     return !!currentPanel;
   }
 
+  function containsTarget(target: EventTarget | null) {
+    if (!(target instanceof Node)) {
+      return false;
+    }
+
+    if (currentAnchorEl?.contains(target)) {
+      return true;
+    }
+
+    return !!currentPanel?.element?.contains(target);
+  }
+
   return {
     open,
     close,
+    containsTarget,
     isOpen,
   };
 }

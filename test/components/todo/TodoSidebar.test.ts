@@ -275,6 +275,61 @@ describe('TodoSidebar', () => {
     mounted.unmount();
   });
 
+  it('does not emit hover callbacks when previewTriggerMode is click', async () => {
+    const onItemHoverStart = vi.fn();
+    const onItemHoverEnd = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      previewTriggerMode: 'click',
+      onItemHoverStart,
+      onItemHoverEnd,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    card?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, cancelable: true }));
+    card?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true, cancelable: true }));
+    await new Promise(resolve => window.requestAnimationFrame(() => resolve(undefined)));
+
+    expect(onItemHoverStart).not.toHaveBeenCalled();
+    expect(onItemHoverEnd).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('emits preview-click payload and suppresses document open when previewTriggerMode is click', async () => {
+    const onItemPreviewClick = vi.fn();
+    const mounted = mountSidebar({
+      displayMode: 'embedded',
+      previewTriggerMode: 'click',
+      onItemPreviewClick,
+    });
+
+    await nextTick();
+
+    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    expect(card).not.toBeNull();
+
+    const clickEvent = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    card?.dispatchEvent(clickEvent);
+
+    expect(onItemPreviewClick).toHaveBeenCalledTimes(1);
+    expect(onItemPreviewClick).toHaveBeenCalledWith({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl: card,
+    }, clickEvent);
+    expect(clickEvent.defaultPrevented).toBe(true);
+
+    mounted.unmount();
+  });
+
   it('does not emit hover callbacks for items without a blockId', async () => {
     const originalBlockId = pendingItem.blockId;
     delete pendingItem.blockId;

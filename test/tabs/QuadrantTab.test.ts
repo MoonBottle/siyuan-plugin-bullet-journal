@@ -10,6 +10,7 @@ import { TAB_TYPES } from '@/constants';
 const todoSidebarProps = vi.fn();
 const nativePreviewOpen = vi.fn();
 const nativePreviewClose = vi.fn();
+const nativePreviewContainsTarget = vi.fn(() => false);
 const nativePreviewOpenCalls: Array<Record<string, any>> = [];
 const mockRefresh = vi.fn(() => Promise.resolve());
 const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
@@ -165,6 +166,8 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
       onItemDragEnd: { type: Function, default: undefined },
       onItemHoverStart: { type: Function, default: undefined },
       onItemHoverEnd: { type: Function, default: undefined },
+      onItemPreviewClick: { type: Function, default: undefined },
+      previewTriggerMode: { type: String, default: 'hover' },
     },
     setup(props, { expose }) {
       watchEffect(() => {
@@ -179,6 +182,8 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
           onItemDragEnd: props.onItemDragEnd,
           onItemHoverStart: props.onItemHoverStart,
           onItemHoverEnd: props.onItemHoverEnd,
+          onItemPreviewClick: props.onItemPreviewClick,
+          previewTriggerMode: props.previewTriggerMode,
         });
       });
 
@@ -199,6 +204,7 @@ vi.mock('@/utils/nativeBlockPreview', () => ({
       nativePreviewOpenCalls.push(options);
     },
     close: nativePreviewClose,
+    containsTarget: nativePreviewContainsTarget,
     isOpen: vi.fn(() => false),
   }),
 }));
@@ -257,6 +263,7 @@ describe('QuadrantTab', () => {
     initI18n('en_US');
     vi.clearAllMocks();
     nativePreviewOpenCalls.length = 0;
+    nativePreviewContainsTarget.mockReturnValue(false);
     mockSettingsStore.scanMode = 'all';
     mockSettingsStore.directories = [];
     mockSettingsStore.defaultGroup = '';
@@ -310,6 +317,8 @@ describe('QuadrantTab', () => {
       onItemDragEnd: expect.any(Function),
       onItemHoverStart: expect.any(Function),
       onItemHoverEnd: expect.any(Function),
+      onItemPreviewClick: expect.any(Function),
+      previewTriggerMode: 'click',
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(2, expect.objectContaining({
       priorities: ['medium'],
@@ -320,6 +329,8 @@ describe('QuadrantTab', () => {
       onItemDragEnd: expect.any(Function),
       onItemHoverStart: expect.any(Function),
       onItemHoverEnd: expect.any(Function),
+      onItemPreviewClick: expect.any(Function),
+      previewTriggerMode: 'click',
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(3, expect.objectContaining({
       priorities: ['low'],
@@ -330,6 +341,8 @@ describe('QuadrantTab', () => {
       onItemDragEnd: expect.any(Function),
       onItemHoverStart: expect.any(Function),
       onItemHoverEnd: expect.any(Function),
+      onItemPreviewClick: expect.any(Function),
+      previewTriggerMode: 'click',
     }));
     expect(todoSidebarProps).toHaveBeenNthCalledWith(4, expect.objectContaining({
       priorities: [],
@@ -340,6 +353,8 @@ describe('QuadrantTab', () => {
       onItemDragEnd: expect.any(Function),
       onItemHoverStart: expect.any(Function),
       onItemHoverEnd: expect.any(Function),
+      onItemPreviewClick: expect.any(Function),
+      previewTriggerMode: 'click',
     }));
 
     expect(mockGetFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
@@ -593,6 +608,57 @@ describe('QuadrantTab', () => {
 
     expect(sidebarProps.onItemHoverStart).toBeTypeOf('function');
     expect(sidebarProps.onItemHoverEnd).toBeTypeOf('function');
+    expect(sidebarProps.onItemPreviewClick).toBeTypeOf('function');
+    expect(sidebarProps.previewTriggerMode).toBe('click');
+
+    mounted.unmount();
+  });
+
+  it('opens preview from embedded card click callbacks in click trigger mode', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const sidebarProps = getLatestTodoSidebarProps();
+    const anchorEl = document.createElement('div');
+
+    sidebarProps.onItemPreviewClick?.({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    });
+    await nextTick();
+
+    expect(nativePreviewOpen).toHaveBeenCalledWith(expect.objectContaining({
+      app: mockApp,
+      blockId: 'block-1',
+      anchorEl,
+      onHoverChange: expect.any(Function),
+    }));
+
+    mounted.unmount();
+  });
+
+  it('closes click-trigger preview when clicking outside the card and preview panel', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const sidebarProps = getLatestTodoSidebarProps();
+    const anchorEl = document.createElement('div');
+    document.body.appendChild(anchorEl);
+
+    sidebarProps.onItemPreviewClick?.({
+      blockId: 'block-1',
+      itemId: 'item-1',
+      anchorEl,
+    });
+    await nextTick();
+
+    expect(nativePreviewOpen).toHaveBeenCalledTimes(1);
+
+    document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    await nextTick();
+
+    expect(nativePreviewClose).toHaveBeenCalled();
 
     mounted.unmount();
   });
