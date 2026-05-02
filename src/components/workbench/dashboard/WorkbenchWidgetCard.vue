@@ -1,9 +1,9 @@
 <template>
   <article class="workbench-widget-card" data-testid="workbench-widget-card">
+    <span class="workbench-widget-card__drag" aria-hidden="true">::</span>
     <header class="workbench-widget-card__header">
       <span class="workbench-widget-card__title">{{ title }}</span>
       <div class="workbench-widget-card__controls">
-        <span class="workbench-widget-card__drag" aria-hidden="true">::</span>
         <div class="workbench-widget-card__menu-wrap">
           <button
             class="workbench-widget-card__menu-trigger block__icon b3-tooltips b3-tooltips__sw"
@@ -93,6 +93,7 @@ function handleDelete() {
 
 <style lang="scss" scoped>
 .workbench-widget-card {
+  position: relative;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -121,12 +122,30 @@ function handleDelete() {
 .workbench-widget-card__controls {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .workbench-widget-card__drag {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 2px 8px;
   color: var(--b3-theme-on-surface);
+  font-size: 14px;
   letter-spacing: 0;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  cursor: move;
+  user-select: none;
+  transition: opacity 0.18s ease;
+}
+
+.workbench-widget-card:hover .workbench-widget-card__drag,
+.workbench-widget-card:focus-within .workbench-widget-card__drag {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .workbench-widget-card__menu-wrap {
@@ -134,13 +153,21 @@ function handleDelete() {
 }
 
 .workbench-widget-card__menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--b3-theme-on-background);
   cursor: pointer;
+  line-height: 1;
+  opacity: 1;
 
   svg {
+    display: block;
     width: 14px;
     height: 14px;
     fill: currentColor;
