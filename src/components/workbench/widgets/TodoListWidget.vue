@@ -1,24 +1,26 @@
 <template>
   <div class="workbench-widget-todo-list" data-testid="workbench-widget-todo-list">
     <div class="workbench-widget-todo-list__meta">
-      <span>{{ openItems.length }}</span>
+      <span>{{ openItemsCount }}</span>
       <span>{{ t('todo').title }}</span>
     </div>
-    <ul v-if="previewItems.length" class="workbench-widget-todo-list__list">
-      <li v-for="item in previewItems" :key="item.blockId || item.id" class="workbench-widget-todo-list__item">
-        {{ item.content }}
-      </li>
-    </ul>
-    <div v-else class="workbench-widget-todo-list__empty">
-      {{ t('workbench').dashboardPlaceholder }}
-    </div>
+    <TodoContentPane
+      :group-id="todoState.selectedGroup.value"
+      :search-query="todoState.searchQuery.value"
+      :date-range="todoState.dateRange.value"
+      :completed-date-range="todoState.completedDateRange.value"
+      :priorities="todoState.selectedPriorities.value"
+      display-mode="embedded"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import TodoContentPane from '@/components/todo/TodoContentPane.vue';
+import { useTodoViewState } from '@/composables/useTodoViewState';
 import { t } from '@/i18n';
-import type { WorkbenchWidgetInstance } from '@/types/workbench';
+import type { WorkbenchTodoListWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
 import { useSafeProjectStore } from './useSafeProjectStore';
 
 const props = defineProps<{
@@ -26,24 +28,27 @@ const props = defineProps<{
 }>();
 
 const projectStore = useSafeProjectStore();
+const todoConfig = computed(() => {
+  return (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig;
+});
+const todoState = useTodoViewState({
+  preset: todoConfig.value.preset,
+  persistToSettings: false,
+});
 
-const openItems = computed(() => {
+const openItemsCount = computed(() => {
   if (!projectStore) {
-    return [];
+    return 0;
   }
 
   return projectStore.getFilteredAndSortedItems({
-    groupId: '',
-  }).filter(item => item.status !== 'completed' && item.status !== 'abandoned');
-});
-
-const previewItems = computed(() => {
-  const rawPreviewCount = Number(props.widget?.config?.previewCount ?? 5);
-  const previewCount = Number.isFinite(rawPreviewCount)
-    ? Math.min(Math.max(Math.round(rawPreviewCount), 1), 20)
-    : 5;
-
-  return openItems.value.slice(0, previewCount);
+    groupId: todoState.selectedGroup.value,
+    searchQuery: todoState.searchQuery.value,
+    dateRange: todoState.dateRange.value,
+    priorities: todoState.selectedPriorities.value.length > 0
+      ? todoState.selectedPriorities.value
+      : undefined,
+  }).filter(item => item.status !== 'completed' && item.status !== 'abandoned').length;
 });
 </script>
 
@@ -66,22 +71,5 @@ const previewItems = computed(() => {
     font-weight: 600;
     color: var(--b3-theme-on-background);
   }
-}
-
-.workbench-widget-todo-list__list {
-  margin: 0;
-  padding-left: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--b3-theme-on-background);
-}
-
-.workbench-widget-todo-list__item {
-  line-height: 1.5;
-}
-
-.workbench-widget-todo-list__empty {
-  color: var(--b3-theme-on-surface);
 }
 </style>

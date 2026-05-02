@@ -1,3 +1,5 @@
+import type { TodoViewPreset } from '@/types/todoView';
+
 export type WorkbenchViewType =
   | 'calendar'
   | 'gantt'
@@ -23,6 +25,11 @@ export type WorkbenchWidgetType =
   | 'habitWeek'
   | 'miniCalendar'
   | 'pomodoroStats';
+
+export interface WorkbenchTodoListWidgetConfig {
+  previewCount?: number;
+  preset?: TodoViewPreset;
+}
 
 export interface WorkbenchWidgetInstance {
   id: string;

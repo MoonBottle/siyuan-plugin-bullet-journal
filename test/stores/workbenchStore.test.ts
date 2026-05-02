@@ -536,4 +536,44 @@ describe('workbenchStore', () => {
       activeEntryId: null,
     });
   });
+
+  it('updateWidgetConfig persists todo preset and preview count together', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard({
+      widgets: [
+        {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: {
+            previewCount: 5,
+            preset: {},
+          },
+        },
+      ],
+    });
+
+    store.dashboards = [dashboard];
+
+    await store.updateWidgetConfig(dashboard.id, 'widget-1', {
+      previewCount: 7,
+      preset: {
+        groupId: 'group-a',
+        dateFilterType: 'today',
+        priorities: ['high'],
+      },
+    });
+
+    expect(store.dashboards[0].widgets[0].config).toEqual({
+      previewCount: 7,
+      preset: {
+        groupId: 'group-a',
+        dateFilterType: 'today',
+        priorities: ['high'],
+      },
+    });
+  });
 });

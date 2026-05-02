@@ -8,10 +8,10 @@
       <span class="fn__flex-1 fn__space"></span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="todoSidebar?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
-        @click="todoSidebar?.toggleCollapseAll()"
+        :aria-label="todoContentPane?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
+        @click="todoContentPane?.toggleCollapseAll()"
       >
-        <svg><use :xlink:href="todoSidebar?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
+        <svg><use :xlink:href="todoContentPane?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
       </span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
@@ -31,131 +31,43 @@
       </span>
     </div>
     <div class="fn__flex-1 fn__flex-column todo-dock-body">
-      <div class="todo-filter-card">
-        <!-- 第一行：搜索框 -->
-        <div class="search-row">
-          <div class="search-box">
-            <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              :placeholder="t('todo').searchPlaceholder"
-              class="search-input"
-            />
-            <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">
-              <svg><use xlink:href="#iconClose"></use></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- 第二行：分组 + 日期 + 优先级 -->
-        <div class="filter-row">
-          <SySelect
-            v-model="selectedGroup"
-            :options="groupOptions"
-            :placeholder="t('settings').projectGroups.allGroups"
-            class="group-select"
-          />
-          
-          <SySelect
-            v-model="dateFilterType"
-            :options="dateFilterOptions"
-            class="date-filter-select"
-            @change="onDateFilterChange"
-          />
-
-          <button
-            class="sort-trigger b3-tooltips b3-tooltips__n"
-            :aria-label="t('todo.sortSettings')"
-            @click="toggleSortPanel"
-          >
-            <svg><use xlink:href="#iconSort"></use></svg>
-          </button>
-
-          <div class="priority-filter">
-            <button 
-              v-for="p in priorityOptions" 
-              :key="p.value"
-              :class="['priority-btn', 'b3-tooltips', 'b3-tooltips__n', { active: selectedPriorities.includes(p.value) }]"
-              :aria-label="PRIORITY_CONFIG[p.value].label"
-              @click="togglePriority(p.value)"
-            >
-              {{ p.emoji }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 自定义日期范围选择器 -->
-        <div v-if="dateFilterType === 'custom'" class="date-range-row">
-          <input v-model="startDate" type="date" class="date-input" />
-          <span>至</span>
-          <input v-model="endDate" type="date" class="date-input" />
-        </div>
-
-        <div v-if="showSortPanel" class="sort-panel">
-          <div
-            v-for="(rule, index) in sortRules"
-            :key="`${rule.field}-${index}`"
-            class="sort-rule-row"
-          >
-            <SySelect
-              :model-value="rule.field"
-              :options="availableFieldOptions(index)"
-              class="sort-field-select"
-              @change="value => updateSortField(index, value)"
-            />
-            <SySelect
-              :model-value="rule.direction"
-              :options="sortDirectionOptions"
-              class="sort-direction-select"
-              @change="value => updateSortDirection(index, value)"
-            />
-            <button
-              class="sort-rule-btn b3-tooltips b3-tooltips__n"
-              :aria-label="t('todo.sortMoveUp')"
-              :disabled="index === 0"
-              @click="moveSortRule(index, -1)"
-            >
-              <svg><use xlink:href="#iconUp"></use></svg>
-            </button>
-            <button
-              class="sort-rule-btn b3-tooltips b3-tooltips__n"
-              :aria-label="t('todo.sortMoveDown')"
-              :disabled="index === sortRules.length - 1"
-              @click="moveSortRule(index, 1)"
-            >
-              <svg><use xlink:href="#iconDown"></use></svg>
-            </button>
-            <button
-              class="sort-rule-btn b3-tooltips b3-tooltips__n"
-              :aria-label="t('todo.sortRemoveRule')"
-              :disabled="sortRules.length <= 1"
-              @click="removeSortRule(index)"
-            >
-              <svg><use xlink:href="#iconClose"></use></svg>
-            </button>
-          </div>
-
-          <div class="sort-panel-actions">
-            <button class="b3-button b3-button--outline" @click="addSortRule">
-              {{ t('todo.sortAddRule') }}
-            </button>
-            <button class="b3-button b3-button--text" @click="resetSortRules">
-              {{ t('todo.sortReset') }}
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="fn__flex-1 todo-dock-content">
-        <TodoSidebar 
-          ref="todoSidebar"
-          :group-id="selectedGroup"
-          :search-query="searchQuery"
-          :date-range="dateRange"
-          :completed-date-range="completedDateRange"
-          :priorities="selectedPriorities"
-        />
-      </div>
+      <TodoFilterBar
+        :selected-group="selectedGroup"
+        :search-query="searchQuery"
+        :date-filter-type="dateFilterType"
+        :selected-priorities="selectedPriorities"
+        :start-date="startDate"
+        :end-date="endDate"
+        :show-sort-panel="showSortPanel"
+        :sort-rules="sortRules"
+        :group-options="groupOptions"
+        :date-filter-options="dateFilterOptions"
+        :priority-options="priorityOptions"
+        :sort-direction-options="sortDirectionOptions"
+        :available-field-options="availableFieldOptions"
+        @update:selected-group="selectedGroup = $event"
+        @update:search-query="searchQuery = $event"
+        @update:date-filter-type="dateFilterType = $event"
+        @change:date-filter-type="onDateFilterChange"
+        @update:start-date="startDate = $event"
+        @update:end-date="endDate = $event"
+        @toggle-priority="togglePriority"
+        @toggle-sort-panel="toggleSortPanel"
+        @update-sort-field="updateSortField"
+        @update-sort-direction="updateSortDirection"
+        @move-sort-rule="moveSortRule"
+        @remove-sort-rule="removeSortRule"
+        @add-sort-rule="addSortRule"
+        @reset-sort-rules="resetSortRules"
+      />
+      <TodoContentPane
+        ref="todoContentPane"
+        :group-id="selectedGroup"
+        :search-query="searchQuery"
+        :date-range="dateRange"
+        :completed-date-range="completedDateRange"
+        :priorities="selectedPriorities"
+      />
     </div>
   </div>
 </template>
@@ -168,8 +80,8 @@ import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
-import TodoSidebar from '@/components/todo/TodoSidebar.vue';
-import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import TodoContentPane from '@/components/todo/TodoContentPane.vue';
+import TodoFilterBar from '@/components/todo/TodoFilterBar.vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { buildViewDebugContext } from '@/utils/viewDebug';
@@ -183,7 +95,7 @@ const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
-const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
+const todoContentPane = ref<InstanceType<typeof TodoContentPane> | null>(null);
 
 const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
 
@@ -241,10 +153,6 @@ const dateRange = computed(() => {
 
 const completedDateRange = computed(() => {
   return buildCompletedTodoDateRange(dateFilterType.value, currentDate.value, dateRange.value);
-});
-
-const dateFilterLabel = computed(() => {
-  return dateFilterOptions.find(o => o.value === dateFilterType.value)?.label || t('todo.dateFilter.today');
 });
 
 const sortRules = computed(() => {
@@ -516,223 +424,5 @@ onUnmounted(() => {
   gap: 8px;
   min-height: 0;
   overflow: hidden;
-}
-
-.todo-filter-card {
-  padding: 8px;
-  background: var(--b3-theme-surface);
-  border-radius: var(--b3-border-radius);
-
-  :deep(.b3-select) {
-    width: auto !important;
-    min-width: 60px;
-    padding: 4px 24px 4px 8px;
-  }
-}
-
-.todo-dock-content {
-  overflow: auto;
-  background: var(--b3-theme-surface);
-  border-radius: var(--b3-border-radius);
-  flex: 1;
-  min-height: 0;
-  position: relative;
-}
-
-.todo-filter-card {
-  .search-row {
-    margin-bottom: 8px;
-
-    .search-box {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      background: var(--b3-theme-background);
-      border-radius: var(--b3-border-radius);
-      border: 1px solid var(--b3-border-color);
-
-      &:focus-within {
-        border-color: var(--b3-theme-primary);
-      }
-
-      .search-icon {
-        width: 14px;
-        height: 14px;
-        fill: var(--b3-theme-on-surface);
-        opacity: 0.5;
-      }
-
-      .search-input {
-        flex: 1;
-        border: none;
-        background: transparent;
-        font-size: 13px;
-        outline: none;
-        color: var(--b3-theme-on-background);
-      }
-
-      .clear-btn {
-        width: 16px;
-        height: 16px;
-        padding: 0;
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        opacity: 0.4;
-        color: var(--b3-theme-on-surface);
-
-        &:hover { opacity: 0.8; }
-      }
-    }
-  }
-
-  .filter-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .priority-filter {
-      display: flex;
-      gap: 2px;
-
-      .priority-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 26px;
-        height: 26px;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s;
-        padding: 0;
-
-        &:hover, &.active {
-          background: var(--b3-theme-primary-lightest);
-        }
-      }
-    }
-
-    .date-filter-select {
-      width: auto !important;
-      min-width: 80px;
-
-      :deep(.b3-select) {
-        height: 28px;
-        font-size: 12px;
-        padding: 0 24px 0 8px;
-      }
-    }
-
-    .sort-trigger {
-      width: 28px;
-      height: 28px;
-      padding: 0;
-      border: 1px solid var(--b3-border-color);
-      border-radius: 4px;
-      background: var(--b3-theme-background);
-      color: var(--b3-theme-on-surface);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-
-      svg {
-        width: 14px;
-        height: 14px;
-        fill: currentColor;
-      }
-
-      &:hover {
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
-      }
-    }
-  }
-
-  .date-range-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding-top: 8px;
-    margin-top: 4px;
-    border-top: 1px solid var(--b3-border-color);
-
-    .date-input {
-      padding: 4px;
-      border: 1px solid var(--b3-border-color);
-      border-radius: 4px;
-      font-size: 12px;
-      background: var(--b3-theme-background);
-      color: var(--b3-theme-on-background);
-    }
-
-
-  }
-
-  .sort-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 8px;
-    margin-top: 8px;
-    border-top: 1px solid var(--b3-border-color);
-  }
-
-  .sort-rule-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 92px auto auto auto;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .sort-field-select,
-  .sort-direction-select {
-    width: 100%;
-
-    :deep(.sy-select__trigger) {
-      min-height: 28px;
-    }
-  }
-
-  .sort-rule-btn {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 1px solid var(--b3-border-color);
-    border-radius: 4px;
-    background: var(--b3-theme-background);
-    color: var(--b3-theme-on-surface);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-
-    svg {
-      width: 12px;
-      height: 12px;
-      fill: currentColor;
-    }
-
-    &:hover:not(:disabled) {
-      border-color: var(--b3-theme-primary);
-      color: var(--b3-theme-primary);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  }
-
-  .sort-panel-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-  }
 }
 </style>

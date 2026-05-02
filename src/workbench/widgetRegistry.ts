@@ -1,5 +1,9 @@
 import { t } from '@/i18n';
-import type { WorkbenchWidgetInstance, WorkbenchWidgetType } from '@/types/workbench';
+import type {
+  WorkbenchTodoListWidgetConfig,
+  WorkbenchWidgetInstance,
+  WorkbenchWidgetType,
+} from '@/types/workbench';
 import { showInputDialog } from '@/utils/dialog';
 
 type WorkbenchWidgetConfigContext = {
@@ -39,11 +43,13 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       icon: 'iconList',
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
-      createDefaultConfig: () => ({
+      createDefaultConfig: (): WorkbenchTodoListWidgetConfig => ({
         previewCount: 5,
+        preset: {},
       }),
       openConfigDialog: ({ widget, onUpdateConfig }) => {
-        const currentValue = clampPreviewCount(Number(widget.config.previewCount ?? 5));
+        const todoConfig = widget.config as WorkbenchTodoListWidgetConfig;
+        const currentValue = clampPreviewCount(Number(todoConfig.previewCount ?? 5));
         showInputDialog(
           t('workbench').configure,
           t('workbench').todoWidgetPreviewCountPrompt,
@@ -60,7 +66,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
             }
 
             await onUpdateConfig({
-              ...widget.config,
+              ...todoConfig,
               previewCount,
             });
           },
