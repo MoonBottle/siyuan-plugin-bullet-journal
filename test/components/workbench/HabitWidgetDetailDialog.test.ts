@@ -6,10 +6,35 @@ import { createPinia, setActivePinia } from 'pinia';
 import { initI18n } from '@/i18n';
 
 const habitWorkspaceDetailPaneProps = vi.fn();
+const refreshHabits = vi.fn();
+const selectHabitById = vi.fn();
+const eventBusOn = vi.fn();
+const refreshUnsubscribe = vi.fn();
+const eventHandlers = new Map<string, () => void | Promise<void>>();
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
   useApp: vi.fn(() => ({})),
+  getCurrentPlugin: vi.fn(() => ({})),
+}));
+
+vi.mock('@/utils/eventBus', () => ({
+  eventBus: {
+    on: eventBusOn.mockImplementation((event: string, handler: () => void | Promise<void>) => {
+      eventHandlers.set(event, handler);
+      return refreshUnsubscribe;
+    }),
+  },
+  Events: {
+    DATA_REFRESH: 'data:refresh',
+  },
+  DATA_REFRESH_CHANNEL: 'habit-refresh-channel',
+}));
+
+vi.mock('@/utils/refreshChannelGuard', () => ({
+  createRefreshChannelGuard: vi.fn(() => ({
+    dispose: vi.fn(),
+  })),
 }));
 
 vi.mock('@/utils/nativeBlockPreview', () => ({
@@ -27,8 +52,8 @@ vi.mock('@/composables/useHabitWorkspace', () => ({
     selectedViewMonth: '2026-05',
     currentDate: '2026-05-02',
     displaySelectedStats: null,
-    refreshHabits: vi.fn(),
-    selectHabitById: vi.fn(),
+    refreshHabits,
+    selectHabitById,
     openSelectedHabitDoc: vi.fn(),
   }),
 }));
@@ -75,6 +100,7 @@ describe('HabitWidgetDetailDialog', () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     document.body.innerHTML = '';
+    eventHandlers.clear();
   });
 
   it('enables preview mode for habit record log interactions', async () => {
@@ -85,6 +111,19 @@ describe('HabitWidgetDetailDialog', () => {
       recordPreviewTriggerMode: 'preview',
       onRecordPreviewClick: expect.any(Function),
     }));
+
+    mounted.unmount();
+  });
+
+  it('refreshes the dialog workspace when data refresh events arrive', async () => {
+    const mounted = await mountDialog();
+
+    expect(selectHabitById).toHaveBeenCalledWith('habit-1');
+    expect(eventBusOn).toHaveBeenCalledWith('data:refresh', expect.any(Function));
+
+    await eventHandlers.get('data:refresh')?.();
+
+    expect(refreshHabits).toHaveBeenCalledTimes(1);
 
     mounted.unmount();
   });

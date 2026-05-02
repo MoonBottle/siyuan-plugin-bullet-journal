@@ -27,9 +27,11 @@ import HabitWorkspaceDetailPane from '@/components/habit/HabitWorkspaceDetailPan
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { useHabitWorkspace } from '@/composables/useHabitWorkspace';
 import { t } from '@/i18n';
-import { useApp, usePlugin } from '@/main';
+import { getCurrentPlugin, useApp, usePlugin } from '@/main';
 import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 
 const props = defineProps<{
   habitId: string;
@@ -113,12 +115,48 @@ function handleNativePreviewDestroyed({
   });
 }
 
+const handleDataRefresh = async () => {
+  await refreshHabits();
+};
+
+let unsubscribeRefresh: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+
 onMounted(() => {
   selectHabitById(props.habitId);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: () => handleDataRefresh(),
+      viewName: 'HabitWidgetDetailDialog',
+    });
+  }
+  catch {
+    // ignore
+  }
+
   document.addEventListener('pointerdown', handleDocumentPointerDown, true);
 });
 
 onUnmounted(() => {
+  if (unsubscribeRefresh) {
+    unsubscribeRefresh();
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
+  }
+
   document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
   nativePreview.close();
   preview.dispose();

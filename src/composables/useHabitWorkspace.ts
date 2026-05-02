@@ -14,6 +14,8 @@ import {
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit, HabitStats } from '@/types/models';
+import { dirtyDocTracker } from '@/utils/dirtyDocTracker';
+import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import dayjs from '@/utils/dayjs';
 import {
@@ -32,8 +34,9 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
   const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
   const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
-  const selectedHabit = ref<Habit | null>(null);
+  const selectedHabitId = ref<string | null>(null);
   const selectedStatsCache = ref<HabitStats | null>(null);
+  let pendingRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   const currentDate = computed(() => projectStore.currentDate);
   const groupId = computed(() => toValue(options.groupId) ?? '');
@@ -49,6 +52,14 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
   const habitPeriodStateMap = computed(() => {
     return new Map(habits.value.map(habit => [habit.blockId, getHabitPeriodState(habit, selectedDate.value)]));
+  });
+
+  const selectedHabit = computed(() => {
+    if (!selectedHabitId.value) {
+      return null;
+    }
+
+    return habits.value.find(habit => habit.blockId === selectedHabitId.value) ?? null;
   });
 
   const selectedStats = computed(() => {
@@ -67,16 +78,19 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   }, { immediate: true });
 
   function syncSelectedHabit() {
-    if (!selectedHabit.value) {
+    if (!selectedHabitId.value) {
       return;
     }
-    selectedHabit.value = habits.value.find(habit => habit.blockId === selectedHabit.value?.blockId) ?? null;
+
+    if (!habits.value.some(habit => habit.blockId === selectedHabitId.value)) {
+      selectedHabitId.value = null;
+    }
   }
 
   function selectHabit(habit: Habit, date: string = currentDate.value) {
     selectedDate.value = date;
     selectedViewMonth.value = date.substring(0, 7);
-    selectedHabit.value = habit;
+    selectedHabitId.value = habit.blockId;
     selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
   }
 
@@ -90,7 +104,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   }
 
   function clearSelectedHabit() {
-    selectedHabit.value = null;
+    selectedHabitId.value = null;
   }
 
   async function refreshHabits() {
@@ -101,20 +115,44 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     syncSelectedHabit();
   }
 
+  function notifyHabitDataRefresh(habit: Habit) {
+    dirtyDocTracker.markDirty([habit.docId]);
+
+    if (pendingRefreshTimer) {
+      clearTimeout(pendingRefreshTimer);
+    }
+
+    pendingRefreshTimer = setTimeout(() => {
+      pendingRefreshTimer = null;
+      eventBus.emit(Events.DATA_REFRESH);
+      broadcastDataRefresh();
+    }, 180);
+  }
+
   async function checkInHabit(habit: Habit) {
     const success = await checkIn(habit, selectedDate.value);
-    if (success && selectedHabit.value?.blockId === habit.blockId) {
+    if (!success) {
+      return;
+    }
+
+    if (selectedHabit.value?.blockId === habit.blockId) {
       selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
       syncSelectedHabit();
     }
+    notifyHabitDataRefresh(habit);
   }
 
   async function incrementHabit(habit: Habit) {
     const success = await checkInCount(habit, selectedDate.value, 1);
-    if (success && selectedHabit.value?.blockId === habit.blockId) {
+    if (!success) {
+      return;
+    }
+
+    if (selectedHabit.value?.blockId === habit.blockId) {
       selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
       syncSelectedHabit();
     }
+    notifyHabitDataRefresh(habit);
   }
 
   async function openHabitDoc(habit: Habit) {

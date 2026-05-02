@@ -10,6 +10,9 @@ const {
   openDocumentAtLine,
   calculateAllHabitStats,
   calculateHabitStats,
+  eventBusEmit,
+  broadcastDataRefresh,
+  markDirty,
 } = vi.hoisted(() => ({
   checkIn: vi.fn(),
   checkInCount: vi.fn(),
@@ -36,6 +39,9 @@ const {
     longestStreak: 3,
     isEnded: false,
   })),
+  eventBusEmit: vi.fn(),
+  broadcastDataRefresh: vi.fn(),
+  markDirty: vi.fn(),
 }));
 
 vi.mock('@/main', () => ({
@@ -49,6 +55,22 @@ vi.mock('@/services/habitService', () => ({
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine,
+}));
+
+vi.mock('@/utils/eventBus', () => ({
+  eventBus: {
+    emit: eventBusEmit,
+  },
+  Events: {
+    DATA_REFRESH: 'data:refresh',
+  },
+  broadcastDataRefresh,
+}));
+
+vi.mock('@/utils/dirtyDocTracker', () => ({
+  dirtyDocTracker: {
+    markDirty,
+  },
 }));
 
 vi.mock('@/utils/habitStatsUtils', () => ({
@@ -73,6 +95,7 @@ describe('useHabitWorkspace', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
+    vi.useFakeTimers();
     checkIn.mockResolvedValue(false);
     checkInCount.mockResolvedValue(false);
   });
@@ -115,7 +138,7 @@ describe('useHabitWorkspace', () => {
     expect(calculateAllHabitStats).toHaveBeenCalled();
   });
 
-  it('refreshes the store and rebinds the selected habit to the latest store instance', async () => {
+  it('derives the selected habit from the latest store instance after refresh', async () => {
     const projectStore = useProjectStore();
     const settingsStore = useSettingsStore();
     settingsStore.scanMode = 'folder';
@@ -180,6 +203,7 @@ describe('useHabitWorkspace', () => {
     await workspace.openHabitDoc(habit);
     await workspace.checkInHabit(habit);
     await workspace.incrementHabit(habit);
+    await vi.runAllTimersAsync();
 
     workspace.selectHabit(habit);
     await workspace.openSelectedHabitDoc();
@@ -188,6 +212,11 @@ describe('useHabitWorkspace', () => {
     expect(checkIn).toHaveBeenCalledWith(habit, workspace.selectedDate.value);
     expect(checkInCount).toHaveBeenCalledWith(habit, workspace.selectedDate.value, 1);
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(2, 'doc-1', undefined, 'habit-a');
+    expect(markDirty).toHaveBeenNthCalledWith(1, ['doc-1']);
+    expect(markDirty).toHaveBeenNthCalledWith(2, ['doc-1']);
+    expect(eventBusEmit).toHaveBeenCalledTimes(1);
+    expect(eventBusEmit).toHaveBeenCalledWith('data:refresh');
+    expect(broadcastDataRefresh).toHaveBeenCalledTimes(1);
     expect(calculateHabitStats).toHaveBeenCalled();
   });
 });
