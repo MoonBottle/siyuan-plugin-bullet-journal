@@ -25,9 +25,9 @@
       v-else
       class="workbench-dashboard-canvas__layout"
       :layout="gridLayout"
-      :col-num="GRID_COLUMNS"
-      :row-height="GRID_ROW_HEIGHT"
-      :margin="GRID_MARGIN"
+      :col-num="WORKBENCH_GRID_COLUMNS"
+      :row-height="WORKBENCH_GRID_ROW_HEIGHT"
+      :margin="WORKBENCH_GRID_MARGIN"
       :is-draggable="true"
       :is-resizable="true"
       :vertical-compact="true"
@@ -43,6 +43,9 @@
         :y="normalizeLayout(widget).y"
         :w="normalizeLayout(widget).w"
         :h="normalizeLayout(widget).h"
+        :min-w="getWidgetDefinition(widget.type).minSize.w"
+        :min-h="getWidgetDefinition(widget.type).minSize.h"
+        :max-w="WORKBENCH_GRID_COLUMNS"
         :i="widget.id"
         :drag-allow-from="'.workbench-widget-card__drag'"
         :drag-ignore-from="'.workbench-widget-card__menu-trigger, .workbench-widget-card__menu, button, a, input, textarea, select'"
@@ -51,7 +54,9 @@
       >
         <WorkbenchWidgetCard
           :title="widget.title || getWidgetDefinition(widget.type).name"
+          :show-configure="Boolean(getWidgetDefinition(widget.type).openConfigDialog)"
           :data-testid="`workbench-widget-card-${widget.id}`"
+          @configure="handleConfigureWidget(widget.id)"
           @rename="handleRenameWidget(widget.id)"
           @delete="handleDeleteWidget(widget.id)"
         >
@@ -80,11 +85,14 @@ import { useWorkbenchStore } from '@/stores';
 import type { Component } from 'vue';
 import type { WorkbenchDashboard, WorkbenchEntry, WorkbenchWidgetInstance, WorkbenchWidgetType } from '@/types/workbench';
 import { showConfirmDialog, showInputDialog } from '@/utils/dialog';
+import {
+  areWidgetLayoutsEqual,
+  normalizeWidgetLayout,
+  WORKBENCH_GRID_COLUMNS,
+  WORKBENCH_GRID_MARGIN,
+  WORKBENCH_GRID_ROW_HEIGHT,
+} from '@/workbench/grid';
 import { getWidgetDefinition } from '@/workbench/widgetRegistry';
-
-const GRID_COLUMNS = 12;
-const GRID_ROW_HEIGHT = 56;
-const GRID_MARGIN = [16, 16];
 
 const props = defineProps<{
   entry: WorkbenchEntry;
@@ -104,6 +112,7 @@ function resolveWorkbenchStore() {
       removeWidget: async () => {},
       renameWidget: async () => {},
       updateWidgetLayouts: async () => {},
+      updateWidgetConfig: async () => {},
     };
   }
 }
@@ -152,17 +161,7 @@ const widgetComponents: Record<WorkbenchWidgetType, Component> = {
 };
 
 function normalizeLayout(widget: WorkbenchWidgetInstance) {
-  const width = Math.min(Math.max(widget.layout.w, 1), GRID_COLUMNS);
-  const height = Math.max(widget.layout.h, 1);
-  const x = Math.min(Math.max(widget.layout.x, 0), GRID_COLUMNS - width);
-  const y = Math.max(widget.layout.y, 0);
-
-  return {
-    x,
-    y,
-    w: width,
-    h: height,
-  };
+  return normalizeWidgetLayout(widget.layout);
 }
 
 async function handleLayoutUpdated(layout: Layout) {
@@ -170,6 +169,9 @@ async function handleLayoutUpdated(layout: Layout) {
     return;
   }
 
+  const currentLayoutMap = new Map(
+    dashboard.value.widgets.map(widget => [widget.id, normalizeLayout(widget)]),
+  );
   const nextLayouts = layout.map(item => ({
     id: String(item.i),
     x: item.x,
@@ -177,6 +179,18 @@ async function handleLayoutUpdated(layout: Layout) {
     w: item.w,
     h: item.h,
   }));
+  const hasChanged = nextLayouts.some((item) => {
+    const current = currentLayoutMap.get(item.id);
+    if (!current) {
+      return true;
+    }
+
+    return !areWidgetLayoutsEqual(current, item);
+  });
+
+  if (!hasChanged) {
+    return;
+  }
 
   await workbenchStore.updateWidgetLayouts(dashboard.value.id, nextLayouts);
 }
@@ -204,6 +218,25 @@ function handleRenameWidget(widgetId: string) {
       await workbenchStore.renameWidget(dashboard.value!.id, widgetId, nextTitle);
     },
   );
+}
+
+function handleConfigureWidget(widgetId: string) {
+  if (!dashboard.value) {
+    return;
+  }
+
+  const widget = dashboard.value.widgets.find(item => item.id === widgetId);
+  if (!widget) {
+    return;
+  }
+
+  const definition = getWidgetDefinition(widget.type);
+  definition.openConfigDialog?.({
+    widget,
+    onUpdateConfig: async (config) => {
+      await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config);
+    },
+  });
 }
 
 function handleDeleteWidget(widgetId: string) {

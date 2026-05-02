@@ -19,6 +19,15 @@
             data-testid="workbench-widget-menu"
           >
             <button
+              v-if="showConfigure"
+              class="workbench-widget-card__menu-item"
+              data-testid="workbench-widget-configure"
+              type="button"
+              @click="handleConfigure"
+            >
+              {{ t('workbench').configure }}
+            </button>
+            <button
               class="workbench-widget-card__menu-item"
               data-testid="workbench-widget-rename"
               type="button"
@@ -50,9 +59,11 @@ import { t } from '@/i18n';
 
 defineProps<{
   title: string;
+  showConfigure?: boolean;
 }>();
 
 const emit = defineEmits<{
+  (event: 'configure'): void;
   (event: 'rename'): void;
   (event: 'delete'): void;
 }>();
@@ -66,6 +77,11 @@ function toggleMenu() {
 function handleRename() {
   isMenuOpen.value = false;
   emit('rename');
+}
+
+function handleConfigure() {
+  isMenuOpen.value = false;
+  emit('configure');
 }
 
 function handleDelete() {

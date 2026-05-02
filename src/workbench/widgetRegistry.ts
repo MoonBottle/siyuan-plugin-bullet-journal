@@ -1,5 +1,11 @@
 import { t } from '@/i18n';
-import type { WorkbenchWidgetType } from '@/types/workbench';
+import type { WorkbenchWidgetInstance, WorkbenchWidgetType } from '@/types/workbench';
+import { showInputDialog } from '@/utils/dialog';
+
+type WorkbenchWidgetConfigContext = {
+  widget: WorkbenchWidgetInstance;
+  onUpdateConfig: (config: Record<string, unknown>) => Promise<void>;
+};
 
 export type WorkbenchWidgetDefinition = {
   type: WorkbenchWidgetType;
@@ -9,8 +15,21 @@ export type WorkbenchWidgetDefinition = {
     w: number;
     h: number;
   };
+  minSize: {
+    w: number;
+    h: number;
+  };
   createDefaultConfig: () => Record<string, unknown>;
+  openConfigDialog?: (context: WorkbenchWidgetConfigContext) => void;
 };
+
+function clampPreviewCount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 5;
+  }
+
+  return Math.min(Math.max(Math.round(value), 1), 20);
+}
 
 function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefinition> {
   return {
@@ -19,13 +38,41 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       name: t('todo').title,
       icon: 'iconList',
       defaultSize: { w: 6, h: 4 },
-      createDefaultConfig: () => ({}),
+      minSize: { w: 4, h: 3 },
+      createDefaultConfig: () => ({
+        previewCount: 5,
+      }),
+      openConfigDialog: ({ widget, onUpdateConfig }) => {
+        const currentValue = clampPreviewCount(Number(widget.config.previewCount ?? 5));
+        showInputDialog(
+          t('workbench').configure,
+          t('workbench').todoWidgetPreviewCountPrompt,
+          String(currentValue),
+          async (nextValue) => {
+            const parsedValue = Number(nextValue);
+            if (!nextValue || Number.isNaN(parsedValue)) {
+              return;
+            }
+
+            const previewCount = clampPreviewCount(parsedValue);
+            if (previewCount === currentValue) {
+              return;
+            }
+
+            await onUpdateConfig({
+              ...widget.config,
+              previewCount,
+            });
+          },
+        );
+      },
     },
     quadrantSummary: {
       type: 'quadrantSummary',
       name: t('quadrant').title,
       icon: 'iconLayout',
       defaultSize: { w: 6, h: 4 },
+      minSize: { w: 4, h: 3 },
       createDefaultConfig: () => ({}),
     },
     habitWeek: {
@@ -33,6 +80,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       name: t('habit').title,
       icon: 'iconCheck',
       defaultSize: { w: 6, h: 4 },
+      minSize: { w: 4, h: 3 },
       createDefaultConfig: () => ({}),
     },
     miniCalendar: {
@@ -40,6 +88,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       name: t('calendar').title,
       icon: 'iconCalendar',
       defaultSize: { w: 6, h: 4 },
+      minSize: { w: 4, h: 3 },
       createDefaultConfig: () => ({}),
     },
     pomodoroStats: {
@@ -47,6 +96,7 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       name: t('pomodoroStats').statsTitle,
       icon: 'iconClock',
       defaultSize: { w: 6, h: 4 },
+      minSize: { w: 4, h: 3 },
       createDefaultConfig: () => ({}),
     },
   };

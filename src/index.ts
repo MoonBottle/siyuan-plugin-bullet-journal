@@ -12,6 +12,7 @@ import {
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import { getSharedPinia, setSharedPinia } from "@/utils/sharedPinia";
+import { mountVueAppInHost, unmountVueAppFromHost } from "@/utils/vueHostMount";
 import {
   showItemDetailModal,
   showIconTooltip,
@@ -992,7 +993,7 @@ export default class TaskAssistantPlugin extends Plugin {
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(CalendarTab);
             app.use(pinia);
-            app.mount(this.element);
+            mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error(
               "[Task Assistant] Failed to mount CalendarTab:",
@@ -1001,7 +1002,7 @@ export default class TaskAssistantPlugin extends Plugin {
           }
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
     }
@@ -1015,13 +1016,13 @@ export default class TaskAssistantPlugin extends Plugin {
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(GanttTab);
             app.use(pinia);
-            app.mount(this.element);
+            mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error("[Task Assistant] Failed to mount GanttTab:", error);
           }
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
     }
@@ -1035,7 +1036,7 @@ export default class TaskAssistantPlugin extends Plugin {
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(WorkbenchTab);
             app.use(pinia);
-            app.mount(this.element);
+            mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error(
               "[Task Assistant] Failed to mount WorkbenchTab:",
@@ -1044,7 +1045,7 @@ export default class TaskAssistantPlugin extends Plugin {
           }
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
     }
@@ -1058,7 +1059,7 @@ export default class TaskAssistantPlugin extends Plugin {
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(QuadrantTab);
             app.use(pinia);
-            app.mount(this.element);
+            mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error(
               "[Task Assistant] Failed to mount QuadrantTab:",
@@ -1067,7 +1068,7 @@ export default class TaskAssistantPlugin extends Plugin {
           }
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
     }
@@ -1081,7 +1082,7 @@ export default class TaskAssistantPlugin extends Plugin {
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(ProjectTab);
             app.use(pinia);
-            app.mount(this.element);
+            mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error(
               "[Task Assistant] Failed to mount ProjectTab:",
@@ -1090,7 +1091,7 @@ export default class TaskAssistantPlugin extends Plugin {
           }
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
     }
@@ -1104,7 +1105,7 @@ export default class TaskAssistantPlugin extends Plugin {
             const pinia = getSharedPinia() ?? createPinia();
             const app = createApp(PomodoroStatsTab);
             app.use(pinia);
-            app.mount(this.element);
+            mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error(
               "[Task Assistant] Failed to mount PomodoroStatsTab:",
@@ -1113,7 +1114,7 @@ export default class TaskAssistantPlugin extends Plugin {
           }
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
     }
@@ -1169,10 +1170,10 @@ export default class TaskAssistantPlugin extends Plugin {
         const pinia = getSharedPinia() ?? createPinia();
         const app = createApp(TodoDock, { plugin });
         app.use(pinia);
-        app.mount(this.element);
+        mountVueAppInHost(this.element, app);
       },
       destroy() {
-        this.element.innerHTML = "";
+        unmountVueAppFromHost(this.element);
       },
     });
 
@@ -1192,10 +1193,10 @@ export default class TaskAssistantPlugin extends Plugin {
         const pinia = getSharedPinia() ?? createPinia();
         const app = createApp(AiChatDock);
         app.use(pinia);
-        app.mount(this.element);
+        mountVueAppInHost(this.element, app);
       },
       destroy() {
-        this.element.innerHTML = "";
+        unmountVueAppFromHost(this.element);
       },
     });
 
@@ -1216,10 +1217,10 @@ export default class TaskAssistantPlugin extends Plugin {
           const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(PomodoroDock);
           app.use(pinia);
-          app.mount(this.element);
+          mountVueAppInHost(this.element, app);
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
       this.pomodoroDockModel = pomodoroDock.model;
@@ -1244,10 +1245,10 @@ export default class TaskAssistantPlugin extends Plugin {
           const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(HabitDock, { plugin });
           app.use(pinia);
-          app.mount(this.element);
+          mountVueAppInHost(this.element, app);
         },
         destroy() {
-          this.element.innerHTML = "";
+          unmountVueAppFromHost(this.element);
         },
       });
     }

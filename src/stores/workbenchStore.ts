@@ -12,6 +12,7 @@ import {
   loadWorkbenchSettings,
   saveWorkbenchSettings,
 } from '@/utils/workbenchStorage';
+import { areWidgetLayoutsEqual, findNextWidgetLayout } from '@/workbench/grid';
 import { getWidgetDefinition } from '@/workbench/widgetRegistry';
 
 type WorkbenchPlugin = Parameters<typeof loadWorkbenchSettings>[0];
@@ -219,6 +220,10 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       return;
     }
 
+    if (activeEntryId.value === id) {
+      return;
+    }
+
     activeEntryId.value = id;
     await persist();
   }
@@ -230,16 +235,12 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     }
 
     const definition = getWidgetDefinition(type);
+    const layout = findNextWidgetLayout(dashboard.widgets, definition.defaultSize);
     const nextWidget = {
       id: createId('widget'),
       type,
       title: definition.name,
-      layout: {
-        x: 0,
-        y: dashboard.widgets.length,
-        w: definition.defaultSize.w,
-        h: definition.defaultSize.h,
-      },
+      layout,
       config: definition.createDefaultConfig(),
     };
 
@@ -337,8 +338,9 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     }
 
     const layoutMap = new Map(layouts.map(layout => [layout.id, layout]));
+    let hasChanged = false;
 
-    dashboards.value = dashboards.value.map(item => (
+    const nextDashboards = dashboards.value.map(item => (
       item.id === dashboardId
         ? {
             ...item,
@@ -348,16 +350,57 @@ export const useWorkbenchStore = defineStore('workbench', () => {
                 return widget;
               }
 
+              const normalizedNextLayout = {
+                x: nextLayout.x,
+                y: nextLayout.y,
+                w: nextLayout.w,
+                h: nextLayout.h,
+              };
+              if (areWidgetLayoutsEqual(widget.layout, normalizedNextLayout)) {
+                return widget;
+              }
+
+              hasChanged = true;
+
               return {
                 ...widget,
-                layout: {
-                  x: nextLayout.x,
-                  y: nextLayout.y,
-                  w: nextLayout.w,
-                  h: nextLayout.h,
-                },
+                layout: normalizedNextLayout,
               };
             }),
+          }
+        : item
+    ));
+
+    if (!hasChanged) {
+      return;
+    }
+
+    dashboards.value = nextDashboards;
+    await persist();
+  }
+
+  async function updateWidgetConfig(
+    dashboardId: string,
+    widgetId: string,
+    config: Record<string, unknown>,
+  ): Promise<void> {
+    const dashboard = dashboards.value.find(item => item.id === dashboardId);
+    if (!dashboard) {
+      return;
+    }
+
+    dashboards.value = dashboards.value.map(item => (
+      item.id === dashboardId
+        ? {
+            ...item,
+            widgets: item.widgets.map(widget => (
+              widget.id === widgetId
+                ? {
+                    ...widget,
+                    config,
+                  }
+                : widget
+            )),
           }
         : item
     ));
@@ -384,5 +427,6 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     renameWidget,
     updateWidgetLayout,
     updateWidgetLayouts,
+    updateWidgetConfig,
   };
 });

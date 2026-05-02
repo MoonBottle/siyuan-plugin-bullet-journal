@@ -107,13 +107,21 @@ vi.mock('grid-layout-plus', () => ({
           'data-testid': 'grid-layout-emit-updated',
           onClick: () => emit('layout-updated', props.layout),
         }),
+        h('button', {
+          type: 'button',
+          'data-testid': 'grid-layout-emit-updated-changed',
+          onClick: () => emit('layout-updated', (props.layout as any[]).map((item, index) => ({
+            ...item,
+            x: index === 0 ? Number(item.x) + 1 : Number(item.x),
+          }))),
+        }),
         slots.default?.(),
       ]);
     },
   }),
   GridItem: defineComponent({
     name: 'GridItemStub',
-    props: ['x', 'y', 'w', 'h', 'i'],
+    props: ['x', 'y', 'w', 'h', 'i', 'minW', 'minH', 'maxW'],
     setup(props, { slots }) {
       return () => h('div', {
         'data-testid': `grid-item-stub-${props.i}`,
@@ -121,6 +129,9 @@ vi.mock('grid-layout-plus', () => ({
         'data-y': String(props.y),
         'data-w': String(props.w),
         'data-h': String(props.h),
+        'data-min-w': String(props.minW),
+        'data-min-h': String(props.minH),
+        'data-max-w': String(props.maxW),
       }, slots.default?.());
     },
   }),
@@ -242,6 +253,52 @@ describe('DashboardCanvas', () => {
     mounted.unmount();
   });
 
+  it('opens widget configure action and persists todo preview count updates', async () => {
+    const store = useWorkbenchStore();
+    store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            title: 'Todo List',
+            layout: { x: 0, y: 0, w: 6, h: 4 },
+            config: { previewCount: 5 },
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    (mounted.container.querySelector('[data-testid="workbench-widget-menu-trigger"]') as HTMLButtonElement).click();
+    await nextTick();
+    (mounted.container.querySelector('[data-testid="workbench-widget-configure"]') as HTMLButtonElement).click();
+
+    expect(mockShowInputDialog).toHaveBeenCalledWith(
+      'Configure',
+      'Enter the number of todo items to preview (1-20)',
+      '5',
+      expect.any(Function),
+    );
+
+    const configureCallback = mockShowInputDialog.mock.calls[0][3];
+    await configureCallback('8');
+    expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', { previewCount: 8 });
+
+    mounted.unmount();
+  });
+
   it('applies widget layout coordinates to rendered grid placement', async () => {
     const store = useWorkbenchStore();
     store.dashboards = [
@@ -273,11 +330,14 @@ describe('DashboardCanvas', () => {
     expect(mounted.container.innerHTML).toContain('data-y="1"');
     expect(mounted.container.innerHTML).toContain('data-w="4"');
     expect(mounted.container.innerHTML).toContain('data-h="3"');
+    expect(mounted.container.innerHTML).toContain('data-min-w="4"');
+    expect(mounted.container.innerHTML).toContain('data-min-h="3"');
+    expect(mounted.container.innerHTML).toContain('data-max-w="12"');
 
     mounted.unmount();
   });
 
-  it('persists updated widget layouts after grid layout update event', async () => {
+  it('does not persist unchanged widget layouts after grid layout update event', async () => {
     const store = useWorkbenchStore();
     store.updateWidgetLayouts = vi.fn().mockResolvedValue(undefined) as any;
     store.dashboards = [
@@ -315,8 +375,51 @@ describe('DashboardCanvas', () => {
     (mounted.container.querySelector('[data-testid="grid-layout-emit-updated"]') as HTMLButtonElement).click();
     await nextTick();
 
+    expect(store.updateWidgetLayouts).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('persists changed widget layouts after grid layout update event', async () => {
+    const store = useWorkbenchStore();
+    store.updateWidgetLayouts = vi.fn().mockResolvedValue(undefined) as any;
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            title: 'Todo List',
+            layout: { x: 2, y: 1, w: 4, h: 3 },
+            config: {},
+          },
+          {
+            id: 'widget-2',
+            type: 'habitWeek',
+            title: 'Habit Week',
+            layout: { x: 6, y: 1, w: 6, h: 4 },
+            config: {},
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    (mounted.container.querySelector('[data-testid="grid-layout-emit-updated-changed"]') as HTMLButtonElement).click();
+    await nextTick();
+
     expect(store.updateWidgetLayouts).toHaveBeenCalledWith('dashboard-1', [
-      { id: 'widget-1', x: 2, y: 1, w: 4, h: 3 },
+      { id: 'widget-1', x: 3, y: 1, w: 4, h: 3 },
       { id: 'widget-2', x: 6, y: 1, w: 6, h: 4 },
     ]);
 

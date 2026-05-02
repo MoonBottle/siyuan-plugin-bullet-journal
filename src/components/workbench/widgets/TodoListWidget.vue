@@ -18,7 +18,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { t } from '@/i18n';
+import type { WorkbenchWidgetInstance } from '@/types/workbench';
 import { useSafeProjectStore } from './useSafeProjectStore';
+
+const props = defineProps<{
+  widget?: WorkbenchWidgetInstance;
+}>();
 
 const projectStore = useSafeProjectStore();
 
@@ -33,7 +38,12 @@ const openItems = computed(() => {
 });
 
 const previewItems = computed(() => {
-  return openItems.value.slice(0, 5);
+  const rawPreviewCount = Number(props.widget?.config?.previewCount ?? 5);
+  const previewCount = Number.isFinite(rawPreviewCount)
+    ? Math.min(Math.max(Math.round(rawPreviewCount), 1), 20)
+    : 5;
+
+  return openItems.value.slice(0, previewCount);
 });
 </script>
 

@@ -20,6 +20,7 @@ const {
     name: type === 'todoList' ? 'Todo List' : type,
     icon: 'iconList',
     defaultSize: { w: 6, h: 4 },
+    minSize: { w: 4, h: 3 },
     createDefaultConfig: () => ({ source: 'default-config' }),
   })),
 }));
@@ -354,6 +355,34 @@ describe('workbenchStore', () => {
     });
   });
 
+  it('addWidget places new widgets into the next available grid slot', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard({
+      widgets: [
+        {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: {},
+        },
+      ],
+    });
+
+    store.dashboards = [dashboard];
+
+    await store.addWidget(dashboard.id, 'todoList');
+    await store.addWidget(dashboard.id, 'todoList');
+
+    expect(store.dashboards[0].widgets.map(widget => widget.layout)).toEqual([
+      { x: 0, y: 0, w: 6, h: 4 },
+      { x: 6, y: 0, w: 6, h: 4 },
+      { x: 0, y: 4, w: 6, h: 4 },
+    ]);
+  });
+
   it('removeWidget removes widget from dashboard and persists', async () => {
     const plugin = createPlugin();
     const store = useWorkbenchStore();
@@ -473,6 +502,34 @@ describe('workbenchStore', () => {
       { x: 6, y: 2, w: 6, h: 5 },
     ]);
     expect(mockSaveWorkbenchSettings).toHaveBeenCalledTimes(1);
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
+      entries: [],
+      dashboards: store.dashboards,
+      activeEntryId: null,
+    });
+  });
+
+  it('updateWidgetConfig updates widget config and persists', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const dashboard = createDashboard({
+      widgets: [
+        {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: { previewCount: 5 },
+        },
+      ],
+    });
+
+    store.dashboards = [dashboard];
+
+    await store.updateWidgetConfig(dashboard.id, 'widget-1', { previewCount: 8 });
+
+    expect(store.dashboards[0].widgets[0].config).toEqual({ previewCount: 8 });
     expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, {
       entries: [],
       dashboards: store.dashboards,
