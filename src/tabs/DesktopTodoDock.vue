@@ -30,7 +30,7 @@
         <svg><use xlink:href="#iconMore"></use></svg>
       </span>
     </div>
-    <div class="fn__flex-1 fn__flex-column todo-dock-body">
+    <div ref="dockBodyRef" class="fn__flex-1 fn__flex-column todo-dock-body">
       <TodoFilterBar
         :selected-group="selectedGroup"
         :search-query="searchQuery"
@@ -116,6 +116,8 @@ const nativePreview = createNativeBlockPreviewController();
 const enableWorkbenchPreview = computed(() => props.enableWorkbenchPreview);
 
 const todoContentPane = ref<InstanceType<typeof TodoContentPane> | null>(null);
+const dockBodyRef = ref<HTMLElement | null>(null);
+let dockScrollbarObserver: ResizeObserver | null = null;
 const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
 watch(selectedGroup, (val) => {
   settingsStore.todoDock.selectedGroup = val;
@@ -414,6 +416,17 @@ const handleMoreClick = (event: MouseEvent) => {
   });
 };
 
+function syncDockScrollbarGutter() {
+  const hostEl = dockBodyRef.value;
+  const scrollEl = todoContentPane.value?.getScrollElement?.() as HTMLElement | null | undefined;
+  if (!hostEl || !scrollEl) {
+    return;
+  }
+
+  const gutterWidth = Math.max(0, scrollEl.offsetWidth - scrollEl.clientWidth);
+  hostEl.style.setProperty('--todo-scrollbar-gutter-width', `${gutterWidth}px`);
+}
+
 // 事件取消订阅函数
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
@@ -458,6 +471,20 @@ onMounted(async () => {
   }
 
   document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+
+  await nextTick();
+  syncDockScrollbarGutter();
+  const scrollEl = todoContentPane.value?.getScrollElement?.() as HTMLElement | null | undefined;
+  const contentEl = scrollEl?.firstElementChild as HTMLElement | null;
+  dockScrollbarObserver = new ResizeObserver(() => {
+    syncDockScrollbarGutter();
+  });
+  if (scrollEl) {
+    dockScrollbarObserver.observe(scrollEl);
+  }
+  if (contentEl) {
+    dockScrollbarObserver.observe(contentEl);
+  }
 });
 
 onUnmounted(() => {
@@ -469,6 +496,8 @@ onUnmounted(() => {
     refreshChannelGuard.dispose();
     refreshChannelGuard = null;
   }
+  dockScrollbarObserver?.disconnect();
+  dockScrollbarObserver = null;
   if (refreshChannel) {
     refreshChannel.close();
     refreshChannel = null;
@@ -520,5 +549,10 @@ watch(
   gap: 8px;
   min-height: 0;
   overflow: hidden;
+
+  :deep(.todo-filter-card) {
+    box-sizing: border-box;
+    padding-right: calc(8px + var(--todo-scrollbar-gutter-width, 0px));
+  }
 }
 </style>

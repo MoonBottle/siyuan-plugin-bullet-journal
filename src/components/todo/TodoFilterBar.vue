@@ -201,11 +201,14 @@ function handleSearchInput(event: Event) {
 
   .search-row {
     margin-bottom: 8px;
+    display: flex;
 
     .search-box {
       display: flex;
       align-items: center;
       gap: 6px;
+      width: 100%;
+      box-sizing: border-box;
       padding: 6px 10px;
       background: var(--b3-theme-background);
       border-radius: var(--b3-border-radius);

@@ -1,5 +1,9 @@
 <template>
-  <div class="fn__flex-1 todo-dock-content">
+  <div
+    ref="rootEl"
+    class="fn__flex-1 todo-dock-content"
+    :class="{ 'todo-dock-content--embedded': displayMode === 'embedded' }"
+  >
     <TodoSidebar
       ref="todoSidebar"
       :group-id="groupId"
@@ -41,13 +45,24 @@ const props = withDefaults(defineProps<{
 });
 
 const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
+const rootEl = ref<HTMLElement | null>(null);
 const allCollapsed = computed(() => todoSidebar.value?.allCollapsed ?? false);
 
 function toggleCollapseAll() {
   todoSidebar.value?.toggleCollapseAll();
 }
 
+function getScrollElement() {
+  if (props.displayMode === 'embedded') {
+    return rootEl.value?.querySelector('.todo-content') as HTMLElement | null;
+  }
+
+  return rootEl.value;
+}
+
 defineExpose({
+  rootEl,
+  getScrollElement,
   todoSidebar,
   allCollapsed,
   toggleCollapseAll,
@@ -56,11 +71,18 @@ defineExpose({
 
 <style lang="scss" scoped>
 .todo-dock-content {
-  overflow: auto;
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
   flex: 1;
   min-height: 0;
   position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.todo-dock-content--embedded {
+  overflow: hidden;
+  scrollbar-gutter: auto;
 }
 </style>

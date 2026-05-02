@@ -1234,6 +1234,7 @@ const handleCreateExample = async () => {
     height: 100%;
     min-height: 0;
     overflow: auto;
+    scrollbar-gutter: stable;
   }
 }
 

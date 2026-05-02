@@ -1,5 +1,9 @@
 <template>
-  <div class="workbench-widget-todo-list" data-testid="workbench-widget-todo-list">
+  <div
+    ref="widgetRootRef"
+    class="workbench-widget-todo-list"
+    data-testid="workbench-widget-todo-list"
+  >
     <div class="workbench-widget-todo-list__meta">
       <span>{{ openItemsCount }}</span>
       <span>{{ t('todo').title }}</span>
@@ -25,6 +29,7 @@
     </div>
     <div class="workbench-widget-todo-list__content" data-testid="workbench-todo-widget-content">
       <TodoContentPane
+        ref="todoContentPaneRef"
         :group-id="todoState.selectedGroup.value"
         :search-query="searchQuery"
         :sort-rules="presetSortRules"
@@ -40,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import TodoContentPane from '@/components/todo/TodoContentPane.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { useTodoViewState } from '@/composables/useTodoViewState';
@@ -65,6 +70,8 @@ const preview = useBlockFocusPreview({
   popoverLeaveGraceMs: 220,
 });
 const nativePreview = createNativeBlockPreviewController();
+const widgetRootRef = ref<HTMLElement | null>(null);
+let widgetScrollbarObserver: ResizeObserver | null = null;
 const todoConfig = computed(() => {
   return (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig;
 });
@@ -146,6 +153,19 @@ function handleNativePreviewDestroyed({
   });
 }
 
+function syncWidgetScrollbarGutter() {
+  const hostEl = widgetRootRef.value;
+  const scrollEl = todoContentPaneRef.value?.getScrollElement?.() as HTMLElement | null | undefined;
+  if (!hostEl || !scrollEl) {
+    return;
+  }
+
+  const gutterWidth = Math.max(0, scrollEl.offsetWidth - scrollEl.clientWidth);
+  hostEl.style.setProperty('--todo-scrollbar-gutter-width', `${gutterWidth}px`);
+}
+
+const todoContentPaneRef = ref<InstanceType<typeof TodoContentPane> | null>(null);
+
 watch(
   () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
   ([isOpen, blockId, anchorEl]) => {
@@ -170,10 +190,26 @@ watch(
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+  nextTick(() => {
+    syncWidgetScrollbarGutter();
+    const scrollEl = todoContentPaneRef.value?.getScrollElement?.() as HTMLElement | null | undefined;
+    const contentEl = scrollEl?.firstElementChild as HTMLElement | null;
+    widgetScrollbarObserver = new ResizeObserver(() => {
+      syncWidgetScrollbarGutter();
+    });
+    if (scrollEl) {
+      widgetScrollbarObserver.observe(scrollEl);
+    }
+    if (contentEl) {
+      widgetScrollbarObserver.observe(contentEl);
+    }
+  });
 });
 
 onUnmounted(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  widgetScrollbarObserver?.disconnect();
+  widgetScrollbarObserver = null;
   nativePreview.close();
   preview.dispose();
 });
@@ -208,6 +244,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+  width: calc(100% - 16px - var(--todo-scrollbar-gutter-width, 0px));
+  margin-left: 8px;
+  box-sizing: border-box;
   padding: 6px 10px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
