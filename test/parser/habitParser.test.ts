@@ -129,6 +129,11 @@ describe('parseCheckInRecordLine', () => {
     const result = parseCheckInRecordLine('喝水 3/8杯', 'habit-block-1');
     expect(result).toBeNull();
   });
+
+  it('带 ✅ 的旧格式记录不再兼容', () => {
+    expect(parseCheckInRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1')).toBeNull();
+    expect(parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06 ✅', 'habit-block-1')).toBeNull();
+  });
 });
 
 describe('parseHabitRecordLine', () => {
@@ -137,10 +142,9 @@ describe('parseHabitRecordLine', () => {
     expect(result).toBeNull();
   });
 
-  it('带完成标记的二元记录应识别为习惯打卡记录', () => {
+  it('带完成标记的旧二元记录不再识别为习惯打卡记录', () => {
     const result = parseHabitRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1');
-    expect(result).not.toBeNull();
-    expect(result!.date).toBe('2026-04-06');
+    expect(result).toBeNull();
   });
 
   it('带计数进度的记录应识别为习惯打卡记录', () => {

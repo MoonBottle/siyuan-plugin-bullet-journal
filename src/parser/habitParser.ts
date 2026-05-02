@@ -194,12 +194,16 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
 
 /**
  * 解析打卡记录行
- * 格式: 内容 [N/M单位] 📅YYYY-MM-DD [✅] 或 内容 [N/M单位] @YYYY-MM-DD [✅]
+ * 格式: 内容 [N/M单位] 📅YYYY-MM-DD 或 内容 [N/M单位] @YYYY-MM-DD
  * @param line 打卡记录行内容
  * @param habitId 所属习惯的 blockId
  */
 export function parseCheckInRecordLine(line: string, habitId: string): Partial<CheckInRecord> | null {
   const normalizedLine = normalizeHabitText(line);
+
+  if (normalizedLine.includes('✅')) {
+    return null;
+  }
 
   // 必须包含日期标记（📅 或 @）
   const dateMatch = normalizedLine.match(/📅(\d{4}-\d{2}-\d{2})/) || normalizedLine.match(/@(\d{4}-\d{2}-\d{2})/);
@@ -225,7 +229,6 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   let content = normalizedLine
     .replace(/📅\d{4}-\d{2}-\d{2}/g, '')
     .replace(/@\d{4}-\d{2}-\d{2}/g, '')
-    .replace(/✅/g, '')
     .replace(/\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/g, '')
     .trim();
 
@@ -257,7 +260,7 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
 
 /**
  * 解析严格意义上的习惯打卡记录行
- * 需要先满足基础记录格式，再满足习惯记录标记（✅ 或 N/M单位）
+ * 需要先满足基础记录格式，再满足习惯记录标记（N/M单位）
  */
 export function parseHabitRecordLine(line: string, habitId: string): Partial<CheckInRecord> | null {
   const normalizedLine = normalizeHabitText(line);
@@ -266,7 +269,7 @@ export function parseHabitRecordLine(line: string, habitId: string): Partial<Che
     return null;
   }
 
-  const hasHabitRecordMarkers = normalizedLine.includes('✅') || /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(normalizedLine);
+  const hasHabitRecordMarkers = /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(normalizedLine);
   return hasHabitRecordMarkers ? parsedRecord : null;
 }
 
