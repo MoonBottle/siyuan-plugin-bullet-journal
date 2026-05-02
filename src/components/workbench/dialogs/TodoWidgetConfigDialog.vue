@@ -1,28 +1,30 @@
 <template>
   <div class="todo-widget-config-dialog">
-    <TodoFilterBar
-      :selected-group="selectedGroup"
-      :search-query="searchQuery"
-      :date-filter-type="dateFilterType"
-      :selected-priorities="selectedPriorities"
-      :start-date="startDate"
-      :end-date="endDate"
-      :show-sort-panel="false"
-      :show-sort-trigger="false"
-      :sort-rules="[]"
-      :group-options="groupOptions"
-      :date-filter-options="dateFilterOptions"
-      :priority-options="priorityOptions"
-      :sort-direction-options="[]"
-      :available-field-options="getEmptyFieldOptions"
-      @update:selected-group="selectedGroup = $event"
-      @update:search-query="searchQuery = $event"
-      @update:date-filter-type="dateFilterType = $event"
-      @change:date-filter-type="handleDateFilterChange"
-      @update:start-date="startDate = $event"
-      @update:end-date="endDate = $event"
-      @toggle-priority="togglePriority"
-    />
+    <div class="todo-widget-config-dialog__body">
+      <TodoFilterBar
+        :selected-group="selectedGroup"
+        :search-query="searchQuery"
+        :date-filter-type="dateFilterType"
+        :selected-priorities="selectedPriorities"
+        :start-date="startDate"
+        :end-date="endDate"
+        :show-sort-panel="false"
+        :show-sort-trigger="false"
+        :sort-rules="[]"
+        :group-options="groupOptions"
+        :date-filter-options="dateFilterOptions"
+        :priority-options="priorityOptions"
+        :sort-direction-options="[]"
+        :available-field-options="getEmptyFieldOptions"
+        @update:selected-group="selectedGroup = $event"
+        @update:search-query="searchQuery = $event"
+        @update:date-filter-type="dateFilterType = $event"
+        @change:date-filter-type="handleDateFilterChange"
+        @update:start-date="startDate = $event"
+        @update:end-date="endDate = $event"
+        @toggle-priority="togglePriority"
+      />
+    </div>
 
     <div class="todo-widget-config-dialog__footer">
       <div class="todo-widget-config-dialog__actions">
@@ -132,14 +134,27 @@ function handleConfirm() {
 .todo-widget-config-dialog {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   min-width: 0;
+  padding: 16px 20px 20px;
+}
+
+.todo-widget-config-dialog__body {
+  padding: 0;
+}
+
+.todo-widget-config-dialog__body :deep(.todo-filter-bar) {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
 }
 
 .todo-widget-config-dialog__footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--b3-border-color);
 }
 
 .todo-widget-config-dialog__actions {
