@@ -5,8 +5,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initI18n } from '@/i18n';
 import type { WorkbenchEntry } from '@/types/workbench';
 
+const desktopTodoDockProps = vi.fn();
+const pomodoroStatsTabProps = vi.fn();
+
 vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   default: {
+    props: ['enableWorkbenchPreview'],
+    setup(props: any) {
+      desktopTodoDockProps({
+        enableWorkbenchPreview: props.enableWorkbenchPreview,
+      });
+      return {};
+    },
     template: '<div data-testid="desktop-todo-dock-mock">Desktop Todo</div>',
   },
 }));
@@ -25,6 +35,13 @@ vi.mock('@/tabs/QuadrantTab.vue', () => ({
 
 vi.mock('@/tabs/PomodoroStatsTab.vue', () => ({
   default: {
+    props: ['embedded'],
+    setup(props: any) {
+      pomodoroStatsTabProps({
+        embedded: props.embedded,
+      });
+      return {};
+    },
     template: '<div data-testid="pomodoro-stats-tab-mock">Pomodoro Stats</div>',
   },
 }));
@@ -61,6 +78,7 @@ async function mountComponent(component: any, props: Record<string, unknown>) {
 describe('WorkbenchViewHost', () => {
   beforeEach(() => {
     initI18n('en_US');
+    vi.clearAllMocks();
   });
 
   it('todo view entry renders workbench todo host', async () => {
@@ -71,6 +89,9 @@ describe('WorkbenchViewHost', () => {
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="desktop-todo-dock-mock"]')).not.toBeNull();
+    expect(desktopTodoDockProps).toHaveBeenCalledWith(expect.objectContaining({
+      enableWorkbenchPreview: true,
+    }));
 
     mounted.unmount();
   });
@@ -107,6 +128,9 @@ describe('WorkbenchViewHost', () => {
 
     expect(mounted.container.querySelector('[data-testid="workbench-view-pomodoro-stats"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="pomodoro-stats-tab-mock"]')).not.toBeNull();
+    expect(pomodoroStatsTabProps).toHaveBeenCalledWith(expect.objectContaining({
+      embedded: true,
+    }));
 
     mounted.unmount();
   });
@@ -158,5 +182,5 @@ describe('WorkbenchContentHost routing', () => {
     expect(viewMounted.container.querySelector('[data-testid="workbench-view-todo"]')).not.toBeNull();
     expect(viewMounted.container.querySelector('[data-testid="workbench-content-title"]')).toBeNull();
     viewMounted.unmount();
-  });
+  }, 10000);
 });

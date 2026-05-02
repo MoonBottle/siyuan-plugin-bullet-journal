@@ -67,6 +67,8 @@
         :date-range="dateRange"
         :completed-date-range="completedDateRange"
         :priorities="selectedPriorities"
+        :preview-trigger-mode="enableWorkbenchPreview ? 'click' : 'hover'"
+        :on-item-preview-click="enableWorkbenchPreview ? handleItemPreviewClick : undefined"
       />
     </div>
   </div>
@@ -79,6 +81,7 @@ import { getCurrentPlugin, usePlugin } from '@/main';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import TodoContentPane from '@/components/todo/TodoContentPane.vue';
 import TodoFilterBar from '@/components/todo/TodoFilterBar.vue';
 import { t } from '@/i18n';
@@ -90,10 +93,27 @@ import { PRIORITY_CONFIG } from '@/parser/priorityParser';
 import { defaultTodoSortRules } from '@/settings';
 import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
 import dayjs from '@/utils/dayjs';
+import { useApp } from '@/main';
+import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
+
+const props = withDefaults(defineProps<{
+  enableWorkbenchPreview?: boolean;
+}>(), {
+  enableWorkbenchPreview: false,
+});
 
 const plugin = usePlugin() as any;
+const app = useApp();
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+const preview = useBlockFocusPreview({
+  showDelayMs: 0,
+  hideDelayMs: 300,
+  popoverLeaveGraceMs: 220,
+});
+const nativePreview = createNativeBlockPreviewController();
+const enableWorkbenchPreview = computed(() => props.enableWorkbenchPreview);
 
 const todoContentPane = ref<InstanceType<typeof TodoContentPane> | null>(null);
 const selectedGroup = ref(settingsStore.todoDock.selectedGroup);
@@ -150,6 +170,58 @@ const dateRange = computed(() => {
 const completedDateRange = computed(() => {
   return buildCompletedTodoDateRange(dateFilterType.value, currentDate.value, dateRange.value);
 });
+
+function handleItemPreviewClick(payload: TodoSidebarHoverPayload) {
+  preview.showNow(payload);
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!enableWorkbenchPreview.value || !preview.isOpen.value) {
+    return;
+  }
+
+  if (nativePreview.containsTarget(event.target)) {
+    return;
+  }
+
+  preview.forceClose();
+}
+
+function handleNativePreviewDestroyed({
+  initiatedByController,
+  blockId,
+  anchorEl,
+}: {
+  initiatedByController: boolean;
+  blockId: string;
+  anchorEl: HTMLElement;
+}) {
+  const activeBlockId = preview.activeBlockId.value;
+  const activeItemId = preview.activeItemId.value;
+  const activeAnchorEl = preview.anchorEl.value;
+
+  if (activeBlockId !== blockId || activeAnchorEl !== anchorEl) {
+    return;
+  }
+
+  preview.forceClose();
+
+  if (
+    initiatedByController
+    || !activeBlockId
+    || !activeItemId
+    || !activeAnchorEl
+    || !anchorEl.matches(':hover')
+  ) {
+    return;
+  }
+
+  preview.showNow({
+    blockId: activeBlockId,
+    itemId: activeItemId,
+    anchorEl: activeAnchorEl,
+  });
+}
 
 const sortRules = computed(() => {
   return settingsStore.todoDock.sortRules;
@@ -384,6 +456,8 @@ onMounted(async () => {
   } catch {
     // 忽略
   }
+
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
 });
 
 onUnmounted(() => {
@@ -399,7 +473,33 @@ onUnmounted(() => {
     refreshChannel.close();
     refreshChannel = null;
   }
+
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  nativePreview.close();
+  preview.dispose();
 });
+
+watch(
+  () => [enableWorkbenchPreview.value, preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
+  ([enabled, isOpen, blockId, anchorEl]) => {
+    if (!enabled || !isOpen || !blockId || !anchorEl || !app) {
+      nativePreview.close();
+      return;
+    }
+
+    nativePreview.open({
+      app,
+      plugin,
+      blockId,
+      anchorEl,
+      onHoverChange: preview.markPopoverHovered,
+      onPanelDestroyed: handleNativePreviewDestroyed,
+    });
+  },
+  {
+    flush: 'post',
+  },
+);
 </script>
 
 <style lang="scss" scoped>

@@ -1,6 +1,6 @@
 <template>
   <div class="pomodoro-stats-tab">
-    <div class="stats-header">
+    <div v-if="showHeader" class="stats-header">
       <h2 class="stats-title">{{ t('pomodoroStats').statsTitle }}</h2>
       <span class="fn__flex-1 fn__space"></span>
       <span class="block__icon refresh-btn b3-tooltips b3-tooltips__sw" :aria-label="t('common').refresh" @click="handleRefresh">
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { getCurrentPlugin, usePlugin } from '@/main';
@@ -39,9 +39,16 @@ import FocusTimelineChart from '@/components/pomodoro/stats/FocusTimelineChart.v
 import BestFocusTimeChart from '@/components/pomodoro/stats/BestFocusTimeChart.vue';
 import AnnualHeatmap from '@/components/pomodoro/stats/AnnualHeatmap.vue';
 
+const props = withDefaults(defineProps<{
+  embedded?: boolean;
+}>(), {
+  embedded: false,
+});
+
 type RangeType = 'today' | 'week' | 'month';
 const range = ref<RangeType>('week');
 const rangeOffset = ref(0);
+const showHeader = computed(() => !props.embedded);
 
 const plugin = usePlugin();
 const settingsStore = useSettingsStore();

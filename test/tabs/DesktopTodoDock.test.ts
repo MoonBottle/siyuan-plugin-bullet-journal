@@ -10,6 +10,10 @@ import { Menu } from 'siyuan';
 const menuAddItem = vi.fn();
 const menuAddSeparator = vi.fn();
 const menuOpen = vi.fn();
+const todoSidebarProps = vi.fn();
+const nativePreviewOpen = vi.fn();
+const nativePreviewClose = vi.fn();
+const nativePreviewContainsTarget = vi.fn(() => false);
 
 vi.mock('siyuan', () => ({
   Menu: vi.fn(function () {
@@ -24,6 +28,7 @@ vi.mock('siyuan', () => ({
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({})),
   getCurrentPlugin: vi.fn(() => ({})),
+  useApp: vi.fn(() => ({})),
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -40,10 +45,24 @@ vi.mock('@/utils/dialog', () => ({
   showMessage: vi.fn(),
 }));
 
+vi.mock('@/utils/nativeBlockPreview', () => ({
+  createNativeBlockPreviewController: () => ({
+    open: nativePreviewOpen,
+    close: nativePreviewClose,
+    containsTarget: nativePreviewContainsTarget,
+    isOpen: vi.fn(() => false),
+  }),
+}));
+
 vi.mock('@/components/todo/TodoSidebar.vue', () => ({
   default: defineComponent({
     name: 'TodoSidebarStub',
+    props: ['previewTriggerMode', 'onItemPreviewClick'],
     setup(_, { expose }) {
+      todoSidebarProps({
+        previewTriggerMode: (_ as any).previewTriggerMode,
+        onItemPreviewClick: (_ as any).onItemPreviewClick,
+      });
       expose({
         allCollapsed: false,
         toggleCollapseAll: vi.fn(),
@@ -64,7 +83,7 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   }),
 }));
 
-function mountDock() {
+function mountDock(props?: Record<string, unknown>) {
   const pinia = createPinia();
   setActivePinia(pinia);
 
@@ -81,7 +100,7 @@ function mountDock() {
   const container = document.createElement('div');
   document.body.appendChild(container);
 
-  const app = createApp(DesktopTodoDock);
+  const app = createApp(DesktopTodoDock, props);
   app.use(pinia);
   app.mount(container);
 
@@ -139,6 +158,19 @@ describe('DesktopTodoDock', () => {
     await nextTick();
 
     expect(mounted.projectStore.refresh).toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('keeps default dock item click behavior instead of enabling workbench preview mode', async () => {
+    const mounted = mountDock();
+    await nextTick();
+
+    expect(todoSidebarProps).toHaveBeenCalledWith(expect.objectContaining({
+      previewTriggerMode: 'hover',
+      onItemPreviewClick: undefined,
+    }));
+    expect(nativePreviewOpen).not.toHaveBeenCalled();
 
     mounted.unmount();
   });

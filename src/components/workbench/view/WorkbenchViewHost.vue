@@ -1,7 +1,7 @@
 <template>
   <div class="workbench-view-host" data-testid="workbench-view-host">
     <div v-if="viewType === 'todo'" class="workbench-view-host__surface" data-testid="workbench-view-todo">
-      <DesktopTodoDock />
+      <DesktopTodoDock :enable-workbench-preview="true" />
     </div>
     <div v-else-if="viewType === 'habit'" class="workbench-view-host__surface" data-testid="workbench-view-habit">
       <WorkbenchHabitView />
@@ -10,7 +10,7 @@
       <QuadrantTab />
     </div>
     <div v-else-if="viewType === 'pomodoroStats'" class="workbench-view-host__surface" data-testid="workbench-view-pomodoro-stats">
-      <PomodoroStatsTab />
+      <PomodoroStatsTab :embedded="true" />
     </div>
     <div
       v-else
