@@ -37,7 +37,9 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
   const currentDate = computed(() => projectStore.currentDate);
   const groupId = computed(() => toValue(options.groupId) ?? '');
-  const habits = computed(() => projectStore.getHabits(groupId.value));
+  const habits = computed(() => {
+    return projectStore.getHabits(groupId.value).filter(habit => !habit.archivedAt);
+  });
 
   const habitStatsMap = computed(() => {
     return calculateAllHabitStats(habits.value, currentDate.value);

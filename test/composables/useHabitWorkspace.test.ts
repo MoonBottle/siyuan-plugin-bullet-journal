@@ -115,6 +115,32 @@ describe('useHabitWorkspace', () => {
     expect(calculateAllHabitStats).toHaveBeenCalled();
   });
 
+  it('filters archived habits out of the default workspace list', async () => {
+    const projectStore = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.scanMode = 'folder';
+    settingsStore.directories = [];
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [
+        createHabit({ blockId: 'active-1' }),
+        createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+      ],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+
+    expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['active-1']);
+    expect(projectStore.habits.map(habit => habit.blockId)).toEqual(['active-1', 'archived-1']);
+  });
+
   it('derives the selected habit from the latest store instance after refresh', async () => {
     const projectStore = useProjectStore();
     const settingsStore = useSettingsStore();
@@ -176,6 +202,7 @@ describe('useHabitWorkspace', () => {
     const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
     const workspace = useHabitWorkspace();
     const habit = workspace.habits.value[0];
+    const initialSelectedDate = workspace.selectedDate.value;
 
     await workspace.openHabitDoc(habit);
     await workspace.checkInHabit(habit);
@@ -185,8 +212,8 @@ describe('useHabitWorkspace', () => {
     await workspace.openSelectedHabitDoc();
 
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(1, 'doc-1', undefined, 'habit-a');
-    expect(checkIn).toHaveBeenCalledWith(habit, workspace.selectedDate.value);
-    expect(checkInCount).toHaveBeenCalledWith(habit, workspace.selectedDate.value, 1);
+    expect(checkIn).toHaveBeenCalledWith(habit, initialSelectedDate);
+    expect(checkInCount).toHaveBeenCalledWith(habit, initialSelectedDate, 1);
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(2, 'doc-1', undefined, 'habit-a');
     expect(calculateHabitStats).toHaveBeenCalled();
   });
