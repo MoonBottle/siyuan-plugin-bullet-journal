@@ -6,6 +6,7 @@ import {
   type MaybeRefOrGetter,
 } from 'vue';
 import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompletion';
+import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import {
   checkIn,
@@ -14,6 +15,7 @@ import {
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit, HabitStats } from '@/types/models';
+import { showMessage } from '@/utils/dialog';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import dayjs from '@/utils/dayjs';
 import {
@@ -114,28 +116,46 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     syncSelectedHabit();
   }
 
+  function isHabitArchived(habit: Habit) {
+    return Boolean(habit.archivedAt);
+  }
+
   async function checkInHabit(habit: Habit) {
+    if (isHabitArchived(habit)) {
+      showMessage(t('habit.archivedCannotCheckIn'));
+      return false;
+    }
+
     const success = await checkIn(habit, selectedDate.value);
     if (!success) {
-      return;
+      return false;
     }
 
     if (selectedHabit.value?.blockId === habit.blockId) {
       selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
       syncSelectedHabit();
     }
+
+    return true;
   }
 
   async function incrementHabit(habit: Habit) {
+    if (isHabitArchived(habit)) {
+      showMessage(t('habit.archivedCannotCheckIn'));
+      return false;
+    }
+
     const success = await checkInCount(habit, selectedDate.value, 1);
     if (!success) {
-      return;
+      return false;
     }
 
     if (selectedHabit.value?.blockId === habit.blockId) {
       selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
       syncSelectedHabit();
     }
+
+    return true;
   }
 
   async function openHabitDoc(habit: Habit) {

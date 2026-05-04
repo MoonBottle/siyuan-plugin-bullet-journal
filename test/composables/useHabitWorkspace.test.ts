@@ -8,12 +8,14 @@ const {
   checkIn,
   checkInCount,
   openDocumentAtLine,
+  showMessage,
   calculateAllHabitStats,
   calculateHabitStats,
 } = vi.hoisted(() => ({
   checkIn: vi.fn(),
   checkInCount: vi.fn(),
   openDocumentAtLine: vi.fn(),
+  showMessage: vi.fn(),
   calculateAllHabitStats: vi.fn((habits: Array<{ blockId: string }>) => {
     return new Map(habits.map(habit => [habit.blockId, {
       habitId: habit.blockId,
@@ -49,6 +51,10 @@ vi.mock('@/services/habitService', () => ({
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine,
+}));
+
+vi.mock('@/utils/dialog', () => ({
+  showMessage,
 }));
 
 vi.mock('@/utils/habitStatsUtils', () => ({
@@ -216,5 +222,38 @@ describe('useHabitWorkspace', () => {
     expect(checkInCount).toHaveBeenCalledWith(habit, initialSelectedDate, 1);
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(2, 'doc-1', undefined, 'habit-a');
     expect(calculateHabitStats).toHaveBeenCalled();
+  });
+
+  it('does not call binary check-in service for archived habits', async () => {
+    const archivedHabit = createHabit({
+      blockId: 'habit-archived-binary',
+      archivedAt: '2026-05-04',
+    });
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+
+    await workspace.checkInHabit(archivedHabit);
+
+    expect(checkIn).not.toHaveBeenCalled();
+    expect(showMessage).toHaveBeenCalledWith('习惯已归档');
+  });
+
+  it('does not call count check-in service for archived habits', async () => {
+    const archivedHabit = createHabit({
+      blockId: 'habit-archived-count',
+      type: 'count',
+      target: 8,
+      unit: 'cups',
+      archivedAt: '2026-05-04',
+    });
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+
+    await workspace.incrementHabit(archivedHabit);
+
+    expect(checkInCount).not.toHaveBeenCalled();
+    expect(showMessage).toHaveBeenCalledWith('习惯已归档');
   });
 });
