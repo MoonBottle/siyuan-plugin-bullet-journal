@@ -844,6 +844,11 @@ export function getActionHandler(
         }
 
         const habit: Habit = matchedHabit;
+        if (habit.archivedAt) {
+          showMessage(t('habit').archivedCannotCheckIn || '习惯已归档', 2000, 'info');
+          return;
+        }
+
         const todayRecord = habit.records.find(record => record.date === currentDate);
         if (todayRecord) {
           if (habit.type === 'count') {

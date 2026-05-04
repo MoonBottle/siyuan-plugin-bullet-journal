@@ -357,6 +357,34 @@ describe('habit slash commands', () => {
     expect(checkInCountSpy).not.toHaveBeenCalled();
   });
 
+  it('/dk 在已归档的习惯定义行上应提示已归档并停止打卡', async () => {
+    const messageSpy = vi.mocked(showMessage);
+    const checkInSpy = vi.mocked(checkIn);
+    const checkInCountSpy = vi.mocked(checkInCount);
+    const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'habit-archived');
+    node.textContent = '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-04-30';
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '喝水',
+      docId: 'doc-1',
+      blockId: 'habit-archived',
+      type: 'count',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      archivedAt: '2026-04-30',
+      frequency: { type: 'daily' },
+      records: [],
+    }]);
+
+    await handler({} as any, node);
+
+    expect(messageSpy).toHaveBeenCalledWith('习惯已归档', 2000, 'info');
+    expect(checkInSpy).not.toHaveBeenCalled();
+    expect(checkInCountSpy).not.toHaveBeenCalled();
+  });
+
   it('/dk 在今天的二元打卡记录上应提示已打卡', async () => {
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
