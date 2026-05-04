@@ -8,6 +8,7 @@ vi.mock('@/api', () => ({
 }));
 
 import {
+  archiveHabit,
   checkIn,
   checkInCount,
   setCheckInValue,
@@ -15,6 +16,7 @@ import {
   buildCheckInMarkdown,
   findInsertAfterBlockId,
   getCheckInMarkdown,
+  unarchiveHabit,
   updateCheckInMarkdown,
 } from '@/services/habitService';
 import type { Habit, CheckInRecord } from '@/types/models';
@@ -304,6 +306,70 @@ describe('updateCheckInMarkdown', () => {
       'markdown',
       '早起 📅2026-04-07 #补签',
       'record-2026-04-07',
+    );
+  });
+});
+
+describe('archiveHabit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('archives a habit by appending 📦YYYY-MM-DD to the definition line', async () => {
+    (getBlockKramdown as any).mockResolvedValue({
+      id: 'habit-1',
+      kramdown: '喝水 🎯2026-04-01 8杯 🔄每天',
+    });
+    (updateBlock as any).mockResolvedValue([{ doOperations: [] }]);
+
+    const result = await archiveHabit(
+      mkHabit({
+        name: '喝水',
+        type: 'count',
+        target: 8,
+        unit: '杯',
+      }),
+      '2026-05-04',
+    );
+
+    expect(result).toBe(true);
+    expect(getBlockKramdown).toHaveBeenCalledWith('habit-1');
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04',
+      'habit-1',
+    );
+  });
+});
+
+describe('unarchiveHabit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('unarchives a habit by removing the 📦YYYY-MM-DD marker only', async () => {
+    (getBlockKramdown as any).mockResolvedValue({
+      id: 'habit-1',
+      kramdown: '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04',
+    });
+    (updateBlock as any).mockResolvedValue([{ doOperations: [] }]);
+
+    const result = await unarchiveHabit(
+      mkHabit({
+        name: '喝水',
+        type: 'count',
+        target: 8,
+        unit: '杯',
+        archivedAt: '2026-05-04',
+      }) as Habit,
+    );
+
+    expect(result).toBe(true);
+    expect(getBlockKramdown).toHaveBeenCalledWith('habit-1');
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '喝水 🎯2026-04-01 8杯 🔄每天',
+      'habit-1',
     );
   });
 });

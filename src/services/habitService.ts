@@ -6,6 +6,8 @@ import { insertBlock, updateBlock, deleteBlock, getBlockKramdown } from '@/api';
 import type { Habit, CheckInRecord } from '@/types/models';
 import type { BlockWriter } from '@/utils/fileUtils';
 
+const HABIT_ARCHIVE_MARKER_RE = /\s*📦\d{4}-\d{2}-\d{2}\s*$/;
+
 export function findInsertAfterBlockId(habit: Habit, date: string): string {
   const sortedRecords = [...habit.records].sort((a, b) => a.date.localeCompare(b.date));
   if (sortedRecords.length === 0) {
@@ -197,6 +199,51 @@ export async function updateCheckInMarkdown(record: CheckInRecord, markdown: str
     return true;
   } catch (error) {
     console.error('[HabitService] updateCheckInMarkdown failed:', error);
+    return false;
+  }
+}
+
+export async function archiveHabit(habit: Habit, archiveDate: string): Promise<boolean> {
+  if (habit.archivedAt) {
+    return false;
+  }
+
+  try {
+    const result = await getBlockKramdown(habit.blockId);
+    const markdown = result?.kramdown?.trim();
+    if (!markdown || HABIT_ARCHIVE_MARKER_RE.test(markdown)) {
+      return false;
+    }
+
+    await updateBlock('markdown', `${markdown} 📦${archiveDate}`, habit.blockId);
+    return true;
+  } catch (error) {
+    console.error('[HabitService] archiveHabit failed:', error);
+    return false;
+  }
+}
+
+export async function unarchiveHabit(habit: Habit): Promise<boolean> {
+  if (!habit.archivedAt) {
+    return false;
+  }
+
+  try {
+    const result = await getBlockKramdown(habit.blockId);
+    const markdown = result?.kramdown?.trim();
+    if (!markdown) {
+      return false;
+    }
+
+    const nextMarkdown = markdown.replace(HABIT_ARCHIVE_MARKER_RE, '').trimEnd();
+    if (nextMarkdown === markdown) {
+      return false;
+    }
+
+    await updateBlock('markdown', nextMarkdown, habit.blockId);
+    return true;
+  } catch (error) {
+    console.error('[HabitService] unarchiveHabit failed:', error);
     return false;
   }
 }
