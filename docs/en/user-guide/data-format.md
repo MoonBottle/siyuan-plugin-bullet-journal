@@ -376,6 +376,7 @@ Habits are at the same level as tasks, both being first-level concepts under a p
 | Target value+unit | `8 cups`, `5 km` | Target for count habits (optional) |
 | Reminder time | `⏰HH:mm` | Habit reminder time (optional) |
 | Frequency rule | `🔄daily` | Habit check-in frequency (required) |
+| Archive marker | `📦YYYY-MM-DD` | Habit archive date (optional) |
 
 ### Habit Types
 
@@ -432,6 +433,26 @@ Use `🔄` as the habit frequency marker:
 | `🔄每周一三五` | `🔄Mon,Wed,Fri` | Check in on specified weekdays |
 
 > **Difference from `🔁`**: `🔄` is the habit-specific frequency marker, while `🔁` is the item recurrence marker. Habit check-ins are user-triggered; the system does not auto-create records.
+
+### Archive Marker
+
+Use `📦` to mark habit archive status:
+
+| Format | Description |
+|------|------|
+| `📦YYYY-MM-DD` | Habit is archived (optional, at the end of the habit definition line) |
+
+Archiving indicates the user has voluntarily deactivated the habit. Archived habits are hidden from the default active list by default, with reminders and check-ins stopped, while historical records and statistics are preserved.
+
+Example:
+
+```markdown
+Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily 📦2026-05-04
+```
+
+> The archive marker is only allowed on the habit definition line, not on check-in record lines.
+
+For more archive details, see [Habit Archive](./habit-checkin.md#habit-archive).
 
 For more habit check-in details, see [Habit Check-in](./habit-checkin.md).
 

@@ -12,6 +12,7 @@ The Task Assistant plugin supports habit tracking to help you build and maintain
 - [Statistics and Streaks](#statistics-and-streaks)
 - [Reminders](#reminders)
 - [Make-up Check-ins and Editing](#make-up-check-ins-and-editing)
+- [Habit Archive](#habit-archive)
 - [Complete Example](#complete-example)
 - [FAQ](#faq)
 
@@ -192,6 +193,7 @@ Drink water 🎯2026-04-01 Stick to 21 days 8 cups ⏰09:00 🔄daily
 |-----------|------|
 | Habit definition line (not checked in today) | Check in today: binary creates record, count increments by 1 |
 | Habit definition line (already checked in today) | Prompt "Already checked in today" |
+| Habit definition line (archived) | Prompt "Habit is archived" |
 | Today's check-in record line (binary) | Prompt "Already checked in today" |
 | Today's check-in record line (count) | Increment current value by 1 |
 | Historical check-in record line | Open Habit Dock, navigate to that habit's details |
@@ -306,6 +308,76 @@ Support for making up check-ins for historical dates:
 ### Undo Check-in
 
 Support for undoing today's or historical check-ins by deleting the corresponding record block.
+
+---
+
+## Habit Archive
+
+When a habit is no longer continued, you can archive it to hide it from the default active list while preserving historical records and statistics.
+
+### Archive Marker
+
+Add the `📦YYYY-MM-DD` marker at the end of the habit definition line:
+
+```markdown
+Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily 📦2026-05-04
+```
+
+- `📦` indicates the habit is archived
+- Followed by the archive date `YYYY-MM-DD`
+
+### Archive vs. Natural End
+
+Habits have two inactive states:
+
+| State | Meaning | Trigger |
+|------|------|----------|
+| **Ended** | Natural expiration | Automatically becomes ended when `Stick to N days` expires |
+| **Archived** | User-initiated deactivation | Manually add the `📦` marker |
+
+The two states do not override each other and can coexist independently:
+
+- Not ended but archived
+- Ended but not archived
+- Ended and archived
+
+**Activeness check**: A habit is considered active only when it is both **not archived** and **not ended**.
+
+### Archive Operations
+
+**Entry point**: Archive or unarchive via the action area in the upper right corner of the habit detail panel.
+
+**When archiving**:
+
+- A confirmation prompt appears: "After archiving, reminders will stop and the habit will be hidden from the default list; historical records will be preserved"
+- After confirmation, `📦YYYY-MM-DD` is appended to the habit definition line
+
+**When unarchiving**:
+
+- No confirmation needed; restores immediately
+- Removes the `📦YYYY-MM-DD` from the habit definition line
+
+> Archive status is not managed through the "Create/Edit Habit" dialog; archiving/unarchiving uses separate action buttons.
+
+### Behavior After Archiving
+
+| Behavior | Archived Habit |
+|------|------------|
+| Default habit list | Hidden, does not appear in the active list |
+| Habit details | Still accessible to view calendar, statistics, logs |
+| Check-in | Disabled (button grayed out, `/checkin` prompts "Habit is archived") |
+| Reminders | Stopped |
+| Historical records | Preserved, unaffected |
+| Statistics | Fully viewable in the detail page |
+| Document navigation | Can still open the block where the habit is defined |
+
+### Invalid Archive Marker Format
+
+If a malformed marker is written, such as `📦today`:
+
+- Not recognized as archived
+- Does not cause a parsing error
+- Other habit fields are parsed normally
 
 ---
 
