@@ -8,6 +8,25 @@ import type { BlockWriter } from '@/utils/fileUtils';
 
 const HABIT_ARCHIVE_MARKER_RE = /\s*📦\d{4}-\d{2}-\d{2}\s*$/;
 
+function replaceHabitDefinitionLine(
+  markdown: string,
+  transform: (line: string) => string | null,
+): string | null {
+  const normalizedMarkdown = markdown.trim();
+  if (!normalizedMarkdown) {
+    return null;
+  }
+
+  const lines = normalizedMarkdown.split('\n');
+  const nextFirstLine = transform(lines[0]?.trim() ?? '');
+  if (!nextFirstLine) {
+    return null;
+  }
+
+  lines[0] = nextFirstLine;
+  return lines.join('\n');
+}
+
 export function findInsertAfterBlockId(habit: Habit, date: string): string {
   const sortedRecords = [...habit.records].sort((a, b) => a.date.localeCompare(b.date));
   if (sortedRecords.length === 0) {
@@ -210,12 +229,21 @@ export async function archiveHabit(habit: Habit, archiveDate: string): Promise<b
 
   try {
     const result = await getBlockKramdown(habit.blockId);
-    const markdown = result?.kramdown?.trim();
-    if (!markdown || HABIT_ARCHIVE_MARKER_RE.test(markdown)) {
+    const markdown = result?.kramdown;
+    const nextMarkdown = markdown
+      ? replaceHabitDefinitionLine(markdown, (line) => {
+          if (!line || HABIT_ARCHIVE_MARKER_RE.test(line)) {
+            return null;
+          }
+
+          return `${line} 📦${archiveDate}`;
+        })
+      : null;
+    if (!nextMarkdown) {
       return false;
     }
 
-    await updateBlock('markdown', `${markdown} 📦${archiveDate}`, habit.blockId);
+    await updateBlock('markdown', nextMarkdown, habit.blockId);
     return true;
   } catch (error) {
     console.error('[HabitService] archiveHabit failed:', error);
@@ -230,13 +258,22 @@ export async function unarchiveHabit(habit: Habit): Promise<boolean> {
 
   try {
     const result = await getBlockKramdown(habit.blockId);
-    const markdown = result?.kramdown?.trim();
-    if (!markdown) {
-      return false;
-    }
+    const markdown = result?.kramdown;
+    const nextMarkdown = markdown
+      ? replaceHabitDefinitionLine(markdown, (line) => {
+          if (!line) {
+            return null;
+          }
 
-    const nextMarkdown = markdown.replace(HABIT_ARCHIVE_MARKER_RE, '').trimEnd();
-    if (nextMarkdown === markdown) {
+          const nextLine = line.replace(HABIT_ARCHIVE_MARKER_RE, '').trimEnd();
+          if (nextLine === line) {
+            return null;
+          }
+
+          return nextLine;
+        })
+      : null;
+    if (!nextMarkdown) {
       return false;
     }
 

@@ -340,6 +340,31 @@ describe('archiveHabit', () => {
       'habit-1',
     );
   });
+
+  it('archives only the definition line when the block also contains an attrs line', async () => {
+    (getBlockKramdown as any).mockResolvedValue({
+      id: 'habit-1',
+      kramdown: '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
+    });
+    (updateBlock as any).mockResolvedValue([{ doOperations: [] }]);
+
+    const result = await archiveHabit(
+      mkHabit({
+        name: '跑步',
+        type: 'count',
+        target: 3,
+        unit: '公里',
+      }),
+      '2026-05-04',
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天 📦2026-05-04\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
+      'habit-1',
+    );
+  });
 });
 
 describe('unarchiveHabit', () => {
@@ -369,6 +394,31 @@ describe('unarchiveHabit', () => {
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       '喝水 🎯2026-04-01 8杯 🔄每天',
+      'habit-1',
+    );
+  });
+
+  it('unarchives only the definition line when the block also contains an attrs line', async () => {
+    (getBlockKramdown as any).mockResolvedValue({
+      id: 'habit-1',
+      kramdown: '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天 📦2026-05-04\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
+    });
+    (updateBlock as any).mockResolvedValue([{ doOperations: [] }]);
+
+    const result = await unarchiveHabit(
+      mkHabit({
+        name: '跑步',
+        type: 'count',
+        target: 3,
+        unit: '公里',
+        archivedAt: '2026-05-04',
+      }) as Habit,
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
       'habit-1',
     );
   });

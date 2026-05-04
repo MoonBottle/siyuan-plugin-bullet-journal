@@ -25,20 +25,27 @@
 
             <button
               v-if="habit"
-              class="mobile-habit-detail-sheet__action b3-button b3-button--outline"
+              class="mobile-habit-detail-sheet__icon"
               :data-testid="habit.archivedAt ? 'mobile-habit-unarchive' : 'mobile-habit-archive'"
-              @click="habit.archivedAt ? emit('unarchive') : emit('archive')"
+              :aria-label="habit.archivedAt ? t('habit').unarchive : t('habit').archive"
+              @click="handleArchiveAction"
             >
-              {{ habit.archivedAt ? t('habit').unarchive : t('habit').archive }}
+              <svg
+                @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, habit.archivedAt ? t('habit').unarchive : t('habit').archive)"
+                @mouseleave="hideIconTooltip"
+              ><use :xlink:href="habit.archivedAt ? '#iconRestore' : '#iconInbox'"></use></svg>
             </button>
 
             <button
               class="mobile-habit-detail-sheet__close"
               data-testid="habit-detail-sheet-close"
               :aria-label="t('common').close || 'Close'"
-              @click="emit('close')"
+              @click="handleClose"
             >
-              <svg><use xlink:href="#iconCloseRound"></use></svg>
+              <svg
+                @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').close || 'Close')"
+                @mouseleave="hideIconTooltip"
+              ><use xlink:href="#iconCloseRound"></use></svg>
             </button>
           </div>
 
@@ -54,8 +61,9 @@
 <script setup lang="ts">
 import { t } from '@/i18n';
 import type { Habit, HabitStats } from '@/types/models';
+import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
 
-defineProps<{
+const props = defineProps<{
   open: boolean;
   habit: Habit | null;
   selectedDate: string;
@@ -68,6 +76,21 @@ const emit = defineEmits<{
   close: [];
   unarchive: [];
 }>();
+
+function handleArchiveAction() {
+  hideIconTooltip();
+  if (props.habit?.archivedAt) {
+    emit('unarchive');
+    return;
+  }
+
+  emit('archive');
+}
+
+function handleClose() {
+  hideIconTooltip();
+  emit('close');
+}
 </script>
 
 <style lang="scss" scoped>
@@ -123,7 +146,8 @@ const emit = defineEmits<{
   white-space: nowrap;
 }
 
-.mobile-habit-detail-sheet__close {
+.mobile-habit-detail-sheet__close,
+.mobile-habit-detail-sheet__icon {
   display: inline-flex;
   width: 32px;
   height: 32px;
@@ -141,13 +165,6 @@ const emit = defineEmits<{
     height: 18px;
     fill: currentColor;
   }
-}
-
-.mobile-habit-detail-sheet__action {
-  flex: 0 0 auto;
-  min-height: 30px;
-  padding: 0 10px;
-  white-space: nowrap;
 }
 
 .mobile-habit-detail-sheet__body {

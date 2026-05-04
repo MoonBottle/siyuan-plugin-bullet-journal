@@ -22,14 +22,21 @@
           :aria-label="t('common').refresh"
           @click="refreshHabits"
         >
-          <svg><use xlink:href="#iconRefresh"></use></svg>
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideIconTooltip"
+          ><use xlink:href="#iconRefresh"></use></svg>
         </button>
         <button
-          class="b3-button b3-button--outline habit-detail-action-button"
+          class="block__icon"
           :data-testid="selectedHabit.archivedAt ? 'habit-detail-unarchive' : 'habit-detail-archive'"
-          @click="selectedHabit.archivedAt ? unarchiveSelectedHabit() : archiveSelectedHabit()"
+          :aria-label="selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive"
+          @click="handleToggleArchiveSelectedHabit"
         >
-          {{ selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive }}
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive)"
+            @mouseleave="hideIconTooltip"
+          ><use :xlink:href="selectedHabit.archivedAt ? '#iconRestore' : '#iconInbox'"></use></svg>
         </button>
         <button
           class="block__icon"
@@ -141,6 +148,16 @@ async function handleOpenSelectedHabitDoc() {
   await openSelectedHabitDoc();
 }
 
+async function handleToggleArchiveSelectedHabit() {
+  hideIconTooltip();
+  if (selectedHabit.value?.archivedAt) {
+    await unarchiveSelectedHabit();
+    return;
+  }
+
+  await archiveSelectedHabit();
+}
+
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
   return selectHabitById(target.habitId, target.date || currentDate.value);
 }
@@ -231,9 +248,4 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-.habit-detail-action-button {
-  min-height: 26px;
-  padding: 0 10px;
-  white-space: nowrap;
-}
 </style>
