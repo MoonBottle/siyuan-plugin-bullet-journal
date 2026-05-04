@@ -4,24 +4,30 @@
       <div class="workbench-habit-view__sidebar-header">
         <template v-if="listMode === 'archived'">
           <button
-            class="block__icon b3-tooltips b3-tooltips__sw"
+            class="block__icon"
             data-testid="workbench-habit-back-active"
             :aria-label="t('habit').backToList"
             @click="showActiveHabits"
           >
-            <svg><use xlink:href="#iconLeft"></use></svg>
+            <svg
+              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+              @mouseleave="hideIconTooltip"
+            ><use xlink:href="#iconLeft"></use></svg>
           </button>
           <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-archived-header">
             {{ t('habit').archivedList }}
           </div>
           <span class="fn__flex-1 fn__space"></span>
           <button
-            class="block__icon b3-tooltips b3-tooltips__sw"
+            class="block__icon"
             data-testid="workbench-habit-sidebar-refresh-button"
             :aria-label="t('common').refresh"
             @click="refreshHabits"
           >
-            <svg><use xlink:href="#iconRefresh"></use></svg>
+            <svg
+              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+              @mouseleave="hideIconTooltip"
+            ><use xlink:href="#iconRefresh"></use></svg>
           </button>
         </template>
         <template v-else>
@@ -30,20 +36,26 @@
           </div>
           <span class="fn__flex-1 fn__space"></span>
           <button
-            class="block__icon b3-tooltips b3-tooltips__sw"
+            class="block__icon"
             data-testid="workbench-habit-sidebar-refresh-button"
             :aria-label="t('common').refresh"
             @click="refreshHabits"
           >
-            <svg><use xlink:href="#iconRefresh"></use></svg>
+            <svg
+              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+              @mouseleave="hideIconTooltip"
+            ><use xlink:href="#iconRefresh"></use></svg>
           </button>
           <button
-            class="block__icon b3-tooltips b3-tooltips__sw"
+            class="block__icon"
             data-testid="workbench-habit-open-archived"
             :aria-label="t('habit').viewArchived"
             @click="showArchivedHabits"
           >
-            <svg><use xlink:href="#iconInbox"></use></svg>
+            <svg
+              @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
+              @mouseleave="hideIconTooltip"
+            ><use xlink:href="#iconInbox"></use></svg>
           </button>
         </template>
       </div>
@@ -109,6 +121,7 @@ import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecor
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import { showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 
 const plugin = usePlugin();
 const app = useApp();
