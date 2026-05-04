@@ -125,6 +125,7 @@ For more view details, see [Views](./views.md).
 
 - Learn [Data Format](./data-format.md) in depth to master all marker syntax
 - Use [Habit Check-in](./habit-checkin.md) to track daily habits
+- Use [Workbench](./workbench.md) for integrated workspace
 - Use [Pomodoro](./pomodoro.md) for focus timing
 - Configure [MCP AI Assistant](./mcp.md) so AI can query tasks and pomodoro data
 - Check [Complete Example](./examples.md) to see how real projects are organized

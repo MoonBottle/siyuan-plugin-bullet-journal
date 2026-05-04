@@ -133,42 +133,27 @@ See [Habit Check-in](./habit-checkin.md) for details.
 
 ## Workbench Tab
 
-The Workbench is a desktop-only integrated workspace that combines habit view, dashboard, todo, quadrant, and focus statistics into a single Tab.
+The Workbench is a desktop-only integrated workspace that combines dashboard, habit view, todo, quadrant, and focus statistics into a single Tab.
 
 ### Access
 
 - **Right-click top bar** → Workbench
 - **Top bar dropdown menu** (plugin icon) → Workbench
 
-### Sidebar
+### Feature Overview
 
-The left sidebar (240px) lists entries (dashboards and views) at the top, with a create button at the bottom.
-
-### Entry Types
-
-| Type | Description |
-|------|------|
-| **Dashboard** | Customizable widget canvas supporting todo list, quadrant summary, habit week, mini calendar, focus stats widgets |
-| **Habit View** | Embedded habit workspace, left habit list + right detail panel |
-| **Todo View** | Embedded todo list view |
+| Feature | Description |
+|---------|-------------|
+| **Sidebar** | Left 240px, lists all entries (dashboards and views), supports create/rename/delete |
+| **Dashboard** | Customizable widget canvas supporting 5 widget types |
+| **Habit View** | Embedded habit workspace |
+| **Todo View** | Embedded todo list |
 | **Quadrant View** | Embedded important/urgent quadrant matrix |
 | **Focus Stats View** | Embedded pomodoro statistics |
 
-### Dashboard Widgets
-
-The dashboard uses a 12-column grid layout supporting drag-and-drop for position and size:
-
-| Widget | Description |
-|--------|------|
-| Todo List | Filtered todo list by preset |
-| Quadrant Summary | Task summary by group and quadrant |
-| Habit Week | Weekly habit check-in progress overview |
-| Mini Calendar | Compact monthly calendar for item distribution |
-| Focus Stats | Pomodoro statistics card |
-
 > Workbench configuration is automatically saved to `workbench.json` — no manual operation required.
 
-See [Habit Check-in](./habit-checkin.md#workbench-habit-view) for details.
+See [Workbench](./workbench.md) for details.
 
 ## Pomodoro Focus Dock
 

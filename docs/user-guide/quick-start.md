@@ -125,6 +125,7 @@
 
 - 深入学习 [数据格式](./data-format.md)，掌握所有标记语法
 - 使用 [习惯打卡](./habit-checkin.md) 追踪日常习惯
+- 使用 [工作台](./workbench.md) 整合所有视图
 - 使用 [番茄钟](./pomodoro.md) 进行专注计时
 - 配置 [MCP AI 助手](./mcp.md)，让 AI 查询任务与番茄数据
 - 查看 [完整示例](./examples.md)，学习实际项目如何组织
