@@ -156,7 +156,7 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
   }
 
   // 解析频率 (🔄后面的内容)
-  const freqMatch = normalizedLine.match(/🔄(.+?)$/);
+  const freqMatch = normalizedLine.match(/🔄(.+?)(?=\s+📦\S+$|$)/);
   if (!freqMatch) {
     return null;
   }
@@ -164,6 +164,8 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
   if (!frequency) {
     return null;
   }
+
+  const archiveMatch = normalizedLine.match(/(?:^|\s)📦(\d{4}-\d{2}-\d{2})(?=\s|$)/);
 
   // 解析提醒（可选，复用 parseReminderFromLine）
   const reminder = parseReminderFromLine(normalizedLine);
@@ -188,6 +190,9 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
   if (reminder) {
     result.reminder = reminder;
   }
+  if (archiveMatch) {
+    result.archivedAt = archiveMatch[1];
+  }
 
   return result;
 }
@@ -200,8 +205,9 @@ export function parseHabitLine(line: string): Partial<Habit> | null {
  */
 export function parseCheckInRecordLine(line: string, habitId: string): Partial<CheckInRecord> | null {
   const normalizedLine = normalizeHabitText(line);
+  const hasArchiveMarker = /(?:^|\s)📦\d{4}-\d{2}-\d{2}(?=\s|$)/.test(normalizedLine);
 
-  if (normalizedLine.includes('✅')) {
+  if (normalizedLine.includes('✅') || hasArchiveMarker) {
     return null;
   }
 

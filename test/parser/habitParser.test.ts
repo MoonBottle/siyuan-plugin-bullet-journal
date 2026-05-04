@@ -86,6 +86,21 @@ describe('parseHabitLine', () => {
     expect(result!.frequency?.type).toBe('daily');
     expect(result!.reminder?.time).toBe('09:26');
   });
+
+  it('解析习惯定义行中的归档日期', () => {
+    const result = parseHabitLine('喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04');
+    expect(result).not.toBeNull();
+    expect(result!.archivedAt).toBe('2026-05-04');
+  });
+
+  it('忽略格式错误的归档标记且不使整行失效', () => {
+    const result = parseHabitLine('喝水 🎯2026-04-01 8杯 🔄每天 📦今天');
+    expect(result).not.toBeNull();
+    expect(result!.archivedAt).toBeUndefined();
+    expect(result!.type).toBe('count');
+    expect(result!.target).toBe(8);
+    expect(result!.unit).toBe('杯');
+  });
 });
 
 describe('parseCheckInRecordLine', () => {
@@ -133,6 +148,21 @@ describe('parseCheckInRecordLine', () => {
   it('带 ✅ 的旧格式记录不再兼容', () => {
     expect(parseCheckInRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1')).toBeNull();
     expect(parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06 ✅', 'habit-block-1')).toBeNull();
+  });
+
+  it('包含归档标记的记录行不应识别为打卡记录', () => {
+    const result = parseCheckInRecordLine('喝水 3/8杯 📅2026-05-01 📦2026-05-04', 'habit-block-1');
+    expect(result).toBeNull();
+  });
+
+  it('内容中的字面📦表情不应导致记录行失效', () => {
+    const result = parseCheckInRecordLine('今天整理了📦柜子 3/8杯 📅2026-05-01', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result!.content).toBe('今天整理了📦柜子');
+    expect(result!.currentValue).toBe(3);
+    expect(result!.targetValue).toBe(8);
+    expect(result!.unit).toBe('杯');
+    expect(result!.date).toBe('2026-05-01');
   });
 });
 

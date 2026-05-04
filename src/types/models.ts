@@ -166,6 +166,7 @@ export interface Habit {
   startDate: string;             // 开始日期（YYYY-MM-DD，必填）
   durationDays?: number;         // 持续日历天数（可选，如30天），到达后习惯结束
   endDate?: string;              // 计算字段：startDate + durationDays - 1
+  archivedAt?: string;           // 归档日期（YYYY-MM-DD）
   target?: number;               // 目标值（计数型，如 8）
   unit?: string;                 // 单位（计数型，如"杯"）
   frequency?: HabitFrequency;    // 频率规则（必填）
