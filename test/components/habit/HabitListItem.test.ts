@@ -486,6 +486,45 @@ describe('HabitListItem', () => {
     mounted.unmount();
   });
 
+  it('every_n_days interval completed state does not render weekly completed copy', async () => {
+    const habit: Habit = {
+      name: '跑步',
+      type: 'count',
+      records: [],
+      blockId: 'habit-interval-1',
+      docId: 'doc-1',
+      startDate: '2026-05-04',
+      target: 3,
+      unit: '公里',
+      frequency: { type: 'every_n_days', interval: 2 },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-05-04',
+      hasRecord: true,
+      isCompleted: true,
+      currentValue: 3,
+      targetValue: 3,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'interval',
+      periodStart: '2026-05-04',
+      periodEnd: '2026-05-05',
+      requiredCount: 1,
+      completedCount: 1,
+      remainingCount: 0,
+      isCompleted: true,
+      eligibleToday: true,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).not.toContain('本周已达标');
+
+    mounted.unmount();
+  });
+
   it('binary daily completed state does not render redundant checked copy', async () => {
     const habit: Habit = {
       name: '早起',

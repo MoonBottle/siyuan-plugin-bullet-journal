@@ -155,6 +155,10 @@ const showPeriodCompletedStatus = computed(() => {
     return false;
   }
 
+  if (props.periodState.periodType === 'interval') {
+    return false;
+  }
+
   return props.periodState.periodType !== 'day';
 });
 
