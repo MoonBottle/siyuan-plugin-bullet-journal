@@ -636,8 +636,15 @@
       width: 348px;
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
 
+      .floating-tomato-shell {
+        min-height: 50px;
+      }
+
       .floating-tomato-main {
         grid-template-columns: 18px minmax(0, 1fr) auto;
+        min-height: 50px;
+        padding-top: 7px;
+        padding-bottom: 7px;
       }
 
       .floating-tomato-summary {
