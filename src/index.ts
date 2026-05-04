@@ -1314,6 +1314,13 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         });
         menu.addItem({
+          icon: "iconCheck",
+          label: t("habit")?.title || "习惯打卡",
+          click: () => {
+            this.openHabitDock();
+          },
+        });
+        menu.addItem({
           icon: "iconClock",
           label: t("pomodoro").dockTitle,
           click: () => {
@@ -1384,6 +1391,11 @@ export default class TaskAssistantPlugin extends Plugin {
                   icon: "iconClock",
                   label: t("helpMenu").pomodoro,
                   click: () => this.openHelpDoc("pomodoro.md"),
+                },
+                {
+                  icon: "iconCheck",
+                  label: t("helpMenu").habitCheckin,
+                  click: () => this.openHelpDoc("habit-checkin.md"),
                 },
                 {
                   icon: "iconSettings",

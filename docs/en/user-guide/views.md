@@ -97,6 +97,40 @@ The dock shows four types of items:
 - View upcoming items
 - Handle expired uncompleted items
 
+## Habit Check-in Dock
+
+Track daily habits in the sidebar, supporting both binary (done/not done) and count (with target value) habit check-ins.
+
+### Access
+
+Right-click top bar → Closed Panels → Habit Check-in
+
+### Display Content
+
+**Layer 1 (Habit List)**:
+
+- **Weekday row**: Displays Monday to Sunday of the current week, with today highlighted; click to switch to a specific day's habits
+- **Habit list**: Each habit on one line, showing name + progress/status
+  - Binary: `Checked in` / `Pending` + streak dot matrix
+  - Count: `current value/target value+unit` + progress dot matrix
+- **Completed habits**: Habits that have met the frequency requirement for the current period are marked as "Completed this week", grayed out
+
+**Layer 2 (Habit Details)**:
+
+Click a habit to expand the detail panel:
+
+- **Stats cards**: Monthly check-ins, total check-ins, monthly completion rate, current streak / longest streak
+- **Check-in calendar**: Month view, color depth indicates completion level (dark green = completed, light green = partial, gray = not checked in)
+- **Check-in log**: List format, displayed in reverse chronological order; count type supports quick +1 or value modification
+
+### Check-in Operations
+
+- **Binary**: Click "Check In" button to create record
+- **Count**: Click `+1` to quickly increment, or input a specific value
+- **Make-up check-in**: Switch to a historical date via the weekday row, then check in for that date
+
+See [Habit Check-in](./habit-checkin.md) for details.
+
 ## Pomodoro Focus Dock
 
 Run pomodoro timers in the sidebar and view today/total focus stats and focus records.
@@ -124,6 +158,7 @@ See [Pomodoro](./pomodoro.md) for details.
 | Gantt | Project Progress | Timeline, task dependencies |
 | Project List | Project Organization | Task categorization, project review |
 | Todo Dock | Quick Access | Today's items, expired reminders |
+| Habit Check-in Dock | Habit Tracking | Daily habit check-ins, streaks, completion rates |
 | Pomodoro Dock | Focus & Records | Pomodoro timer, today/total stats, record list |
 
 ## Bidirectional Links
