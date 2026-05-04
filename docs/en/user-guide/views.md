@@ -131,6 +131,45 @@ Click a habit to expand the detail panel:
 
 See [Habit Check-in](./habit-checkin.md) for details.
 
+## Workbench Tab
+
+The Workbench is a desktop-only integrated workspace that combines habit view, dashboard, todo, quadrant, and focus statistics into a single Tab.
+
+### Access
+
+- **Right-click top bar** → Workbench
+- **Top bar dropdown menu** (plugin icon) → Workbench
+
+### Sidebar
+
+The left sidebar (240px) lists entries (dashboards and views) at the top, with a create button at the bottom.
+
+### Entry Types
+
+| Type | Description |
+|------|------|
+| **Dashboard** | Customizable widget canvas supporting todo list, quadrant summary, habit week, mini calendar, focus stats widgets |
+| **Habit View** | Embedded habit workspace, left habit list + right detail panel |
+| **Todo View** | Embedded todo list view |
+| **Quadrant View** | Embedded important/urgent quadrant matrix |
+| **Focus Stats View** | Embedded pomodoro statistics |
+
+### Dashboard Widgets
+
+The dashboard uses a 12-column grid layout supporting drag-and-drop for position and size:
+
+| Widget | Description |
+|--------|------|
+| Todo List | Filtered todo list by preset |
+| Quadrant Summary | Task summary by group and quadrant |
+| Habit Week | Weekly habit check-in progress overview |
+| Mini Calendar | Compact monthly calendar for item distribution |
+| Focus Stats | Pomodoro statistics card |
+
+> Workbench configuration is automatically saved to `workbench.json` — no manual operation required.
+
+See [Habit Check-in](./habit-checkin.md#workbench-habit-view) for details.
+
 ## Pomodoro Focus Dock
 
 Run pomodoro timers in the sidebar and view today/total focus stats and focus records.
@@ -159,6 +198,7 @@ See [Pomodoro](./pomodoro.md) for details.
 | Project List | Project Organization | Task categorization, project review |
 | Todo Dock | Quick Access | Today's items, expired reminders |
 | Habit Check-in Dock | Habit Tracking | Daily habit check-ins, streaks, completion rates |
+| Workbench Tab | Integrated Workspace | Dashboard + Habits + Todo + Quadrant + Focus Stats |
 | Pomodoro Dock | Focus & Records | Pomodoro timer, today/total stats, record list |
 
 ## Bidirectional Links

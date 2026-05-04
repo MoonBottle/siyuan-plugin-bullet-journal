@@ -100,6 +100,7 @@ Once configured, access your tasks through multiple views:
 | **Project List** | Click 📁 folder icon in top bar | Review all tasks by project |
 | **Todo Dock** | Right-click top bar → Closed Panels → Todo Items | Quick access to upcoming tasks |
 | **Habit Check-in** | Right-click top bar → Closed Panels → Habit Check-in | Daily habit tracking and check-ins |
+| **Workbench** | Right-click top bar → Workbench | Integrated workspace (Dashboard + Habits + Todo + Quadrant + Focus Stats) |
 | **Pomodoro Focus** | Right-click top bar → Closed Panels → Pomodoro Focus | Pomodoro timer and focus records |
 
 > 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes. When editing in notes, right-click an item block and select "View Detail", or Ctrl+click (Cmd+click on Mac) on item content to open the item detail modal.

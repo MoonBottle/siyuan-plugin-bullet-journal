@@ -17,6 +17,7 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 
 - [Views](./views.md) - Usage instructions for Calendar, Gantt, Project List, and Todo Dock
 - [Habit Check-in](./habit-checkin.md) - Habit definition, check-in records, statistics and streak tracking
+- [Workbench](./views.md#workbench-tab) - Integrated workspace (Dashboard + Habits + Todo + Quadrant + Focus Stats)
 - [Pomodoro](./pomodoro.md) - Pomodoro Focus Dock, start/pause/end focus, and record format
 - [MCP AI Assistant](./mcp.md) - Configuration and AI tool usage
 - [Configuration](./configuration.md) - Directory settings, group management, lunch break time, and other settings
@@ -40,6 +41,7 @@ Welcome to the SiYuan Task Assistant plugin! This guide will help you get starte
 | Want to view item details directly in notes | [Views - View Item Details in Document](./views.md#view-item-details-in-document) |
 | Want to configure scan directories and groups | [Configuration](./configuration.md) |
 | Want to track daily habits | [Habit Check-in](./habit-checkin.md) |
+| Want an integrated workspace for all views | [Workbench](./views.md#workbench-tab) |
 | Want to use Pomodoro focus | [Pomodoro](./pomodoro.md) |
 | Want AI to query tasks and pomodoro data | [MCP AI Assistant](./mcp.md) |
 | Want to see a complete project example | [Complete Example](./examples.md) |

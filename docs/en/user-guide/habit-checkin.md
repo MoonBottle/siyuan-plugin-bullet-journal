@@ -9,6 +9,7 @@ The Task Assistant plugin supports habit tracking to help you build and maintain
 - [Check-in Record Format](#check-in-record-format)
 - [Slash Commands](#slash-commands)
 - [Habit Check-in Dock](#habit-check-in-dock)
+- [Workbench Habit View](#workbench-habit-view)
 - [Statistics and Streaks](#statistics-and-streaks)
 - [Reminders](#reminders)
 - [Make-up Check-ins and Editing](#make-up-check-ins-and-editing)
@@ -232,6 +233,70 @@ The mobile check-in feature is integrated into the Todo Dock's bottom navigation
 
 - Click "Check-in" to switch to the habit list
 - Click a habit item to open the detail drawer (check-in calendar + log + stats)
+
+---
+
+## Workbench Habit View
+
+The Workbench is a desktop-only integrated workspace that combines habit view, dashboard, todo, quadrant, and focus statistics into a single Tab. The habit view is one of the default workbench views, offering richer interaction and layout compared to the Dock.
+
+### Access
+
+- **Right-click top bar** → Workbench
+- **Top bar dropdown menu** (plugin icon) → Workbench
+
+### Sidebar
+
+The left sidebar of the workbench is 240px wide, divided into two areas:
+
+**Top (Entry List)**:
+
+- Lists all created workbench entries (dashboards and views)
+- The active entry is highlighted
+- Right-click an entry to rename or delete
+- Click an entry to switch the right-side content
+
+**Bottom (Create)**:
+
+- "+ New View" button with 5 creation options:
+  - **New Dashboard**: Create a customizable widget canvas
+  - **Todo View**: Embed the todo list
+  - **Habit View**: Habit workspace
+  - **Quadrant View**: Important/Urgent quadrant matrix
+  - **Focus Stats View**: Pomodoro statistics
+
+### Habit View
+
+The habit view (viewType: `habit`) embeds the habit workspace into the workbench, with a habit list on the left and a detail panel on the right. It shares the same data and interactions as the Habit Check-in Dock:
+
+- **Left**: Week-based habit list, same as the Dock's first layer
+- **Right**: When a habit is selected, the detail panel expands (stats cards + check-in calendar + check-in log + archive/unarchive actions)
+- Click "Open Document" in the top-right of the detail panel to jump to the block where the habit is defined
+
+### Dashboard
+
+The dashboard is a customizable widget canvas using a 12-column grid layout (row height 56px, margin 16px), supporting drag-and-drop for position and size adjustment.
+
+**Adding Widgets**: Click the "Add Widget" button in the dashboard's top-right corner, then select the widget type:
+
+| Widget | Icon | Description | Configurable |
+|--------|------|------|--------|
+| Todo List | `iconList` | Filtered todo list by preset | Todo preset |
+| Quadrant Summary | `iconLayout` | Task summary by group and quadrant | Group + Quadrant |
+| Habit Week | `iconCheck` | Weekly habit check-in progress overview | Group + Scope (active/archived) |
+| Mini Calendar | `iconCalendar` | Compact monthly calendar for item distribution | Group |
+| Focus Stats | `iconClock` | Pomodoro statistics card | Section selection |
+
+**Widget Operations**:
+
+- Drag the ⋮⋮ handle on the left of the title bar to reposition
+- Drag the bottom-right corner to resize
+- Click the `···` menu on the top-right to rename or delete
+- Configurable widgets can open a config dialog via the menu
+
+### Data Persistence
+
+Workbench entries, dashboards, and widget layout configurations are automatically saved to the `workbench.json` file in the plugin data directory — no manual operation required.
 
 ---
 
