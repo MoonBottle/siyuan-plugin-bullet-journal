@@ -33,7 +33,7 @@
               <svg
                 @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, habit.archivedAt ? t('habit').unarchive : t('habit').archive)"
                 @mouseleave="hideIconTooltip"
-              ><use :xlink:href="habit.archivedAt ? '#iconRestore' : '#iconInbox'"></use></svg>
+              ><use :xlink:href="habit.archivedAt ? '#iconUpload' : '#iconInbox'"></use></svg>
             </button>
 
             <button

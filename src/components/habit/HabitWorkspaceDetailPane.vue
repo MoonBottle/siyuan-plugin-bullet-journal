@@ -28,7 +28,7 @@
             :aria-label="selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive"
             @click="selectedHabit.archivedAt ? emit('unarchive') : emit('archive')"
           >
-            <svg><use :xlink:href="selectedHabit.archivedAt ? '#iconRestore' : '#iconInbox'"></use></svg>
+            <svg><use :xlink:href="selectedHabit.archivedAt ? '#iconUpload' : '#iconInbox'"></use></svg>
           </button>
           <button
             v-if="showOpenDocAction"
