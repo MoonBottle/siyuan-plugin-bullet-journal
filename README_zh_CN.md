@@ -13,6 +13,9 @@
 | **日历视图** | 以日历形式展示工作任务，支持月/周/日/列表视图 | 日/周计划和时间安排 |
 | **甘特图** | 项目进度可视化，支持层级任务展示 | 了解项目时间线和任务依赖关系 |
 | **待办事项** | 在侧边栏显示即将到来的待办事项 | 快速查看今日及未来的待办 |
+| **习惯打卡** | 追踪日常习惯，支持二元型和计数型打卡 | 培养习惯、查看连续天数和完成率 |
+| **四象限视图** | 基于优先级自动归类任务到重要/紧急矩阵 | 聚焦关键事项、合理安排时间 |
+| **工作台** | 集成工作空间，支持仪表盘和多种视图组合 | 一站式任务管理 |
 | **番茄钟** | 在侧边栏显示番茄钟专注状态 | 跟踪番茄钟专注时间 |
 | **AI 对话** | 在侧边栏显示 AI 对话记录 | 与 AI 助手交互查询项目、任务和事项 |
 
@@ -28,7 +31,7 @@
 1. **创建项目文档** - 在思源笔记中创建文档记录项目任务
 2. **编写任务格式** - 使用 `#任务` 标记任务，`@日期` 标记事项
 3. **配置插件**（可选，推荐）- 在设置中配置要扫描的目录路径；也可在文档树中右键文档/文件夹，选择「设置为任务助手目录」快速添加
-4. **查看视图** - 通过日历、甘特图、项目列表、待办或番茄钟面板查看任务
+4. **查看视图** - 通过日历、甘特图、项目列表、待办、四象限、工作台或番茄钟面板查看任务
 
 详细步骤请参阅 [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)。
 
@@ -107,10 +110,13 @@
   - [快速开始](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quick-start.md)
   - [数据格式](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/data-format.md)
   - [视图功能](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/views.md)
-  - [番茄钟](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/pomodoro.md)
-  - [MCP AI 助手](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/mcp.md)
-  - [配置说明](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/configuration.md)
-  - [完整示例](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/examples.md)
+- [习惯打卡](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/habit-checkin.md)
+- [四象限视图](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/quadrant.md)
+- [工作台](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/workbench.md)
+- [番茄钟](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/pomodoro.md)
+- [MCP AI 助手](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/mcp.md)
+- [配置说明](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/configuration.md)
+- [完整示例](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/examples.md)
 - [参与贡献](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/user-guide/contributing.md)
 
 ## 💝 支持作者
