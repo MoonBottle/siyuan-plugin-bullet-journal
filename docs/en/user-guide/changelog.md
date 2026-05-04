@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.13.0] - 2026-05-04
+
+### Features
+
+- **Workbench**: Customize your work panel
+  - Support adding components like todo list, calendar, pomodoro statistics, habit weekly view, four-quadrant tasks, etc.
+  - Drag to adjust position and size of each component
+  - Each component can be individually configured for display content and filter conditions
+
+- **Habit Tracking**: Track habits daily to build good routines
+  - Create habits: Support daily, weekly, or every-few-days habits
+  - One-click check-in: Record completion with a single click
+  - Habit archiving: Temporarily hide habits you don't want to track
+  - Weekly view: See at a glance which days you completed habits this week
+  - Statistics: Consecutive check-in days, completion rate clearly visible
+  - Mobile support: Complete habit management on mobile devices
+
+- **Four-Quadrant View**: Manage tasks with the Eisenhower Matrix
+  - Categorize tasks into four quadrants based on importance and urgency
+  - Drag tasks to adjust priorities
+
+- **Pomodoro Floating Capsule**: Brand new capsule-shaped design
+  - Floats in the bottom-right corner during focus sessions
+  - Displays countdown, focused time, and associated item
+  - Supports pause/resume, end focus, skip break, and other quick actions
+
+- **Mobile Independent Interface**: Complete independent operation interface designed for mobile
+  - Bottom Tab navigation: Todo, Pomodoro, Habit Tracking, Settings four main entries
+  - Todo panel: Support directly clicking to complete tasks
+  - Habit Tracking: Complete habit management and check-in functionality
+  - Pomodoro: Clean focus timer interface
+
+### Docs
+
+- Added Workbench usage tutorial
+- Added Habit Tracking usage tutorial
+- Added Four-Quadrant View usage tutorial
+- Updated feature list
+- Task markers changed from `#task`/`#任务` to 📋 icon
+
 ## [0.12.8] - 2026-04-28
 
 ### Features
