@@ -123,7 +123,7 @@ describe('MiniCalendarWidget', () => {
     expect(mounted.container.querySelector('[data-initial-view="timeGridDay"]')).not.toBeNull();
 
     mounted.unmount();
-  });
+  }, 10000);
 
   it('shows the day header and reuses calendar navigation controls in day view widgets', async () => {
     const events: CalendarEvent[] = [

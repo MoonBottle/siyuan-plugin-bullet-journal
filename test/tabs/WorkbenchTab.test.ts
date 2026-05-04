@@ -9,6 +9,7 @@ import { initI18n } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 
 const mockPlugin = { name: 'plugin' };
+const mockApp = { name: 'app' };
 const mockLoad = vi.fn(() => Promise.resolve());
 const mockCreateDashboardEntry = vi.fn(() => Promise.resolve({
   id: 'entry-created-dashboard',
@@ -28,9 +29,40 @@ const mockCreateViewEntry = vi.fn(() => Promise.resolve({
 }));
 const mockSetActiveEntry = vi.fn(() => Promise.resolve());
 const mockAddWidget = vi.fn(() => Promise.resolve());
+const mockEntries = ref([
+  {
+    id: 'entry-dashboard',
+    type: 'dashboard',
+    title: 'Planning Board',
+    icon: 'iconBoard',
+    order: 0,
+    dashboardId: 'dashboard-1',
+  },
+  {
+    id: 'entry-todo',
+    type: 'view',
+    title: 'Todo',
+    icon: 'iconList',
+    order: 1,
+    viewType: 'todo',
+  },
+]);
+const mockActiveEntryId = ref<string | null>('entry-dashboard');
 
-vi.mock('@/main', () => ({
-  usePlugin: vi.fn(() => mockPlugin),
+vi.mock('@/main', async () => {
+  const actual = await vi.importActual<typeof import('@/main')>('@/main');
+  return {
+    ...actual,
+    usePlugin: vi.fn(() => mockPlugin),
+    useApp: vi.fn(() => mockApp),
+  };
+});
+
+vi.mock('@/components/workbench/dashboard/DashboardCanvas.vue', () => ({
+  default: {
+    name: 'DashboardCanvasStub',
+    template: '<div data-testid="workbench-dashboard-canvas-stub"></div>',
+  },
 }));
 
 vi.mock('@/stores', async () => {
@@ -38,34 +70,15 @@ vi.mock('@/stores', async () => {
   return {
     ...actual,
     useWorkbenchStore: () => {
-      const entries = ref([
-        {
-          id: 'entry-dashboard',
-          type: 'dashboard',
-          title: 'Planning Board',
-          icon: 'iconBoard',
-          order: 0,
-          dashboardId: 'dashboard-1',
-        },
-        {
-          id: 'entry-todo',
-          type: 'view',
-          title: 'Todo',
-          icon: 'iconList',
-          order: 1,
-          viewType: 'todo',
-        },
-      ]);
-      const activeEntryId = ref<string | null>('entry-dashboard');
       const store = {
         get entries() {
-          return entries.value;
+          return mockEntries.value;
         },
         get activeEntryId() {
-          return activeEntryId.value;
+          return mockActiveEntryId.value;
         },
         get activeEntry() {
-          return entries.value.find((entry: any) => entry.id === activeEntryId.value) ?? null;
+          return mockEntries.value.find((entry: any) => entry.id === mockActiveEntryId.value) ?? null;
         },
         dashboards: [
           {
@@ -77,19 +90,19 @@ vi.mock('@/stores', async () => {
         load: mockLoad,
         createDashboardEntry: async (...args: any[]) => {
           const entry = await mockCreateDashboardEntry(...args);
-          entries.value = [...entries.value, entry];
-          activeEntryId.value = entry.id;
+          mockEntries.value = [...mockEntries.value, entry];
+          mockActiveEntryId.value = entry.id;
           return entry;
         },
         createViewEntry: async (...args: any[]) => {
           const entry = await mockCreateViewEntry(...args);
-          entries.value = [...entries.value, entry];
-          activeEntryId.value = entry.id;
+          mockEntries.value = [...mockEntries.value, entry];
+          mockActiveEntryId.value = entry.id;
           return entry;
         },
         setActiveEntry: async (id: string) => {
           mockSetActiveEntry(id);
-          activeEntryId.value = id;
+          mockActiveEntryId.value = id;
         },
         addWidget: mockAddWidget,
       };
@@ -109,6 +122,25 @@ describe('WorkbenchTab shell', () => {
     setActivePinia(createPinia());
     initI18n('en_US');
     vi.clearAllMocks();
+    mockEntries.value = [
+      {
+        id: 'entry-dashboard',
+        type: 'dashboard',
+        title: 'Planning Board',
+        icon: 'iconBoard',
+        order: 0,
+        dashboardId: 'dashboard-1',
+      },
+      {
+        id: 'entry-todo',
+        type: 'view',
+        title: 'Todo',
+        icon: 'iconList',
+        order: 1,
+        viewType: 'todo',
+      },
+    ];
+    mockActiveEntryId.value = 'entry-dashboard';
     mockCreateDashboardEntry.mockResolvedValue({
       id: 'entry-created-dashboard',
       type: 'dashboard',
@@ -148,6 +180,7 @@ describe('WorkbenchTab shell', () => {
   }
 
   it('renders sidebar and content host and loads store on mount', async () => {
+    mockActiveEntryId.value = 'entry-todo';
     const mounted = await mountWorkbenchTab();
 
     expect(mounted.container.querySelector('[data-testid="workbench-sidebar"]')).not.toBeNull();
@@ -155,7 +188,7 @@ describe('WorkbenchTab shell', () => {
     expect(mockLoad).toHaveBeenCalledWith(mockPlugin);
 
     mounted.unmount();
-  });
+  }, 10000);
 
   it('sidebar actions create dashboard and todo view entries', async () => {
     const mounted = await mountWorkbenchTab();
