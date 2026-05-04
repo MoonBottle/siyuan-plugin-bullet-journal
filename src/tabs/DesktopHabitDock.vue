@@ -25,6 +25,13 @@
           <svg><use xlink:href="#iconRefresh"></use></svg>
         </button>
         <button
+          class="b3-button b3-button--outline habit-detail-action-button"
+          :data-testid="selectedHabit.archivedAt ? 'habit-detail-unarchive' : 'habit-detail-archive'"
+          @click="selectedHabit.archivedAt ? unarchiveSelectedHabit() : archiveSelectedHabit()"
+        >
+          {{ selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive }}
+        </button>
+        <button
           class="block__icon"
           data-testid="habit-detail-open-doc"
           :aria-label="t('todo').openDoc"
@@ -125,6 +132,8 @@ const {
   incrementHabit,
   openHabitDoc,
   openSelectedHabitDoc,
+  archiveSelectedHabit,
+  unarchiveSelectedHabit,
 } = useHabitWorkspace();
 
 async function handleOpenSelectedHabitDoc() {
@@ -220,5 +229,11 @@ onUnmounted(() => {
 
 .block__icons .block__icon {
   opacity: 1;
+}
+
+.habit-detail-action-button {
+  min-height: 26px;
+  padding: 0 10px;
+  white-space: nowrap;
 }
 </style>

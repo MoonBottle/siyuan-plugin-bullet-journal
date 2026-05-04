@@ -13,11 +13,15 @@ import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events } from '@/utils/eventBus';
 
 const {
+  archiveHabit,
   checkIn,
   checkInCount,
+  unarchiveHabit,
 } = vi.hoisted(() => ({
+  archiveHabit: vi.fn(),
   checkIn: vi.fn(),
   checkInCount: vi.fn(),
+  unarchiveHabit: vi.fn(),
 }));
 
 vi.mock('@/utils/fileUtils', () => ({
@@ -29,8 +33,10 @@ vi.mock('@/main', () => ({
 }));
 
 vi.mock('@/services/habitService', () => ({
+  archiveHabit,
   checkIn,
   checkInCount,
+  unarchiveHabit,
 }));
 
 vi.mock('@/components/habit/HabitWeekBar.vue', () => ({
@@ -192,8 +198,10 @@ describe('DesktopHabitDock', () => {
     initI18n('en_US');
     vi.clearAllMocks();
     document.body.innerHTML = '';
+    archiveHabit.mockResolvedValue(false);
     checkIn.mockResolvedValue(false);
     checkInCount.mockResolvedValue(false);
+    unarchiveHabit.mockResolvedValue(false);
   });
 
   it('opening a list item main action enters detail mode', async () => {
@@ -249,6 +257,40 @@ describe('DesktopHabitDock', () => {
     mounted.unmount();
   });
 
+  it('renders an archive action for active habits in detail mode', async () => {
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-detail-archive"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-detail-unarchive"]')).toBeNull();
+    mounted.unmount();
+  });
+
+  it('renders an unarchive action and archived notice for archived habits in detail mode', async () => {
+    const mounted = mountDock();
+    mounted.projectStore.projects[0].habits = [createHabit({
+      archivedAt: '2026-05-04',
+    })];
+    await nextTick();
+
+    eventBus.emit(Events.HABIT_DOCK_NAVIGATE, {
+      habitId: 'habit-1',
+      date: '2026-04-30',
+    });
+    await nextTick();
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-detail-unarchive"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-detail-archive"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-detail-archived-tip"]')?.textContent).toContain('Archived');
+    expect(mounted.container.querySelector('.habit-detail__today')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-count-input-stub"]')).toBeNull();
+    mounted.unmount();
+  });
+
   it('refresh button calls projectStore.refresh', async () => {
     const mounted = mountDock();
 
@@ -257,6 +299,54 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     expect(mounted.projectStore.refresh).toHaveBeenCalled();
+    mounted.unmount();
+  });
+
+  it('archive action routes through the habit service', async () => {
+    archiveHabit.mockResolvedValue(true);
+    const mounted = mountDock();
+    vi.mocked(mounted.projectStore.refresh).mockClear();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-detail-archive"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(archiveHabit).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'habit-1' }),
+      dayjs().format('YYYY-MM-DD'),
+    );
+    expect(mounted.projectStore.refresh).toHaveBeenCalledTimes(1);
+    mounted.unmount();
+  });
+
+  it('unarchive action routes through the habit service', async () => {
+    unarchiveHabit.mockResolvedValue(true);
+    const mounted = mountDock();
+    vi.mocked(mounted.projectStore.refresh).mockClear();
+    mounted.projectStore.projects[0].habits = [createHabit({
+      archivedAt: '2026-05-04',
+    })];
+    await nextTick();
+
+    eventBus.emit(Events.HABIT_DOCK_NAVIGATE, {
+      habitId: 'habit-1',
+      date: '2026-04-30',
+    });
+    await nextTick();
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-detail-unarchive"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(unarchiveHabit).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'habit-1', archivedAt: '2026-05-04' }),
+    );
+    expect(mounted.projectStore.refresh).toHaveBeenCalledTimes(1);
     mounted.unmount();
   });
 

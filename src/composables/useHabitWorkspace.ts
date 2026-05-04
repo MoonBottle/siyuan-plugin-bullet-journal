@@ -9,13 +9,16 @@ import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompl
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import {
+  archiveHabit,
   checkIn,
   checkInCount,
+  unarchiveHabit,
 } from '@/services/habitService';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit, HabitStats } from '@/types/models';
 import { showMessage } from '@/utils/dialog';
+import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import dayjs from '@/utils/dayjs';
 import {
@@ -39,8 +42,9 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
   const currentDate = computed(() => projectStore.currentDate);
   const groupId = computed(() => toValue(options.groupId) ?? '');
+  const allHabits = computed(() => projectStore.getHabits(groupId.value));
   const habits = computed(() => {
-    return projectStore.getHabits(groupId.value).filter(habit => !habit.archivedAt);
+    return allHabits.value.filter(habit => !habit.archivedAt);
   });
 
   const habitStatsMap = computed(() => {
@@ -60,7 +64,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
       return null;
     }
 
-    return habits.value.find(habit => habit.blockId === selectedHabitId.value) ?? null;
+    return allHabits.value.find(habit => habit.blockId === selectedHabitId.value) ?? null;
   });
 
   const selectedStats = computed(() => {
@@ -83,7 +87,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
       return;
     }
 
-    if (!habits.value.some(habit => habit.blockId === selectedHabitId.value)) {
+    if (!allHabits.value.some(habit => habit.blockId === selectedHabitId.value)) {
       selectedHabitId.value = null;
     }
   }
@@ -96,7 +100,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   }
 
   function selectHabitById(habitId: string, date: string = currentDate.value): boolean {
-    const habit = habits.value.find(item => item.blockId === habitId);
+    const habit = allHabits.value.find(item => item.blockId === habitId);
     if (!habit) {
       return false;
     }
@@ -172,6 +176,32 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     await openHabitDoc(selectedHabit.value);
   }
 
+  async function archiveSelectedHabit() {
+    if (!selectedHabit.value || selectedHabit.value.archivedAt) {
+      return false;
+    }
+
+    const success = await archiveHabit(selectedHabit.value, dayjs().format('YYYY-MM-DD'));
+    if (success) {
+      eventBus.emit(Events.DATA_REFRESH);
+      broadcastDataRefresh();
+    }
+    return success;
+  }
+
+  async function unarchiveSelectedHabit() {
+    if (!selectedHabit.value || !selectedHabit.value.archivedAt) {
+      return false;
+    }
+
+    const success = await unarchiveHabit(selectedHabit.value);
+    if (success) {
+      eventBus.emit(Events.DATA_REFRESH);
+      broadcastDataRefresh();
+    }
+    return success;
+  }
+
   return {
     selectedDate,
     selectedViewMonth,
@@ -192,5 +222,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     incrementHabit,
     openHabitDoc,
     openSelectedHabitDoc,
+    archiveSelectedHabit,
+    unarchiveSelectedHabit,
   };
 }

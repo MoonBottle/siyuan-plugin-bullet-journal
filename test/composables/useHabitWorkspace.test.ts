@@ -5,13 +5,16 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
 
 const {
+  archiveHabit,
   checkIn,
   checkInCount,
   openDocumentAtLine,
   showMessage,
   calculateAllHabitStats,
   calculateHabitStats,
+  unarchiveHabit,
 } = vi.hoisted(() => ({
+  archiveHabit: vi.fn(),
   checkIn: vi.fn(),
   checkInCount: vi.fn(),
   openDocumentAtLine: vi.fn(),
@@ -38,15 +41,18 @@ const {
     longestStreak: 3,
     isEnded: false,
   })),
-}));
+  unarchiveHabit: vi.fn(),
+})); 
 
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({ debugInstanceId: 'plugin-1' })),
 }));
 
 vi.mock('@/services/habitService', () => ({
+  archiveHabit,
   checkIn,
   checkInCount,
+  unarchiveHabit,
 }));
 
 vi.mock('@/utils/fileUtils', () => ({
@@ -81,6 +87,8 @@ describe('useHabitWorkspace', () => {
     vi.clearAllMocks();
     checkIn.mockResolvedValue(false);
     checkInCount.mockResolvedValue(false);
+    archiveHabit.mockResolvedValue(false);
+    unarchiveHabit.mockResolvedValue(false);
   });
 
   it('filters habits by groupId and exposes computed habit state maps', async () => {
@@ -222,6 +230,90 @@ describe('useHabitWorkspace', () => {
     expect(checkInCount).toHaveBeenCalledWith(habit, initialSelectedDate, 1);
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(2, 'doc-1', undefined, 'habit-a');
     expect(calculateHabitStats).toHaveBeenCalled();
+  });
+
+  it('keeps archived habits selectable from the full store collection', async () => {
+    const projectStore = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.scanMode = 'folder';
+    settingsStore.directories = [];
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [
+        createHabit({ blockId: 'active-1' }),
+        createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+      ],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+
+    expect(workspace.selectHabitById('archived-1')).toBe(true);
+    expect(workspace.selectedHabit.value?.blockId).toBe('archived-1');
+    expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['active-1']);
+  });
+
+  it('archives the selected habit through the habit service', async () => {
+    const projectStore = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.scanMode = 'folder';
+    settingsStore.directories = [];
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [createHabit({ blockId: 'habit-a' })],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+    archiveHabit.mockResolvedValue(true);
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+    workspace.selectHabitById('habit-a');
+
+    await workspace.archiveSelectedHabit();
+
+    expect(archiveHabit).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'habit-a' }),
+      '2026-05-04',
+    );
+  });
+
+  it('unarchives the selected habit through the habit service', async () => {
+    const projectStore = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.scanMode = 'folder';
+    settingsStore.directories = [];
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [createHabit({ blockId: 'habit-a', archivedAt: '2026-05-04' })],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+    unarchiveHabit.mockResolvedValue(true);
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+    workspace.selectHabitById('habit-a');
+
+    await workspace.unarchiveSelectedHabit();
+
+    expect(unarchiveHabit).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'habit-a', archivedAt: '2026-05-04' }),
+    );
   });
 
   it('does not call binary check-in service for archived habits', async () => {

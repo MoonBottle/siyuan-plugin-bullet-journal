@@ -878,6 +878,9 @@
   "habit": {
     "title": "Habit Check-in",
     "todayChecked": "Checked in",
+    "archived": "Archived",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
     "archivedCannotCheckIn": "Habit is archived",
     "todayUnchecked": "Pending",
     "periodCompleted": "Completed this period",

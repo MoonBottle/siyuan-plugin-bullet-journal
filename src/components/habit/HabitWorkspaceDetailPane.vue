@@ -37,6 +37,14 @@
         class="habit-workspace-detail-pane__content"
         :data-testid="contentTestId || undefined"
       >
+        <div
+          v-if="selectedHabit.archivedAt"
+          class="habit-workspace-detail-pane__archived-tip"
+          data-testid="habit-detail-archived-tip"
+        >
+          {{ t('habit.archived') }}
+        </div>
+
         <HabitMonthCalendar
           :habit="selectedHabit"
           :stats="stats"
@@ -160,6 +168,15 @@ const headerTitle = computed(() => props.title || props.selectedHabit?.name || '
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.habit-workspace-detail-pane__archived-tip {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--b3-border-color);
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface-light);
+  font-size: 13px;
 }
 
 .habit-workspace-detail-pane__empty {

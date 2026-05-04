@@ -919,6 +919,9 @@
   "habit": {
     "title": "习惯打卡",
     "todayChecked": "已打卡",
+    "archived": "已归档",
+    "archive": "归档",
+    "unarchive": "取消归档",
     "archivedCannotCheckIn": "习惯已归档",
     "todayUnchecked": "待打卡",
     "periodCompleted": "本周已达标",
