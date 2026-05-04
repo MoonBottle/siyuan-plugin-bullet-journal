@@ -155,6 +155,54 @@ describe('useHabitWorkspace', () => {
     expect(projectStore.habits.map(habit => habit.blockId)).toEqual(['active-1', 'archived-1']);
   });
 
+  it('defaults to active list mode and only exposes active habits', async () => {
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [
+        createHabit({ blockId: 'active-1' }),
+        createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+      ],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+
+    expect(workspace.listMode.value).toBe('active');
+    expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['active-1']);
+  });
+
+  it('switches to archived list mode and only exposes archived habits', async () => {
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [
+        createHabit({ blockId: 'active-1' }),
+        createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+      ],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+
+    workspace.showArchivedHabits();
+
+    expect(workspace.listMode.value).toBe('archived');
+    expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1']);
+  });
+
   it('derives the selected habit from the latest store instance after refresh', async () => {
     const projectStore = useProjectStore();
     const settingsStore = useSettingsStore();
@@ -257,6 +305,33 @@ describe('useHabitWorkspace', () => {
     expect(workspace.selectHabitById('archived-1')).toBe(true);
     expect(workspace.selectedHabit.value?.blockId).toBe('archived-1');
     expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['active-1']);
+  });
+
+  it('keeps selectedHabit resolvable from all habits while archived list mode is active', async () => {
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [
+        createHabit({ blockId: 'active-1' }),
+        createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+      ],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+
+    workspace.showArchivedHabits();
+    workspace.selectHabitById('archived-1');
+
+    expect(workspace.selectedHabit.value?.blockId).toBe('archived-1');
+    workspace.clearSelectedHabit();
+    expect(workspace.listMode.value).toBe('archived');
   });
 
   it('archives the selected habit through the habit service', async () => {

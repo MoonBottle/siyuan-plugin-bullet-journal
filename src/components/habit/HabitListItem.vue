@@ -44,73 +44,75 @@
         <svg><use xlink:href="#iconFile"></use></svg>
       </button>
 
-      <!-- 二元型打卡按钮 -->
-      <button
-        v-if="habit.type === 'binary'"
-        :class="['habit-action-btn', {
-          'habit-action-btn--done': dayState.isCompleted,
-          'habit-action-btn--binary': true,
-        }]"
-        :disabled="dayState.isCompleted"
-        data-testid="habit-list-item-check-in"
-        :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').checkIn"
-        @click.stop="emit('check-in', habit)"
-      >
-        <span
-          v-if="dayState.isCompleted"
-          class="habit-action-btn__check"
-          data-testid="habit-action-check"
+      <template v-if="!readonlyActions">
+        <!-- 二元型打卡按钮 -->
+        <button
+          v-if="habit.type === 'binary'"
+          :class="['habit-action-btn', {
+            'habit-action-btn--done': dayState.isCompleted,
+            'habit-action-btn--binary': true,
+          }]"
+          :disabled="dayState.isCompleted"
+          data-testid="habit-list-item-check-in"
+          :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').checkIn"
+          @click.stop="emit('check-in', habit)"
         >
-          <svg viewBox="0 0 20 20" aria-hidden="true">
-            <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
-          </svg>
-        </span>
-        <span
-          v-else
-          class="habit-action-btn__empty"
-          data-testid="habit-action-empty"
-        ></span>
-      </button>
+          <span
+            v-if="dayState.isCompleted"
+            class="habit-action-btn__check"
+            data-testid="habit-action-check"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
+            </svg>
+          </span>
+          <span
+            v-else
+            class="habit-action-btn__empty"
+            data-testid="habit-action-empty"
+          ></span>
+        </button>
 
-      <!-- 计数型 +1 按钮 -->
-      <button
-        v-else
-        :class="['habit-action-btn', {
-          'habit-action-btn--done': dayState.isCompleted,
-          'habit-action-btn--count': true,
-        }]"
-        :disabled="dayState.isCompleted"
-        data-testid="habit-list-item-increment"
-        :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').addOne"
-        @click.stop="emit('increment', habit)"
-      >
-        <span
-          v-if="dayState.isCompleted"
-          class="habit-action-btn__check"
-          data-testid="habit-action-check"
-        >
-          <svg viewBox="0 0 20 20" aria-hidden="true">
-            <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
-          </svg>
-        </span>
-        <svg
+        <!-- 计数型 +1 按钮 -->
+        <button
           v-else
-          class="habit-action-btn__progress-ring"
-          data-testid="habit-action-progress-ring"
-          :data-progress="String(actionProgress)"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
+          :class="['habit-action-btn', {
+            'habit-action-btn--done': dayState.isCompleted,
+            'habit-action-btn--count': true,
+          }]"
+          :disabled="dayState.isCompleted"
+          data-testid="habit-list-item-increment"
+          :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').addOne"
+          @click.stop="emit('increment', habit)"
         >
-          <circle class="habit-action-btn__progress-track" cx="12" cy="12" r="8" />
-          <circle
-            class="habit-action-btn__progress-value"
-            cx="12"
-            cy="12"
-            r="8"
-            :stroke-dasharray="`${actionProgress * progressCircumference} ${progressCircumference}`"
-          />
-        </svg>
-      </button>
+          <span
+            v-if="dayState.isCompleted"
+            class="habit-action-btn__check"
+            data-testid="habit-action-check"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
+            </svg>
+          </span>
+          <svg
+            v-else
+            class="habit-action-btn__progress-ring"
+            data-testid="habit-action-progress-ring"
+            :data-progress="String(actionProgress)"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle class="habit-action-btn__progress-track" cx="12" cy="12" r="8" />
+            <circle
+              class="habit-action-btn__progress-value"
+              cx="12"
+              cy="12"
+              r="8"
+              :stroke-dasharray="`${actionProgress * progressCircumference} ${progressCircumference}`"
+            />
+          </svg>
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -126,6 +128,7 @@ const props = defineProps<{
   periodState: HabitPeriodState;
   stats?: HabitStats;
   isMobile?: boolean;
+  readonlyActions?: boolean;
 }>();
 
 const emit = defineEmits<{

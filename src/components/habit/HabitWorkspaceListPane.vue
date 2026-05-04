@@ -22,6 +22,7 @@
           :period-state="habitPeriodStateMap.get(habit.blockId)!"
           :stats="habitStatsMap.get(habit.blockId)"
           :is-mobile="itemOpenBehavior === 'detail'"
+          :readonly-actions="archivedList"
           @check-in="emit('check-in', $event)"
           @increment="emit('increment', $event)"
           @open-doc="emit('open-doc', $event)"
@@ -32,8 +33,8 @@
 
     <div v-else class="habit-workspace-list-pane__empty">
       <div class="habit-workspace-list-pane__empty-icon">🎯</div>
-      <div class="habit-workspace-list-pane__empty-title">{{ t('habit').noHabits }}</div>
-      <div class="habit-workspace-list-pane__empty-desc">{{ t('habit').noHabitsDesc }}</div>
+      <div class="habit-workspace-list-pane__empty-title">{{ emptyTitle || t('habit').noHabits }}</div>
+      <div class="habit-workspace-list-pane__empty-desc">{{ emptyDesc || t('habit').noHabitsDesc }}</div>
     </div>
   </div>
 </template>
@@ -59,10 +60,16 @@ withDefaults(defineProps<{
   activeHabitId?: string | null;
   itemOpenBehavior?: 'document' | 'detail';
   itemTestIdPrefix?: string;
+  archivedList?: boolean;
+  emptyTitle?: string;
+  emptyDesc?: string;
 }>(), {
   activeHabitId: null,
   itemOpenBehavior: 'document',
   itemTestIdPrefix: '',
+  archivedList: false,
+  emptyTitle: '',
+  emptyDesc: '',
 });
 
 const emit = defineEmits<{

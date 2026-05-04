@@ -50,6 +50,32 @@
           ><use xlink:href="#iconFile"></use></svg>
         </button>
       </template>
+      <template v-else-if="listMode === 'archived'">
+        <button
+          class="block__icon"
+          data-testid="habit-archived-back-button"
+          :aria-label="t('habit').backToList"
+          @click="handleBackToActiveList"
+        >
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').backToList)"
+            @mouseleave="hideIconTooltip"
+          ><use xlink:href="#iconLeft"></use></svg>
+        </button>
+        <div class="block__logo" data-testid="habit-archived-header">{{ t('habit').archivedList }}</div>
+        <span class="fn__flex-1 fn__space"></span>
+        <button
+          class="block__icon"
+          data-testid="habit-dock-refresh-button"
+          :aria-label="t('common').refresh"
+          @click="refreshHabits"
+        >
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideIconTooltip"
+          ><use xlink:href="#iconRefresh"></use></svg>
+        </button>
+      </template>
       <template v-else>
         <div class="block__logo">
           <svg class="block__logoicon"><use xlink:href="#iconCheck"></use></svg>
@@ -62,7 +88,21 @@
           :aria-label="t('common').refresh"
           @click="refreshHabits"
         >
-          <svg><use xlink:href="#iconRefresh"></use></svg>
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('common').refresh)"
+            @mouseleave="hideIconTooltip"
+          ><use xlink:href="#iconRefresh"></use></svg>
+        </button>
+        <button
+          class="block__icon"
+          data-testid="habit-dock-open-archived"
+          :aria-label="t('habit').viewArchived"
+          @click="handleShowArchivedHabits"
+        >
+          <svg
+            @mouseenter="showIconTooltip($event.currentTarget as HTMLElement, t('habit').viewArchived)"
+            @mouseleave="hideIconTooltip"
+          ><use xlink:href="#iconInbox"></use></svg>
         </button>
       </template>
     </div>
@@ -97,6 +137,10 @@
           :habit-stats-map="habitStatsMap"
           :habit-day-state-map="habitDayStateMap"
           :habit-period-state-map="habitPeriodStateMap"
+          :archived-list="listMode === 'archived'"
+          :empty-title="listMode === 'archived' ? t('habit').archivedEmptyTitle : ''"
+          :empty-desc="listMode === 'archived' ? t('habit').archivedEmptyDesc : ''"
+          item-test-id-prefix="habit-list-item-"
           @update:selected-date="selectedDate = $event"
           @check-in="checkInHabit"
           @increment="incrementHabit"
@@ -122,6 +166,7 @@ import { consumePendingHabitDockTarget, type HabitDockNavigationTarget } from '@
 
 const plugin = usePlugin();
 const {
+  listMode,
   selectedDate,
   selectedViewMonth,
   selectedHabit,
@@ -132,6 +177,8 @@ const {
   habitPeriodStateMap,
   displaySelectedStats,
   refreshHabits,
+  showActiveHabits,
+  showArchivedHabits,
   selectHabit,
   selectHabitById,
   clearSelectedHabit,
@@ -165,6 +212,16 @@ function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
 function handleBackToList() {
   hideIconTooltip();
   clearSelectedHabit();
+}
+
+function handleShowArchivedHabits() {
+  hideIconTooltip();
+  showArchivedHabits();
+}
+
+function handleBackToActiveList() {
+  hideIconTooltip();
+  showActiveHabits();
 }
 
 const handleDataRefresh = async () => {

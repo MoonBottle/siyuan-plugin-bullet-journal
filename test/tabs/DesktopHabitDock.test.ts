@@ -118,7 +118,7 @@ vi.mock('@/components/habit/HabitCountInput.vue', () => ({
 vi.mock('@/components/habit/HabitListItem.vue', () => ({
   default: defineComponent({
     name: 'HabitListItemStub',
-    props: ['habit'],
+    props: ['habit', 'readonlyActions'],
     emits: ['open-doc', 'open-detail', 'check-in', 'increment'],
     setup(props, { emit }) {
       return () => h('div', { 'data-testid': `habit-list-item-${props.habit.blockId}` }, [
@@ -130,14 +130,18 @@ vi.mock('@/components/habit/HabitListItem.vue', () => ({
           'data-testid': 'habit-list-item-open-doc',
           onClick: () => emit('open-doc', props.habit),
         }),
-        h('button', {
-          'data-testid': 'habit-list-item-check-in',
-          onClick: () => emit('check-in', props.habit),
-        }),
-        h('button', {
-          'data-testid': 'habit-list-item-increment',
-          onClick: () => emit('increment', props.habit),
-        }),
+        ...(props.readonlyActions
+          ? []
+          : [
+              h('button', {
+                'data-testid': 'habit-list-item-check-in',
+                onClick: () => emit('check-in', props.habit),
+              }),
+              h('button', {
+                'data-testid': 'habit-list-item-increment',
+                onClick: () => emit('increment', props.habit),
+              }),
+            ]),
       ]);
     },
   }),
@@ -302,6 +306,60 @@ describe('DesktopHabitDock', () => {
     mounted.unmount();
   });
 
+  it('shows an archived-list entry in active list mode and opens archived list mode on click', async () => {
+    const mounted = mountDock();
+    mounted.projectStore.projects[0].habits = [
+      createHabit({ blockId: 'active-1' }),
+      createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+    ];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-archived-header"]')?.textContent).toContain('Archived');
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-active-1"]')).toBeNull();
+    mounted.unmount();
+  });
+
+  it('returns from archived detail to archived list context', async () => {
+    const mounted = mountDock();
+    mounted.projectStore.projects[0].habits = [
+      createHabit({ blockId: 'active-1' }),
+      createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+    ];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-detail-back-button"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-archived-header"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-archived-1"]')).not.toBeNull();
+    mounted.unmount();
+  });
+
+  it('renders the archived empty state when there are no archived habits', async () => {
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('No archived habits');
+    mounted.unmount();
+  });
+
   it('archive action routes through the habit service', async () => {
     archiveHabit.mockResolvedValue(true);
     const mounted = mountDock();
@@ -408,6 +466,54 @@ describe('DesktopHabitDock', () => {
     );
     expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
 
+    mounted.unmount();
+  });
+
+  it('does not render archived list check-in controls', async () => {
+    const mounted = mountDock();
+    mounted.projectStore.projects[0].habits = [
+      createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+    ];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-check-in"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-increment"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')).not.toBeNull();
+    mounted.unmount();
+  });
+
+  it('removes a habit from the archived list after unarchive and returning to the archived list shell', async () => {
+    unarchiveHabit.mockResolvedValue(true);
+    const mounted = mountDock();
+    mounted.projectStore.projects[0].habits = [
+      createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+    ];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-dock-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.projectStore.projects[0].habits = [
+      createHabit({ blockId: 'archived-1' }),
+    ];
+    mounted.container.querySelector('[data-testid="habit-detail-unarchive"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-detail-back-button"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('No archived habits');
     mounted.unmount();
   });
 

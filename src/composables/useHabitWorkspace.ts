@@ -30,6 +30,8 @@ type UseHabitWorkspaceOptions = {
   groupId?: MaybeRefOrGetter<string | undefined>;
 };
 
+type HabitListMode = 'active' | 'archived';
+
 export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   const plugin = usePlugin();
   const projectStore = useProjectStore();
@@ -39,11 +41,16 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   const selectedViewMonth = ref(dayjs().format('YYYY-MM'));
   const selectedHabitId = ref<string | null>(null);
   const selectedStatsCache = ref<HabitStats | null>(null);
+  const listMode = ref<HabitListMode>('active');
 
   const currentDate = computed(() => projectStore.currentDate);
   const groupId = computed(() => toValue(options.groupId) ?? '');
   const allHabits = computed(() => projectStore.getHabits(groupId.value));
   const habits = computed(() => {
+    if (listMode.value === 'archived') {
+      return allHabits.value.filter(habit => Boolean(habit.archivedAt));
+    }
+
     return allHabits.value.filter(habit => !habit.archivedAt);
   });
 
@@ -110,6 +117,14 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
   function clearSelectedHabit() {
     selectedHabitId.value = null;
+  }
+
+  function showArchivedHabits() {
+    listMode.value = 'archived';
+  }
+
+  function showActiveHabits() {
+    listMode.value = 'active';
   }
 
   async function refreshHabits() {
@@ -205,6 +220,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   return {
     selectedDate,
     selectedViewMonth,
+    listMode,
     selectedHabit,
     currentDate,
     habits,
@@ -218,6 +234,8 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     selectHabit,
     selectHabitById,
     clearSelectedHabit,
+    showArchivedHabits,
+    showActiveHabits,
     checkInHabit,
     incrementHabit,
     openHabitDoc,
