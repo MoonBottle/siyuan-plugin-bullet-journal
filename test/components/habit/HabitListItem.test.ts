@@ -8,7 +8,6 @@ import type { Habit, HabitDayState, HabitPeriodState, HabitStats } from '@/types
 type EmitSpies = {
   openDoc?: ReturnType<typeof vi.fn>;
   openDetail?: ReturnType<typeof vi.fn>;
-  openCalendar?: ReturnType<typeof vi.fn>;
   checkIn?: ReturnType<typeof vi.fn>;
   increment?: ReturnType<typeof vi.fn>;
 };
@@ -23,7 +22,6 @@ function mountComponent(props: Record<string, unknown>, emits: EmitSpies = {}) {
         ...props,
         onOpenDoc: emits.openDoc,
         onOpenDetail: emits.openDetail,
-        onOpenCalendar: emits.openCalendar,
         onCheckIn: emits.checkIn,
         onIncrement: emits.increment,
       });
@@ -45,7 +43,7 @@ afterEach(() => {
 });
 
 describe('HabitListItem', () => {
-  it('clicking main body emits open-doc only', async () => {
+  it('clicking main body emits open-detail only on desktop', async () => {
     const habit: Habit = {
       name: '周报',
       type: 'binary',
@@ -72,7 +70,7 @@ describe('HabitListItem', () => {
     };
     const emits = {
       openDoc: vi.fn(),
-      openCalendar: vi.fn(),
+      openDetail: vi.fn(),
       checkIn: vi.fn(),
       increment: vi.fn(),
     };
@@ -86,9 +84,9 @@ describe('HabitListItem', () => {
 
     target?.click();
 
-    expect(emits.openDoc).toHaveBeenCalledTimes(1);
-    expect(emits.openDoc).toHaveBeenCalledWith(habit);
-    expect(emits.openCalendar).not.toHaveBeenCalled();
+    expect(emits.openDetail).toHaveBeenCalledTimes(1);
+    expect(emits.openDetail).toHaveBeenCalledWith(habit);
+    expect(emits.openDoc).not.toHaveBeenCalled();
     expect(emits.checkIn).not.toHaveBeenCalled();
     expect(emits.increment).not.toHaveBeenCalled();
 
@@ -123,7 +121,6 @@ describe('HabitListItem', () => {
     const emits = {
       openDoc: vi.fn(),
       openDetail: vi.fn(),
-      openCalendar: vi.fn(),
       checkIn: vi.fn(),
       increment: vi.fn(),
     };
@@ -140,14 +137,13 @@ describe('HabitListItem', () => {
     expect(emits.openDetail).toHaveBeenCalledTimes(1);
     expect(emits.openDetail).toHaveBeenCalledWith(habit);
     expect(emits.openDoc).not.toHaveBeenCalled();
-    expect(emits.openCalendar).not.toHaveBeenCalled();
     expect(emits.checkIn).not.toHaveBeenCalled();
     expect(emits.increment).not.toHaveBeenCalled();
 
     mounted.unmount();
   });
 
-  it('clicking calendar action emits open-calendar only', async () => {
+  it('clicking desktop document action emits open-doc only', async () => {
     const habit: Habit = {
       name: '周报',
       type: 'binary',
@@ -174,7 +170,7 @@ describe('HabitListItem', () => {
     };
     const emits = {
       openDoc: vi.fn(),
-      openCalendar: vi.fn(),
+      openDetail: vi.fn(),
       checkIn: vi.fn(),
       increment: vi.fn(),
     };
@@ -183,21 +179,21 @@ describe('HabitListItem', () => {
 
     await nextTick();
 
-    const target = mounted.container.querySelector('[data-testid="habit-list-item-calendar"]') as HTMLButtonElement | null;
+    const target = mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]') as HTMLButtonElement | null;
     expect(target).not.toBeNull();
 
     target?.click();
 
-    expect(emits.openCalendar).toHaveBeenCalledTimes(1);
-    expect(emits.openCalendar).toHaveBeenCalledWith(habit);
-    expect(emits.openDoc).not.toHaveBeenCalled();
+    expect(emits.openDoc).toHaveBeenCalledTimes(1);
+    expect(emits.openDoc).toHaveBeenCalledWith(habit);
+    expect(emits.openDetail).not.toHaveBeenCalled();
     expect(emits.checkIn).not.toHaveBeenCalled();
     expect(emits.increment).not.toHaveBeenCalled();
 
     mounted.unmount();
   });
 
-  it('hides the calendar action on mobile', async () => {
+  it('hides the desktop document action on mobile', async () => {
     const habit: Habit = {
       name: '周报',
       type: 'binary',
@@ -227,7 +223,7 @@ describe('HabitListItem', () => {
 
     await nextTick();
 
-    expect(mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')).toBeNull();
 
     mounted.unmount();
   });
@@ -263,7 +259,6 @@ describe('HabitListItem', () => {
     };
     const emits = {
       openDoc: vi.fn(),
-      openCalendar: vi.fn(),
       checkIn: vi.fn(),
       increment: vi.fn(),
     };
@@ -280,7 +275,6 @@ describe('HabitListItem', () => {
     expect(emits.increment).toHaveBeenCalledTimes(1);
     expect(emits.increment).toHaveBeenCalledWith(habit);
     expect(emits.openDoc).not.toHaveBeenCalled();
-    expect(emits.openCalendar).not.toHaveBeenCalled();
     expect(emits.checkIn).not.toHaveBeenCalled();
 
     mounted.unmount();
@@ -318,7 +312,6 @@ describe('HabitListItem', () => {
     const emits = {
       openDoc: vi.fn(),
       openDetail: vi.fn(),
-      openCalendar: vi.fn(),
       checkIn: vi.fn(),
       increment: vi.fn(),
     };
@@ -367,7 +360,6 @@ describe('HabitListItem', () => {
     };
     const emits = {
       openDoc: vi.fn(),
-      openCalendar: vi.fn(),
       checkIn: vi.fn(),
       increment: vi.fn(),
     };
@@ -384,7 +376,6 @@ describe('HabitListItem', () => {
     expect(emits.checkIn).toHaveBeenCalledTimes(1);
     expect(emits.checkIn).toHaveBeenCalledWith(habit);
     expect(emits.openDoc).not.toHaveBeenCalled();
-    expect(emits.openCalendar).not.toHaveBeenCalled();
     expect(emits.increment).not.toHaveBeenCalled();
 
     mounted.unmount();
@@ -418,7 +409,6 @@ describe('HabitListItem', () => {
     const emits = {
       openDoc: vi.fn(),
       openDetail: vi.fn(),
-      openCalendar: vi.fn(),
       checkIn: vi.fn(),
       increment: vi.fn(),
     };

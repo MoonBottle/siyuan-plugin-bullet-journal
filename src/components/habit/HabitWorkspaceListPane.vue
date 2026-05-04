@@ -26,7 +26,6 @@
           @increment="emit('increment', $event)"
           @open-doc="emit('open-doc', $event)"
           @open-detail="emit('select-habit', $event)"
-          @open-calendar="emit('select-habit', $event)"
         />
       </div>
     </div>

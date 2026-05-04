@@ -37,11 +37,11 @@
       <button
         v-if="!isMobile"
         class="habit-calendar-btn"
-        data-testid="habit-list-item-calendar"
-        :aria-label="t('habit').title"
-        @click.stop="emit('open-calendar', habit)"
+        data-testid="habit-list-item-open-doc"
+        :aria-label="t('todo').openDoc"
+        @click.stop="emit('open-doc', habit)"
       >
-        <svg><use xlink:href="#iconCalendar"></use></svg>
+        <svg><use xlink:href="#iconFile"></use></svg>
       </button>
 
       <!-- 二元型打卡按钮 -->
@@ -133,7 +133,6 @@ const emit = defineEmits<{
   'increment': [habit: Habit];
   'open-doc': [habit: Habit];
   'open-detail': [habit: Habit];
-  'open-calendar': [habit: Habit];
 }>();
 
 const isMobile = computed(() => props.isMobile === true);
@@ -170,12 +169,7 @@ const progressPercent = computed(() => {
 const actionProgress = computed(() => progressPercent.value / 100);
 
 function handleMainClick() {
-  if (isMobile.value) {
-    emit('open-detail', props.habit);
-    return;
-  }
-
-  emit('open-doc', props.habit);
+  emit('open-detail', props.habit);
 }
 </script>
 

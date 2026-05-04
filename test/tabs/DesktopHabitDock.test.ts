@@ -8,6 +8,7 @@ import { initI18n } from '@/i18n';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
+import dayjs from '@/utils/dayjs';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events } from '@/utils/eventBus';
 
@@ -112,16 +113,16 @@ vi.mock('@/components/habit/HabitListItem.vue', () => ({
   default: defineComponent({
     name: 'HabitListItemStub',
     props: ['habit'],
-    emits: ['open-doc', 'open-calendar', 'check-in', 'increment'],
+    emits: ['open-doc', 'open-detail', 'check-in', 'increment'],
     setup(props, { emit }) {
       return () => h('div', { 'data-testid': `habit-list-item-${props.habit.blockId}` }, [
         h('button', {
           'data-testid': 'habit-list-item-main',
-          onClick: () => emit('open-doc', props.habit),
+          onClick: () => emit('open-detail', props.habit),
         }),
         h('button', {
-          'data-testid': 'habit-list-item-calendar',
-          onClick: () => emit('open-calendar', props.habit),
+          'data-testid': 'habit-list-item-open-doc',
+          onClick: () => emit('open-doc', props.habit),
         }),
         h('button', {
           'data-testid': 'habit-list-item-check-in',
@@ -195,21 +196,10 @@ describe('DesktopHabitDock', () => {
     checkInCount.mockResolvedValue(false);
   });
 
-  it('opening a list item document uses openDocumentAtLine', async () => {
+  it('opening a list item main action enters detail mode', async () => {
     const mounted = mountDock();
 
     mounted.container.querySelector('[data-testid="habit-list-item-main"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
-
-    expect(openDocumentAtLine).toHaveBeenCalledWith('doc-1', undefined, 'habit-1');
-    mounted.unmount();
-  });
-
-  it('clicking the calendar action enters detail mode', async () => {
-    const mounted = mountDock();
-
-    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
@@ -217,10 +207,21 @@ describe('DesktopHabitDock', () => {
     mounted.unmount();
   });
 
+  it('desktop document action opens the habit document', async () => {
+    const mounted = mountDock();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(openDocumentAtLine).toHaveBeenCalledWith('doc-1', undefined, 'habit-1');
+    mounted.unmount();
+  });
+
   it('back button returns detail mode to the list mode shell', async () => {
     const mounted = mountDock();
 
-    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
@@ -236,7 +237,7 @@ describe('DesktopHabitDock', () => {
   it('detail header open-doc action opens the selected habit document', async () => {
     const mounted = mountDock();
 
-    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
@@ -278,7 +279,10 @@ describe('DesktopHabitDock', () => {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(checkIn).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-02');
+    expect(checkIn).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'habit-1' }),
+      dayjs().format('YYYY-MM-DD'),
+    );
     expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
 
     mounted.unmount();
@@ -307,7 +311,11 @@ describe('DesktopHabitDock', () => {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(checkInCount).toHaveBeenCalledWith(expect.objectContaining({ blockId: 'habit-1' }), '2026-05-02', 1);
+    expect(checkInCount).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'habit-1' }),
+      dayjs().format('YYYY-MM-DD'),
+      1,
+    );
     expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
 
     mounted.unmount();
@@ -328,7 +336,7 @@ describe('DesktopHabitDock', () => {
   it('keeps the detail header outside the scrollable content region', async () => {
     const mounted = mountDock();
 
-    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
@@ -350,7 +358,7 @@ describe('DesktopHabitDock', () => {
   it('renders month calendar above stats cards and removes the today progress block in detail mode', async () => {
     const mounted = mountDock();
 
-    mounted.container.querySelector('[data-testid="habit-list-item-calendar"]')
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
