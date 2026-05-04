@@ -75,11 +75,11 @@ export class MarkdownParser {
   }
 
   /**
-   * 获取含 #任务 或 #task 标记的文档（目录配置为空时使用）
+   * 获取含 #任务、#task、📋 或 🎯 标记的文档（目录配置为空时使用）
    * 先查 content 含任务标记的 block，按 root_id 聚合成文档列表
    */
   private async getAllDocs(): Promise<{ id: string; path: string; notebookId: string }[]> {
-    console.log('[Task Assistant][Parser] 目录为空，扫描含 #任务/#task/📋 的文档');
+    console.log('[Task Assistant][Parser] 目录为空，扫描含 #任务/#task/📋/🎯 的文档');
     try {
       const sqlQuery = `
         SELECT id, hpath as path, box as notebookId
@@ -87,7 +87,7 @@ export class MarkdownParser {
         WHERE type = 'd'
         AND id IN (
           SELECT DISTINCT root_id FROM blocks
-          WHERE (content LIKE '%#任务%' OR content LIKE '%#task%' OR content LIKE '%📋%')
+          WHERE (content LIKE '%#任务%' OR content LIKE '%#task%' OR content LIKE '%📋%' OR content LIKE '%🎯%')
           AND root_id IS NOT NULL AND root_id != ''
           AND type IN ('p', 'h', 'l', 'i')
         )

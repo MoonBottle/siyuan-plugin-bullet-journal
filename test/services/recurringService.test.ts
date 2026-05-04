@@ -342,6 +342,29 @@ describe('recurringService', () => {
       );
     });
 
+    it('工作日重复遇到法定节假日时应跳过到节后工作日', async () => {
+      mockUpdateBlock.mockResolvedValue([{ id: 'new-block-id' }]);
+
+      const item: Item = {
+        id: '1',
+        content: '节前任务',
+        date: '2026-04-30',
+        status: 'pending',
+        lineNumber: 1,
+        docId: 'doc1',
+        blockId: 'block123',
+        repeatRule: { type: 'workday' }
+      };
+
+      const result = await skipCurrentOccurrence({} as any, item);
+      expect(result).toBe(true);
+      expect(mockUpdateBlock).toHaveBeenCalledWith(
+        'markdown',
+        expect.stringContaining('📅2026-05-06'),
+        'block123'
+      );
+    });
+
     it('用户具体案例：每月3日重复，当前28日，应跳到4月3日', async () => {
       mockUpdateBlock.mockResolvedValue([{ id: 'new-block-id' }]);
 
@@ -714,6 +737,31 @@ describe('recurringService', () => {
       expect(blockContent).toContain('⏰提前15分钟');
       expect(blockContent).toContain('🔁每月3日');
       expect(blockContent).toContain('截止到2026-05-31');
+    });
+
+    it('工作日重复创建下一次时应命中补班周六', async () => {
+      mockInsertBlock.mockResolvedValue([{ id: 'new-block-id' }]);
+
+      const item: Item = {
+        id: '1',
+        content: '节后任务',
+        date: '2026-05-08',
+        status: 'completed',
+        lineNumber: 1,
+        docId: 'doc1',
+        blockId: 'block123',
+        repeatRule: { type: 'workday' }
+      };
+
+      const result = await createNextOccurrence({} as any, item);
+      expect(result).toBe(true);
+      expect(mockInsertBlock).toHaveBeenCalledWith(
+        'markdown',
+        expect.stringContaining('📅2026-05-09'),
+        undefined,
+        'block123',
+        undefined,
+      );
     });
   });
 });

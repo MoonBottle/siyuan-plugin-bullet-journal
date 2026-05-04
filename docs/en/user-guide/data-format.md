@@ -18,11 +18,11 @@ Location: Content before the task list
 
 ### 2. Task Area
 
-Location: Content containing `#task` marker
+Location: Content containing `📋` marker
 
 | Element | Format | Description |
 |---------|--------|-------------|
-| Task Marker | `#task` or `📋` | Identifies task line (supports Emoji) |
+| Task Marker | `📋` | Identifies task line (supports `#task` / `#任务`) |
 | Hierarchy | `@L1/@L2/@L3` | L1 parent task, L2/L3 subtasks |
 | Task Links | `[Link Name](URL)` | Related docs or external links (separate line) |
 
@@ -30,7 +30,7 @@ Location: Content containing `#task` marker
 
 ### 3. Item Area
 
-Location: Content below tasks (contains `@` or `📅` but not `#task`)
+Location: Content below tasks (contains `@` or `📅` but not `📋`)
 
 | Element | Format | Description |
 |---------|--------|-------------|
@@ -48,7 +48,7 @@ Location: Content below tasks (contains `@` or `📅` but not `#task`)
 |--------|--------|-------------|
 | Project name | `## Project Name` | Document title |
 | Project description | `>` | Project summary |
-| Task marker | `#task` / `#任务` / `📋` | Task line identifier |
+| Task marker | `📋` | Task line identifier (compatible with `#task` / `#任务`) |
 | Task hierarchy | `@L1/@L2/@L3` | `@L1` parent task, `@L2/L3` subtasks |
 | Date | `@YYYY-MM-DD` / `📅YYYY-MM-DD` | Date marker |
 | Time range | `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` / `📅YYYY-MM-DD HH:mm:ss~HH:mm:ss` | Date with time |
@@ -287,7 +287,9 @@ Type `/` in the editor to open the slash command panel for quick access to commo
 | Select Date | `/date` | Open date picker for custom date |
 | Mark as Done | `/done` | Add completion mark `✅` or `#done` |
 | Mark as Abandoned | `/abandon` | Add abandon mark `❌` or `#abandoned` |
-| Mark as Task | `/task` | Add task mark `📋` or `#task` |
+| Mark as Task | `/task` | Add task mark `📋` |
+| Create/Edit Habit | `/habit` | Open habit create/edit dialog |
+| Check In | `/checkin` | Quick check-in current habit |
 | Set Reminder | `/reminder` | Open reminder settings dialog |
 | Set Recurring | `/recurring` | Open recurrence rule settings dialog |
 | Set Priority | `/priority` | Open priority settings dialog |
@@ -304,6 +306,7 @@ Type `/` in the editor to open the slash command panel for quick access to commo
 | Open Calendar List | `/calendarlist` | Open calendar list view |
 | Open Gantt | `/gantt` | Open Gantt view, jump to item date |
 | Open Todo Dock | `/todo` | Open todo sidebar |
+| Open Habit Dock | `/habits` | Open habit check-in sidebar |
 | Start Focus | `/focus` | Open Pomodoro focus dialog |
 
 ### Other Commands
@@ -359,15 +362,109 @@ Item without status (or [ ])
     └─→ Abandon → Add #abandoned (or ❌)
 ```
 
+## Habit Definition
+
+Habits are at the same level as tasks, both being first-level concepts under a project, defined using the `🎯` marker.
+
+### Habit Markers
+
+| Element | Format | Description |
+|------|------|------|
+| Habit marker | `🎯` | Identifies this as a habit line (written after habit name) |
+| Start date | `🎯YYYY-MM-DD` | Habit start date (required) |
+| Stick to days | `Stick to N days` | Calendar days to persist (optional, indefinite if omitted) |
+| Target value+unit | `8 cups`, `5 km` | Target for count habits (optional) |
+| Reminder time | `⏰HH:mm` | Habit reminder time (optional) |
+| Frequency rule | `🔄daily` | Habit check-in frequency (required) |
+| Archive marker | `📦YYYY-MM-DD` | Habit archive date (optional) |
+
+### Habit Types
+
+**Binary** (no target value):
+
+```markdown
+Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
+
+Meditation 🎯2026-04-01 🔄daily
+```
+
+**Count** (with target value+unit):
+
+```markdown
+Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
+
+Running 🎯2026-04-01 5 km 🔄daily
+```
+
+### Check-in Records
+
+`📅date` lines below a habit are parsed as check-in records:
+
+```markdown
+Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
+
+Wake up early 📅2026-04-06
+
+Wake up early 📅2026-04-07
+```
+
+Count check-in records:
+
+```markdown
+Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
+
+Drink water 3/8 cups 📅2026-04-07
+
+Drink water 8/8 cups 📅2026-04-08
+```
+
+> Count format is `current value/target value+unit`; target value is snapshot-copied from habit definition.
+
+### Habit Frequency Rules
+
+Use `🔄` as the habit frequency marker:
+
+| Chinese Format | English Format | Description |
+|----------|----------|------|
+| `🔄每天` | `🔄daily` | Check in daily |
+| `🔄每N天` | `🔄every N days` | Check in every N days |
+| `🔄每周` | `🔄weekly` | Check in once a week |
+| `🔄每周N天` | `🔄N days/week` | Check in N days a week |
+| `🔄每周一三五` | `🔄Mon,Wed,Fri` | Check in on specified weekdays |
+
+> **Difference from `🔁`**: `🔄` is the habit-specific frequency marker, while `🔁` is the item recurrence marker. Habit check-ins are user-triggered; the system does not auto-create records.
+
+### Archive Marker
+
+Use `📦` to mark habit archive status:
+
+| Format | Description |
+|------|------|
+| `📦YYYY-MM-DD` | Habit is archived (optional, at the end of the habit definition line) |
+
+Archiving indicates the user has voluntarily deactivated the habit. Archived habits are hidden from the default active list by default, with reminders and check-ins stopped, while historical records and statistics are preserved.
+
+Example:
+
+```markdown
+Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily 📦2026-05-04
+```
+
+> The archive marker is only allowed on the habit definition line, not on check-in record lines.
+
+For more archive details, see [Habit Archive](./habit-checkin.md#habit-archive).
+
+For more habit check-in details, see [Habit Check-in](./habit-checkin.md).
+
 ## Task and Item Relationship
 
 Tasks and items have a hierarchical relationship:
 
 ```
-Task (#task @L1)           ← Task itself has no date
+Task (📋 @L1)           ← Task itself has no date
 ├── Item @2026-02-20       ← Item has date
 ├── Item @2026-02-21       ← Same task can have multiple items
-└── Sub-task (#task @L2)
+└── Sub-task (📋 @L2)
     └── Item @2026-02-22
 ```
 
@@ -375,6 +472,29 @@ Task (#task @L1)           ← Task itself has no date
 - A task represents a goal or deliverable
 - An item represents a specific action to achieve that goal
 - A task may take multiple days to complete, with different work items each day
+
+### Context Switching Between Habits and Tasks
+
+Habits and tasks switch context based on order of appearance:
+
+```markdown
+## My Project
+
+📋 Develop login module @L1
+
+Design login page 📅2026-04-01
+
+Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
+
+Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
+
+📋 Develop registration module @L1
+
+Write registration API 📅2026-04-02
+```
+
+- When `🎯` is encountered, switch to **habit context**; `📅date` lines below are parsed as check-in records
+- When `📋` is encountered, switch to **task context**; `📅date` lines below are parsed as work items
 
 ## Date Format Details
 
@@ -461,7 +581,7 @@ Inline block references in project names, task names, and item content—`((bloc
 - **Display**: Block reference is replaced with the alias (removed if no alias) to avoid cluttering the sidebar
 - **Links**: Automatically added to project/task/item links for clickable navigation
 
-Example: `Homepage((20260310210016-gkixdit 'Test'))Revamp #task` → Task name displays as "HomepageTestRevamp", links include a clickable "Test" link
+Example: `Homepage((20260310210016-gkixdit 'Test'))Revamp 📋` → Task name displays as "HomepageTestRevamp", links include a clickable "Test" link
 
 ### Item links
 
@@ -494,7 +614,7 @@ A task is a goal or deliverable, while an item is a specific action to achieve t
 **Option 1**: Create multiple items under the task, each with a different date:
 
 ```markdown
-Develop login module #task @L1
+Develop login module 📋 @L1
 
 Requirements review @2026-02-20
 
@@ -506,7 +626,7 @@ Testing @2026-02-22
 **Option 2**: Use a multi-date item and attach several dates to one item:
 
 ```markdown
-Develop login module #task @L1
+Develop login module 📋 @L1
 
 Development work @2026-02-20~2026-02-22
 ```

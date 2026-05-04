@@ -1,28 +1,15 @@
 <template>
   <div ref="tabRootRef" class="hk-work-tab calendar-tab">
     <div class="block__icons">
-      <!-- 导航按钮 -->
-      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').prev" @click="handlePrev">
-        <svg><use xlink:href="#iconLeft"></use></svg>
-      </span>
-      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').next" @click="handleNext">
-        <svg><use xlink:href="#iconRight"></use></svg>
-      </span>
-      <span class="block__icon b3-tooltips b3-tooltips__se" :aria-label="t('calendarNav').today" @click="handleToday">
-        <svg><use xlink:href="#iconCalendar"></use></svg>
-      </span>
-      <!-- 返回按钮（drill-down 时显示，返回上一个点击进入的视图） -->
-      <span
-        v-if="previousViewStack.length > 0"
-        class="block__icon b3-tooltips b3-tooltips__se"
-        :aria-label="t('calendarNav').back"
-        @click="handleBack"
-      >
-        <svg><use xlink:href="#iconUndo"></use></svg>
-      </span>
-      <!-- 日期显示 -->
-      <span class="date-title">{{ currentTitle }}</span>
-      <span v-if="showDayTotalDuration" class="date-duration">{{ dayTotalDurationLabel }}</span>
+      <CalendarDayHeader
+        :title="currentTitle"
+        :duration-label="showDayTotalDuration ? dayTotalDurationLabel : ''"
+        :show-back="previousViewStack.length > 0"
+        @prev="handlePrev"
+        @next="handleNext"
+        @today="handleToday"
+        @back="handleBack"
+      />
       <span class="fn__flex-1 fn__space"></span>
       <!-- 视图切换 -->
       <SySelect v-model="currentView" :options="viewOptions" />
@@ -60,16 +47,17 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import type { PomodoroRecord } from '@/types/models';
 import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
-import { openDocumentAtLine, updateBlockDateTime } from '@/utils/fileUtils';
-import { showMessage } from '@/utils/dialog';
+import { openDocumentAtLine } from '@/utils/fileUtils';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import CalendarDayHeader from '@/components/calendar/CalendarDayHeader.vue';
 import CalendarView from '@/components/calendar/CalendarView.vue';
 import { DataConverter } from '@/utils/dataConverter';
 import { calculateDayTotalDurationMinutes, formatTotalDuration } from '@/utils/calendarDuration';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
+import { persistCalendarEventChange } from '@/utils/calendarEventChange';
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -363,83 +351,7 @@ const handleEventResize = async (eventInfo: any) => {
 
 // 统一处理事件变化
 const handleEventChange = async (eventInfo: any, action: 'move' | 'resize') => {
-  const blockId = eventInfo.blockId || eventInfo.extendedProps?.blockId;
-  const allDay = eventInfo.allDay;
-
-  if (!blockId) {
-    showMessage(t('common').blockIdError, 'error');
-    return;
-  }
-
-  // 获取原始日期时间信息（直接从 eventInfo 获取，CalendarView 已传递）
-  const originalDate = eventInfo.date;
-  const originalStartDateTime = eventInfo.originalStartDateTime;
-  const originalEndDateTime = eventInfo.originalEndDateTime;
-  const siblingItems = eventInfo.siblingItems;
-  const status = eventInfo.status;
-
-  // 解析新的日期时间
-  const startStr = eventInfo.start;
-  const endStr = eventInfo.end;
-
-  // 解析日期和时间
-  let newDate = '';
-  let newStartTime = '';
-  let newEndTime = '';
-
-  if (startStr) {
-    // 格式可能是 "2026-02-25T10:00:00" 或 "2026-02-25"
-    if (startStr.includes('T')) {
-      const [date, time] = startStr.split('T');
-      newDate = date;
-      newStartTime = time.substring(0, 8); // HH:mm:ss
-    } else {
-      newDate = startStr;
-    }
-  }
-
-  if (endStr && endStr.includes('T')) {
-    const time = endStr.split('T')[1];
-    newEndTime = time.substring(0, 8); // HH:mm:ss
-  }
-
-  const timePrecision
-    = eventInfo.timePrecision
-      || eventInfo.extendedProps?.timePrecision
-      || (!originalStartDateTime && newStartTime ? 'minute' : 'second');
-
-  // 重建完整的 siblingItems（包含当前日期）
-  // siblingItems 原本只包含"其他日期"，需要加上当前正在修改的日期
-  const completeSiblingItems = [
-    ...(siblingItems || []),
-    ...(originalDate ? [{
-      date: originalDate,
-      startDateTime: originalStartDateTime,
-      endDateTime: originalEndDateTime,
-      timePrecision
-    }] : [])
-  ];
-
-  // 更新块（传递 completeSiblingItems、status 以支持智能合并）
-  const success = await updateBlockDateTime(
-    blockId,
-    newDate,
-    newStartTime,
-    newEndTime,
-    allDay,
-    originalDate,
-    completeSiblingItems,
-    status,
-    undefined,
-    timePrecision
-  );
-
-  if (success) {
-    showMessage(action === 'move' ? t('common').moveSuccess : t('common').resizeSuccess);
-    // 操作成功，等待 ws-main 事件触发定向刷新
-  } else {
-    showMessage(t('common').actionFailed, 'error');
-  }
+  await persistCalendarEventChange(eventInfo, action);
 };
 
 // 监听视图切换（用户手动切换下拉框时清空 drill-down 栈）
@@ -478,20 +390,6 @@ watch(currentView, (newView) => {
   .refresh-btn {
     margin-left: 6px;
   }
-}
-
-.date-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-  margin-left: 12px;
-}
-
-.date-duration {
-  font-size: 13px;
-  color: var(--b3-theme-on-surface-light);
-  margin-left: 10px;
-  white-space: nowrap;
 }
 
 .tab-content {

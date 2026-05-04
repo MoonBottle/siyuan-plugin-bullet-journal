@@ -13,6 +13,9 @@ Task management plugin: Calendar and Gantt chart for planning, Todo and Pomodoro
 | **Calendar View** | Display tasks in calendar format with month/week/day/list views | Daily/weekly planning and time blocking |
 | **Gantt Chart** | Visualize project progress with hierarchical task display | Understanding project timelines and dependencies |
 | **Todo Dock** | Show upcoming todo items in sidebar for quick access | Quick glance at today's and future tasks |
+| **Habit Check-in** | Track daily habits, support binary and count types | Build habits, view streaks and completion rates |
+| **Quadrant View** | Auto-categorize tasks by priority into importance/urgency matrix | Focus on key items, manage time effectively |
+| **Workbench** | Integrated workspace with dashboard and multiple views | One-stop task management |
 | **Pomodoro** | Display Pomodoro focus status in sidebar | Track Pomodoro focus time |
 | **AI Chat** | Display AI conversation history in sidebar | Interact with AI assistant to query projects, tasks, and items |
 
@@ -28,7 +31,7 @@ Task management plugin: Calendar and Gantt chart for planning, Todo and Pomodoro
 1. **Create Project Document** - Create a document in SiYuan to record project tasks
 2. **Write Task Format** - Use `#task` to mark tasks, `@date` to mark items
 3. **Configure Plugin** (optional, recommended) - Add directory paths to scan in settings, or right-click a node in the document tree and choose "Set as Task Assistant directory" to add quickly
-4. **View Tasks** - Access tasks through Calendar, Gantt, Project List, Todo Dock, or Pomodoro panels
+4. **View Tasks** - Access tasks through Calendar, Gantt, Project List, Todo Dock, Quadrant, Workbench, or Pomodoro panels
 
 For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
 
@@ -106,10 +109,13 @@ Click any task in the view to jump directly to its location in your notes.
   - [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md)
   - [Data Format](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/data-format.md)
   - [Views](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/views.md)
-  - [Pomodoro](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/pomodoro.md)
-  - [MCP AI Assistant](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/mcp.md)
-  - [Configuration](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/configuration.md)
-  - [Complete Example](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/examples.md)
+- [Habit Check-in](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/habit-checkin.md)
+- [Quadrant View](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quadrant.md)
+- [Workbench](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/workbench.md)
+- [Pomodoro](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/pomodoro.md)
+- [MCP AI Assistant](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/mcp.md)
+- [Configuration](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/configuration.md)
+- [Complete Example](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/examples.md)
 - [Contributing](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/contributing.md)
 
 ## 💝 Support the Author

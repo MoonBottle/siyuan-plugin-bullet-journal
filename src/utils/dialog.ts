@@ -1,11 +1,11 @@
-/**
+﻿/**
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
 import type { Plugin } from 'siyuan';
 import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel, HabitFrequency } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
@@ -16,6 +16,8 @@ import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
+import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue';
+import HabitRecordEditDialog from '@/components/dialog/HabitRecordEditDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { t } from '@/i18n';
 import { formatDateLabel, formatTimeRange, calculateDuration } from './dateUtils';
@@ -121,6 +123,16 @@ export function showIconTooltip(el: HTMLElement, text: string): void {
 export function hideIconTooltip(): void {
   const tip = document.getElementById(SY_ICON_TOOLTIP_ID);
   if (tip) tip.classList.remove('visible');
+}
+
+function focusDialogInitialElement(dialogElement: HTMLElement): void {
+  const focusableEl
+    = dialogElement.querySelector('[data-initial-focus]') as HTMLElement | null
+      ?? dialogElement.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement | null;
+
+  if (focusableEl) {
+    focusableEl.focus();
+  }
 }
 
 function formatLinkDisplay(name: string): { display: string; tooltipAttr: string } {
@@ -336,6 +348,10 @@ export function showItemDetailModal(item: Item, options?: { showAllDates?: boole
     bodyEl.appendChild(container);
   }
 
+  requestAnimationFrame(() => {
+    focusDialogInitialElement(dialog.element);
+  });
+
   return dialog;
 }
 
@@ -523,6 +539,10 @@ export function showEventDetailModal(
   if (bodyEl) {
     bodyEl.appendChild(container);
   }
+
+  requestAnimationFrame(() => {
+    focusDialogInitialElement(dialog.element);
+  });
 
   return dialog;
 }
@@ -1177,5 +1197,177 @@ export function showPrioritySettingDialog(
   return dialog;
 }
 
+/**
+ * 显示习惯创建弹框
+ */
+export function showHabitCreateDialog(
+  onSave: (markdown: string) => void,
+  initialData?: Partial<{
+    name: string;
+    startDate: string;
+    durationDays?: number;
+    type: 'binary' | 'count';
+    target?: number;
+    unit?: string;
+    reminder?: Pick<ReminderConfig, 'type' | 'time'>;
+    frequency?: HabitFrequency;
+  }>,
+): Dialog {
+  const container = document.createElement('div');
 
+  const app = createApp(HabitCreateDialog, {
+    initialData,
+    onSave: (markdown: string) => {
+      onSave(markdown);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    }
+  });
 
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('slash').createHabit || '创建习惯',
+    content: '',
+    width: '460px',
+    destroyCallback: () => {
+      app.unmount();
+    }
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
+}
+
+/**
+ * 单输入框弹框
+ */
+export function showInputDialog(
+  title: string,
+  message: string,
+  defaultValue: string,
+  onConfirm: (value: string) => void,
+  onCancel?: () => void,
+): Dialog {
+  let content = '<div class="sy-dialog-content">';
+  content += `<div class="sy-dialog-message">${message}</div>`;
+  content += `
+    <div class="sy-dialog-input-wrap">
+      <input
+        class="b3-text-field fn__block sy-dialog-input"
+        data-role="input"
+        type="text"
+        value="${defaultValue.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}"
+      >
+    </div>
+  `;
+  content += `
+    <div class="sy-dialog-footer">
+      ${createButtons([
+        { text: t('common').cancel, class: 'b3-button--cancel', action: 'cancel' },
+        { text: t('common').confirm, class: 'b3-button--text', action: 'confirm' },
+      ])}
+    </div>
+  `;
+  content += '</div>';
+
+  const dialog = createDialog({
+    title,
+    content,
+    width: '420px',
+  });
+
+  const element = dialog.element;
+  const inputEl = element.querySelector('[data-role="input"]') as HTMLInputElement | null;
+
+  const handleConfirm = () => {
+    const nextValue = inputEl?.value.trim() ?? '';
+    onConfirm(nextValue);
+    dialog.destroy();
+  };
+
+  element.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const action = (e.currentTarget as HTMLElement).dataset.action;
+
+      if (action === 'confirm') {
+        handleConfirm();
+      } else if (action === 'cancel') {
+        onCancel?.();
+        dialog.destroy();
+      }
+    });
+  });
+
+  inputEl?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleConfirm();
+    }
+  });
+
+  requestAnimationFrame(() => {
+    inputEl?.focus();
+    inputEl?.select();
+  });
+
+  return dialog;
+}
+
+export function showHabitRecordEditDialog(
+  initialMarkdown: string,
+  onSave: (markdown: string) => void,
+): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(HabitRecordEditDialog, {
+    initialMarkdown,
+    onSave: (markdown: string) => {
+      onSave(markdown);
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('habit').recordEditTitle,
+    content: '',
+    width: '520px',
+    destroyCallback: () => {
+      app.unmount();
+    },
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('textarea, input, button, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
+}

@@ -133,6 +133,85 @@ export interface ReminderConfig {
   offsetMinutes?: number;          // 偏移分钟数（正数表示提前）
 }
 
+// 习惯频率规则
+export type HabitFrequency = {
+  type: 'daily' | 'every_n_days' | 'weekly' | 'n_per_week' | 'weekly_days';
+  interval?: number;             // 每 N 天的间隔（如 2 = 每2天）
+  daysPerWeek?: number;          // 每周 N 天（如 3 = 每周3天）
+  daysOfWeek?: number[];         // 每周指定周几（0=周日, 1=周一, ...）
+};
+
+// 打卡记录
+export interface CheckInRecord {
+  content: string;               // 打卡日志内容（默认等于习惯名，用户可自定义修改）
+  date: string;                  // YYYY-MM-DD
+  docId: string;
+  blockId: string;               // SiYuan block ID，作为唯一标识
+  // 计数型专用
+  currentValue?: number;         // 当前值（如 3）
+  targetValue?: number;          // 目标值（如 8）
+  unit?: string;                 // 单位
+  // 所属习惯引用
+  habitId: string;               // 所属习惯的 blockId
+}
+
+// 习惯
+export interface Habit {
+  name: string;                  // 习惯名（如"喝水"、""早起""）
+  project?: Project;             // 所属项目（反向引用，运行时设置）
+  docId: string;                 // 所属文档 ID
+  blockId: string;               // SiYuan block ID，作为唯一标识
+  lastBlockId?: string;          // 最后一个 record 的 block ID（用于插入位置）
+  type: 'binary' | 'count';     // 二元型 / 计数型
+  startDate: string;             // 开始日期（YYYY-MM-DD，必填）
+  durationDays?: number;         // 持续日历天数（可选，如30天），到达后习惯结束
+  endDate?: string;              // 计算字段：startDate + durationDays - 1
+  archivedAt?: string;           // 归档日期（YYYY-MM-DD）
+  target?: number;               // 目标值（计数型，如 8）
+  unit?: string;                 // 单位（计数型，如"杯"）
+  frequency?: HabitFrequency;    // 频率规则（必填）
+  reminder?: ReminderConfig;     // 提醒配置（可选，复用已有）
+  records: CheckInRecord[];      // 打卡记录
+  links?: Link[];                // 链接
+  pomodoros?: PomodoroRecord[];  // 番茄钟记录
+}
+
+export interface HabitDayState {
+  date: string;
+  hasRecord: boolean;
+  isCompleted: boolean;
+  currentValue?: number;
+  targetValue?: number;
+}
+
+export interface HabitPeriodState {
+  periodType: 'day' | 'interval' | 'week';
+  periodStart: string;
+  periodEnd: string;
+  requiredCount: number;
+  completedCount: number;
+  remainingCount: number;
+  isCompleted: boolean;
+  eligibleToday: boolean;
+}
+
+// 习惯统计（纯计算，不持久化）
+export interface HabitStats {
+  habitId: string;
+  monthlyCheckins: number;       // 本月打卡次数（达标天数）
+  totalCheckins: number;         // 总打卡次数（达标天数）
+  currentStreak: number;         // 当前连续
+  longestStreak: number;         // 最长连续
+  completionRate: number;        // 总完成率 (0-1)
+  monthlyCompletionRate: number; // 本月完成率 (0-1)
+  weeklyCompletionRate: number;  // 本周完成率 (0-1)
+  totalValue?: number;           // 累计值（计数型）
+  averageValue?: number;         // 日均值（计数型）
+  isEnded?: boolean;             // 习惯是否已结束
+  isCompleted?: boolean;         // 兼容旧字段，后续清理
+  isPeriodCompleted?: boolean;   // 兼容旧字段，后续清理
+}
+
 // 重复规则类型
 export type RepeatRuleType = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'workday';
 

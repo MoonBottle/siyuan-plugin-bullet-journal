@@ -6,12 +6,16 @@
 
 import { Cron } from 'croner';
 import type { Plugin } from 'siyuan';
-import type { Item } from '@/types/models';
+import type { Habit, Item } from '@/types/models';
 import { useProjectStore } from '@/stores';
 import { calculateReminderTime } from '@/parser/reminderParser';
 import { showSystemNotification } from '@/utils/notification';
+import { getHabitReminderEntries } from '@/services/habitReminder';
+import dayjs from '@/utils/dayjs';
 
 type ProjectStoreType = ReturnType<typeof useProjectStore>;
+const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
+const FUTURE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
  * 生成调度 key：blockId-date-reminderTime
@@ -23,10 +27,12 @@ function makeScheduleKey(item: Item, reminderTime: number): string {
 
 export class ReminderService {
   private scheduledJobs: Map<string, Cron> = new Map(); // key → Cron job
+  private habitScheduledJobs: Map<string, Cron> = new Map(); // key → Habit Cron job
   private notifiedKeys: Set<string> = new Set(); // 已提醒的 scheduleKey
   private projectStore: ProjectStoreType | null = null;
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
   private visibilityHandler: (() => void) | null = null;
+  private midnightRefreshJob: Cron | null = null;
 
   /**
    * 启动提醒服务
@@ -36,7 +42,8 @@ export class ReminderService {
 
     this.requestNotificationPermission();
     this.setupVisibilityListener();
-    this.rebuildSchedule();
+    this.rebuildSchedulesFromNow();
+    this.scheduleMidnightRefresh();
 
     console.log('[ReminderService] Started with croner');
   }
@@ -63,7 +70,7 @@ export class ReminderService {
    */
   scheduleRebuild(): void {
     if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
-    this.rebuildTimer = setTimeout(() => this.rebuildSchedule(), 300);
+    this.rebuildTimer = setTimeout(() => this.rebuildSchedulesFromNow(), 300);
   }
 
   /**
@@ -85,10 +92,34 @@ export class ReminderService {
     this.visibilityHandler = () => {
       if (document.visibilityState === 'visible') {
         console.log('[ReminderService] Page became visible, rebuilding schedule');
-        this.rebuildSchedule();
+        this.rebuildSchedulesFromNow();
       }
     };
     document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  /**
+   * 根据当前真实日期先校准 store，再重建调度
+   */
+  private rebuildSchedulesFromNow(): void {
+    this.syncCurrentDateFromNow();
+    this.rebuildSchedule();
+  }
+
+  /**
+   * 把 currentDate 校准到当前真实日期
+   */
+  private syncCurrentDateFromNow(): void {
+    if (!this.projectStore) return;
+
+    const today = dayjs().format('YYYY-MM-DD');
+    if (this.projectStore.currentDate === today) return;
+
+    if (typeof (this.projectStore as any).setCurrentDate === 'function') {
+      (this.projectStore as any).setCurrentDate(today);
+    } else {
+      this.projectStore.currentDate = today;
+    }
   }
 
   /**
@@ -99,6 +130,7 @@ export class ReminderService {
 
     const now = Date.now();
     const newEntries = new Map<string, { item: Item; reminderTime: number }>();
+    const habitNewEntries = new Map<string, { habit: Habit; reminderTime: number }>();
 
     // 遍历所有事项，计算提醒时间
     for (const project of this.projectStore.projects) {
@@ -124,7 +156,6 @@ export class ReminderService {
 
           // 提醒时间已过：仅当在宽容窗口（5 分钟）内才视为漏掉的提醒
           // 超过 5 分钟说明是事后编辑，不应触发
-          const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
           if (reminderTime <= now && (now - reminderTime) <= MISSED_THRESHOLD_MS) {
             if (!this.notifiedKeys.has(key)) {
               console.log(`[ReminderService] Missed reminder, triggering now: "${item.content.substring(0, 20)}..." | key=${key}`);
@@ -140,11 +171,34 @@ export class ReminderService {
               console.log(`[ReminderService] Stale reminder (${Math.round((now - reminderTime) / 60000)}min ago), skipping: "${item.content.substring(0, 20)}..." | key=${key}`);
               this.notifiedKeys.add(key); // 标记为已处理，避免重复日志
             }
-          } else if (reminderTime < now + 24 * 60 * 60 * 1000) {
+          } else if (reminderTime < now + FUTURE_WINDOW_MS) {
             // 未来 24 小时内 → 加入调度
             newEntries.set(key, { item, reminderTime });
           }
         }
+      }
+    }
+
+    const habits = typeof this.projectStore.getHabits === 'function'
+      ? this.projectStore.getHabits('')
+      : [];
+
+    for (const entry of getHabitReminderEntries(habits, this.projectStore.currentDate)) {
+      if (entry.reminderTime <= now && (now - entry.reminderTime) <= MISSED_THRESHOLD_MS) {
+        if (!this.notifiedKeys.has(entry.key)) {
+          this.triggerHabitNotification(entry.habit);
+          this.notifiedKeys.add(entry.key);
+          this.scheduleCleanup(entry.key);
+        }
+      } else if (entry.reminderTime <= now) {
+        if (!this.notifiedKeys.has(entry.key)) {
+          this.notifiedKeys.add(entry.key);
+        }
+      } else if (entry.reminderTime < now + FUTURE_WINDOW_MS) {
+        habitNewEntries.set(entry.key, {
+          habit: entry.habit,
+          reminderTime: entry.reminderTime,
+        });
       }
     }
 
@@ -179,7 +233,31 @@ export class ReminderService {
       this.scheduledJobs.set(key, job);
     }
 
-    console.log(`[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active jobs, ${newEntries.size} items scanned, ${this.notifiedKeys.size} notified keys`);
+    for (const [key, job] of this.habitScheduledJobs) {
+      if (!habitNewEntries.has(key)) {
+        job.stop();
+        this.habitScheduledJobs.delete(key);
+      }
+    }
+
+    for (const [key, { habit, reminderTime }] of habitNewEntries) {
+      if (this.habitScheduledJobs.has(key)) continue;
+
+      const job = new Cron(new Date(reminderTime), () => {
+        if (!this.notifiedKeys.has(key)) {
+          this.triggerHabitNotification(habit);
+          this.notifiedKeys.add(key);
+          this.scheduleCleanup(key);
+        }
+        this.habitScheduledJobs.delete(key);
+      });
+
+      this.habitScheduledJobs.set(key, job);
+    }
+
+    console.log(
+      `[ReminderService] Schedule rebuilt: ${this.scheduledJobs.size} active item jobs, ${this.habitScheduledJobs.size} active habit jobs, ${newEntries.size} items scanned, ${this.notifiedKeys.size} notified keys`
+    );
   }
 
   /**
@@ -190,6 +268,40 @@ export class ReminderService {
       job.stop();
     }
     this.scheduledJobs.clear();
+    for (const [, job] of this.habitScheduledJobs) {
+      job.stop();
+    }
+    this.habitScheduledJobs.clear();
+    if (this.midnightRefreshJob) {
+      this.midnightRefreshJob.stop();
+      this.midnightRefreshJob = null;
+    }
+  }
+
+  /**
+   * 调度下一次零点刷新
+   */
+  private scheduleMidnightRefresh(): void {
+    if (this.midnightRefreshJob) {
+      this.midnightRefreshJob.stop();
+      this.midnightRefreshJob = null;
+    }
+
+    const nextMidnight = new Date();
+    nextMidnight.setHours(24, 0, 0, 0);
+    this.midnightRefreshJob = new Cron(nextMidnight, () => {
+      this.handleMidnightRefresh();
+    });
+  }
+
+  /**
+   * 零点推进日期并重建调度
+   */
+  private handleMidnightRefresh(): void {
+    if (!this.projectStore) return;
+
+    this.rebuildSchedulesFromNow();
+    this.scheduleMidnightRefresh();
   }
 
   /**
@@ -210,6 +322,26 @@ export class ReminderService {
     });
 
     console.log(`[ReminderService] Notification triggered: ${item.content}`);
+  }
+
+  /**
+   * 触发习惯提醒通知
+   */
+  private triggerHabitNotification(habit: Habit): void {
+    const title = `🎯 ${habit.name}`;
+    const body = habit.type === 'count'
+      ? `${habit.name} ${habit.target || 0}${habit.unit || ''}`
+      : habit.name;
+
+    showSystemNotification(title, body, {
+      tag: `habit-reminder-${habit.blockId}`,
+      icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+      onClick: () => {
+        this.openBlock(habit.blockId);
+      },
+    });
+
+    console.log(`[ReminderService] Habit notification triggered: ${habit.name}`);
   }
 
   /**

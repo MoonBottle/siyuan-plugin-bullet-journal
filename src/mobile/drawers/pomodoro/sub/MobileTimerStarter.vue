@@ -73,9 +73,6 @@
     </div>
 
     <div class="drawer-footer">
-      <button class="cancel-btn" @click="close">
-        {{ t('common').cancel || '取消' }}
-      </button>
       <button
         class="confirm-btn"
         :disabled="!selectedItem"
@@ -237,7 +234,7 @@ const close = () => {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px;
+  padding: 16px 16px 12px;
 }
 
 // Selected Item Card
@@ -448,36 +445,26 @@ const close = () => {
 
 // Footer
 .drawer-footer {
-  padding: 16px;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--b3-border-color);
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
+  background: var(--b3-theme-background);
 }
 
-.cancel-btn,
 .confirm-btn {
+  width: 100%;
+  min-height: 48px;
   padding: 12px 24px;
   border-radius: 12px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
 
   &:active {
     transform: scale(0.98);
-  }
-}
-
-.cancel-btn {
-  background: var(--b3-theme-surface);
-  color: var(--b3-theme-on-surface);
-
-  &:hover {
-    background: var(--b3-theme-surface-lighter);
   }
 }
 

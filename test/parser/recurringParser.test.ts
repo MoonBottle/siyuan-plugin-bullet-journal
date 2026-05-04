@@ -238,6 +238,18 @@ describe('recurringParser', () => {
       expect(result).toBe('2026-03-23');
     });
 
+    it('应该计算工作日的下一次（跳过中国法定节假日）', () => {
+      const rule: RepeatRule = { type: 'workday' };
+      const result = getNextOccurrenceDate('2026-04-30', rule);
+      expect(result).toBe('2026-05-06');
+    });
+
+    it('应该计算工作日的下一次（命中补班周六）', () => {
+      const rule: RepeatRule = { type: 'workday' };
+      const result = getNextOccurrenceDate('2026-05-08', rule);
+      expect(result).toBe('2026-05-09');
+    });
+
     // ==================== P1: 指定周几边界测试 ====================
 
     it('每周指定周几：周一到周三（同周内）', () => {

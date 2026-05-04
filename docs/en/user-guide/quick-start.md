@@ -50,7 +50,7 @@ The plugin parses Markdown content to identify tasks. A project document consist
 
 [Design Mockup](https://figma.com/design/xxx)
 
-Homepage revamp (Task name) #task @L1
+Homepage revamp (Task name) 📋 @L1
 
 [Requirements Doc](https://doc.example.com/homepage)
 
@@ -62,7 +62,7 @@ Review meeting (Abandoned item) @2026-03-08 14:00:00~15:00:00 #abandoned
 ```
 
 **Key markers explained:**
-- `#task` or `📋` - Marks a line as a task (supports Emoji)
+- `📋` - Marks a line as a task
 - `@L1`, `@L2`, `@L3` - Task hierarchy levels (L1 = parent, L2/L3 = subtasks)
 - `@YYYY-MM-DD` or `📅YYYY-MM-DD` - Date marker for work items (supports Emoji)
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
@@ -84,7 +84,7 @@ For more format details, see [Data Format](./data-format.md).
 
 > ⚠️ **Common Issue**: If no data appears, check that:
 > - The directory path matches your actual folder structure
-> - Project documents contain the `#task` marker
+> - Project documents contain the `📋` / `#task` / `#任务` marker
 > - Work items have valid date formats (`@YYYY-MM-DD`)
 
 For more configuration details, see [Configuration](./configuration.md).
@@ -99,6 +99,9 @@ Once configured, access your tasks through multiple views:
 | **Gantt** | Click 📊 Gantt icon in top bar | Project timeline visualization |
 | **Project List** | Click 📁 folder icon in top bar | Review all tasks by project |
 | **Todo Dock** | Right-click top bar → Closed Panels → Todo Items | Quick access to upcoming tasks |
+| **Habit Check-in** | Right-click top bar → Closed Panels → Habit Check-in | Daily habit tracking and check-ins |
+| **Quadrant** | Right-click top bar → Quadrant | Manage tasks by priority |
+| **Workbench** | Right-click top bar → Workbench | Integrated workspace (Dashboard + Habits + Todo + Quadrant + Focus Stats) |
 | **Pomodoro Focus** | Right-click top bar → Closed Panels → Pomodoro Focus | Pomodoro timer and focus records |
 
 > 💡 **Pro Tip**: Click on any task in Calendar or Gantt view to jump directly to that task's location in your notes. When editing in notes, right-click an item block and select "View Detail", or Ctrl+click (Cmd+click on Mac) on item content to open the item detail modal.
@@ -122,6 +125,9 @@ For more view details, see [Views](./views.md).
 ## Next Steps
 
 - Learn [Data Format](./data-format.md) in depth to master all marker syntax
+- Use [Habit Check-in](./habit-checkin.md) to track daily habits
+- Use [Quadrant View](./quadrant.md) to manage tasks by priority
+- Use [Workbench](./workbench.md) for integrated workspace
 - Use [Pomodoro](./pomodoro.md) for focus timing
 - Configure [MCP AI Assistant](./mcp.md) so AI can query tasks and pomodoro data
 - Check [Complete Example](./examples.md) to see how real projects are organized

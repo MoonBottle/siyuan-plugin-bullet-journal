@@ -8,6 +8,13 @@
         <span class="nav-label">{{ t('pomodoro').title || '番茄钟' }}</span>
       </button>
       
+      <button class="nav-item" @click="emit('open-habit')">
+        <div class="nav-icon-wrapper">
+          <svg class="nav-icon"><use xlink:href="#iconCheck"></use></svg>
+        </div>
+        <span class="nav-label">{{ t('habit').title }}</span>
+      </button>
+      
       <div class="nav-spacer">
         <button class="add-btn" @click="emit('create')">
           <svg><use xlink:href="#iconAdd"></use></svg>
@@ -34,6 +41,7 @@ import SettingsDrawer from '../../drawers/settings/SettingsDrawer.vue';
 
 const emit = defineEmits<{
   'open-pomodoro': [];
+  'open-habit': [];
   create: [];
 }>();
 

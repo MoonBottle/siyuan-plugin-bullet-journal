@@ -86,15 +86,10 @@ function formatDuration(minutes: number): string {
 <style lang="scss" scoped>
 .stats-overview {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
   margin-bottom: 0;
-}
-
-@media (max-width: 768px) {
-  .stats-overview {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  align-content: start;
 }
 
 .overview-card {
@@ -102,6 +97,7 @@ function formatDuration(minutes: number): string {
   border-radius: var(--b3-border-radius);
   padding: 12px;
   min-height: 60px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;

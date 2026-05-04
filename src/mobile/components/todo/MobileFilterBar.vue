@@ -63,9 +63,7 @@ const handleFocus = (e: FocusEvent) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  background: var(--b3-theme-background);
-  border-bottom: 1px solid var(--b3-border-color);
+  padding: 8px 0;
   flex-shrink: 0;
   box-sizing: border-box;
   max-width: 100%;
@@ -77,8 +75,8 @@ const handleFocus = (e: FocusEvent) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: var(--b3-theme-surface);
+  padding: 7px 12px;
+  background: var(--b3-theme-background);
   border-radius: 10px;
   border: 1px solid transparent;
   transition: all 0.2s ease;
@@ -138,13 +136,13 @@ const handleFocus = (e: FocusEvent) => {
 }
 
 .filter-btn {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  background: var(--b3-theme-surface);
+  background: var(--b3-theme-background);
   border-radius: 10px;
   cursor: pointer;
   position: relative;

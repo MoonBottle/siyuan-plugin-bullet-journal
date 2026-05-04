@@ -1,5 +1,8 @@
 <template>
-  <div class="todo-sidebar">
+  <div
+    class="todo-sidebar"
+    :class="{ 'todo-sidebar--embedded': displayMode === 'embedded' }"
+  >
     <div class="todo-content">
       <SyLoading v-if="loading" :text="t('common').loading" />
 
@@ -45,55 +48,73 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
-              @click="openItem(item)"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').complete"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').startFocusAria"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').migrateToToday"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToToday)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleMigrateToday(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').abandon"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -119,55 +140,73 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
-              @click="openItem(item)"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').complete"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').startFocusAria"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').migrateToTomorrow"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').abandon"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -193,55 +232,73 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
-              @click="openItem(item)"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').complete"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleDone(item)"
                   >
                     <svg><use xlink:href="#iconCheck"></use></svg>
                   </span>
                   <span
                     v-if="!pomodoroStore.isFocusing"
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').startFocusAria"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').migrateToTomorrow"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleMigrate(item)"
                   >
                     <svg><use xlink:href="#iconForward"></use></svg>
                   </span>
                   <span
-                    class="block__icon b3-tooltips b3-tooltips__nw"
+                    class="block__icon"
                     :aria-label="t('todo').abandon"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                    @mouseleave="handleActionTooltipLeave"
                     @click.stop="handleAbandon(item)"
                   >
                     <svg><use xlink:href="#iconCloseRound"></use></svg>
                   </span>
                 </div>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -274,55 +331,73 @@
                   :show-header="true"
                   :show-footer="true"
                   :clickable="true"
-                  @click="openItem(item)"
+                  :draggable="getItemDraggable(item)"
+                  :data-testid="`todo-sidebar-card-${item.id}`"
+                  :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
+                  @click="handleItemPreviewClick(item, $event)"
                   @contextmenu="handleContextMenu($event, item)"
+                  @mouseenter="handleItemHoverStart(item, $event)"
+                  @mouseleave="handleItemHoverEnd(item, $event)"
+                  @dragstart="handleItemDragStart(item, $event)"
+                  @dragend="handleItemDragEnd(item, $event)"
                 >
                   <template #header>
                     <div class="item-header-left">
                       <span class="item-time">{{ formatTime(item) || t('todo').allDay }}</span>
                     </div>
-                    <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                    <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                      <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                      <span v-if="item.project">{{ item.project.name }}</span>
+                    </span>
                   </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-                  <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+                  <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
                   <TodoItemMeta :item="item" />
                   <template #footer>
                     <div class="item-actions-hover">
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').complete"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="handleDone(item)"
                       >
                         <svg><use xlink:href="#iconCheck"></use></svg>
                       </span>
                       <span
                         v-if="!pomodoroStore.isFocusing"
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').startFocusAria"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="openPomodoroDialog(item)"
                       >
                         <svg><use xlink:href="#iconClock"></use></svg>
                       </span>
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').migrateToTomorrow"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="handleMigrate(item)"
                       >
                         <svg><use xlink:href="#iconForward"></use></svg>
                       </span>
                       <span
-                        class="block__icon b3-tooltips b3-tooltips__nw"
+                        class="block__icon"
                         :aria-label="t('todo').abandon"
+                        @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                        @mouseleave="handleActionTooltipLeave"
                         @click.stop="handleAbandon(item)"
                       >
                         <svg><use xlink:href="#iconCloseRound"></use></svg>
                       </span>
                     </div>
                     <div class="item-actions-fixed">
-                      <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                      <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                         <svg><use xlink:href="#iconInfo"></use></svg>
                       </span>
-                      <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                      <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                         <svg><use xlink:href="#iconCalendar"></use></svg>
                       </span>
                     </div>
@@ -350,24 +425,34 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
-              @click="openItem(item)"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -393,24 +478,34 @@
               :show-header="true"
               :show-footer="true"
               :clickable="true"
-              @click="openItem(item)"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
+              @click="handleItemPreviewClick(item, $event)"
               @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
             >
               <template #header>
                 <div class="item-header-left">
                   <span class="item-time">{{ formatDateLabel(item.date) }}</span>
                 </div>
-                <span v-if="item.project" class="item-project">{{ item.project.name }}</span>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
-              <div class="item-content">{{ getStatusEmoji(item) }}{{ item.content }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').detail" @click.stop="openDetail(item)">
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
-                  <span class="block__icon b3-tooltips b3-tooltips__nw" :aria-label="t('todo').calendar" @click.stop="openCalendar(item)">
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
                     <svg><use xlink:href="#iconCalendar"></use></svg>
                   </span>
                 </div>
@@ -431,12 +526,13 @@ import Card from '@/components/common/Card.vue';
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 import { updateBlockPriority } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
+import type { TodoSortRule } from '@/settings';
 import type { Item, PriorityLevel } from '@/types/models';
 import { t } from '@/i18n';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
@@ -445,46 +541,81 @@ import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 
+type TodoSidebarDragPayload = {
+  blockId: string;
+  itemId: string;
+  priority?: PriorityLevel;
+};
+
+export type TodoSidebarHoverPayload = {
+  blockId: string;
+  itemId: string;
+  anchorEl: HTMLElement;
+};
+
+type TodoSidebarPreviewTriggerMode = 'hover' | 'click';
+
+const getPriorityEmoji = (item: Item): string => {
+  if (item.priority === 'high') return '🔥';
+  if (item.priority === 'medium') return '🌱';
+  if (item.priority === 'low') return '🍃';
+  return '';
+};
+
 // 获取状态 emoji
 const getStatusEmoji = (item: Item): string => {
-  // 优先级 emoji
-  let priorityEmoji = '';
-  if (item.priority === 'high') priorityEmoji = '🔥 ';
-  else if (item.priority === 'medium') priorityEmoji = '🌱 ';
-  else if (item.priority === 'low') priorityEmoji = '🍃 ';
-  
   // 原有逻辑
   if (pomodoroStore.activePomodoro?.blockId && item.blockId === pomodoroStore.activePomodoro.blockId) {
-    return priorityEmoji + '🍅 ';
+    return '🍅';
   }
-  if (item.status === 'completed') return priorityEmoji + '✅ ';
-  if (item.status === 'abandoned') return priorityEmoji + '❌ ';
+  if (item.status === 'completed') return '✅';
+  if (item.status === 'abandoned') return '❌';
   const todayStr = dayjs().format('YYYY-MM-DD');
   if (item.dateRangeStart && item.dateRangeEnd) {
     const rangeStatus = getDateRangeStatus(item, todayStr);
-    if (rangeStatus) return priorityEmoji + dateRangeStatusToEmoji(rangeStatus);
+    if (rangeStatus) return dateRangeStatusToEmoji(rangeStatus);
   }
   if (!item.dateRangeStart && !item.dateRangeEnd && item.date) {
     const timeStatus = getTimeRangeStatus(item, dayjs().format('YYYY-MM-DD HH:mm:ss'));
-    if (timeStatus) return priorityEmoji + dateRangeStatusToEmoji(timeStatus);
+    if (timeStatus) return dateRangeStatusToEmoji(timeStatus);
   }
   const isExpired = item.status !== 'completed' && item.status !== 'abandoned' && item.date && item.date < todayStr;
-  if (isExpired) return priorityEmoji + '⚠️ ';
-  return priorityEmoji + '⏳ ';
+  if (isExpired) return '⚠️';
+  return '⏳';
 };
 
 const props = withDefaults(defineProps<{
   groupId?: string;
   searchQuery?: string;
+  sortRules?: TodoSortRule[];
   dateRange?: { start: string; end: string } | null;
   completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
+  includeNoPriority?: boolean;
+  displayMode?: 'default' | 'embedded';
+  previewTriggerMode?: TodoSidebarPreviewTriggerMode;
+  enableDrag?: boolean;
+  onItemDragStart?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
+  onItemDragEnd?: (payload: TodoSidebarDragPayload, event: DragEvent) => void;
+  onItemHoverStart?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
+  onItemHoverEnd?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
+  onItemPreviewClick?: (payload: TodoSidebarHoverPayload, event: MouseEvent) => void;
 }>(), {
   groupId: '',
   searchQuery: '',
+  sortRules: () => [],
   dateRange: null,
   completedDateRange: null,
   priorities: () => [],
+  includeNoPriority: false,
+  displayMode: 'default',
+  previewTriggerMode: 'hover',
+  enableDrag: false,
+  onItemDragStart: undefined,
+  onItemDragEnd: undefined,
+  onItemHoverStart: undefined,
+  onItemHoverEnd: undefined,
+  onItemPreviewClick: undefined,
 });
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
@@ -570,6 +701,8 @@ const completedItems = computed(() => {
     searchQuery: props.searchQuery,
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
   });
 });
 
@@ -580,6 +713,8 @@ const abandonedItems = computed(() => {
     searchQuery: props.searchQuery,
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
   });
 });
 
@@ -590,6 +725,8 @@ const filteredItems = computed(() => {
     searchQuery: props.searchQuery,
     dateRange: props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
   });
 });
 
@@ -604,7 +741,8 @@ const hasActiveFilters = computed(() => {
   return props.groupId || // 选择了特定分组
          props.searchQuery?.trim() || 
          props.dateRange || 
-         props.priorities.length > 0;
+         props.priorities.length > 0 ||
+         (props.includeNoPriority && hasAnyItemsRaw.value);
 });
 
 // 只包含待办状态的事项（已完成和已放弃单独分组）
@@ -678,6 +816,132 @@ const formatTime = (item: Item): string => {
   return formatTimeRange(item.startDateTime, item.endDateTime);
 };
 
+const getItemDragPayload = (item: Item): TodoSidebarDragPayload | null => {
+  if (!item.blockId) return null;
+  return {
+    blockId: item.blockId,
+    itemId: item.id,
+    priority: item.priority,
+  };
+};
+
+const getItemDraggable = (item: Item): boolean => {
+  return !!props.enableDrag && !!item.blockId;
+};
+
+const getItemHoverPayload = (item: Item, event: MouseEvent): TodoSidebarHoverPayload | null => {
+  if (!item.blockId) return null;
+
+  const anchorEl = event.currentTarget as HTMLElement | null;
+  if (!anchorEl) return null;
+
+  return {
+    blockId: item.blockId,
+    itemId: item.id,
+    anchorEl,
+  };
+};
+
+const handleItemDragStart = (item: Item, event: DragEvent) => {
+  const payload = getItemDragPayload(item);
+  if (!props.enableDrag || !payload) return;
+  event.dataTransfer?.setData('application/json', JSON.stringify(payload));
+  event.dataTransfer?.setData('text/plain', payload.blockId);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+  props.onItemDragStart?.(payload, event);
+};
+
+const handleItemDragEnd = (item: Item, event: DragEvent) => {
+  const payload = getItemDragPayload(item);
+  if (!props.enableDrag || !payload) return;
+  props.onItemDragEnd?.(payload, event);
+};
+
+const handleItemHoverStart = (item: Item, event: MouseEvent) => {
+  if (props.previewTriggerMode !== 'hover') return;
+  const payload = getItemHoverPayload(item, event);
+  if (!payload) return;
+  props.onItemHoverStart?.(payload, event);
+};
+
+const handleItemPreviewClick = (item: Item, event: MouseEvent) => {
+  if (props.previewTriggerMode !== 'click') {
+    openItem(item);
+    return;
+  }
+
+  const payload = getItemHoverPayload(item, event);
+  if (!payload) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  props.onItemPreviewClick?.(payload, event);
+};
+
+const handleActionTooltipEnter = (event: MouseEvent, text: string) => {
+  const el = event.currentTarget as HTMLElement | null;
+  if (!el || !text) return;
+  showIconTooltip(el, text);
+};
+
+const handleActionTooltipLeave = () => {
+  hideIconTooltip();
+};
+
+function shouldSuppressHoverEndForAnchor(anchorEl: HTMLElement, event: MouseEvent) {
+  const relatedTarget = event.relatedTarget;
+  if (relatedTarget instanceof Node && anchorEl.contains(relatedTarget)) {
+    return true;
+  }
+
+  const anchorRect = anchorEl.getBoundingClientRect();
+  return (
+    !!relatedTarget
+    && event.clientX >= anchorRect.left
+    && event.clientX <= anchorRect.right
+    && event.clientY >= anchorRect.top
+    && event.clientY <= anchorRect.bottom
+  );
+}
+
+function shouldSuppressHoverEndAfterFrame(anchorEl: HTMLElement, event: MouseEvent) {
+  if (anchorEl.matches(':hover')) {
+    return true;
+  }
+
+  const elementUnderPointer = typeof document.elementFromPoint === 'function'
+    ? document.elementFromPoint(event.clientX, event.clientY)
+    : null;
+  if (elementUnderPointer instanceof Node && anchorEl.contains(elementUnderPointer)) {
+    return true;
+  }
+
+  return (
+    elementUnderPointer instanceof HTMLElement
+    && !!elementUnderPointer.closest('.block__popover')
+  );
+}
+
+const handleItemHoverEnd = (item: Item, event: MouseEvent) => {
+  if (props.previewTriggerMode !== 'hover') return;
+  const payload = getItemHoverPayload(item, event);
+  if (!payload) return;
+
+  if (shouldSuppressHoverEndForAnchor(payload.anchorEl, event)) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    if (shouldSuppressHoverEndAfterFrame(payload.anchorEl, event)) {
+      return;
+    }
+
+    props.onItemHoverEnd?.(payload, event);
+  });
+};
+
 // 打开事项所在文档
 const openItem = async (item: Item) => {
   if (!item.docId) return;
@@ -691,7 +955,6 @@ const openDetail = (item: Item) => {
 
 // 在日历中打开（afterOpen 会 emit CALENDAR_NAVIGATE，无需重复）
 const openCalendar = (item: Item) => {
-  console.log('[Task Assistant] openCalendar', item.date);
   if (plugin && (plugin as any).openCustomTab) {
     (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
   }
@@ -973,7 +1236,25 @@ const handleCreateExample = async () => {
 
 <style lang="scss" scoped>
 .todo-sidebar {
+  width: 100%;
   height: 100%;
+  min-height: 0;
+
+  &--embedded {
+    height: 100%;
+    min-height: 0;
+  }
+
+  &--embedded .todo-content {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
 }
 
 .todo-content {
@@ -1124,13 +1405,19 @@ const handleCreateExample = async () => {
 }
 
 .item-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--b3-theme-on-surface);
-  opacity: 0.6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 0;
   max-width: 50%;
+}
+
+.item-priority {
+  flex-shrink: 0;
 }
 
 .item-task {
@@ -1181,5 +1468,9 @@ const handleCreateExample = async () => {
       height: 14px;
     }
   }
+}
+
+.todo-card--drag-source {
+  cursor: grab;
 }
 </style>

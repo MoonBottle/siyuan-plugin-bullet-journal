@@ -15,5 +15,6 @@ docs/temp/
 .claude
 .cursor
 package
+/.codebuddy/
 .agents/
 logs/

@@ -88,6 +88,8 @@ export const Events = {
   DOCUMENT_CHANGED: 'document:changed',
   CALENDAR_NAVIGATE: 'calendar:navigate', // 导航到指定日期
   CALENDAR_CHANGE_VIEW: 'calendar:change-view', // 切换日历视图
+  MOBILE_MAIN_SHELL_NAVIGATE: 'mobile-main-shell:navigate',
+  HABIT_DOCK_NAVIGATE: 'habit-dock:navigate',
   POMODORO_STARTED: 'pomodoro:started',
   POMODORO_COMPLETED: 'pomodoro:completed',
   POMODORO_CANCELLED: 'pomodoro:cancelled',

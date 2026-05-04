@@ -8,19 +8,13 @@
 
     <!-- 呼吸圆圈与倒计时 -->
     <div class="timer-section">
-      <div class="breathing-circle" :style="circleStyle">
+      <div class="breathing-circle">
         <div class="circle-inner">
           <div class="time-remaining">{{ formattedTime }}</div>
           <div class="time-label">{{ t('common').minutes }}</div>
         </div>
       </div>
     </div>
-
-    <!-- 提示文字 -->
-    <div class="hint-section">
-      <p class="hint-text">{{ t('settings').pomodoro.breakHint }}</p>
-    </div>
-
     <!-- 跳过按钮 -->
     <div class="action-section">
       <button class="skip-btn" @click="skipBreak">
@@ -48,33 +42,9 @@ const pomodoroStore = usePomodoroStore();
 
 // Break remaining seconds
 const breakRemainingSeconds = computed(() => pomodoroStore.breakRemainingSeconds);
-const breakTotalSeconds = computed(() => pomodoroStore.breakTotalSeconds);
 
 // Processing lock to prevent double clicks
 const isProcessing = ref(false);
-
-// Progress percentage
-const progress = computed(() => {
-  const total = breakTotalSeconds.value;
-  const remaining = breakRemainingSeconds.value;
-  if (total <= 0) return 0;
-  return remaining / total;
-});
-
-// Circle scale based on breathing animation
-const circleScale = computed(() => {
-  // Create a breathing effect based on time
-  const seconds = breakRemainingSeconds.value;
-  const breatheCycle = 4; // 4 second cycle
-  const phase = (seconds % breatheCycle) / breatheCycle;
-  // Scale between 0.95 and 1.05
-  return 0.95 + Math.sin(phase * Math.PI * 2) * 0.05;
-});
-
-const circleStyle = computed(() => ({
-  transform: `scale(${circleScale.value})`,
-  opacity: 0.8 + (1 - circleScale.value) * 2,
-}));
 
 // Formatted time MM:SS
 const formattedTime = computed(() => {
@@ -102,10 +72,13 @@ const skipBreak = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
   padding: 24px 16px 32px;
   background: var(--b3-theme-background);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 // 顶部标题
@@ -131,10 +104,11 @@ const skipBreak = async () => {
 // 计时器区域
 .timer-section {
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 0;
+  padding: 32px 0 24px;
 }
 
 .breathing-circle {
@@ -145,12 +119,13 @@ const skipBreak = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 
-    0 0 60px rgba(76, 175, 80, 0.3),
-    0 0 100px rgba(76, 175, 80, 0.1),
-    inset 0 0 20px rgba(255, 255, 255, 0.1);
-  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
-  animation: breathe-glow 4s ease-in-out infinite;
+  box-shadow:
+    0 0 24px rgba(76, 175, 80, 0.18),
+    0 0 56px rgba(76, 175, 80, 0.08),
+    inset 0 0 14px rgba(255, 255, 255, 0.08);
+  will-change: transform;
+  transform: translateZ(0);
+  animation: breathe-scale 3.6s ease-in-out infinite;
 }
 
 .circle-inner {
@@ -175,38 +150,21 @@ const skipBreak = async () => {
   letter-spacing: 1px;
 }
 
-// 呼吸发光动画
-@keyframes breathe-glow {
+// 轻量呼吸动画
+@keyframes breathe-scale {
   0%, 100% {
-    box-shadow: 
-      0 0 60px rgba(76, 175, 80, 0.3),
-      0 0 100px rgba(76, 175, 80, 0.1),
-      inset 0 0 20px rgba(255, 255, 255, 0.1);
+    transform: translateZ(0) scale(0.985);
   }
   50% {
-    box-shadow: 
-      0 0 80px rgba(76, 175, 80, 0.5),
-      0 0 140px rgba(76, 175, 80, 0.2),
-      inset 0 0 30px rgba(255, 255, 255, 0.2);
+    transform: translateZ(0) scale(1.02);
   }
-}
-
-// 提示区域
-.hint-section {
-  text-align: center;
-  padding: 0 24px;
-}
-
-.hint-text {
-  font-size: 15px;
-  color: var(--b3-theme-on-surface);
-  line-height: 1.6;
-  margin: 0;
 }
 
 // 操作区域
 .action-section {
-  padding-top: 32px;
+  margin-top: auto;
+  padding-top: 24px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
 .skip-btn {

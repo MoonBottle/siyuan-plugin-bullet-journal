@@ -97,6 +97,64 @@ The dock shows four types of items:
 - View upcoming items
 - Handle expired uncompleted items
 
+## Habit Check-in Dock
+
+Track daily habits in the sidebar, supporting both binary (done/not done) and count (with target value) habit check-ins.
+
+### Access
+
+Right-click top bar → Closed Panels → Habit Check-in
+
+### Display Content
+
+**Layer 1 (Habit List)**:
+
+- **Weekday row**: Displays Monday to Sunday of the current week, with today highlighted; click to switch to a specific day's habits
+- **Habit list**: Each habit on one line, showing name + progress/status
+  - Binary: `Checked in` / `Pending` + streak dot matrix
+  - Count: `current value/target value+unit` + progress dot matrix
+- **Completed habits**: Habits that have met the frequency requirement for the current period are marked as "Completed this week", grayed out
+
+**Layer 2 (Habit Details)**:
+
+Click a habit to expand the detail panel:
+
+- **Stats cards**: Monthly check-ins, total check-ins, monthly completion rate, current streak / longest streak
+- **Check-in calendar**: Month view, color depth indicates completion level (dark green = completed, light green = partial, gray = not checked in)
+- **Check-in log**: List format, displayed in reverse chronological order; count type supports quick +1 or value modification
+
+### Check-in Operations
+
+- **Binary**: Click "Check In" button to create record
+- **Count**: Click `+1` to quickly increment, or input a specific value
+- **Make-up check-in**: Switch to a historical date via the weekday row, then check in for that date
+
+See [Habit Check-in](./habit-checkin.md) for details.
+
+## Workbench Tab
+
+The Workbench is a desktop-only integrated workspace that combines dashboard, habit view, todo, quadrant, and focus statistics into a single Tab.
+
+### Access
+
+- **Right-click top bar** → Workbench
+- **Top bar dropdown menu** (plugin icon) → Workbench
+
+### Feature Overview
+
+| Feature | Description |
+|---------|-------------|
+| **Sidebar** | Left 240px, lists all entries (dashboards and views), supports create/rename/delete |
+| **Dashboard** | Customizable widget canvas supporting 5 widget types |
+| **Habit View** | Embedded habit workspace |
+| **Todo View** | Embedded todo list |
+| **Quadrant View** | Embedded important/urgent quadrant matrix |
+| **Focus Stats View** | Embedded pomodoro statistics |
+
+> Workbench configuration is automatically saved to `workbench.json` — no manual operation required.
+
+See [Workbench](./workbench.md) for details.
+
 ## Pomodoro Focus Dock
 
 Run pomodoro timers in the sidebar and view today/total focus stats and focus records.
@@ -116,6 +174,33 @@ You can click "Start Focus" on an item from the Todo sidebar, calendar, or Gantt
 
 See [Pomodoro](./pomodoro.md) for details.
 
+## Quadrant View
+
+Based on the "Importance-Urgency" matrix, automatically categorizes tasks into four quadrants by priority.
+
+### Access
+
+- **Right-click top bar** → Quadrant
+- **Top bar dropdown menu** (plugin icon) → Quadrant
+
+### Quadrant Division
+
+| Quadrant | Name | Priority |
+|----------|------|----------|
+| Q1 | Important & Urgent | `🔥` High |
+| Q2 | Important & Not Urgent | `🌱` Medium |
+| Q3 | Urgent & Not Important | `🍃` Low |
+| Q4 | Not Important & Not Urgent | No priority |
+
+### Core Features
+
+- **Auto-categorization**: Automatically assigns items to quadrants based on `🔥`/`🌱`/`🍃` priority markers
+- **Drag to adjust**: Drag tasks between quadrants to automatically update priority markers in notes
+- **Group filter**: Filter tasks by project group
+- **Search filter**: Keyword filtering across all four quadrants
+
+See [Quadrant View](./quadrant.md) for details.
+
 ## View Comparison
 
 | View | Dimension | Use Case |
@@ -124,6 +209,9 @@ See [Pomodoro](./pomodoro.md) for details.
 | Gantt | Project Progress | Timeline, task dependencies |
 | Project List | Project Organization | Task categorization, project review |
 | Todo Dock | Quick Access | Today's items, expired reminders |
+| Habit Check-in Dock | Habit Tracking | Daily habit check-ins, streaks, completion rates |
+| Quadrant View | Priority | Task importance/urgency management |
+| Workbench Tab | Integrated Workspace | Dashboard + Habits + Todo + Quadrant + Focus Stats |
 | Pomodoro Dock | Focus & Records | Pomodoro timer, today/total stats, record list |
 
 ## Bidirectional Links

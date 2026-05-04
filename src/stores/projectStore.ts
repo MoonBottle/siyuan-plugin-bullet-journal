@@ -3,7 +3,7 @@
  * 分组筛选按视图独立：getters 接受 groupId 参数，各 Tab/Dock 维护本地 selectedGroup。
  */
 import { defineStore } from 'pinia';
-import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode, PriorityLevel } from '@/types/models';
+import type { Project, Item, CalendarEvent, ProjectDirectory, PomodoroRecord, ScanMode, PriorityLevel, Habit, CheckInRecord } from '@/types/models';
 import { comparePriority } from '@/parser/priorityParser';
 import { matchGroupId } from '@/utils/directoryUtils';
 import { MarkdownParser } from '@/parser/markdownParser';
@@ -129,6 +129,43 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
 
   return 0;
 }
+
+type TodoFilterParams = {
+  groupId: string;
+  searchQuery?: string;
+  dateRange?: { start: string; end: string } | null;
+  priorities?: PriorityLevel[];
+  includeNoPriority?: boolean;
+  sortRules?: TodoSortRule[];
+};
+
+function resolveTodoSortRules(params: TodoFilterParams): TodoSortRule[] {
+  if (Array.isArray(params.sortRules) && params.sortRules.length > 0) {
+    return params.sortRules;
+  }
+
+  const settingsStore = useSettingsStore();
+  return Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
+    ? settingsStore.todoDock.sortRules
+    : defaultTodoSortRules;
+}
+
+function shouldApplyPriorityFilter(params: TodoFilterParams): boolean {
+  return Boolean(
+    params.includeNoPriority
+    || (params.priorities && params.priorities.length > 0),
+  );
+}
+
+function matchesPriorityFilter(item: Item, params: TodoFilterParams): boolean {
+  const matchesDefinedPriority = Boolean(
+    item.priority
+    && params.priorities?.includes(item.priority),
+  );
+  const matchesNoPriority = params.includeNoPriority && item.priority === undefined;
+  return Boolean(matchesDefinedPriority || matchesNoPriority);
+}
+
 import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
 
@@ -334,12 +371,7 @@ export const useProjectStore = defineStore('project', {
     },
 
     // 按分组获取过滤和排序后的事项（支持搜索、日期筛选、优先级筛选）
-    getFilteredAndSortedItems: (state) => (params: {
-      groupId: string;
-      searchQuery?: string;
-      dateRange?: { start: string; end: string } | null;
-      priorities?: PriorityLevel[];
-    }) => {
+    getFilteredAndSortedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
         (state as any).items as Item[],
@@ -366,10 +398,8 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 4. 应用优先级筛选
-      if (params.priorities && params.priorities.length > 0) {
-        items = items.filter(item => 
-          item.priority && params.priorities!.includes(item.priority)
-        );
+      if (shouldApplyPriorityFilter(params)) {
+        items = items.filter(item => matchesPriorityFilter(item, params));
       }
 
       // 5. 根据设置过滤已完成和已放弃的事项
@@ -381,23 +411,13 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 6. 按配置排序
-      const settingsStore = useSettingsStore();
-      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
-        ? settingsStore.todoDock.sortRules
-        : defaultTodoSortRules;
-
-      items.sort((a, b) => compareTodoItems(a, b, sortRules));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
     },
 
     // 按分组获取过滤和排序后的已完成事项（支持搜索、日期筛选、优先级筛选）
-    getFilteredCompletedItems: (state) => (params: {
-      groupId: string;
-      searchQuery?: string;
-      dateRange?: { start: string; end: string } | null;
-      priorities?: PriorityLevel[];
-    }) => {
+    getFilteredCompletedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
         (state as any).items as Item[],
@@ -427,30 +447,18 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 5. 应用优先级筛选
-      if (params.priorities && params.priorities.length > 0) {
-        items = items.filter(item => 
-          item.priority && params.priorities!.includes(item.priority)
-        );
+      if (shouldApplyPriorityFilter(params)) {
+        items = items.filter(item => matchesPriorityFilter(item, params));
       }
 
       // 6. 按配置排序
-      const settingsStore = useSettingsStore();
-      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
-        ? settingsStore.todoDock.sortRules
-        : defaultTodoSortRules;
-
-      items.sort((a, b) => compareTodoItems(a, b, sortRules));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
     },
 
     // 按分组获取过滤和排序后的已放弃事项（支持搜索、日期筛选、优先级筛选）
-    getFilteredAbandonedItems: (state) => (params: {
-      groupId: string;
-      searchQuery?: string;
-      dateRange?: { start: string; end: string } | null;
-      priorities?: PriorityLevel[];
-    }) => {
+    getFilteredAbandonedItems: (state) => (params: TodoFilterParams) => {
       // 1. 获取基础事项列表（多日期去重）
       let items = computeDisplayItems(
         (state as any).items as Item[],
@@ -480,19 +488,12 @@ export const useProjectStore = defineStore('project', {
       }
 
       // 5. 应用优先级筛选
-      if (params.priorities && params.priorities.length > 0) {
-        items = items.filter(item => 
-          item.priority && params.priorities!.includes(item.priority)
-        );
+      if (shouldApplyPriorityFilter(params)) {
+        items = items.filter(item => matchesPriorityFilter(item, params));
       }
 
       // 6. 按配置排序
-      const settingsStore = useSettingsStore();
-      const sortRules = Array.isArray(settingsStore.todoDock.sortRules) && settingsStore.todoDock.sortRules.length > 0
-        ? settingsStore.todoDock.sortRules
-        : defaultTodoSortRules;
-
-      items.sort((a, b) => compareTodoItems(a, b, sortRules));
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
     },
@@ -642,6 +643,53 @@ export const useProjectStore = defineStore('project', {
       return allPomodoros
         .filter((p: PomodoroRecord) => p.date === date)
         .reduce((sum: number, p: PomodoroRecord) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
+    },
+
+    // 从 projects 计算所有习惯
+    habits: (state): Habit[] => {
+      const habits: Habit[] = [];
+      for (const project of state.projects) {
+        for (const habit of project.habits || []) {
+          habit.project = project;
+          habits.push(habit);
+        }
+      }
+      return habits;
+    },
+
+    // 按分组过滤的习惯
+    getHabits: (state) => (groupId: string): Habit[] => {
+      const habits = (state as any).habits as Habit[];
+      if (!groupId) return habits;
+      return habits.filter(h => h.project?.groupId === groupId);
+    },
+
+    // 获取今日打卡记录
+    getTodayRecords: (state) => (groupId: string): CheckInRecord[] => {
+      const records: CheckInRecord[] = [];
+      const habits = (state as any).getHabits(groupId) as Habit[];
+      for (const habit of habits) {
+        for (const record of habit.records) {
+          if (record.date === state.currentDate) {
+            records.push(record);
+          }
+        }
+      }
+      return records;
+    },
+
+    // 按日期获取打卡记录
+    getRecordsByDate: (state) => (date: string, groupId: string): CheckInRecord[] => {
+      const records: CheckInRecord[] = [];
+      const habits = (state as any).getHabits(groupId) as Habit[];
+      for (const habit of habits) {
+        for (const record of habit.records) {
+          if (record.date === date) {
+            records.push(record);
+          }
+        }
+      }
+      return records;
     }
   },
 
@@ -930,6 +978,13 @@ export const useProjectStore = defineStore('project', {
       const settingsStore = useSettingsStore();
       settingsStore.todoDock.hideAbandoned = this.hideAbandoned;
       settingsStore.saveToPlugin();
+    },
+
+    /**
+     * 更新当前日期（供零点调度推进统一日期源）
+     */
+    setCurrentDate(newDate: string) {
+      this.currentDate = newDate;
     },
 
     /**

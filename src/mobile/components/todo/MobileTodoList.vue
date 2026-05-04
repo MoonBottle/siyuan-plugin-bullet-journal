@@ -67,13 +67,12 @@
               :key="item.id"
               class="todo-item"
               :class="{ 'is-last': index === expiredItems.length - 1 }"
-              @click="emit('itemClick', item)"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <div class="item-status-bar expired"></div>
-              <div class="item-content">
+              <button class="item-check-button expired" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
+              <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
                 <div class="item-title">{{ item.content }}</div>
                 <div class="item-meta">
                   <span class="meta-date expired">{{ formatExpiredDate(item) }}</span>
@@ -105,13 +104,12 @@
               :key="item.id"
               class="todo-item"
               :class="{ 'is-last': index === todayItems.length - 1 }"
-              @click="emit('itemClick', item)"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <div class="item-status-bar today"></div>
-              <div class="item-content">
+              <button class="item-check-button today" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
+              <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
                 <div class="item-title">{{ item.content }}</div>
                 <div class="item-meta">
                   <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
@@ -144,13 +142,12 @@
               :key="item.id"
               class="todo-item"
               :class="{ 'is-last': index === tomorrowItems.length - 1 }"
-              @click="emit('itemClick', item)"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <div class="item-status-bar tomorrow"></div>
-              <div class="item-content">
+              <button class="item-check-button tomorrow" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
+              <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
                 <div class="item-title">{{ item.content }}</div>
                 <div class="item-meta">
                   <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
@@ -183,13 +180,12 @@
                 :key="item.id"
                 class="todo-item"
                 :class="{ 'is-last': index === groupedFutureItems.get(date)!.length - 1 }"
-                @click="emit('itemClick', item)"
                 @touchstart="handleTouchStart(item)"
                 @touchend="handleTouchEnd"
                 @touchmove="handleTouchMove"
               >
-                <div class="item-status-bar future"></div>
-                <div class="item-content">
+                <button class="item-check-button future" data-testid="todo-item-complete-button" type="button" @click.stop="emit('itemComplete', item)"></button>
+                <div class="item-content" data-testid="todo-item-content" @click="emit('itemClick', item)">
                   <div class="item-title">{{ item.content }}</div>
                   <div class="item-meta">
                     <span v-if="item.startDateTime" class="meta-time">{{ formatTime(item) }}</span>
@@ -221,13 +217,12 @@
               :key="item.id"
               class="todo-item completed-item"
               :class="{ 'is-last': index === completedItems.slice(0, 10).length - 1 }"
-              @click="emit('itemClick', item)"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <div class="item-status-bar completed"></div>
-              <div class="item-content">
+              <span class="item-check-indicator completed"></span>
+              <div class="item-content" @click="emit('itemClick', item)">
                 <div class="item-title">{{ item.content }}</div>
                 <div class="item-meta">
                   <span class="meta-date">{{ formatExpiredDate(item) }}</span>
@@ -256,13 +251,12 @@
               :key="item.id"
               class="todo-item abandoned-item"
               :class="{ 'is-last': index === abandonedItems.slice(0, 10).length - 1 }"
-              @click="emit('itemClick', item)"
               @touchstart="handleTouchStart(item)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
             >
-              <div class="item-status-bar abandoned"></div>
-              <div class="item-content">
+              <span class="item-check-indicator abandoned"></span>
+              <div class="item-content" @click="emit('itemClick', item)">
                 <div class="item-title">{{ item.content }}</div>
                 <div class="item-meta">
                   <span class="meta-date">{{ formatExpiredDate(item) }}</span>
@@ -301,6 +295,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   itemClick: [item: Item];
+  itemComplete: [item: Item];
   itemLongPress: [item: Item];
   refresh: [];
 }>();
@@ -578,7 +573,7 @@ onUnmounted(() => {
 }
 
 .todo-content {
-  padding: 12px 16px 24px;
+  padding: 4px 16px 16px;
   min-height: 100%;
   box-sizing: border-box;
 }
@@ -671,7 +666,7 @@ onUnmounted(() => {
 .todo-sections {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .todo-section {
@@ -685,7 +680,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 10px 16px;
   cursor: pointer;
   user-select: none;
   background: var(--b3-theme-background);
@@ -795,7 +790,7 @@ onUnmounted(() => {
 }
 
 .section-content {
-  padding: 4px 0;
+  padding: 0;
 }
 
 // Todo items
@@ -803,7 +798,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 12px 16px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid var(--b3-border-color);
@@ -821,35 +816,76 @@ onUnmounted(() => {
   }
 }
 
-.item-status-bar {
-  width: 3px;
-  height: 40px;
-  border-radius: 2px;
+.item-check-indicator,
+.item-check-button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   margin-right: 12px;
   flex-shrink: 0;
-  
+  margin-top: 2px;
+}
+
+.item-check-button {
+  border: 1.5px solid var(--b3-border-color);
+  background: var(--b3-theme-background);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--b3-theme-primary);
+    background: var(--b3-theme-surface);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.item-check-indicator {
+  border: 1.5px solid var(--b3-border-color);
+  background: var(--b3-theme-surface);
+  opacity: 0.9;
+  position: relative;
+}
+
+.item-check-indicator,
+.item-check-button {
   &.expired {
-    background: #ef4444;
+    border-color: rgba(239, 68, 68, 0.32);
   }
   
   &.today {
-    background: var(--b3-theme-primary);
+    border-color: rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0.38);
   }
   
   &.tomorrow {
-    background: #10b981;
+    border-color: rgba(16, 185, 129, 0.34);
   }
   
   &.future {
-    background: #8b5cf6;
+    border-color: rgba(139, 92, 246, 0.34);
   }
   
   &.completed {
-    background: #22c55e;
+    border-color: rgba(34, 197, 94, 0.34);
+    background: var(--b3-theme-background);
+  }
+
+  &.completed::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border-right: 2px solid #22c55e;
+    border-bottom: 2px solid #22c55e;
+    transform: rotate(45deg);
   }
   
   &.abandoned {
-    background: #9ca3af;
+    border-color: rgba(156, 163, 175, 0.38);
   }
 }
 
