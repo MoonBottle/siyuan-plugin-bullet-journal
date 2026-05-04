@@ -613,8 +613,8 @@
   position: fixed;
   right: 60px;
   bottom: 60px;
-  width: 102px;
-  min-height: 36px;
+  width: 94px;
+  min-height: 25px;
   border-radius: 999px;
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
@@ -633,11 +633,16 @@
 
   @media (hover: hover) {
     &:hover:not(.dragging) {
-      width: 320px;
+      width: 348px;
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
 
       .floating-tomato-main {
         grid-template-columns: 18px minmax(0, 1fr) auto;
+      }
+
+      .floating-tomato-summary {
+        padding-right: 0px;
+        margin-left: 3px;
       }
 
       .floating-tomato-status,
@@ -682,7 +687,7 @@
   }
 
   .floating-tomato-shell {
-    min-height: 36px;
+    min-height: 25px;
   }
 
   .floating-tomato-main {
@@ -690,9 +695,9 @@
     grid-template-columns: 18px minmax(0, auto) auto;
     align-items: center;
     justify-content: start;
-    gap: 10px;
-    min-height: 36px;
-    padding: 6px 10px 6px 12px;
+    gap: 8px;
+    min-height: 25px;
+    padding: 4px 8px 4px 10px;
   }
 
   .floating-tomato-icon {
@@ -759,12 +764,6 @@
     text-overflow: ellipsis;
   }
 
-  &.has-item-title {
-    .floating-tomato-item {
-      display: block;
-    }
-  }
-
   .floating-tomato-secondary {
     font-size: 11px;
     color: var(--b3-theme-on-surface-light);
@@ -777,15 +776,15 @@
   .floating-tomato-actions {
     align-items: center;
     align-self: center;
-    gap: 8px;
+    gap: 6px;
     margin-left: auto;
   }
 
   .floating-tomato-action {
     border: none;
     border-radius: 999px;
-    padding: 7px 12px;
-    font-size: 11px;
+    padding: 6px 10px;
+    font-size: 10px;
     font-weight: 500;
     line-height: 1;
     color: var(--b3-theme-on-background);
