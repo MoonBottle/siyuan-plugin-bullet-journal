@@ -7,6 +7,7 @@
       :habit-stats-map="habitStatsMap"
       :habit-day-state-map="habitDayStateMap"
       :habit-period-state-map="habitPeriodStateMap"
+      :archived-list="habitConfig.habitScope === 'archived'"
       item-open-behavior="detail"
       @update:selected-date="selectedDate = $event"
       @check-in="checkInHabit"
@@ -44,6 +45,7 @@ const {
   incrementHabit,
 } = useHabitWorkspace({
   groupId: () => habitConfig.value.groupId,
+  defaultListMode: () => habitConfig.value.habitScope ?? 'active',
 });
 
 let detailDialog: Dialog | null = null;

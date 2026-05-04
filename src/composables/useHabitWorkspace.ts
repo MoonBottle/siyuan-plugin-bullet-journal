@@ -28,6 +28,7 @@ import {
 
 type UseHabitWorkspaceOptions = {
   groupId?: MaybeRefOrGetter<string | undefined>;
+  defaultListMode?: MaybeRefOrGetter<'active' | 'archived' | undefined>;
 };
 
 type HabitListMode = 'active' | 'archived';
@@ -45,6 +46,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
   const currentDate = computed(() => projectStore.currentDate);
   const groupId = computed(() => toValue(options.groupId) ?? '');
+  const resolvedDefaultListMode = computed<HabitListMode>(() => toValue(options.defaultListMode) ?? 'active');
   const allHabits = computed(() => projectStore.getHabits(groupId.value));
   const habits = computed(() => {
     if (listMode.value === 'archived') {
@@ -89,6 +91,10 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     }
   }, { immediate: true });
 
+  watch(resolvedDefaultListMode, (value) => {
+    listMode.value = value;
+  }, { immediate: true });
+
   function syncSelectedHabit() {
     if (!selectedHabitId.value) {
       return;
@@ -125,6 +131,10 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
   function showActiveHabits() {
     listMode.value = 'active';
+  }
+
+  function resetListMode() {
+    listMode.value = resolvedDefaultListMode.value;
   }
 
   async function refreshHabits() {
@@ -236,6 +246,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     clearSelectedHabit,
     showArchivedHabits,
     showActiveHabits,
+    resetListMode,
     checkInHabit,
     incrementHabit,
     openHabitDoc,

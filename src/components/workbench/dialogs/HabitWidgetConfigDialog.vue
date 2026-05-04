@@ -12,6 +12,17 @@
           :placeholder="t('settings').projectGroups.allGroups"
         />
       </div>
+
+      <div class="habit-widget-config-dialog__field">
+        <label class="habit-widget-config-dialog__label">
+          {{ t('habit').widgetScopeLabel }}
+        </label>
+        <SySelect
+          v-model="selectedScope"
+          data-testid="habit-widget-scope-select"
+          :options="scopeOptions"
+        />
+      </div>
     </div>
 
     <template #footer>
@@ -51,6 +62,7 @@ const props = defineProps<{
 
 const settingsStore = useSettingsStore();
 const selectedGroup = ref(props.initialConfig.groupId ?? '');
+const selectedScope = ref(props.initialConfig.habitScope ?? 'active');
 
 onMounted(() => {
   if (!settingsStore.loaded) {
@@ -66,9 +78,15 @@ const groupOptions = computed(() => [
   })),
 ]);
 
+const scopeOptions = computed(() => [
+  { value: 'active', label: t('habit').widgetScopeActive },
+  { value: 'archived', label: t('habit').widgetScopeArchived },
+]);
+
 function handleConfirm() {
   props.onConfirm({
     groupId: selectedGroup.value || undefined,
+    habitScope: selectedScope.value === 'archived' ? 'archived' : 'active',
   });
 }
 </script>

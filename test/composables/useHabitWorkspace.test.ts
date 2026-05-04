@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
+import { nextTick, ref } from 'vue';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
@@ -198,6 +199,65 @@ describe('useHabitWorkspace', () => {
     const workspace = useHabitWorkspace();
 
     workspace.showArchivedHabits();
+
+    expect(workspace.listMode.value).toBe('archived');
+    expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1']);
+  });
+
+  it('initializes list mode from the host-provided default and follows host changes', async () => {
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [
+        createHabit({ blockId: 'active-1' }),
+        createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+      ],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+    const defaultListMode = ref<'active' | 'archived'>('archived');
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace({ defaultListMode });
+
+    expect(workspace.listMode.value).toBe('archived');
+    expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1']);
+
+    defaultListMode.value = 'active';
+    await nextTick();
+
+    expect(workspace.listMode.value).toBe('active');
+    expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['active-1']);
+  });
+
+  it('resets list mode back to the host-provided default', async () => {
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-04';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [
+        createHabit({ blockId: 'active-1' }),
+        createHabit({ blockId: 'archived-1', archivedAt: '2026-05-04' }),
+      ],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+    const defaultListMode = ref<'active' | 'archived'>('archived');
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace({ defaultListMode });
+
+    workspace.showActiveHabits();
+    expect(workspace.listMode.value).toBe('active');
+
+    workspace.resetListMode();
 
     expect(workspace.listMode.value).toBe('archived');
     expect(workspace.habits.value.map(habit => habit.blockId)).toEqual(['archived-1']);

@@ -16,8 +16,10 @@ vi.mock('@/main', () => ({
 }));
 
 vi.mock('@/services/habitService', () => ({
+  archiveHabit: vi.fn().mockResolvedValue(false),
   checkIn: vi.fn().mockResolvedValue(false),
   checkInCount: vi.fn().mockResolvedValue(false),
+  unarchiveHabit: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock('@/utils/fileUtils', () => ({
@@ -158,6 +160,7 @@ async function mountView() {
 
   return {
     container,
+    projectStore,
     app,
     unmount() {
       app.unmount();
@@ -206,6 +209,119 @@ describe('WorkbenchHabitView', () => {
 
     expect(root?.querySelector('.workbench-habit-view__sidebar')).not.toBeNull();
     expect(root?.querySelector('.workbench-habit-view__detail')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('enters the archived list from the sidebar header action', async () => {
+    const mounted = await mountView();
+    mounted.projectStore.projects = [{
+      id: 'project-1',
+      name: 'Project 1',
+      items: [],
+      habits: [
+        createHabit({ blockId: 'habit-active', name: 'Active Habit' }),
+        createHabit({ blockId: 'habit-archived', name: 'Archived Habit', archivedAt: '2026-05-01' }),
+      ],
+      links: [],
+      groupId: '',
+    } as any];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="workbench-habit-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')).not.toBeNull();
+    expect(mounted.container.textContent).toContain('Archived Habit');
+    expect(mounted.container.textContent).not.toContain('Active Habit');
+
+    mounted.unmount();
+  });
+
+  it('returns archived detail back to the archived list context', async () => {
+    const mounted = await mountView();
+    mounted.projectStore.projects = [{
+      id: 'project-1',
+      name: 'Project 1',
+      items: [],
+      habits: [
+        createHabit({ blockId: 'habit-active', name: 'Active Habit' }),
+        createHabit({ blockId: 'habit-archived', name: 'Archived Habit', archivedAt: '2026-05-01' }),
+      ],
+      links: [],
+      groupId: '',
+    } as any];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="workbench-habit-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-habit-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-selected-header"]')?.textContent).toContain('Archived Habit');
+
+    mounted.container.querySelector('[data-testid="workbench-habit-back-to-list"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')).not.toBeNull();
+    expect(mounted.container.textContent).toContain('Archived Habit');
+    expect(mounted.container.textContent).not.toContain('Active Habit');
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-detail-header"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('renders archive action with tooltip in active habit detail', async () => {
+    const mounted = await mountView();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    const archiveButton = mounted.container.querySelector('[data-testid="workbench-habit-detail-archive"]');
+    const openDocButton = mounted.container.querySelector('[data-testid="workbench-habit-open-doc"]');
+    const refreshButton = mounted.container.querySelector('[data-testid="workbench-habit-refresh-button"]');
+
+    expect(archiveButton).not.toBeNull();
+    expect(archiveButton?.className).toContain('b3-tooltips');
+    expect(archiveButton?.getAttribute('aria-label')).toBe('Archive');
+    expect(openDocButton?.className).toContain('b3-tooltips');
+    expect(refreshButton?.className).toContain('b3-tooltips');
+
+    mounted.unmount();
+  });
+
+  it('renders unarchive action with tooltip in archived habit detail', async () => {
+    const mounted = await mountView();
+    mounted.projectStore.projects = [{
+      id: 'project-1',
+      name: 'Project 1',
+      items: [],
+      habits: [
+        createHabit({ blockId: 'habit-archived', name: 'Archived Habit', archivedAt: '2026-05-01' }),
+      ],
+      links: [],
+      groupId: '',
+    } as any];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="workbench-habit-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-habit-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    const unarchiveButton = mounted.container.querySelector('[data-testid="workbench-habit-detail-unarchive"]');
+    expect(unarchiveButton).not.toBeNull();
+    expect(unarchiveButton?.className).toContain('b3-tooltips');
+    expect(unarchiveButton?.getAttribute('aria-label')).toBe('Unarchive');
 
     mounted.unmount();
   });

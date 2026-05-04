@@ -91,16 +91,20 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       icon: 'iconCheck',
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
-      createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({}),
+      createDefaultConfig: (): WorkbenchHabitWeekWidgetConfig => ({
+        habitScope: 'active',
+      }),
       openConfigDialog: ({ widget, onUpdateConfig }) => {
         const habitConfig = widget.config as WorkbenchHabitWeekWidgetConfig;
         openHabitWidgetConfigDialog({
           initialConfig: {
             groupId: habitConfig.groupId,
+            habitScope: habitConfig.habitScope ?? 'active',
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               groupId: nextConfig.groupId,
+              habitScope: nextConfig.habitScope ?? 'active',
             });
           },
         });

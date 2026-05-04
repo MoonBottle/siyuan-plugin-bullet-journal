@@ -1,6 +1,75 @@
 <template>
   <div class="workbench-habit-view" data-testid="workbench-habit-view">
     <aside class="workbench-habit-view__sidebar">
+      <div class="workbench-habit-view__sidebar-header">
+        <template v-if="selectedHabit">
+          <button
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            data-testid="workbench-habit-back-to-list"
+            :aria-label="t('habit').backToList"
+            @click="clearSelectedHabit"
+          >
+            <svg><use xlink:href="#iconLeft"></use></svg>
+          </button>
+          <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-selected-header">
+            {{ selectedHabit.name }}
+          </div>
+          <span class="fn__flex-1 fn__space"></span>
+          <button
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            data-testid="workbench-habit-sidebar-refresh-button"
+            :aria-label="t('common').refresh"
+            @click="refreshHabits"
+          >
+            <svg><use xlink:href="#iconRefresh"></use></svg>
+          </button>
+        </template>
+        <template v-else-if="listMode === 'archived'">
+          <button
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            data-testid="workbench-habit-back-active"
+            :aria-label="t('habit').backToList"
+            @click="showActiveHabits"
+          >
+            <svg><use xlink:href="#iconLeft"></use></svg>
+          </button>
+          <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-archived-header">
+            {{ t('habit').archivedList }}
+          </div>
+          <span class="fn__flex-1 fn__space"></span>
+          <button
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            data-testid="workbench-habit-sidebar-refresh-button"
+            :aria-label="t('common').refresh"
+            @click="refreshHabits"
+          >
+            <svg><use xlink:href="#iconRefresh"></use></svg>
+          </button>
+        </template>
+        <template v-else>
+          <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-active-header">
+            {{ t('habit').title }}
+          </div>
+          <span class="fn__flex-1 fn__space"></span>
+          <button
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            data-testid="workbench-habit-sidebar-refresh-button"
+            :aria-label="t('common').refresh"
+            @click="refreshHabits"
+          >
+            <svg><use xlink:href="#iconRefresh"></use></svg>
+          </button>
+          <button
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            data-testid="workbench-habit-open-archived"
+            :aria-label="t('habit').viewArchived"
+            @click="showArchivedHabits"
+          >
+            <svg><use xlink:href="#iconInbox"></use></svg>
+          </button>
+        </template>
+      </div>
+
       <HabitWorkspaceListPane
         :selected-date="selectedDate"
         :current-date="currentDate"
@@ -9,6 +78,9 @@
         :habit-day-state-map="habitDayStateMap"
         :habit-period-state-map="habitPeriodStateMap"
         :active-habit-id="selectedHabit?.blockId"
+        :archived-list="listMode === 'archived'"
+        :empty-title="listMode === 'archived' ? t('habit').archivedEmptyTitle : ''"
+        :empty-desc="listMode === 'archived' ? t('habit').archivedEmptyDesc : ''"
         item-open-behavior="detail"
         item-test-id-prefix="workbench-habit-item-"
         @update:selected-date="selectedDate = $event"
@@ -31,10 +103,15 @@
         content-test-id="workbench-habit-detail-content"
         empty-test-id="workbench-habit-empty-detail"
         refresh-button-test-id="workbench-habit-refresh-button"
+        show-archive-action
+        archive-button-test-id="workbench-habit-detail-archive"
+        unarchive-button-test-id="workbench-habit-detail-unarchive"
         open-doc-button-test-id="workbench-habit-open-doc"
         record-preview-trigger-mode="preview"
         :on-record-preview-click="handleRecordPreviewClick"
         @refresh="refreshHabits"
+        @archive="archiveSelectedHabit"
+        @unarchive="unarchiveSelectedHabit"
         @open-doc="openSelectedHabitDoc"
         @update:view-month="selectedViewMonth = $event"
       />
@@ -64,6 +141,7 @@ const preview = useBlockFocusPreview({
 });
 const nativePreview = createNativeBlockPreviewController();
 const {
+  listMode,
   selectedDate,
   selectedViewMonth,
   selectedHabit,
@@ -74,10 +152,15 @@ const {
   habitPeriodStateMap,
   displaySelectedStats,
   refreshHabits,
+  showActiveHabits,
+  showArchivedHabits,
   selectHabit,
+  clearSelectedHabit,
   checkInHabit,
   incrementHabit,
   openSelectedHabitDoc,
+  archiveSelectedHabit,
+  unarchiveSelectedHabit,
 } = useHabitWorkspace();
 
 function handleRecordPreviewClick(payload: HabitRecordLogPreviewPayload) {
@@ -229,6 +312,23 @@ watch(
 .workbench-habit-view__sidebar {
   padding: 12px;
   gap: 8px;
+}
+
+.workbench-habit-view__sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workbench-habit-view__sidebar-title {
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+}
+
+.workbench-habit-view__sidebar .block__icon {
+  opacity: 1;
 }
 
 .workbench-habit-view__detail-pane {

@@ -469,7 +469,7 @@ describe('DashboardCanvas', () => {
     mounted.unmount();
   });
 
-  it('opens habit widget configure dialog and persists group config', async () => {
+  it('opens habit widget configure dialog and persists group/scope config', async () => {
     const store = useWorkbenchStore();
     store.updateWidgetConfig = vi.fn().mockResolvedValue(undefined) as any;
     store.dashboards = [
@@ -484,6 +484,7 @@ describe('DashboardCanvas', () => {
             layout: { x: 0, y: 0, w: 6, h: 4 },
             config: {
               groupId: 'group-a',
+              habitScope: 'archived',
             },
           },
         ],
@@ -506,6 +507,7 @@ describe('DashboardCanvas', () => {
     expect(mockOpenHabitWidgetConfigDialog).toHaveBeenCalledWith({
       initialConfig: {
         groupId: 'group-a',
+        habitScope: 'archived',
       },
       onConfirm: expect.any(Function),
     });
@@ -513,9 +515,11 @@ describe('DashboardCanvas', () => {
     const configureOptions = mockOpenHabitWidgetConfigDialog.mock.calls[0][0];
     await configureOptions.onConfirm({
       groupId: 'group-b',
+      habitScope: 'active',
     });
     expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
       groupId: 'group-b',
+      habitScope: 'active',
     });
 
     mounted.unmount();

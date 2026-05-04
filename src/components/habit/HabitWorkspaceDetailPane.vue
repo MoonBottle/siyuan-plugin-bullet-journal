@@ -14,7 +14,7 @@
         <div class="habit-workspace-detail-pane__actions">
           <button
             v-if="showRefreshAction"
-            class="block__icon"
+            class="block__icon b3-tooltips b3-tooltips__sw"
             :data-testid="refreshButtonTestId || undefined"
             :aria-label="t('common').refresh"
             @click="emit('refresh')"
@@ -22,8 +22,17 @@
             <svg><use xlink:href="#iconRefresh"></use></svg>
           </button>
           <button
+            v-if="showArchiveAction && selectedHabit"
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            :data-testid="selectedHabit.archivedAt ? (unarchiveButtonTestId || undefined) : (archiveButtonTestId || undefined)"
+            :aria-label="selectedHabit.archivedAt ? t('habit').unarchive : t('habit').archive"
+            @click="selectedHabit.archivedAt ? emit('unarchive') : emit('archive')"
+          >
+            <svg><use :xlink:href="selectedHabit.archivedAt ? '#iconRestore' : '#iconInbox'"></use></svg>
+          </button>
+          <button
             v-if="showOpenDocAction"
-            class="block__icon"
+            class="block__icon b3-tooltips b3-tooltips__sw"
             :data-testid="openDocButtonTestId || undefined"
             :aria-label="t('todo').openDoc"
             @click="emit('open-doc')"
@@ -91,6 +100,7 @@ const props = withDefaults(defineProps<{
   viewMonth: string;
   showHeader?: boolean;
   showRefreshAction?: boolean;
+  showArchiveAction?: boolean;
   showOpenDocAction?: boolean;
   title?: string;
   emptyTitle: string;
@@ -99,6 +109,8 @@ const props = withDefaults(defineProps<{
   contentTestId?: string;
   emptyTestId?: string;
   refreshButtonTestId?: string;
+  archiveButtonTestId?: string;
+  unarchiveButtonTestId?: string;
   openDocButtonTestId?: string;
   recordPreviewTriggerMode?: 'document' | 'preview';
   onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void;
@@ -106,18 +118,23 @@ const props = withDefaults(defineProps<{
   stats: null,
   showHeader: true,
   showRefreshAction: true,
+  showArchiveAction: false,
   showOpenDocAction: true,
   title: '',
   headerTestId: '',
   contentTestId: '',
   emptyTestId: '',
   refreshButtonTestId: '',
+  archiveButtonTestId: '',
+  unarchiveButtonTestId: '',
   openDocButtonTestId: '',
   recordPreviewTriggerMode: 'document',
 });
 
 const emit = defineEmits<{
   refresh: [];
+  archive: [];
+  unarchive: [];
   'open-doc': [];
   'update:viewMonth': [value: string];
 }>();

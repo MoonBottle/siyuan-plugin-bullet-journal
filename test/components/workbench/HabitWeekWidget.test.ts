@@ -171,10 +171,16 @@ describe('HabitWidgetConfigDialog', () => {
     select.dispatchEvent(new Event('change'));
     await nextTick();
 
+    const scopeSelect = mounted.container.querySelector('[data-testid="habit-widget-scope-select"]') as HTMLSelectElement;
+    scopeSelect.value = 'archived';
+    scopeSelect.dispatchEvent(new Event('change'));
+    await nextTick();
+
     (mounted.container.querySelector('[data-testid="habit-widget-config-confirm"]') as HTMLButtonElement).click();
 
     expect(mounted.onConfirm).toHaveBeenCalledWith({
       groupId: 'group-b',
+      habitScope: 'archived',
     });
 
     mounted.unmount();
@@ -198,10 +204,14 @@ describe('HabitWidgetConfigDialog', () => {
     select.dispatchEvent(new Event('change'));
     await nextTick();
 
+    const scopeSelect = mounted.container.querySelector('[data-testid="habit-widget-scope-select"]') as HTMLSelectElement;
+    expect(scopeSelect.value).toBe('active');
+
     (mounted.container.querySelector('[data-testid="habit-widget-config-confirm"]') as HTMLButtonElement).click();
 
     expect(mounted.onConfirm).toHaveBeenCalledWith({
       groupId: undefined,
+      habitScope: 'active',
     });
 
     mounted.unmount();
@@ -234,5 +244,65 @@ describe('HabitWeekWidget', () => {
     });
 
     mounted.unmount();
+  });
+
+  it('shows archived habits in archived scope and keeps actions readonly while opening detail', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-02';
+    projectStore.projects = [
+      {
+        id: 'project-a',
+        name: 'Project A',
+        tasks: [],
+        items: [],
+        habits: [
+          createHabit({ blockId: 'habit-active', name: 'Active Habit' }),
+          createHabit({ blockId: 'habit-archived', name: 'Archived Habit', archivedAt: '2026-05-01' }),
+        ],
+        links: [],
+        groupId: 'group-a',
+      } as any,
+    ];
+
+    const { default: HabitWeekWidget } = await import('@/components/workbench/widgets/HabitWeekWidget.vue');
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp(HabitWeekWidget, {
+      widget: {
+        id: 'widget-1',
+        type: 'habitWeek',
+        title: 'Habit Widget',
+        layout: { x: 0, y: 0, w: 6, h: 4 },
+        config: {
+          groupId: 'group-a',
+          habitScope: 'archived',
+        },
+      },
+    });
+
+    app.use(pinia);
+    app.mount(container);
+    await nextTick();
+
+    expect(container.textContent).toContain('Archived Habit');
+    expect(container.textContent).not.toContain('Active Habit');
+    expect(container.querySelector('[data-testid="habit-list-item-check-in"]')).toBeNull();
+    expect(container.querySelector('[data-testid="habit-list-item-increment"]')).toBeNull();
+
+    container.querySelector('[data-testid="habit-list-item-main"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(openHabitWidgetDetailDialog).toHaveBeenCalledWith({
+      habitId: 'habit-archived',
+      habitName: 'Archived Habit',
+      groupId: 'group-a',
+    });
+
+    app.unmount();
+    container.remove();
   });
 });

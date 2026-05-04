@@ -51,6 +51,7 @@ export interface WorkbenchCalendarWidgetConfig {
 
 export interface WorkbenchHabitWeekWidgetConfig {
   groupId?: string;
+  habitScope?: 'active' | 'archived';
 }
 
 export interface WorkbenchPomodoroStatsWidgetConfig {
