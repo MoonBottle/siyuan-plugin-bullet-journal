@@ -5,14 +5,18 @@ import { createApp, defineComponent, h, nextTick } from 'vue';
 import MobileHabitPanel from '@/mobile/panels/MobileHabitPanel.vue';
 
 const {
+  archiveHabit,
+  broadcastDataRefresh,
   habits,
   projectStore,
   settingsStore,
+  eventBusEmit,
   eventBusOn,
   consumePendingHabitDockTarget,
   dayStateByHabitId,
   checkIn,
   checkInCount,
+  unarchiveHabit,
 } = vi.hoisted(() => {
   const habits = [
     {
@@ -60,8 +64,12 @@ const {
         currentValue: 0,
       },
     },
+    archiveHabit: vi.fn(),
+    broadcastDataRefresh: vi.fn(),
     checkIn: vi.fn(),
     checkInCount: vi.fn(),
+    eventBusEmit: vi.fn(),
+    unarchiveHabit: vi.fn(),
   };
 });
 
@@ -79,6 +87,8 @@ vi.mock('@/i18n', () => ({
     if (key === 'habit') {
       return {
         title: 'Habits',
+        archive: 'Archive',
+        archived: 'Archived',
         noHabits: 'No habits',
         noHabitsDesc: 'Create one',
         todayProgress: 'Today',
@@ -92,6 +102,7 @@ vi.mock('@/i18n', () => ({
         longestStreak: 'Longest streak',
         noMonthlyCheckinLog: 'No log',
         monthlyCheckinLog: '{month} log',
+        unarchive: 'Unarchive',
       };
     }
 
@@ -136,9 +147,11 @@ vi.mock('@/domain/habit/habitCompletion', () => ({
 }));
 
 vi.mock('@/services/habitService', () => ({
+  archiveHabit,
   checkIn,
   checkInCount,
   setCheckInValue: vi.fn(),
+  unarchiveHabit,
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -147,7 +160,9 @@ vi.mock('@/utils/eventBus', () => ({
     DATA_REFRESH: 'data:refresh',
     HABIT_DOCK_NAVIGATE: 'habit-dock:navigate',
   },
+  broadcastDataRefresh,
   eventBus: {
+    emit: eventBusEmit,
     on: eventBusOn,
   },
 }));
@@ -272,13 +287,17 @@ vi.mock('@/mobile/components/habit/MobileHabitDetailSheet.vue', () => ({
         default: '',
       },
     },
-    emits: ['close', 'update:viewMonth'],
+    emits: ['archive', 'close', 'unarchive', 'update:viewMonth'],
     setup(props, { emit, slots }) {
       return () => props.open
         ? h('div', { 'data-testid': 'habit-detail-sheet-stub' }, [
             h('div', { 'data-testid': 'habit-detail-sheet-name' }, (props.habit as { name?: string } | null)?.name ?? ''),
             h('div', { 'data-testid': 'habit-detail-sheet-date' }, props.selectedDate),
             h('div', { 'data-testid': 'habit-detail-sheet-month' }, props.viewMonth),
+            h('button', {
+              'data-testid': (props.habit as { archivedAt?: string } | null)?.archivedAt ? 'mobile-habit-unarchive' : 'mobile-habit-archive',
+              onClick: () => emit((props.habit as { archivedAt?: string } | null)?.archivedAt ? 'unarchive' : 'archive'),
+            }, 'archive-toggle'),
             h('button', {
               'data-testid': 'habit-detail-sheet-close',
               onClick: () => emit('close'),
@@ -321,6 +340,8 @@ function resetDayState() {
     isCompleted: false,
     currentValue: 0,
   };
+  habits[0].archivedAt = undefined;
+  habits[1].archivedAt = undefined;
 }
 
 afterEach(() => {
@@ -331,6 +352,9 @@ afterEach(() => {
   consumePendingHabitDockTarget.mockReturnValue(null);
   checkIn.mockResolvedValue(false);
   checkInCount.mockResolvedValue(false);
+  archiveHabit.mockResolvedValue(false);
+  broadcastDataRefresh.mockReset();
+  unarchiveHabit.mockResolvedValue(false);
 });
 
 describe('MobileHabitPanel', () => {
@@ -368,6 +392,23 @@ describe('MobileHabitPanel', () => {
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-stub"]')).not.toBeNull();
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-name"]')?.textContent).toBe('Read');
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-month"]')?.textContent).toBe('2026-05');
+
+    mounted.unmount();
+  });
+
+  it('filters archived habits out of the mobile list while still allowing archived detail navigation', async () => {
+    habits[1].archivedAt = '2026-05-04';
+    consumePendingHabitDockTarget.mockReturnValue({
+      habitId: 'habit-2',
+      date: '2026-04-15',
+    });
+
+    const mounted = mountPanel();
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-2"]')).toBeNull();
+    expect(document.body.querySelector('[data-testid="habit-detail-sheet-name"]')?.textContent).toBe('Water');
 
     mounted.unmount();
   });
@@ -412,6 +453,51 @@ describe('MobileHabitPanel', () => {
 
     expect(document.body.querySelector('[data-testid="habit-detail-sheet-stub"]')).toBeNull();
     expect(mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('archives the selected habit from the mobile detail sheet and refreshes the panel', async () => {
+    archiveHabit.mockResolvedValue(true);
+    const mounted = mountPanel();
+    await nextTick();
+
+    const item = mounted.container.querySelector('[data-testid="habit-list-item-open-habit-1"]') as HTMLButtonElement | null;
+    item?.click();
+    await nextTick();
+
+    const button = document.body.querySelector('[data-testid="mobile-habit-archive"]') as HTMLButtonElement | null;
+    button?.click();
+    await nextTick();
+
+    expect(archiveHabit).toHaveBeenCalledWith(habits[0], '2026-05-04');
+    expect(eventBusEmit).toHaveBeenCalledWith('data:refresh');
+    expect(broadcastDataRefresh).toHaveBeenCalledTimes(1);
+
+    mounted.unmount();
+  });
+
+  it('unarchives the selected habit from the mobile detail sheet and refreshes the panel', async () => {
+    habits[0].archivedAt = '2026-05-04';
+    unarchiveHabit.mockResolvedValue(true);
+    consumePendingHabitDockTarget.mockReturnValue({
+      habitId: 'habit-1',
+      date: '2026-05-01',
+    });
+
+    const mounted = mountPanel();
+    await nextTick();
+
+    const button = document.body.querySelector('[data-testid="mobile-habit-unarchive"]') as HTMLButtonElement | null;
+    button?.click();
+    await nextTick();
+
+    expect(unarchiveHabit).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'habit-1',
+      archivedAt: '2026-05-04',
+    }));
+    expect(eventBusEmit).toHaveBeenCalledWith('data:refresh');
+    expect(broadcastDataRefresh).toHaveBeenCalledTimes(1);
 
     mounted.unmount();
   });

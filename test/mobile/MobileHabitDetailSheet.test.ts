@@ -60,4 +60,57 @@ describe('MobileHabitDetailSheet', () => {
 
     mounted.unmount();
   });
+
+  it('shows archive action for active habits', () => {
+    let archiveCount = 0;
+    const mounted = mountSheet({
+      open: true,
+      habit: {
+        blockId: 'habit-1',
+        name: 'Read',
+      },
+      selectedDate: '2026-05-01',
+      viewMonth: '2026-05',
+      stats: null,
+      onArchive: () => {
+        archiveCount += 1;
+      },
+    });
+
+    const button = document.body.querySelector('[data-testid="mobile-habit-archive"]') as HTMLButtonElement | null;
+    expect(button).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="mobile-habit-unarchive"]')).toBeNull();
+
+    button?.click();
+    expect(archiveCount).toBe(1);
+
+    mounted.unmount();
+  });
+
+  it('shows unarchive action for archived habits', () => {
+    let unarchiveCount = 0;
+    const mounted = mountSheet({
+      open: true,
+      habit: {
+        blockId: 'habit-1',
+        name: 'Read',
+        archivedAt: '2026-05-04',
+      },
+      selectedDate: '2026-05-01',
+      viewMonth: '2026-05',
+      stats: null,
+      onUnarchive: () => {
+        unarchiveCount += 1;
+      },
+    });
+
+    const button = document.body.querySelector('[data-testid="mobile-habit-unarchive"]') as HTMLButtonElement | null;
+    expect(button).not.toBeNull();
+    expect(document.body.querySelector('[data-testid="mobile-habit-archive"]')).toBeNull();
+
+    button?.click();
+    expect(unarchiveCount).toBe(1);
+
+    mounted.unmount();
+  });
 });

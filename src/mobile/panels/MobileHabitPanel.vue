@@ -42,7 +42,9 @@
       :selected-date="state.selectedDate"
       :view-month="state.selectedViewMonth"
       :stats="displaySelectedStats"
+      @archive="handleArchiveSelectedHabit"
       @close="handleCloseHabitDetail"
+      @unarchive="handleUnarchiveSelectedHabit"
       @update:view-month="state.selectedViewMonth = $event"
     >
       <div v-if="state.selectedHabit && displaySelectedStats" class="mobile-habit-detail__body">
@@ -78,12 +80,15 @@ import { getHabitDayState, getHabitPeriodState } from '@/domain/habit/habitCompl
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import {
+  archiveHabit,
   checkIn,
   checkInCount,
+  unarchiveHabit,
 } from '@/services/habitService';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import type { Habit, HabitStats } from '@/types/models';
 import {
+  broadcastDataRefresh,
   eventBus,
   Events,
   DATA_REFRESH_CHANNEL,
@@ -109,7 +114,8 @@ const state = reactive({
 });
 
 const currentDate = computed(() => projectStore.currentDate);
-const habits = computed(() => projectStore.getHabits(''));
+const allHabits = computed(() => projectStore.getHabits(''));
+const habits = computed(() => allHabits.value.filter(habit => !habit.archivedAt));
 
 const habitStatsMap = computed(() => {
   return calculateAllHabitStats(habits.value, currentDate.value);
@@ -161,7 +167,7 @@ function openHabitDetail(habit: Habit) {
 }
 
 function applyHabitDockNavigation(target: HabitDockNavigationTarget): boolean {
-  const habit = habits.value.find(item => item.blockId === target.habitId);
+  const habit = allHabits.value.find(item => item.blockId === target.habitId);
   if (!habit) {
     return false;
   }
@@ -179,7 +185,7 @@ function syncSelectedHabit() {
   if (!state.selectedHabit)
     return;
 
-  state.selectedHabit = habits.value.find(habit => habit.blockId === state.selectedHabit?.blockId) ?? null;
+  state.selectedHabit = allHabits.value.find(habit => habit.blockId === state.selectedHabit?.blockId) ?? null;
 }
 
 function handleCloseHabitDetail() {
@@ -209,6 +215,30 @@ async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, state.selectedDate, 1);
   if (success)
     state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
+}
+
+async function handleArchiveSelectedHabit() {
+  if (!state.selectedHabit || state.selectedHabit.archivedAt) {
+    return;
+  }
+
+  const success = await archiveHabit(state.selectedHabit, dayjs().format('YYYY-MM-DD'));
+  if (success) {
+    eventBus.emit(Events.DATA_REFRESH);
+    broadcastDataRefresh();
+  }
+}
+
+async function handleUnarchiveSelectedHabit() {
+  if (!state.selectedHabit || !state.selectedHabit.archivedAt) {
+    return;
+  }
+
+  const success = await unarchiveHabit(state.selectedHabit);
+  if (success) {
+    eventBus.emit(Events.DATA_REFRESH);
+    broadcastDataRefresh();
+  }
 }
 
 const handleDataRefresh = async () => {

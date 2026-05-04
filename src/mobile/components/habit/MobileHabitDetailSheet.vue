@@ -24,6 +24,15 @@
             </div>
 
             <button
+              v-if="habit"
+              class="mobile-habit-detail-sheet__action b3-button b3-button--outline"
+              :data-testid="habit.archivedAt ? 'mobile-habit-unarchive' : 'mobile-habit-archive'"
+              @click="habit.archivedAt ? emit('unarchive') : emit('archive')"
+            >
+              {{ habit.archivedAt ? t('habit').unarchive : t('habit').archive }}
+            </button>
+
+            <button
               class="mobile-habit-detail-sheet__close"
               data-testid="habit-detail-sheet-close"
               :aria-label="t('common').close || 'Close'"
@@ -55,7 +64,9 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
+  archive: [];
   close: [];
+  unarchive: [];
 }>();
 </script>
 
@@ -130,6 +141,13 @@ const emit = defineEmits<{
     height: 18px;
     fill: currentColor;
   }
+}
+
+.mobile-habit-detail-sheet__action {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  white-space: nowrap;
 }
 
 .mobile-habit-detail-sheet__body {
