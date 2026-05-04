@@ -165,4 +165,14 @@ describe('getHabitReminderEntries', () => {
 
     expect(getHabitReminderEntries([habit], '2026-04-04')).toHaveLength(0);
   });
+
+  it('已归档的习惯不生成 reminder entry', () => {
+    const habit = mkHabit({
+      name: '冥想',
+      archivedAt: '2026-05-04',
+      reminder: { type: 'absolute', time: '07:00' },
+    });
+
+    expect(getHabitReminderEntries([habit], '2026-05-04')).toEqual([]);
+  });
 });

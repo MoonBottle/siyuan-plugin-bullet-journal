@@ -55,6 +55,9 @@ export function getHabitReminderEntries(
   const entries: HabitReminderEntry[] = [];
 
   for (const habit of habits) {
+    if (habit.archivedAt)
+      continue;
+
     if (!isDateEligibleForHabit(habit, currentDate))
       continue;
 
