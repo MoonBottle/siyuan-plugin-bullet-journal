@@ -50,7 +50,7 @@ The plugin parses Markdown content to identify tasks. A project document consist
 
 [Design Mockup](https://figma.com/design/xxx)
 
-Homepage revamp (Task name) #task @L1
+Homepage revamp (Task name) 📋 @L1
 
 [Requirements Doc](https://doc.example.com/homepage)
 
@@ -62,7 +62,7 @@ Review meeting (Abandoned item) @2026-03-08 14:00:00~15:00:00 #abandoned
 ```
 
 **Key markers explained:**
-- `#task` or `📋` - Marks a line as a task (supports Emoji)
+- `📋` - Marks a line as a task
 - `@L1`, `@L2`, `@L3` - Task hierarchy levels (L1 = parent, L2/L3 = subtasks)
 - `@YYYY-MM-DD` or `📅YYYY-MM-DD` - Date marker for work items (supports Emoji)
 - `@YYYY-MM-DD HH:mm:ss~HH:mm:ss` - Date with time range
@@ -84,7 +84,7 @@ For more format details, see [Data Format](./data-format.md).
 
 > ⚠️ **Common Issue**: If no data appears, check that:
 > - The directory path matches your actual folder structure
-> - Project documents contain the `#task` marker
+> - Project documents contain the `📋` / `#task` / `#任务` marker
 > - Work items have valid date formats (`@YYYY-MM-DD`)
 
 For more configuration details, see [Configuration](./configuration.md).

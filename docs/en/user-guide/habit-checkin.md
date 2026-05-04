@@ -108,7 +108,7 @@ Habits and tasks switch context in the document based on their order of appearan
 ```markdown
 ## My Project
 
-#task Develop login module @L1
+📋 Develop login module @L1
 
 Design login page 📅2026-04-01
 
@@ -116,13 +116,13 @@ Wake up early 🎯2026-04-01 Stick to 30 days 🔄daily
 
 Drink water 🎯2026-04-01 Stick to 21 days 8 cups 🔄daily
 
-#task Develop registration module @L1
+📋 Develop registration module @L1
 
 Write registration API 📅2026-04-02
 ```
 
 - When `🎯` is encountered, switch to **habit context**; `📅date` lines below are parsed as check-in records
-- When `#task` is encountered, switch to **task context**; `📅date` lines below are parsed as work items
+- When `📋` is encountered, switch to **task context**; `📅date` lines below are parsed as work items
 
 ---
 
@@ -416,7 +416,7 @@ Meditation 📅2026-04-01
 
 Meditation 📅2026-04-02
 
-#task Physical examination appointment @L1
+📋 Physical examination appointment @L1
 
 Book hospital 📅2026-04-15
 ```
@@ -427,7 +427,7 @@ Book hospital 📅2026-04-15
 
 ### Q: What's the difference between habits and tasks?
 
-**Tasks** are goals with clear deliverables, marked with `#task`, with dated items below representing specific actions.
+**Tasks** are goals with clear deliverables, marked with `📋`, with dated items below representing specific actions.
 
 **Habits** are periodic behavior tracking, marked with `🎯`, with check-in records below representing each execution.
 
@@ -448,7 +448,7 @@ Yes. After `Stick to N days` expires, the habit is marked as ended, but you can 
 
 ### Q: Will habit check-ins affect task and item parsing?
 
-No. `🎯` is a new marker and does not conflict with existing `#task`, `📅`, etc. Habits and tasks alternate strictly in the document, and the parser correctly distinguishes contexts based on order of appearance.
+No. `🎯` is a new marker and does not conflict with existing `📋`, `📅`, etc. Habits and tasks alternate strictly in the document, and the parser correctly distinguishes contexts based on order of appearance.
 
 ### Q: Can I have both habits and tasks in the same project?
 

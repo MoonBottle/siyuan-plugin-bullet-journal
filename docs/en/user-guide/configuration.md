@@ -279,7 +279,7 @@ For detailed steps and tool descriptions, see [MCP AI Assistant](./mcp.md).
 Please check:
 1. Is scan scope setting correct (Full Scan mode should show all tasks)
 2. Does directory path match actual folder structure (Configured Directories Only mode)
-3. Do project documents contain `#task` marker
+3. Do project documents contain `📋` / `#task` / `#任务` marker
 4. Do work items have valid date format (`@YYYY-MM-DD`)
 
 ### Q: How do I scan multiple directories?
