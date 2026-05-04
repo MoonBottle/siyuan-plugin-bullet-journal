@@ -239,7 +239,7 @@ describe('WorkbenchHabitView', () => {
     mounted.unmount();
   });
 
-  it('returns archived detail back to the archived list context', async () => {
+  it('keeps the archived list header while showing archived habit detail', async () => {
     const mounted = await mountView();
     mounted.projectStore.projects = [{
       id: 'project-1',
@@ -262,16 +262,54 @@ describe('WorkbenchHabitView', () => {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mounted.container.querySelector('[data-testid="workbench-habit-selected-header"]')?.textContent).toContain('Archived Habit');
-
-    mounted.container.querySelector('[data-testid="workbench-habit-back-to-list"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await nextTick();
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')?.textContent).toContain('Archived Habits');
 
     expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')).not.toBeNull();
     expect(mounted.container.textContent).toContain('Archived Habit');
     expect(mounted.container.textContent).not.toContain('Active Habit');
-    expect(mounted.container.querySelector('[data-testid="workbench-habit-detail-header"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-detail-header"]')?.textContent).toContain('Archived Habit');
+
+    mounted.unmount();
+  });
+
+  it('keeps the active list header fixed after selecting a habit', async () => {
+    const mounted = await mountView();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-habit-1"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-active-header"]')?.textContent).toContain('Habit Check-in');
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-selected-header"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('keeps the archived list header fixed after selecting an archived habit', async () => {
+    const mounted = await mountView();
+    mounted.projectStore.projects = [{
+      id: 'project-1',
+      name: 'Project 1',
+      items: [],
+      habits: [
+        createHabit({ blockId: 'habit-active', name: 'Active Habit' }),
+        createHabit({ blockId: 'habit-archived', name: 'Archived Habit', archivedAt: '2026-05-01' }),
+      ],
+      links: [],
+      groupId: '',
+    } as any];
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="workbench-habit-open-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('[data-testid="habit-list-item-habit-archived"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-archived-header"]')?.textContent).toContain('Archived Habits');
+    expect(mounted.container.querySelector('[data-testid="workbench-habit-selected-header"]')).toBeNull();
 
     mounted.unmount();
   });

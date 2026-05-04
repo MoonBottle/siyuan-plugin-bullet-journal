@@ -2,29 +2,7 @@
   <div class="workbench-habit-view" data-testid="workbench-habit-view">
     <aside class="workbench-habit-view__sidebar">
       <div class="workbench-habit-view__sidebar-header">
-        <template v-if="selectedHabit">
-          <button
-            class="block__icon b3-tooltips b3-tooltips__sw"
-            data-testid="workbench-habit-back-to-list"
-            :aria-label="t('habit').backToList"
-            @click="clearSelectedHabit"
-          >
-            <svg><use xlink:href="#iconLeft"></use></svg>
-          </button>
-          <div class="workbench-habit-view__sidebar-title" data-testid="workbench-habit-selected-header">
-            {{ selectedHabit.name }}
-          </div>
-          <span class="fn__flex-1 fn__space"></span>
-          <button
-            class="block__icon b3-tooltips b3-tooltips__sw"
-            data-testid="workbench-habit-sidebar-refresh-button"
-            :aria-label="t('common').refresh"
-            @click="refreshHabits"
-          >
-            <svg><use xlink:href="#iconRefresh"></use></svg>
-          </button>
-        </template>
-        <template v-else-if="listMode === 'archived'">
+        <template v-if="listMode === 'archived'">
           <button
             class="block__icon b3-tooltips b3-tooltips__sw"
             data-testid="workbench-habit-back-active"
@@ -155,7 +133,6 @@ const {
   showActiveHabits,
   showArchivedHabits,
   selectHabit,
-  clearSelectedHabit,
   checkInHabit,
   incrementHabit,
   openSelectedHabitDoc,
