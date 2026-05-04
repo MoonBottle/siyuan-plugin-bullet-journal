@@ -613,25 +613,40 @@
   position: fixed;
   right: 60px;
   bottom: 60px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--b3-theme-primary);
-  color: var(--b3-theme-on-primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  width: 108px;
+  min-height: 34px;
+  border-radius: 999px;
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  border: 1px solid var(--b3-border-color);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   z-index: 2147483647;
-  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  transition:
+    width 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease,
+    background-color 0.18s ease;
   user-select: none;
   touch-action: none;
 
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  @media (hover: hover) {
+    &:hover:not(.dragging) {
+      width: 320px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+
+      .floating-tomato-status,
+      .floating-tomato-item,
+      .floating-tomato-secondary,
+      .floating-tomato-actions {
+        display: block;
+      }
+
+      .floating-tomato-actions {
+        display: flex;
+      }
+    }
   }
 
   &:active {
@@ -643,25 +658,143 @@
     transition: none;
   }
 
-  .tomato-icon {
-    font-size: 14px;
-    margin-bottom: 2px;
+  &.is-break {
+    .floating-tomato-icon,
+    .floating-tomato-status {
+      color: var(--b3-card-success-color);
+    }
+  }
+
+  &.is-paused {
+    .floating-tomato-icon,
+    .floating-tomato-status {
+      color: var(--b3-card-warning-color);
+    }
+  }
+
+  .floating-tomato-shell {
+    min-height: 34px;
+  }
+
+  .floating-tomato-main {
+    display: grid;
+    grid-template-columns: 20px minmax(0, auto) auto;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+    min-height: 34px;
+    padding: 5px 12px 5px 14px;
+  }
+
+  .floating-tomato-icon {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: var(--b3-theme-primary);
+    flex: 0 0 auto;
 
     svg {
-      width: 14px;
-      height: 14px;
+      width: 20px;
+      height: 20px;
       fill: currentColor;
     }
   }
 
-  .remaining-time {
-    font-size: 14px;
+  .floating-tomato-summary {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    justify-content: center;
+  }
+
+  .floating-tomato-topline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .floating-tomato-primary {
+    font-size: 13px;
     font-weight: 600;
     font-family: var(--b3-font-family);
     line-height: 1;
+    white-space: nowrap;
+    letter-spacing: 0;
+  }
+
+  .floating-tomato-status,
+  .floating-tomato-item,
+  .floating-tomato-secondary,
+  .floating-tomato-actions {
+    display: none;
+  }
+
+  .floating-tomato-status {
+    color: var(--b3-theme-primary);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .floating-tomato-item {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--b3-theme-on-surface);
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .floating-tomato-secondary {
+    font-size: 11px;
+    color: var(--b3-theme-on-surface-light);
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .floating-tomato-actions {
+    align-items: center;
+    align-self: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .floating-tomato-action {
+    border: none;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--b3-theme-on-background);
+    background: var(--b3-theme-surface-lighter);
+    cursor: pointer;
+    white-space: nowrap;
+
+    &[hidden] {
+      display: none !important;
+    }
+  }
+
+  .floating-tomato-action--complete {
+    color: var(--b3-theme-primary);
+    background: color-mix(
+      in srgb,
+      var(--b3-theme-primary) 12%,
+      var(--b3-theme-surface) 88%
+    );
+  }
+
+  .floating-tomato-progress,
+  .floating-tomato-progress-fill {
+    display: none;
   }
 }
 
