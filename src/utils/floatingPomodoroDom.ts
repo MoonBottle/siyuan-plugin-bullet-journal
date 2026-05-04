@@ -58,6 +58,7 @@ export function applyFloatingPomodoroViewState(
 
   setClass(host, 'is-break', state.phase === 'break');
   setClass(host, 'is-paused', state.isPaused);
+  setClass(host, 'has-item-title', Boolean(state.title));
 
   iconEl.innerHTML = state.phase === 'break' ? BREAK_ICON : FOCUS_ICON;
   statusEl.textContent = state.status;

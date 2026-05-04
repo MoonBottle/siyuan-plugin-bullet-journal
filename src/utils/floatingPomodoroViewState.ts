@@ -62,7 +62,7 @@ export type FloatingPomodoroViewState =
 export function buildFloatingPomodoroViewState(
   source: FloatingPomodoroSourceState
 ): FloatingPomodoroViewState {
-  const title = source.itemTitle?.trim() || source.labels.unknownItem;
+  const rawTitle = source.itemTitle?.trim() ?? '';
 
   if (source.phase === 'break') {
     const remainingSeconds = normalizeNonNegativeNumber(source.remainingSeconds);
@@ -72,7 +72,7 @@ export function buildFloatingPomodoroViewState(
     return {
       phase: 'break',
       status: source.labels.breaking,
-      title,
+      title: '',
       primaryText: formatClock(remainingSeconds),
       secondaryText: formatBreakSummary(source.labels, remainingMinutes),
       progress: normalizeProgress(
@@ -95,7 +95,7 @@ export function buildFloatingPomodoroViewState(
   return {
     phase: 'focus',
     status: source.isPaused ? source.labels.paused : source.labels.focusing,
-    title,
+    title: rawTitle || source.labels.unknownItem,
     primaryText: formatClock(
       timerMode === 'stopwatch' ? accumulatedSeconds : remainingSeconds
     ),

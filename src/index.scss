@@ -641,10 +641,15 @@
       }
 
       .floating-tomato-status,
-      .floating-tomato-item,
       .floating-tomato-secondary,
       .floating-tomato-actions {
         display: block;
+      }
+
+      &.has-item-title {
+        .floating-tomato-item {
+          display: block;
+        }
       }
 
       .floating-tomato-actions {
@@ -752,6 +757,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  &.has-item-title {
+    .floating-tomato-item {
+      display: block;
+    }
   }
 
   .floating-tomato-secondary {

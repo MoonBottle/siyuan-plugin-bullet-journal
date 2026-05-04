@@ -50,7 +50,7 @@ describe('applyFloatingPomodoroViewState', () => {
     const state: FloatingPomodoroViewState = {
       phase: 'break',
       status: '休息中',
-      title: '未关联事项',
+      title: '',
       primaryText: '04:12',
       secondaryText: '休息剩余 4 分钟',
       progress: 0.16,
@@ -61,12 +61,33 @@ describe('applyFloatingPomodoroViewState', () => {
     applyFloatingPomodoroViewState(host, state);
 
     expect(host.classList.contains('is-break')).toBe(true);
+    expect(host.classList.contains('has-item-title')).toBe(false);
     expect(host.querySelector('.floating-tomato-status')?.textContent).toBe('休息中');
+    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('');
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.hidden).toBe(true);
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.hidden).toBe(true);
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.hidden).toBe(false);
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.textContent).toBe('跳过休息');
     expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(0.16)');
+  });
+
+  it('keeps the item row visible when focus state has a title', () => {
+    const host = createHost();
+
+    applyFloatingPomodoroViewState(host, {
+      phase: 'focus',
+      status: '专注中',
+      title: 'Draft note',
+      primaryText: '10:00',
+      secondaryText: '已专注 15 分钟 / 目标 25 分钟',
+      progress: 0.6,
+      pauseResumeLabel: '暂停',
+      endLabel: '结束专注',
+      isPaused: false,
+    });
+
+    expect(host.classList.contains('has-item-title')).toBe(true);
+    expect(host.querySelector('.floating-tomato-item')?.textContent).toBe('Draft note');
   });
 
   it('updates paused class and clamps progress when reapplying state', () => {

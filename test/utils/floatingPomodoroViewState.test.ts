@@ -90,13 +90,13 @@ describe('buildFloatingPomodoroViewState', () => {
     expect(viewState.secondaryText).toBe('已专注 9 分钟 / 目标 25 分钟');
   });
 
-  it('builds a break capsule state with skip-break control and fallback title', () => {
+  it('builds a break capsule state without item fallback title', () => {
     const viewState = buildFloatingPomodoroViewState(createBreakSource());
 
     expect(viewState).toEqual({
       phase: 'break',
       status: '休息中',
-      title: '未知事项',
+      title: '',
       primaryText: '05:00',
       secondaryText: '休息剩余 5 分钟',
       progress: 0,
