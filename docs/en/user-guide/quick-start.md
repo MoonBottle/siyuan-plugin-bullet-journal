@@ -100,6 +100,7 @@ Once configured, access your tasks through multiple views:
 | **Project List** | Click 📁 folder icon in top bar | Review all tasks by project |
 | **Todo Dock** | Right-click top bar → Closed Panels → Todo Items | Quick access to upcoming tasks |
 | **Habit Check-in** | Right-click top bar → Closed Panels → Habit Check-in | Daily habit tracking and check-ins |
+| **Quadrant** | Right-click top bar → Quadrant | Manage tasks by priority |
 | **Workbench** | Right-click top bar → Workbench | Integrated workspace (Dashboard + Habits + Todo + Quadrant + Focus Stats) |
 | **Pomodoro Focus** | Right-click top bar → Closed Panels → Pomodoro Focus | Pomodoro timer and focus records |
 
@@ -125,6 +126,7 @@ For more view details, see [Views](./views.md).
 
 - Learn [Data Format](./data-format.md) in depth to master all marker syntax
 - Use [Habit Check-in](./habit-checkin.md) to track daily habits
+- Use [Quadrant View](./quadrant.md) to manage tasks by priority
 - Use [Workbench](./workbench.md) for integrated workspace
 - Use [Pomodoro](./pomodoro.md) for focus timing
 - Configure [MCP AI Assistant](./mcp.md) so AI can query tasks and pomodoro data

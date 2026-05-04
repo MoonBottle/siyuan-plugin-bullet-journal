@@ -156,20 +156,14 @@ The Todo View shares the same data source and filtering logic as the Todo Dock, 
 
 The Quadrant View (viewType: `quadrant`) embeds the Important/Urgent quadrant matrix into the workbench.
 
-### Quadrant Division
+### Core Features
 
-| Quadrant | Name | Description |
-|----------|------|-------------|
-| Q1 | Important & Urgent | Tasks to handle immediately |
-| Q2 | Important & Not Urgent | Tasks to schedule |
-| Q3 | Urgent & Not Important | Tasks to delegate |
-| Q4 | Not Important & Not Urgent | Tasks to consider deleting |
+- **Auto-categorization**: Automatically assigns items to quadrants based on `🔥`/`🌱`/`🍃` priority markers
+- **Drag to adjust**: Drag tasks between quadrants to automatically update priority markers in notes
+- **Group filter**: Filter tasks by project group
+- **Search filter**: Keyword filtering across all four quadrants
 
-### How to Use
-
-- Tasks are automatically categorized into the corresponding quadrant based on priority and due date
-- Click a task to jump to its location in notes
-- Supports filtering by group
+See [Quadrant View](./quadrant.md) for details.
 
 ---
 

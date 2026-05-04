@@ -174,6 +174,33 @@ You can click "Start Focus" on an item from the Todo sidebar, calendar, or Gantt
 
 See [Pomodoro](./pomodoro.md) for details.
 
+## Quadrant View
+
+Based on the "Importance-Urgency" matrix, automatically categorizes tasks into four quadrants by priority.
+
+### Access
+
+- **Right-click top bar** → Quadrant
+- **Top bar dropdown menu** (plugin icon) → Quadrant
+
+### Quadrant Division
+
+| Quadrant | Name | Priority |
+|----------|------|----------|
+| Q1 | Important & Urgent | `🔥` High |
+| Q2 | Important & Not Urgent | `🌱` Medium |
+| Q3 | Urgent & Not Important | `🍃` Low |
+| Q4 | Not Important & Not Urgent | No priority |
+
+### Core Features
+
+- **Auto-categorization**: Automatically assigns items to quadrants based on `🔥`/`🌱`/`🍃` priority markers
+- **Drag to adjust**: Drag tasks between quadrants to automatically update priority markers in notes
+- **Group filter**: Filter tasks by project group
+- **Search filter**: Keyword filtering across all four quadrants
+
+See [Quadrant View](./quadrant.md) for details.
+
 ## View Comparison
 
 | View | Dimension | Use Case |
@@ -183,6 +210,7 @@ See [Pomodoro](./pomodoro.md) for details.
 | Project List | Project Organization | Task categorization, project review |
 | Todo Dock | Quick Access | Today's items, expired reminders |
 | Habit Check-in Dock | Habit Tracking | Daily habit check-ins, streaks, completion rates |
+| Quadrant View | Priority | Task importance/urgency management |
 | Workbench Tab | Integrated Workspace | Dashboard + Habits + Todo + Quadrant + Focus Stats |
 | Pomodoro Dock | Focus & Records | Pomodoro timer, today/total stats, record list |
 
