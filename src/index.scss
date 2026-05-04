@@ -613,8 +613,8 @@
   position: fixed;
   right: 60px;
   bottom: 60px;
-  width: 108px;
-  min-height: 34px;
+  width: 102px;
+  min-height: 36px;
   border-radius: 999px;
   background: var(--b3-theme-surface);
   color: var(--b3-theme-on-surface);
@@ -635,6 +635,10 @@
     &:hover:not(.dragging) {
       width: 320px;
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+
+      .floating-tomato-main {
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+      }
 
       .floating-tomato-status,
       .floating-tomato-item,
@@ -673,31 +677,31 @@
   }
 
   .floating-tomato-shell {
-    min-height: 34px;
+    min-height: 36px;
   }
 
   .floating-tomato-main {
     display: grid;
-    grid-template-columns: 20px minmax(0, auto) auto;
+    grid-template-columns: 18px minmax(0, auto) auto;
     align-items: center;
     justify-content: start;
     gap: 10px;
-    min-height: 34px;
-    padding: 5px 12px 5px 14px;
+    min-height: 36px;
+    padding: 6px 10px 6px 12px;
   }
 
   .floating-tomato-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     color: var(--b3-theme-primary);
     flex: 0 0 auto;
 
     svg {
-      width: 20px;
-      height: 20px;
+      width: 16px;
+      height: 16px;
       fill: currentColor;
     }
   }
@@ -718,7 +722,7 @@
   }
 
   .floating-tomato-primary {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     font-family: var(--b3-font-family);
     line-height: 1;

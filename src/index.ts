@@ -91,6 +91,15 @@ import {
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService";
 import { CleanupManager } from "@/utils/cleanupManager";
+import {
+  type FloatingPomodoroLabels,
+  type FloatingPomodoroSourceState,
+  buildFloatingPomodoroViewState,
+} from "@/utils/floatingPomodoroViewState";
+import {
+  applyFloatingPomodoroViewState,
+  createFloatingPomodoroMarkup,
+} from "@/utils/floatingPomodoroDom";
 
 let PluginInfo = {
   version: "",
@@ -2197,31 +2206,33 @@ export default class TaskAssistantPlugin extends Plugin {
   private createFloatingTomatoButton(): HTMLElement {
     const btn = document.createElement("div");
     btn.className = "floating-tomato-btn";
-    btn.innerHTML = `
-      <div class="tomato-icon">
-        <svg
-          class="tomato-icon"
-          viewBox="0 0 1024 1024"
-          version="1.1"
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-        >
-          <path
-            d="M963.05566 345.393457c-34.433245-59.444739-83.5084-112.04244-142.458001-152.926613 3.805482-11.402299 2.23519-23.908046-4.272326-34.008842a39.5855 39.5855 0 0 0-29.198939-17.938108L617.888552 123.076923l-73.365164-105.421751c-7.398762-10.638373-19.55084-16.976127-32.509284-16.976127s-25.110522 6.337754-32.509283 16.976127L406.111363 123.076923 236.887668 140.505747A39.625111 39.625111 0 0 0 207.688729 158.443855a39.676039 39.676039 0 0 0-4.286473 34.008842C77.170603 279.724138 2.716138 415.179487 2.716138 560.311229c-0.04244 62.72679 13.849691 124.689655 40.671972 181.38992 25.916888 55.129973 62.924845 104.587091 110.005305 146.956676 46.769231 42.100796 101.177719 75.119363 161.683466 98.164456a559.214854 559.214854 0 0 0 393.846153 0c60.519894-23.030946 114.928382-56.06366 161.71176-98.164456 47.08046-42.369584 84.088417-91.826702 110.005305-146.956676A423.347834 423.347834 0 0 0 1021.283777 560.311229a429.629001 429.629001 0 0 0-58.228117-214.917772z m-530.786914-145.372237c11.473033-1.188329 21.856764-7.299735 28.44916-16.778072L511.999958 109.609195l51.239611 73.633953c6.592396 9.464191 16.976127 15.589744 28.44916 16.778072l80.580017 8.304156-47.278514 32.679045a39.601061 39.601061 0 0 0-15.971707 41.874447l14.458002 59.784262-97.655172-36.413793a39.633599 39.633599 0 0 0-27.671088 0l-97.655172 36.399646 14.458001-59.784262a39.601061 39.601061 0 0 0-15.971706-41.874447l-47.278515-32.679045 80.565871-8.290009zM817.570249 829.778957a434.642617 434.642617 0 0 1-136.94076 83.013262 480.025464 480.025464 0 0 1-337.457118 0 434.642617 434.642617 0 0 1-136.94076-83.013262C126.132584 757.545535 81.938065 661.842617 81.938065 560.311229c0-125.496021 68.923077-242.758621 184.615385-314.553492l65.018568 44.944297-25.563219 105.81786a39.619452 39.619452 0 0 0 52.34306 46.401415L511.999958 385.669319l153.676392 57.280283c13.72237 5.106985 29.142352 2.23519 40.106101-7.483643a39.58267 39.58267 0 0 0 12.222812-38.917772l-25.605659-105.81786 65.018568-44.93015c2.900088 1.79664 5.78603 3.621574 8.629531 5.488948 53.616269 35.083996 98.022989 81.343943 128.43855 133.842617 31.56145 54.507515 47.533156 113.471264 47.533156 175.221927 0.04244 101.488948-44.152078 197.191866-124.44916 269.425288z m0 0"
-            fill="currentColor"
-          />
-        </svg>
-      </div>
-      <div class="remaining-time">--:--</div>
-    `;
+    btn.innerHTML = createFloatingPomodoroMarkup();
 
-    // 点击打开番茄 Dock
     btn.addEventListener("click", (e) => {
-      // 如果不是拖拽操作，则打开 Dock
-      if (!btn.classList.contains("dragging")) {
-        this.togglePomodoroDock();
+      if (btn.classList.contains("dragging")) return;
+
+      const target = e.target as HTMLElement;
+      const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
+
+      if (action === "pause") {
+        e.stopPropagation();
+        this.togglePomodoroPause();
+        return;
       }
+
+      if (action === "complete") {
+        e.stopPropagation();
+        this.completeFocusFromFloatingButton();
+        return;
+      }
+
+      if (action === "skip") {
+        e.stopPropagation();
+        this.skipBreakFromFloatingButton();
+        return;
+      }
+
+      this.togglePomodoroDock();
     });
 
     // 添加拖拽功能
@@ -2578,6 +2589,80 @@ export default class TaskAssistantPlugin extends Plugin {
     }
   }
 
+  private async completeFocusFromFloatingButton() {
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+
+    const pomodoroStore = usePomodoroStore(pinia);
+    if (!pomodoroStore.isFocusing) return;
+
+    showConfirmDialog(
+      t("pomodoroActive").confirmEndTitle,
+      t("pomodoroActive").confirmEndMessage,
+      async () => {
+        await pomodoroStore.completePomodoro(this);
+      },
+    );
+  }
+
+  private async skipBreakFromFloatingButton() {
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+
+    const pomodoroStore = usePomodoroStore(pinia);
+    if (!pomodoroStore.isBreakActive) return;
+
+    await pomodoroStore.stopBreak(this);
+  }
+
+  private getFloatingPomodoroLabels(): FloatingPomodoroLabels {
+    const pomodoro = t("pomodoro") as any;
+    const pomodoroActive = t("pomodoroActive") as any;
+    const settingsPomodoro = (t("settings") as any).pomodoro;
+
+    return {
+      focusing: pomodoroActive.focusing,
+      paused: pomodoroActive.paused,
+      breaking: settingsPomodoro.breakLabel,
+      pause: pomodoroActive.pause,
+      resume: pomodoroActive.resume,
+      endFocus: pomodoroActive.endFocus,
+      skipBreak: settingsPomodoro.skipBreak,
+      unknownItem: pomodoro.floatingUnknownItem,
+      formatFocusSummary: (focusedMinutes, targetMinutes) =>
+        pomodoro.floatingFocusSummary
+          .replace("{minutes}", String(focusedMinutes))
+          .replace("{target}", String(targetMinutes)),
+      formatStopwatchSummary: focusedMinutes =>
+        pomodoro.floatingStopwatchSummary.replace(
+          "{minutes}",
+          String(focusedMinutes),
+        ),
+      formatBreakSummary: remainingMinutes =>
+        pomodoro.floatingBreakRemaining.replace(
+          "{minutes}",
+          String(remainingMinutes),
+        ),
+    };
+  }
+
+  private getFloatingPomodoroItemTitle(
+    pinia: NonNullable<ReturnType<typeof getSharedPinia>>,
+    fallback?: string,
+  ) {
+    const blockId = usePomodoroStore(pinia).activePomodoro?.blockId;
+    if (!blockId) return fallback;
+    return useProjectStore(pinia).getItemByBlockId(blockId)?.content || fallback;
+  }
+
+  private updateFloatingTomatoView(source: FloatingPomodoroSourceState) {
+    if (!this.floatingTomatoEl) return;
+    applyFloatingPomodoroViewState(
+      this.floatingTomatoEl,
+      buildFloatingPomodoroViewState(source),
+    );
+  }
+
   /**
    * 统一更新四处显示（悬浮按钮、底栏倒计时、底栏进度条）
    * 有 data 时用 TICK 数据；无 data 时从 store 读取（用于恢复后首次渲染）
@@ -2636,13 +2721,15 @@ export default class TaskAssistantPlugin extends Plugin {
             "0",
           )}:${(d.remainingSeconds % 60).toString().padStart(2, "0")}`;
 
-        if (this.floatingTomatoEl) {
-          const iconEl = this.floatingTomatoEl.querySelector(".tomato-icon");
-          if (iconEl) {
-            iconEl.innerHTML = `<svg class="tomato-icon" viewBox="0 0 1024 1024" width="20" height="20" fill="currentColor"><path d="M828.36 955.46h-738C75.8 955.46 64 943.66 64 929.1s11.8-26.36 26.36-26.36h738c14.56 0 26.36 11.8 26.36 26.36s-11.81 26.36-26.36 26.36zM512.17 876.39H406.53c-159.87 0-289.93-130.06-289.93-289.93V481.04c0-43.6 35.47-79.07 79.07-79.07h527.36c43.6 0 79.07 35.47 79.07 79.07v105.43c0 159.86-130.06 289.92-289.93 289.92z m-316.5-421.71c-14.53 0-26.36 11.82-26.36 26.36v105.43c0 130.8 106.42 237.21 237.21 237.21h105.65c130.79 0 237.21-106.41 237.21-237.21V481.04c0-14.54-11.83-26.36-26.36-26.36H195.67z"/><path d="M828.19 705.07h-65.65c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h65.65c43.62 0 79.1-35.47 79.1-79.07s-35.48-79.07-79.1-79.07h-52.47c-14.56 0-26.36-11.8-26.36-26.36s11.8-26.36 26.36-26.36h52.47c72.68 0 131.81 59.12 131.81 131.79s-59.14 131.79-131.81 131.79z"/></svg>`;
-          }
-          const timeEl = this.floatingTomatoEl.querySelector(".remaining-time");
-          if (timeEl) timeEl.textContent = timeStr;
+        const pinia = getSharedPinia();
+        if (pinia) {
+          this.updateFloatingTomatoView({
+            phase: "break",
+            remainingSeconds: d.remainingSeconds,
+            breakDurationSeconds: totalSeconds,
+            itemTitle: "",
+            labels: this.getFloatingPomodoroLabels(),
+          });
         }
 
         const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
@@ -2690,9 +2777,21 @@ export default class TaskAssistantPlugin extends Plugin {
           "0",
         )}:${(displaySeconds % 60).toString().padStart(2, "0")}`;
 
-      if (this.floatingTomatoEl) {
-        const timeEl = this.floatingTomatoEl.querySelector(".remaining-time");
-        if (timeEl) timeEl.textContent = timeStr;
+      const pinia = getSharedPinia();
+      if (pinia) {
+        this.updateFloatingTomatoView({
+          phase: "focus",
+          timerMode: isStopwatch ? "stopwatch" : "countdown",
+          remainingSeconds,
+          accumulatedSeconds,
+          isPaused: d.isPaused ?? false,
+          targetDurationMinutes: d.targetDurationMinutes,
+          itemTitle: this.getFloatingPomodoroItemTitle(
+            pinia,
+            usePomodoroStore(pinia).activePomodoro?.itemContent,
+          ),
+          labels: this.getFloatingPomodoroLabels(),
+        });
       }
 
       const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
