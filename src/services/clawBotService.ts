@@ -10,12 +10,14 @@ import {
   type WeixinMessage,
   type GetUpdatesReq,
   type GetUpdatesResp,
+  type GetConfigResp,
   type QRCodeResponse,
   type QRStatusResponse,
   type SendMessageReq,
   type UploadedFileInfo,
   type MessageItem,
-  type CDNMedia
+  type CDNMedia,
+  type WeixinApiCommonResp
 } from '@/types/clawbot';
 import { aes128EcbEncrypt, aes128EcbDecrypt, generateAesKey, base64Encode, base64Decode, md5, bytesToHex } from '@/utils/crypto';
 
@@ -23,6 +25,18 @@ const DEFAULT_BASE_URL = 'https://ilinkai.weixin.qq.com';
 const DEFAULT_CDN_BASE_URL = 'https://cdn.weixin.qq.com';
 const DEFAULT_BOT_TYPE = '3';
 const CHANNEL_VERSION = '2.1.1';
+
+export class ClawBotApiError extends Error {
+  code: number;
+  kind: 'context_stale' | 'session_expired' | 'api';
+
+  constructor(message: string, code: number, kind: 'context_stale' | 'session_expired' | 'api') {
+    super(message);
+    this.name = 'ClawBotApiError';
+    this.code = code;
+    this.kind = kind;
+  }
+}
 
 /** 构建请求头 */
 function buildHeaders(token?: string, body?: string): Record<string, string> {
@@ -83,6 +97,10 @@ export class ClawBotService {
 
   isConnected(): boolean {
     return this.config.loginStatus === 'connected' && !!this.config.token;
+  }
+
+  isContextStaleError(error: unknown): error is ClawBotApiError {
+    return error instanceof ClawBotApiError && error.kind === 'context_stale';
   }
 
   // ========== 登录流程 ==========
@@ -546,6 +564,87 @@ export class ClawBotService {
     if (!response.ok) {
       throw new Error(`发送消息失败: ${response.status} ${responseText}`);
     }
+
+    this.assertApiSuccess(responseText, 'sendmessage');
+  }
+
+  /**
+   * 静默探测会话上下文是否仍然有效
+   * 不会发送任何用户可见消息
+   */
+  async probeContext(toUserId: string, contextToken?: string): Promise<{ status: 'active' | 'stale' | 'unknown' }> {
+    if (!this.config.token) {
+      throw new Error('未登录');
+    }
+
+    if (!contextToken) {
+      return { status: 'unknown' };
+    }
+
+    try {
+      await this.fetchConfig(toUserId, contextToken);
+      return { status: 'active' };
+    } catch (error) {
+      if (this.isContextStaleError(error)) {
+        return { status: 'stale' };
+      }
+      throw error;
+    }
+  }
+
+  async notifyGatewayStart(): Promise<WeixinApiCommonResp> {
+    if (!this.config.token) {
+      throw new Error('未登录');
+    }
+
+    const body = JSON.stringify({ base_info: buildBaseInfo() });
+    const response = await fetch(`${this.config.baseUrl}/ilink/bot/msg/notifystart`, {
+      method: 'POST',
+      headers: buildHeaders(this.config.token, body),
+      body
+    });
+
+    const responseText = await response.text();
+    console.log('[ClawBot] notifyGatewayStart response:', {
+      status: response.status,
+      body: responseText.substring(0, 500)
+    });
+
+    if (!response.ok) {
+      throw new Error(`网关保活失败: ${response.status} ${responseText}`);
+    }
+
+    this.assertApiSuccess(responseText, 'notifystart');
+    return this.parseApiResponse(responseText) ?? { ret: 0 };
+  }
+
+  async sendTypingKeepalive(toUserId: string, contextToken?: string): Promise<{ status: 'active' | 'stale' | 'unknown' }> {
+    if (!this.config.token) {
+      throw new Error('未登录');
+    }
+
+    if (!contextToken) {
+      return { status: 'unknown' };
+    }
+
+    try {
+      const config = await this.fetchConfig(toUserId, contextToken);
+      const typingTicket = config.typing_ticket;
+
+      if (!typingTicket) {
+        return { status: 'unknown' };
+      }
+
+      await this.sendTypingStatus(toUserId, typingTicket, 1);
+      await this.sleep(1200);
+      await this.sendTypingStatus(toUserId, typingTicket, 2);
+      return { status: 'active' };
+    } catch (error) {
+      if (this.isContextStaleError(error)) {
+        return { status: 'stale' };
+      }
+      throw error;
+    }
   }
 
   /**
@@ -718,6 +817,115 @@ export class ClawBotService {
   }
 
   // ========== 工具方法 ==========
+
+  private parseApiResponse(responseText: string): WeixinApiCommonResp | null {
+    if (!responseText.trim()) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(responseText) as WeixinApiCommonResp;
+    } catch {
+      throw new Error(`微信接口返回了无法解析的响应: ${responseText.slice(0, 200)}`);
+    }
+  }
+
+  private async fetchConfig(toUserId: string, contextToken?: string): Promise<GetConfigResp> {
+    const body = JSON.stringify({
+      ilink_user_id: toUserId,
+      context_token: contextToken,
+      base_info: buildBaseInfo()
+    });
+
+    const response = await fetch(`${this.config.baseUrl}/ilink/bot/getconfig`, {
+      method: 'POST',
+      headers: buildHeaders(this.config.token, body),
+      body
+    });
+
+    const responseText = await response.text();
+    console.log('[ClawBot] getConfig response:', {
+      toUserId,
+      status: response.status,
+      body: responseText.substring(0, 500)
+    });
+
+    if (!response.ok) {
+      throw new Error(`探测会话失败: ${response.status} ${responseText}`);
+    }
+
+    this.assertApiSuccess(responseText, 'getconfig');
+    return (this.parseApiResponse(responseText) ?? { ret: 0 }) as GetConfigResp;
+  }
+
+  private async sendTypingStatus(toUserId: string, typingTicket: string, status: 1 | 2): Promise<void> {
+    const body = JSON.stringify({
+      ilink_user_id: toUserId,
+      typing_ticket: typingTicket,
+      status,
+      base_info: buildBaseInfo()
+    });
+
+    const response = await fetch(`${this.config.baseUrl}/ilink/bot/sendtyping`, {
+      method: 'POST',
+      headers: buildHeaders(this.config.token, body),
+      body
+    });
+
+    const responseText = await response.text();
+    console.log('[ClawBot] sendTyping response:', {
+      toUserId,
+      status: response.status,
+      typingStatus: status,
+      body: responseText.substring(0, 500)
+    });
+
+    if (!response.ok) {
+      throw new Error(`发送输入态失败: ${response.status} ${responseText}`);
+    }
+
+    this.assertApiSuccess(responseText, 'sendtyping');
+  }
+
+  private extractApiCode(resp: WeixinApiCommonResp | null): number | null {
+    if (!resp) {
+      return null;
+    }
+
+    if (typeof resp.errcode === 'number')
+      return resp.errcode;
+    if (typeof resp.ret === 'number')
+      return resp.ret;
+    if (typeof resp.res === 'number')
+      return resp.res;
+    return null;
+  }
+
+  private assertApiSuccess(responseText: string, label: string): void {
+    const resp = this.parseApiResponse(responseText);
+    const code = this.extractApiCode(resp);
+
+    if (code === null || code === 0) {
+      return;
+    }
+
+    const rawMessage = resp?.errmsg || resp?.msg || `${label} failed`;
+
+    if (code === -14) {
+      this.config.loginStatus = 'expired';
+      this.config.errorMessage = '会话已过期，请重新登录';
+      console.warn(`[ClawBot] ${label}: login token expired`, { code, rawMessage });
+      throw new ClawBotApiError(`微信登录会话已过期: ${rawMessage}`, code, 'session_expired');
+    }
+
+    if (code === -2) {
+      console.warn(`[ClawBot] ${label}: context token stale`, { code, rawMessage });
+      throw new ClawBotApiError(`微信会话上下文已失效: ${rawMessage}`, code, 'context_stale');
+    }
+
+    console.warn(`[ClawBot] ${label}: api error`, { code, rawMessage });
+    throw new ClawBotApiError(`微信接口错误(${code}): ${rawMessage}`, code, 'api');
+  }
 
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));

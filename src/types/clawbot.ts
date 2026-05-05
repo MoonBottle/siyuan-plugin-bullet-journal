@@ -9,6 +9,7 @@ export type MessageSource = 'local' | 'weixin';
 
 /** ClawBot 连接状态 */
 export type ClawBotLoginStatus = 'none' | 'pending' | 'scaned' | 'connected' | 'expired' | 'error';
+export type WeixinContextStatus = 'unknown' | 'active' | 'stale';
 
 /** ClawBot 配置 */
 export interface ClawBotConfig {
@@ -28,7 +29,13 @@ export interface WeixinConversationMap {
   ilinkUserId: string;
   conversationId: string;
   contextToken?: string;
+  contextState?: WeixinContextStatus;
   lastMessageAt: number;
+  lastInboundAt?: number;
+  lastOutboundAt?: number;
+  lastContextErrorAt?: number;
+  lastHealthCheckAt?: number;
+  lastKeepaliveAt?: number;
   userName?: string;
 }
 
@@ -189,6 +196,18 @@ export interface UploadedFileInfo {
 /** 发送消息请求 */
 export interface SendMessageReq {
   msg?: WeixinMessage;
+}
+
+export interface WeixinApiCommonResp {
+  ret?: number;
+  errcode?: number;
+  res?: number;
+  errmsg?: string;
+  msg?: string;
+}
+
+export interface GetConfigResp extends WeixinApiCommonResp {
+  typing_ticket?: string;
 }
 
 /** ClawBot 状态统计 */

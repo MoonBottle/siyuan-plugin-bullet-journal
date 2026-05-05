@@ -90,9 +90,227 @@ export const useAIStore = defineStore('ai', () => {
   
   // 当前登录会话 Key
   let currentQRSessionKey: string | null = null;
+
+  let clawBotHealthCheckTimer: ReturnType<typeof setInterval> | null = null;
+  let clawBotHealthCheckRunning = false;
+  let clawBotGatewayHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  const CLAWBOT_HEALTH_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+  const CLAWBOT_HEALTH_CHECK_ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;
+  const CLAWBOT_GATEWAY_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000;
+  const CLAWBOT_TYPING_KEEPALIVE_INTERVAL_MS = 15 * 60 * 1000;
   
   // 未读消息计数（按用户）
   const unreadWeixinMessages = ref<Record<string, number>>({});
+
+  function upsertWeixinConversationState(
+    ilinkUserId: string,
+    patch: Partial<WeixinConversationMap>,
+  ) {
+    const existing = weixinConversationMap.value[ilinkUserId];
+    if (!existing) {
+      return;
+    }
+
+    weixinConversationMap.value[ilinkUserId] = {
+      ...existing,
+      ...patch,
+    };
+  }
+
+  function markWeixinContextActive(ilinkUserId: string, contextToken?: string, timestamp = Date.now()) {
+    const patch: Partial<WeixinConversationMap> = {
+      contextToken,
+      contextState: contextToken ? 'active' : 'unknown',
+      lastInboundAt: timestamp,
+      lastMessageAt: timestamp,
+    };
+
+    upsertWeixinConversationState(ilinkUserId, patch);
+  }
+
+  function markWeixinNotificationDelivered(ilinkUserId: string, contextState: 'active' | 'unknown', timestamp = Date.now()) {
+    upsertWeixinConversationState(ilinkUserId, {
+      contextState,
+      lastOutboundAt: timestamp,
+      lastMessageAt: timestamp,
+    });
+  }
+
+  function markWeixinContextStale(ilinkUserId: string, clearContextToken = true, timestamp = Date.now()) {
+    const patch: Partial<WeixinConversationMap> = {
+      contextState: 'stale',
+      lastContextErrorAt: timestamp,
+      lastMessageAt: timestamp,
+    };
+
+    if (clearContextToken) {
+      patch.contextToken = undefined;
+    }
+
+    upsertWeixinConversationState(ilinkUserId, patch);
+  }
+
+  function markWeixinContextUnknown(ilinkUserId: string, timestamp = Date.now()) {
+    upsertWeixinConversationState(ilinkUserId, {
+      contextState: 'unknown',
+      lastHealthCheckAt: timestamp,
+    });
+  }
+
+  function markWeixinKeepaliveSent(ilinkUserId: string, timestamp = Date.now()) {
+    upsertWeixinConversationState(ilinkUserId, {
+      lastKeepaliveAt: timestamp,
+      lastHealthCheckAt: timestamp,
+    });
+  }
+
+  function syncClawBotLoginStateFromService(clawBot: ReturnType<typeof useClawBotService>) {
+    const latestConfig = clawBot.getConfig();
+    if (latestConfig.loginStatus === 'expired') {
+      clawBotConfig.value.loginStatus = 'expired';
+      clawBotConfig.value.errorMessage = latestConfig.errorMessage;
+      clawBotStats.value.isConnected = false;
+      stopClawBotHealthCheck();
+    }
+  }
+
+  function isWeixinConversationRecentlyActive(conversation: WeixinConversationMap, now = Date.now()): boolean {
+    const lastActivity = conversation.lastInboundAt ?? conversation.lastMessageAt;
+    return now - lastActivity <= CLAWBOT_HEALTH_CHECK_ACTIVE_WINDOW_MS;
+  }
+
+  function shouldSendTypingKeepalive(conversation: WeixinConversationMap, now = Date.now()): boolean {
+    if (conversation.contextState !== 'active' || !conversation.contextToken) {
+      return false;
+    }
+
+    const lastKeepaliveAt = conversation.lastKeepaliveAt ?? 0;
+    return now - lastKeepaliveAt >= CLAWBOT_TYPING_KEEPALIVE_INTERVAL_MS;
+  }
+
+  function stopClawBotHealthCheck() {
+    if (clawBotHealthCheckTimer) {
+      clearInterval(clawBotHealthCheckTimer);
+      clawBotHealthCheckTimer = null;
+    }
+
+    if (clawBotGatewayHeartbeatTimer) {
+      clearInterval(clawBotGatewayHeartbeatTimer);
+      clawBotGatewayHeartbeatTimer = null;
+    }
+  }
+
+  function startClawBotHealthCheck() {
+    stopClawBotHealthCheck();
+
+    if (!clawBotConfig.value.enabled || clawBotConfig.value.loginStatus !== 'connected') {
+      return;
+    }
+
+    clawBotHealthCheckTimer = setInterval(() => {
+      void runClawBotHealthCheck();
+    }, CLAWBOT_HEALTH_CHECK_INTERVAL_MS);
+
+    clawBotGatewayHeartbeatTimer = setInterval(() => {
+      void runClawBotGatewayHeartbeat();
+    }, CLAWBOT_GATEWAY_HEARTBEAT_INTERVAL_MS);
+
+    void runClawBotGatewayHeartbeat();
+    void runClawBotHealthCheck();
+  }
+
+  async function runClawBotGatewayHeartbeat() {
+    if (!clawBotConfig.value.enabled || clawBotConfig.value.loginStatus !== 'connected') {
+      return;
+    }
+
+    const clawBot = useClawBotService(clawBotConfig.value);
+    if (!clawBot.isConnected()) {
+      return;
+    }
+
+    try {
+      await clawBot.notifyGatewayStart();
+    } catch (error) {
+      syncClawBotLoginStateFromService(clawBot);
+      console.warn('[AIStore] notifyGatewayStart failed:', error);
+    }
+  }
+
+  async function runClawBotHealthCheck() {
+    if (clawBotHealthCheckRunning) {
+      return;
+    }
+
+    if (!clawBotConfig.value.enabled || clawBotConfig.value.loginStatus !== 'connected') {
+      return;
+    }
+
+    const clawBot = useClawBotService(clawBotConfig.value);
+    if (!clawBot.isConnected()) {
+      return;
+    }
+
+    clawBotHealthCheckRunning = true;
+
+    try {
+      const now = Date.now();
+      const entries = Object.values(weixinConversationMap.value)
+        .filter(conversation => !!conversation.contextToken)
+        .filter(conversation => isWeixinConversationRecentlyActive(conversation, now));
+
+      for (const conversation of entries) {
+        try {
+          const result = await clawBot.probeContext(conversation.ilinkUserId, conversation.contextToken);
+          const checkTime = Date.now();
+
+          if (result.status === 'stale') {
+            markWeixinContextStale(conversation.ilinkUserId, false, checkTime);
+            upsertWeixinConversationState(conversation.ilinkUserId, {
+              lastHealthCheckAt: checkTime,
+            });
+          } else if (result.status === 'active') {
+            upsertWeixinConversationState(conversation.ilinkUserId, {
+              contextState: 'active',
+              lastHealthCheckAt: checkTime,
+            });
+
+            if (shouldSendTypingKeepalive(conversation, checkTime)) {
+              const keepaliveResult = await clawBot.sendTypingKeepalive(conversation.ilinkUserId, conversation.contextToken);
+              const keepaliveTime = Date.now();
+
+              if (keepaliveResult.status === 'active') {
+                markWeixinKeepaliveSent(conversation.ilinkUserId, keepaliveTime);
+              } else if (keepaliveResult.status === 'stale') {
+                markWeixinContextStale(conversation.ilinkUserId, false, keepaliveTime);
+              } else {
+                markWeixinContextUnknown(conversation.ilinkUserId, keepaliveTime);
+              }
+            }
+          } else {
+            markWeixinContextUnknown(conversation.ilinkUserId, checkTime);
+          }
+        } catch (error) {
+          const checkTime = Date.now();
+          if (clawBot.isContextStaleError(error)) {
+            markWeixinContextStale(conversation.ilinkUserId, false, checkTime);
+            upsertWeixinConversationState(conversation.ilinkUserId, {
+              lastHealthCheckAt: checkTime,
+            });
+            continue;
+          }
+
+          syncClawBotLoginStateFromService(clawBot);
+          markWeixinContextUnknown(conversation.ilinkUserId, checkTime);
+          if (clawBotConfig.value.loginStatus === 'expired') {
+            break;
+          }
+        }
+      }
+    } finally {
+      clawBotHealthCheckRunning = false;
+    }
+  }
 
   // ==================== Getters ====================
   
@@ -474,11 +692,7 @@ export const useAIStore = defineStore('ai', () => {
     
     // 保存 context_token
     if (weixinConversationMap.value[fromUserId]) {
-      weixinConversationMap.value[fromUserId] = {
-        ...weixinConversationMap.value[fromUserId],
-        contextToken,
-        lastMessageAt: Date.now()
-      };
+      markWeixinContextActive(fromUserId, contextToken, Date.now());
     }
     
     // 提取消息内容
@@ -609,6 +823,8 @@ export const useAIStore = defineStore('ai', () => {
         console.log('[AIStore] 收到微信消息:', msg.from_user_id);
         handleWeixinMessage(msg);
       });
+
+      startClawBotHealthCheck();
       
       console.log('[AIStore] ClawBot 恢复连接成功');
     } else {
@@ -678,6 +894,8 @@ export const useAIStore = defineStore('ai', () => {
           console.log('[AIStore] 收到微信消息:', msg.from_user_id);
           handleWeixinMessage(msg);
         });
+
+        startClawBotHealthCheck();
         
         // 启用并保存所有配置到单独文件
         console.log('[AIStore] 保存微信配置到单独文件');
@@ -712,6 +930,7 @@ export const useAIStore = defineStore('ai', () => {
   async function disconnectClawBot() {
     const clawBot = useClawBotService(clawBotConfig.value);
     
+    stopClawBotHealthCheck();
     clawBot.disconnect();
     resetClawBotService();
     
@@ -760,6 +979,7 @@ export const useAIStore = defineStore('ai', () => {
       weixinConversationMap.value[ilinkUserId] = {
         ilinkUserId,
         conversationId: existingConv.id,
+        contextState: 'unknown',
         lastMessageAt: Date.now(),
         userName
       };
@@ -780,6 +1000,7 @@ export const useAIStore = defineStore('ai', () => {
     weixinConversationMap.value[ilinkUserId] = {
       ilinkUserId,
       conversationId: conversation.id,
+      contextState: 'unknown',
       lastMessageAt: Date.now(),
       userName
     };
@@ -985,7 +1206,12 @@ export const useAIStore = defineStore('ai', () => {
     
     try {
       await clawBot.sendTextMessage(toUserId, content, contextToken);
+      markWeixinNotificationDelivered(toUserId, contextToken ? 'active' : 'unknown');
     } catch (error) {
+      syncClawBotLoginStateFromService(clawBot);
+      if (clawBot.isContextStaleError(error)) {
+        markWeixinContextStale(toUserId, false);
+      }
       console.error('[AIStore] 发送微信消息失败:', error);
     }
   }
@@ -1022,6 +1248,7 @@ export const useAIStore = defineStore('ai', () => {
                 ilinkUserId: c.weixinUserId,
                 conversationId: c.id,
                 contextToken: undefined,
+                contextState: 'unknown',
                 lastMessageAt: c.updatedAt || 0,
                 userName: c.weixinUserName
               };
@@ -1048,12 +1275,35 @@ export const useAIStore = defineStore('ai', () => {
 
       console.log('[AIStore] 开始发送微信通知给', userIds.length, '个用户');
       for (const ilinkUserId of userIds) {
+        const conversationState = weixinConversationMap.value[ilinkUserId];
+        if (conversationState?.contextState === 'stale') {
+          console.log('[AIStore] sendWechatNotification: 微信会话上下文已失效，等待新的入站消息恢复:', ilinkUserId);
+          continue;
+        }
+
         try {
-          const contextToken = weixinConversationMap.value[ilinkUserId]?.contextToken;
+          const contextToken = conversationState?.contextToken;
           console.log('[AIStore] 发送微信通知给:', ilinkUserId, 'hasContextToken:', !!contextToken);
           await clawBot.sendTextMessage(ilinkUserId, text, contextToken);
+          markWeixinNotificationDelivered(ilinkUserId, contextToken ? 'active' : 'unknown');
           console.log('[AIStore] 微信通知发送成功:', ilinkUserId);
         } catch (err) {
+          syncClawBotLoginStateFromService(clawBot);
+          if (clawBot.isContextStaleError(err)) {
+            console.warn('[AIStore] 微信通知上下文失效，清理旧 contextToken 并尝试无上下文重试:', ilinkUserId);
+            markWeixinContextStale(ilinkUserId, true);
+
+            try {
+              await clawBot.sendTextMessage(ilinkUserId, text, undefined);
+              markWeixinNotificationDelivered(ilinkUserId, 'unknown');
+              console.log('[AIStore] 微信通知无上下文重试成功:', ilinkUserId);
+              continue;
+            } catch (retryError) {
+              syncClawBotLoginStateFromService(clawBot);
+              console.error(`[AIStore] 微信通知无上下文重试失败 (${ilinkUserId}):`, retryError);
+              markWeixinContextStale(ilinkUserId, true);
+            }
+          }
           console.error(`[AIStore] 微信通知发送失败 (${ilinkUserId}):`, err);
         }
       }
@@ -1104,6 +1354,7 @@ export const useAIStore = defineStore('ai', () => {
     // ClawBot
     clawBotConfig,
     clawBotStats,
+    weixinConversationMap,
     isClawBotEnabled,
     isClawBotConnected,
     clawBotLoginStatus,
@@ -1115,6 +1366,8 @@ export const useAIStore = defineStore('ai', () => {
     disconnectClawBot,
     handleWeixinMessage,
     getOrCreateWeixinConversation,
+    runClawBotGatewayHeartbeat,
+    runClawBotHealthCheck,
     sendReplyToWeixin,
     sendWechatNotification
   };
