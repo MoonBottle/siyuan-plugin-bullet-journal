@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.13.1] - 2026-05-05
+
+### Features
+
+- **ClawBot Session Keepalive**: Added session keepalive and stale recovery mechanism
+  - Session keepalive: Periodically checks session status to prevent session expiration during long idle periods
+  - Stale recovery: Automatically restores previous conversation context after session expiration
+  - Smart reconnection: Auto-retry on network errors to improve conversation stability
+
+- **Example Document Optimization**:
+  - Added habit tracking example data to help new users quickly understand the feature
+  - Optimized slash command descriptions for better readability
+
+- **Help Menu Enhancement**: Added workbench document link in the help menu for quick access to workbench usage guide
+
+### Fixes
+
+- **Task Assistant Menu Positioning**: Fixed the issue where the task assistant menu was incorrectly positioned in certain cases, added fallback anchor logic to ensure proper menu display
+
+### Tests
+
+- Improved habit-related test cases, unified archive date and version assertions
+
 ## [0.13.0] - 2026-05-04
 
 ### Features
