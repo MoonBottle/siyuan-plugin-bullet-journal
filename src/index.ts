@@ -76,6 +76,7 @@ import {
   setPendingHabitDockTarget,
   type HabitDockNavigationTarget,
 } from "@/utils/habitDockNavigation";
+import { resolveMenuPosition } from "@/utils/menuPosition";
 import {
   setPendingMobileMainShellTabTarget,
 } from "@/utils/mobileMainShellNavigation";
@@ -1455,11 +1456,7 @@ export default class TaskAssistantPlugin extends Plugin {
             },
           ],
         });
-        menu.open({
-          x: event.clientX,
-          y: event.clientY,
-          isLeft: true,
-        });
+        menu.open(resolveMenuPosition(event));
       },
     });
   }
