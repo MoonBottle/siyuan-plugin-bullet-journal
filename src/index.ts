@@ -1408,6 +1408,11 @@ export default class TaskAssistantPlugin extends Plugin {
                   click: () => this.openHelpDoc("habit-checkin.md"),
                 },
                 {
+                  icon: "iconWorkspace",
+                  label: t("helpMenu").workbench,
+                  click: () => this.openHelpDoc("workbench.md"),
+                },
+                {
                   icon: "iconSettings",
                   label: t("helpMenu").configuration,
                   click: () => this.openHelpDoc("configuration.md"),
