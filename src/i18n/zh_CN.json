@@ -678,9 +678,9 @@
     "overrideSuccess": "已覆盖内置技能「{name}」",
     "willOverrideBuiltin": "将覆盖内置技能",
     "setPriority": "设置优先级",
-    "createHabit": "创建习惯",
-    "checkIn": "打卡",
-    "habitDock": "习惯面板"
+    "createHabit": "创建/编辑习惯",
+    "checkIn": "习惯打卡",
+    "habitDock": "打开习惯面板"
   },
   "reminder": {
     "setReminder": "设置提醒",

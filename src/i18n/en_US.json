@@ -640,9 +640,9 @@
     "setReminder": "Set Reminder",
     "setRecurring": "Set Recurring",
     "setPriority": "Set Priority",
-    "createHabit": "Create Habit",
-    "checkIn": "Check In",
-    "habitDock": "Habit Panel"
+    "createHabit": "Create/Edit Habit",
+    "checkIn": "Habit Check-in",
+    "habitDock": "Open Habit Panel"
   },
   "reminder": {
     "setReminder": "Set Reminder",

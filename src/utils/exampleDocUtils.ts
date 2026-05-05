@@ -67,6 +67,10 @@ This is an abandoned item ${dateMarker}${today} ${abandonedTag}
 
 🍅${today} 10:00:00~10:25:00 This is a pomodoro record
 
+Daily running habit 🎯${today}
+
+Drink 8 glasses of water 🎯${today} 8 cups 🔄每天
+
   > 📌 Quick Add with Slash Commands:
 Type /task then Enter → Mark as task
 Type /today then Enter → Add today's item
@@ -75,6 +79,9 @@ Type /done then Enter → Mark as completed
 Type /cal then Enter → View calendar view
 Type /todo then Enter → View todo items
 Type /focus then Enter → Start pomodoro
+Type /habit then Enter → Create or edit habit
+Type /checkin then Enter → Habit check-in
+Type /habits then Enter → Open habit panel
 `;
   }
 
@@ -90,6 +97,10 @@ Type /focus then Enter → Start pomodoro
 
 🍅${today} 10:00:00~10:25:00 这是一个番茄钟记录
 
+每日跑步习惯 🎯${today}
+
+喝水8杯 🎯${today} 8杯 🔄每天
+
   > 📌 斜杠命令快速添加：
 输入 /rw 回车 → 标记为任务
 输入 /jt 回车 → 添加今日事项
@@ -98,6 +109,9 @@ Type /focus then Enter → Start pomodoro
 输入 /rl 回车 → 查看日历视图
 输入 /todo 回车 → 查看待办事项
 输入 /zz 回车 → 开始番茄钟
+输入 /xg 回车 → 创建或编辑习惯
+输入 /dk 回车 → 习惯打卡
+输入 /xgd 回车 → 打开习惯面板
 `;
 }
 
