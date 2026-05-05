@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue';
 import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
+import dayjs from '@/utils/dayjs';
 
 const {
   archiveHabit,
@@ -84,6 +85,7 @@ function createHabit(overrides: Partial<Habit> = {}): Habit {
 
 describe('useHabitWorkspace', () => {
   beforeEach(() => {
+    vi.useRealTimers();
     setActivePinia(createPinia());
     vi.clearAllMocks();
     checkIn.mockResolvedValue(false);
@@ -395,6 +397,8 @@ describe('useHabitWorkspace', () => {
   });
 
   it('archives the selected habit through the habit service', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-05T00:00:00'));
     const projectStore = useProjectStore();
     const settingsStore = useSettingsStore();
     settingsStore.scanMode = 'folder';
@@ -419,7 +423,7 @@ describe('useHabitWorkspace', () => {
 
     expect(archiveHabit).toHaveBeenCalledWith(
       expect.objectContaining({ blockId: 'habit-a' }),
-      '2026-05-04',
+      dayjs().format('YYYY-MM-DD'),
     );
   });
 

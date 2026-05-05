@@ -67,7 +67,7 @@ This is an abandoned item ${dateMarker}${today} ${abandonedTag}
 
 🍅${today} 10:00:00~10:25:00 This is a pomodoro record
 
-Daily running habit 🎯${today}
+Running habit 🎯${today} 🔄daily
 
 Drink 8 glasses of water 🎯${today} 8 cups 🔄每天
 
@@ -97,7 +97,7 @@ Type /habits then Enter → Open habit panel
 
 🍅${today} 10:00:00~10:25:00 这是一个番茄钟记录
 
-每日跑步习惯 🎯${today}
+跑步习惯 🎯${today} 🔄每天
 
 喝水8杯 🎯${today} 8杯 🔄每天
 

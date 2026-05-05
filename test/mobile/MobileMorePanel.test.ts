@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { createApp, nextTick } from 'vue';
 import MobileMorePanel from '@/mobile/panels/MobileMorePanel.vue';
+import PluginInfo from '@/../plugin.json';
 import { useProjectStore } from '@/stores';
 import { usePlugin } from '@/main';
 
@@ -71,7 +72,7 @@ describe('MobileMorePanel', () => {
     const mounted = mountPanel(pinia);
     await nextTick();
 
-    expect(mounted.container.querySelector('[data-testid="more-version"]')?.textContent).toContain('v0.12.8');
+    expect(mounted.container.querySelector('[data-testid="more-version"]')?.textContent).toContain(`v${PluginInfo.version}`);
 
     mounted.unmount();
   });

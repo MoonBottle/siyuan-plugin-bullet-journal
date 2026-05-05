@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, defineComponent, h, nextTick } from 'vue';
 import MobileHabitPanel from '@/mobile/panels/MobileHabitPanel.vue';
+import dayjs from '@/utils/dayjs';
 
 const {
   archiveHabit,
@@ -344,7 +345,13 @@ function resetDayState() {
   habits[1].archivedAt = undefined;
 }
 
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-05-05T00:00:00'));
+});
+
 afterEach(() => {
+  vi.useRealTimers();
   document.body.innerHTML = '';
   resetDayState();
   vi.clearAllMocks();
@@ -470,7 +477,7 @@ describe('MobileHabitPanel', () => {
     button?.click();
     await nextTick();
 
-    expect(archiveHabit).toHaveBeenCalledWith(habits[0], '2026-05-04');
+    expect(archiveHabit).toHaveBeenCalledWith(habits[0], dayjs().format('YYYY-MM-DD'));
     expect(eventBusEmit).toHaveBeenCalledWith('data:refresh');
     expect(broadcastDataRefresh).toHaveBeenCalledTimes(1);
 
