@@ -140,12 +140,12 @@
     <div class="dialog-actions">
       <template v-if="!saved">
         <template v-if="isDurationTooShort">
-          <button class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
+          <button v-if="autoExtendEnabled" class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
           <button class="discard-btn" @click="handleDiscard">{{ t('pomodoroComplete').discardRecord }}</button>
           <button class="save-btn" @click="handleSave">{{ t('pomodoroComplete').confirmRecord }}</button>
         </template>
         <template v-else>
-          <button class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
+          <button v-if="autoExtendEnabled" class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
           <button class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
         </template>
       </template>
@@ -241,6 +241,11 @@ const formattedEndTime = computed(() => {
 });
 
 const autoExtendRemaining = computed(() => pomodoroStore.autoExtendRemainingSeconds);
+
+const autoExtendEnabled = computed(() => {
+  const settings = plugin?.getSettings?.();
+  return settings?.pomodoro?.autoExtendEnabled ?? false;
+});
 
 async function handleSave() {
   if (!plugin || !props.pending) return;
