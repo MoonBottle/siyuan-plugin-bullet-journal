@@ -1174,7 +1174,7 @@ export default class TaskAssistantPlugin extends Plugin {
         position: "RightBottom",
         size: { width: 320, height: 400 },
         icon: "iconList",
-        title: t("todo").title,
+        title: this.isMobile ? t("title") : t("todo").title,
       },
       data: {},
       type: DOCK_TYPES.TODO,
@@ -1193,28 +1193,30 @@ export default class TaskAssistantPlugin extends Plugin {
       },
     });
 
-    // AI 对话 Dock
-    this.addDock({
-      config: {
-        position: "RightBottom",
-        size: { width: 360, height: 500 },
-        icon: "iconSparkles",
-        title: t("aiChat").title,
-      },
-      data: {},
-      type: DOCK_TYPES.AI_CHAT,
-      init() {
-        this.element.style.height = "100%";
-        // 不设置 overflow: hidden，让 Vue 组件内部控制滚动
-        const pinia = getSharedPinia() ?? createPinia();
-        const app = createApp(AiChatDock);
-        app.use(pinia);
-        mountVueAppInHost(this.element, app);
-      },
-      destroy() {
-        unmountVueAppFromHost(this.element);
-      },
-    });
+    // AI 对话 Dock（桌面端专用；移动端并入 MobileMainShell）
+    if (!this.isMobile) {
+      this.addDock({
+        config: {
+          position: "RightBottom",
+          size: { width: 360, height: 500 },
+          icon: "iconSparkles",
+          title: t("aiChat").title,
+        },
+        data: {},
+        type: DOCK_TYPES.AI_CHAT,
+        init() {
+          this.element.style.height = "100%";
+          // 不设置 overflow: hidden，让 Vue 组件内部控制滚动
+          const pinia = getSharedPinia() ?? createPinia();
+          const app = createApp(AiChatDock);
+          app.use(pinia);
+          mountVueAppInHost(this.element, app);
+        },
+        destroy() {
+          unmountVueAppFromHost(this.element);
+        },
+      });
+    }
 
     // 番茄钟统计 Dock（桌面端专用）
     if (!this.isMobile) {
@@ -3025,7 +3027,13 @@ export default class TaskAssistantPlugin extends Plugin {
     try {
       const rightDock = (window as any).siyuan?.layout?.rightDock;
       if (rightDock) {
-        rightDock.toggleModel(`${this.name}${DOCK_TYPES.AI_CHAT}`, true);
+        if (this.isMobile) {
+          setPendingMobileMainShellTabTarget({ tab: "ai" });
+          rightDock.toggleModel(`${this.name}${DOCK_TYPES.TODO}`, true);
+          eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: "ai" });
+        } else {
+          rightDock.toggleModel(`${this.name}${DOCK_TYPES.AI_CHAT}`, true);
+        }
       }
     } catch (error) {
       console.error("[Task Assistant] Failed to open AI chat dock:", error);
