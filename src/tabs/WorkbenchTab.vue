@@ -59,16 +59,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue';
 import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue';
 import { t } from '@/i18n';
-import { usePlugin } from '@/main';
-import { useSettingsStore, useWorkbenchStore } from '@/stores';
+import { getCurrentPlugin, usePlugin } from '@/main';
+import { useProjectStore, useSettingsStore, useWorkbenchStore } from '@/stores';
 import type { WorkbenchViewType, WorkbenchWidgetType } from '@/types/workbench';
+import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
+import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { getWidgetRegistry } from '@/workbench/widgetRegistry';
 
 const plugin = usePlugin();
+const projectStore = useProjectStore();
 const workbenchStore = useWorkbenchStore();
 const settingsStore = useSettingsStore();
 const currentActiveEntryId = computed(() => workbenchStore.activeEntryId);
@@ -76,6 +79,9 @@ const currentActiveEntry = computed(() => workbenchStore.activeEntry);
 const isDashboardActive = computed(() => currentActiveEntry.value?.type === 'dashboard');
 const isWidgetMenuOpen = ref(false);
 const widgetDefinitions = computed(() => Object.values(getWidgetRegistry()));
+let unsubscribeRefresh: (() => void) | null = null;
+let refreshChannel: BroadcastChannel | null = null;
+let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 async function handleSelect(id: string) {
   await workbenchStore.setActiveEntry(id);
@@ -114,11 +120,73 @@ async function handleAddWidget(type: WorkbenchWidgetType) {
   isWidgetMenuOpen.value = false;
 }
 
+async function handleDataRefresh(payload?: Record<string, unknown>) {
+  const storeKeys = [
+    'directories',
+    'groups',
+    'defaultGroup',
+    'lunchBreakStart',
+    'lunchBreakEnd',
+    'showPomodoroBlocks',
+    'showPomodoroTotal',
+    'todoDock',
+    'scanMode',
+  ];
+  const hasStorePayload = payload && typeof payload === 'object' && storeKeys.some(key => key in payload);
+
+  if (hasStorePayload) {
+    const patch: Record<string, unknown> = {};
+    storeKeys.forEach((key) => {
+      if (payload[key] !== undefined) {
+        patch[key] = payload[key];
+      }
+    });
+    if (Object.keys(patch).length > 0) {
+      settingsStore.$patch(patch);
+    }
+  } else {
+    settingsStore.loadFromPlugin();
+  }
+
+  await nextTick();
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+}
+
 onMounted(async () => {
   if (!settingsStore.loaded) {
     settingsStore.loadFromPlugin();
   }
   await workbenchStore.load(plugin);
+
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+
+  try {
+    refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    refreshChannelGuard = createRefreshChannelGuard({
+      channel: refreshChannel,
+      plugin,
+      getCurrentPlugin,
+      onRefresh: payload => handleDataRefresh(payload),
+      viewName: 'WorkbenchTab',
+    });
+  } catch {
+    // ignore
+  }
+});
+
+onUnmounted(() => {
+  if (unsubscribeRefresh) {
+    unsubscribeRefresh();
+    unsubscribeRefresh = null;
+  }
+  if (refreshChannelGuard) {
+    refreshChannelGuard.dispose();
+    refreshChannelGuard = null;
+  }
+  if (refreshChannel) {
+    refreshChannel.close();
+    refreshChannel = null;
+  }
 });
 </script>
 

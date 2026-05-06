@@ -11,6 +11,13 @@ import { TAB_TYPES } from '@/constants';
 const mockPlugin = { name: 'plugin' };
 const mockApp = { name: 'app' };
 const mockLoad = vi.fn(() => Promise.resolve());
+const mockProjectRefresh = vi.fn(() => Promise.resolve());
+const mockSettingsLoadFromPlugin = vi.fn();
+const mockEventBusOn = vi.fn(() => () => {});
+const mockRefreshChannelDispose = vi.fn();
+const mockCreateRefreshChannelGuard = vi.fn(() => ({
+  dispose: mockRefreshChannelDispose,
+}));
 const mockCreateDashboardEntry = vi.fn(() => Promise.resolve({
   id: 'entry-created-dashboard',
   type: 'dashboard',
@@ -48,6 +55,16 @@ const mockEntries = ref([
   },
 ]);
 const mockActiveEntryId = ref<string | null>('entry-dashboard');
+const mockSettingsStore = {
+  loaded: true,
+  scanMode: 'all',
+  directories: [],
+  loadFromPlugin: mockSettingsLoadFromPlugin,
+  $patch: vi.fn((patch: Record<string, unknown>) => Object.assign(mockSettingsStore, patch)),
+};
+const mockProjectStore = {
+  refresh: mockProjectRefresh,
+};
 
 vi.mock('@/main', async () => {
   const actual = await vi.importActual<typeof import('@/main')>('@/main');
@@ -55,6 +72,7 @@ vi.mock('@/main', async () => {
     ...actual,
     usePlugin: vi.fn(() => mockPlugin),
     useApp: vi.fn(() => mockApp),
+    getCurrentPlugin: vi.fn(() => mockPlugin),
   };
 });
 
@@ -65,10 +83,29 @@ vi.mock('@/components/workbench/dashboard/DashboardCanvas.vue', () => ({
   },
 }));
 
+vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
+  default: {
+    name: 'DesktopTodoDockStub',
+    template: '<div data-testid="desktop-todo-dock-stub"></div>',
+  },
+}));
+
+vi.mock('@/utils/eventBus', () => ({
+  eventBus: { on: mockEventBusOn, emit: vi.fn() },
+  Events: { DATA_REFRESH: 'data:refresh' },
+  DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
+}));
+
+vi.mock('@/utils/refreshChannelGuard', () => ({
+  createRefreshChannelGuard: mockCreateRefreshChannelGuard,
+}));
+
 vi.mock('@/stores', async () => {
   const actual = await vi.importActual<typeof import('@/stores')>('@/stores');
   return {
     ...actual,
+    useProjectStore: () => mockProjectStore,
+    useSettingsStore: () => mockSettingsStore,
     useWorkbenchStore: () => {
       const store = {
         get entries() {
@@ -122,6 +159,9 @@ describe('WorkbenchTab shell', () => {
     setActivePinia(createPinia());
     initI18n('en_US');
     vi.clearAllMocks();
+    mockSettingsStore.loaded = true;
+    mockSettingsStore.scanMode = 'all';
+    mockSettingsStore.directories = [];
     mockEntries.value = [
       {
         id: 'entry-dashboard',
@@ -157,6 +197,11 @@ describe('WorkbenchTab shell', () => {
       order: 2,
       viewType: 'todo',
     });
+    (globalThis as any).BroadcastChannel = vi.fn(function () {
+      return {
+      close: vi.fn(),
+      };
+    });
   });
 
   async function mountWorkbenchTab() {
@@ -189,6 +234,70 @@ describe('WorkbenchTab shell', () => {
 
     mounted.unmount();
   }, 10000);
+
+  it('subscribes to same-context refresh events and reloads settings before refreshing projects', async () => {
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    expect(mockEventBusOn).toHaveBeenCalledWith('data:refresh', expect.any(Function));
+
+    const refreshHandler = mockEventBusOn.mock.calls.find(call => call[0] === 'data:refresh')?.[1];
+    await refreshHandler?.();
+
+    expect(mockSettingsLoadFromPlugin).toHaveBeenCalled();
+    expect(mockProjectRefresh).toHaveBeenCalledWith(mockPlugin, 'all', []);
+
+    mounted.unmount();
+  });
+
+  it('sets up BroadcastChannel refresh handling and refreshes projects from payload', async () => {
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    expect(globalThis.BroadcastChannel).toHaveBeenCalledWith('task-assistant-refresh');
+    expect(mockCreateRefreshChannelGuard).toHaveBeenCalledWith(expect.objectContaining({
+      channel: expect.any(Object),
+      plugin: mockPlugin,
+      getCurrentPlugin: expect.any(Function),
+      onRefresh: expect.any(Function),
+      viewName: 'WorkbenchTab',
+    }));
+
+    mockSettingsLoadFromPlugin.mockClear();
+    mockProjectRefresh.mockClear();
+
+    const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh;
+    await onRefresh?.({
+      scanMode: 'dirs',
+      directories: ['updated-dir'],
+    });
+    await nextTick();
+
+    expect(mockSettingsLoadFromPlugin).not.toHaveBeenCalled();
+    expect(mockProjectRefresh).toHaveBeenCalledWith(mockPlugin, 'dirs', ['updated-dir']);
+
+    mounted.unmount();
+  });
+
+  it('cleans up refresh subscriptions and BroadcastChannel on unmount', async () => {
+    const unsubscribeRefresh = vi.fn();
+    const closeChannel = vi.fn();
+    mockEventBusOn.mockReturnValueOnce(unsubscribeRefresh);
+    (globalThis as any).BroadcastChannel = vi.fn(function () {
+      return {
+      close: closeChannel,
+      };
+    });
+
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    mounted.unmount();
+
+    expect(unsubscribeRefresh).toHaveBeenCalled();
+    expect(mockRefreshChannelDispose).toHaveBeenCalled();
+    expect(closeChannel).toHaveBeenCalled();
+  });
 
   it('sidebar actions create dashboard and todo view entries', async () => {
     const mounted = await mountWorkbenchTab();
