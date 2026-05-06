@@ -16,6 +16,8 @@ const {
     loadConversationsList: vi.fn(),
     createConversation: vi.fn(),
     saveConversation: vi.fn(),
+    setCurrentConversation: vi.fn(),
+    deleteConversation: vi.fn(),
   }
 
   const clawBotService = {
@@ -397,5 +399,46 @@ describe('aiStore clawbot context management', () => {
 
     expect(conversations).toHaveLength(1)
     expect(conversations[0].id).toBe('conv-normal')
+  })
+
+  it('uses the first user message as the title for a new untitled conversation', async () => {
+    const store = useAIStore()
+    await store.initializeStorage({})
+
+    store.loadSettings({
+      providers: [
+        {
+          id: 'provider-1',
+          name: 'Test Provider',
+          provider: 'openai',
+          apiKey: 'test-key',
+          baseUrl: 'https://api.example.com',
+          defaultModel: 'test-model',
+          models: ['test-model'],
+          enabled: true,
+        },
+      ],
+      activeProviderId: 'provider-1',
+      showToolCalls: true,
+    })
+
+    mockStorageService.createConversation.mockResolvedValueOnce({
+      id: 'conv-1',
+      title: '新对话',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+      skillExecutions: [],
+    })
+
+    await store.sendMessage('今天完成周报并同步项目进度\n补充第二行')
+
+    expect(mockStorageService.saveConversation).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: 'conv-1',
+        title: '今天完成周报并同步项目进度',
+      }),
+    )
+    expect(store.currentConversation?.title).toBe('今天完成周报并同步项目进度')
   })
 })

@@ -20,6 +20,7 @@ import { useClawBotService, resetClawBotService } from '@/services/clawBotServic
 import type { ClawBotConfig, WeixinMessage, WeixinConversationMap, ClawBotStats } from '@/types/clawbot';
 import { showMessage } from 'siyuan';
 import { getCurrentPlugin } from '@/main';
+import { t } from '@/i18n';
 import { useProjectStore } from './projectStore';
 import { useSettingsStore } from './settingsStore';
 
@@ -551,6 +552,24 @@ export const useAIStore = defineStore('ai', () => {
     await storageService.saveConversation(currentConversation.value);
   }
 
+  function normalizeConversationTitleFromMessage(content: string): string {
+    return content
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .find(Boolean)
+      ?.replace(/\s+/g, ' ')
+      || '';
+  }
+
+  function shouldAutoTitleConversation(conversation: ConversationData): boolean {
+    const defaultTitle = t('aiChat').defaultConversationTitle;
+    return conversation.messages.length === 0
+      && (!conversation.title
+        || conversation.title === defaultTitle
+        || conversation.title === '新对话'
+        || conversation.title === 'New Conversation');
+  }
+
   // ==================== ReAct Agent Core ====================
   
   /**
@@ -606,6 +625,14 @@ export const useAIStore = defineStore('ai', () => {
     }
 
     const conversation = currentConversation.value!;
+    if (shouldAutoTitleConversation(conversation)) {
+      const derivedTitle = normalizeConversationTitleFromMessage(content);
+      if (derivedTitle) {
+        conversation.title = derivedTitle;
+        conversation.updatedAt = Date.now();
+        currentConversation.value = { ...conversation };
+      }
+    }
 
     // 从 SkillService 获取所有启用技能（包括内置和用户自定义）
     const skillService = SkillService.getInstance();
