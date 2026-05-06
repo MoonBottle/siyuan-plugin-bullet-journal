@@ -618,7 +618,9 @@
     "durationTooShort": "专注时长过短",
     "durationTooShortMessage": "当前专注时长 {actual} 分钟，未达到最小专注时间 {min} 分钟",
     "discardRecord": "不记录",
-    "confirmRecord": "仍要记录"
+    "confirmRecord": "仍要记录",
+    "extendFocus": "专注延长",
+    "autoExtendCountdown": "自动延长倒计时"
   },
   "pomodoroRecord": {
     "title": "专注记录",

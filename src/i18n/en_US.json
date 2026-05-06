@@ -595,7 +595,9 @@
     "durationTooShort": "Focus Duration Too Short",
     "durationTooShortMessage": "Current focus duration {actual} min, minimum required {min} min",
     "discardRecord": "Discard",
-    "confirmRecord": "Save Anyway"
+    "confirmRecord": "Save Anyway",
+    "extendFocus": "Extend Focus",
+    "autoExtendCountdown": "Auto-extend countdown"
   },
   "pomodoroRecord": {
     "title": "Focus Records",

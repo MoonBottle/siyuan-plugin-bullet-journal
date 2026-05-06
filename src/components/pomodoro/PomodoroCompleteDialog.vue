@@ -108,6 +108,7 @@
               class="desc-input desc-textarea"
               :placeholder="t('pomodoroComplete').descriptionPlaceholder"
               rows="4"
+              @focus="handleInputFocus"
             />
           </div>
         </div>
@@ -129,13 +130,24 @@
         </div>
       </template>
     </div>
+    <div
+      v-if="autoExtendRemaining > 0 && !saved"
+      class="auto-extend-countdown"
+    >
+      <span class="countdown-label">{{ t('pomodoroComplete').autoExtendCountdown }}</span>
+      <span class="countdown-value">{{ autoExtendRemaining }}s</span>
+    </div>
     <div class="dialog-actions">
       <template v-if="!saved">
         <template v-if="isDurationTooShort">
+          <button class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
           <button class="discard-btn" @click="handleDiscard">{{ t('pomodoroComplete').discardRecord }}</button>
           <button class="save-btn" @click="handleSave">{{ t('pomodoroComplete').confirmRecord }}</button>
         </template>
-        <button v-else class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
+        <template v-else>
+          <button class="extend-btn" @click="handleExtend">{{ t('pomodoroComplete').extendFocus }}</button>
+          <button class="save-btn" @click="handleSave">{{ t('pomodoroComplete').save }}</button>
+        </template>
       </template>
       <template v-else>
         <button class="skip-btn" @click="handleClose">{{ t('settings').pomodoro.skipBreak }}</button>
@@ -228,6 +240,8 @@ const formattedEndTime = computed(() => {
   return dayjs(props.pending.endTime).format('HH:mm');
 });
 
+const autoExtendRemaining = computed(() => pomodoroStore.autoExtendRemainingSeconds);
+
 async function handleSave() {
   if (!plugin || !props.pending) return;
   const success = await pomodoroStore.savePomodoroRecordFromPending(
@@ -238,6 +252,14 @@ async function handleSave() {
   if (success) {
     saved.value = true;
   }
+}
+
+function handleInputFocus() {
+  pomodoroStore.cancelAutoExtend();
+}
+
+function handleExtend() {
+  pomodoroStore.manualExtendPomodoro(plugin);
 }
 
 function selectBreakDuration(minutes: number) {
@@ -495,8 +517,34 @@ onBeforeUnmount(async () => {
   gap: 12px;
 }
 
+.auto-extend-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.25);
+  border-radius: 6px;
+}
+
+.countdown-label {
+  font-size: 13px;
+  color: #FF9800;
+  font-weight: 500;
+}
+
+.countdown-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #FF9800;
+  font-variant-numeric: tabular-nums;
+}
+
 .save-btn,
-.close-btn {
+.close-btn,
+.extend-btn {
   padding: 10px 24px;
   border: none;
   border-radius: var(--b3-border-radius);
@@ -508,8 +556,14 @@ onBeforeUnmount(async () => {
 }
 
 .save-btn:hover,
-.close-btn:hover {
+.close-btn:hover,
+.extend-btn:hover {
   opacity: 0.9;
+}
+
+.extend-btn {
+  background: var(--b3-theme-surface-lighter);
+  color: var(--b3-theme-on-background);
 }
 
 .close-btn {

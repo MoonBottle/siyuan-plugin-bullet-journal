@@ -40,6 +40,9 @@ interface PomodoroState {
   // 自动延迟状态（不持久化）
   autoExtendCount: number;
   autoExtendTimeoutId: ReturnType<typeof setTimeout> | null;
+  autoExtendRemainingSeconds: number;
+  autoExtendTotalSeconds: number;
+  autoExtendCountdownInterval: ReturnType<typeof setInterval> | null;
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
@@ -55,6 +58,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
     isBreakOverlayVisible: false,
     autoExtendCount: 0,
     autoExtendTimeoutId: null,
+    autoExtendRemainingSeconds: 0,
+    autoExtendTotalSeconds: 0,
+    autoExtendCountdownInterval: null,
   }),
 
   getters: {
@@ -611,10 +617,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
      * 启动自动延迟倒计时
      */
     scheduleAutoExtend(plugin: any) {
-      // 只清除定时器，不清零 autoExtendCount（保留跨周期的延迟计数）
       if (this.autoExtendTimeoutId) {
         clearTimeout(this.autoExtendTimeoutId);
         this.autoExtendTimeoutId = null;
+      }
+      if (this.autoExtendCountdownInterval) {
+        clearInterval(this.autoExtendCountdownInterval);
+        this.autoExtendCountdownInterval = null;
       }
 
       const settings = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
@@ -622,8 +631,27 @@ export const usePomodoroStore = defineStore('pomodoro', {
       if (this.autoExtendCount >= (settings.autoExtendMaxCount ?? 3)) return;
 
       const waitSeconds = settings.autoExtendWaitSeconds ?? 30;
+      this.autoExtendTotalSeconds = waitSeconds;
+      this.autoExtendRemainingSeconds = waitSeconds;
+
+      this.autoExtendCountdownInterval = setInterval(() => {
+        if (this.autoExtendRemainingSeconds > 0) {
+          this.autoExtendRemainingSeconds--;
+        } else {
+          if (this.autoExtendCountdownInterval) {
+            clearInterval(this.autoExtendCountdownInterval);
+            this.autoExtendCountdownInterval = null;
+          }
+        }
+      }, 1000);
+
       this.autoExtendTimeoutId = setTimeout(() => {
         this.autoExtendTimeoutId = null;
+        if (this.autoExtendCountdownInterval) {
+          clearInterval(this.autoExtendCountdownInterval);
+          this.autoExtendCountdownInterval = null;
+        }
+        this.autoExtendRemainingSeconds = 0;
         this.autoExtendPomodoro(plugin);
       }, waitSeconds * 1000);
     },
@@ -704,7 +732,20 @@ export const usePomodoroStore = defineStore('pomodoro', {
         clearTimeout(this.autoExtendTimeoutId);
         this.autoExtendTimeoutId = null;
       }
+      if (this.autoExtendCountdownInterval) {
+        clearInterval(this.autoExtendCountdownInterval);
+        this.autoExtendCountdownInterval = null;
+      }
+      this.autoExtendRemainingSeconds = 0;
       this.autoExtendCount = 0;
+    },
+
+    /**
+     * 手动触发专注延长（供弹窗"专注延长"按钮调用）
+     */
+    manualExtendPomodoro(plugin: any) {
+      this.cancelAutoExtend();
+      this.autoExtendPomodoro(plugin);
     },
 
     /**
