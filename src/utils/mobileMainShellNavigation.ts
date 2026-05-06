@@ -1,4 +1,4 @@
-export type MobileMainShellTab = 'todo' | 'pomodoro' | 'habit' | 'more';
+export type MobileMainShellTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more';
 
 export interface MobileMainShellNavigationTarget {
   tab: MobileMainShellTab;

@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-type MobileMainTab = 'todo' | 'pomodoro' | 'habit' | 'more';
+type MobileMainTab = 'todo' | 'ai' | 'pomodoro' | 'habit' | 'more';
 
 defineProps<{
   activeTab: MobileMainTab
@@ -27,8 +27,9 @@ const emit = defineEmits<{
 
 const tabs: Array<{ value: MobileMainTab, label: string }> = [
   { value: 'todo', label: '待办' },
+  { value: 'ai', label: '对话' },
   { value: 'pomodoro', label: '番茄钟' },
-  { value: 'habit', label: '习惯打卡' },
+  { value: 'habit', label: '习惯' },
   { value: 'more', label: '设置' },
 ];
 </script>
@@ -41,7 +42,7 @@ const tabs: Array<{ value: MobileMainTab, label: string }> = [
   left: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-top: 1px solid var(--b3-border-color, #ddd);
   background: var(--b3-theme-surface, #fff);
   padding-bottom: env(safe-area-inset-bottom, 0px);

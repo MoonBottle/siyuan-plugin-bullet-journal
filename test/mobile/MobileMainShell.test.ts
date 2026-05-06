@@ -62,6 +62,15 @@ vi.mock('@/mobile/panels/MobileHabitPanel.vue', () => ({
   }),
 }));
 
+vi.mock('@/mobile/panels/MobileAiPanel.vue', () => ({
+  default: defineComponent({
+    name: 'MobileAiPanelStub',
+    setup() {
+      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai');
+    },
+  }),
+}));
+
 vi.mock('@/mobile/panels/MobileMorePanel.vue', () => ({
   default: defineComponent({
     name: 'MobileMorePanelStub',
@@ -124,6 +133,21 @@ describe('MobileMainShell', () => {
     expect(pomodoroPanel?.getAttribute('data-block-id')).toBe('item-1');
     expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
     expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
+
+    mounted.unmount();
+  });
+
+  it('renders ai as a first-level tab without showing the todo fab', async () => {
+    const mounted = mountShell();
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.textContent).toContain('习惯');
+
+    (mounted.container.querySelector('[data-testid="mobile-tab-ai"]') as HTMLButtonElement | null)?.click();
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-create-fab"]')).toBeNull();
 
     mounted.unmount();
   });

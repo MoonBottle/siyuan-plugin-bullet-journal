@@ -7,8 +7,9 @@
         ref="todoPanelRef"
         @open-pomodoro="handleOpenPomodoro"
       />
+      <MobileAiPanel v-if="activeTab === 'ai'" />
       <MobilePomodoroPanel
-        v-if="activeTab === 'pomodoro'"
+        v-else-if="activeTab === 'pomodoro'"
         :initial-context="pomodoroContext"
       />
       <MobileHabitPanel v-else-if="activeTab === 'habit'" />
@@ -32,6 +33,7 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import MobileBottomTabBar from '@/mobile/components/navigation/MobileBottomTabBar.vue';
 import MobileCreateFab from '@/mobile/components/navigation/MobileCreateFab.vue';
+import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue';
 import MobileHabitPanel from '@/mobile/panels/MobileHabitPanel.vue';
 import MobileMorePanel from '@/mobile/panels/MobileMorePanel.vue';
 import MobilePomodoroPanel from '@/mobile/panels/MobilePomodoroPanel.vue';

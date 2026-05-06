@@ -36,6 +36,15 @@ vi.mock('@/mobile/panels/MobileHabitPanel.vue', () => ({
   }),
 }));
 
+vi.mock('@/mobile/panels/MobileAiPanel.vue', () => ({
+  default: defineComponent({
+    name: 'MobileAiPanelStub',
+    setup() {
+      return () => h('div', { 'data-testid': 'ai-panel' }, 'ai');
+    },
+  }),
+}));
+
 vi.mock('@/mobile/panels/MobileMorePanel.vue', () => ({
   default: defineComponent({
     name: 'MobileMorePanelStub',
@@ -92,6 +101,20 @@ describe('MobileMainShell navigation handling', () => {
     expect(mounted.container.querySelector('[data-testid="habit-panel"]')).toBeNull();
     expect(mounted.container.querySelector('[data-testid="todo-panel"]')?.getAttribute('style')).toContain('display: none');
     expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro"]')?.className).toContain('mobile-bottom-tab-bar__button--active');
+
+    mounted.unmount();
+  });
+
+  it('supports navigating to the ai tab through live shell navigation events', async () => {
+    const mounted = mountShell();
+    await nextTick();
+
+    eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab: 'ai' });
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="ai-panel"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-ai"]')?.className)
+      .toContain('mobile-bottom-tab-bar__button--active');
 
     mounted.unmount();
   });

@@ -215,6 +215,7 @@ describe('AiChatDock mobile clawbot gating', () => {
     const mounted = mountDock();
     await nextTick();
 
+    expect(mounted.container.querySelector('[data-testid="conversation-select-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('.weixin-btn')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="weixin-icon-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="weixin-login-dialog-stub"]')).toBeNull();
