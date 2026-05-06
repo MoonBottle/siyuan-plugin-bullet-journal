@@ -16,26 +16,29 @@
           class="mobile-ai-panel__icon-button"
           data-testid="mobile-ai-open-history"
           type="button"
+          :aria-label="t('aiChat').conversations"
           @click="handleOpenHistory"
         >
-          {{ t('aiChat').conversations }}
+          <svg class="mobile-ai-panel__icon-svg"><use xlink:href="#iconHistory"></use></svg>
         </button>
         <div class="mobile-ai-panel__title">{{ currentTitle }}</div>
         <button
           class="mobile-ai-panel__icon-button"
           data-testid="mobile-ai-new-conversation"
           type="button"
+          :aria-label="t('aiChat').newConversation"
           @click="handleCreateConversation"
         >
-          新建
+          <svg class="mobile-ai-panel__icon-svg"><use xlink:href="#iconAdd"></use></svg>
         </button>
         <button
           class="mobile-ai-panel__icon-button"
           data-testid="mobile-ai-clear-conversation"
           type="button"
+          :aria-label="t('aiChat').clearConversation"
           @click="handleClearConversation"
         >
-          {{ t('aiChat').clearConversation }}
+          <svg class="mobile-ai-panel__icon-svg mobile-ai-panel__icon-svg--danger"><use xlink:href="#iconTrashcan"></use></svg>
         </button>
       </header>
 
@@ -205,10 +208,25 @@ onMounted(async () => {
   }
 
   &__icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     border: 0;
+    border-radius: 8px;
     background: transparent;
     color: var(--b3-theme-primary);
-    font-size: 14px;
+  }
+
+  &__icon-svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--b3-theme-primary);
+
+    &--danger {
+      fill: var(--b3-theme-error, #ef4444);
+    }
   }
 
   &__title {
