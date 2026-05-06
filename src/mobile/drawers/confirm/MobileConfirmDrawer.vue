@@ -4,7 +4,7 @@
       <div v-if="modelValue" class="confirm-overlay" @click="handleCancel">
         <Transition name="zoom">
           <div v-if="modelValue" class="confirm-dialog" @click.stop>
-            <div class="confirm-icon" v-if="icon">
+            <div class="confirm-icon" :class="{ danger: type === 'danger' }" v-if="icon">
               <svg class="icon-svg">
                 <use :xlink:href="`#${icon}`"></use>
               </svg>
@@ -92,19 +92,19 @@ const handleCancel = () => {
 }
 
 .confirm-icon {
-  width: 56px;
-  height: 56px;
   margin: 0 auto 16px;
-  border-radius: 50%;
-  background: var(--b3-theme-error, #ef4444);
   display: flex;
   align-items: center;
   justify-content: center;
 
   .icon-svg {
-    width: 28px;
-    height: 28px;
-    fill: white;
+    width: 32px;
+    height: 32px;
+    fill: var(--b3-theme-primary);
+  }
+
+  &.danger .icon-svg {
+    fill: var(--b3-theme-error, #ef4444);
   }
 }
 

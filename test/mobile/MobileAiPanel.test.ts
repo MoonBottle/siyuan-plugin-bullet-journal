@@ -263,8 +263,6 @@ describe('MobileAiPanel', () => {
     const mounted = mountPanel();
     await flushPanelUpdates();
 
-    (mounted.container.querySelector('[data-testid="mobile-ai-open-actions"]') as HTMLButtonElement | null)?.click();
-    await flushPanelUpdates();
     (mounted.container.querySelector('[data-testid="mobile-ai-clear-conversation"]') as HTMLButtonElement | null)?.click();
     await flushPanelUpdates();
     expect(getConfirmDialog()).not.toBeNull();
@@ -280,8 +278,6 @@ describe('MobileAiPanel', () => {
     const mounted = mountPanel();
     await flushPanelUpdates();
 
-    (mounted.container.querySelector('[data-testid="mobile-ai-open-actions"]') as HTMLButtonElement | null)?.click();
-    await flushPanelUpdates();
     (mounted.container.querySelector('[data-testid="mobile-ai-clear-conversation"]') as HTMLButtonElement | null)?.click();
     await flushPanelUpdates();
     expect(getConfirmDialog()).not.toBeNull();

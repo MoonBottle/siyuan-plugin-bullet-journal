@@ -31,24 +31,13 @@
         </button>
         <button
           class="mobile-ai-panel__icon-button"
-          data-testid="mobile-ai-open-actions"
-          type="button"
-          @click="showActions = !showActions"
-        >
-          更多
-        </button>
-      </header>
-
-      <div v-if="showActions" class="mobile-ai-panel__actions">
-        <button
-          class="mobile-ai-panel__action-button"
           data-testid="mobile-ai-clear-conversation"
           type="button"
           @click="handleClearConversation"
         >
           {{ t('aiChat').clearConversation }}
         </button>
-      </div>
+      </header>
 
       <ChatPanel
         ref="chatPanelRef"
@@ -101,7 +90,6 @@ const settingsStore = useSettingsStore();
 const viewMode = ref<'chat' | 'history'>('chat');
 const conversationsList = ref<ConversationIndexItem[]>([]);
 const isLoadingHistory = ref(false);
-const showActions = ref(false);
 const showDeleteConfirm = ref(false);
 const showClearConfirm = ref(false);
 const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null);
@@ -147,7 +135,6 @@ async function handleOpenHistory() {
 
 async function handleSelectConversation(conversationId: string) {
   await aiStore.switchConversation(conversationId);
-  showActions.value = false;
   viewMode.value = 'chat';
   await nextTick();
   chatPanelRef.value?.focusInput?.();
@@ -156,7 +143,6 @@ async function handleSelectConversation(conversationId: string) {
 async function handleCreateConversation() {
   await aiStore.createConversation(t('aiChat').defaultConversationTitle);
   await refreshConversationsList();
-  showActions.value = false;
   viewMode.value = 'chat';
   await nextTick();
   chatPanelRef.value?.focusInput?.();
@@ -181,16 +167,13 @@ async function handleConfirmDelete() {
     viewMode.value = 'chat';
     await aiStore.createConversation(t('aiChat').defaultConversationTitle);
     await refreshConversationsList();
-    showActions.value = false;
     return;
   }
 
-  showActions.value = false;
   viewMode.value = 'history';
 }
 
 async function handleClearConversation() {
-  showActions.value = false;
   showClearConfirm.value = true;
 }
 
@@ -236,21 +219,6 @@ onMounted(async () => {
     text-align: center;
     font-size: 16px;
     font-weight: 600;
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    padding: 8px 16px 0;
-  }
-
-  &__action-button {
-    border: 0;
-    border-radius: 10px;
-    background: var(--b3-theme-surface);
-    padding: 10px 14px;
-    color: var(--b3-theme-on-surface);
-    font-size: 13px;
   }
 
   &__chat-panel {
