@@ -39,6 +39,7 @@
 
       <!-- 微信连接按钮 -->
       <span
+        v-if="!isMobile"
         class="block__icon b3-tooltips b3-tooltips__sw weixin-btn"
         :class="{ 'is-active': isClawBotConnected, 'has-unread': hasUnreadWeixin }"
         :aria-label="clawBotTooltip"
@@ -62,7 +63,7 @@
 
     <!-- 微信登录弹窗 -->
     <WeixinLoginDialog
-      v-if="showWeixinDialog"
+      v-if="!isMobile && showWeixinDialog"
       @close="showWeixinDialog = false"
       @switch-conversation="handleWeixinConversationSwitch"
     />
@@ -82,13 +83,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { Menu, showMessage, getFrontend } from 'siyuan';
-
-// 判断是否为移动端
-const isMobile = computed(() => {
-  const frontEnd = getFrontend();
-  return frontEnd === 'mobile' || frontEnd === 'browser-mobile';
-});
+import { Menu, showMessage } from 'siyuan';
 import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore, useAIStore } from '@/stores';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
@@ -113,6 +108,7 @@ const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const aiStore = useAIStore();
+const isMobile = computed(() => !!plugin?.isMobile);
 
 // 对话列表（从存储服务获取，仅元数据）
 const conversationsList = ref<ConversationIndexItem[]>([]);
@@ -178,6 +174,10 @@ const clawBotTooltip = computed(() => {
 
 // 微信按钮点击
 function handleWeixinClick(event: MouseEvent) {
+  if (isMobile.value) {
+    return;
+  }
+
   event.stopPropagation();
   event.preventDefault();
   showWeixinDialog.value = true;
@@ -185,6 +185,10 @@ function handleWeixinClick(event: MouseEvent) {
 
 // 切换到微信会话
 async function handleWeixinConversationSwitch(conversationId: string) {
+  if (isMobile.value) {
+    return;
+  }
+
   await aiStore.switchConversation(conversationId);
   await refreshConversationsList();
 }
@@ -370,7 +374,9 @@ onMounted(async () => {
   }
 
   // 初始化 ClawBot（如果已启用）
-  await aiStore.initializeClawBot(plugin);
+  if (!isMobile.value) {
+    await aiStore.initializeClawBot(plugin);
+  }
 
   // 从插件加载设置
   settingsStore.loadFromPlugin();

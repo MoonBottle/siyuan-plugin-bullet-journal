@@ -19,6 +19,7 @@ import { SkillService } from '@/services/skillService';
 import { useClawBotService, resetClawBotService } from '@/services/clawBotService';
 import type { ClawBotConfig, WeixinMessage, WeixinConversationMap, ClawBotStats } from '@/types/clawbot';
 import { showMessage } from 'siyuan';
+import { getCurrentPlugin } from '@/main';
 import { useProjectStore } from './projectStore';
 import { useSettingsStore } from './settingsStore';
 
@@ -203,6 +204,10 @@ export const useAIStore = defineStore('ai', () => {
   function startClawBotHealthCheck() {
     stopClawBotHealthCheck();
 
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return;
+    }
+
     if (!clawBotConfig.value.enabled || clawBotConfig.value.loginStatus !== 'connected') {
       return;
     }
@@ -220,6 +225,10 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   async function runClawBotGatewayHeartbeat() {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return;
+    }
+
     if (!clawBotConfig.value.enabled || clawBotConfig.value.loginStatus !== 'connected') {
       return;
     }
@@ -238,6 +247,10 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   async function runClawBotHealthCheck() {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return;
+    }
+
     if (clawBotHealthCheckRunning) {
       return;
     }
@@ -347,13 +360,30 @@ export const useAIStore = defineStore('ai', () => {
     return Object.values(messages).some(count => count > 0);
   });
 
+  function getPluginInstance() {
+    return plugin ?? getCurrentPlugin();
+  }
+
+  function isClawBotAllowedOnCurrentFrontend() {
+    return !getPluginInstance()?.isMobile;
+  }
+
+  function filterVisibleConversations(conversations: ConversationIndexItem[]) {
+    if (isClawBotAllowedOnCurrentFrontend()) {
+      return conversations;
+    }
+
+    return conversations.filter(conversation => conversation.source !== 'weixin');
+  }
+
   // ==================== Storage Management ====================
   
   /**
    * 初始化存储服务
    */
-  async function initializeStorage(plugin: any) {
-    storageService = useConversationStorage(plugin);
+  async function initializeStorage(pluginInstance: any) {
+    plugin = pluginInstance;
+    storageService = useConversationStorage(pluginInstance);
 
     const migrationResult = await storageService.initialize();
     if (migrationResult.migrated) {
@@ -364,9 +394,15 @@ export const useAIStore = defineStore('ai', () => {
 
     const index = await storageService.getIndex();
     if (index.currentConversationId) {
-      currentConversation.value = await storageService.loadConversation(
+      const conversation = await storageService.loadConversation(
         index.currentConversationId
       );
+
+      if (conversation?.source === 'weixin' && !isClawBotAllowedOnCurrentFrontend()) {
+        currentConversation.value = null;
+      } else {
+        currentConversation.value = conversation;
+      }
     }
   }
 
@@ -421,7 +457,8 @@ export const useAIStore = defineStore('ai', () => {
    */
   async function refreshConversationsList() {
     if (!storageService) return;
-    conversationsList.value = await storageService.loadConversationsList();
+    const allConversations = await storageService.loadConversationsList();
+    conversationsList.value = filterVisibleConversations(allConversations);
   }
 
   /**
@@ -429,7 +466,8 @@ export const useAIStore = defineStore('ai', () => {
    */
   async function getConversationsList(): Promise<ConversationIndexItem[]> {
     if (!storageService) return [];
-    return await storageService.loadConversationsList();
+    const allConversations = await storageService.loadConversationsList();
+    return filterVisibleConversations(allConversations);
   }
 
   // ==================== Configuration Management ====================
@@ -667,6 +705,10 @@ export const useAIStore = defineStore('ai', () => {
    * 处理收到的微信消息
    */
   async function handleWeixinMessage(msg: WeixinMessage) {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return;
+    }
+
     console.log('[AIStore] =======================================');
     console.log('[AIStore] 开始处理微信消息');
     console.log('[AIStore] from_user_id:', msg.from_user_id);
@@ -758,6 +800,11 @@ export const useAIStore = defineStore('ai', () => {
     
     // 保存 plugin 实例引用
     plugin = pluginInstance;
+
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      stopClawBotHealthCheck();
+      return;
+    }
     
     // 从单独文件加载所有配置（包括 enabled）
     let loginState = null;
@@ -836,6 +883,10 @@ export const useAIStore = defineStore('ai', () => {
    * 启动扫码登录
    */
   async function startClawBotLogin(): Promise<{ qrcodeUrl: string; sessionKey: string } | null> {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return null;
+    }
+
     const clawBot = useClawBotService(clawBotConfig.value);
     
     try {
@@ -859,6 +910,10 @@ export const useAIStore = defineStore('ai', () => {
    * 轮询登录状态
    */
   async function pollClawBotLogin(): Promise<boolean> {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return false;
+    }
+
     const clawBot = useClawBotService(clawBotConfig.value);
     
     if (!currentQRSessionKey) return false;
@@ -928,6 +983,10 @@ export const useAIStore = defineStore('ai', () => {
    * 断开 ClawBot 连接
    */
   async function disconnectClawBot() {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return;
+    }
+
     const clawBot = useClawBotService(clawBotConfig.value);
     
     stopClawBotHealthCheck();
@@ -959,6 +1018,10 @@ export const useAIStore = defineStore('ai', () => {
     ilinkUserId: string,
     userName?: string
   ): Promise<string> {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      throw new Error('ClawBot is disabled on mobile frontend');
+    }
+
     console.log('[AIStore] getOrCreateWeixinConversation:', { ilinkUserId, userName });
     
     if (!storageService) throw new Error('存储服务未初始化');
@@ -1195,6 +1258,10 @@ export const useAIStore = defineStore('ai', () => {
    * 发送回复到微信
    */
   async function sendReplyToWeixin(toUserId: string, content: string, contextToken?: string) {
+    if (!isClawBotAllowedOnCurrentFrontend()) {
+      return;
+    }
+
     console.log('[AIStore] sendReplyToWeixin:', { toUserId, contentLength: content.length, hasContextToken: !!contextToken });
     
     const clawBot = useClawBotService(clawBotConfig.value);
@@ -1223,6 +1290,11 @@ export const useAIStore = defineStore('ai', () => {
   async function sendWechatNotification(text: string): Promise<void> {
     console.log('[AIStore] sendWechatNotification called, text length:', text?.length);
     try {
+      if (!isClawBotAllowedOnCurrentFrontend()) {
+        console.log('[AIStore] sendWechatNotification: mobile frontend disabled, skip');
+        return;
+      }
+
       console.log('[AIStore] isClawBotConnected:', isClawBotConnected.value, 'clawBotConfig:', JSON.stringify(clawBotConfig.value?.loginStatus));
       if (!isClawBotConnected.value) {
         console.log('[AIStore] sendWechatNotification: ClawBot 未连接，跳过');

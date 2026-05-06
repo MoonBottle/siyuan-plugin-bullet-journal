@@ -5,6 +5,7 @@
 
 import { showMessage } from './dialog';
 import { t } from '@/i18n';
+import { getCurrentPlugin } from '@/main';
 import { useAIStore } from '@/stores/aiStore';
 import { getSharedPinia } from '@/utils/sharedPinia';
 
@@ -52,6 +53,10 @@ function sendWechatNotification(title: string, body: string): void {
     const pinia = getSharedPinia();
     if (!pinia) {
       console.warn('[Notification] getSharedPinia() returned null');
+      return;
+    }
+    if (getCurrentPlugin()?.isMobile) {
+      console.log('[Notification] mobile frontend detected, skip wechat notification');
       return;
     }
     const aiStore = useAIStore(pinia);
