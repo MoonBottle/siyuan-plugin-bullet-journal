@@ -82,6 +82,7 @@ import {
 } from "@/utils/mobileMainShellNavigation";
 import { createExampleDocument } from "@/utils/exampleDocUtils";
 import { dirtyDocTracker } from "@/utils/dirtyDocTracker";
+import { mobileNotificationScheduler } from "@/services/mobileNotificationScheduler";
 import { reminderService } from "@/services/reminderService";
 import {
   createNextOccurrence,
@@ -240,12 +241,19 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     console.log("[Task Assistant] Starting initial loadProjects...");
     const projectStore = useProjectStore(pinia);
+    if (this.isMobile) {
+      mobileNotificationScheduler.attachRuntime(projectStore);
+    }
     projectStore
       .loadProjects(this, scanMode, enabledDirs)
       .then(async () => {
         console.log("[Task Assistant] Initial loadProjects completed");
-        // 初始加载完成后触发提醒调度重建
-        reminderService.scheduleRebuild();
+        if (this.isMobile) {
+          await mobileNotificationScheduler.scheduleSync(projectStore);
+        } else {
+          // 初始加载完成后触发提醒调度重建
+          reminderService.scheduleRebuild();
+        }
       })
       .catch((err) => {
         console.error("[Task Assistant] Failed to load projects on init:", err);
@@ -290,8 +298,10 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册斜杠命令
     this.registerSlashCommands();
 
-    // 启动提醒服务（基于 croner 精确调度）
-    reminderService.start(this, projectStore);
+    if (!this.isMobile) {
+      // 启动提醒服务（基于 croner 精确调度）
+      reminderService.start(this, projectStore);
+    }
 
     // 初始化技能存储服务
     this.initSkillStorage();
@@ -519,6 +529,7 @@ export default class TaskAssistantPlugin extends Plugin {
     destroy();
     // 清理悬浮番茄按钮
     this.hideFloatingTomatoButton();
+    mobileNotificationScheduler.detachRuntime();
     // 停止提醒服务
     reminderService.stop();
 
@@ -2140,7 +2151,14 @@ export default class TaskAssistantPlugin extends Plugin {
       });
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
-      reminderService.scheduleRebuild();
+      if (this.isMobile) {
+        const pinia = getSharedPinia();
+        if (pinia) {
+          void mobileNotificationScheduler.scheduleSync(useProjectStore(pinia));
+        }
+      } else {
+        reminderService.scheduleRebuild();
+      }
     }, 150);
   }
 
