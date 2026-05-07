@@ -573,11 +573,13 @@ const getPriorityLabel = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?
 const goToProject = () => {
   if (props.disableNavigation || !props.item?.project?.id) return;
   emit('openProject', props.item.project.id);
+  close();
 };
 
 const goToTask = () => {
   if (props.disableNavigation || !props.item?.task?.blockId) return;
   emit('openTask', props.item.task.blockId);
+  close();
 };
 
 const togglePomodoroList = () => {

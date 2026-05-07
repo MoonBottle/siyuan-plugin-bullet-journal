@@ -3,157 +3,158 @@
     <Transition name="slide-up-full">
       <div
         v-if="modelValue && task"
-        class="task-detail-fullscreen b3-dialog"
-        style="overscroll-behavior: contain; touch-action: pan-y;"
+        class="task-detail-overlay b3-dialog"
       >
-        <!-- Header -->
-        <div class="detail-header">
-          <button class="back-btn" @click="close">
-            <svg><use xlink:href="#iconLeft"></use></svg>
-          </button>
-          <span class="header-title">{{ t('mobile.detail.task') || '任务详情' }}</span>
-          <button class="create-btn" @click="handleCreateItem">
-            <svg><use xlink:href="#iconAdd"></use></svg>
-          </button>
-        </div>
-
-        <!-- Task Info Section -->
-        <div class="task-info-section">
-          <div class="task-name-row">
-            <div class="task-icon">
-              <svg><use xlink:href="#iconList"></use></svg>
-            </div>
-            <h2 class="task-name">{{ task.name }}</h2>
-          </div>
-          <div class="task-meta-row">
-            <span class="task-level-badge">{{ task.level }}</span>
-            <span v-if="projectName" class="project-name">{{ projectName }}</span>
-          </div>
-          <div class="task-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ totalItems }}</span>
-              <span class="stat-label">{{ t('mobile.task.items') || '事项' }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ completedItems }}</span>
-              <span class="stat-label">{{ t('mobile.task.completed') || '已完成' }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ pendingItems }}</span>
-              <span class="stat-label">{{ t('mobile.task.pending') || '待完成' }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ completionRate }}%</span>
-              <span class="stat-label">{{ t('mobile.task.progress') || '进度' }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Items List Grouped by Status -->
-        <div class="items-container" style="overscroll-behavior: contain; touch-action: pan-y;">
-          <!-- Pending Items -->
-          <div v-if="pendingItemsList.length > 0" class="status-section">
-            <div class="status-header pending">
-              <div class="status-icon">
-                <svg><use xlink:href="#iconClock"></use></svg>
-              </div>
-              <span class="status-name">{{ t('mobile.status.pending') || '待完成' }}</span>
-              <span class="status-count">{{ pendingItemsList.length }}</span>
-            </div>
-            <div class="item-list">
-              <div
-                v-for="item in pendingItemsList"
-                :key="item.id"
-                class="item-row"
-                @click="handleItemClick(item)"
-              >
-                <div class="item-checkbox" @click.stop="toggleItemStatus(item)">
-                  <div class="checkbox-circle"></div>
-                </div>
-                <div class="item-content">
-                  <div class="item-text">{{ item.content }}</div>
-                  <div v-if="item.date" class="item-date">
-                    {{ formatDate(item.date) }}
-                  </div>
-                </div>
-                <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Completed Items -->
-          <div v-if="completedItemsList.length > 0" class="status-section">
-            <div class="status-header completed">
-              <div class="status-icon">
-                <svg><use xlink:href="#iconCheck"></use></svg>
-              </div>
-              <span class="status-name">{{ t('mobile.status.completed') || '已完成' }}</span>
-              <span class="status-count">{{ completedItemsList.length }}</span>
-            </div>
-            <div class="item-list">
-              <div
-                v-for="item in completedItemsList"
-                :key="item.id"
-                class="item-row completed"
-                @click="handleItemClick(item)"
-              >
-                <div class="item-checkbox" @click.stop="toggleItemStatus(item)">
-                  <div class="checkbox-circle checked">
-                    <svg><use xlink:href="#iconCheck"></use></svg>
-                  </div>
-                </div>
-                <div class="item-content">
-                  <div class="item-text">{{ item.content }}</div>
-                  <div v-if="item.date" class="item-date">
-                    {{ formatDate(item.date) }}
-                  </div>
-                </div>
-                <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Abandoned Items -->
-          <div v-if="abandonedItemsList.length > 0" class="status-section">
-            <div class="status-header abandoned">
-              <div class="status-icon">
-                <svg><use xlink:href="#iconBan"></use></svg>
-              </div>
-              <span class="status-name">{{ t('mobile.status.abandoned') || '已放弃' }}</span>
-              <span class="status-count">{{ abandonedItemsList.length }}</span>
-            </div>
-            <div class="item-list">
-              <div
-                v-for="item in abandonedItemsList"
-                :key="item.id"
-                class="item-row abandoned"
-                @click="handleItemClick(item)"
-              >
-                <div class="item-checkbox">
-                  <div class="checkbox-circle abandoned">
-                    <svg><use xlink:href="#iconClose"></use></svg>
-                  </div>
-                </div>
-                <div class="item-content">
-                  <div class="item-text">{{ item.content }}</div>
-                  <div v-if="item.date" class="item-date">
-                    {{ formatDate(item.date) }}
-                  </div>
-                </div>
-                <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- No Items -->
-          <div v-if="allItems.length === 0" class="empty-state">
-            <div class="empty-icon">
-              <svg><use xlink:href="#iconEdit"></use></svg>
-            </div>
-            <span class="empty-text">{{ t('mobile.task.noItems') || '暂无事项' }}</span>
-            <button class="empty-action" @click="handleCreateItem">
-              {{ t('mobile.task.createItem') || '创建事项' }}
+        <div class="task-detail-fullscreen" style="overscroll-behavior: contain; touch-action: pan-y;">
+          <!-- Header -->
+          <div class="detail-header">
+            <button class="back-btn" @click="close">
+              <svg><use xlink:href="#iconLeft"></use></svg>
             </button>
+            <span class="header-title">{{ t('mobile.detail.task') || '任务详情' }}</span>
+            <button class="create-btn" @click="handleCreateItem">
+              <svg><use xlink:href="#iconAdd"></use></svg>
+            </button>
+          </div>
+
+          <!-- Task Info Section -->
+          <div class="task-info-section">
+            <div class="task-name-row">
+              <div class="task-icon">
+                <svg><use xlink:href="#iconList"></use></svg>
+              </div>
+              <h2 class="task-name">{{ task.name }}</h2>
+            </div>
+            <div class="task-meta-row">
+              <span class="task-level-badge">{{ task.level }}</span>
+              <span v-if="projectName" class="project-name">{{ projectName }}</span>
+            </div>
+            <div class="task-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ totalItems }}</span>
+                <span class="stat-label">{{ t('mobile.task.items') || '事项' }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ completedItems }}</span>
+                <span class="stat-label">{{ t('mobile.task.completed') || '已完成' }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ pendingItems }}</span>
+                <span class="stat-label">{{ t('mobile.task.pending') || '待完成' }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ completionRate }}%</span>
+                <span class="stat-label">{{ t('mobile.task.progress') || '进度' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items List Grouped by Status -->
+          <div class="items-container" style="overscroll-behavior: contain; touch-action: pan-y;">
+            <!-- Pending Items -->
+            <div v-if="pendingItemsList.length > 0" class="status-section">
+              <div class="status-header pending">
+                <div class="status-icon">
+                  <svg><use xlink:href="#iconClock"></use></svg>
+                </div>
+                <span class="status-name">{{ t('mobile.status.pending') || '待完成' }}</span>
+                <span class="status-count">{{ pendingItemsList.length }}</span>
+              </div>
+              <div class="item-list">
+                <div
+                  v-for="item in pendingItemsList"
+                  :key="item.id"
+                  class="item-row"
+                  @click="handleItemClick(item)"
+                >
+                  <div class="item-checkbox" @click.stop="toggleItemStatus(item)">
+                    <div class="checkbox-circle"></div>
+                  </div>
+                  <div class="item-content">
+                    <div class="item-text">{{ item.content }}</div>
+                    <div v-if="item.date" class="item-date">
+                      {{ formatDate(item.date) }}
+                    </div>
+                  </div>
+                  <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Completed Items -->
+            <div v-if="completedItemsList.length > 0" class="status-section">
+              <div class="status-header completed">
+                <div class="status-icon">
+                  <svg><use xlink:href="#iconCheck"></use></svg>
+                </div>
+                <span class="status-name">{{ t('mobile.status.completed') || '已完成' }}</span>
+                <span class="status-count">{{ completedItemsList.length }}</span>
+              </div>
+              <div class="item-list">
+                <div
+                  v-for="item in completedItemsList"
+                  :key="item.id"
+                  class="item-row completed"
+                  @click="handleItemClick(item)"
+                >
+                  <div class="item-checkbox" @click.stop="toggleItemStatus(item)">
+                    <div class="checkbox-circle checked">
+                      <svg><use xlink:href="#iconCheck"></use></svg>
+                    </div>
+                  </div>
+                  <div class="item-content">
+                    <div class="item-text">{{ item.content }}</div>
+                    <div v-if="item.date" class="item-date">
+                      {{ formatDate(item.date) }}
+                    </div>
+                  </div>
+                  <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Abandoned Items -->
+            <div v-if="abandonedItemsList.length > 0" class="status-section">
+              <div class="status-header abandoned">
+                <div class="status-icon">
+                  <svg><use xlink:href="#iconBan"></use></svg>
+                </div>
+                <span class="status-name">{{ t('mobile.status.abandoned') || '已放弃' }}</span>
+                <span class="status-count">{{ abandonedItemsList.length }}</span>
+              </div>
+              <div class="item-list">
+                <div
+                  v-for="item in abandonedItemsList"
+                  :key="item.id"
+                  class="item-row abandoned"
+                  @click="handleItemClick(item)"
+                >
+                  <div class="item-checkbox">
+                    <div class="checkbox-circle abandoned">
+                      <svg><use xlink:href="#iconClose"></use></svg>
+                    </div>
+                  </div>
+                  <div class="item-content">
+                    <div class="item-text">{{ item.content }}</div>
+                    <div v-if="item.date" class="item-date">
+                      {{ formatDate(item.date) }}
+                    </div>
+                  </div>
+                  <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Items -->
+            <div v-if="allItems.length === 0" class="empty-state">
+              <div class="empty-icon">
+                <svg><use xlink:href="#iconEdit"></use></svg>
+              </div>
+              <span class="empty-text">{{ t('mobile.task.noItems') || '暂无事项' }}</span>
+              <button class="empty-action" @click="handleCreateItem">
+                {{ t('mobile.task.createItem') || '创建事项' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -255,6 +256,12 @@ const close = () => {
 </script>
 
 <style lang="scss" scoped>
+.task-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1004;
+}
+
 .task-detail-fullscreen {
   position: fixed;
   top: 0;
@@ -262,7 +269,6 @@ const close = () => {
   right: 0;
   bottom: 0;
   background: var(--b3-theme-background);
-  z-index: 1001;
   display: flex;
   flex-direction: column;
 }
