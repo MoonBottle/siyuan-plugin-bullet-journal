@@ -1,8 +1,8 @@
 <template>
   <Teleport to="body">
     <Transition name="slide-up">
-      <div v-if="modelValue" class="ios-pomodoro-overlay" @click="closeOnOverlay">
-        <div class="ios-pomodoro-drawer" @click.stop>
+      <div v-if="modelValue" class="ios-pomodoro-overlay b3-dialog" @click="closeOnOverlay">
+        <div class="ios-pomodoro-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
           <!-- Header -->
           <div class="drawer-header">
             <div class="drag-handle"></div>
@@ -13,7 +13,7 @@
           </div>
 
           <!-- Content -->
-          <div class="drawer-content">
+          <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
             <!-- Selected Item -->
             <div v-if="selectedItem" class="selected-item-card">
               <div class="item-project" v-if="selectedItem.project">

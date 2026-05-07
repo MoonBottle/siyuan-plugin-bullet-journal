@@ -1,9 +1,14 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="priority-picker-overlay" @click="close">
+      <div v-if="modelValue" class="priority-picker-overlay b3-dialog" @click="close">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="priority-picker-sheet" @click.stop>
+          <div
+            v-if="modelValue"
+            class="priority-picker-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <div class="sheet-handle" @click="close">
               <div class="handle-bar"></div>
             </div>
@@ -11,7 +16,7 @@
               <h4 class="sheet-title">{{ title }}</h4>
             </div>
             
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <button
                 v-for="option in priorityOptions"
                 :key="option.value"

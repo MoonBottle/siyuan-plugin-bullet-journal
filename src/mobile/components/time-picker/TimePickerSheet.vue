@@ -1,8 +1,8 @@
 <template>
   <Teleport to="body">
     <Transition name="sheet-fade">
-      <div v-if="modelValue" class="time-picker-overlay" @click="onCancel">
-        <div class="time-picker-sheet" @click.stop>
+      <div v-if="modelValue" class="time-picker-overlay b3-dialog" @click="onCancel">
+        <div class="time-picker-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
           <!-- 标题栏（仅标题，无按钮） -->
           <div class="sheet-header">
             <div class="header-title">{{ title || t('mobile.time.selectTime') }}</div>

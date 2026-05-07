@@ -1,9 +1,14 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="sheet-overlay" @click="close">
+      <div v-if="modelValue" class="sheet-overlay b3-dialog" @click="close">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="selector-sheet" @click.stop>
+          <div
+            v-if="modelValue"
+            class="selector-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- Drag Handle -->
             <div class="sheet-handle" @click="close">
               <div class="handle-bar"></div>
@@ -15,7 +20,7 @@
             </div>
 
             <!-- Content -->
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <!-- Expired Items Section -->
               <div v-if="expiredItems.length > 0" class="item-section">
                 <div class="section-label section-label--expired">

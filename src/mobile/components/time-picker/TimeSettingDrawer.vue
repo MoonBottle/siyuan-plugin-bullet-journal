@@ -1,8 +1,8 @@
 <template>
   <Teleport to="body">
     <Transition name="drawer-fade">
-      <div v-if="modelValue" class="time-setting-overlay" @click="onCancel">
-        <div class="time-setting-drawer" @click.stop>
+      <div v-if="modelValue" class="time-setting-overlay b3-dialog" @click="onCancel">
+        <div class="time-setting-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
           <!-- 标题栏 -->
           <div class="drawer-header">
             <div class="header-title">{{ t('mobile.time.timeSetting') }}</div>
@@ -14,7 +14,7 @@
           </div>
 
           <!-- 内容区域 -->
-          <div class="drawer-content">
+          <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
             <TimeRangeSelector
               v-model:is-all-day="tempIsAllDay"
               v-model:start-time="tempStartTime"
