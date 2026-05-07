@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="slide-up-full">
-      <div v-if="modelValue && project" class="project-detail-fullscreen">
+      <div
+        v-if="modelValue && project"
+        class="project-detail-fullscreen b3-dialog"
+        style="overscroll-behavior: contain; touch-action: pan-y;"
+      >
         <!-- Header -->
         <div class="detail-header">
           <button class="back-btn" @click="close">
@@ -45,7 +49,7 @@
         </div>
 
         <!-- Task List Grouped by Priority -->
-        <div class="tasks-container">
+        <div class="tasks-container" style="overscroll-behavior: contain; touch-action: pan-y;">
           <!-- High Priority -->
           <div v-if="highPriorityTasks.length > 0" class="priority-section">
             <div class="priority-header high">

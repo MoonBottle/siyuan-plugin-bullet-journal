@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" :class="overlayClass" @click="close">
+      <div v-if="modelValue" class="drawer-overlay b3-dialog" :class="overlayClass" @click="close">
         <Transition name="slide-up">
           <div 
             v-if="modelValue" 
@@ -25,7 +25,11 @@
             </div>
             
             <!-- Content -->
-            <div v-if="item" class="drawer-content">
+            <div
+              v-if="item"
+              class="drawer-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <!-- Mobile Pickers -->
               <MobilePriorityPicker
                 v-model="showPriorityPicker"

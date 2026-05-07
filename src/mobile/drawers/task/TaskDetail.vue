@@ -1,7 +1,11 @@
 <template>
   <Teleport to="body">
     <Transition name="slide-up-full">
-      <div v-if="modelValue && task" class="task-detail-fullscreen">
+      <div
+        v-if="modelValue && task"
+        class="task-detail-fullscreen b3-dialog"
+        style="overscroll-behavior: contain; touch-action: pan-y;"
+      >
         <!-- Header -->
         <div class="detail-header">
           <button class="back-btn" @click="close">
@@ -46,7 +50,7 @@
         </div>
 
         <!-- Items List Grouped by Status -->
-        <div class="items-container">
+        <div class="items-container" style="overscroll-behavior: contain; touch-action: pan-y;">
           <!-- Pending Items -->
           <div v-if="pendingItemsList.length > 0" class="status-section">
             <div class="status-header pending">
