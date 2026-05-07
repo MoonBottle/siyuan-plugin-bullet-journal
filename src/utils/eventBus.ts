@@ -83,6 +83,7 @@ export function broadcastPluginUnloading(pluginInstanceId?: string): void {
 // 事件类型
 export const Events = {
   DATA_REFRESH: 'data:refresh',
+  LOCAL_DATA_MUTATED: 'data:mutated',
   DATA_REFRESHED: 'data:refreshed', // 数据已刷新完成（用于通知其他模块）
   SETTINGS_CHANGED: 'settings:changed',
   DOCUMENT_CHANGED: 'document:changed',

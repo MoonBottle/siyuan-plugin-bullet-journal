@@ -21,6 +21,7 @@ import {
   stripRecurringMarkers
 } from '@/parser/recurringParser';
 import { generatePriorityMarker } from '@/parser/priorityParser';
+import { eventBus, Events } from '@/utils/eventBus';
 
 /**
  * 构建设置项内容选项
@@ -81,6 +82,17 @@ async function updateBlockContent(blockId: string, content: string): Promise<voi
   }
 }
 
+function emitItemSettingMutation(
+  kind: 'reminder' | 'recurring',
+  blockId: string,
+): void {
+  eventBus.emit(Events.LOCAL_DATA_MUTATED, {
+    source: 'item-setting',
+    kind,
+    blockId,
+  });
+}
+
 /**
  * 更新事项的提醒设置
  * @param item 事项对象
@@ -113,6 +125,7 @@ export async function updateItemWithReminder(
 
   // 更新块
   await updateBlockContent(item.blockId, newContent);
+  emitItemSettingMutation('reminder', item.blockId);
 }
 
 /**
@@ -157,6 +170,7 @@ export async function updateItemWithRecurring(
 
   // 更新块
   await updateBlockContent(item.blockId, newContent);
+  emitItemSettingMutation('recurring', item.blockId);
 }
 
 /**

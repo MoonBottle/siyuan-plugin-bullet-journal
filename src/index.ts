@@ -1622,6 +1622,19 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerEventListeners() {
     // 监听 WebSocket 消息，用于检测数据变化
     this.registerPluginEventListener("ws-main", this.onWsMain);
+    this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, () => {
+      this.scheduleRefresh();
+    });
+    this.registerAppEventListener(Events.DATA_REFRESHED, () => {
+      if (this.isMobile) {
+        const pinia = getSharedPinia();
+        if (pinia) {
+          void mobileNotificationScheduler.scheduleSync(useProjectStore(pinia));
+        }
+      } else {
+        reminderService.scheduleRebuild();
+      }
+    });
   }
 
   private registerPluginEventListener(
@@ -2180,14 +2193,6 @@ export default class TaskAssistantPlugin extends Plugin {
       });
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
-      if (this.isMobile) {
-        const pinia = getSharedPinia();
-        if (pinia) {
-          void mobileNotificationScheduler.scheduleSync(useProjectStore(pinia));
-        }
-      } else {
-        reminderService.scheduleRebuild();
-      }
     }, 150);
   }
 
