@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.13.2] - 2026-05-07
+
+### Features
+
+- **Pomodoro Extension**: Support one-click extension after focus completion
+- **Mobile AI Chat**: Use AI assistant on mobile devices
+- **Mobile Native Notifications**: Support local scheduled notifications
+
+### Fixes
+
+- **Workbench Data Refresh**: Fixed issue where workbench data didn't auto-refresh after task updates
+- **Mobile Gesture Isolation**: Fixed gesture conflicts between multiple popups/drawers
+- **Mobile Pull-to-Refresh**: Protected todo list pull-to-refresh gesture from accidental triggers
+- **Reminder Scheduling Sync**: Auto-sync reminder scheduling status after data refresh
+- **ClawBot Mobile Adaptation**: Disabled ClawBot service on mobile devices
+
+### Refactors
+
+- **Mobile Entry Unification**: Unified mobile Dock entry logic
+- **AI Panel Simplification**: Streamlined AI panel action buttons
+
 ## [0.13.1] - 2026-05-05
 
 ### Features
