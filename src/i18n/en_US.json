@@ -779,7 +779,8 @@
     "priority": {
       "high": "High Priority",
       "medium": "Medium Priority",
-      "low": "Low Priority"
+      "low": "Low Priority",
+      "none": "No Priority"
     },
     "settings": {
       "title": "Settings",

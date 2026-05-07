@@ -819,7 +819,8 @@
     "priority": {
       "high": "高优先级",
       "medium": "中优先级",
-      "low": "低优先级"
+      "low": "低优先级",
+      "none": "未设置优先级"
     },
     "settings": {
       "title": "设置",
