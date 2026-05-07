@@ -1,39 +1,41 @@
 <template>
   <Teleport to="body">
     <Transition name="drawer-fade">
-      <div v-if="modelValue" class="time-setting-overlay b3-dialog" @click="onCancel">
-        <div class="time-setting-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
-          <!-- 标题栏 -->
-          <div class="drawer-header">
-            <div class="header-title">{{ t('mobile.time.timeSetting') }}</div>
-            <button class="close-btn" @click="onCancel">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
+      <div v-if="modelValue" class="time-setting-dialog-root b3-dialog">
+        <div class="time-setting-overlay" @click="onCancel">
+          <div class="time-setting-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+            <!-- 标题栏 -->
+            <div class="drawer-header">
+              <div class="header-title">{{ t('mobile.time.timeSetting') }}</div>
+              <button class="close-btn" @click="onCancel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
 
-          <!-- 内容区域 -->
-          <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
-            <TimeRangeSelector
-              v-model:is-all-day="tempIsAllDay"
-              v-model:start-time="tempStartTime"
-              v-model:end-time="tempEndTime"
-            />
-          </div>
+            <!-- 内容区域 -->
+            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
+              <TimeRangeSelector
+                v-model:is-all-day="tempIsAllDay"
+                v-model:start-time="tempStartTime"
+                v-model:end-time="tempEndTime"
+              />
+            </div>
 
-          <!-- 底部按钮 -->
-          <div class="drawer-footer">
-            <button class="footer-btn cancel" @click="onCancel">
-              {{ t('common.cancel') }}
-            </button>
-            <button 
-              class="footer-btn save" 
-              :disabled="!canSave"
-              @click="onSave"
-            >
-              {{ t('common.save') }}
-            </button>
+            <!-- 底部按钮 -->
+            <div class="drawer-footer">
+              <button class="footer-btn cancel" @click="onCancel">
+                {{ t('common.cancel') }}
+              </button>
+              <button 
+                class="footer-btn save" 
+                :disabled="!canSave"
+                @click="onSave"
+              >
+                {{ t('common.save') }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -104,6 +106,12 @@ function onCancel() {
 </script>
 
 <style scoped>
+.time-setting-dialog-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+}
+
 .time-setting-overlay {
   position: fixed;
   top: 0;
@@ -114,7 +122,6 @@ function onCancel() {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  z-index: 10001;
 }
 
 .time-setting-drawer {
