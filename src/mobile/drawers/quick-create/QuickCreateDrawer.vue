@@ -1,9 +1,9 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
+      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="quick-create-drawer" @click.stop>
+          <div v-if="modelValue" class="quick-create-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="drawer-handle" @click="close">
               <div class="handle-bar"></div>
             </div>
@@ -12,7 +12,7 @@
               <h3 class="drawer-title">{{ t('mobile.quickCreate.title') || '快速创建' }}</h3>
             </div>
             
-            <div class="drawer-content">
+            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <!-- Item Content - 移到第一位 -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.quickCreate.itemContent') || '事项内容' }}</label>
@@ -140,16 +140,16 @@
     
     <!-- Project Selector Sheet -->
     <Transition name="fade">
-      <div v-if="showProjectSheet" class="sheet-overlay" @click="closeProjectSheet">
+      <div v-if="showProjectSheet" class="sheet-overlay b3-dialog" @click="closeProjectSheet">
         <Transition name="slide-up">
-          <div v-if="showProjectSheet" class="selector-sheet" @click.stop>
+          <div v-if="showProjectSheet" class="selector-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="sheet-handle" @click="closeProjectSheet">
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
               <h4 class="sheet-title">{{ t('mobile.quickCreate.selectProject') || '选择项目' }}</h4>
             </div>
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <button
                 v-for="project in projects"
                 :key="project.id"
@@ -176,9 +176,9 @@
     
     <!-- Task Selector Sheet -->
     <Transition name="fade">
-      <div v-if="showTaskSheet" class="sheet-overlay" @click="closeTaskSheet">
+      <div v-if="showTaskSheet" class="sheet-overlay b3-dialog" @click="closeTaskSheet">
         <Transition name="slide-up">
-          <div v-if="showTaskSheet" class="selector-sheet" @click.stop>
+          <div v-if="showTaskSheet" class="selector-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="sheet-handle" @click="closeTaskSheet">
               <div class="handle-bar"></div>
             </div>
@@ -202,7 +202,7 @@
               <span>{{ t('mobile.quickCreate.willCreateNewTask') || '将创建新任务' }}</span>
             </div>
             
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <div v-if="availableTasks.length === 0" class="sheet-empty">
                 <svg class="empty-icon"><use xlink:href="#iconList"></use></svg>
                 <span>{{ t('mobile.quickCreate.noTasks') || '该项目暂无任务' }}</span>
@@ -239,9 +239,9 @@
     
     <!-- Date Picker Sheet -->
     <Transition name="fade">
-      <div v-if="showDatePicker" class="sheet-overlay" @click="closeDatePicker">
+      <div v-if="showDatePicker" class="sheet-overlay b3-dialog" @click="closeDatePicker">
         <Transition name="slide-up">
-          <div v-if="showDatePicker" class="date-picker-sheet" @click.stop>
+          <div v-if="showDatePicker" class="date-picker-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="sheet-handle" @click="closeDatePicker">
               <div class="handle-bar"></div>
             </div>
@@ -249,7 +249,7 @@
               <h4 class="sheet-title">{{ t('mobile.quickCreate.selectDate') || '选择日期' }}</h4>
             </div>
             
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <!-- Quick Date Buttons -->
               <div class="quick-dates">
                 <button class="quick-date-btn" @click="selectQuickDate(0)">

@@ -141,4 +141,16 @@ describe('MobileTodoList', () => {
 
     mounted.unmount();
   });
+
+  it('marks the list root as a Siyuan dialog guard without losing list layout', async () => {
+    const mounted = mountList();
+    await nextTick();
+
+    const listRoot = mounted.container.querySelector('.mobile-todo-list') as HTMLElement | null;
+
+    expect(listRoot?.classList.contains('b3-dialog')).toBe(true);
+    expect(listRoot?.classList.contains('mobile-todo-list--gesture-guard')).toBe(true);
+
+    mounted.unmount();
+  });
 });

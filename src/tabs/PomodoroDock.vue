@@ -224,8 +224,10 @@ onMounted(async () => {
   // 恢复专注状态（如果插件启动时没有恢复）
   await restorePomodoroState();
 
-  // 请求通知权限（用于专注完成时的系统通知）
-  await requestNotificationPermission();
+  // 仅桌面端预热浏览器通知权限，移动端走原生通知调度
+  if (!plugin?.isMobile) {
+    void requestNotificationPermission();
+  }
 
   // 监听数据刷新事件（同上下文）
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);

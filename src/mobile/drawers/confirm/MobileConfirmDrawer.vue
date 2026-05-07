@@ -1,9 +1,14 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="confirm-overlay" @click="handleCancel">
+      <div v-if="modelValue" class="confirm-overlay b3-dialog" @click="handleCancel">
         <Transition name="zoom">
-          <div v-if="modelValue" class="confirm-dialog" @click.stop>
+          <div
+            v-if="modelValue"
+            class="confirm-dialog"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <div class="confirm-icon" :class="{ danger: type === 'danger' }" v-if="icon">
               <svg class="icon-svg">
                 <use :xlink:href="`#${icon}`"></use>

@@ -32,8 +32,8 @@ defineEmits<{
 
 <style lang="scss">
 // Global style (no scoped) to override z-index
-// Higher than TaskDetail (z-index: 1001)
+// Higher than ProjectDetail/TaskDetail overlays (z-index: 1004)
 .drawer-overlay.task-item-detail-overlay {
-  z-index: 1002;
+  z-index: 1005;
 }
 </style>

@@ -819,7 +819,8 @@
     "priority": {
       "high": "高优先级",
       "medium": "中优先级",
-      "low": "低优先级"
+      "low": "低优先级",
+      "none": "未设置优先级"
     },
     "settings": {
       "title": "设置",
@@ -836,6 +837,18 @@
       "about": "关于",
       "pluginSettings": "插件设置",
       "version": "版本"
+    },
+    "debug": {
+      "reminder": {
+        "title": "移动端提醒调试",
+        "enabled": "已开启移动端提醒调试模式（仅当前会话有效）",
+        "generatedAt": "生成时间",
+        "currentDate": "当前日期",
+        "computed": "计算出的提醒计划",
+        "registry": "原生预约注册表",
+        "emptyComputed": "当前没有未来 24 小时内的提醒计划",
+        "emptyRegistry": "当前没有额外保留的原生预约记录"
+      }
     },
     "time": {
       "allDay": "全天",

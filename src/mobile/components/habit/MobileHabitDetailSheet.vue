@@ -3,7 +3,7 @@
     <Transition name="mobile-habit-sheet-fade">
       <div
         v-if="open"
-        class="mobile-habit-detail-sheet"
+        class="mobile-habit-detail-sheet b3-dialog"
         data-testid="habit-detail-sheet"
       >
         <div
@@ -12,7 +12,11 @@
           @click="emit('close')"
         ></div>
 
-        <div class="mobile-habit-detail-sheet__panel" @click.stop>
+        <div
+          class="mobile-habit-detail-sheet__panel"
+          style="overscroll-behavior: contain; touch-action: pan-y;"
+          @click.stop
+        >
           <div class="mobile-habit-detail-sheet__handle" aria-hidden="true"></div>
 
           <div class="mobile-habit-detail-sheet__header">
@@ -49,7 +53,10 @@
             </button>
           </div>
 
-          <div class="mobile-habit-detail-sheet__body">
+          <div
+            class="mobile-habit-detail-sheet__body"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+          >
             <slot></slot>
           </div>
         </div>

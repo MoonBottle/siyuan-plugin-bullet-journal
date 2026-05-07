@@ -1,59 +1,61 @@
 <template>
   <Teleport to="body">
     <Transition name="sheet-fade">
-      <div v-if="modelValue" class="time-picker-overlay" @click="onCancel">
-        <div class="time-picker-sheet" @click.stop>
-          <!-- 标题栏（仅标题，无按钮） -->
-          <div class="sheet-header">
-            <div class="header-title">{{ title || t('mobile.time.selectTime') }}</div>
-          </div>
-          
-          <!-- 当前选中时间大字体显示 -->
-          <div class="current-time-display">
-            <span class="time-text">{{ currentHour }}:{{ currentMinute }}</span>
-          </div>
-          
-          <!-- 滚轮区域 -->
-          <div class="wheels-container">
-            <TimeWheel
-              ref="hourWheelRef"
-              v-model="currentHour"
-              :options="hourOptions"
-              :label="t('mobile.time.hour')"
-            />
-            <div class="time-colon">:</div>
-            <TimeWheel
-              ref="minuteWheelRef"
-              v-model="currentMinute"
-              :options="minuteOptions"
-              :label="t('mobile.time.minute')"
-            />
-          </div>
-          
-          <!-- 快捷时间按钮 -->
-          <div class="quick-times-section">
-            <div class="quick-times-label">{{ t('mobile.time.quickTime') }}</div>
-            <div class="quick-times-grid">
-              <button
-                v-for="time in quickTimes"
-                :key="time"
-                class="quick-time-btn"
-                :class="{ active: currentHour === time.split(':')[0] && currentMinute === time.split(':')[1] }"
-                @click="selectQuickTime(time)"
-              >
-                {{ time }}
+      <div v-if="modelValue" class="time-picker-dialog-root b3-dialog">
+        <div class="time-picker-overlay" @click="onCancel">
+          <div class="time-picker-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
+            <!-- 标题栏（仅标题，无按钮） -->
+            <div class="sheet-header">
+              <div class="header-title">{{ title || t('mobile.time.selectTime') }}</div>
+            </div>
+
+            <!-- 当前选中时间大字体显示 -->
+            <div class="current-time-display">
+              <span class="time-text">{{ currentHour }}:{{ currentMinute }}</span>
+            </div>
+
+            <!-- 滚轮区域 -->
+            <div class="wheels-container">
+              <TimeWheel
+                ref="hourWheelRef"
+                v-model="currentHour"
+                :options="hourOptions"
+                :label="t('mobile.time.hour')"
+              />
+              <div class="time-colon">:</div>
+              <TimeWheel
+                ref="minuteWheelRef"
+                v-model="currentMinute"
+                :options="minuteOptions"
+                :label="t('mobile.time.minute')"
+              />
+            </div>
+
+            <!-- 快捷时间按钮 -->
+            <div class="quick-times-section">
+              <div class="quick-times-label">{{ t('mobile.time.quickTime') }}</div>
+              <div class="quick-times-grid">
+                <button
+                  v-for="time in quickTimes"
+                  :key="time"
+                  class="quick-time-btn"
+                  :class="{ active: currentHour === time.split(':')[0] && currentMinute === time.split(':')[1] }"
+                  @click="selectQuickTime(time)"
+                >
+                  {{ time }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 底部按钮（取消/确认） -->
+            <div class="sheet-footer">
+              <button class="footer-btn cancel" @click="onCancel">
+                {{ t('common.cancel') }}
+              </button>
+              <button class="footer-btn confirm" @click="onConfirm">
+                {{ t('common.confirm') }}
               </button>
             </div>
-          </div>
-
-          <!-- 底部按钮（取消/确认） -->
-          <div class="sheet-footer">
-            <button class="footer-btn cancel" @click="onCancel">
-              {{ t('common.cancel') }}
-            </button>
-            <button class="footer-btn confirm" @click="onConfirm">
-              {{ t('common.confirm') }}
-            </button>
           </div>
         </div>
       </div>
@@ -160,6 +162,12 @@ const currentTimeStr = computed(() => `${currentHour.value}:${currentMinute.valu
 </script>
 
 <style scoped>
+.time-picker-dialog-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+}
+
 .time-picker-overlay {
   position: fixed;
   top: 0;
@@ -170,7 +178,6 @@ const currentTimeStr = computed(() => `${currentHour.value}:${currentMinute.valu
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  z-index: 10010;
 }
 
 .time-picker-sheet {

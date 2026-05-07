@@ -1,9 +1,14 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
+      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="settings-drawer" @click.stop>
+          <div
+            v-if="modelValue"
+            class="settings-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <div class="drawer-handle" @click="close">
               <div class="handle-bar"></div>
             </div>
@@ -12,7 +17,7 @@
               <h3 class="drawer-title">{{ t('mobile.settings.title') || '设置' }}</h3>
             </div>
             
-            <div class="drawer-content">
+            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <!-- View Settings Section -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.settings.view') || '视图设置' }}</label>

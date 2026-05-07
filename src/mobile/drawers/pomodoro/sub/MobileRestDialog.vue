@@ -1,9 +1,14 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="rest-overlay" @click="handleClose">
+      <div v-if="modelValue" class="rest-overlay b3-dialog" @click="handleClose">
         <Transition name="zoom">
-          <div v-if="modelValue" class="rest-dialog" @click.stop>
+          <div
+            v-if="modelValue"
+            class="rest-dialog"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- 成功图标 -->
             <div class="success-icon">
               <svg viewBox="0 0 24 24">

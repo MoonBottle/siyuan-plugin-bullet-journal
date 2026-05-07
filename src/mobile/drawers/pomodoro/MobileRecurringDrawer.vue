@@ -1,9 +1,9 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
+      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="mobile-recurring-drawer" @click.stop>
+          <div v-if="modelValue" class="mobile-recurring-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <!-- Handle Bar -->
             <div class="drawer-handle" @click="close">
               <div class="handle-bar"></div>
@@ -15,7 +15,7 @@
             </div>
 
             <!-- Content -->
-            <div class="drawer-content">
+            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <RecurringSettingDialog
                 ref="recurringDialogRef"
                 :block-id="blockId || ''"

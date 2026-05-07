@@ -56,8 +56,8 @@
 
     <!-- Dialog -->
     <Transition name="fade">
-      <div v-if="dialogVisible" class="ios-dialog-overlay" @click="closeDialog">
-        <div class="ios-dialog" @click.stop>
+      <div v-if="dialogVisible" class="ios-dialog-overlay b3-dialog" @click="closeDialog">
+        <div class="ios-dialog" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
           <div class="dialog-header">
             <button class="cancel-btn" @click="closeDialog">{{ t('common').cancel }}</button>
             <span class="dialog-title">{{ isEditing ? t('settings').slashCommands.dialogTitleEdit : t('settings').slashCommands.dialogTitleAdd }}</span>

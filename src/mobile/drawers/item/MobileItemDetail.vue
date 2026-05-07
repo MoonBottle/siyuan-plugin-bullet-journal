@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" :class="overlayClass" @click="close">
+      <div v-if="modelValue" class="drawer-overlay b3-dialog" :class="overlayClass" @click="close">
         <Transition name="slide-up">
           <div 
             v-if="modelValue" 
@@ -25,7 +25,11 @@
             </div>
             
             <!-- Content -->
-            <div v-if="item" class="drawer-content">
+            <div
+              v-if="item"
+              class="drawer-content"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+            >
               <!-- Mobile Pickers -->
               <MobilePriorityPicker
                 v-model="showPriorityPicker"
@@ -253,9 +257,14 @@
     <!-- Migrate Menu Drawer -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="showMigrateDrawer" class="migrate-overlay" @click="showMigrateDrawer = false">
+        <div v-if="showMigrateDrawer" class="migrate-overlay b3-dialog" @click="showMigrateDrawer = false">
           <Transition name="slide-up">
-            <div v-if="showMigrateDrawer" class="migrate-drawer" @click.stop>
+            <div
+              v-if="showMigrateDrawer"
+              class="migrate-drawer"
+              style="overscroll-behavior: contain; touch-action: pan-y;"
+              @click.stop
+            >
               <div class="migrate-handle" @click="showMigrateDrawer = false">
                 <div class="handle-bar"></div>
               </div>
@@ -291,9 +300,14 @@
 
     <!-- Content Edit Drawer -->
     <Transition name="fade">
-      <div v-if="showContentEdit" class="content-edit-overlay" @click="cancelEditContent">
+      <div v-if="showContentEdit" class="content-edit-overlay b3-dialog" @click="cancelEditContent">
         <Transition name="slide-up">
-          <div v-if="showContentEdit" class="content-edit-drawer" @click.stop>
+          <div
+            v-if="showContentEdit"
+            class="content-edit-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- Handle Bar -->
             <div class="drawer-handle" @click="cancelEditContent">
               <div class="handle-bar"></div>
@@ -305,7 +319,7 @@
             </div>
             
             <!-- Content -->
-            <div class="content-edit-body">
+            <div class="content-edit-body" style="overscroll-behavior: contain; touch-action: pan-y;">
               <input
                 v-model="editingContent" 
                 type="text"
@@ -559,11 +573,13 @@ const getPriorityLabel = (priority: PriorityLevel) => PRIORITY_CONFIG[priority]?
 const goToProject = () => {
   if (props.disableNavigation || !props.item?.project?.id) return;
   emit('openProject', props.item.project.id);
+  close();
 };
 
 const goToTask = () => {
   if (props.disableNavigation || !props.item?.task?.blockId) return;
   emit('openTask', props.item.task.blockId);
+  close();
 };
 
 const togglePomodoroList = () => {

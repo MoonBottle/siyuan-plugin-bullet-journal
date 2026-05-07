@@ -1,9 +1,9 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="close">
+      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="close">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="filter-drawer" @click.stop>
+          <div v-if="modelValue" class="filter-drawer" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="drawer-handle" @click="close">
               <div class="handle-bar"></div>
             </div>
@@ -12,7 +12,7 @@
               <h3 class="drawer-title">{{ t('mobile.filter.title') || '筛选' }}</h3>
             </div>
             
-            <div class="drawer-content">
+            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <!-- Project Group -->
               <div class="form-section">
                 <label class="section-label">{{ t('mobile.filter.projectGroup') || '项目分组' }}</label>
@@ -77,16 +77,16 @@
     
     <!-- Group Selector Sheet -->
     <Transition name="fade">
-      <div v-if="showGroupSheet" class="sheet-overlay" @click="closeGroupSheet">
+      <div v-if="showGroupSheet" class="sheet-overlay b3-dialog" @click="closeGroupSheet">
         <Transition name="slide-up">
-          <div v-if="showGroupSheet" class="selector-sheet" @click.stop>
+          <div v-if="showGroupSheet" class="selector-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="sheet-handle" @click="closeGroupSheet">
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
               <h4 class="sheet-title">{{ t('mobile.filter.projectGroup') || '项目分组' }}</h4>
             </div>
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <button
                 class="sheet-option"
                 :class="{ selected: localGroup === '' }"
@@ -124,16 +124,16 @@
     
     <!-- Date Filter Selector Sheet -->
     <Transition name="fade">
-      <div v-if="showDateFilterSheet" class="sheet-overlay" @click="closeDateFilterSheet">
+      <div v-if="showDateFilterSheet" class="sheet-overlay b3-dialog" @click="closeDateFilterSheet">
         <Transition name="slide-up">
-          <div v-if="showDateFilterSheet" class="selector-sheet" @click.stop>
+          <div v-if="showDateFilterSheet" class="selector-sheet" style="overscroll-behavior: contain; touch-action: pan-y;" @click.stop>
             <div class="sheet-handle" @click="closeDateFilterSheet">
               <div class="handle-bar"></div>
             </div>
             <div class="sheet-header">
               <h4 class="sheet-title">{{ t('mobile.filter.dateFilter') || '日期筛选' }}</h4>
             </div>
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <button
                 v-for="opt in dateOptions"
                 :key="opt.value"
@@ -160,9 +160,14 @@
     
     <!-- Date Picker Sheet -->
     <Transition name="fade">
-      <div v-if="showDatePicker" class="sheet-overlay" @click="closeDatePicker">
+      <div v-if="showDatePicker" class="sheet-overlay b3-dialog" @click="closeDatePicker">
         <Transition name="slide-up">
-          <div v-if="showDatePicker" class="date-picker-sheet" @click.stop>
+          <div
+            v-if="showDatePicker"
+            class="date-picker-sheet"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <div class="sheet-handle" @click="closeDatePicker">
               <div class="handle-bar"></div>
             </div>
@@ -170,7 +175,7 @@
               <h4 class="sheet-title">{{ datePickerType === 'start' ? '选择开始日期' : '选择结束日期' }}</h4>
             </div>
             
-            <div class="sheet-content">
+            <div class="sheet-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <!-- Calendar -->
               <div class="calendar">
                 <div class="calendar-header">

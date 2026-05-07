@@ -24,6 +24,7 @@ import { extractDatesFromBlock } from '@/utils/slashCommandUtils';
 import { updateBlockDateTime } from '@/utils/fileUtils';
 import { defaultPomodoroSettings } from '@/settings';
 import { t } from '@/i18n';
+import { mobileNotificationScheduler } from '@/services/mobileNotificationScheduler';
 
 interface PomodoroState {
   activePomodoro: ActivePomodoro | null;
@@ -43,6 +44,72 @@ interface PomodoroState {
   autoExtendRemainingSeconds: number;
   autoExtendTotalSeconds: number;
   autoExtendCountdownInterval: ReturnType<typeof setInterval> | null;
+}
+
+function isMobilePomodoroNotificationsEnabled(plugin?: any): boolean {
+  return mobileNotificationScheduler.isMobileNotificationsEnabled(plugin ?? usePlugin());
+}
+
+async function scheduleMobileFocusEnd(
+  store: PomodoroState & {
+    activePomodoro: ActivePomodoro | null;
+  },
+  plugin?: any,
+): Promise<void> {
+  const activePomodoro = store.activePomodoro;
+  if (!activePomodoro || activePomodoro.timerMode !== 'countdown' || activePomodoro.isPaused)
+    return;
+  if (!isMobilePomodoroNotificationsEnabled(plugin))
+    return;
+
+  await mobileNotificationScheduler.schedulePomodoroFocusEnd({
+    expectedEndAt: Date.now() + activePomodoro.remainingSeconds * 1000,
+    itemContent: activePomodoro.itemContent,
+    plugin,
+  });
+}
+
+function cancelMobileFocusEnd(plugin?: any): void {
+  if (!isMobilePomodoroNotificationsEnabled(plugin))
+    return;
+  mobileNotificationScheduler.cancelPomodoroFocusEnd();
+}
+
+function calculateRestoredAccumulatedSeconds(data: ActivePomodoroData): number {
+  const now = Date.now();
+  const pausedSeconds = data.totalPausedSeconds || 0;
+
+  if (data.isPaused) {
+    if (!data.currentPauseStartTime) {
+      return data.accumulatedSeconds;
+    }
+
+    const elapsedUntilPause = Math.floor((data.currentPauseStartTime - data.startTime) / 1000);
+    return Math.max(data.accumulatedSeconds, elapsedUntilPause - pausedSeconds);
+  }
+
+  const elapsedSinceStart = Math.floor((now - data.startTime) / 1000);
+  return Math.max(data.accumulatedSeconds, elapsedSinceStart - pausedSeconds);
+}
+
+async function scheduleMobileBreakEnd(
+  remainingSeconds: number,
+  plugin?: any,
+): Promise<void> {
+  if (!isMobilePomodoroNotificationsEnabled(plugin))
+    return;
+
+  await mobileNotificationScheduler.schedulePomodoroBreakEnd({
+    expectedEndAt: Date.now() + remainingSeconds * 1000,
+    breakLabel: t('settings').pomodoro.breakLabel,
+    plugin,
+  });
+}
+
+function cancelMobileBreakEnd(plugin?: any): void {
+  if (!isMobilePomodoroNotificationsEnabled(plugin))
+    return;
+  mobileNotificationScheduler.cancelPomodoroBreakEnd();
 }
 
 export const usePomodoroStore = defineStore('pomodoro', {
@@ -144,6 +211,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 启动倒计时
         this.startTimer();
 
+        await scheduleMobileFocusEnd(this, plugin);
+
         // 触发专注开始事件
         eventBus.emit(Events.POMODORO_STARTED);
 
@@ -179,6 +248,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         // 停止定时器
         this.stopTimer();
+
+        cancelMobileFocusEnd(plugin);
 
         // 保存状态
         if (plugin) {
@@ -229,6 +300,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         // 重新启动定时器
         this.startTimer();
+
+        await scheduleMobileFocusEnd(this, plugin);
 
         // 保存状态
         if (plugin) {
@@ -428,6 +501,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const ap = this.activePomodoro;
         const now = Date.now();
         const actualMinutes = Math.floor(ap.accumulatedSeconds / 60);
+        cancelMobileFocusEnd(pluginToUse);
 
         // 1. 构建并持久化待完成记录
         const pending: PendingPomodoroCompletion = {
@@ -471,7 +545,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         this.playNotificationSound();
 
         // 5. 系统通知（此时用户可能在其他应用，提醒回来补填说明）
-        showPomodoroCompleteNotification(ap.itemContent, actualMinutes, () => {
+        void showPomodoroCompleteNotification(ap.itemContent, actualMinutes, () => {
           if (typeof window !== 'undefined' && (window as any).require) {
             try {
               const { ipcRenderer } = (window as any).require('electron');
@@ -480,6 +554,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
               // 忽略
             }
           }
+        }).catch((error) => {
+          console.error('[Pomodoro] 显示完成通知失败:', error);
         });
 
         // 6. 触发弹窗（由监听器显示完成弹窗）
@@ -597,6 +673,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
           await removeActivePomodoro(plugin);
         }
 
+        cancelMobileFocusEnd(plugin);
+
         // 清理状态
         this.stopTimer();
         this.activePomodoro = null;
@@ -667,9 +745,6 @@ export const usePomodoroStore = defineStore('pomodoro', {
           return;
         }
 
-        // 删除 pending 文件
-        await removePendingCompletion(plugin);
-
         const settings = plugin?.getSettings?.()?.pomodoro ?? defaultPomodoroSettings;
         const extendMinutes = settings.autoExtendMinutes ?? 5;
         const newTargetMinutes = Math.ceil(pending.accumulatedSeconds / 60) + extendMinutes;
@@ -677,6 +752,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 基于 pending 数据创建新的 active pomodoro
         const pomodoroData: ActivePomodoroData = {
           blockId: pending.blockId,
+          rootId: pending.rootId,
           itemId: pending.itemId,
           itemContent: pending.itemContent,
           startTime: pending.startTime,
@@ -703,6 +779,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
           return;
         }
 
+        await removePendingCompletion(plugin);
+
         const remainingSeconds = newTargetMinutes * 60 - pending.accumulatedSeconds;
         this.activePomodoro = {
           ...pomodoroData,
@@ -710,6 +788,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         };
 
         this.startTimer();
+        await scheduleMobileFocusEnd(this, plugin);
 
         this.autoExtendCount++;
 
@@ -774,13 +853,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
           return false;
         }
 
-        // 如果处于暂停状态，不计算经过的时间
-        let effectiveAccumulatedSeconds = data.accumulatedSeconds;
-        if (!data.isPaused) {
-          // 计算从上次保存到现在经过的时间（秒）
-          const elapsedSinceLastSave = Math.floor((Date.now() - data.startTime) / 1000);
-          effectiveAccumulatedSeconds = data.accumulatedSeconds + elapsedSinceLastSave;
-        }
+        const effectiveAccumulatedSeconds = calculateRestoredAccumulatedSeconds(data);
 
         const targetSeconds = data.targetDurationMinutes * 60;
         const remainingSeconds = targetSeconds - effectiveAccumulatedSeconds;
@@ -788,6 +861,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (remainingSeconds <= 0) {
           // 已经过期，自动标记为完成
           console.log('[Pomodoro] 专注已过期，自动标记为完成');
+          cancelMobileFocusEnd(plugin);
           await this.markExpiredPomodoroComplete(data, plugin);
           return false;
         }
@@ -802,6 +876,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
         // 只有在非暂停状态才启动定时器
         if (!data.isPaused) {
           this.startTimer();
+          await scheduleMobileFocusEnd(this, plugin);
           console.log('[Pomodoro] 专注状态已恢复，剩余时间:', remainingSeconds, '秒');
           showMessage(`🔄 已恢复专注「${data.itemContent}」`);
         } else {
@@ -895,7 +970,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
      * @param plugin 思源插件实例，用于持久化
      */
     async startBreak(minutes: number, plugin?: any): Promise<void> {
-      this.stopBreak(plugin);
+      await this.stopBreak(plugin);
       const startTime = Date.now();
       const totalSeconds = minutes * 60;
       this.isBreakActive = true;
@@ -907,6 +982,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
       if (plugin) {
         await saveActiveBreak(plugin, { startTime, durationMinutes: minutes });
       }
+
+      await scheduleMobileBreakEnd(totalSeconds, plugin);
 
       this.breakInterval = window.setInterval(() => {
         this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
@@ -955,6 +1032,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.breakTotalSeconds = 0;
       // 休息结束时关闭弹窗
       this.isBreakOverlayVisible = false;
+      cancelMobileBreakEnd(plugin);
       if (wasActive && plugin) {
         await removeActiveBreak(plugin);
       }
@@ -973,6 +1051,8 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.isBreakActive = true;
       this.breakRemainingSeconds = remainingSeconds;
       this.breakTotalSeconds = totalSeconds ?? remainingSeconds;
+
+      void scheduleMobileBreakEnd(remainingSeconds, plugin);
 
       this.breakInterval = window.setInterval(() => {
         this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);

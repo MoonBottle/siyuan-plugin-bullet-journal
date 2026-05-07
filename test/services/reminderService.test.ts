@@ -6,9 +6,13 @@ import { ReminderService } from '@/services/reminderService';
 import type { Habit, Item } from '@/types/models';
 
 // Mock notification utils
-const mockShowSystemNotification = vi.fn();
+const mockShowSystemNotification = vi.fn().mockResolvedValue(null);
 vi.mock('@/utils/notification', () => ({
   showSystemNotification: (...args: unknown[]) => mockShowSystemNotification(...args),
+  requestNotificationPermission: () => {
+    mockNotificationRequestPermission();
+    return Promise.resolve(true);
+  },
 }));
 
 // Mock calculateReminderTime to return controlled values
@@ -81,6 +85,12 @@ describe('ReminderService', () => {
       const projectStore = makeStore([], []);
       service.start({} as any, projectStore as any);
       expect(mockNotificationRequestPermission).toHaveBeenCalled();
+    });
+
+    it('移动端启动时不应请求浏览器通知权限', () => {
+      const projectStore = makeStore([], []);
+      service.start({ isMobile: true } as any, projectStore as any);
+      expect(mockNotificationRequestPermission).not.toHaveBeenCalled();
     });
 
     it('启动时应先把过期的 currentDate 校准到今天', () => {
