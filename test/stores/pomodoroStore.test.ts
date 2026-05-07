@@ -15,12 +15,32 @@ beforeAll(() => {
 });
 import { createPinia, setActivePinia } from 'pinia';
 import { eventBus, Events } from '@/utils/eventBus';
-import { loadActivePomodoro } from '@/utils/pomodoroStorage';
+import {
+  loadActivePomodoro,
+  loadPendingCompletion,
+  removePendingCompletion,
+  saveActivePomodoro,
+} from '@/utils/pomodoroStorage';
 import { usePomodoroStore } from '@/stores/pomodoroStore';
+
+const mockSchedulePomodoroFocusEnd = vi.fn();
+const mockCancelPomodoroFocusEnd = vi.fn();
+const mockSchedulePomodoroBreakEnd = vi.fn();
+const mockCancelPomodoroBreakEnd = vi.fn();
 
 // Mock dependencies
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => ({}))
+}));
+
+vi.mock('@/services/mobileNotificationScheduler', () => ({
+  mobileNotificationScheduler: {
+    schedulePomodoroFocusEnd: (...args: unknown[]) => mockSchedulePomodoroFocusEnd(...args),
+    cancelPomodoroFocusEnd: (...args: unknown[]) => mockCancelPomodoroFocusEnd(...args),
+    schedulePomodoroBreakEnd: (...args: unknown[]) => mockSchedulePomodoroBreakEnd(...args),
+    cancelPomodoroBreakEnd: (...args: unknown[]) => mockCancelPomodoroBreakEnd(...args),
+    isMobileNotificationsEnabled: vi.fn((plugin?: { isMobile?: boolean }) => !!plugin?.isMobile),
+  },
 }));
 
 vi.mock('@/api', () => ({
@@ -35,7 +55,7 @@ vi.mock('@/utils/dialog', () => ({
 }));
 
 vi.mock('@/utils/notification', () => ({
-  showPomodoroCompleteNotification: vi.fn()
+  showPomodoroCompleteNotification: vi.fn().mockResolvedValue(null)
 }));
 
 vi.mock('@/utils/pomodoroStorage', () => ({
@@ -43,6 +63,7 @@ vi.mock('@/utils/pomodoroStorage', () => ({
   loadActivePomodoro: vi.fn().mockResolvedValue(null),
   removeActivePomodoro: vi.fn().mockResolvedValue(true),
   savePendingCompletion: vi.fn().mockResolvedValue(true),
+  loadPendingCompletion: vi.fn().mockResolvedValue(null),
   removePendingCompletion: vi.fn().mockResolvedValue(true),
   saveActiveBreak: vi.fn().mockResolvedValue(undefined),
   removeActiveBreak: vi.fn().mockResolvedValue(undefined)
@@ -60,6 +81,9 @@ vi.mock('@/settings', () => ({
 }));
 
 const mockLoadActivePomodoro = vi.mocked(loadActivePomodoro);
+const mockLoadPendingCompletion = vi.mocked(loadPendingCompletion);
+const mockRemovePendingCompletion = vi.mocked(removePendingCompletion);
+const mockSaveActivePomodoro = vi.mocked(saveActivePomodoro);
 
 describe('pomodoroStore Getters', () => {
   beforeEach(() => {
@@ -231,6 +255,85 @@ describe('pomodoroStore BREAK_TICK', () => {
   });
 });
 
+describe('pomodoroStore mobile scheduling', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-07T06:00:00'));
+    setActivePinia(createPinia());
+    mockSchedulePomodoroFocusEnd.mockReset().mockResolvedValue(undefined);
+    mockCancelPomodoroFocusEnd.mockReset();
+    mockSchedulePomodoroBreakEnd.mockReset().mockResolvedValue(undefined);
+    mockCancelPomodoroBreakEnd.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('startPomodoro schedules focus-end notification on mobile', async () => {
+    const store = usePomodoroStore();
+    const plugin = { isMobile: true };
+    const item = {
+      id: 'item-1',
+      content: 'Write tests',
+      docId: 'doc-1',
+      status: 'pending',
+    } as any;
+
+    await store.startPomodoro(item, 25, 'block-1', plugin, 'countdown');
+
+    expect(mockSchedulePomodoroFocusEnd).toHaveBeenCalledWith(expect.objectContaining({
+      expectedEndAt: new Date('2026-05-07T06:25:00').getTime(),
+      itemContent: 'Write tests',
+    }));
+  });
+
+  it('pausePomodoro cancels focus-end notification on mobile', async () => {
+    const store = usePomodoroStore();
+    store.$patch({
+      activePomodoro: {
+        itemContent: 'Write tests',
+        remainingSeconds: 1200,
+        accumulatedSeconds: 300,
+        isPaused: false,
+        pauseCount: 0,
+        totalPausedSeconds: 0,
+        targetDurationMinutes: 25,
+        timerMode: 'countdown',
+      } as any,
+      timerStartTimestamp: Date.now() - 1000,
+      lastAccumulatedSeconds: 299,
+      timerInterval: 1,
+    });
+
+    await store.pausePomodoro({ isMobile: true });
+
+    expect(mockCancelPomodoroFocusEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('startBreak schedules break-end notification on mobile', async () => {
+    const store = usePomodoroStore();
+
+    await store.startBreak(5, { isMobile: true });
+
+    expect(mockSchedulePomodoroBreakEnd).toHaveBeenCalledWith(expect.objectContaining({
+      expectedEndAt: new Date('2026-05-07T06:05:00').getTime(),
+      breakLabel: '休息',
+    }));
+  });
+
+  it('stopBreak cancels break-end notification on mobile', async () => {
+    const store = usePomodoroStore();
+    await store.startBreak(5, { isMobile: true });
+    mockCancelPomodoroBreakEnd.mockClear();
+
+    await store.stopBreak({ isMobile: true });
+
+    expect(mockCancelPomodoroBreakEnd).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('pomodoroStore restorePomodoro', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -283,27 +386,115 @@ describe('pomodoroStore restorePomodoro', () => {
   });
 
   it('restorePomodoro 正确重算 accumulatedSeconds', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-07T06:02:00'));
     const store = usePomodoroStore();
-    const now = Date.now();
-    const twoMinutesAgo = now - 2 * 60 * 1000;
     mockLoadActivePomodoro.mockResolvedValue({
       blockId: 'b1',
       itemId: 'i1',
       itemContent: '测试',
-      startTime: twoMinutesAgo,
+      startTime: new Date('2026-05-07T06:00:00').getTime(),
       targetDurationMinutes: 25,
       accumulatedSeconds: 60,
       isPaused: false,
       pauseCount: 0,
-      totalPausedSeconds: 0,
+      totalPausedSeconds: 30,
       timerMode: 'countdown'
     } as any);
 
     await store.restorePomodoro({} as any);
 
     expect(store.activePomodoro).not.toBeNull();
-    expect(store.activePomodoro!.accumulatedSeconds).toBeGreaterThanOrEqual(170);
-    expect(store.activePomodoro!.accumulatedSeconds).toBeLessThanOrEqual(185);
+    expect(store.activePomodoro!.accumulatedSeconds).toBe(90);
+    expect(store.activePomodoro!.remainingSeconds).toBe(25 * 60 - 90);
+    vi.useRealTimers();
+  });
+
+  it('restorePomodoro clears stale mobile focus-end when the restored session is already expired', async () => {
+    const store = usePomodoroStore();
+    mockLoadActivePomodoro.mockResolvedValue({
+      blockId: 'b1',
+      itemId: 'i1',
+      itemContent: '测试',
+      startTime: Date.now() - 30 * 60 * 1000,
+      targetDurationMinutes: 25,
+      accumulatedSeconds: 25 * 60,
+      isPaused: false,
+      pauseCount: 0,
+      totalPausedSeconds: 0,
+      timerMode: 'countdown'
+    } as any);
+    const expiredSpy = vi.spyOn(store, 'markExpiredPomodoroComplete').mockResolvedValue();
+
+    const restored = await store.restorePomodoro({ isMobile: true } as any);
+
+    expect(restored).toBe(false);
+    expect(expiredSpy).toHaveBeenCalledTimes(1);
+    expect(mockCancelPomodoroFocusEnd).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('pomodoroStore autoExtendPomodoro', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-07T06:00:00'));
+    setActivePinia(createPinia());
+    mockSchedulePomodoroFocusEnd.mockReset().mockResolvedValue(undefined);
+    mockCancelPomodoroFocusEnd.mockReset();
+    mockLoadPendingCompletion.mockReset();
+    mockRemovePendingCompletion.mockReset().mockResolvedValue(true);
+    mockSaveActivePomodoro.mockReset().mockResolvedValue(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('keeps pending completion when auto-extend save fails', async () => {
+    const store = usePomodoroStore();
+    mockLoadPendingCompletion.mockResolvedValue({
+      blockId: 'b1',
+      itemId: 'i1',
+      itemContent: '测试',
+      startTime: new Date('2026-05-07T05:35:00').getTime(),
+      accumulatedSeconds: 25 * 60,
+      durationMinutes: 25,
+      timerMode: 'countdown',
+    } as any);
+    mockSaveActivePomodoro.mockResolvedValue(false);
+
+    await store.autoExtendPomodoro({ isMobile: true } as any);
+
+    expect(mockRemovePendingCompletion).not.toHaveBeenCalled();
+    expect(store.activePomodoro).toBeNull();
+    expect(mockSchedulePomodoroFocusEnd).not.toHaveBeenCalled();
+  });
+
+  it('reschedules mobile focus-end after successful auto-extend', async () => {
+    const store = usePomodoroStore();
+    mockLoadPendingCompletion.mockResolvedValue({
+      blockId: 'b1',
+      rootId: 'doc-root-1',
+      itemId: 'i1',
+      itemContent: '测试',
+      startTime: new Date('2026-05-07T05:35:00').getTime(),
+      accumulatedSeconds: 25 * 60,
+      durationMinutes: 25,
+      projectId: 'p1',
+      taskId: 't1',
+      timerMode: 'countdown',
+    } as any);
+
+    await store.autoExtendPomodoro({ isMobile: true, getSettings: () => ({ pomodoro: { autoExtendMinutes: 5 } }) } as any);
+
+    expect(mockSaveActivePomodoro).toHaveBeenCalledTimes(1);
+    expect(store.activePomodoro?.rootId).toBe('doc-root-1');
+    expect(mockRemovePendingCompletion).toHaveBeenCalledTimes(1);
+    expect(mockSchedulePomodoroFocusEnd).toHaveBeenCalledWith(expect.objectContaining({
+      expectedEndAt: new Date('2026-05-07T06:05:00').getTime(),
+      itemContent: '测试',
+    }));
   });
 });
 

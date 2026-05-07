@@ -113,4 +113,27 @@ describe('MobileHabitDetailSheet', () => {
 
     mounted.unmount();
   });
+
+  it('marks the sheet panel as a Siyuan dialog container and constrains touch scrolling', () => {
+    const mounted = mountSheet({
+      open: true,
+      habit: {
+        blockId: 'habit-1',
+        name: 'Read',
+      },
+      selectedDate: '2026-05-01',
+      viewMonth: '2026-05',
+      stats: null,
+    });
+
+    const root = document.body.querySelector('[data-testid="habit-detail-sheet"]');
+    const body = document.body.querySelector('.mobile-habit-detail-sheet__body') as HTMLElement | null;
+
+    expect(root?.classList.contains('b3-dialog')).toBe(true);
+    expect(body).not.toBeNull();
+    expect(body?.style.touchAction).toBe('pan-y');
+    expect(body?.style.overscrollBehavior).toBe('contain');
+
+    mounted.unmount();
+  });
 });

@@ -1,16 +1,21 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="drawer-overlay" @click="closeOnOverlay">
+      <div v-if="modelValue" class="drawer-overlay b3-dialog" @click="closeOnOverlay">
         <Transition name="slide-up">
-          <div v-if="modelValue" class="pomodoro-drawer" @click.stop>
+          <div
+            v-if="modelValue"
+            class="pomodoro-drawer"
+            style="overscroll-behavior: contain; touch-action: pan-y;"
+            @click.stop
+          >
             <!-- Drag Handle -->
             <div class="drawer-handle" @click="close">
               <div class="handle-bar"></div>
             </div>
 
             <!-- Dynamic Content -->
-            <div class="drawer-content">
+            <div class="drawer-content" style="overscroll-behavior: contain; touch-action: pan-y;">
               <!-- 专注完成记录 - 底部抽屉 -->
               <MobileComplete
                 v-if="showComplete && pendingCompletion"

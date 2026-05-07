@@ -82,6 +82,10 @@ import {
 } from "@/utils/mobileMainShellNavigation";
 import { createExampleDocument } from "@/utils/exampleDocUtils";
 import { dirtyDocTracker } from "@/utils/dirtyDocTracker";
+import {
+  mobileNotificationScheduler,
+  type MobileNotificationDebugSnapshot,
+} from "@/services/mobileNotificationScheduler";
 import { reminderService } from "@/services/reminderService";
 import {
   createNextOccurrence,
@@ -177,6 +181,32 @@ export default class TaskAssistantPlugin extends Plugin {
   private processedTaskCompletions = new Set<string>();
   /** 正在处理的任务列表完成，防止并发重复 */
   private processingTaskCompletions = new Map<string, Promise<void>>();
+  /** 移动端提醒调试开关，仅当前前端会话有效 */
+  private mobileReminderDebugModeEnabled = false;
+
+  public isMobileReminderDebugMode(): boolean {
+    return this.mobileReminderDebugModeEnabled;
+  }
+
+  public toggleMobileReminderDebugMode(): boolean {
+    this.mobileReminderDebugModeEnabled = !this.mobileReminderDebugModeEnabled;
+    return this.mobileReminderDebugModeEnabled;
+  }
+
+  public getMobileReminderDebugSnapshot(): MobileNotificationDebugSnapshot {
+    const pinia = getSharedPinia();
+    if (!pinia) {
+      return {
+        generatedAt: Date.now(),
+        currentDate: "",
+        computedEntries: [],
+        registryEntries: [],
+      };
+    }
+
+    const projectStore = useProjectStore(pinia);
+    return mobileNotificationScheduler.getDebugSnapshot(projectStore);
+  }
 
   async onload() {
     const debugState = getTaskAssistantDebugState();
@@ -240,12 +270,19 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     console.log("[Task Assistant] Starting initial loadProjects...");
     const projectStore = useProjectStore(pinia);
+    if (this.isMobile) {
+      mobileNotificationScheduler.attachRuntime(projectStore);
+    }
     projectStore
       .loadProjects(this, scanMode, enabledDirs)
       .then(async () => {
         console.log("[Task Assistant] Initial loadProjects completed");
-        // 初始加载完成后触发提醒调度重建
-        reminderService.scheduleRebuild();
+        if (this.isMobile) {
+          await mobileNotificationScheduler.scheduleSync(projectStore);
+        } else {
+          // 初始加载完成后触发提醒调度重建
+          reminderService.scheduleRebuild();
+        }
       })
       .catch((err) => {
         console.error("[Task Assistant] Failed to load projects on init:", err);
@@ -290,8 +327,10 @@ export default class TaskAssistantPlugin extends Plugin {
     // 注册斜杠命令
     this.registerSlashCommands();
 
-    // 启动提醒服务（基于 croner 精确调度）
-    reminderService.start(this, projectStore);
+    if (!this.isMobile) {
+      // 启动提醒服务（基于 croner 精确调度）
+      reminderService.start(this, projectStore);
+    }
 
     // 初始化技能存储服务
     this.initSkillStorage();
@@ -519,6 +558,7 @@ export default class TaskAssistantPlugin extends Plugin {
     destroy();
     // 清理悬浮番茄按钮
     this.hideFloatingTomatoButton();
+    mobileNotificationScheduler.detachRuntime();
     // 停止提醒服务
     reminderService.stop();
 
@@ -1582,6 +1622,19 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerEventListeners() {
     // 监听 WebSocket 消息，用于检测数据变化
     this.registerPluginEventListener("ws-main", this.onWsMain);
+    this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, () => {
+      this.scheduleRefresh();
+    });
+    this.registerAppEventListener(Events.DATA_REFRESHED, () => {
+      if (this.isMobile) {
+        const pinia = getSharedPinia();
+        if (pinia) {
+          void mobileNotificationScheduler.scheduleSync(useProjectStore(pinia));
+        }
+      } else {
+        reminderService.scheduleRebuild();
+      }
+    });
   }
 
   private registerPluginEventListener(
@@ -2140,7 +2193,6 @@ export default class TaskAssistantPlugin extends Plugin {
       });
       eventBus.emit(Events.DATA_REFRESH);
       broadcastDataRefresh();
-      reminderService.scheduleRebuild();
     }, 150);
   }
 

@@ -9,7 +9,7 @@ import type { Plugin } from 'siyuan';
 import type { Habit, Item } from '@/types/models';
 import { useProjectStore } from '@/stores';
 import { calculateReminderTime } from '@/parser/reminderParser';
-import { showSystemNotification } from '@/utils/notification';
+import { requestNotificationPermission, showSystemNotification } from '@/utils/notification';
 import { getHabitReminderEntries } from '@/services/habitReminder';
 import dayjs from '@/utils/dayjs';
 
@@ -37,10 +37,15 @@ export class ReminderService {
   /**
    * 启动提醒服务
    */
-  start(_plugin: Plugin, projectStore: ProjectStoreType): void {
+  start(plugin: Plugin, projectStore: ProjectStoreType): void {
     this.projectStore = projectStore;
 
-    this.requestNotificationPermission();
+    if ((plugin as Plugin & { isMobile?: boolean }).isMobile) {
+      console.log('[ReminderService] Mobile frontend detected, skipping realtime scheduler startup');
+      return;
+    }
+
+    void requestNotificationPermission();
     this.setupVisibilityListener();
     this.rebuildSchedulesFromNow();
     this.scheduleMidnightRefresh();
@@ -71,17 +76,6 @@ export class ReminderService {
   scheduleRebuild(): void {
     if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
     this.rebuildTimer = setTimeout(() => this.rebuildSchedulesFromNow(), 300);
-  }
-
-  /**
-   * 请求通知权限
-   */
-  private requestNotificationPermission(): void {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
   }
 
   /**
@@ -313,12 +307,14 @@ export class ReminderService {
       ? `${item.task.name}: ${item.content}`
       : item.content;
 
-    showSystemNotification(title, body, {
+    void showSystemNotification(title, body, {
       tag: `reminder-${item.blockId}`,
       icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
       onClick: () => {
         this.openBlock(item.blockId);
       },
+    }).catch((error) => {
+      console.error('[ReminderService] Failed to show item notification:', error);
     });
 
     console.log(`[ReminderService] Notification triggered: ${item.content}`);
@@ -333,12 +329,14 @@ export class ReminderService {
       ? `${habit.name} ${habit.target || 0}${habit.unit || ''}`
       : habit.name;
 
-    showSystemNotification(title, body, {
+    void showSystemNotification(title, body, {
       tag: `habit-reminder-${habit.blockId}`,
       icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
       onClick: () => {
         this.openBlock(habit.blockId);
       },
+    }).catch((error) => {
+      console.error('[ReminderService] Failed to show habit notification:', error);
     });
 
     console.log(`[ReminderService] Habit notification triggered: ${habit.name}`);
