@@ -35,4 +35,17 @@ describe('MobileTodoList layout', () => {
     expect(source).toContain('padding: 8px 16px');
     expect(source).toContain('padding: 0');
   });
+
+  it('keeps the gesture-guard root from inheriting dialog layout styles', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/mobile/components/todo/MobileTodoList.vue'),
+      'utf-8',
+    );
+
+    expect(source).toContain('mobile-todo-list--gesture-guard b3-dialog');
+    expect(source).toContain('position: relative;');
+    expect(source).toContain('display: block;');
+    expect(source).toContain('touch-action: pan-y;');
+    expect(source).toContain('overscroll-behavior: contain;');
+  });
 });

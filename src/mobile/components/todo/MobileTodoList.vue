@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="mobile-todo-list" 
+    class="mobile-todo-list mobile-todo-list--gesture-guard b3-dialog" 
     ref="scrollContainer"
     @touchstart="handleContainerTouchStart"
     @touchmove="handleContainerTouchMove"
@@ -546,6 +546,18 @@ onUnmounted(() => {
   position: relative;
   background: var(--b3-theme-surface);
   width: 100%;
+}
+
+.mobile-todo-list--gesture-guard {
+  position: relative;
+  inset: auto;
+  display: block;
+  height: auto;
+  min-height: 0;
+  align-items: stretch;
+  justify-content: flex-start;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 
 .pull-refresh-indicator {
