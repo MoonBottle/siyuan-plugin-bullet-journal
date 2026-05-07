@@ -89,4 +89,42 @@ describe('Project and Task detail fullscreen layout', () => {
 
     mounted.unmount();
   });
+
+  it('renders tasks even when they have no item priority', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp(ProjectDetail, {
+      modelValue: true,
+      project: {
+        id: 'project-1',
+        name: '任务助手示例文档',
+        description: '',
+        tasks: [
+          {
+            id: 'task-1',
+            blockId: 'task-block-1',
+            name: '这是一个任务',
+            level: 'L1',
+            items: [
+              {
+                id: 'item-1',
+                blockId: 'item-1',
+                content: '这是一个全天事项',
+                date: '2026-05-07',
+                status: 'pending',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    app.mount(container);
+    await nextTick();
+
+    expect(document.body.textContent).toContain('这是一个任务');
+
+    app.unmount();
+    container.remove();
+  });
 });

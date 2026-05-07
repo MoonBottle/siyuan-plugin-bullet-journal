@@ -149,6 +149,39 @@
               </div>
             </div>
 
+            <!-- No Priority -->
+            <div v-if="unprioritizedTasks.length > 0" class="priority-section">
+              <div class="priority-header none">
+                <div class="priority-icon">
+                  <svg><use xlink:href="#iconList"></use></svg>
+                </div>
+                <span class="priority-name">{{ t('mobile.priority.none') || '未设置优先级' }}</span>
+                <span class="priority-count">{{ unprioritizedTasks.length }}</span>
+              </div>
+              <div class="task-list">
+                <div
+                  v-for="task in unprioritizedTasks"
+                  :key="task.id"
+                  class="task-item"
+                  @click="handleTaskClick(task)"
+                >
+                  <div class="task-info">
+                    <div class="task-name">{{ task.name }}</div>
+                    <div class="task-meta">
+                      <span class="task-level">{{ task.level }}</span>
+                      <span class="task-items-count">{{ getTaskItemsCount(task) }} 事项</span>
+                    </div>
+                  </div>
+                  <div class="task-progress">
+                    <div class="progress-ring" :style="getProgressStyle(task)">
+                      <span class="progress-text">{{ getTaskProgress(task) }}%</span>
+                    </div>
+                    <svg class="arrow-icon"><use xlink:href="#iconRight"></use></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- No Tasks -->
             <div v-if="allTasks.length === 0" class="empty-state">
               <div class="empty-icon">
@@ -196,6 +229,10 @@ const mediumPriorityTasks = computed(() =>
 
 const lowPriorityTasks = computed(() => 
   allTasks.value.filter(task => getTaskPriority(task) === 'low')
+);
+
+const unprioritizedTasks = computed(() =>
+  allTasks.value.filter(task => getTaskPriority(task) === undefined)
 );
 
 // Computed: Project stats
@@ -465,6 +502,20 @@ const close = () => {
     .priority-count {
       background: rgba(75, 85, 99, 0.15);
       color: #4b5563;
+    }
+  }
+
+  &.none {
+    background: rgba(107, 114, 128, 0.08);
+    color: #6b7280;
+
+    .priority-icon svg {
+      fill: #6b7280;
+    }
+
+    .priority-count {
+      background: rgba(107, 114, 128, 0.15);
+      color: #6b7280;
     }
   }
 }
