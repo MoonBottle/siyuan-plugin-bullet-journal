@@ -59,7 +59,12 @@
         {{ t('mobile.settings.about') || '关于' }}
       </div>
 
-      <div class="mobile-more-panel__item mobile-more-panel__item--static">
+      <button
+        class="mobile-more-panel__item mobile-more-panel__item--static"
+        data-testid="more-version-trigger"
+        type="button"
+        @click="handleVersionTap"
+      >
         <div class="mobile-more-panel__item-copy">
           <span class="mobile-more-panel__item-title">
             {{ t('mobile.settings.version') || '版本' }}
@@ -68,23 +73,100 @@
             v{{ version }}
           </span>
         </div>
-      </div>
+      </button>
     </div>
+
+    <MobileReminderDebugSheet
+      v-model="showReminderDebugSheet"
+      :snapshot="reminderDebugSnapshot"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import PluginInfo from '@/../plugin.json';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
+import MobileReminderDebugSheet from '@/mobile/components/debug/MobileReminderDebugSheet.vue';
+import type { MobileNotificationDebugSnapshot } from '@/services/mobileNotificationScheduler';
 import { useProjectStore } from '@/stores';
+import { showMessage } from '@/utils/dialog';
 
 const projectStore = useProjectStore();
-const plugin = usePlugin();
+type MobileReminderDebugPluginLike = {
+  manifest?: {
+    version?: string;
+  };
+  isMobileReminderDebugMode?: () => boolean;
+  toggleMobileReminderDebugMode?: () => boolean;
+  getMobileReminderDebugSnapshot?: () => MobileNotificationDebugSnapshot;
+} | null;
+
+const plugin = usePlugin() as MobileReminderDebugPluginLike;
 const fallbackVersion = PluginInfo.version || '0.12.8';
+const showReminderDebugSheet = ref(false);
+const reminderDebugSnapshot = ref<MobileNotificationDebugSnapshot | null>(null);
+const reminderDebugModeEnabled = ref(plugin?.isMobileReminderDebugMode?.() ?? false);
+const versionTapCount = ref(0);
+let versionTapResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 const version = computed(() => plugin?.manifest?.version || fallbackVersion);
+
+function resetVersionTapProgress() {
+  versionTapCount.value = 0;
+  if (versionTapResetTimer) {
+    clearTimeout(versionTapResetTimer);
+    versionTapResetTimer = null;
+  }
+}
+
+function openReminderDebugSheet() {
+  reminderDebugSnapshot.value = plugin?.getMobileReminderDebugSnapshot?.() ?? {
+    generatedAt: Date.now(),
+    currentDate: '',
+    computedEntries: [],
+    registryEntries: [],
+  };
+  showReminderDebugSheet.value = true;
+}
+
+function enableReminderDebugMode() {
+  reminderDebugModeEnabled.value = plugin?.toggleMobileReminderDebugMode?.() ?? false;
+
+  if (!reminderDebugModeEnabled.value) {
+    return;
+  }
+
+  showMessage(t('mobile.debug.reminder.enabled') || '已开启移动端提醒调试模式（仅当前会话有效）');
+  openReminderDebugSheet();
+}
+
+function handleVersionTap() {
+  if (reminderDebugModeEnabled.value) {
+    openReminderDebugSheet();
+    return;
+  }
+
+  versionTapCount.value += 1;
+  if (versionTapCount.value >= 5) {
+    resetVersionTapProgress();
+    enableReminderDebugMode();
+    return;
+  }
+
+  if (versionTapResetTimer) {
+    clearTimeout(versionTapResetTimer);
+  }
+  versionTapResetTimer = setTimeout(() => {
+    versionTapCount.value = 0;
+    versionTapResetTimer = null;
+  }, 1500);
+}
+
+onBeforeUnmount(() => {
+  resetVersionTapProgress();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -131,6 +213,8 @@ const version = computed(() => plugin?.manifest?.version || fallbackVersion);
   background: var(--b3-theme-background, #fff);
   text-align: left;
   color: inherit;
+  cursor: pointer;
+  appearance: none;
 }
 
 .mobile-more-panel__item + .mobile-more-panel__item {
@@ -156,7 +240,7 @@ const version = computed(() => plugin?.manifest?.version || fallbackVersion);
 }
 
 .mobile-more-panel__item--static {
-  cursor: default;
+  cursor: pointer;
 }
 
 .mobile-more-panel__switch {

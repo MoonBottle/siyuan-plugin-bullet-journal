@@ -151,6 +151,15 @@ describe('notification utility', () => {
     expect(mockCancelNotification).toHaveBeenCalledWith(202);
   });
 
+  it('treats negative native notification ids as scheduling failure', async () => {
+    mockSendNotification.mockResolvedValueOnce(-1);
+
+    const { scheduleNativeNotification } = await import('@/utils/notification');
+    const notificationId = await scheduleNativeNotification('Scheduled', 'Later', 30, { tag: 'reminder' });
+
+    expect(notificationId).toBeNull();
+  });
+
   it('requests browser notification permission when still undecided', async () => {
     const BrowserNotification = installBrowserNotification();
     BrowserNotification.permission = 'default';

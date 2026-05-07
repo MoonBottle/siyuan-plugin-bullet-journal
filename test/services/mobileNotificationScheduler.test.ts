@@ -7,6 +7,28 @@ const mockCancelNativeNotification = vi.fn();
 
 vi.mock('@/utils/notification', () => ({
   scheduleNativeNotification: (...args: unknown[]) => mockScheduleNativeNotification(...args),
+  scheduleNativeNotificationWithDebug: async (...args: unknown[]) => {
+    const result = await mockScheduleNativeNotification(...args);
+    if (result === null || result === undefined) {
+      return {
+        notificationId: null,
+        rawNotificationId: null,
+        failureReason: 'exception',
+      };
+    }
+    if (!Number.isInteger(result) || result < 0) {
+      return {
+        notificationId: null,
+        rawNotificationId: Number(result),
+        failureReason: 'invalid-id',
+      };
+    }
+    return {
+      notificationId: result,
+      rawNotificationId: result,
+      failureReason: null,
+    };
+  },
   cancelNativeNotification: (...args: unknown[]) => mockCancelNativeNotification(...args),
 }));
 
@@ -319,6 +341,25 @@ describe('MobileNotificationScheduler', () => {
     expect(registryState['reminder:block-1:2026-05-07']?.notificationId).toBe(101);
   });
 
+  it('records debug failure details when native scheduling returns an invalid id', async () => {
+    mockReminderTime = new Date('2026-05-07T06:00:32').getTime();
+    mockScheduleNativeNotification.mockResolvedValueOnce(-1);
+    const store = makeStore([makeItem()]) as any;
+
+    await scheduler.scheduleSync(store);
+
+    const snapshot = scheduler.getDebugSnapshot(store);
+    expect(snapshot.computedEntries).toEqual([
+      expect.objectContaining({
+        entryKey: 'reminder:block-1:2026-05-07',
+        registryNotificationId: null,
+        registryStatus: null,
+        lastScheduleResult: 'invalid-id',
+        lastNativeNotificationId: -1,
+      }),
+    ]);
+  });
+
   it('reschedules focus-end when the expected end time changes', async () => {
     const firstEnd = new Date('2026-05-07T06:25:00').getTime();
     const secondEnd = new Date('2026-05-07T06:30:00').getTime();
@@ -377,5 +418,54 @@ describe('MobileNotificationScheduler', () => {
     expect(mockCancelNativeNotification).toHaveBeenCalledWith(601);
     expect(mockRemoveRegistryEntry).toHaveBeenCalledWith('pomodoro:break-end');
     expect(registryState['pomodoro:break-end']).toBeUndefined();
+  });
+
+  it('builds a debug snapshot with computed plans and registry metadata', () => {
+    mockReminderTime = new Date('2026-05-07T06:20:00').getTime();
+    registryState = {
+      'reminder:block-1:2026-05-07': {
+        entryKey: 'reminder:block-1:2026-05-07',
+        notificationId: 101,
+        scheduledAt: mockReminderTime,
+        delayInSeconds: 20 * 60,
+        planKey: 'plan-1',
+        kind: 'reminder',
+        status: 'scheduled',
+        updatedAt: '2026-05-07T06:00:00.000Z',
+      },
+      'pomodoro:focus-end': {
+        entryKey: 'pomodoro:focus-end',
+        notificationId: 777,
+        scheduledAt: new Date('2026-05-07T06:25:00').getTime(),
+        delayInSeconds: 25 * 60,
+        planKey: 'pomodoro-plan',
+        kind: 'pomodoro-focus-end',
+        status: 'scheduled',
+        updatedAt: '2026-05-07T06:00:00.000Z',
+      },
+    };
+
+    const snapshot = scheduler.getDebugSnapshot(makeStore([makeItem()]) as any);
+
+    expect(snapshot.currentDate).toBe('2026-05-07');
+    expect(snapshot.computedEntries).toEqual([
+      expect.objectContaining({
+        entryKey: 'reminder:block-1:2026-05-07',
+        kind: 'reminder',
+        title: '⏰ Project A',
+        body: 'Task A: Call client',
+        registryNotificationId: 101,
+        registryStatus: 'scheduled',
+        lastScheduleResult: 'scheduled',
+        lastNativeNotificationId: 101,
+      }),
+    ]);
+    expect(snapshot.registryEntries).toEqual([
+      expect.objectContaining({
+        entryKey: 'pomodoro:focus-end',
+        kind: 'pomodoro-focus-end',
+        notificationId: 777,
+      }),
+    ]);
   });
 });

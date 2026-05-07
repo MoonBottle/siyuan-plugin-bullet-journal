@@ -7,8 +7,13 @@ import {
   removeMobileNotificationRegistryEntry,
   saveMobileNotificationRegistryEntry,
   type MobileNotificationKind,
+  type MobileNotificationRegistryEntry,
 } from '@/services/mobileNotificationRegistry';
-import { scheduleNativeNotification, cancelNativeNotification } from '@/utils/notification';
+import {
+  scheduleNativeNotificationWithDebug,
+  cancelNativeNotification,
+  type NativeScheduleFailureReason,
+} from '@/utils/notification';
 import type { Habit, Item } from '@/types/models';
 import { useProjectStore } from '@/stores';
 
@@ -43,6 +48,21 @@ type MobileSchedulePlan = {
   title: string;
   body: string;
   tag: string;
+};
+
+export type MobileNotificationDebugComputedEntry = MobileSchedulePlan & {
+  registryNotificationId: number | null;
+  registryStatus: string | null;
+  registryUpdatedAt: string | null;
+  lastNativeNotificationId: number | null;
+  lastScheduleResult: 'scheduled' | NativeScheduleFailureReason | null;
+};
+
+export type MobileNotificationDebugSnapshot = {
+  generatedAt: number;
+  currentDate: string;
+  computedEntries: MobileNotificationDebugComputedEntry[];
+  registryEntries: MobileNotificationRegistryEntry[];
 };
 
 function makeReminderEntryKey(item: Item): string | null {
@@ -125,6 +145,10 @@ export class MobileNotificationScheduler {
   private midnightTimer: ReturnType<typeof setTimeout> | null = null;
   private activeSync: Promise<void> | null = null;
   private pendingSyncRequested = false;
+  private lastScheduleAttempts = new Map<string, {
+    rawNotificationId: number | null;
+    result: 'scheduled' | NativeScheduleFailureReason;
+  }>();
 
   attachRuntime(projectStore: ProjectStoreType): void {
     this.runtimeProjectStore = projectStore;
@@ -174,6 +198,7 @@ export class MobileNotificationScheduler {
 
       cancelNativeNotification(existing.notificationId);
       removeMobileNotificationRegistryEntry(entryKey);
+      this.lastScheduleAttempts.delete(entryKey);
     }
 
     for (const [entryKey, plan] of nextPlans) {
@@ -206,6 +231,38 @@ export class MobileNotificationScheduler {
 
   cancelPomodoroBreakEnd(): void {
     this.cancelRegistryEntry(POMODORO_BREAK_END_ENTRY_KEY);
+  }
+
+  getDebugSnapshot(projectStore: ProjectStoreType): MobileNotificationDebugSnapshot {
+    const registry = loadMobileNotificationRegistry();
+    const computedEntries = Array.from(this.collectPlans(projectStore).values())
+      .sort((a, b) => a.scheduledAt - b.scheduledAt)
+      .map((plan) => {
+        const existing = registry[plan.entryKey];
+        return {
+          ...plan,
+          registryNotificationId: existing?.notificationId ?? null,
+          registryStatus: existing?.status ?? null,
+          registryUpdatedAt: existing?.updatedAt ?? null,
+          lastNativeNotificationId: this.lastScheduleAttempts.get(plan.entryKey)?.rawNotificationId
+            ?? existing?.notificationId
+            ?? null,
+          lastScheduleResult: this.lastScheduleAttempts.get(plan.entryKey)?.result
+            ?? (existing ? 'scheduled' : null),
+        };
+      });
+
+    const computedEntryKeys = new Set(computedEntries.map(entry => entry.entryKey));
+    const registryEntries = Object.values(registry)
+      .filter(entry => !computedEntryKeys.has(entry.entryKey))
+      .sort((a, b) => a.scheduledAt - b.scheduledAt);
+
+    return {
+      generatedAt: Date.now(),
+      currentDate: projectStore.currentDate,
+      computedEntries,
+      registryEntries,
+    };
   }
 
   private async runSyncLoop(): Promise<void> {
@@ -387,27 +444,37 @@ export class MobileNotificationScheduler {
       return;
     }
 
-    const notificationId = await scheduleNativeNotification(
-      plan.title,
-      plan.body,
-      plan.delayInSeconds,
-      { tag: plan.tag },
-    );
+      const scheduleAttempt = await scheduleNativeNotificationWithDebug(
+        plan.title,
+        plan.body,
+        plan.delayInSeconds,
+        { tag: plan.tag },
+      );
 
-    if (notificationId === null)
-      return;
+      if (scheduleAttempt.notificationId === null) {
+        this.lastScheduleAttempts.set(plan.entryKey, {
+          rawNotificationId: scheduleAttempt.rawNotificationId,
+          result: scheduleAttempt.failureReason ?? 'invalid-id',
+        });
+        return;
+      }
 
-    if (existing) {
-      cancelNativeNotification(existing.notificationId);
-      removeMobileNotificationRegistryEntry(plan.entryKey);
-    }
+      this.lastScheduleAttempts.set(plan.entryKey, {
+        rawNotificationId: scheduleAttempt.rawNotificationId,
+        result: 'scheduled',
+      });
 
-    saveMobileNotificationRegistryEntry({
-      entryKey: plan.entryKey,
-      notificationId,
-      scheduledAt: plan.scheduledAt,
-      delayInSeconds: plan.delayInSeconds,
-      planKey: plan.planKey,
+      if (existing) {
+        cancelNativeNotification(existing.notificationId);
+        removeMobileNotificationRegistryEntry(plan.entryKey);
+      }
+
+      saveMobileNotificationRegistryEntry({
+        entryKey: plan.entryKey,
+        notificationId: scheduleAttempt.notificationId,
+        scheduledAt: plan.scheduledAt,
+        delayInSeconds: plan.delayInSeconds,
+        planKey: plan.planKey,
       kind: plan.kind,
       status: 'scheduled',
       updatedAt: new Date().toISOString(),
@@ -422,6 +489,7 @@ export class MobileNotificationScheduler {
 
     cancelNativeNotification(existing.notificationId);
     removeMobileNotificationRegistryEntry(entryKey);
+    this.lastScheduleAttempts.delete(entryKey);
   }
 }
 

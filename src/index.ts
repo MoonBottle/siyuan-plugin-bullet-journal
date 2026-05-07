@@ -82,7 +82,10 @@ import {
 } from "@/utils/mobileMainShellNavigation";
 import { createExampleDocument } from "@/utils/exampleDocUtils";
 import { dirtyDocTracker } from "@/utils/dirtyDocTracker";
-import { mobileNotificationScheduler } from "@/services/mobileNotificationScheduler";
+import {
+  mobileNotificationScheduler,
+  type MobileNotificationDebugSnapshot,
+} from "@/services/mobileNotificationScheduler";
 import { reminderService } from "@/services/reminderService";
 import {
   createNextOccurrence,
@@ -178,6 +181,32 @@ export default class TaskAssistantPlugin extends Plugin {
   private processedTaskCompletions = new Set<string>();
   /** 正在处理的任务列表完成，防止并发重复 */
   private processingTaskCompletions = new Map<string, Promise<void>>();
+  /** 移动端提醒调试开关，仅当前前端会话有效 */
+  private mobileReminderDebugModeEnabled = false;
+
+  public isMobileReminderDebugMode(): boolean {
+    return this.mobileReminderDebugModeEnabled;
+  }
+
+  public toggleMobileReminderDebugMode(): boolean {
+    this.mobileReminderDebugModeEnabled = !this.mobileReminderDebugModeEnabled;
+    return this.mobileReminderDebugModeEnabled;
+  }
+
+  public getMobileReminderDebugSnapshot(): MobileNotificationDebugSnapshot {
+    const pinia = getSharedPinia();
+    if (!pinia) {
+      return {
+        generatedAt: Date.now(),
+        currentDate: "",
+        computedEntries: [],
+        registryEntries: [],
+      };
+    }
+
+    const projectStore = useProjectStore(pinia);
+    return mobileNotificationScheduler.getDebugSnapshot(projectStore);
+  }
 
   async onload() {
     const debugState = getTaskAssistantDebugState();

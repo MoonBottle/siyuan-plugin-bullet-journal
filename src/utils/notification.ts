@@ -82,6 +82,16 @@ type NotificationOptions = {
   onClose?: () => void;
 };
 
+export type NativeScheduleFailureReason =
+  | 'invalid-id'
+  | 'exception';
+
+export type NativeScheduleAttemptResult = {
+  notificationId: number | null;
+  rawNotificationId: number | null;
+  failureReason: NativeScheduleFailureReason | null;
+};
+
 type UnifiedNotificationResult = number | Notification | null;
 type NativeNotificationApi = {
   sendNotification?: (options: {
@@ -213,19 +223,47 @@ export async function scheduleNativeNotification(
   delayInSeconds: number,
   options?: Omit<NotificationOptions, 'onClick' | 'onClose'>,
 ): Promise<number | null> {
+  const result = await scheduleNativeNotificationWithDebug(title, body, delayInSeconds, options);
+  return result.notificationId;
+}
+
+export async function scheduleNativeNotificationWithDebug(
+  title: string,
+  body: string,
+  delayInSeconds: number,
+  options?: Omit<NotificationOptions, 'onClick' | 'onClose'>,
+): Promise<NativeScheduleAttemptResult> {
   try {
     const { sendNotification } = getNativeNotificationApi();
     if (!sendNotification) {
       throw new Error('Native notification API unavailable');
     }
 
-    return await sendNotification(buildNativeNotificationOptions(title, body, {
+    const rawNotificationId = await sendNotification(buildNativeNotificationOptions(title, body, {
       ...options,
       delayInSeconds,
     }));
+
+    if (!Number.isInteger(rawNotificationId) || rawNotificationId < 0) {
+      return {
+        notificationId: null,
+        rawNotificationId,
+        failureReason: 'invalid-id',
+      };
+    }
+
+    return {
+      notificationId: rawNotificationId,
+      rawNotificationId,
+      failureReason: null,
+    };
   } catch (error) {
     console.error('[Notification] 调度原生通知失败:', error);
-    return null;
+    return {
+      notificationId: null,
+      rawNotificationId: null,
+      failureReason: 'exception',
+    };
   }
 }
 

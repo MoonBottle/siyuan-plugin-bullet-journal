@@ -798,6 +798,18 @@
       "pluginSettings": "Plugin Settings",
       "version": "Version"
     },
+    "debug": {
+      "reminder": {
+        "title": "Mobile Reminder Debug",
+        "enabled": "Mobile reminder debug mode enabled for this session only",
+        "generatedAt": "Generated At",
+        "currentDate": "Current Date",
+        "computed": "Computed Reminder Plans",
+        "registry": "Native Reservation Registry",
+        "emptyComputed": "No reminder plans are scheduled within the next 24 hours",
+        "emptyRegistry": "No extra native reservation records are currently retained"
+      }
+    },
     "time": {
       "allDay": "All Day",
       "customTime": "Custom Time",
