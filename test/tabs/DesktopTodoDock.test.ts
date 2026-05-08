@@ -399,8 +399,12 @@ describe('DesktopTodoDock', () => {
       [{ name: 'Alpha', count: 2 }],
     );
 
+    (mounted.container.querySelector('.tag-search-box') as HTMLDivElement | null)
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
     const optionChip = mounted.container.querySelector('.tag-options .tag-chip') as HTMLElement | null;
-    expect(optionChip?.className).toContain('tag-chip--active');
+    expect(optionChip?.className).toContain('tag-chip--selected');
 
     optionChip?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();

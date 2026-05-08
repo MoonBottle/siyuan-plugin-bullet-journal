@@ -16,42 +16,60 @@
       </div>
     </div>
 
-    <div v-if="showSearch" class="tag-search-row">
-      <div class="tag-search-box">
+    <div
+      v-if="showSearch"
+      ref="tagSearchRow"
+      class="tag-search-row"
+    >
+      <div
+        ref="tagSearchRoot"
+        class="tag-search-box"
+        :class="{ 'tag-search-box--open': showTagDropdown }"
+        @click="handleTagBoxClick"
+      >
         <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
+        <div v-if="displaySelectedTags.length" class="selected-tag-chips">
+          <button
+            v-for="tag in displaySelectedTags"
+            :key="`selected-${tag}`"
+            class="tag-chip tag-chip--selected"
+            @click.stop="removeTag(tag)"
+          >
+            <span class="tag-chip__label">#{{ tag }}</span>
+            <svg class="tag-chip__icon"><use xlink:href="#iconClose"></use></svg>
+          </button>
+        </div>
         <input
+          ref="tagSearchInput"
           :value="tagQuery"
           type="text"
           placeholder="筛选标签"
           class="tag-search-input"
+          @focus="handleTagInputFocus"
           @input="handleTagQueryInput"
+          @keydown="handleTagInputKeydown"
         />
-        <button v-if="tagQuery" class="clear-btn" @click="$emit('update:tagQuery', '')">
+        <button v-if="tagQuery" class="clear-btn" @click.stop="$emit('update:tagQuery', '')">
           <svg><use xlink:href="#iconClose"></use></svg>
         </button>
       </div>
 
-      <div v-if="displaySelectedTags.length" class="selected-tag-chips">
+      <div v-if="showTagDropdown" class="tag-dropdown tag-options">
         <button
-          v-for="tag in displaySelectedTags"
-          :key="`selected-${tag}`"
-          class="tag-chip tag-chip--selected"
-          @click="toggleTag(tag)"
-        >
-          <span class="tag-chip__label">#{{ tag }}</span>
-          <svg class="tag-chip__icon"><use xlink:href="#iconClose"></use></svg>
-        </button>
-      </div>
-
-      <div v-if="filteredTagOptions.length" class="tag-options">
-        <button
-          v-for="option in filteredTagOptions"
+          v-for="(option, index) in filteredTagOptions"
           :key="option.name"
-          :class="['tag-chip', { 'tag-chip--active': isTagSelected(option.name) }]"
-          @click="toggleTag(option.name)"
+          :class="[
+            'tag-chip',
+            'tag-option',
+            {
+              'tag-chip--selected': isTagSelected(option.name),
+              'tag-option--highlighted': highlightedTagName === option.name,
+            },
+          ]"
+          @click.stop="toggleTag(option.name)"
         >
-          <span class="tag-chip__label">#{{ option.name }}</span>
-          <span class="tag-chip__count">{{ option.count }}</span>
+          <span class="tag-option__label">#{{ option.name }}</span>
+          <span class="tag-option__count">{{ option.count }}</span>
         </button>
       </div>
     </div>
@@ -168,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
@@ -240,6 +258,12 @@ function handleSearchInput(event: Event) {
   emit('update:searchQuery', target.value);
 }
 
+const tagSearchRoot = ref<HTMLElement | null>(null);
+const tagSearchRow = ref<HTMLElement | null>(null);
+const tagSearchInput = ref<HTMLInputElement | null>(null);
+const isTagDropdownOpen = ref(false);
+const highlightedTagIndex = ref(-1);
+
 const normalizedTagQuery = computed(() => {
   return normalizeTagQuery(props.tagQuery);
 });
@@ -271,6 +295,10 @@ const filteredTagOptions = computed(() => {
   );
 });
 
+const showTagDropdown = computed(() => {
+  return isTagDropdownOpen.value && filteredTagOptions.value.length > 0;
+});
+
 function normalizeTagQuery(query?: string) {
   return (query || '').trim().replace(/^#/, '').toLocaleLowerCase();
 }
@@ -284,7 +312,17 @@ function handleTagQueryInput(event: Event) {
   if (!target) {
     return;
   }
+  highlightedTagIndex.value = -1;
   emit('update:tagQuery', target.value);
+}
+
+function openTagDropdown() {
+  isTagDropdownOpen.value = true;
+}
+
+function closeTagDropdown() {
+  isTagDropdownOpen.value = false;
+  highlightedTagIndex.value = -1;
 }
 
 function isTagSelected(tag: string) {
@@ -293,14 +331,109 @@ function isTagSelected(tag: string) {
 
 function toggleTag(tag: string) {
   const normalizedTargetTag = normalizeSelectedTag(tag);
+  const tagAlreadySelected = isTagSelected(tag);
   const nextTagsWithoutTarget = props.selectedTags.filter(
     selectedTag => normalizeSelectedTag(selectedTag) !== normalizedTargetTag,
   );
-  const nextTags = isTagSelected(tag)
+  const nextTags = tagAlreadySelected
     ? nextTagsWithoutTarget
     : [...nextTagsWithoutTarget, tag];
 
   emit('update:selectedTags', nextTags);
+  emit('update:tagQuery', '');
+  highlightedTagIndex.value = -1;
+}
+
+function removeTag(tag: string) {
+  if (!isTagSelected(tag)) {
+    return;
+  }
+
+  toggleTag(tag);
+}
+
+function handleTagInputKeydown(event: KeyboardEvent) {
+  if (event.key === 'Backspace' && !props.tagQuery && displaySelectedTags.value.length > 0) {
+    event.preventDefault();
+    const lastTag = displaySelectedTags.value[displaySelectedTags.value.length - 1];
+    if (lastTag) {
+      removeTag(lastTag);
+    }
+    return;
+  }
+
+  if (event.key === 'Escape') {
+    closeTagDropdown();
+    return;
+  }
+
+  if (!filteredTagOptions.value.length) {
+    return;
+  }
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    openTagDropdown();
+    highlightedTagIndex.value = highlightedTagIndex.value < 0
+      ? 0
+      : (highlightedTagIndex.value + 1) % filteredTagOptions.value.length;
+    return;
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    openTagDropdown();
+    highlightedTagIndex.value = highlightedTagIndex.value < 0
+      ? filteredTagOptions.value.length - 1
+      : (highlightedTagIndex.value - 1 + filteredTagOptions.value.length) % filteredTagOptions.value.length;
+    return;
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const activeOption = highlightedTagIndex.value >= 0
+      ? filteredTagOptions.value[highlightedTagIndex.value]
+      : filteredTagOptions.value[0];
+    if (activeOption) {
+      toggleTag(activeOption.name);
+    }
+  }
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  const target = event.target;
+  if (!(target instanceof Node)) {
+    return;
+  }
+
+  if (tagSearchRow.value?.contains(target)) {
+    return;
+  }
+
+  closeTagDropdown();
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
+});
+
+const highlightedTagName = computed(() => {
+  return filteredTagOptions.value[highlightedTagIndex.value]?.name ?? '';
+});
+
+function handleTagInputFocus() {
+  highlightedTagIndex.value = -1;
+  openTagDropdown();
+}
+
+function handleTagBoxClick() {
+  highlightedTagIndex.value = -1;
+  openTagDropdown();
+  tagSearchInput.value?.focus();
 }
 </script>
 
@@ -325,8 +458,9 @@ function toggleTag(tag: string) {
       align-items: center;
       gap: 6px;
       width: 100%;
+      min-height: 36px;
       box-sizing: border-box;
-      padding: 6px 10px;
+      padding: 5px 10px;
       background: var(--b3-theme-background);
       border-radius: var(--b3-border-radius);
       border: 1px solid var(--b3-border-color);
@@ -367,19 +501,19 @@ function toggleTag(tag: string) {
   }
 
   .tag-search-row {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    position: relative;
     margin-bottom: 8px;
   }
 
   .tag-search-box {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
     width: 100%;
+    min-height: 36px;
     box-sizing: border-box;
-    padding: 6px 10px;
+    padding: 5px 10px;
     background: var(--b3-theme-background);
     border-radius: var(--b3-border-radius);
     border: 1px solid var(--b3-border-color);
@@ -388,18 +522,25 @@ function toggleTag(tag: string) {
       border-color: var(--b3-theme-primary);
     }
 
+    &--open {
+      border-color: var(--b3-theme-primary);
+    }
+
     .search-icon {
       width: 14px;
       height: 14px;
       fill: var(--b3-theme-on-surface);
       opacity: 0.5;
+      flex-shrink: 0;
     }
 
     .tag-search-input {
       flex: 1;
+      min-width: 96px;
       border: none;
       background: transparent;
       font-size: 13px;
+      line-height: 1.5;
       outline: none;
       color: var(--b3-theme-on-background);
     }
@@ -418,11 +559,28 @@ function toggleTag(tag: string) {
     }
   }
 
-  .selected-tag-chips,
-  .tag-options {
+  .selected-tag-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .tag-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--b3-border-color);
+    border-radius: var(--b3-border-radius);
+    background: var(--b3-theme-surface);
+    box-shadow: var(--b3-dialog-shadow);
   }
 
   .tag-chip {
@@ -456,6 +614,30 @@ function toggleTag(tag: string) {
       opacity: 0.7;
       font-variant-numeric: tabular-nums;
     }
+  }
+
+  .tag-option {
+    width: 100%;
+    justify-content: space-between;
+    min-height: 28px;
+    border-radius: 6px;
+    padding: 0 10px;
+
+    &.tag-option--highlighted {
+      border-color: var(--b3-theme-primary);
+      background: var(--b3-theme-primary-lightest);
+      color: var(--b3-theme-primary);
+    }
+  }
+
+  .tag-option__label,
+  .tag-option__count {
+    font-size: 12px;
+  }
+
+  .tag-option__count {
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
   }
 
   .filter-row {
