@@ -27,11 +27,22 @@
         <svg><use xlink:href="#iconClose"></use></svg>
       </button>
     </div>
+    <div
+      class="workbench-widget-todo-list__tag-filter"
+      data-testid="workbench-todo-widget-tag-filter"
+    >
+      <TodoTagFilterInput
+        v-model:tag-query="tagQuery"
+        v-model:selected-tags="selectedTags"
+        :tag-options="tagOptions"
+      />
+    </div>
     <div class="workbench-widget-todo-list__content" data-testid="workbench-todo-widget-content">
       <TodoContentPane
         ref="todoContentPaneRef"
         :group-id="todoState.selectedGroup.value"
         :search-query="searchQuery"
+        :selected-tags="selectedTags"
         :sort-rules="presetSortRules"
         :date-range="todoState.dateRange.value"
         :completed-date-range="todoState.completedDateRange.value"
@@ -47,6 +58,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import TodoContentPane from '@/components/todo/TodoContentPane.vue';
+import TodoTagFilterInput from '@/components/todo/TodoTagFilterInput.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { useTodoViewState } from '@/composables/useTodoViewState';
 import { t } from '@/i18n';
@@ -79,11 +91,35 @@ const todoState = useTodoViewState({
   preset: todoConfig.value.preset,
   persistToSettings: false,
 });
+const selectedTags = todoState.selectedTags;
 const searchQuery = ref('');
+const tagQuery = ref('');
 const presetSortRules = computed<TodoSortRule[] | undefined>(() => {
   const sortRules = todoConfig.value.preset?.sortRules;
   return Array.isArray(sortRules) && sortRules.length > 0 ? sortRules : undefined;
 });
+const tagOptions = computed(() => {
+  if (!projectStore) {
+    return [];
+  }
+
+  return projectStore.getTodoTagOptions(todoState.selectedGroup.value);
+});
+
+watch(
+  () => todoConfig.value.preset,
+  (preset) => {
+    todoState.selectedGroup.value = preset?.groupId ?? '';
+    todoState.selectedPriorities.value = [...(preset?.priorities ?? [])];
+    selectedTags.value = [...(preset?.selectedTags ?? [])];
+    todoState.dateFilterType.value = preset?.dateFilterType ?? 'today';
+    todoState.startDate.value = preset?.startDate ?? todoState.startDate.value;
+    todoState.endDate.value = preset?.endDate ?? todoState.endDate.value;
+  },
+  {
+    deep: true,
+  },
+);
 
 const openItemsCount = computed(() => {
   if (!projectStore) {
@@ -93,6 +129,7 @@ const openItemsCount = computed(() => {
   return projectStore.getFilteredAndSortedItems({
     groupId: todoState.selectedGroup.value,
     searchQuery: searchQuery.value,
+    selectedTags: selectedTags.value,
     sortRules: presetSortRules.value,
     dateRange: todoState.dateRange.value,
     priorities: todoState.selectedPriorities.value.length > 0
@@ -300,11 +337,31 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.workbench-widget-todo-list__tag-filter {
+  flex-shrink: 0;
+  width: calc(100% - 16px - var(--todo-scrollbar-gutter-width, 0px));
+  margin-left: 8px;
+}
+
 .workbench-widget-todo-list__content :deep(.todo-dock-content) {
   display: flex;
   flex: 1;
   width: 100%;
   height: 100%;
   min-height: 0;
+}
+
+.workbench-widget-todo-list__tag-filter :deep(.tag-search-row) {
+  margin: 0;
+}
+
+.workbench-widget-todo-list__tag-filter :deep(.tag-search-box) {
+  min-height: 32px;
+  padding: 3px 10px;
+}
+
+.workbench-widget-todo-list__tag-filter :deep(.tag-dropdown) {
+  left: 0;
+  right: 0;
 }
 </style>

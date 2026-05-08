@@ -13,6 +13,7 @@ export function useTodoViewState(options: TodoViewStateOptions = {}) {
   const selectedGroup = ref(preset?.groupId ?? settingsStore.todoDock.selectedGroup);
   const searchQuery = ref(preset?.searchQuery ?? '');
   const selectedPriorities = ref<PriorityLevel[]>([...(preset?.priorities ?? [])]);
+  const selectedTags = ref<string[]>([...(preset?.selectedTags ?? [])]);
   const dateFilterType = ref<TodoDateFilterType>(preset?.dateFilterType ?? 'today');
   const startDate = ref(preset?.startDate ?? dayjs().format('YYYY-MM-DD'));
   const endDate = ref(preset?.endDate ?? dayjs().add(7, 'day').format('YYYY-MM-DD'));
@@ -45,6 +46,7 @@ export function useTodoViewState(options: TodoViewStateOptions = {}) {
     selectedGroup,
     searchQuery,
     selectedPriorities,
+    selectedTags,
     dateFilterType,
     startDate,
     endDate,

@@ -8,6 +8,7 @@ export interface TodoViewPreset {
   startDate?: string;
   endDate?: string;
   priorities?: PriorityLevel[];
+  selectedTags?: string[];
   searchQuery?: string;
   sortRules?: TodoSortRule[];
 }

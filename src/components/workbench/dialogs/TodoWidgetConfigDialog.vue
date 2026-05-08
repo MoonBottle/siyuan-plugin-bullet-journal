@@ -1,6 +1,17 @@
 <template>
   <WorkbenchConfigDialogLayout>
     <div class="todo-widget-config-dialog__body">
+      <div class="todo-widget-config-dialog__field">
+        <label class="todo-widget-config-dialog__label">
+          标签
+        </label>
+        <TodoTagFilterInput
+          v-model:tag-query="tagQuery"
+          v-model:selected-tags="selectedTags"
+          data-testid="todo-widget-tag-filter"
+          :tag-options="tagOptions"
+        />
+      </div>
       <TodoFilterBar
         :selected-group="selectedGroup"
         search-query=""
@@ -34,10 +45,20 @@
 
     <template #footer>
       <div class="todo-widget-config-dialog__actions">
-        <button class="b3-button b3-button--cancel" type="button" @click="onCancel">
+        <button
+          class="b3-button b3-button--cancel"
+          data-testid="todo-widget-config-cancel"
+          type="button"
+          @click="onCancel"
+        >
           {{ t('common').cancel }}
         </button>
-        <button class="b3-button b3-button--text" type="button" @click="handleConfirm">
+        <button
+          class="b3-button b3-button--text"
+          data-testid="todo-widget-config-confirm"
+          type="button"
+          @click="handleConfirm"
+        >
           {{ t('common').confirm }}
         </button>
       </div>
@@ -50,11 +71,12 @@ import { computed, ref } from 'vue';
 import { defaultTodoSortRules } from '@/settings';
 import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings';
 import TodoFilterBar from '@/components/todo/TodoFilterBar.vue';
+import TodoTagFilterInput from '@/components/todo/TodoTagFilterInput.vue';
 import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
 import { useTodoViewState } from '@/composables/useTodoViewState';
 import { t } from '@/i18n';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
-import { useSettingsStore } from '@/stores';
+import { useProjectStore, useSettingsStore } from '@/stores';
 import type { PriorityLevel } from '@/types/models';
 import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench';
 import type { TodoDateFilterType } from '@/utils/todoDateFilter';
@@ -67,6 +89,7 @@ const props = defineProps<{
 }>();
 
 const settingsStore = useSettingsStore();
+const projectStore = useProjectStore();
 const todoState = useTodoViewState({
   preset: props.initialConfig.preset,
   persistToSettings: false,
@@ -74,9 +97,11 @@ const todoState = useTodoViewState({
 
 const selectedGroup = todoState.selectedGroup;
 const selectedPriorities = todoState.selectedPriorities;
+const selectedTags = todoState.selectedTags;
 const dateFilterType = todoState.dateFilterType;
 const startDate = todoState.startDate;
 const endDate = todoState.endDate;
+const tagQuery = ref('');
 const showSortPanel = ref(false);
 const sortRules = ref<TodoSortRule[]>(
   props.initialConfig.preset?.sortRules?.length
@@ -119,6 +144,10 @@ const sortDirectionOptions = [
   { value: 'asc' as TodoSortDirection, label: t('todo.sortDirection.asc') },
   { value: 'desc' as TodoSortDirection, label: t('todo.sortDirection.desc') },
 ];
+
+const tagOptions = computed(() => {
+  return projectStore.getTodoTagOptions(selectedGroup.value);
+});
 
 function togglePriority(priority: PriorityLevel) {
   const index = selectedPriorities.value.indexOf(priority);
@@ -215,6 +244,9 @@ function handleConfirm() {
       priorities: selectedPriorities.value.length > 0
         ? [...selectedPriorities.value]
         : undefined,
+      selectedTags: selectedTags.value.length > 0
+        ? [...selectedTags.value]
+        : undefined,
       sortRules: sortRules.value.length > 0
         ? sortRules.value.map(rule => ({ ...rule }))
         : undefined,
@@ -225,13 +257,37 @@ function handleConfirm() {
 
 <style lang="scss" scoped>
 .todo-widget-config-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 0;
 }
 
-.todo-widget-config-dialog__body :deep(.todo-filter-bar) {
-  padding: 0;
+.todo-widget-config-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.todo-widget-config-dialog__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
+}
+
+.todo-widget-config-dialog__body :deep(.todo-filter-card) {
   background: transparent;
   border-radius: 0;
+}
+
+.todo-widget-config-dialog__body :deep(.tag-search-row) {
+  margin-bottom: 0;
+}
+
+.todo-widget-config-dialog__body :deep(.tag-search-box) {
+  min-height: 32px;
+  padding: 3px 10px;
 }
 
 .todo-widget-config-dialog__actions {
