@@ -8,6 +8,7 @@
       ref="todoSidebar"
       :group-id="groupId"
       :search-query="searchQuery"
+      :selected-tags="selectedTags"
       :sort-rules="sortRules"
       :date-range="dateRange"
       :completed-date-range="completedDateRange"
@@ -15,6 +16,7 @@
       :display-mode="displayMode"
       :preview-trigger-mode="previewTriggerMode"
       :on-item-preview-click="onItemPreviewClick"
+      @add-tag-filter="emit('add-tag-filter', $event)"
     />
   </div>
 </template>
@@ -30,6 +32,7 @@ import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue'
 const props = withDefaults(defineProps<{
   groupId: string;
   searchQuery: string;
+  selectedTags?: string[];
   sortRules?: TodoSortRule[];
   dateRange?: TodoDateRange | null;
   completedDateRange?: TodoDateRange | null;
@@ -43,6 +46,10 @@ const props = withDefaults(defineProps<{
   displayMode: 'default',
   previewTriggerMode: 'hover',
 });
+
+const emit = defineEmits<{
+  (event: 'add-tag-filter', value: string): void;
+}>();
 
 const todoSidebar = ref<InstanceType<typeof TodoSidebar> | null>(null);
 const rootEl = ref<HTMLElement | null>(null);

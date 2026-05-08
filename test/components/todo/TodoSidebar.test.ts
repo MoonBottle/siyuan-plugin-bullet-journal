@@ -5,6 +5,7 @@ import { createApp, h, nextTick } from 'vue';
 import TodoSidebar from '@/components/todo/TodoSidebar.vue';
 import type { Item } from '@/types/models';
 
+const mockToggleItemPinned = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 const pendingItem: Item = {
   id: 'item-1',
   content: '处理优先级',
@@ -24,6 +25,10 @@ const mockProjectStore = {
   hideAbandoned: false,
   getDisplayItems: vi.fn(() => [pendingItem]),
   getFilteredAndSortedItems: vi.fn(() => [pendingItem]),
+  getGroupedFilteredAndSortedItems: vi.fn(() => ({
+    pinnedItems: [],
+    regularItems: [pendingItem],
+  })),
   getFilteredCompletedItems: vi.fn(() => []),
   getFilteredAbandonedItems: vi.fn(() => []),
 };
@@ -153,6 +158,10 @@ vi.mock('@/utils/exampleDocUtils', () => ({
   createExampleDocument: vi.fn(),
 }));
 
+vi.mock('@/utils/itemSettingUtils', () => ({
+  toggleItemPinned: mockToggleItemPinned,
+}));
+
 vi.mock('@/utils/dayjs', () => ({
   default: () => ({
     format: () => '2026-05-01',
@@ -186,6 +195,17 @@ function mountSidebar(props: Record<string, unknown>) {
 afterEach(() => {
   document.body.innerHTML = '';
   vi.clearAllMocks();
+  mockProjectStore.hideCompleted = false;
+  mockProjectStore.hideAbandoned = false;
+  mockProjectStore.getDisplayItems.mockReturnValue([pendingItem]);
+  mockProjectStore.getFilteredAndSortedItems.mockReturnValue([pendingItem]);
+  mockProjectStore.getGroupedFilteredAndSortedItems.mockReturnValue({
+    pinnedItems: [],
+    regularItems: [pendingItem],
+  });
+  mockProjectStore.getFilteredCompletedItems.mockReturnValue([]);
+  mockProjectStore.getFilteredAbandonedItems.mockReturnValue([]);
+  mockToggleItemPinned.mockClear();
 });
 
 describe('TodoSidebar', () => {
@@ -576,6 +596,92 @@ describe('TodoSidebar', () => {
 
     expect(projectEl?.textContent?.trim()).toBe('🔥项目A');
     expect(contentEl?.textContent?.trim()).toBe('⏳ 处理优先级');
+
+    mounted.unmount();
+  });
+
+  it('passes selectedTags into pending/completed/abandoned store filters and renders a pinned section', async () => {
+    const pinnedItem: Item = {
+      ...pendingItem,
+      id: 'item-pinned',
+      blockId: 'block-pinned',
+      content: '处理置顶事项',
+      pinned: true,
+      tags: ['前端'],
+    };
+
+    mockProjectStore.getGroupedFilteredAndSortedItems.mockReturnValue({
+      pinnedItems: [pinnedItem],
+      regularItems: [pendingItem],
+    });
+    mockProjectStore.getFilteredCompletedItems.mockReturnValue([]);
+    mockProjectStore.getFilteredAbandonedItems.mockReturnValue([]);
+
+    const mounted = mountSidebar({
+      selectedTags: ['前端'],
+    });
+
+    await nextTick();
+
+    expect(mockProjectStore.getGroupedFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
+      selectedTags: ['前端'],
+    }));
+    expect(mockProjectStore.getFilteredCompletedItems).toHaveBeenCalledWith(expect.objectContaining({
+      selectedTags: ['前端'],
+    }));
+    expect(mockProjectStore.getFilteredAbandonedItems).toHaveBeenCalledWith(expect.objectContaining({
+      selectedTags: ['前端'],
+    }));
+    expect(mounted.container.textContent).toContain('已置顶');
+    expect(mounted.container.textContent).toContain('#前端');
+
+    mounted.unmount();
+  });
+
+  it('emits add-tag-filter when a rendered tag chip is clicked', async () => {
+    const taggedItem: Item = {
+      ...pendingItem,
+      tags: ['前端'],
+    };
+
+    mockProjectStore.getGroupedFilteredAndSortedItems.mockReturnValue({
+      pinnedItems: [],
+      regularItems: [taggedItem],
+    });
+
+    const onAddTagFilter = vi.fn();
+    const mounted = mountSidebar({
+      onAddTagFilter,
+    });
+
+    await nextTick();
+
+    const tagChip = mounted.container.querySelector('.item-tag-chip') as HTMLButtonElement | null;
+    expect(tagChip?.textContent).toContain('#前端');
+
+    tagChip?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(onAddTagFilter).toHaveBeenCalledWith('前端');
+
+    mounted.unmount();
+  });
+
+  it('calls toggleItemPinned when the pin button is clicked on a pending card', async () => {
+    const mounted = mountSidebar({});
+
+    await nextTick();
+
+    const pinButton = mounted.container.querySelector('[data-testid="todo-pin-toggle-item-1"]') as HTMLButtonElement | null;
+    expect(pinButton).not.toBeNull();
+
+    pinButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mockToggleItemPinned).toHaveBeenCalledTimes(1);
+    expect(mockToggleItemPinned).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'item-1',
+      blockId: 'block-1',
+    }));
 
     mounted.unmount();
   });

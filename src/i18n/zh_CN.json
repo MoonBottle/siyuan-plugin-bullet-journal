@@ -113,7 +113,13 @@
     "noTasks": "暂无任务",
     "noProjectsData": "暂无项目数据",
     "configureDirHint": "请在设置中配置笔记本目录",
-    "dirStructureHint": "项目文档需放置在 工作安排/YYYY/项目/ 目录下"
+    "dirStructureHint": "项目文档需放置在 工作安排/YYYY/项目/ 目录下",
+    "viewModes": {
+      "table": "表格视图",
+      "card": "卡片视图"
+    },
+    "searchPlaceholder": "搜索项目...",
+    "path": "路径"
   },
   "todo": {
     "title": "待办事项",
@@ -232,6 +238,14 @@
       "startDesc": "午休开始时间，与结束时间之间的时段在计算工时时将被扣除",
       "end": "结束",
       "endDesc": "午休结束时间，与开始时间之间的时段在计算工时时将被扣除"
+    },
+    "habitSettings": {
+      "title": "习惯",
+      "checkInTimePrecision": "打卡完成时间精度",
+      "checkInTimePrecisionDesc": "控制习惯打卡记录写入与展示的时间精度",
+      "precisionDay": "到日",
+      "precisionMinute": "到分",
+      "precisionSecond": "到秒"
     },
     "groupManage": {
       "title": "分组管理",
@@ -827,6 +841,7 @@
       "view": "视图",
       "configuration": "配置",
       "advanced": "高级",
+      "habit": "习惯",
       "hideCompleted": "隐藏已完成",
       "hideAbandoned": "隐藏已放弃",
       "directories": "个目录",

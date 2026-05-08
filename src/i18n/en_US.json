@@ -113,7 +113,13 @@
     "noTasks": "No tasks",
     "noProjectsData": "No project data",
     "configureDirHint": "Please configure notebook directory in settings",
-    "dirStructureHint": "Project documents should be placed under work/YYYY/project/"
+    "dirStructureHint": "Project documents should be placed under work/YYYY/project/",
+    "viewModes": {
+      "table": "Table View",
+      "card": "Card View"
+    },
+    "searchPlaceholder": "Search projects...",
+    "path": "Path"
   },
   "todo": {
     "title": "Todo",
@@ -232,6 +238,14 @@
       "startDesc": "Lunch break start time; the period until end time is excluded from work hours",
       "end": "End",
       "endDesc": "Lunch break end time; the period from start time is excluded from work hours"
+    },
+    "habitSettings": {
+      "title": "Habit",
+      "checkInTimePrecision": "Check-in time precision",
+      "checkInTimePrecisionDesc": "Control the precision used when writing and displaying habit check-in timestamps",
+      "precisionDay": "Day",
+      "precisionMinute": "Minute",
+      "precisionSecond": "Second"
     },
     "groupManage": {
       "title": "Group Management",
@@ -787,6 +801,7 @@
       "view": "View",
       "configuration": "Configuration",
       "advanced": "Advanced",
+      "habit": "Habit",
       "hideCompleted": "Hide Completed",
       "hideAbandoned": "Hide Abandoned",
       "directories": "directories",

@@ -16,6 +16,11 @@ import {
   stripReminderMarker
 } from '@/parser/reminderParser';
 import {
+  generatePinnedMarker,
+  parsePinnedFromLine,
+  stripPinnedMarker,
+} from '@/parser/pinParser';
+import {
   generateRepeatRuleMarker,
   generateEndConditionMarker,
   stripRecurringMarkers
@@ -83,7 +88,7 @@ async function updateBlockContent(blockId: string, content: string): Promise<voi
 }
 
 function emitItemSettingMutation(
-  kind: 'reminder' | 'recurring',
+  kind: 'reminder' | 'recurring' | 'pin',
   blockId: string,
 ): void {
   eventBus.emit(Events.LOCAL_DATA_MUTATED, {
@@ -171,6 +176,25 @@ export async function updateItemWithRecurring(
   // 更新块
   await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('recurring', item.blockId);
+}
+
+export async function toggleItemPinned(item: Item): Promise<void> {
+  if (!item.blockId) {
+    throw new Error('事项缺少 blockId，无法更新');
+  }
+
+  const currentContent = await fetchBlockContent(item.blockId);
+  const shouldPin = !parsePinnedFromLine(currentContent);
+  let newContent = stripPinnedMarker(currentContent);
+
+  if (shouldPin) {
+    newContent = `${newContent} ${generatePinnedMarker()}`;
+  }
+
+  newContent = normalizeWhitespace(newContent);
+
+  await updateBlockContent(item.blockId, newContent);
+  emitItemSettingMutation('pin', item.blockId);
 }
 
 /**

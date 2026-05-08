@@ -3,6 +3,7 @@
  * 解析习惯定义行和打卡记录行
  */
 import type { Habit, HabitFrequency, CheckInRecord } from '@/types/models';
+import { extractHabitCompletedAt, stripHabitCompletedAtTokens } from '@/utils/habitDateTime';
 import { parseReminderFromLine } from './reminderParser';
 
 // 中文星期映射
@@ -212,12 +213,14 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   }
 
   // 必须包含日期标记（📅 或 @）
-  const dateMatch = normalizedLine.match(/📅(\d{4}-\d{2}-\d{2})/) || normalizedLine.match(/@(\d{4}-\d{2}-\d{2})/);
-  if (!dateMatch) {
+  const habitCompletedAt = extractHabitCompletedAt(normalizedLine);
+  const legacyDateMatch = normalizedLine.match(/@(\d{4}-\d{2}-\d{2})/);
+  if (!habitCompletedAt && !legacyDateMatch) {
     return null;
   }
 
-  const date = dateMatch[1];
+  const date = habitCompletedAt?.date ?? legacyDateMatch![1];
+  const completedAt = habitCompletedAt?.completedAt ?? legacyDateMatch![1];
 
   // 解析计数格式 N/M单位 (如 3/8杯)
   const countMatch = normalizedLine.match(/(\d+)\/(\d+)([a-zA-Z\u4e00-\u9fff]+)/);
@@ -232,14 +235,16 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   }
 
   // 提取内容（移除所有标记后的文本）
-  let content = normalizedLine
-    .replace(/📅\d{4}-\d{2}-\d{2}/g, '')
+  let content = stripHabitCompletedAtTokens(normalizedLine)
     .replace(/@\d{4}-\d{2}-\d{2}/g, '')
     .replace(/\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/g, '')
     .trim();
 
   // 清理多余空格
-  content = content.replace(/\s+/g, ' ').trim();
+  content = content
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;!?，。；！？])/g, '$1')
+    .trim();
 
   if (!content) {
     return null;
@@ -248,6 +253,7 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   const result: Partial<CheckInRecord> = {
     content,
     date,
+    completedAt,
     habitId,
   };
 

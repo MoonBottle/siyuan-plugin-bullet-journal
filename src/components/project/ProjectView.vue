@@ -11,6 +11,41 @@
       <p class="hint">{{ t('project').dirStructureHint }}</p>
     </div>
 
+    <div v-else-if="viewMode === 'table'" class="project-table-wrapper">
+      <table class="project-table">
+        <thead>
+          <tr>
+            <th class="col-title">{{ t('project').title }}</th>
+            <th class="col-path">{{ t('project').path }}</th>
+            <th class="col-task-count">{{ t('project').taskCount }}</th>
+            <th class="col-l1">L1</th>
+            <th class="col-l2">L2</th>
+            <th class="col-l3">L3</th>
+            <th class="col-items">{{ t('project').itemsLabel }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="project in projects"
+            :key="project.id"
+            class="project-table-row"
+            @click="handleClick(project)"
+          >
+            <td class="col-title project-name-cell">
+              <span class="project-name">{{ project.name }}</span>
+              <span v-if="project.description" class="project-desc-inline">{{ project.description }}</span>
+            </td>
+            <td class="col-path project-path-cell">{{ project.path }}</td>
+            <td class="col-task-count task-count-cell">{{ project.tasks.length }}</td>
+            <td class="col-l1">{{ getTaskCountByLevel(project, 'L1') }}</td>
+            <td class="col-l2">{{ getTaskCountByLevel(project, 'L2') }}</td>
+            <td class="col-l3">{{ getTaskCountByLevel(project, 'L3') }}</td>
+            <td class="col-items">{{ getItemCount(project) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div v-else class="project-grid">
       <div
         v-for="project in projects"
@@ -72,9 +107,12 @@ import { t } from '@/i18n';
 
 interface Props {
   projects: Project[];
+  viewMode?: 'table' | 'card';
 }
 
-defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  viewMode: 'table',
+});
 const emit = defineEmits<{
   (e: 'project-click', project: Project): void;
 }>();
@@ -138,6 +176,114 @@ const getItemCount = (project: Project): number => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+}
+
+.project-table-wrapper {
+  display: block;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.project-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--b3-border-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--b3-theme-on-surface);
+    opacity: 0.7;
+    font-size: 12px;
+    background-color: var(--b3-theme-background);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  td {
+    color: var(--b3-theme-on-background);
+  }
+
+  .col-title {
+    width: 200px;
+  }
+
+  .col-path {
+    width: 300px;
+  }
+
+  .col-task-count {
+    width: 80px;
+    text-align: center;
+  }
+
+  .col-l1,
+  .col-l2,
+  .col-l3 {
+    width: 60px;
+    text-align: center;
+  }
+
+  .col-items {
+    width: 80px;
+    text-align: center;
+  }
+}
+
+.project-table-row {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--b3-theme-hover);
+  }
+}
+
+.project-name-cell {
+  max-width: 300px;
+}
+
+.project-name {
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+}
+
+.project-desc-inline {
+  display: block;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.7;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.project-path-cell {
+  font-family: var(--b3-font-family-mono);
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.7;
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-count-cell {
+  text-align: center;
 }
 
 .project-card {

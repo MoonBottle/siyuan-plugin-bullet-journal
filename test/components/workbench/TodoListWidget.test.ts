@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick, ref } from 'vue';
 import type { Pinia } from 'pinia';
 import { createPinia, setActivePinia } from 'pinia';
 import { initI18n } from '@/i18n';
@@ -34,6 +34,7 @@ vi.mock('@/components/todo/TodoContentPane.vue', () => ({
     props: [
       'groupId',
       'searchQuery',
+      'selectedTags',
       'sortRules',
       'dateRange',
       'completedDateRange',
@@ -52,6 +53,7 @@ vi.mock('@/components/todo/TodoContentPane.vue', () => ({
         todoContentPaneProps({
           groupId: props.groupId,
           searchQuery: props.searchQuery,
+          selectedTags: props.selectedTags,
           sortRules: props.sortRules,
           displayMode: props.displayMode,
           previewTriggerMode: props.previewTriggerMode,
@@ -84,6 +86,44 @@ async function mountWidget(widgetConfig: Record<string, unknown>, pinia: Pinia, 
 
   return {
     container,
+    unmount() {
+      app.unmount();
+      container.remove();
+    },
+  };
+}
+
+async function mountReactiveWidget(initialWidgetConfig: Record<string, unknown>, pinia: Pinia) {
+  const { default: TodoListWidget } = await import('@/components/workbench/widgets/TodoListWidget.vue');
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const widgetConfig = ref<Record<string, unknown>>(initialWidgetConfig);
+
+  const app = createApp(defineComponent({
+    setup() {
+      return () => h(TodoListWidget, {
+        widget: {
+          id: 'widget-1',
+          type: 'todoList',
+          title: 'Todo List',
+          layout: { x: 0, y: 0, w: 6, h: 4 },
+          config: widgetConfig.value,
+        },
+      });
+    },
+  }));
+
+  app.use(pinia);
+  app.mount(container);
+  await nextTick();
+
+  return {
+    container,
+    widgetConfig,
+    async updateWidgetConfig(nextConfig: Record<string, unknown>) {
+      widgetConfig.value = nextConfig;
+      await nextTick();
+    },
     unmount() {
       app.unmount();
       container.remove();
@@ -125,6 +165,7 @@ describe('TodoListWidget', () => {
     expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull();
     const contentProps = todoContentPaneProps.mock.calls.at(-1)?.[0];
     expect(contentProps.searchQuery).toBe('');
+    expect(contentProps.selectedTags).toEqual([]);
     expect(contentProps.sortRules).toEqual(undefined);
     expect(contentProps.previewTriggerMode).toBe('click');
     expect(contentProps.onItemPreviewClick).toBeTypeOf('function');
@@ -181,6 +222,64 @@ describe('TodoListWidget', () => {
       { field: 'time', direction: 'asc' },
       { field: 'priority', direction: 'desc' },
     ]);
+  });
+
+  it('applies preset selected tags and exposes a runtime tag filter input', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-02';
+    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+    projectStore.getTodoTagOptions = vi.fn(() => [
+      { name: 'Alpha', count: 2 },
+      { name: 'Beta', count: 1 },
+    ]) as any;
+
+    const mounted = await mountWidget({
+      preset: {
+        groupId: 'group-a',
+        selectedTags: ['Alpha'],
+      },
+    }, pinia);
+
+    expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-tag-filter"]')).not.toBeNull();
+
+    const contentProps = todoContentPaneProps.mock.calls.at(-1)?.[0];
+    expect(contentProps.selectedTags).toEqual(['Alpha']);
+
+    mounted.unmount();
+  });
+
+  it('refreshes selected tags when the widget preset config changes', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const projectStore = useProjectStore();
+    projectStore.currentDate = '2026-05-02';
+    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+    projectStore.getTodoTagOptions = vi.fn(() => [
+      { name: 'Alpha', count: 2 },
+      { name: 'Beta', count: 1 },
+    ]) as any;
+
+    const mounted = await mountReactiveWidget({
+      preset: {
+        groupId: 'group-a',
+        selectedTags: ['Alpha'],
+      },
+    }, pinia);
+
+    expect(todoContentPaneProps.mock.calls.at(-1)?.[0]?.selectedTags).toEqual(['Alpha']);
+
+    await mounted.updateWidgetConfig({
+      preset: {
+        groupId: 'group-a',
+        selectedTags: ['Beta'],
+      },
+    });
+
+    expect(todoContentPaneProps.mock.calls.at(-1)?.[0]?.selectedTags).toEqual(['Beta']);
+
+    mounted.unmount();
   });
 
   it('does not emit navigation events when clicking the widget surface', async () => {

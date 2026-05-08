@@ -336,8 +336,8 @@ describe('useHabitWorkspace', () => {
     await workspace.openSelectedHabitDoc();
 
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(1, 'doc-1', undefined, 'habit-a');
-    expect(checkIn).toHaveBeenCalledWith(habit, initialSelectedDate);
-    expect(checkInCount).toHaveBeenCalledWith(habit, initialSelectedDate, 1);
+    expect(checkIn).toHaveBeenCalledWith(habit, initialSelectedDate, undefined, 'day');
+    expect(checkInCount).toHaveBeenCalledWith(habit, initialSelectedDate, 1, undefined, 'day');
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(2, 'doc-1', undefined, 'habit-a');
     expect(calculateHabitStats).toHaveBeenCalled();
   });

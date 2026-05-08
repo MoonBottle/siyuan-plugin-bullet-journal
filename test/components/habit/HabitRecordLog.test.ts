@@ -2,7 +2,9 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp, nextTick } from 'vue';
+import { createPinia } from 'pinia';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
+import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 
@@ -10,11 +12,21 @@ vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
 }));
 
-function mountComponent(props: Record<string, unknown>) {
+function mountComponent(
+  props: Record<string, unknown>,
+  options: { habitCheckInTimePrecision?: 'day' | 'minute' | 'second' } = {},
+) {
   const container = document.createElement('div');
   document.body.appendChild(container);
 
+  const pinia = createPinia();
   const app = createApp(HabitRecordLog, props);
+  app.use(pinia);
+
+  if (options.habitCheckInTimePrecision) {
+    useSettingsStore(pinia).habitCheckInTimePrecision = options.habitCheckInTimePrecision;
+  }
+
   app.mount(container);
 
   return {
@@ -32,6 +44,71 @@ afterEach(() => {
 });
 
 describe('HabitRecordLog', () => {
+  it('renders minute precision from completedAt when the setting uses minute precision', async () => {
+    const habit: Habit = {
+      name: '喝水',
+      type: 'binary',
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-05-01',
+      frequency: { type: 'daily' },
+      records: [
+        {
+          content: '喝水',
+          date: '2026-05-08',
+          completedAt: '2026-05-08 08:30',
+          docId: 'doc-1',
+          blockId: 'record-1',
+          habitId: 'habit-1',
+        },
+      ],
+    };
+
+    const mounted = mountComponent({
+      habit,
+      viewMonth: '2026-05',
+    }, { habitCheckInTimePrecision: 'minute' });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('5/8 08:30');
+
+    mounted.unmount();
+  });
+
+  it('keeps old day-only records date-only under second precision', async () => {
+    const habit: Habit = {
+      name: '喝水',
+      type: 'binary',
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-05-01',
+      frequency: { type: 'daily' },
+      records: [
+        {
+          content: '喝水',
+          date: '2026-05-08',
+          completedAt: '2026-05-08',
+          docId: 'doc-1',
+          blockId: 'record-1',
+          habitId: 'habit-1',
+        },
+      ],
+    };
+
+    const mounted = mountComponent({
+      habit,
+      viewMonth: '2026-05',
+    }, { habitCheckInTimePrecision: 'second' });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('5/8');
+    expect(mounted.container.textContent).not.toContain('5/8 00:00');
+
+    mounted.unmount();
+  });
+
   it('shows month-specific title and filters records by view month', async () => {
     const habit: Habit = {
       name: '喝水',

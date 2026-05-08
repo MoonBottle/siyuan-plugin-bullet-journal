@@ -34,6 +34,8 @@
       <TodoFilterBar
         :selected-group="selectedGroup"
         :search-query="searchQuery"
+        :tag-query="tagQuery"
+        :selected-tags="selectedTags"
         :date-filter-type="dateFilterType"
         :selected-priorities="selectedPriorities"
         :start-date="startDate"
@@ -41,12 +43,15 @@
         :show-sort-panel="showSortPanel"
         :sort-rules="sortRules"
         :group-options="groupOptions"
+        :tag-options="tagOptions"
         :date-filter-options="dateFilterOptions"
         :priority-options="priorityOptions"
         :sort-direction-options="sortDirectionOptions"
         :available-field-options="availableFieldOptions"
         @update:selected-group="selectedGroup = $event"
         @update:search-query="searchQuery = $event"
+        @update:tag-query="tagQuery = $event"
+        @update:selected-tags="selectedTags = $event"
         @update:date-filter-type="dateFilterType = $event"
         @change:date-filter-type="onDateFilterChange"
         @update:start-date="startDate = $event"
@@ -64,11 +69,13 @@
         ref="todoContentPane"
         :group-id="selectedGroup"
         :search-query="searchQuery"
+        :selected-tags="selectedTags"
         :date-range="dateRange"
         :completed-date-range="completedDateRange"
         :priorities="selectedPriorities"
         :preview-trigger-mode="enableWorkbenchPreview ? 'click' : 'hover'"
         :on-item-preview-click="enableWorkbenchPreview ? handleItemPreviewClick : undefined"
+        @add-tag-filter="handleAddTagFilter"
       />
     </div>
   </div>
@@ -125,6 +132,8 @@ watch(selectedGroup, (val) => {
 });
 
 const searchQuery = ref('');
+const tagQuery = ref('');
+const selectedTags = ref<string[]>([]);
 const selectedPriorities = ref<PriorityLevel[]>([]);
 const showSortPanel = ref(false);
 const dateFilterType = ref<TodoDateFilterType>('today');
@@ -238,6 +247,23 @@ function togglePriority(priority: PriorityLevel) {
   }
 }
 
+function normalizeTag(tag?: string) {
+  return (tag || '').trim().toLocaleLowerCase();
+}
+
+function handleAddTagFilter(tag: string) {
+  const normalizedTag = normalizeTag(tag);
+  if (!normalizedTag) {
+    return;
+  }
+
+  const nextSelectedTags = selectedTags.value.filter(
+    selectedTag => normalizeTag(selectedTag) !== normalizedTag,
+  );
+
+  selectedTags.value = [...nextSelectedTags, tag];
+}
+
 function onDateFilterChange(type: TodoDateFilterType) {
   dateFilterType.value = type;
   if (type === 'custom') {
@@ -324,6 +350,10 @@ const groupOptions = computed(() => {
     options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
   });
   return options;
+});
+
+const tagOptions = computed(() => {
+  return projectStore.getTodoTagOptions(selectedGroup.value);
 });
 
 // 数据刷新处理函数（同上下文无 payload 则 loadFromPlugin 同步 groups/defaultGroup；跨上下文 BC 带完整设置则 patch）

@@ -84,6 +84,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
   });
 
   const displaySelectedStats = computed(() => selectedStats.value ?? selectedStatsCache.value);
+  const habitCheckInTimePrecision = computed(() => settingsStore.habitCheckInTimePrecision || 'day');
 
   watch(selectedStats, (value) => {
     if (value) {
@@ -155,7 +156,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
       return false;
     }
 
-    const success = await checkIn(habit, selectedDate.value);
+    const success = await checkIn(habit, selectedDate.value, undefined, habitCheckInTimePrecision.value);
     if (!success) {
       return false;
     }
@@ -174,7 +175,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
       return false;
     }
 
-    const success = await checkInCount(habit, selectedDate.value, 1);
+    const success = await checkInCount(habit, selectedDate.value, 1, undefined, habitCheckInTimePrecision.value);
     if (!success) {
       return false;
     }

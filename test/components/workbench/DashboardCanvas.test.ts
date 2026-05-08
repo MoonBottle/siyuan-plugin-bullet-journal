@@ -333,6 +333,7 @@ describe('DashboardCanvas', () => {
       initialConfig: {
         preset: {
           groupId: 'group-a',
+          selectedTags: undefined,
         },
       },
       onConfirm: expect.any(Function),
@@ -344,6 +345,7 @@ describe('DashboardCanvas', () => {
         groupId: 'group-b',
         dateFilterType: 'today',
         priorities: ['high'],
+        selectedTags: ['Alpha', 'Beta'],
       },
     });
     expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
@@ -351,6 +353,7 @@ describe('DashboardCanvas', () => {
         groupId: 'group-b',
         dateFilterType: 'today',
         priorities: ['high'],
+        selectedTags: ['Alpha', 'Beta'],
       },
     });
 

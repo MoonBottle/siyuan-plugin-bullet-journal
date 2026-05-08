@@ -773,6 +773,9 @@ export function getActionHandler(
         const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
         const parsedRecord = parseHabitRecordLine(text, blockId || '');
         const currentDate = dayjs().format('YYYY-MM-DD');
+        const sharedPinia = getSharedPinia();
+        const settingsStore = sharedPinia ? useSettingsStore(sharedPinia) : useSettingsStore();
+        const habitCheckInTimePrecision = settingsStore.habitCheckInTimePrecision || 'day';
         const matchedHabit = parsedHabit ? findHabitByDefinitionBlockId(blockId) : null;
         const activeRecordMatch = matchedRecord ?? (parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null);
         const isRecordContext = Boolean(activeRecordMatch || parsedRecord);
@@ -799,7 +802,7 @@ export function getActionHandler(
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1);
+            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1, undefined, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -827,7 +830,7 @@ export function getActionHandler(
                 unit: parsedRecord.unit,
               }],
             };
-            const success = await checkInCount(habit, currentDate, 1);
+            const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -858,7 +861,7 @@ export function getActionHandler(
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            const success = await checkInCount(habit, currentDate, 1);
+            const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -869,12 +872,12 @@ export function getActionHandler(
         }
 
         if (habit.type === 'count') {
-          const success = await checkInCount(habit, currentDate, 1);
+          const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
           if (success) {
             notifyHabitDataRefresh();
           }
         } else {
-          const success = await checkIn(habit, currentDate);
+          const success = await checkIn(habit, currentDate, undefined, habitCheckInTimePrecision);
           if (success) {
             notifyHabitDataRefresh();
           }

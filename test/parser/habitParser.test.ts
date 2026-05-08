@@ -131,6 +131,39 @@ describe('parseCheckInRecordLine', () => {
     const result = parseCheckInRecordLine('早起 @2026-04-06', 'habit-block-1');
     expect(result).not.toBeNull();
     expect(result!.date).toBe('2026-04-06');
+    expect(result!.completedAt).toBe('2026-04-06');
+  });
+
+  it('支持分钟精度完成时间：早起 📅2026-04-06 07:30', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 07:30', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result!.date).toBe('2026-04-06');
+    expect(result!.completedAt).toBe('2026-04-06 07:30');
+    expect(result!.content).toBe('早起');
+  });
+
+  it('支持秒级完成时间：早起 📅2026-04-06 07:30:45', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 07:30:45', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result!.date).toBe('2026-04-06');
+    expect(result!.completedAt).toBe('2026-04-06 07:30:45');
+    expect(result!.content).toBe('早起');
+  });
+
+  it('支持中文逗号后的分钟精度完成时间：早起 📅2026-04-06 07:30，补卡', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 07:30，补卡', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result!.date).toBe('2026-04-06');
+    expect(result!.completedAt).toBe('2026-04-06 07:30');
+    expect(result!.content).toBe('早起，补卡');
+  });
+
+  it('支持中文句号后的分钟精度完成时间：早起 📅2026-04-06 07:30。', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 07:30。', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result!.date).toBe('2026-04-06');
+    expect(result!.completedAt).toBe('2026-04-06 07:30');
+    expect(result!.content).toBe('早起。');
   });
 
   it('自定义内容：今天喝了温水 3/8杯 📅2026-04-06', () => {
@@ -143,6 +176,11 @@ describe('parseCheckInRecordLine', () => {
   it('无日期不识别为记录', () => {
     const result = parseCheckInRecordLine('喝水 3/8杯', 'habit-block-1');
     expect(result).toBeNull();
+  });
+
+  it('秒级时间后跟非法片段时不识别为记录', () => {
+    expect(parseCheckInRecordLine('早起 📅2026-04-06 07:30:45foo', 'habit-block-1')).toBeNull();
+    expect(parseCheckInRecordLine('早起 📅2026-04-06 07:30:45~10:00:00', 'habit-block-1')).toBeNull();
   });
 
   it('带 ✅ 的旧格式记录不再兼容', () => {

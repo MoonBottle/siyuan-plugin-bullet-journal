@@ -142,6 +142,8 @@ describe('MobileMainShell', () => {
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="mobile-tab-habit"]')?.textContent).toContain('习惯');
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro-icon"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="mobile-tab-pomodoro-label"]')?.textContent).toBe('番茄钟');
 
     (mounted.container.querySelector('[data-testid="mobile-tab-ai"]') as HTMLButtonElement | null)?.click();
     await nextTick();

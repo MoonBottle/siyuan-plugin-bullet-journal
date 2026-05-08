@@ -624,6 +624,12 @@ export default class TaskAssistantPlugin extends Plugin {
           calendarDefaultView: data.calendarDefaultView || "timeGridDay",
           lunchBreakStart: data.lunchBreakStart || "12:00",
           lunchBreakEnd: data.lunchBreakEnd || "13:00",
+          habitCheckInTimePrecision:
+            data.habitCheckInTimePrecision === "day"
+            || data.habitCheckInTimePrecision === "minute"
+            || data.habitCheckInTimePrecision === "second"
+              ? data.habitCheckInTimePrecision
+              : defaultSettings.habitCheckInTimePrecision,
           showPomodoroBlocks: data.showPomodoroBlocks ?? true,
           showPomodoroTotal: data.showPomodoroTotal ?? true,
           todoDock: {
@@ -1032,8 +1038,72 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   openSetting(): void {
     void this.loadSettings().then(() => {
+      if (this.isMobile) {
+        this.openMobilePluginDock(DOCK_TYPES.TODO, "todo");
+        return;
+      }
       showSettingsDialog(this);
     });
+  }
+
+  private openMobilePluginDock(
+    dockType: string,
+    tab: "todo" | "habit" | "pomodoro" | "ai",
+  ): void {
+    setPendingMobileMainShellTabTarget({ tab });
+    eventBus.emit(Events.MOBILE_MAIN_SHELL_NAVIGATE, { tab });
+
+    const fullDockType = `${this.name}${dockType}`;
+    const mobileDock = (this as any).docks?.[fullDockType];
+    const sidebarElement = document.getElementById("sidebar");
+    const pluginPanel = document.querySelector('#sidebar [data-type="sidebar-plugin"]') as HTMLElement | null;
+    const pluginTab = document.querySelector('#sidebar .toolbar__icon[data-type="sidebar-plugin-tab"]') as HTMLElement | null;
+    const panelContainer = pluginPanel?.parentElement;
+
+    if (!mobileDock || !sidebarElement || !pluginPanel || !pluginTab || !panelContainer) {
+      this.openTodoDock();
+      this.closeMobileModelLayer();
+      return;
+    }
+
+    sidebarElement.style.transform = "translateX(0px)";
+    pluginTab.parentElement?.querySelectorAll(".toolbar__icon").forEach((item) => {
+      item.classList.remove("toolbar__icon--active");
+    });
+    pluginTab.classList.add("toolbar__icon--active");
+
+    panelContainer.querySelectorAll<HTMLElement>(':scope > [data-type]').forEach((panel) => {
+      panel.classList.add("fn__none");
+    });
+    pluginPanel.classList.remove("fn__none");
+
+    const existingMobileDock = (window as any).siyuan?.mobile?.docks?.[fullDockType];
+    if (existingMobileDock?.type !== fullDockType) {
+      existingMobileDock?.destroy?.();
+      (window as any).siyuan.mobile.docks[fullDockType] = mobileDock.mobileModel(pluginPanel);
+    } else {
+      existingMobileDock.update?.();
+    }
+
+    this.closeMobileModelLayer();
+  }
+
+  private closeMobileModelLayer(): void {
+    const modelElement = document.getElementById("model");
+    if (modelElement) {
+      modelElement.style.transform = "";
+    }
+
+    const menuElement = document.getElementById("menu");
+    if (menuElement) {
+      menuElement.style.transform = "";
+    }
+
+    const maskElement = document.querySelector(".side-mask") as HTMLElement | null;
+    if (maskElement) {
+      maskElement.style.opacity = "";
+      maskElement.classList.remove("fn__none");
+    }
   }
 
   /**
