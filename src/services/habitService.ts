@@ -3,10 +3,21 @@
  * 负责创建、更新、删除打卡记录（SiYuan block 操作）
  */
 import { insertBlock, updateBlock, deleteBlock, getBlockKramdown } from '@/api';
+import type { HabitCheckInTimePrecision } from '@/settings/types';
 import type { Habit, CheckInRecord } from '@/types/models';
-import type { BlockWriter } from '@/utils/fileUtils';
+import { formatHabitCompletedAtForMarkdown } from '@/utils/habitDateTime';
 
 const HABIT_ARCHIVE_MARKER_RE = /\s*📦\d{4}-\d{2}-\d{2}\s*$/;
+
+type HabitBlockWriter = {
+  insertAfter: (markdown: string, previousBlockId: string) => Promise<boolean>;
+  update: (markdown: string, blockId: string) => Promise<boolean>;
+};
+
+function isSuccessfulBlockOperationResult(result: unknown): boolean {
+  return Array.isArray(result)
+    && result.some((entry) => Array.isArray((entry as any)?.doOperations) && (entry as any).doOperations.length > 0);
+}
 
 function replaceHabitDefinitionLine(
   markdown: string,
@@ -52,16 +63,35 @@ export function findInsertAfterBlockId(habit: Habit, date: string): string {
 /**
  * 构建二元型打卡记录行 Markdown
  */
-export function buildCheckInMarkdown(habit: Habit, date: string, currentValue?: number): string {
+function buildCompletedAtMarkdown(
+  date: string,
+  precision: HabitCheckInTimePrecision = 'day',
+): string {
+  if (precision === 'day') {
+    return date;
+  }
+
+  const currentTimestamp = formatHabitCompletedAtForMarkdown(precision);
+  return currentTimestamp.replace(/^\d{4}-\d{2}-\d{2}/, date);
+}
+
+export function buildCheckInMarkdown(
+  habit: Habit,
+  date: string,
+  currentValue?: number,
+  precision: HabitCheckInTimePrecision = 'day',
+): string {
+  const completedAt = buildCompletedAtMarkdown(date, precision);
+
   if (habit.type === 'binary') {
-    return `${habit.name} 📅${date}`;
+    return `${habit.name} 📅${completedAt}`;
   }
 
   // 计数型
   const target = habit.target ?? 0;
   const unit = habit.unit ?? '';
   const value = currentValue ?? 0;
-  return `${habit.name} ${value}/${target}${unit} 📅${date}`;
+  return `${habit.name} ${value}/${target}${unit} 📅${completedAt}`;
 }
 
 /**
@@ -71,7 +101,8 @@ export function buildCheckInMarkdown(habit: Habit, date: string, currentValue?: 
 export async function checkIn(
   habit: Habit,
   date: string,
-  writer?: BlockWriter
+  writer?: HabitBlockWriter,
+  precision: HabitCheckInTimePrecision = 'day',
 ): Promise<boolean> {
   if (habit.type !== 'binary') {
     console.warn('[HabitService] checkIn only for binary habits');
@@ -85,15 +116,15 @@ export async function checkIn(
     return false;
   }
 
-  const markdown = buildCheckInMarkdown(habit, date);
+  const markdown = buildCheckInMarkdown(habit, date, undefined, precision);
   const previousId = findInsertAfterBlockId(habit, date);
 
   try {
     if (writer) {
-      return await writer(markdown, previousId);
+      return await writer.insertAfter(markdown, previousId);
     } else {
-      await insertBlock('markdown', markdown, undefined, previousId);
-      return true;
+      const result = await insertBlock('markdown', markdown, undefined, previousId);
+      return isSuccessfulBlockOperationResult(result);
     }
   } catch (error) {
     console.error('[HabitService] checkIn failed:', error);
@@ -109,7 +140,8 @@ export async function checkInCount(
   habit: Habit,
   date: string,
   incrementBy: number = 1,
-  writer?: BlockWriter
+  writer?: HabitBlockWriter,
+  precision: HabitCheckInTimePrecision = 'day',
 ): Promise<boolean> {
   if (habit.type !== 'count') {
     console.warn('[HabitService] checkInCount only for count habits');
@@ -121,21 +153,21 @@ export async function checkInCount(
   if (existingRecord) {
     // 更新现有记录
     const currentValue = (existingRecord.currentValue ?? 0) + incrementBy;
-    return await setCheckInValue(habit, date, currentValue, writer);
+    return await setCheckInValue(habit, date, currentValue, writer, precision);
   }
 
   // 创建新记录
   const value = incrementBy;
-  const markdown = buildCheckInMarkdown(habit, date, value);
+  const markdown = buildCheckInMarkdown(habit, date, value, precision);
 
   const previousId = findInsertAfterBlockId(habit, date);
 
   try {
     if (writer) {
-      return await writer(markdown, previousId);
+      return await writer.insertAfter(markdown, previousId);
     } else {
-      await insertBlock('markdown', markdown, undefined, previousId);
-      return true;
+      const result = await insertBlock('markdown', markdown, undefined, previousId);
+      return isSuccessfulBlockOperationResult(result);
     }
   } catch (error) {
     console.error('[HabitService] checkInCount failed:', error);
@@ -151,20 +183,26 @@ export async function setCheckInValue(
   habit: Habit,
   date: string,
   value: number,
-  writer?: BlockWriter
+  writer?: HabitBlockWriter,
+  precision: HabitCheckInTimePrecision = 'day',
 ): Promise<boolean> {
+  if (habit.type !== 'count') {
+    console.warn('[HabitService] setCheckInValue only for count habits');
+    return false;
+  }
+
   const existingRecord = habit.records.find(r => r.date === date);
 
   if (existingRecord) {
     // 更新现有记录 block
-    const markdown = buildCheckInMarkdown(habit, date, value);
+    const markdown = buildCheckInMarkdown(habit, date, value, precision);
 
     try {
       if (writer) {
-        return await writer(markdown, existingRecord.blockId);
+        return await writer.update(markdown, existingRecord.blockId);
       } else {
-        await updateBlock('markdown', markdown, existingRecord.blockId);
-        return true;
+        const result = await updateBlock('markdown', markdown, existingRecord.blockId);
+        return isSuccessfulBlockOperationResult(result);
       }
     } catch (error) {
       console.error('[HabitService] setCheckInValue failed:', error);
@@ -173,15 +211,15 @@ export async function setCheckInValue(
   }
 
   // 创建新记录
-  const markdown = buildCheckInMarkdown(habit, date, value);
+  const markdown = buildCheckInMarkdown(habit, date, value, precision);
   const previousId = findInsertAfterBlockId(habit, date);
 
   try {
     if (writer) {
-      return await writer(markdown, previousId);
+      return await writer.insertAfter(markdown, previousId);
     } else {
-      await insertBlock('markdown', markdown, undefined, previousId);
-      return true;
+      const result = await insertBlock('markdown', markdown, undefined, previousId);
+      return isSuccessfulBlockOperationResult(result);
     }
   } catch (error) {
     console.error('[HabitService] setCheckInValue failed:', error);
@@ -194,8 +232,8 @@ export async function setCheckInValue(
  */
 export async function deleteCheckIn(record: CheckInRecord): Promise<boolean> {
   try {
-    await deleteBlock(record.blockId);
-    return true;
+    const result = await deleteBlock(record.blockId);
+    return isSuccessfulBlockOperationResult(result);
   } catch (error) {
     console.error('[HabitService] deleteCheckIn failed:', error);
     return false;
@@ -214,8 +252,8 @@ export async function getCheckInMarkdown(record: CheckInRecord): Promise<string 
 
 export async function updateCheckInMarkdown(record: CheckInRecord, markdown: string): Promise<boolean> {
   try {
-    await updateBlock('markdown', markdown, record.blockId);
-    return true;
+    const result = await updateBlock('markdown', markdown, record.blockId);
+    return isSuccessfulBlockOperationResult(result);
   } catch (error) {
     console.error('[HabitService] updateCheckInMarkdown failed:', error);
     return false;
@@ -243,8 +281,8 @@ export async function archiveHabit(habit: Habit, archiveDate: string): Promise<b
       return false;
     }
 
-    await updateBlock('markdown', nextMarkdown, habit.blockId);
-    return true;
+    const updateResult = await updateBlock('markdown', nextMarkdown, habit.blockId);
+    return isSuccessfulBlockOperationResult(updateResult);
   } catch (error) {
     console.error('[HabitService] archiveHabit failed:', error);
     return false;
@@ -277,8 +315,8 @@ export async function unarchiveHabit(habit: Habit): Promise<boolean> {
       return false;
     }
 
-    await updateBlock('markdown', nextMarkdown, habit.blockId);
-    return true;
+    const updateResult = await updateBlock('markdown', nextMarkdown, habit.blockId);
+    return isSuccessfulBlockOperationResult(updateResult);
   } catch (error) {
     console.error('[HabitService] unarchiveHabit failed:', error);
     return false;
