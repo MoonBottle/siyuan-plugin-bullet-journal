@@ -50,6 +50,37 @@
                   </div>
                 </div>
               </div>
+
+              <div class="form-section">
+                <label class="section-label">{{ t('settings').habitSettings.title }}</label>
+
+                <div class="setting-item setting-item--select">
+                  <div class="setting-info">
+                    <div class="setting-icon">
+                      <svg><use xlink:href="#iconCheck"></use></svg>
+                    </div>
+                    <div class="setting-copy">
+                      <span class="setting-label">{{ t('settings').habitSettings.checkInTimePrecision }}</span>
+                      <span class="setting-description">{{ t('settings').habitSettings.checkInTimePrecisionDesc }}</span>
+                    </div>
+                  </div>
+                  <div class="setting-control">
+                    <select
+                      :value="habitCheckInTimePrecision"
+                      class="setting-select"
+                      @change="handleHabitCheckInTimePrecisionChange"
+                    >
+                      <option
+                        v-for="option in habitCheckInTimePrecisionOptions"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        {{ option.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
               
               <!-- About Section -->
               <div class="form-section">
@@ -95,10 +126,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
+import type { HabitCheckInTimePrecision } from '@/settings/types';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -112,6 +144,12 @@ const projectStore = useProjectStore();
 const plugin = usePlugin();
 
 const version = computed(() => plugin?.manifest?.version || '0.12.2');
+const habitCheckInTimePrecision = ref<HabitCheckInTimePrecision>(plugin?.getSettings?.().habitCheckInTimePrecision ?? 'day');
+const habitCheckInTimePrecisionOptions = computed(() => [
+  { value: 'day', label: t('settings').habitSettings.precisionDay },
+  { value: 'minute', label: t('settings').habitSettings.precisionMinute },
+  { value: 'second', label: t('settings').habitSettings.precisionSecond },
+]);
 
 const close = () => {
   emit('update:modelValue', false);
@@ -123,6 +161,19 @@ const toggleHideCompleted = () => {
 
 const toggleHideAbandoned = () => {
   projectStore.toggleHideAbandoned();
+};
+
+const handleHabitCheckInTimePrecisionChange = (event: Event) => {
+  const value = (event.target as HTMLSelectElement).value as HabitCheckInTimePrecision;
+  habitCheckInTimePrecision.value = value;
+
+  if (!plugin?.updateSettings) {
+    return;
+  }
+
+  plugin.updateSettings({
+    habitCheckInTimePrecision: value,
+  });
 };
 
 const openPluginSettings = () => {
@@ -245,6 +296,12 @@ const openPluginSettings = () => {
   gap: 12px;
 }
 
+.setting-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .setting-icon {
   width: 36px;
   height: 36px;
@@ -267,9 +324,34 @@ const openPluginSettings = () => {
   color: var(--b3-theme-on-background);
 }
 
+.setting-description {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+  opacity: 0.72;
+}
+
 .setting-control {
   display: flex;
   align-items: center;
+}
+
+.setting-item--select {
+  align-items: flex-start;
+}
+
+.setting-select {
+  appearance: none;
+  min-width: 88px;
+  padding: 8px 24px 8px 8px;
+  border: none;
+  background: transparent;
+  color: var(--b3-theme-on-surface);
+  font-size: 14px;
+  text-align: right;
+
+  &:focus {
+    outline: none;
+  }
 }
 
 // Switch component

@@ -65,6 +65,12 @@
             v-model:show-pomodoro-total="local.showPomodoroTotal"
           />
         </div>
+        <div id="section-habit" class="sy-settings-section-wrapper">
+          <HabitConfigSection
+            v-show="sectionVisible('habit')"
+            v-model:habit-check-in-time-precision="local.habitCheckInTimePrecision"
+          />
+        </div>
         <div id="section-lunch" class="sy-settings-section-wrapper">
           <LunchBreakConfigSection
             v-show="sectionVisible('lunch')"
@@ -108,6 +114,7 @@ import DirectoryConfigSection from './DirectoryConfigSection.vue';
 import GroupConfigSection from './GroupConfigSection.vue';
 import PomodoroConfigSection from './PomodoroConfigSection.vue';
 import CalendarConfigSection from './CalendarConfigSection.vue';
+import HabitConfigSection from './HabitConfigSection.vue';
 import AiConfigSection from './AiConfigSection.vue';
 import McpConfigSection from './McpConfigSection.vue';
 import LunchBreakConfigSection from './LunchBreakConfigSection.vue';
@@ -136,6 +143,7 @@ const menuItems = computed<MenuItem[]>(() => {
     { key: 'group', title: settings.groupManage?.title ?? '分组管理', icon: 'iconGroups', sectionId: 'section-group' },
     { key: 'pomodoro', title: settings.pomodoro?.title ?? '番茄钟', icon: 'iconClock', sectionId: 'section-pomodoro' },
     { key: 'calendar', title: settings.calendar?.title ?? '日历', icon: 'iconCalendar', sectionId: 'section-calendar' },
+    { key: 'habit', title: settings.habitSettings?.title ?? '习惯', icon: 'iconCheck', sectionId: 'section-habit' },
     { key: 'lunch', title: settings.lunchBreak?.title ?? '午休时间', icon: 'iconClock', sectionId: 'section-lunch' },
     { key: 'slash', title: settings.slashCommands?.title ?? '斜杠命令', icon: 'iconCode', sectionId: 'section-slash' },
     { key: 'ai', title: settings.ai?.title ?? 'AI 服务配置', icon: 'iconSparkles', sectionId: 'section-ai' },
@@ -199,6 +207,7 @@ const sectionKeywords: Record<string, string> = computed(() => {
     group: collectStrings({ groupManage: s.groupManage, projectGroups: s.projectGroups }).join(' '),
     pomodoro: collectStrings(s.pomodoro).join(' '),
     calendar: collectStrings(s.calendar).join(' '),
+    habit: collectStrings(s.habitSettings).join(' '),
     ai: collectStrings(s.ai).join(' '),
     mcp: collectStrings(s.mcp).join(' '),
     lunch: collectStrings(s.lunchBreak).join(' '),

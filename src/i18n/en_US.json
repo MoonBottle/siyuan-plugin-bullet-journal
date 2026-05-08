@@ -233,6 +233,14 @@
       "end": "End",
       "endDesc": "Lunch break end time; the period from start time is excluded from work hours"
     },
+    "habitSettings": {
+      "title": "Habit",
+      "checkInTimePrecision": "Check-in time precision",
+      "checkInTimePrecisionDesc": "Control the precision used when writing and displaying habit check-in timestamps",
+      "precisionDay": "Day",
+      "precisionMinute": "Minute",
+      "precisionSecond": "Second"
+    },
     "groupManage": {
       "title": "Group Management",
       "description": "Create and manage project groups",
@@ -787,6 +795,7 @@
       "view": "View",
       "configuration": "Configuration",
       "advanced": "Advanced",
+      "habit": "Habit",
       "hideCompleted": "Hide Completed",
       "hideAbandoned": "Hide Abandoned",
       "directories": "directories",
