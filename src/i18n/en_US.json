@@ -113,7 +113,13 @@
     "noTasks": "No tasks",
     "noProjectsData": "No project data",
     "configureDirHint": "Please configure notebook directory in settings",
-    "dirStructureHint": "Project documents should be placed under work/YYYY/project/"
+    "dirStructureHint": "Project documents should be placed under work/YYYY/project/",
+    "viewModes": {
+      "table": "Table View",
+      "card": "Card View"
+    },
+    "searchPlaceholder": "Search projects...",
+    "path": "Path"
   },
   "todo": {
     "title": "Todo",

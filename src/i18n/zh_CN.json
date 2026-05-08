@@ -113,7 +113,13 @@
     "noTasks": "暂无任务",
     "noProjectsData": "暂无项目数据",
     "configureDirHint": "请在设置中配置笔记本目录",
-    "dirStructureHint": "项目文档需放置在 工作安排/YYYY/项目/ 目录下"
+    "dirStructureHint": "项目文档需放置在 工作安排/YYYY/项目/ 目录下",
+    "viewModes": {
+      "table": "表格视图",
+      "card": "卡片视图"
+    },
+    "searchPlaceholder": "搜索项目...",
+    "path": "路径"
   },
   "todo": {
     "title": "待办事项",

@@ -321,8 +321,11 @@ export const useProjectStore = defineStore('project', {
 
     // 按分组过滤的项目（groupId 为空表示全部分组）
     getFilteredProjects: (state) => (groupId: string) => {
-      if (!groupId) return state.projects;
-      return state.projects.filter(p => p.groupId === groupId);
+      let projects = state.projects;
+      if (groupId) {
+        projects = projects.filter(p => p.groupId === groupId);
+      }
+      return [...projects].sort((a, b) => b.path.localeCompare(a.path));
     },
 
     // 按分组过滤的事项
