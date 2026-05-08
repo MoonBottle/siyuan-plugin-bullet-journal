@@ -762,6 +762,18 @@ describe('parseItemLine - 置顶与业务标签解析', () => {
     expect(items[0].tags).toEqual(['Alpha', 'Beta']);
   });
 
+  it('解析思源原生 #标签# 语法，不把尾部 # 留在事项内容里', () => {
+    const items = LineParser.parseItemLine(
+      '这是一个全天事项 ⏰23:08 📅2026-05-07 📌 #测试一下标签#\u200B #测试标签B#',
+      1,
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('这是一个全天事项');
+    expect(items[0].pinned).toBe(true);
+    expect(items[0].tags).toEqual(['测试一下标签', '测试标签B']);
+  });
+
   it('保留块引用锚文本中的置顶和业务标签字符，不将其作为事项元数据', () => {
     const items = LineParser.parseItemLine(
       "跟进((20260310210016-gkixdit '📌 #Alpha 设计稿')) @2026-03-21 #Release",

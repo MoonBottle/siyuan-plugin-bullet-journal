@@ -44,6 +44,20 @@ describe('tagParser', () => {
     ]);
   });
 
+  it('parses native siyuan tags with closing # markers', () => {
+    expect(parseTagsFromLine('整理资料 #前端# #认证# #done#')).toEqual([
+      '前端',
+      '认证',
+    ]);
+  });
+
+  it('ignores zero-width separators around native siyuan tags', () => {
+    expect(parseTagsFromLine('整理资料 #前端#\u200B #认证#')).toEqual([
+      '前端',
+      '认证',
+    ]);
+  });
+
   it('strips only business tags and preserves reserved tags', () => {
     expect(stripTagsFromLine('整理资料 #重要 #done #任务 #frontend')).toBe('整理资料 #done #任务');
   });
@@ -56,6 +70,10 @@ describe('tagParser', () => {
 
   it('strips business tags before closing parenthesis and sentence punctuation', () => {
     expect(stripTagsFromLine('发布(#frontend)#done。')).toBe('发布()#done。');
+  });
+
+  it('strips native siyuan business tags without leaving trailing # in content', () => {
+    expect(stripTagsFromLine('整理资料 #前端# #认证# #done#')).toBe('整理资料 #done');
   });
 
   it('normalizes spacing after stripping business tags', () => {
