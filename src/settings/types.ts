@@ -11,6 +11,7 @@ export type TodoSortField =
   | 'content';
 
 export type TodoSortDirection = 'asc' | 'desc';
+export type HabitCheckInTimePrecision = 'day' | 'minute' | 'second';
 
 export interface TodoSortRule {
   field: TodoSortField;
@@ -79,6 +80,7 @@ export interface SettingsData {
   calendarDefaultView: string;
   lunchBreakStart: string;
   lunchBreakEnd: string;
+  habitCheckInTimePrecision?: HabitCheckInTimePrecision;
   showPomodoroBlocks?: boolean;     // 日历日视图是否显示番茄钟时间块，默认 true
   showPomodoroTotal?: boolean;      // 事项条是否显示专注总时长，默认 true
   todoDock: TodoDockSettings;
@@ -137,6 +139,7 @@ export const defaultSettings: SettingsData = {
   calendarDefaultView: 'timeGridDay',
   lunchBreakStart: '12:00',
   lunchBreakEnd: '13:00',
+  habitCheckInTimePrecision: 'day',
   showPomodoroBlocks: true,
   showPomodoroTotal: true,
   todoDock: {

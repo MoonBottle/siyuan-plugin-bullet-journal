@@ -145,6 +145,7 @@ export type HabitFrequency = {
 export interface CheckInRecord {
   content: string;               // 打卡日志内容（默认等于习惯名，用户可自定义修改）
   date: string;                  // YYYY-MM-DD
+  completedAt?: string;          // YYYY-MM-DD / YYYY-MM-DD HH:mm / YYYY-MM-DD HH:mm:ss
   docId: string;
   blockId: string;               // SiYuan block ID，作为唯一标识
   // 计数型专用

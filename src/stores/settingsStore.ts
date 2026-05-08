@@ -6,6 +6,9 @@ import { defineStore } from 'pinia';
 import type { ProjectGroup, ProjectDirectory, ScanMode } from '@/types/models';
 import { usePlugin } from '@/main';
 import { defaultTodoSortRules } from '@/settings/types';
+import type { HabitCheckInTimePrecision } from '@/settings/types';
+
+const habitCheckInTimePrecisionOptions: HabitCheckInTimePrecision[] = ['day', 'minute', 'second'];
 
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
@@ -18,6 +21,7 @@ export const useSettingsStore = defineStore('settings', {
     calendarDefaultView: 'timeGridDay',
     lunchBreakStart: '12:00',
     lunchBreakEnd: '13:00',
+    habitCheckInTimePrecision: 'day' as HabitCheckInTimePrecision,
     showPomodoroBlocks: true,
     showPomodoroTotal: true,
     todoDock: {
@@ -80,6 +84,9 @@ export const useSettingsStore = defineStore('settings', {
         this.calendarDefaultView = settings.calendarDefaultView || 'timeGridDay';
         this.lunchBreakStart = settings.lunchBreakStart || '12:00';
         this.lunchBreakEnd = settings.lunchBreakEnd || '13:00';
+        this.habitCheckInTimePrecision = habitCheckInTimePrecisionOptions.includes(settings.habitCheckInTimePrecision)
+          ? settings.habitCheckInTimePrecision
+          : 'day';
         this.showPomodoroBlocks = settings.showPomodoroBlocks ?? true;
         this.showPomodoroTotal = settings.showPomodoroTotal ?? true;
         this.todoDock = {
@@ -113,6 +120,7 @@ export const useSettingsStore = defineStore('settings', {
           calendarDefaultView: this.calendarDefaultView,
           lunchBreakStart: this.lunchBreakStart,
           lunchBreakEnd: this.lunchBreakEnd,
+          habitCheckInTimePrecision: this.habitCheckInTimePrecision,
           showPomodoroBlocks: this.showPomodoroBlocks,
           showPomodoroTotal: this.showPomodoroTotal,
           todoDock: this.todoDock

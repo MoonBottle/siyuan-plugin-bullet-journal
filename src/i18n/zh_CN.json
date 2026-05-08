@@ -233,6 +233,14 @@
       "end": "结束",
       "endDesc": "午休结束时间，与开始时间之间的时段在计算工时时将被扣除"
     },
+    "habitSettings": {
+      "title": "习惯",
+      "checkInTimePrecision": "打卡完成时间精度",
+      "checkInTimePrecisionDesc": "控制习惯打卡记录写入与展示的时间精度",
+      "precisionDay": "到日",
+      "precisionMinute": "到分",
+      "precisionSecond": "到秒"
+    },
     "groupManage": {
       "title": "分组管理",
       "description": "创建和管理项目分组",
