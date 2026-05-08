@@ -1,6 +1,6 @@
 import dayjs from '@/utils/dayjs';
 
-const HABIT_COMPLETED_AT_BOUNDARY = String.raw`(?=$|[\s),.;!?])`;
+const HABIT_COMPLETED_AT_BOUNDARY = String.raw`(?=$|[\s),.;!?，。；！？])`;
 const HABIT_COMPLETED_AT_SECOND_RE = new RegExp(
   String.raw`📅(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}):(\d{2})${HABIT_COMPLETED_AT_BOUNDARY}`,
 );
@@ -11,6 +11,10 @@ const HABIT_COMPLETED_AT_DAY_RE = new RegExp(
   String.raw`📅(\d{4}-\d{2}-\d{2})${HABIT_COMPLETED_AT_BOUNDARY}`,
 );
 const HABIT_COMPLETED_AT_TIME_FRAGMENT_RE = /📅\d{4}-\d{2}-\d{2}(?= \d)/;
+export const HABIT_COMPLETED_AT_TOKEN_RE = new RegExp(
+  String.raw`📅\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2}(?::\d{2})?)?${HABIT_COMPLETED_AT_BOUNDARY}`,
+  'g',
+);
 
 type HabitDateTimePrecision = 'day' | 'minute' | 'second';
 
@@ -59,6 +63,10 @@ export function extractHabitCompletedAt(markdown: string): { date: string, compl
   }
 
   return null;
+}
+
+export function stripHabitCompletedAtTokens(markdown: string): string {
+  return markdown.replace(HABIT_COMPLETED_AT_TOKEN_RE, '');
 }
 
 export function formatHabitCompletedAtForMarkdown(

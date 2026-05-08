@@ -27,6 +27,17 @@ describe('extractHabitCompletedAt', () => {
     });
   });
 
+  it('accepts common Chinese punctuation after minute precision timestamps', () => {
+    expect(extractHabitCompletedAt('喝水 📅2026-05-08 09:30，补卡')).toEqual({
+      date: '2026-05-08',
+      completedAt: '2026-05-08 09:30',
+    });
+    expect(extractHabitCompletedAt('喝水 📅2026-05-08 09:30。')).toEqual({
+      date: '2026-05-08',
+      completedAt: '2026-05-08 09:30',
+    });
+  });
+
   it('rejects malformed trailing content after a second precision timestamp', () => {
     expect(extractHabitCompletedAt('喝水 📅2026-05-08 09:30:45foo')).toBeNull();
     expect(extractHabitCompletedAt('喝水 📅2026-05-08 09:30:45~10:00:00')).toBeNull();
