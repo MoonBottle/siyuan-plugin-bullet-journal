@@ -137,6 +137,7 @@ const selectedStats = computed(() => {
 });
 
 const displaySelectedStats = computed(() => selectedStats.value ?? state.selectedStatsCache);
+const habitCheckInTimePrecision = computed(() => settingsStore.habitCheckInTimePrecision || 'day');
 
 watch(selectedStats, (value) => {
   if (value) {
@@ -206,13 +207,13 @@ async function handleCheckIn(habit: Habit) {
     return;
   }
 
-  const success = await checkIn(habit, state.selectedDate);
+  const success = await checkIn(habit, state.selectedDate, undefined, habitCheckInTimePrecision.value);
   if (success)
     state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
 }
 
 async function handleIncrement(habit: Habit) {
-  const success = await checkInCount(habit, state.selectedDate, 1);
+  const success = await checkInCount(habit, state.selectedDate, 1, undefined, habitCheckInTimePrecision.value);
   if (success)
     state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
 }

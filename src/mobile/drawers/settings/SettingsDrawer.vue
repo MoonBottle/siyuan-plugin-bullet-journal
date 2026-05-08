@@ -127,7 +127,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useProjectStore } from '@/stores';
+import { useProjectStore, useSettingsStore } from '@/stores';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import type { HabitCheckInTimePrecision } from '@/settings/types';
@@ -141,6 +141,7 @@ const emit = defineEmits<{
 }>();
 
 const projectStore = useProjectStore();
+const settingsStore = useSettingsStore();
 const plugin = usePlugin();
 
 const version = computed(() => plugin?.manifest?.version || '0.12.2');
@@ -174,6 +175,7 @@ const handleHabitCheckInTimePrecisionChange = (event: Event) => {
   plugin.updateSettings({
     habitCheckInTimePrecision: value,
   });
+  settingsStore.habitCheckInTimePrecision = value;
 };
 
 const openPluginSettings = () => {

@@ -50,6 +50,7 @@ const {
     settingsStore: {
       scanMode: 'all',
       directories: [],
+      habitCheckInTimePrecision: 'day',
     },
     eventBusOn: vi.fn(() => vi.fn()),
     consumePendingHabitDockTarget: vi.fn(() => null),
@@ -356,6 +357,7 @@ afterEach(() => {
   resetDayState();
   vi.clearAllMocks();
   projectStore.currentDate = '2026-05-01';
+  settingsStore.habitCheckInTimePrecision = 'day';
   consumePendingHabitDockTarget.mockReturnValue(null);
   checkIn.mockResolvedValue(false);
   checkInCount.mockResolvedValue(false);
@@ -576,7 +578,7 @@ describe('MobileHabitPanel', () => {
     button?.click();
     await nextTick();
 
-    expect(checkIn).toHaveBeenCalledWith(habits[0], '2026-05-01');
+    expect(checkIn).toHaveBeenCalledWith(habits[0], '2026-05-01', undefined, 'day');
     expect(projectStore.refresh).not.toHaveBeenCalled();
 
     mounted.unmount();
@@ -591,7 +593,7 @@ describe('MobileHabitPanel', () => {
     button?.click();
     await nextTick();
 
-    expect(checkInCount).toHaveBeenCalledWith(habits[1], '2026-05-01', 1);
+    expect(checkInCount).toHaveBeenCalledWith(habits[1], '2026-05-01', 1, undefined, 'day');
     expect(projectStore.refresh).not.toHaveBeenCalled();
 
     mounted.unmount();

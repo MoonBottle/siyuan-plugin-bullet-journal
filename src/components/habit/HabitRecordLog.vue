@@ -12,7 +12,7 @@
         :data-testid="`habit-record-log-item-${record.blockId}`"
         @click="handleOpenRecord(record, $event)"
       >
-        <div class="habit-record-log__date">{{ formatDate(record.date) }}</div>
+        <div class="habit-record-log__date">{{ formatRecordDate(record) }}</div>
         <div class="habit-record-log__content">
           <span class="habit-record-log__text">{{ record.content }}</span>
           <span v-if="habit.type === 'count' && record.currentValue !== undefined" class="habit-record-log__count">
@@ -30,6 +30,8 @@ import dayjs from '@/utils/dayjs';
 import { t } from '@/i18n';
 import type { Habit, CheckInRecord } from '@/types/models';
 import { openDocumentAtLine } from '@/utils/fileUtils';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { formatHabitCompletedAtForDisplay } from '@/utils/habitDateTime';
 
 export type HabitRecordLogPreviewPayload = {
   blockId: string;
@@ -44,6 +46,8 @@ const props = defineProps<{
   onRecordPreviewClick?: (payload: HabitRecordLogPreviewPayload, event: MouseEvent) => void;
 }>();
 
+const settingsStore = useSettingsStore();
+
 const monthlyRecords = computed(() => {
   return [...(props.habit.records || [])]
     .filter(record => record.date.startsWith(`${props.viewMonth}-`))
@@ -55,8 +59,11 @@ const headerTitle = computed(() => {
   return t('habit').monthlyCheckinLog.replace('{month}', month);
 });
 
-function formatDate(date: string): string {
-  return dayjs(date).format('M/D');
+function formatRecordDate(record: CheckInRecord): string {
+  return formatHabitCompletedAtForDisplay(
+    record.completedAt || record.date,
+    settingsStore.habitCheckInTimePrecision || 'day',
+  );
 }
 
 async function handleOpenRecord(record: CheckInRecord, event: MouseEvent) {

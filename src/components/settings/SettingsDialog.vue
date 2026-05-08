@@ -110,6 +110,7 @@ import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { t } from '@/i18n';
 import type { SettingsData } from '@/settings/types';
 import { defaultSettings } from '@/settings/types';
+import { useSettingsStore } from '@/stores/settingsStore';
 import DirectoryConfigSection from './DirectoryConfigSection.vue';
 import GroupConfigSection from './GroupConfigSection.vue';
 import PomodoroConfigSection from './PomodoroConfigSection.vue';
@@ -281,6 +282,7 @@ function cloneSettings(data: SettingsData): SettingsData {
 }
 
 const local = reactive<SettingsData>(cloneSettings(props.plugin.getSettings()));
+const settingsStore = useSettingsStore();
 
 // 当 plugin 传入的 settings 变化时同步（如 destroyCallback 重新 load 后再次打开）
 watch(() => props.plugin.getSettings(), (newSettings) => {
@@ -337,6 +339,19 @@ async function handleSave() {
     props.plugin.updateSettings(local);
     await props.plugin.saveSettings();
     const settings = props.plugin.getSettings();
+    settingsStore.$patch({
+      scanMode: settings.scanMode || 'full',
+      directories: settings.directories || [],
+      groups: settings.groups || [],
+      defaultGroup: settings.defaultGroup || '',
+      calendarDefaultView: settings.calendarDefaultView || 'timeGridDay',
+      lunchBreakStart: settings.lunchBreakStart || '12:00',
+      lunchBreakEnd: settings.lunchBreakEnd || '13:00',
+      habitCheckInTimePrecision: settings.habitCheckInTimePrecision || 'day',
+      showPomodoroBlocks: settings.showPomodoroBlocks ?? true,
+      showPomodoroTotal: settings.showPomodoroTotal ?? true,
+      todoDock: settings.todoDock ?? settingsStore.todoDock,
+    });
     eventBus.emit(Events.DATA_REFRESH, settings);
     broadcastDataRefresh(settings as object);
     // 触发设置变更事件，通知插件主类更新 UI（如番茄钟显示/隐藏）
