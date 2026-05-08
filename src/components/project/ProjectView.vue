@@ -15,13 +15,13 @@
       <table class="project-table">
         <thead>
           <tr>
-            <th>{{ t('project').title }}</th>
-            <th>{{ t('project').path }}</th>
-            <th>{{ t('project').taskCount }}</th>
-            <th>L1</th>
-            <th>L2</th>
-            <th>L3</th>
-            <th>{{ t('project').itemsLabel }}</th>
+            <th class="col-title">{{ t('project').title }}</th>
+            <th class="col-path">{{ t('project').path }}</th>
+            <th class="col-task-count">{{ t('project').taskCount }}</th>
+            <th class="col-l1">L1</th>
+            <th class="col-l2">L2</th>
+            <th class="col-l3">L3</th>
+            <th class="col-items">{{ t('project').itemsLabel }}</th>
           </tr>
         </thead>
         <tbody>
@@ -31,16 +31,16 @@
             class="project-table-row"
             @click="handleClick(project)"
           >
-            <td class="project-name-cell">
+            <td class="col-title project-name-cell">
               <span class="project-name">{{ project.name }}</span>
               <span v-if="project.description" class="project-desc-inline">{{ project.description }}</span>
             </td>
-            <td class="project-path-cell">{{ project.path }}</td>
-            <td class="task-count-cell">{{ project.tasks.length }}</td>
-            <td>{{ getTaskCountByLevel(project, 'L1') }}</td>
-            <td>{{ getTaskCountByLevel(project, 'L2') }}</td>
-            <td>{{ getTaskCountByLevel(project, 'L3') }}</td>
-            <td>{{ getItemCount(project) }}</td>
+            <td class="col-path project-path-cell">{{ project.path }}</td>
+            <td class="col-task-count task-count-cell">{{ project.tasks.length }}</td>
+            <td class="col-l1">{{ getTaskCountByLevel(project, 'L1') }}</td>
+            <td class="col-l2">{{ getTaskCountByLevel(project, 'L2') }}</td>
+            <td class="col-l3">{{ getTaskCountByLevel(project, 'L3') }}</td>
+            <td class="col-items">{{ getItemCount(project) }}</td>
           </tr>
         </tbody>
       </table>
@@ -179,10 +179,14 @@ const getItemCount = (project: Project): number => {
 }
 
 .project-table-wrapper {
+  display: block;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
   overflow-x: auto;
 }
 
 .project-table {
+  table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
@@ -191,6 +195,9 @@ const getItemCount = (project: Project): number => {
     padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid var(--b3-border-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   th {
@@ -198,13 +205,39 @@ const getItemCount = (project: Project): number => {
     color: var(--b3-theme-on-surface);
     opacity: 0.7;
     font-size: 12px;
-    background: var(--b3-theme-background);
+    background-color: var(--b3-theme-background);
     position: sticky;
     top: 0;
+    z-index: 1;
   }
 
   td {
     color: var(--b3-theme-on-background);
+  }
+
+  .col-title {
+    width: 200px;
+  }
+
+  .col-path {
+    width: 300px;
+  }
+
+  .col-task-count {
+    width: 80px;
+    text-align: center;
+  }
+
+  .col-l1,
+  .col-l2,
+  .col-l3 {
+    width: 60px;
+    text-align: center;
+  }
+
+  .col-items {
+    width: 80px;
+    text-align: center;
   }
 }
 
