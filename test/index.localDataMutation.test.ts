@@ -24,4 +24,11 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
       /private scheduleRefresh\(\)\s*\{[\s\S]*reminderService\.scheduleRebuild\(\);[\s\S]*\}/s,
     );
   });
+
+  it('merges habitCheckInTimePrecision when loading settings from disk', () => {
+    const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+
+    expect(indexSource).toMatch(/data\.habitCheckInTimePrecision\s*===\s*["']minute["']/);
+    expect(indexSource).toContain('defaultSettings.habitCheckInTimePrecision');
+  });
 });

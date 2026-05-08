@@ -624,6 +624,12 @@ export default class TaskAssistantPlugin extends Plugin {
           calendarDefaultView: data.calendarDefaultView || "timeGridDay",
           lunchBreakStart: data.lunchBreakStart || "12:00",
           lunchBreakEnd: data.lunchBreakEnd || "13:00",
+          habitCheckInTimePrecision:
+            data.habitCheckInTimePrecision === "day"
+            || data.habitCheckInTimePrecision === "minute"
+            || data.habitCheckInTimePrecision === "second"
+              ? data.habitCheckInTimePrecision
+              : defaultSettings.habitCheckInTimePrecision,
           showPomodoroBlocks: data.showPomodoroBlocks ?? true,
           showPomodoroTotal: data.showPomodoroTotal ?? true,
           todoDock: {
