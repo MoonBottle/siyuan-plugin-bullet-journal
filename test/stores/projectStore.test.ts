@@ -475,3 +475,208 @@ describe('projectStore 事项排序规则', () => {
     expect(result.map(item => item.blockId)).toEqual(['low-0700', 'medium-0800', 'high-0900']);
   });
 });
+
+describe('projectStore Todo 标签与置顶分组', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('搜索同时匹配业务标签，支持带 # 和不带 # 的查询', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-05-01', 'frontend-item', {
+        content: '修复接口异常',
+        tags: ['前端'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'backend-item', {
+        content: '更新数据库索引',
+        tags: ['后端'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-05-01',
+      projects: [createMockProject(items)],
+    });
+
+    const withHash = store.getFilteredAndSortedItems({
+      groupId: '',
+      searchQuery: '#前端',
+    });
+    const withoutHash = store.getFilteredAndSortedItems({
+      groupId: '',
+      searchQuery: '前端',
+    });
+
+    expect(withHash.map(item => item.blockId)).toEqual(['frontend-item']);
+    expect(withoutHash.map(item => item.blockId)).toEqual(['frontend-item']);
+  });
+
+  it('聚合标签选项时去重计数，并按数量降序后名称升序排序', () => {
+    const store = useProjectStore();
+    const projectA = createMockProject([
+      mkItem('2026-05-01', 'item-a', {
+        tags: ['前端', 'Alpha'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'item-b', {
+        tags: ['前端'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'item-c', {
+        tags: ['Beta'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+    ]);
+    const projectB: Project = {
+      ...createMockProject([
+        mkItem('2026-05-01', 'item-d', {
+          tags: ['Alpha'],
+          dateRangeStart: undefined,
+          dateRangeEnd: undefined,
+        }),
+      ]),
+      id: 'proj-2',
+      name: '测试项目 B',
+      path: '/test-b',
+    };
+
+    store.$patch({
+      currentDate: '2026-05-01',
+      projects: [projectA, projectB],
+    });
+
+    expect(store.getTodoTagOptions('')).toEqual([
+      { name: 'Alpha', count: 2 },
+      { name: '前端', count: 2 },
+      { name: 'Beta', count: 1 },
+    ]);
+  });
+
+  it('聚合标签与 selectedTags 使用相同归一化规则', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-05-01', 'item-a', {
+        tags: ['Alpha'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'item-b', {
+        tags: ['alpha'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'item-c', {
+        tags: ['Beta'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-05-01',
+      projects: [createMockProject(items)],
+    });
+
+    expect(store.getTodoTagOptions('')).toEqual([
+      { name: 'Alpha', count: 2 },
+      { name: 'Beta', count: 1 },
+    ]);
+
+    const filtered = store.getFilteredAndSortedItems({
+      groupId: '',
+      selectedTags: ['alpha'],
+    });
+
+    expect(filtered.map(item => item.blockId)).toEqual(['item-a', 'item-b']);
+  });
+
+  it('selectedTags 支持多选并按 OR 语义过滤', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-05-01', 'frontend-item', {
+        tags: ['前端'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'backend-item', {
+        tags: ['后端'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'design-item', {
+        tags: ['设计'],
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-05-01',
+      projects: [createMockProject(items)],
+    });
+
+    const result = store.getFilteredAndSortedItems({
+      groupId: '',
+      selectedTags: ['前端', '后端'],
+    });
+
+    expect(result.map(item => item.blockId)).toEqual(['frontend-item', 'backend-item']);
+  });
+
+  it('分组待办将置顶事项单独拆出，普通事项保持既有排序结果', () => {
+    const store = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.todoDock.sortRules = [
+      { field: 'time', direction: 'asc' },
+    ];
+
+    const items = [
+      mkItem('2026-05-01', 'regular-early', {
+        content: '普通事项 1',
+        startDateTime: '2026-05-01 08:00:00',
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'pinned-late', {
+        content: '置顶事项',
+        pinned: true,
+        tags: ['置顶'],
+        startDateTime: '2026-05-01 10:00:00',
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+      mkItem('2026-05-01', 'regular-mid', {
+        content: '普通事项 2',
+        startDateTime: '2026-05-01 09:00:00',
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+      }),
+    ];
+
+    store.$patch({
+      currentDate: '2026-05-01',
+      projects: [createMockProject(items)],
+    });
+
+    const sorted = store.getFilteredAndSortedItems({ groupId: '' });
+    const grouped = store.getGroupedFilteredAndSortedItems({ groupId: '' });
+    const groupedWithTag = store.getGroupedFilteredAndSortedItems({
+      groupId: '',
+      selectedTags: ['置顶'],
+    });
+
+    expect(sorted.map(item => item.blockId)).toEqual(['regular-early', 'regular-mid', 'pinned-late']);
+    expect(grouped.pinnedItems.map(item => item.blockId)).toEqual(['pinned-late']);
+    expect(grouped.regularItems.map(item => item.blockId)).toEqual(['regular-early', 'regular-mid']);
+    expect(groupedWithTag.pinnedItems.map(item => item.blockId)).toEqual(['pinned-late']);
+    expect(groupedWithTag.regularItems).toEqual([]);
+  });
+});

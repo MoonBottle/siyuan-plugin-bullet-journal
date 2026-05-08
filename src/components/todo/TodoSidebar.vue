@@ -7,7 +7,7 @@
       <SyLoading v-if="loading" :text="t('common').loading" />
 
       <!-- 空状态：有筛选条件但无结果 -->
-      <div v-else-if="hasActiveFilters && todayItems.length === 0 && tomorrowItems.length === 0 && futureItems.length === 0 && expiredItems.length === 0 && (hideCompleted || completedItems.length === 0) && (hideAbandoned || abandonedItems.length === 0)" class="empty-guide">
+      <div v-else-if="hasActiveFilters && visibleItemCount === 0" class="empty-guide">
         <div class="empty-guide-icon">
           <svg><use xlink:href="#iconSearch"></use></svg>
         </div>
@@ -31,6 +31,119 @@
       </div>
 
       <div v-else class="todo-list">
+        <!-- 已置顶 -->
+        <div v-if="pinnedItems.length > 0" class="todo-section">
+          <div class="section-label clickable" @click="toggleSection('pinned')">
+            <span class="collapse-icon">
+              <svg v-if="collapsedSections.pinned"><use xlink:href="#iconRight"></use></svg>
+              <svg v-else><use xlink:href="#iconDown"></use></svg>
+            </span>
+            <span>{{ t('todo').pinned || '已置顶' }} ({{ pinnedItems.length }})</span>
+          </div>
+          <div v-show="!collapsedSections.pinned" class="todo-items">
+            <Card
+              v-for="item in pinnedItems"
+              :key="item.id"
+              status="today"
+              :show-header="true"
+              :show-footer="true"
+              :clickable="true"
+              :draggable="getItemDraggable(item)"
+              :data-testid="`todo-sidebar-card-${item.id}`"
+              :class="{ 'todo-card--drag-source': getItemDraggable(item) }"
+              @click="handleItemPreviewClick(item, $event)"
+              @contextmenu="handleContextMenu($event, item)"
+              @mouseenter="handleItemHoverStart(item, $event)"
+              @mouseleave="handleItemHoverEnd(item, $event)"
+              @dragstart="handleItemDragStart(item, $event)"
+              @dragend="handleItemDragEnd(item, $event)"
+            >
+              <template #header>
+                <div class="item-header-left">
+                  <span class="item-time">{{ formatDateLabel(item.date) }}</span>
+                </div>
+                <span v-if="item.project || getPriorityEmoji(item)" class="item-project">
+                  <span v-if="getPriorityEmoji(item)" class="item-priority">{{ getPriorityEmoji(item) }}</span>
+                  <span v-if="item.project">{{ item.project.name }}</span>
+                </span>
+              </template>
+              <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
+              <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="item.tags?.length" class="item-tag-list">
+                <button
+                  v-for="tag in item.tags"
+                  :key="`${item.id}-${tag}`"
+                  :class="['item-tag-chip', { 'item-tag-chip--active': isTagSelected(tag) }]"
+                  @click.stop="handleAddTagFilter(tag)"
+                >
+                  #{{ tag }}
+                </button>
+              </div>
+              <TodoItemMeta :item="item" />
+              <template #footer>
+                <div class="item-actions-hover">
+                  <span
+                    class="block__icon"
+                    :aria-label="t('todo').complete"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').complete)"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="handleDone(item)"
+                  >
+                    <svg><use xlink:href="#iconCheck"></use></svg>
+                  </span>
+                  <span
+                    v-if="!pomodoroStore.isFocusing"
+                    class="block__icon"
+                    :aria-label="t('todo').startFocusAria"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').startFocusAria)"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openPomodoroDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="t('todo').migrateToTomorrow"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="handleMigrate(item)"
+                  >
+                    <svg><use xlink:href="#iconForward"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="t('todo').abandon"
+                    @mouseenter="handleActionTooltipEnter($event, t('todo').abandon)"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="handleAbandon(item)"
+                  >
+                    <svg><use xlink:href="#iconCloseRound"></use></svg>
+                  </span>
+                </div>
+                <div class="item-actions-fixed">
+                  <span
+                    class="block__icon"
+                    :class="{ 'block__icon--active': item.pinned }"
+                    :data-testid="`todo-pin-toggle-${item.id}`"
+                    :aria-label="getPinAriaLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="handleTogglePinned(item)"
+                  >
+                    <svg><use xlink:href="#iconPin"></use></svg>
+                  </span>
+                  <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
+                    <svg><use xlink:href="#iconInfo"></use></svg>
+                  </span>
+                  <span class="block__icon" :aria-label="t('todo').calendar" @mouseenter="handleActionTooltipEnter($event, t('todo').calendar)" @mouseleave="handleActionTooltipLeave" @click.stop="openCalendar(item)">
+                    <svg><use xlink:href="#iconCalendar"></use></svg>
+                  </span>
+                </div>
+              </template>
+            </Card>
+          </div>
+        </div>
+
         <!-- 已过期 -->
         <div v-if="expiredItems.length > 0" class="todo-section">
           <div class="section-label clickable" @click="toggleSection('expired')">
@@ -69,6 +182,16 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="item.tags?.length" class="item-tag-list">
+                <button
+                  v-for="tag in item.tags"
+                  :key="`${item.id}-${tag}`"
+                  :class="['item-tag-chip', { 'item-tag-chip--active': isTagSelected(tag) }]"
+                  @click.stop="handleAddTagFilter(tag)"
+                >
+                  #{{ tag }}
+                </button>
+              </div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
@@ -111,6 +234,17 @@
                   </span>
                 </div>
                 <div class="item-actions-fixed">
+                  <span
+                    class="block__icon"
+                    :class="{ 'block__icon--active': item.pinned }"
+                    :data-testid="`todo-pin-toggle-${item.id}`"
+                    :aria-label="getPinAriaLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="handleTogglePinned(item)"
+                  >
+                    <svg><use xlink:href="#iconPin"></use></svg>
+                  </span>
                   <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -161,6 +295,16 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="item.tags?.length" class="item-tag-list">
+                <button
+                  v-for="tag in item.tags"
+                  :key="`${item.id}-${tag}`"
+                  :class="['item-tag-chip', { 'item-tag-chip--active': isTagSelected(tag) }]"
+                  @click.stop="handleAddTagFilter(tag)"
+                >
+                  #{{ tag }}
+                </button>
+              </div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
@@ -203,6 +347,17 @@
                   </span>
                 </div>
                 <div class="item-actions-fixed">
+                  <span
+                    class="block__icon"
+                    :class="{ 'block__icon--active': item.pinned }"
+                    :data-testid="`todo-pin-toggle-${item.id}`"
+                    :aria-label="getPinAriaLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="handleTogglePinned(item)"
+                  >
+                    <svg><use xlink:href="#iconPin"></use></svg>
+                  </span>
                   <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -253,6 +408,16 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="item.tags?.length" class="item-tag-list">
+                <button
+                  v-for="tag in item.tags"
+                  :key="`${item.id}-${tag}`"
+                  :class="['item-tag-chip', { 'item-tag-chip--active': isTagSelected(tag) }]"
+                  @click.stop="handleAddTagFilter(tag)"
+                >
+                  #{{ tag }}
+                </button>
+              </div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-hover">
@@ -295,6 +460,17 @@
                   </span>
                 </div>
                 <div class="item-actions-fixed">
+                  <span
+                    class="block__icon"
+                    :class="{ 'block__icon--active': item.pinned }"
+                    :data-testid="`todo-pin-toggle-${item.id}`"
+                    :aria-label="getPinAriaLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="handleTogglePinned(item)"
+                  >
+                    <svg><use xlink:href="#iconPin"></use></svg>
+                  </span>
                   <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                     <svg><use xlink:href="#iconInfo"></use></svg>
                   </span>
@@ -352,6 +528,16 @@
                   </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
                   <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+                  <div v-if="item.tags?.length" class="item-tag-list">
+                    <button
+                      v-for="tag in item.tags"
+                      :key="`${item.id}-${tag}`"
+                      :class="['item-tag-chip', { 'item-tag-chip--active': isTagSelected(tag) }]"
+                      @click.stop="handleAddTagFilter(tag)"
+                    >
+                      #{{ tag }}
+                    </button>
+                  </div>
                   <TodoItemMeta :item="item" />
                   <template #footer>
                     <div class="item-actions-hover">
@@ -394,6 +580,17 @@
                       </span>
                     </div>
                     <div class="item-actions-fixed">
+                      <span
+                        class="block__icon"
+                        :class="{ 'block__icon--active': item.pinned }"
+                        :data-testid="`todo-pin-toggle-${item.id}`"
+                        :aria-label="getPinAriaLabel(item)"
+                        @mouseenter="handleActionTooltipEnter($event, getPinAriaLabel(item))"
+                        @mouseleave="handleActionTooltipLeave"
+                        @click.stop="handleTogglePinned(item)"
+                      >
+                        <svg><use xlink:href="#iconPin"></use></svg>
+                      </span>
                       <span class="block__icon" :aria-label="t('todo').detail" @mouseenter="handleActionTooltipEnter($event, t('todo').detail)" @mouseleave="handleActionTooltipLeave" @click.stop="openDetail(item)">
                         <svg><use xlink:href="#iconInfo"></use></svg>
                       </span>
@@ -446,6 +643,16 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="item.tags?.length" class="item-tag-list">
+                <button
+                  v-for="tag in item.tags"
+                  :key="`${item.id}-${tag}`"
+                  :class="['item-tag-chip', { 'item-tag-chip--active': isTagSelected(tag) }]"
+                  @click.stop="handleAddTagFilter(tag)"
+                >
+                  #{{ tag }}
+                </button>
+              </div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
@@ -499,6 +706,16 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="item.tags?.length" class="item-tag-list">
+                <button
+                  v-for="tag in item.tags"
+                  :key="`${item.id}-${tag}`"
+                  :class="['item-tag-chip', { 'item-tag-chip--active': isTagSelected(tag) }]"
+                  @click.stop="handleAddTagFilter(tag)"
+                >
+                  #{{ tag }}
+                </button>
+              </div>
               <TodoItemMeta :item="item" />
               <template #footer>
                 <div class="item-actions-fixed">
@@ -540,6 +757,7 @@ import { eventBus, Events } from '@/utils/eventBus';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
+import { toggleItemPinned } from '@/utils/itemSettingUtils';
 
 type TodoSidebarDragPayload = {
   blockId: string;
@@ -587,6 +805,7 @@ const getStatusEmoji = (item: Item): string => {
 const props = withDefaults(defineProps<{
   groupId?: string;
   searchQuery?: string;
+  selectedTags?: string[];
   sortRules?: TodoSortRule[];
   dateRange?: { start: string; end: string } | null;
   completedDateRange?: { start: string; end: string } | null;
@@ -603,6 +822,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   groupId: '',
   searchQuery: '',
+  selectedTags: () => [],
   sortRules: () => [],
   dateRange: null,
   completedDateRange: null,
@@ -617,6 +837,10 @@ const props = withDefaults(defineProps<{
   onItemHoverEnd: undefined,
   onItemPreviewClick: undefined,
 });
+
+const emit = defineEmits<{
+  (event: 'add-tag-filter', value: string): void;
+}>();
 
 // 使用 inject 的 pinia（TodoSidebar 始终在 TodoDock 内，app 已 use(pinia)）
 const settingsStore = useSettingsStore();
@@ -634,6 +858,7 @@ const loading = computed(() => projectStore.loading);
 
 // 折叠状态管理
 const collapsedSections = ref({
+  pinned: false,
   expired: false,
   today: false,
   tomorrow: false,
@@ -699,6 +924,7 @@ const completedItems = computed(() => {
   return projectStore.getFilteredCompletedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
+    selectedTags: props.selectedTags,
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
     includeNoPriority: props.includeNoPriority,
@@ -711,6 +937,7 @@ const abandonedItems = computed(() => {
   return projectStore.getFilteredAbandonedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
+    selectedTags: props.selectedTags,
     dateRange: props.completedDateRange ?? props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
     includeNoPriority: props.includeNoPriority,
@@ -719,10 +946,11 @@ const abandonedItems = computed(() => {
 });
 
 // 获取所有过滤后的事项
-const filteredItems = computed(() => {
-  return projectStore.getFilteredAndSortedItems({
+const groupedFilteredItems = computed(() => {
+  return projectStore.getGroupedFilteredAndSortedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
+    selectedTags: props.selectedTags,
     dateRange: props.dateRange,
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
     includeNoPriority: props.includeNoPriority,
@@ -739,34 +967,49 @@ const hasAnyItemsRaw = computed(() => {
 // 是否有激活的筛选条件（包括分组、搜索、日期、优先级）
 const hasActiveFilters = computed(() => {
   return props.groupId || // 选择了特定分组
-         props.searchQuery?.trim() || 
-         props.dateRange || 
+         props.searchQuery?.trim() ||
+         props.selectedTags.length > 0 ||
+         props.dateRange ||
          props.priorities.length > 0 ||
          (props.includeNoPriority && hasAnyItemsRaw.value);
 });
 
+const pinnedItems = computed(() => {
+  return groupedFilteredItems.value.pinnedItems.filter(item => item.status === 'pending');
+});
+
 // 只包含待办状态的事项（已完成和已放弃单独分组）
-const pendingItems = computed(() => {
-  return filteredItems.value.filter(item => item.status === 'pending');
+const regularPendingItems = computed(() => {
+  return groupedFilteredItems.value.regularItems.filter(item => item.status === 'pending');
+});
+
+const visibleItemCount = computed(() => {
+  return pinnedItems.value.length
+    + expiredItems.value.length
+    + todayItems.value.length
+    + tomorrowItems.value.length
+    + futureItems.value.length
+    + (hideCompleted.value ? 0 : completedItems.value.length)
+    + (hideAbandoned.value ? 0 : abandonedItems.value.length);
 });
 
 // 今日待办事项
 const todayItems = computed(() => {
   const todayStr = getTodayStr();
-  return pendingItems.value.filter(item => item.date === todayStr);
+  return regularPendingItems.value.filter(item => item.date === todayStr);
 });
 
 // 明日待办事项
 const tomorrowItems = computed(() => {
   const tomorrowStr = getTomorrowStr();
-  return pendingItems.value.filter(item => item.date === tomorrowStr);
+  return regularPendingItems.value.filter(item => item.date === tomorrowStr);
 });
 
 // 未来待办事项
 const futureItems = computed(() => {
   const todayStr = getTodayStr();
   const tomorrowStr = getTomorrowStr();
-  return pendingItems.value.filter(item => {
+  return regularPendingItems.value.filter(item => {
     // 排除今天、明天和已过期的事项
     if (item.date === todayStr || item.date === tomorrowStr) return false;
     const effectiveDate = getEffectiveDate(item);
@@ -777,11 +1020,42 @@ const futureItems = computed(() => {
 // 过期事项
 const expiredItems = computed(() => {
   const todayStr = getTodayStr();
-  return pendingItems.value.filter(item => {
+  return regularPendingItems.value.filter(item => {
     const effectiveDate = getEffectiveDate(item);
     return effectiveDate < todayStr;
   });
 });
+
+function normalizeTag(tag?: string) {
+  return (tag || '').trim().toLocaleLowerCase();
+}
+
+function isTagSelected(tag: string) {
+  const normalizedTargetTag = normalizeTag(tag);
+  return props.selectedTags.some(selectedTag => normalizeTag(selectedTag) === normalizedTargetTag);
+}
+
+function handleAddTagFilter(tag: string) {
+  if (!tag) return;
+  emit('add-tag-filter', tag);
+}
+
+function getPinAriaLabel(item: Item) {
+  return item.pinned
+    ? t('todo').unpin || '取消置顶'
+    : t('todo').pin || '置顶';
+}
+
+async function handleTogglePinned(item: Item) {
+  if (isProcessing.value) return;
+
+  isProcessing.value = true;
+  try {
+    await toggleItemPinned(item);
+  } finally {
+    isProcessing.value = false;
+  }
+}
 
 // 按日期分组的未来待办事项（基于筛选后的数据）
 const groupedFutureItems = computed(() => {
@@ -1439,6 +1713,36 @@ const handleCreateExample = async () => {
   line-height: 1.4;
 }
 
+.item-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.item-tag-chip {
+  border: none;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-surface);
+  opacity: 0.82;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
+    color: var(--b3-theme-primary);
+  }
+
+  &--active {
+    background: var(--b3-theme-primary-lightest);
+    color: var(--b3-theme-primary);
+    opacity: 1;
+  }
+}
+
 .item-actions-hover {
   display: flex;
   gap: 4px;
@@ -1462,6 +1766,10 @@ const handleCreateExample = async () => {
   .block__icon {
     opacity: 1;
     cursor: pointer;
+
+    &.block__icon--active {
+      color: var(--b3-theme-primary);
+    }
 
     svg {
       width: 14px;

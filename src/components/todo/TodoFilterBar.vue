@@ -16,6 +16,46 @@
       </div>
     </div>
 
+    <div v-if="showSearch" class="tag-search-row">
+      <div class="tag-search-box">
+        <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
+        <input
+          :value="tagQuery"
+          type="text"
+          placeholder="筛选标签"
+          class="tag-search-input"
+          @input="handleTagQueryInput"
+        />
+        <button v-if="tagQuery" class="clear-btn" @click="$emit('update:tagQuery', '')">
+          <svg><use xlink:href="#iconClose"></use></svg>
+        </button>
+      </div>
+
+      <div v-if="displaySelectedTags.length" class="selected-tag-chips">
+        <button
+          v-for="tag in displaySelectedTags"
+          :key="`selected-${tag}`"
+          class="tag-chip tag-chip--selected"
+          @click="toggleTag(tag)"
+        >
+          <span class="tag-chip__label">#{{ tag }}</span>
+          <svg class="tag-chip__icon"><use xlink:href="#iconClose"></use></svg>
+        </button>
+      </div>
+
+      <div v-if="filteredTagOptions.length" class="tag-options">
+        <button
+          v-for="option in filteredTagOptions"
+          :key="option.name"
+          :class="['tag-chip', { 'tag-chip--active': isTagSelected(option.name) }]"
+          @click="toggleTag(option.name)"
+        >
+          <span class="tag-chip__label">#{{ option.name }}</span>
+          <span class="tag-chip__count">{{ option.count }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="filter-row">
       <SySelect
         :model-value="selectedGroup"
@@ -128,6 +168,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { PRIORITY_CONFIG } from '@/parser/priorityParser';
@@ -140,9 +181,16 @@ type SelectOption = {
   label: string;
 };
 
-withDefaults(defineProps<{
+type TagOption = {
+  name: string;
+  count: number;
+};
+
+const props = withDefaults(defineProps<{
   selectedGroup: string;
   searchQuery: string;
+  tagQuery?: string;
+  selectedTags?: string[];
   dateFilterType: TodoDateFilterType;
   selectedPriorities: PriorityLevel[];
   startDate: string;
@@ -152,6 +200,7 @@ withDefaults(defineProps<{
   showSearch?: boolean;
   sortRules: TodoSortRule[];
   groupOptions: SelectOption[];
+  tagOptions?: TagOption[];
   dateFilterOptions: SelectOption[];
   priorityOptions: Array<{ value: PriorityLevel; emoji: string }>;
   sortDirectionOptions: Array<{ value: TodoSortDirection; label: string }>;
@@ -159,11 +208,16 @@ withDefaults(defineProps<{
 }>(), {
   showSearch: true,
   showSortTrigger: true,
+  tagQuery: '',
+  selectedTags: () => [],
+  tagOptions: () => [],
 });
 
 const emit = defineEmits<{
   (event: 'update:selectedGroup', value: string): void;
   (event: 'update:searchQuery', value: string): void;
+  (event: 'update:tagQuery', value: string): void;
+  (event: 'update:selectedTags', value: string[]): void;
   (event: 'update:dateFilterType', value: TodoDateFilterType): void;
   (event: 'change:dateFilterType', value: TodoDateFilterType): void;
   (event: 'update:startDate', value: string): void;
@@ -184,6 +238,69 @@ function handleSearchInput(event: Event) {
     return;
   }
   emit('update:searchQuery', target.value);
+}
+
+const normalizedTagQuery = computed(() => {
+  return normalizeTagQuery(props.tagQuery);
+});
+
+const normalizedSelectedTags = computed(() => {
+  return new Set(props.selectedTags.map(tag => normalizeSelectedTag(tag)));
+});
+
+const displaySelectedTags = computed(() => {
+  const seen = new Set<string>();
+
+  return props.selectedTags.filter((tag) => {
+    const normalizedTag = normalizeSelectedTag(tag);
+    if (!normalizedTag || seen.has(normalizedTag)) {
+      return false;
+    }
+    seen.add(normalizedTag);
+    return true;
+  });
+});
+
+const filteredTagOptions = computed(() => {
+  if (!normalizedTagQuery.value) {
+    return props.tagOptions;
+  }
+
+  return props.tagOptions.filter(option =>
+    option.name.toLocaleLowerCase().includes(normalizedTagQuery.value),
+  );
+});
+
+function normalizeTagQuery(query?: string) {
+  return (query || '').trim().replace(/^#/, '').toLocaleLowerCase();
+}
+
+function normalizeSelectedTag(tag?: string) {
+  return (tag || '').toLocaleLowerCase();
+}
+
+function handleTagQueryInput(event: Event) {
+  const target = event.target as HTMLInputElement | null;
+  if (!target) {
+    return;
+  }
+  emit('update:tagQuery', target.value);
+}
+
+function isTagSelected(tag: string) {
+  return normalizedSelectedTags.value.has(normalizeSelectedTag(tag));
+}
+
+function toggleTag(tag: string) {
+  const normalizedTargetTag = normalizeSelectedTag(tag);
+  const nextTagsWithoutTarget = props.selectedTags.filter(
+    selectedTag => normalizeSelectedTag(selectedTag) !== normalizedTargetTag,
+  );
+  const nextTags = isTagSelected(tag)
+    ? nextTagsWithoutTarget
+    : [...nextTagsWithoutTarget, tag];
+
+  emit('update:selectedTags', nextTags);
 }
 </script>
 
@@ -246,6 +363,98 @@ function handleSearchInput(event: Event) {
 
         &:hover { opacity: 0.8; }
       }
+    }
+  }
+
+  .tag-search-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .tag-search-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    background: var(--b3-theme-background);
+    border-radius: var(--b3-border-radius);
+    border: 1px solid var(--b3-border-color);
+
+    &:focus-within {
+      border-color: var(--b3-theme-primary);
+    }
+
+    .search-icon {
+      width: 14px;
+      height: 14px;
+      fill: var(--b3-theme-on-surface);
+      opacity: 0.5;
+    }
+
+    .tag-search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      outline: none;
+      color: var(--b3-theme-on-background);
+    }
+
+    .clear-btn {
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.4;
+      color: var(--b3-theme-on-surface);
+
+      &:hover { opacity: 0.8; }
+    }
+  }
+
+  .selected-tag-chips,
+  .tag-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 24px;
+    padding: 0 8px;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 999px;
+    background: var(--b3-theme-background);
+    color: var(--b3-theme-on-background);
+    cursor: pointer;
+    font-size: 12px;
+
+    &:hover,
+    &.tag-chip--active,
+    &.tag-chip--selected {
+      border-color: var(--b3-theme-primary);
+      background: var(--b3-theme-primary-lightest);
+      color: var(--b3-theme-primary);
+    }
+
+    .tag-chip__icon {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+    }
+
+    .tag-chip__count {
+      opacity: 0.7;
+      font-variant-numeric: tabular-nums;
     }
   }
 

@@ -731,6 +731,57 @@ describe('parsePomodoroLine 多行描述解析', () => {
   });
 });
 
+describe('parseItemLine - 置顶与业务标签解析', () => {
+  it('解析置顶和业务标签，并清理事项内容', () => {
+    const items = LineParser.parseItemLine('📌 准备周报 #Work #重点 @2026-03-21 #done', 1);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('准备周报');
+    expect(items[0].pinned).toBe(true);
+    expect(items[0].tags).toEqual(['Work', '重点']);
+    expect(items[0].status).toBe('completed');
+  });
+
+  it('多日期展开的事项共享置顶和业务标签', () => {
+    const items = LineParser.parseItemLine('📌 跟进发布 #Release @2026-03-21, 2026-03-23', 1);
+
+    expect(items).toHaveLength(2);
+    expect(items[0].content).toBe('跟进发布');
+    expect(items[1].content).toBe('跟进发布');
+    expect(items[0].pinned).toBe(true);
+    expect(items[1].pinned).toBe(true);
+    expect(items[0].tags).toEqual(['Release']);
+    expect(items[1].tags).toEqual(['Release']);
+  });
+
+  it('移除紧邻标点的业务标签，同时保留标点内容', () => {
+    const items = LineParser.parseItemLine('复盘（#Alpha，#Beta） @2026-03-21', 1);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('复盘（）');
+    expect(items[0].tags).toEqual(['Alpha', 'Beta']);
+  });
+
+  it('保留块引用锚文本中的置顶和业务标签字符，不将其作为事项元数据', () => {
+    const items = LineParser.parseItemLine(
+      "跟进((20260310210016-gkixdit '📌 #Alpha 设计稿')) @2026-03-21 #Release",
+      1,
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('跟进📌 #Alpha 设计稿');
+    expect(items[0].pinned).toBeUndefined();
+    expect(items[0].tags).toEqual(['Release']);
+    expect(items[0].links).toEqual([
+      {
+        name: '📌 #Alpha 设计稿',
+        url: 'siyuan://blocks/20260310210016-gkixdit',
+        type: 'block-ref',
+      },
+    ]);
+  });
+});
+
 describe('parseItemLine - 任务列表状态解析', () => {
   it('任务列表 [ ] 未选中状态', () => {
     const items = LineParser.parseItemLine('[ ] 整理资料 @2024-01-01', 1);
@@ -803,6 +854,22 @@ describe('parseItemLine - 任务列表状态解析', () => {
     expect(items[0].status).toBe('completed');
     expect(items[1].status).toBe('completed');
     expect(items[0].content).toBe('整理资料');
+  });
+
+  it('业务标签前缀不应触发已完成状态', () => {
+    const items = LineParser.parseItemLine('整理资料 @2024-01-01 #doneLater', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('整理资料');
+    expect(items[0].tags).toEqual(['doneLater']);
+  });
+
+  it('业务标签前缀不应触发已放弃状态', () => {
+    const items = LineParser.parseItemLine('整理资料 @2024-01-01 #abandonedSoon', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe('pending');
+    expect(items[0].content).toBe('整理资料');
+    expect(items[0].tags).toEqual(['abandonedSoon']);
   });
 });
 

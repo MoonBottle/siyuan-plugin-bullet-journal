@@ -1,16 +1,18 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { Menu } from 'siyuan';
+import type { Item, Project, Task } from '@/types/models';
 
 const menuAddItem = vi.fn();
 const menuAddSeparator = vi.fn();
 const menuOpen = vi.fn();
-const todoSidebarProps = vi.fn();
+const todoFilterBarProps = vi.fn();
+const todoContentPaneProps = vi.fn();
 const nativePreviewOpen = vi.fn();
 const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
@@ -54,20 +56,76 @@ vi.mock('@/utils/nativeBlockPreview', () => ({
   }),
 }));
 
-vi.mock('@/components/todo/TodoSidebar.vue', () => ({
+vi.mock('@/components/todo/TodoFilterBar.vue', () => ({
   default: defineComponent({
-    name: 'TodoSidebarStub',
-    props: ['previewTriggerMode', 'onItemPreviewClick'],
-    setup(_, { expose }) {
-      todoSidebarProps({
-        previewTriggerMode: (_ as any).previewTriggerMode,
-        onItemPreviewClick: (_ as any).onItemPreviewClick,
-      });
+    name: 'TodoFilterBarStub',
+    props: [
+      'tagQuery',
+      'selectedTags',
+      'tagOptions',
+      'searchQuery',
+      'selectedGroup',
+      'dateFilterType',
+      'selectedPriorities',
+      'startDate',
+      'endDate',
+      'showSortPanel',
+      'sortRules',
+      'groupOptions',
+      'dateFilterOptions',
+      'priorityOptions',
+      'sortDirectionOptions',
+      'availableFieldOptions',
+    ],
+    emits: ['update:tagQuery', 'update:selectedTags'],
+    setup(props, { emit }) {
+      return () => {
+        todoFilterBarProps({
+          tagQuery: (props as any).tagQuery,
+          selectedTags: (props as any).selectedTags,
+          tagOptions: (props as any).tagOptions,
+        });
+
+        return h('div', { 'data-testid': 'todo-filter-bar-stub' }, [
+          h('button', {
+            'data-testid': 'todo-filter-bar-emit-tag-query',
+            onClick: () => emit('update:tagQuery', 'alp'),
+          }),
+          h('button', {
+            'data-testid': 'todo-filter-bar-emit-selected-tags',
+            onClick: () => emit('update:selectedTags', ['Alpha', 'Beta']),
+          }),
+        ]);
+      };
+    },
+  }),
+}));
+
+vi.mock('@/components/todo/TodoContentPane.vue', () => ({
+  default: defineComponent({
+    name: 'TodoContentPaneStub',
+    props: ['selectedTags', 'previewTriggerMode', 'onItemPreviewClick'],
+    emits: ['add-tag-filter'],
+    setup(props, { expose, emit }) {
+      const root = document.createElement('div');
       expose({
         allCollapsed: false,
         toggleCollapseAll: vi.fn(),
+        getScrollElement: () => root,
       });
-      return () => h('div', { 'data-testid': 'todo-sidebar-stub' });
+      return () => {
+        todoContentPaneProps({
+          selectedTags: (props as any).selectedTags,
+          previewTriggerMode: (props as any).previewTriggerMode,
+          onItemPreviewClick: (props as any).onItemPreviewClick,
+        });
+        return h('div', { 'data-testid': 'todo-content-pane-stub' }, [
+          h('button', {
+            'data-testid': 'todo-content-pane-emit-add-tag-filter',
+            onClick: () => emit('add-tag-filter', 'Alpha'),
+          }),
+        ]);
+      };
     },
   }),
 }));
@@ -107,6 +165,99 @@ function mountDock(props?: Record<string, unknown>) {
   return {
     container,
     projectStore,
+    settingsStore,
+    unmount() {
+      app.unmount();
+      container.remove();
+    },
+  };
+}
+
+const mkItem = (
+  date: string,
+  blockId: string,
+  overrides?: Partial<Item>,
+): Item => ({
+  id: `item-${blockId}`,
+  content: '测试事项',
+  date,
+  lineNumber: 1,
+  docId: 'doc1',
+  blockId,
+  status: 'pending',
+  dateRangeStart: undefined,
+  dateRangeEnd: undefined,
+  ...overrides,
+}) as Item;
+
+function createMockProject(items: Item[]): Project {
+  const task: Task = {
+    id: 'task-1',
+    name: '测试任务',
+    level: 'L1',
+    items,
+    lineNumber: 1,
+  };
+
+  return {
+    id: 'proj-1',
+    name: '测试项目',
+    path: '/test',
+    tasks: [task],
+    habits: [],
+  };
+}
+
+async function mountRealTodoFilterBar(initialSelectedTags: string[], tagOptions: Array<{ name: string; count: number }>) {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+
+  const TodoFilterBar = (await vi.importActual<typeof import('@/components/todo/TodoFilterBar.vue')>('@/components/todo/TodoFilterBar.vue')).default;
+  const selectedTagsState = ref<string[]>([...initialSelectedTags]);
+
+  const Root = defineComponent({
+    components: { TodoFilterBar },
+    setup() {
+      return {
+        selectedTagsState,
+        tagOptions,
+      };
+    },
+    template: `
+      <TodoFilterBar
+        selected-group=""
+        search-query=""
+        tag-query=""
+        :selected-tags="selectedTagsState"
+        date-filter-type="today"
+        :selected-priorities="[]"
+        start-date="2026-05-01"
+        end-date="2026-05-08"
+        :show-sort-panel="false"
+        :sort-rules="[{ field: 'priority', direction: 'asc' }]"
+        :group-options="[]"
+        :tag-options="tagOptions"
+        :date-filter-options="[]"
+        :priority-options="[]"
+        :sort-direction-options="[]"
+        :available-field-options="() => []"
+        @update:selected-tags="selectedTagsState = $event"
+      />
+    `,
+  });
+
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+
+  const app = createApp(Root);
+  app.use(pinia);
+  app.mount(container);
+
+  await nextTick();
+
+  return {
+    container,
+    selectedTagsState,
     unmount() {
       app.unmount();
       container.remove();
@@ -166,11 +317,108 @@ describe('DesktopTodoDock', () => {
     const mounted = mountDock();
     await nextTick();
 
-    expect(todoSidebarProps).toHaveBeenCalledWith(expect.objectContaining({
+    expect(todoContentPaneProps).toHaveBeenCalledWith(expect.objectContaining({
       previewTriggerMode: 'hover',
       onItemPreviewClick: undefined,
     }));
     expect(nativePreviewOpen).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('passes aggregated tag options into the filter bar', async () => {
+    const mounted = mountDock();
+    mounted.projectStore.$patch({
+      currentDate: '2026-05-01',
+      projects: [createMockProject([
+        mkItem('2026-05-01', 'item-a', { tags: ['Alpha'] }),
+        mkItem('2026-05-01', 'item-b', { tags: ['alpha', 'Beta'] }),
+      ])],
+    });
+
+    await nextTick();
+
+    expect(todoFilterBarProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      tagQuery: '',
+      selectedTags: [],
+      tagOptions: [
+        { name: 'Alpha', count: 2 },
+        { name: 'Beta', count: 1 },
+      ],
+    }));
+
+    mounted.unmount();
+  });
+
+  it('updates tag query and selected tags from filter bar and passes selected tags to content pane', async () => {
+    const mounted = mountDock();
+    await nextTick();
+
+    (mounted.container.querySelector('[data-testid="todo-filter-bar-emit-tag-query"]') as HTMLElement)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    (mounted.container.querySelector('[data-testid="todo-filter-bar-emit-selected-tags"]') as HTMLElement)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(todoFilterBarProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      tagQuery: 'alp',
+      selectedTags: ['Alpha', 'Beta'],
+    }));
+    expect(todoContentPaneProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      selectedTags: ['Alpha', 'Beta'],
+    }));
+
+    mounted.unmount();
+  });
+
+  it('adds sidebar tag clicks into selected tags with normalized deduplication', async () => {
+    const mounted = mountDock();
+    await nextTick();
+
+    (mounted.container.querySelector('[data-testid="todo-filter-bar-emit-selected-tags"]') as HTMLElement)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    (mounted.container.querySelector('[data-testid="todo-content-pane-emit-add-tag-filter"]') as HTMLElement)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(todoFilterBarProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      selectedTags: ['Beta', 'Alpha'],
+    }));
+    expect(todoContentPaneProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      selectedTags: ['Beta', 'Alpha'],
+    }));
+
+    mounted.unmount();
+  });
+
+  it('treats selected tags case-insensitively in the filter bar toggle flow', async () => {
+    const mounted = await mountRealTodoFilterBar(
+      ['alpha'],
+      [{ name: 'Alpha', count: 2 }],
+    );
+
+    const optionChip = mounted.container.querySelector('.tag-options .tag-chip') as HTMLElement | null;
+    expect(optionChip?.className).toContain('tag-chip--active');
+
+    optionChip?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.selectedTagsState.value).toEqual([]);
+
+    mounted.unmount();
+  });
+
+  it('deduplicates selected tag chips by normalized tag value', async () => {
+    const mounted = await mountRealTodoFilterBar(
+      ['Alpha', 'alpha'],
+      [{ name: 'Alpha', count: 2 }],
+    );
+
+    const selectedChips = mounted.container.querySelectorAll('.selected-tag-chips .tag-chip');
+    expect(selectedChips).toHaveLength(1);
+    expect(selectedChips[0]?.textContent).toContain('#Alpha');
 
     mounted.unmount();
   });

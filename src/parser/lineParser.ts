@@ -15,6 +15,8 @@ import type {
 import { parseReminderFromLine, stripReminderMarker } from './reminderParser';
 import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser';
 import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
+import { parsePinnedFromLine, stripPinnedMarker } from './pinParser';
+import { parseTagsFromLine, stripTagsFromLine } from './tagParser';
 import { processLineText } from '@/utils/stringUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
@@ -23,6 +25,10 @@ const BLOCK_REF_REGEX = /\(\((\d{14}-[a-z0-9]+)(?:\s+"([^"]*)"|\s+'([^']*)')?\)\
 const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
 const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;
 const DATE_WITH_OPTIONAL_TIME_PATTERN = `(?:@|📅)\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?`;
+const STATUS_TAG_BOUNDARY = '(?=$|[\\s#.,，。！？；：、)\\]】」』}）〕〗〙〛])';
+const COMPLETED_STATUS_TAG_REGEX = new RegExp(`#done${STATUS_TAG_BOUNDARY}|#已完成${STATUS_TAG_BOUNDARY}`, 'u');
+const ABANDONED_STATUS_TAG_REGEX = new RegExp(`#abandoned${STATUS_TAG_BOUNDARY}|#已放弃${STATUS_TAG_BOUNDARY}`, 'u');
+const STATUS_TAGS_STRIP_REGEX = new RegExp(`(#done|#abandoned|#已完成|#已放弃)${STATUS_TAG_BOUNDARY}`, 'gu');
 
 export function inferLinkType(url: string): Link['type'] {
   if (url.startsWith('siyuan://')) {
@@ -66,6 +72,25 @@ export function parseBlockRefs(text: string): { stripped: string; links: Link[] 
   });
   // 保留换行符，只将非换行的连续空白字符替换为单个空格
   return { stripped: stripped.trim().replace(/[ \t]+/g, ' '), links };
+}
+
+function stripBlockRefsForMetadata(text: string): string {
+  return text.replace(BLOCK_REF_REGEX, '');
+}
+
+function protectBlockRefs(text: string, transform: (maskedText: string) => string): string {
+  const protectedRefs: string[] = [];
+  const masked = text.replace(BLOCK_REF_REGEX, (match) => {
+    const token = `__BLOCK_REF_${protectedRefs.length}__`;
+    protectedRefs.push(match);
+    return token;
+  });
+
+  let restored = transform(masked);
+  protectedRefs.forEach((blockRef, index) => {
+    restored = restored.replace(`__BLOCK_REF_${index}__`, blockRef);
+  });
+  return restored;
 }
 
 export class LineParser {
@@ -161,6 +186,11 @@ export class LineParser {
     // 解析优先级
     const priority = parsePriorityFromLine(line);
 
+    // 解析置顶和业务标签（每行只解析一次，应用到所有展开项）
+    const metadataLine = stripBlockRefsForMetadata(line);
+    const pinned = parsePinnedFromLine(metadataLine);
+    const tags = parseTagsFromLine(metadataLine);
+
     // 解析重复规则（多日期与重复互斥时优先多日期）
     // 匹配多日期：
     // 1. 逗号分隔：@日期, 或 📅日期, 或 @日期， 或 📅日期，
@@ -171,7 +201,7 @@ export class LineParser {
 
     // 解析任务列表标记 [ ] [x] [X]（在去除块属性后解析）
     let taskListStatus: ItemStatus | null = null;
-    const taskListMatch = line.match(/\[([ xX])\]/);
+    const taskListMatch = metadataLine.match(/\[([ xX])\]/);
     if (taskListMatch) {
       const taskListMarker = taskListMatch[1];
       if (taskListMarker === 'x' || taskListMarker === 'X') {
@@ -183,9 +213,9 @@ export class LineParser {
 
     // 解析状态标签（中英文 + Emoji 兼容）- 优先级高于任务列表标记
     let status: ItemStatus = 'pending';
-    if (line.includes('#done') || line.includes('#已完成') || line.includes('✅')) {
+    if (COMPLETED_STATUS_TAG_REGEX.test(metadataLine) || metadataLine.includes('✅')) {
       status = 'completed';
-    } else if (line.includes('#abandoned') || line.includes('#已放弃') || line.includes('❌')) {
+    } else if (ABANDONED_STATUS_TAG_REGEX.test(metadataLine) || metadataLine.includes('❌')) {
       status = 'abandoned';
     } else if (taskListStatus) {
       // 没有状态标签时，使用任务列表状态
@@ -209,27 +239,33 @@ export class LineParser {
       content = content.split(expr.fullMatch).join('');
     }
     // 移除所有标记（使用规范化字符串处理 Emoji）
-    content = content
-      .replace(/#done|#abandoned|#已完成|#已放弃/g, '')
-      .replace(/[✅❌📅📋]/gu, '')  // 移除 Emoji 标记
-      .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
-      .trim();
+    content = protectBlockRefs(content, (maskedContent) => {
+      let cleanedContent = maskedContent
+        .replace(STATUS_TAGS_STRIP_REGEX, '')
+        .replace(/[✅❌📅📋]/gu, '')  // 移除 Emoji 标记
+        .replace(/\[([ xX])\]\s*/, '')  // 移除任务列表标记 [ ] [x] [X] 及其后的空格
+        .trim();
 
-    // 移除提醒标记
-    content = stripReminderMarker(content);
+      // 移除提醒标记
+      cleanedContent = stripReminderMarker(cleanedContent);
 
-    // 移除优先级标记
-    content = stripPriorityMarker(content);
+      // 移除优先级标记
+      cleanedContent = stripPriorityMarker(cleanedContent);
 
-    // 移除重复和结束条件标记（🔁🔚🔢 等）
-    // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
-    content = stripRecurringMarkers(content);
+      // 移除置顶与业务标签标记，保留系统保留标签以供既有状态清理逻辑处理
+      cleanedContent = stripPinnedMarker(cleanedContent);
+      cleanedContent = stripTagsFromLine(cleanedContent);
 
-    // 移除斜杠命令
-    content = processLineText(content, ALL_SLASH_COMMAND_FILTERS);
+      // 移除重复和结束条件标记（🔁🔚🔢 等）
+      // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
+      cleanedContent = stripRecurringMarkers(cleanedContent);
 
-    // 额外清理：移除任何残留的 Emoji 字符（补充平面字符）
-    content = content.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+      // 移除斜杠命令
+      cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
+
+      // 额外清理：移除任何残留的 Emoji 字符（补充平面字符）
+      return cleanedContent.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+    });
 
     // 清理日期表达式之间残留的逗号分隔符
     // 匹配模式：空白 + 逗号（中英文）+ 空白/日期，这些是日期分隔符
@@ -317,7 +353,9 @@ export class LineParser {
         reminder,
         repeatRule,
         endCondition,
-        priority
+        priority,
+        pinned: pinned || undefined,
+        tags: tags.length > 0 ? tags : undefined
       });
     }
 

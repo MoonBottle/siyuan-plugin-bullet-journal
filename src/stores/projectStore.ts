@@ -133,10 +133,16 @@ function compareTodoItems(a: Item, b: Item, sortRules: TodoSortRule[]): number {
 type TodoFilterParams = {
   groupId: string;
   searchQuery?: string;
+  selectedTags?: string[];
   dateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
   includeNoPriority?: boolean;
   sortRules?: TodoSortRule[];
+};
+
+type TodoTagOption = {
+  name: string;
+  count: number;
 };
 
 function resolveTodoSortRules(params: TodoFilterParams): TodoSortRule[] {
@@ -164,6 +170,79 @@ function matchesPriorityFilter(item: Item, params: TodoFilterParams): boolean {
   );
   const matchesNoPriority = params.includeNoPriority && item.priority === undefined;
   return Boolean(matchesDefinedPriority || matchesNoPriority);
+}
+
+function normalizeSearchQuery(query?: string): string {
+  return normalizeString(query).trim().replace(/^#/, '');
+}
+
+function matchesSearchQuery(item: Item, searchQuery?: string): boolean {
+  const query = normalizeSearchQuery(searchQuery);
+  if (!query) return true;
+
+  const normalizedTags = item.tags?.map(tag => normalizeString(tag)) ?? [];
+  return normalizedTags.some(tag => tag.includes(query))
+    || normalizeString(item.content).includes(query)
+    || normalizeString(item.project?.name).includes(query)
+    || normalizeString(item.task?.name).includes(query);
+}
+
+function matchesSelectedTags(item: Item, selectedTags?: string[]): boolean {
+  if (!selectedTags?.length) return true;
+
+  const itemTags = new Set((item.tags ?? []).map(tag => normalizeString(tag)));
+  return selectedTags.some(tag => itemTags.has(normalizeString(tag)));
+}
+
+function applyTodoFilters(items: Item[], params: TodoFilterParams): Item[] {
+  let filtered = items;
+
+  if (params.searchQuery?.trim()) {
+    filtered = filtered.filter(item => matchesSearchQuery(item, params.searchQuery));
+  }
+
+  if (params.selectedTags?.length) {
+    filtered = filtered.filter(item => matchesSelectedTags(item, params.selectedTags));
+  }
+
+  if (params.dateRange) {
+    filtered = filtered.filter(item =>
+      item.date >= params.dateRange.start
+      && item.date <= params.dateRange.end
+    );
+  }
+
+  if (shouldApplyPriorityFilter(params)) {
+    filtered = filtered.filter(item => matchesPriorityFilter(item, params));
+  }
+
+  return filtered;
+}
+
+function buildTodoTagOptions(items: Item[]): TodoTagOption[] {
+  const tagCounts = new Map<string, TodoTagOption>();
+  const tagNameCollator = new Intl.Collator('en', { sensitivity: 'base' });
+
+  for (const item of items) {
+    const uniqueTags = new Set((item.tags ?? []).map(tag => normalizeString(tag)));
+    for (const normalizedTag of uniqueTags) {
+      const rawTag = (item.tags ?? []).find(tag => normalizeString(tag) === normalizedTag);
+      const existing = tagCounts.get(normalizedTag);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+
+      if (!rawTag) continue;
+      tagCounts.set(normalizedTag, {
+        name: rawTag,
+        count: 1,
+      });
+    }
+  }
+
+  return Array.from(tagCounts.values())
+    .sort((a, b) => b.count - a.count || tagNameCollator.compare(a.name, b.name));
 }
 
 import { useSettingsStore } from './settingsStore';
@@ -379,30 +458,10 @@ export const useProjectStore = defineStore('project', {
         params.groupId
       );
 
-      // 2. 应用搜索过滤
-      if (params.searchQuery?.trim()) {
-        const query = params.searchQuery.toLowerCase().trim();
-        items = items.filter(item => 
-          item.content.toLowerCase().includes(query) ||
-          item.project?.name.toLowerCase().includes(query) ||
-          item.task?.name.toLowerCase().includes(query)
-        );
-      }
+      // 2. 应用搜索、标签、日期、优先级过滤
+      items = applyTodoFilters(items, params);
 
-      // 3. 应用日期筛选
-      if (params.dateRange) {
-        items = items.filter(item => 
-          item.date >= params.dateRange!.start && 
-          item.date <= params.dateRange!.end
-        );
-      }
-
-      // 4. 应用优先级筛选
-      if (shouldApplyPriorityFilter(params)) {
-        items = items.filter(item => matchesPriorityFilter(item, params));
-      }
-
-      // 5. 根据设置过滤已完成和已放弃的事项
+      // 3. 根据设置过滤已完成和已放弃的事项
       if (state.hideCompleted) {
         items = items.filter(item => item.status !== 'completed');
       }
@@ -410,10 +469,51 @@ export const useProjectStore = defineStore('project', {
         items = items.filter(item => item.status !== 'abandoned');
       }
 
-      // 6. 按配置排序
+      // 4. 按配置排序
       items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
+    },
+
+    getGroupedFilteredAndSortedItems: (state) => (params: TodoFilterParams) => {
+      let items = computeDisplayItems(
+        (state as any).items as Item[],
+        state.currentDate,
+        params.groupId,
+      );
+
+      items = applyTodoFilters(items, params);
+
+      if (state.hideCompleted) {
+        items = items.filter(item => item.status !== 'completed');
+      }
+      if (state.hideAbandoned) {
+        items = items.filter(item => item.status !== 'abandoned');
+      }
+
+      items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
+
+      return {
+        pinnedItems: items.filter(item => item.pinned),
+        regularItems: items.filter(item => !item.pinned),
+      };
+    },
+
+    getTodoTagOptions: (state) => (groupId: string): TodoTagOption[] => {
+      let items = computeDisplayItems(
+        (state as any).items as Item[],
+        state.currentDate,
+        groupId,
+      );
+
+      if (state.hideCompleted) {
+        items = items.filter(item => item.status !== 'completed');
+      }
+      if (state.hideAbandoned) {
+        items = items.filter(item => item.status !== 'abandoned');
+      }
+
+      return buildTodoTagOptions(items);
     },
 
     // 按分组获取过滤和排序后的已完成事项（支持搜索、日期筛选、优先级筛选）
@@ -428,30 +528,10 @@ export const useProjectStore = defineStore('project', {
       // 2. 只保留已完成的事项
       items = items.filter(item => item.status === 'completed');
 
-      // 3. 应用搜索过滤
-      if (params.searchQuery?.trim()) {
-        const query = params.searchQuery.toLowerCase().trim();
-        items = items.filter(item => 
-          item.content.toLowerCase().includes(query) ||
-          item.project?.name.toLowerCase().includes(query) ||
-          item.task?.name.toLowerCase().includes(query)
-        );
-      }
+      // 3. 应用搜索、标签、日期、优先级过滤
+      items = applyTodoFilters(items, params);
 
-      // 4. 应用日期筛选
-      if (params.dateRange) {
-        items = items.filter(item => 
-          item.date >= params.dateRange!.start && 
-          item.date <= params.dateRange!.end
-        );
-      }
-
-      // 5. 应用优先级筛选
-      if (shouldApplyPriorityFilter(params)) {
-        items = items.filter(item => matchesPriorityFilter(item, params));
-      }
-
-      // 6. 按配置排序
+      // 4. 按配置排序
       items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;
@@ -469,30 +549,10 @@ export const useProjectStore = defineStore('project', {
       // 2. 只保留已放弃的事项
       items = items.filter(item => item.status === 'abandoned');
 
-      // 3. 应用搜索过滤
-      if (params.searchQuery?.trim()) {
-        const query = params.searchQuery.toLowerCase().trim();
-        items = items.filter(item => 
-          item.content.toLowerCase().includes(query) ||
-          item.project?.name.toLowerCase().includes(query) ||
-          item.task?.name.toLowerCase().includes(query)
-        );
-      }
+      // 3. 应用搜索、标签、日期、优先级过滤
+      items = applyTodoFilters(items, params);
 
-      // 4. 应用日期筛选
-      if (params.dateRange) {
-        items = items.filter(item => 
-          item.date >= params.dateRange!.start && 
-          item.date <= params.dateRange!.end
-        );
-      }
-
-      // 5. 应用优先级筛选
-      if (shouldApplyPriorityFilter(params)) {
-        items = items.filter(item => matchesPriorityFilter(item, params));
-      }
-
-      // 6. 按配置排序
+      // 4. 按配置排序
       items.sort((a, b) => compareTodoItems(a, b, resolveTodoSortRules(params)));
 
       return items;

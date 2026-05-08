@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { updateItemWithRecurring, updateItemWithReminder } from '@/utils/itemSettingUtils';
+import { toggleItemPinned, updateItemWithRecurring, updateItemWithReminder } from '@/utils/itemSettingUtils';
 import { eventBus, Events } from '@/utils/eventBus';
 import type { Item, ReminderConfig, RepeatRule } from '@/types/models';
 
@@ -63,6 +63,36 @@ describe('itemSettingUtils', () => {
     expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
       source: 'item-setting',
       kind: 'recurring',
+      blockId: 'block-1',
+    });
+  });
+
+  it('adds a pinned marker when toggling an unpinned item', async () => {
+    mockGetBlockByID.mockResolvedValueOnce({
+      markdown: '写日报 @2026-05-08',
+    });
+
+    await toggleItemPinned(item);
+
+    expect(mockUpdateBlock).toHaveBeenCalledWith('markdown', '写日报 @2026-05-08 📌', 'block-1');
+    expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
+      source: 'item-setting',
+      kind: 'pin',
+      blockId: 'block-1',
+    });
+  });
+
+  it('removes pinned markers when toggling a pinned item', async () => {
+    mockGetBlockByID.mockResolvedValueOnce({
+      markdown: '写日报 📌 @2026-05-08',
+    });
+
+    await toggleItemPinned(item);
+
+    expect(mockUpdateBlock).toHaveBeenCalledWith('markdown', '写日报 @2026-05-08', 'block-1');
+    expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
+      source: 'item-setting',
+      kind: 'pin',
       blockId: 'block-1',
     });
   });

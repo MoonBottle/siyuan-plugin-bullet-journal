@@ -242,6 +242,8 @@ export interface ItemDateTimeInfo {
 export interface Item {
   id: string;              // 事项 ID
   content: string;         // 事项内容
+  pinned?: boolean;        // 是否置顶
+  tags?: string[];         // 业务标签
   date: string;            // 日期
   startDateTime?: string;  // 开始时间
   endDateTime?: string;    // 结束时间
