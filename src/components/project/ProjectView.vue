@@ -11,7 +11,7 @@
       <p class="hint">{{ t('project').dirStructureHint }}</p>
     </div>
 
-    <div v-else-if="viewMode === 'list'" class="project-table-wrapper">
+    <div v-else-if="viewMode === 'table'" class="project-table-wrapper">
       <table class="project-table">
         <thead>
           <tr>

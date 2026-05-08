@@ -19,10 +19,10 @@
     <span class="fn__flex-1 fn__space"></span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="viewMode === 'list' ? t('project').viewModes.card : t('project').viewModes.table"
-        @click="viewMode = viewMode === 'list' ? 'card' : 'list'"
+        :aria-label="viewMode === 'table' ? t('project').viewModes.card : t('project').viewModes.table"
+        @click="viewMode = viewMode === 'table' ? 'card' : 'table'"
       >
-        <svg v-if="viewMode === 'list'"><use xlink:href="#iconLayout"></use></svg>
+        <svg v-if="viewMode === 'table'"><use xlink:href="#iconLayout"></use></svg>
         <svg v-else><use xlink:href="#iconList"></use></svg>
       </span>
       <span
@@ -61,7 +61,7 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const selectedGroup = ref('');
-const viewMode = ref<'list' | 'card'>('list');
+const viewMode = ref<'table' | 'card'>('table');
 const searchKeyword = ref('');
 
 const filteredProjects = computed(() => {
