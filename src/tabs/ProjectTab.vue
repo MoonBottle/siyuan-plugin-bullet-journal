@@ -69,8 +69,9 @@ const filteredProjects = computed(() => {
   if (!searchKeyword.value.trim()) return projects;
   const keyword = searchKeyword.value.toLowerCase();
   return projects.filter(p => 
-    p.name?.toLowerCase().includes(keyword) || 
-    p.description?.toLowerCase().includes(keyword)
+    (p.name?.toLowerCase().includes(keyword)) ||
+    (p.description?.toLowerCase().includes(keyword)) ||
+    (p.path?.toLowerCase().includes(keyword))
   );
 });
 
