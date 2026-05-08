@@ -43,7 +43,7 @@
           ref="tagSearchInput"
           :value="tagQuery"
           type="text"
-          placeholder="筛选标签"
+          :placeholder="tagInputPlaceholder"
           class="tag-search-input"
           @focus="handleTagInputFocus"
           @input="handleTagQueryInput"
@@ -283,6 +283,10 @@ const displaySelectedTags = computed(() => {
     seen.add(normalizedTag);
     return true;
   });
+});
+
+const tagInputPlaceholder = computed(() => {
+  return displaySelectedTags.value.length > 0 ? '' : '筛选标签';
 });
 
 const filteredTagOptions = computed(() => {
@@ -563,8 +567,8 @@ function handleTagBoxClick() {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    flex: 1 1 auto;
-    min-width: 0;
+    flex: 0 1 auto;
+    min-width: fit-content;
   }
 
   .tag-dropdown {

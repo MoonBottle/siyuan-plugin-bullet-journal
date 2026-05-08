@@ -119,6 +119,7 @@ describe('TodoFilterBar', () => {
     expect(options).toHaveLength(2);
     expect(options[1]?.textContent).toContain('#Beta');
     expect(options[1]?.querySelector('.tag-option__count')?.textContent).toBe('1');
+    expect((mounted.container.querySelector('.tag-search-input') as HTMLInputElement | null)?.placeholder).toBe('');
 
     mounted.unmount();
   });
@@ -173,6 +174,24 @@ describe('TodoFilterBar', () => {
     expect(options[1]?.className).not.toContain('tag-chip--selected');
 
     mounted.unmount();
+  });
+
+  it('keeps the placeholder only when no tags are selected', async () => {
+    const emptyMounted = await mountFilterBar({
+      searchQuery: '',
+      selectedTags: [],
+    });
+
+    expect((emptyMounted.container.querySelector('.tag-search-input') as HTMLInputElement | null)?.placeholder).toBe('筛选标签');
+    emptyMounted.unmount();
+
+    const selectedMounted = await mountFilterBar({
+      searchQuery: '',
+      selectedTags: ['Alpha'],
+    });
+
+    expect((selectedMounted.container.querySelector('.tag-search-input') as HTMLInputElement | null)?.placeholder).toBe('');
+    selectedMounted.unmount();
   });
 
   it('does not open the dropdown after removing a selected tag chip', async () => {
