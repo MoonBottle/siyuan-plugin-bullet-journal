@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     ONE-PAGER TEMPLATE · parchment design system
+     单页 A4 方案/报告/执行摘要
+     改完跑：python3 -c "from weasyprint import HTML; HTML('one-pager.html').write_pdf('out.pdf')"
+     目标：页数必须 == 1
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>2026年第19周工作周报</title>
+<meta name="author" content="Kami">
+<meta name="description" content="2026年第19周（05-04 至 05-10）工作周报，涵盖项目A、项目B、项目C、项目D等项目进展与代码量统计。">
+<meta name="keywords" content="周报, 第19周, 项目A, 项目B, 项目C, 项目D, 代码量">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../../../.trae/skills/kami/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../../../.trae/skills/kami/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm 18mm 15mm 18mm;
+    background: #f5f4ed;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --sand:      #e8e6dc;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 15mm 18mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10pt;
+    line-height: 1.45;
+    letter-spacing: 0.3pt;
+  }
+
+  .serif {
+    font-family: var(--serif);
+  }
+
+  /* ========== HEADER ========== */
+  .header {
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    margin-bottom: 14pt;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20pt;
+  }
+  .title-block {
+    flex: 1;
+  }
+  .eyebrow {
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 24pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    margin-bottom: 5pt;
+  }
+  .subtitle {
+    font-size: 11pt;
+    color: var(--olive);
+    line-height: 1.4;
+  }
+  .meta {
+    font-size: 9pt;
+    color: var(--stone);
+    text-align: right;
+    line-height: 1.45;
+    white-space: nowrap;
+  }
+
+  /* ========== METRICS ========== */
+  .metrics {
+    display: flex;
+    gap: 14pt;
+    margin-bottom: 18pt;
+    padding: 4pt 0 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+  }
+  .metric {
+    flex: 1;
+    background: transparent;
+    padding: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 4pt;
+    break-inside: avoid;
+  }
+  .metric-value {
+    font-family: var(--serif);
+    font-size: 20pt;
+    font-weight: 500;
+    color: var(--brand);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: -0.2pt;
+  }
+  .metric-label {
+    font-size: 9pt;
+    color: var(--olive);
+    line-height: 1.3;
+  }
+
+  /* ========== SECTIONS ========== */
+  section { margin-bottom: 18pt; break-inside: avoid; }
+  section:last-of-type { margin-bottom: 0; }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 16pt;
+    font-weight: 500;
+    color: var(--near-black);
+    margin-bottom: 6pt;
+  }
+  h2 .sub {
+    font-size: 9pt;
+    color: var(--stone);
+    font-weight: 400;
+    margin-left: 6pt;
+  }
+
+  p { margin-bottom: 6pt; line-height: 1.45; }
+  p:last-child { margin-bottom: 0; }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+
+  /* ========== 2-column grid ========== */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18pt;
+  }
+
+  /* ========== 短横线 list ========== */
+  ul.dash {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  ul.dash li {
+    position: relative;
+    padding-left: 14pt;
+    margin-bottom: 4pt;
+    line-height: 1.45;
+  }
+  ul.dash li::before {
+    content: "\2013";
+    position: absolute;
+    left: 0;
+    color: var(--brand);
+  }
+
+  /* ========== Tag ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 5pt;
+    border-radius: 3pt;
+    letter-spacing: 0.3pt;
+    margin-right: 3pt;
+  }
+
+  /* ========== Callout ========== */
+  .callout {
+    background: transparent;
+    border-left: 1.8pt solid var(--brand);
+    padding: 4pt 0 4pt 14pt;
+    margin: 10pt 0;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: var(--olive);
+    break-inside: avoid;
+  }
+  .callout .hl, .callout .em-brand { color: var(--brand); }
+
+  /* ========== FEATURED CARD ========== */
+  .featured {
+    background: var(--ivory);
+    border: 0.5pt solid var(--border);
+    border-radius: 3pt;
+    padding: 10pt 12pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+    position: relative;
+  }
+  .featured::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2.5pt;
+    background: var(--brand);
+    border-radius: 3pt 3pt 0 0;
+  }
+  .featured-label {
+    font-size: 8pt;
+    color: var(--brand);
+    letter-spacing: 0.8pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+    font-weight: 500;
+  }
+  .featured-title {
+    font-size: 13pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.25;
+    margin-bottom: 5pt;
+  }
+  .featured-body {
+    font-size: 9.5pt;
+    color: var(--olive);
+    line-height: 1.5;
+  }
+  .featured-footer {
+    margin-top: 8pt;
+    padding-top: 6pt;
+    border-top: 0.3pt dotted var(--border);
+    font-size: 8.5pt;
+    color: var(--stone);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .featured-tags {
+    display: flex;
+    gap: 3pt;
+  }
+
+  /* ========== FIGURE / CHART ========== */
+  figure {
+    margin: 10pt 0;
+    break-inside: avoid;
+  }
+  figure svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    font-size: 9pt;
+    color: var(--olive);
+    margin-top: 6pt;
+    line-height: 1.4;
+  }
+
+  /* ========== TABLE ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin: 8pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 4pt 6pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 3pt 6pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 2pt 5pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 1pt 5pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== FOOTER ========== */
+  .footer {
+    margin-top: 18pt;
+    padding-top: 6pt;
+    border-top: 0.3pt dotted var(--border);
+    font-size: 9pt;
+    color: var(--stone);
+    display: flex;
+    justify-content: space-between;
+    letter-spacing: 0.3pt;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<div class="header">
+  <div class="title-block">
+    <div class="eyebrow">WEEKLY REPORT</div>
+    <h1>2026年第19周工作周报</h1>
+    <div class="subtitle">本周聚焦项目A逻辑优化、新版功能模块A上线、项目C接口联调与项目D报表开发。</div>
+  </div>
+  <div class="meta">
+    XX技术团队<br>
+    2026.05.04 – 05.10<br>
+    已归档
+  </div>
+</div>
+
+<!-- ========== METRICS ========== -->
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-value">21</div>
+    <div class="metric-label">已完成事项</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">1,096</div>
+    <div class="metric-label">有效新增代码行</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">4</div>
+    <div class="metric-label">活跃项目</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">19</div>
+    <div class="metric-label">变更文件数</div>
+  </div>
+</div>
+
+<!-- ========== FEATURED CARD ========== -->
+<div class="featured">
+  <div class="featured-label">本周亮点</div>
+  <div class="featured-title">新版功能模块A全量上线</div>
+  <div class="featured-body">
+    5月6日，新版功能模块A完成全量发布，覆盖全部4个新增节点。该版本优化了子模块X与子模块Y的配置逻辑，解决了旧版在极端条件下的误触发问题。模块上线后，项目C正式进入设备管理与数据下发的全链路联调阶段，为下周功能验收奠定基础。
+  </div>
+  <div class="featured-footer">
+    <div class="featured-tags">
+      <span class="tag">项目C</span>
+      <span class="tag">算法</span>
+    </div>
+    <span>05-06 发布</span>
+  </div>
+</div>
+
+<!-- ========== LEAD ========== -->
+<p class="lead">
+  本周完成 <span class="hl">21</span> 项任务，覆盖项目A、项目B、项目C与项目D四大项目。核心产出包括：项目A统计逻辑重构并上线、新版功能模块A全量发布、项目C完成设备管理与数据下发全链路联调，以及项目D报表完成定时快照方案设计与系统A数据对接。
+</p>
+
+<!-- ========== 核心内容（两栏） ========== -->
+<div class="two-col">
+  <section>
+    <h2>项目进展</h2>
+    <p>本周重点推进设备端与平台端功能开发，多个项目进入联调与上线阶段。</p>
+    <ul class="dash">
+      <li><span class="hl">项目A</span>：周报统计逻辑调整为周期结束时统计，已上线；新增每日离线数量统计接口。</li>
+      <li><span class="hl">项目B</span>：新版功能模块A上线；外设配置隐藏子模块X和子模块Y开发完成；新增4个节点。</li>
+      <li><span class="hl">项目C</span>：设备管理接口联调完成，数据上报与下发接口开发及自测通过。</li>
+      <li><span class="hl">项目D</span>：报表定时快照方案设计、开发及系统A接口对接完成；日报方案设计完成。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>代码量统计</h2>
+    <p>本周有效代码净增 <span class="hl">+1,034</span> 行，涉及 19 个文件，以项目C和项目A为主要贡献项。</p>
+    <table class="kami-table compact financial striped">
+      <thead>
+        <tr>
+          <th>项目</th>
+          <th>新增</th>
+          <th>删除</th>
+          <th>文件</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>项目C</td>
+          <td>+990</td>
+          <td>–48</td>
+          <td>12</td>
+        </tr>
+        <tr>
+          <td>项目A</td>
+          <td>+86</td>
+          <td>–14</td>
+          <td>3</td>
+        </tr>
+        <tr>
+          <td>项目B</td>
+          <td>+20</td>
+          <td>–0</td>
+          <td>4</td>
+        </tr>
+        <tr class="total">
+          <td>合计</td>
+          <td>+1,096</td>
+          <td>–62</td>
+          <td>19</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<!-- ========== CHARTS ========== -->
+<figure>
+  <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="#f5f4ed"/>
+    <line x1="80" y1="220" x2="620" y2="220" stroke="#e8e7e1" stroke-width="0.8"/>
+    <line x1="80" y1="180" x2="620" y2="180" stroke="#e8e7e1" stroke-width="0.8"/>
+    <line x1="80" y1="140" x2="620" y2="140" stroke="#e8e7e1" stroke-width="0.8"/>
+    <line x1="80" y1="100" x2="620" y2="100" stroke="#e8e7e1" stroke-width="0.8"/>
+    <line x1="80" y1="60"  x2="620" y2="60"  stroke="#e8e7e1" stroke-width="0.8"/>
+    <text x="72" y="224" fill="#6b6a64" font-size="9" font-family="inherit" text-anchor="end">0</text>
+    <text x="72" y="184" fill="#6b6a64" font-size="9" font-family="inherit" text-anchor="end">250</text>
+    <text x="72" y="144" fill="#6b6a64" font-size="9" font-family="inherit" text-anchor="end">500</text>
+    <text x="72" y="104" fill="#6b6a64" font-size="9" font-family="inherit" text-anchor="end">750</text>
+    <text x="72" y="64"  fill="#6b6a64" font-size="9" font-family="inherit" text-anchor="end">1000</text>
+    <text x="30" y="140" fill="#6b6a64" font-size="8" font-family="'JetBrains Mono', monospace" transform="rotate(-90 30 140)" text-anchor="middle">LOC</text>
+    <line x1="80" y1="220" x2="620" y2="220" stroke="#141413" stroke-width="0.8"/>
+    <rect x="130"  y="61.6" width="56" height="158.4" fill="#1B365D" rx="2"/>
+    <text x="158" y="56" fill="#141413" font-size="9" font-family="inherit" font-weight="500" text-anchor="middle">990</text>
+    <rect x="270" y="206.2" width="56" height="13.8" fill="#504e49" rx="2"/>
+    <text x="298" y="202" fill="#141413" font-size="9" font-family="inherit" text-anchor="middle">86</text>
+    <rect x="410" y="216.8" width="56" height="3.2" fill="#6b6a64" rx="2"/>
+    <text x="438" y="213" fill="#141413" font-size="9" font-family="inherit" text-anchor="middle">20</text>
+    <text x="158" y="238" fill="#141413" font-size="10" font-family="inherit" text-anchor="middle">项目C</text>
+    <text x="298" y="238" fill="#141413" font-size="10" font-family="inherit" text-anchor="middle">项目A</text>
+    <text x="438" y="238" fill="#141413" font-size="10" font-family="inherit" text-anchor="middle">项目B</text>
+    <text x="80" y="24" fill="#141413" font-size="11" font-family="inherit" font-weight="500">各项目有效新增代码量</text>
+  </svg>
+  <figcaption>项目C以 990 行新增代码占据本周绝对主力，占比 90.3%。</figcaption>
+</figure>
+
+<figure>
+  <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="#f5f4ed"/>
+    <text x="40" y="24" fill="#141413" font-size="11" font-family="inherit" font-weight="500">本周已完成事项项目分布</text>
+    <path d="M 220 60 A 90 90 0 1 1 148.6 221.4 L 179.2 190.8 A 50 50 0 1 0 220 100 Z" fill="#1B365D"/>
+    <path d="M 148.6 221.4 A 90 90 0 0 1 220 60 L 220 100 A 50 50 0 0 0 179.2 190.8 Z" fill="#504e49"/>
+    <path d="M 220 60 A 90 90 0 0 1 291.4 221.4 L 260.8 190.8 A 50 50 0 0 0 220 100 Z" fill="#6b6a64"/>
+    <path d="M 291.4 221.4 A 90 90 0 0 1 262.6 234.6 L 241.4 197 A 50 50 0 0 0 260.8 190.8 Z" fill="#b8b7b0"/>
+    <path d="M 262.6 234.6 A 90 90 0 0 1 220 240 L 220 200 A 50 50 0 0 0 241.4 197 Z" fill="#d4d3cd"/>
+    <circle cx="220" cy="150" r="90" fill="none" stroke="#f5f4ed" stroke-width="1.5"/>
+    <circle cx="220" cy="150" r="50" fill="none" stroke="#f5f4ed" stroke-width="1.5"/>
+    <circle cx="220" cy="150" r="49" fill="#f5f4ed"/>
+    <text x="220" y="145" fill="#1B365D" font-size="18" font-family="inherit" font-weight="500" text-anchor="middle">21</text>
+    <text x="220" y="162" fill="#6b6a64" font-size="8" font-family="inherit" text-anchor="middle" letter-spacing="0.1em">已完成事项</text>
+    <line x1="380" y1="60" x2="380" y2="230" stroke="#e8e7e1" stroke-width="0.8"/>
+    <rect x="392" y="72" width="10" height="10" fill="#1B365D" rx="2"/>
+    <text x="408" y="81" fill="#141413" font-size="9" font-family="inherit" font-weight="500">43%</text>
+    <text x="438" y="81" fill="#504e49" font-size="9" font-family="inherit">项目C</text>
+    <rect x="392" y="94" width="10" height="10" fill="#504e49" rx="2"/>
+    <text x="408" y="103" fill="#141413" font-size="9" font-family="inherit">24%</text>
+    <text x="438" y="103" fill="#504e49" font-size="9" font-family="inherit">项目B</text>
+    <rect x="392" y="116" width="10" height="10" fill="#6b6a64" rx="2"/>
+    <text x="408" y="125" fill="#141413" font-size="9" font-family="inherit">19%</text>
+    <text x="438" y="125" fill="#504e49" font-size="9" font-family="inherit">项目D</text>
+    <rect x="392" y="138" width="10" height="10" fill="#b8b7b0" rx="2"/>
+    <text x="408" y="147" fill="#141413" font-size="9" font-family="inherit">10%</text>
+    <text x="438" y="147" fill="#504e49" font-size="9" font-family="inherit">项目A</text>
+    <rect x="392" y="160" width="10" height="10" fill="#d4d3cd" rx="2"/>
+    <text x="408" y="169" fill="#141413" font-size="9" font-family="inherit">5%</text>
+    <text x="438" y="169" fill="#504e49" font-size="9" font-family="inherit">其他</text>
+    <text x="40" y="265" fill="#6b6a64" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.15em">TOTAL · 21</text>
+  </svg>
+  <figcaption>项目C与项目B合计占比 67%，是本周工作负荷最集中的两个项目。</figcaption>
+</figure>
+
+<!-- ========== 关键节点（Featured Cards） ========== -->
+<section>
+  <h2>本周关键节点</h2>
+  <div class="two-col">
+    <div class="featured">
+      <div class="featured-label">05-06 · 算法发布</div>
+      <div class="featured-title">功能模块A全量上线</div>
+      <div class="featured-body">
+        新版功能模块A完成全量发布，覆盖全部4个新增节点。优化了子模块X与子模块Y的配置逻辑，解决了旧版在极端条件下的误触发问题。
+      </div>
+      <div class="featured-footer">
+        <div class="featured-tags">
+          <span class="tag">项目C</span>
+          <span class="tag">算法</span>
+        </div>
+        <span>已上线</span>
+      </div>
+    </div>
+
+    <div class="featured">
+      <div class="featured-label">05-07 · 逻辑重构</div>
+      <div class="featured-title">项目A统计口径调整</div>
+      <div class="featured-body">
+        统计口径由实时计算调整为周期结束快照，保证数据一致性。项目D报表定时快照方案同步设计完成。
+      </div>
+      <div class="featured-footer">
+        <div class="featured-tags">
+          <span class="tag">项目A</span>
+          <span class="tag">项目D</span>
+        </div>
+        <span>已上线</span>
+      </div>
+    </div>
+
+    <div class="featured">
+      <div class="featured-label">05-09 · 数据对接</div>
+      <div class="featured-title">项目D系统A批次接口联调</div>
+      <div class="featured-body">
+        项目D完成系统A批次数据接口对接，日报方案设计同步完成。项目A功能正式交付上线，统计归档。
+      </div>
+      <div class="featured-footer">
+        <div class="featured-tags">
+          <span class="tag">项目D</span>
+          <span class="tag">数据对接</span>
+        </div>
+        <span>已完成</span>
+      </div>
+    </div>
+
+    <div class="featured">
+      <div class="featured-label">05-09 · 设备联调</div>
+      <div class="featured-title">项目C全链路联调</div>
+      <div class="featured-body">
+        设备管理接口联调完成，数据上报与下发接口开发及自测通过。为下周功能验收与正式上线奠定基础。
+      </div>
+      <div class="featured-footer">
+        <div class="featured-tags">
+          <span class="tag">项目C</span>
+          <span class="tag">联调</span>
+        </div>
+        <span>联调中</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CALLOUT ========== -->
+<div class="callout">
+  <span class="hl">下周关注</span>：项目D日报开发、项目C下发功能持续联调、项目B外设配置功能验收。
+</div>
+
+<!-- ========== FOOTER ========== -->
+<div class="footer">
+  <span>内部资料</span>
+  <span>第 19 周 / 共 52 周</span>
+</div>
+
+</body>
+</html>
