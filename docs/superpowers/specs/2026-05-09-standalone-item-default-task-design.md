@@ -121,6 +121,39 @@ Existing pomodoro association rules should remain:
 - pomodoro blocks directly under a standalone item attach to that item,
 - task-level pomodoros for the synthetic task are not a target scenario and need no new UX guarantees.
 
+## Document Discovery Impact
+
+When directory configuration is empty, `src/parser/markdownParser.ts` currently discovers candidate documents by scanning for task or habit markers such as `#任务`, `#task`, `📋`, and `🎯`.
+
+That rule is no longer sufficient after standalone-item support. A document that contains only standalone dated items would never reach the parser.
+
+### Required change
+
+The empty-directory discovery query must also include documents that contain standalone item markers.
+
+At minimum, candidate discovery should consider blocks containing:
+
+- `@YYYY-MM-DD`
+- `📅YYYY-MM-DD`
+
+within the same block types already used for discovery.
+
+### Design constraints
+
+- Keep this change limited to the empty-directory fallback path in `getAllDocs()`.
+- Do not broaden normal directory-based scanning behavior.
+- Prefer a coarse SQL candidate filter plus precise parser validation, rather than trying to fully distinguish real standalone items in SQL.
+
+### Risk
+
+Searching for date markers will widen the fallback candidate set because many notes contain dates that are not task items.
+
+Mitigation:
+
+- accept broader candidate discovery in the fallback path,
+- rely on parser validation to discard documents that still do not produce tasks, habits, or standalone items,
+- keep the existing result cap and ordering behavior unless later profiling shows the need for a tighter heuristic.
+
 ## Project Validity Rule
 
 Current project parsing returns `null` when a document has:
