@@ -161,4 +161,32 @@ describe('executeFilterItems - groupId 过滤', () => {
       projectName: '测试项目'
     });
   });
+
+  it('全库扫描时应发现只有独立事项的文档', async () => {
+    const client = {
+      sql: vi.fn().mockResolvedValue([
+        {
+          id: 'doc-standalone',
+          path: '日记/2026-05-09',
+          notebookId: 'notebook-1',
+        },
+      ]),
+      getBlockKramdown: vi.fn().mockResolvedValue(`## Daily Note
+{: id="doc-block" type="doc" }
+整理日报 @2026-05-09
+{: id="item-1" updated="20260509100000" }`),
+    } as unknown as SiYuanClient;
+
+    const result = await executeFilterItems(client, [], {
+      startDate: '2026-05-09',
+      endDate: '2026-05-09',
+    }, 'full');
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      content: '整理日报',
+      taskName: '未分类',
+      projectName: 'Daily Note',
+    });
+  });
 });
