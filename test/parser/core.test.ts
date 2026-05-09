@@ -1208,3 +1208,76 @@ describe('parseKramdown 习惯打卡解析', () => {
     expect(result!.habits).toHaveLength(2);
   });
 });
+
+describe('parseKramdown 独立事项解析', () => {
+  it('只有独立事项的文档应生成默认任务并保留事项', () => {
+    const kramdown = `## 每日记录
+{: id="doc-block" type="doc" }
+整理日报 @2026-05-09
+{: id="item-1" updated="20260509100000" }`;
+
+    const project = parseKramdown(kramdown, 'standalone-doc');
+
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].name).toBe('未分类');
+    expect(project!.tasks[0].isSyntheticDefault).toBe(true);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0]).toMatchObject({
+      content: '整理日报',
+      date: '2026-05-09',
+      docId: 'standalone-doc',
+      blockId: 'item-1',
+    });
+  });
+
+  it('显式任务与独立事项混排时应分别归属原任务与默认任务', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+会前准备 @2026-05-09
+{: id="standalone-1" updated="20260509100000" }
+开发登录模块 #任务#
+{: id="task-1" updated="20260509100100" }
+编码实现 @2026-05-10
+{: id="item-2" updated="20260509100200" }`;
+
+    const project = parseKramdown(kramdown, 'mixed-doc');
+
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(2);
+    expect(project!.tasks.find(task => task.isSyntheticDefault)?.items[0].content).toBe('会前准备');
+    expect(project!.tasks.find(task => task.name === '开发登录模块')?.items[0].content).toBe('编码实现');
+  });
+
+  it('独立事项下方链接与番茄钟仍归属该事项', () => {
+    const kramdown = `## 每日记录
+{: id="doc-block" type="doc" }
+复盘会议 @2026-05-09
+{: id="item-1" updated="20260509100000" }
+[会议纪要](https://example.com/notes)
+{: id="link-1" updated="20260509100001" }
+🍅2026-05-09 09:00:00\\~09:25:00
+{: id="pomodoro-1" updated="20260509100002" }`;
+
+    const project = parseKramdown(kramdown, 'link-doc');
+    const item = project!.tasks[0].items[0];
+
+    expect(item.links?.map(link => link.url)).toContain('https://example.com/notes');
+    expect(item.pomodoros).toHaveLength(1);
+    expect(item.lastBlockId).toBe('pomodoro-1');
+  });
+
+  it('任务列表格式的独立事项应保留 isTaskList 和 listItemBlockId', () => {
+    const kramdown = `## 每日记录
+{: id="doc-block" type="doc" }
+- {: id="list-parent-id"}[ ] 整理日报 @2026-05-09
+{: id="item-1" updated="20260509100000" }`;
+
+    const project = parseKramdown(kramdown, 'tasklist-doc');
+    const item = project!.tasks[0].items[0];
+
+    expect(item.isTaskList).toBe(true);
+    expect(item.listItemBlockId).toBe('list-parent-id');
+    expect(item.content).toBe('整理日报');
+  });
+});
