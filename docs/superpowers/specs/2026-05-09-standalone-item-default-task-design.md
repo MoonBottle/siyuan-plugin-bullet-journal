@@ -1,45 +1,47 @@
-# Standalone Item Default Task Design
+# 独立事项默认任务设计
 
-Date: 2026-05-09
+日期：2026-05-09
 
-## Background
+## 背景
 
-The current parser only keeps item lines when they appear under an explicit task context. In practice this forces users to create a `📋` task line before writing any dated item. That works for project-oriented notes, but it is awkward for daily-note usage where the user often wants to capture dated actions directly.
+当前解析器只有在事项行位于显式任务上下文下时，才会保留该事项。这意味着用户必须先写一行 `📋` 任务，再在下面写带日期的事项。
 
-Today the behavior is:
+这种方式适合项目型文档，但对 daily note 一类的记录场景并不顺手。很多时候用户只是想直接记一条带日期的行动项，并不想先补一个任务头。
 
-- `LineParser.parseItemLine()` can parse a dated item line on its own.
-- `src/parser/core.ts` only attaches parsed items when `currentTask` exists.
-- As a result, standalone dated items are dropped before they reach `projectStore`, Calendar, Todo Dock, reminders, or Gantt.
+当前行为是：
 
-The goal of this change is to support standalone dated items without changing the rest of the application model.
+- `LineParser.parseItemLine()` 本身已经可以独立解析带日期的事项行；
+- `src/parser/core.ts` 只有在 `currentTask` 存在时才会把解析结果挂入任务；
+- 因此没有任务头的独立事项会在解析阶段被丢弃，后续 `projectStore`、日历、待办、提醒、甘特图都拿不到它。
 
-## Goal
+这个改动的目标是在不改变整体数据模型的前提下，支持独立事项。
 
-Allow users to write dated items directly in a project document or daily note without creating an explicit task first. These items must appear in the existing Todo, Calendar, reminder, recurring-item, and Gantt flows by being attached to a document-level default task created at parse time.
+## 目标
 
-## Non-Goals
+允许用户在项目文档或 daily note 中直接书写带日期的事项，而不必先创建显式任务。这些事项需要通过“文档级默认任务”接入现有 Todo、Calendar、提醒、重复事项、Gantt 等完整链路。
 
-- Do not introduce `project.items` as a new top-level data model.
-- Do not change existing explicit task parsing behavior.
-- Do not add a new Markdown marker for standalone items.
-- Do not special-case UI behavior in the first iteration beyond showing the default task name through existing rendering paths.
+## 非目标
 
-## Recommended Approach
+- 不引入 `project.items` 这类新的顶层数据模型；
+- 不改变现有显式任务的解析行为；
+- 不新增专门用于独立事项的 Markdown 标记；
+- 第一版不在 UI 层做额外特殊展示，只沿用现有任务展示路径显示默认任务名。
 
-Use a synthetic document-level default task created inside `src/parser/core.ts` whenever a dated item is encountered outside any explicit task context.
+## 推荐方案
 
-Why this approach:
+在 `src/parser/core.ts` 中，当解析到“不处于任何显式任务上下文下的带日期事项行”时，创建或复用一个“文档级默认任务”，再把事项挂到这个默认任务下面。
 
-- It preserves the existing `project -> task -> item` tree used across the codebase.
-- It minimizes downstream changes in store getters, converters, and views.
-- It keeps standalone-item support as a parser concern instead of a cross-cutting model refactor.
+选择这个方案的原因：
 
-## User-Facing Behavior
+- 保持现有 `project -> task -> item` 树形结构不变；
+- 对 store、converter、视图层的改动最小；
+- 把“独立事项支持”限定在解析层，不把它扩散成全局模型重构。
 
-### Supported input
+## 用户可见行为
 
-The following should be treated as valid standalone items even when no `📋` / `#task` / `#任务` task line exists above them:
+### 支持的输入
+
+即使上方没有 `📋` / `#task` / `#任务` 任务行，下面这些内容也应被视为有效事项：
 
 ```markdown
 整理日报 @2026-05-09
@@ -49,211 +51,321 @@ The following should be treated as valid standalone items even when no `📋` / 
 复盘会议 @2026-05-09 #前端
 ```
 
-### Resulting behavior
+### 最终行为
 
-- These lines appear in Todo Dock.
-- These lines produce calendar events.
-- These lines participate in reminders, recurrence, tags, priorities, and Gantt item rendering exactly like ordinary items.
-- In task-aware displays, they appear under a default task label such as `未分类`.
+- 这些事项会出现在 Todo Dock；
+- 这些事项会生成日历事件；
+- 这些事项会像普通事项一样参与提醒、重复、标签、优先级、甘特图等现有功能；
+- 在带任务分组语义的显示里，它们会归在一个默认任务名下，例如 `未分类`。
 
-### Scope
+### 作用范围
 
-- One default task per document.
-- The default task is created only when the document actually contains at least one standalone item.
-- A document may contain both explicit tasks and standalone items.
+- 每篇文档最多生成一个默认任务；
+- 只有文档里实际出现独立事项时，才创建默认任务；
+- 一篇文档里可以同时存在显式任务和独立事项。
 
-## Parsing Design
+## 解析设计
 
-### Core rule
+### 核心规则
 
-In `src/parser/core.ts`, when the parser sees a dated item line and:
+在 `src/parser/core.ts` 中，当解析器遇到一行带日期的事项，并且同时满足以下条件时：
 
-- the line is not a task line,
-- the line is not a habit definition or habit check-in record,
-- and there is no active explicit task context,
+- 该行不是任务行；
+- 该行不是习惯定义行，也不是习惯打卡记录；
+- 当前不存在活动中的显式任务上下文；
 
-the parser should:
+则解析器应当：
 
-1. create the document default task if it does not already exist,
-2. parse the item with existing `LineParser.parseItemLine()`,
-3. attach the parsed item(s) to the default task,
-4. preserve item metadata exactly as for ordinary task-owned items.
+1. 如果默认任务不存在，则创建默认任务；
+2. 复用现有 `LineParser.parseItemLine()` 解析事项；
+3. 将解析出的一个或多个事项挂到默认任务下；
+4. 像普通事项一样完整保留其 metadata。
 
-### Default task shape
+### 默认任务形态
 
-The synthetic task should remain compatible with the existing `Task` interface and should additionally carry a runtime marker for later identification.
+这个默认任务应继续兼容现有 `Task` 接口，同时增加一个运行时标记，供后续识别。
 
-Recommended shape:
+建议字段：
 
 - `name`: `未分类`
 - `level`: `L1`
 - `items`: `[]`
-- `lineNumber`: line number of the first standalone item that caused creation
-- `docId`: current document id
+- `lineNumber`: 触发创建的第一条独立事项所在行号
+- `docId`: 当前文档 id
 - `blockId`: `undefined`
-- runtime marker: `isSyntheticDefault?: true`
+- 运行时标记：`isSyntheticDefault?: true`
 
-This keeps all consumers compatible while making future UI refinements possible.
+这样既不影响现有消费者，又为后续 UI 特殊处理留下了空间。
 
-### Task context rules
+### 任务上下文规则
 
-- Explicit task lines still create and switch `currentTask` exactly as today.
-- Habit lines still reset task context exactly as today.
-- A standalone item should not permanently behave like an explicit task section header in the Markdown model.
+- 显式任务行仍然和现在一样，负责创建并切换 `currentTask`；
+- 习惯行仍然和现在一样，会重置任务上下文；
+- 独立事项不应在 Markdown 语义上变成一个“显式任务段落头”。
 
-Implementation note:
-the parser may still set `currentTask` to the synthetic default task while parsing subsequent standalone items so that consecutive standalone items share the same container. However, explicit task parsing must continue to override that context immediately when a real task line appears.
+实现层面可以允许解析器在处理连续独立事项时，把 `currentTask` 临时指向这个默认任务，以便这些事项进入同一个容器；但一旦遇到真实任务行，显式任务上下文仍然必须立即覆盖默认任务上下文。
 
-### Link handling
+### 链接处理
 
-Item-level link collection should behave exactly like ordinary items:
+事项级链接收集规则应与普通事项完全一致：
 
-- links immediately below a standalone item belong to that item,
-- block-ref lines immediately below a standalone item belong to that item,
-- task-level links for the synthetic task are not a first-class user feature in this iteration.
+- 独立事项下方紧邻的链接属于该事项；
+- 独立事项下方紧邻的块引用行属于该事项；
+- 第一版不把“默认任务级链接”作为一个单独用户能力去设计。
 
-The parser should prefer the simpler rule: standalone-item-adjacent links attach to the current item, and there is no separate synthetic-task link collection path unless existing code already makes it unavoidable.
+实现上应优先采用简单规则：独立事项附近的附属链接直接归当前事项；除非现有逻辑无法避免，否则不要额外引入默认任务自己的链接收集分支。
 
-### Pomodoro association
+### 番茄钟归属
 
-Existing pomodoro association rules should remain:
+现有番茄钟归属规则保持不变：
 
-- pomodoro blocks directly under a standalone item attach to that item,
-- task-level pomodoros for the synthetic task are not a target scenario and need no new UX guarantees.
+- 独立事项下方紧邻的番茄钟块归该事项；
+- 不额外为默认任务定义新的任务级番茄钟交互语义。
 
-## Document Discovery Impact
+### 重复事项创建与写回
 
-When directory configuration is empty, `src/parser/markdownParser.ts` currently discovers candidate documents by scanning for task or habit markers such as `#任务`, `#task`, `📋`, and `🎯`.
+独立事项不仅要能被解析和展示，还必须适配“完成后自动创建下次 occurrence”的写回链路。
 
-That rule is no longer sufficient after standalone-item support. A document that contains only standalone dated items would never reach the parser.
+当前 `src/services/recurringService.ts` 的创建逻辑主要依赖：
 
-### Required change
+- `item.blockId`
+- `item.lastBlockId`
+- `item.isTaskList`
+- `item.listItemBlockId`
 
-The empty-directory discovery query must also include documents that contain standalone item markers.
+它并不直接要求事项必须隶属于一条真实存在的任务块。因此独立事项支持的关键不是改写重复事项服务的数据模型，而是确保 parser 为独立事项补齐与普通事项一致的定位信息，并明确写回语义。
 
-At minimum, candidate discovery should consider blocks containing:
+#### 写回规则
+
+- 独立事项完成后创建的下次 occurrence，仍然应作为“独立事项块”插回原文档；
+- 不应因为内部存在默认任务，就在 Markdown 中额外生成一条 `📋 未分类` 或其他任务标题；
+- 新生成的 occurrence 应继续与原独立事项保持同级；
+- 如果原事项带有附属链接、番茄钟等相关块，新 occurrence 的插入点仍遵循现有 `lastBlockId` 规则，插在当前事项相关内容之后。
+
+#### 任务列表场景
+
+如果独立事项本身采用任务列表格式（如 `- [ ] 复盘 @2026-05-09 🔁每周`），则下次 occurrence 仍应沿用现有任务列表插入逻辑：
+
+- 使用 `listItemBlockId` 保持同级插入；
+- 新生成内容继续保留 `- [ ]` 前缀；
+- 不因为默认任务的存在而改变列表结构。
+
+#### 继承规则
+
+独立事项创建下次 occurrence 时，仍应继承现有重复事项规则中已约定的内容：
+
+- content
+- date / time 结构
+- reminder
+- repeatRule
+- endCondition（次数型递减）
+- task list 形态
+
+第一版不额外要求继承“默认任务”本身的任何可见信息，因为默认任务只是运行时容器，不是 Markdown 实体。
+
+## 文档发现影响
+
+当目录配置为空时，`src/parser/markdownParser.ts` 当前通过查找 `#任务`、`#task`、`📋`、`🎯` 这些标记来发现候选文档。
+
+支持独立事项之后，这个规则已经不够了。因为一篇只包含独立事项的文档，在进入解析器之前就会被漏掉。
+
+### 必要改动
+
+空目录兜底扫描的 SQL 候选文档发现逻辑，必须同时纳入“独立事项标记”。
+
+至少需要把包含以下模式的块也视为候选：
 
 - `@YYYY-MM-DD`
 - `📅YYYY-MM-DD`
 
-within the same block types already used for discovery.
+仍然限定在当前 discovery 已使用的 block type 范围内。
 
-### Design constraints
+### 设计约束
 
-- Keep this change limited to the empty-directory fallback path in `getAllDocs()`.
-- Do not broaden normal directory-based scanning behavior.
-- Prefer a coarse SQL candidate filter plus precise parser validation, rather than trying to fully distinguish real standalone items in SQL.
+- 只改 `getAllDocs()` 里的“空目录兜底扫描”路径；
+- 不扩大正常目录扫描模式的行为范围；
+- SQL 层只做粗筛，不尝试在 SQL 中完全区分“真实独立事项”和“普通含日期文本”。
 
-### Risk
+### 风险
 
-Searching for date markers will widen the fallback candidate set because many notes contain dates that are not task items.
+把日期模式也加入候选会扩大 fallback 扫描范围，因为很多普通笔记也会包含日期文本。
 
-Mitigation:
+缓解方式：
 
-- accept broader candidate discovery in the fallback path,
-- rely on parser validation to discard documents that still do not produce tasks, habits, or standalone items,
-- keep the existing result cap and ordering behavior unless later profiling shows the need for a tighter heuristic.
+- 接受 fallback 路径候选集变宽这一现实；
+- 依赖 parser 的最终校验，丢弃那些最终仍然没有任务、习惯或独立事项的文档；
+- 保持现有排序与数量上限，除非后续 profiling 证明需要进一步收紧规则。
 
-## Project Validity Rule
+## 项目有效性规则
 
-Current project parsing returns `null` when a document has:
+当前项目解析在文档同时满足以下条件时会返回 `null`：
 
-- no tasks,
-- no project pomodoros,
-- no habits.
+- 没有任务；
+- 没有项目级番茄钟；
+- 没有习惯。
 
-After this feature, a document containing only standalone items must be treated as a valid parsed project. Therefore the project-empty check must count a synthetic default task with items as real task content.
+支持独立事项后，如果一篇文档只有独立事项，也必须被视为有效项目。因此这个“空项目判定”需要把“包含事项的默认任务”计入有效内容。
 
-## Data Model Impact
+## 数据模型影响
 
-### Types
+### 类型
 
-The least disruptive option is to extend `Task` with an optional runtime-only flag:
+最小改动方式是在 `Task` 上增加一个可选的运行时字段：
 
 ```ts
 isSyntheticDefault?: boolean;
 ```
 
-This avoids adding parallel structures or weakening existing assumptions that every item belongs to a task.
+这样无需引入并行结构，也不必打破“每个 item 都属于 task”这一现有假设。
 
-### Store and converter expectations
+### Store 与 converter 预期
 
-No structural changes are expected in:
+以下层面理论上不需要结构性改动：
 
 - `src/stores/projectStore.ts`
-- calendar conversion
-- Gantt conversion
-- reminder scanning
-- Todo filtering and sorting
+- 日历转换
+- 甘特图转换
+- 提醒扫描
+- Todo 过滤与排序
 
-These layers should continue to work because they already consume `project.tasks[].items[]`.
+原因是这些逻辑本来就消费 `project.tasks[].items[]`。
 
-The only behavioral difference is that some items will now have `item.task?.isSyntheticDefault === true` and `item.task?.name === '未分类'`.
+唯一新增的行为差异是：某些事项会带有
 
-## Documentation Changes
+- `item.task?.isSyntheticDefault === true`
+- `item.task?.name === '未分类'`
 
-Update `docs/user-guide/data-format.md` to document:
+## MCP 适配影响
 
-- users may write standalone dated items directly,
-- such items are automatically grouped under a default task internally,
-- explicit tasks remain the recommended structure for multi-step project work,
-- daily-note capture can use standalone items for convenience.
+独立事项能力不能只停留在插件内视图层，还需要覆盖 MCP 数据链路。当前 MCP 并不是直接复用 `MarkdownParser` 的完整高层流程，而是通过 `src/mcp/dataLoader.ts` 自己做了一层文档发现、项目装载与事项扁平化。因此它存在单独的适配点。
 
-The relationship section should no longer imply that every item must always have a user-authored task line above it.
+### 现状
 
-## Testing Strategy
+当前 `src/mcp/dataLoader.ts` 中：
 
-Add parser-focused coverage first. This feature is parser-centric and should be proven there before any view-level validation.
+- `SQL_GET_ALL_PROJECT_DOCS` 只搜索 `#任务`、`#task`、`📋`；
+- 没有纳入独立事项日期标记；
+- 事项扁平化仍然基于 `project.tasks[].items[]`，这一层在默认任务方案下可以继续复用；
+- `filter_items` 的输出会返回 `taskName`，因此独立事项进入 MCP 后会暴露默认任务名。
 
-Required tests:
+### 必要适配
 
-1. A document with only standalone dated items produces one project with one synthetic default task and the expected items.
-2. Consecutive standalone items in the same document share the same synthetic default task.
-3. A document with both explicit tasks and standalone items keeps explicit items under explicit tasks and standalone items under the synthetic default task.
-4. Standalone items preserve links, tags, reminders, priority, status, and multi-date expansion.
-5. A document containing only standalone items is not discarded as `null`.
-6. Pomodoro blocks directly under a standalone item still attach to that item.
+#### 1. MCP 文档发现要同步扩展
 
-Optional secondary tests:
+`src/mcp/dataLoader.ts` 中的 `SQL_GET_ALL_PROJECT_DOCS` 必须与插件侧的空目录兜底扫描保持一致，至少纳入：
 
-- a store-level regression test proving such items appear in `projectStore.items`,
-- a converter-level regression test proving they become calendar or Gantt records.
+- `@YYYY-MM-DD`
+- `📅YYYY-MM-DD`
+- 以及现有任务 / 习惯相关标记
 
-## Risks and Mitigations
+否则通过 MCP 查询时，“只有独立事项的文档”仍然会完全漏掉，即使插件本体已经支持。
 
-### Risk: synthetic task leaks into UI awkwardly
+#### 2. MCP 数据结构可以继续复用默认任务方案
 
-Users may see `未分类` in views where they did not expect task grouping.
+由于 MCP 的事项收集本身就是从 `project.tasks[].items[]` 扁平化得到，因此只要 parser 产出的默认任务进入 `project.tasks`，`filter_items`、`list_projects`、`get_pomodoro_stats`、`get_pomodoro_records` 理论上都可以复用现有结构。
 
-Mitigation:
+也就是说，MCP 不需要额外引入 `project.items` 模型。
 
-- accept this in the first iteration,
-- mark the task with `isSyntheticDefault` so the UI can later hide or relabel it without another parser redesign.
+#### 3. MCP 输出语义需要明确
 
-### Risk: parser context becomes ambiguous after habits or explicit tasks
+独立事项经由 MCP 暴露时，`filter_items` 返回中的 `taskName` 默认会是 `未分类`。
 
-If the synthetic task is treated too much like a normal persistent context, later lines could be attached incorrectly.
+第一版建议接受这一语义，不额外在 MCP 层隐藏或改写。原因：
 
-Mitigation:
+- 这样最符合插件内部真实结构；
+- 保持 MCP 返回结果稳定、简单；
+- 如果后续 AI 侧反馈 `未分类` 噪声过大，再评估是否将 `isSyntheticDefault` 映射为空字符串或新增字段说明。
 
-- keep explicit task and habit transitions authoritative,
-- cover mixed-order documents in parser tests.
+### 测试要求
 
-### Risk: task-level link or pomodoro logic accidentally attaches to synthetic task
+除 parser 测试外，应至少补一条 MCP 级回归测试，验证：
 
-Mitigation:
+- 只包含独立事项的文档可以被 MCP 发现；
+- `filter_items` 能返回这些独立事项；
+- 返回结果中的 `taskName` 行为符合设计预期。
 
-- do not add new synthetic-task metadata behavior beyond what is necessary to carry items,
-- keep standalone-item adjacency rules item-first.
+## 文档说明改动
 
-## Rollout Plan
+需要更新 `docs/user-guide/data-format.md`，补充说明：
 
-1. Extend the parser to create and reuse a synthetic default task.
-2. Ensure project-empty checks treat standalone-item documents as valid.
-3. Add parser tests for standalone-only and mixed documents.
-4. Update the user guide.
-5. Optionally evaluate whether any UI should special-case `isSyntheticDefault` in a later follow-up.
+- 用户可以直接写独立事项；
+- 这类事项会在内部自动归入默认任务；
+- 显式任务仍然是更适合项目分解的推荐结构；
+- daily note 场景可以直接用独立事项做快速记录。
 
-## Decision
+同时，“任务与事项关系”一节不能再暗示“所有事项都必须有一条用户手写任务行在上方”。
 
-Implement standalone-item support by synthesizing one document-level default task during parsing. Keep the existing data model and downstream consumers unchanged.
+## 测试策略
+
+优先补 parser 级测试。这个功能本质上是解析层能力，应该先在这里建立回归保护，再考虑视图层验证。
+
+必测项：
+
+1. 只有独立事项的文档，会产出一个 project、一个默认任务，以及期望的事项集合；
+2. 同一文档里连续独立事项会复用同一个默认任务；
+3. 同一文档里同时存在显式任务和独立事项时，显式事项仍归原任务，独立事项归默认任务；
+4. 独立事项能够保留 links、tags、reminder、priority、status、多日期展开等 metadata；
+5. 只包含独立事项的文档不会因为空项目判定而返回 `null`；
+6. 独立事项下方紧邻的 pomodoro 仍然归属该事项。
+7. 带重复规则的独立事项在完成后能够成功创建下次 occurrence，且新事项仍以独立事项形式写回原位置，不生成虚拟任务标题。
+
+可选但推荐补充：
+
+8. MCP `filter_items` 能返回独立事项文档中的事项。
+
+可选的次级测试：
+
+- store 级回归测试，证明这些事项能进入 `projectStore.items`；
+- converter 级回归测试，证明这些事项会生成 calendar 或 gantt 数据。
+
+## 风险与缓解
+
+### 风险：默认任务名在 UI 中显得突兀
+
+用户可能会在某些视图里看到 `未分类`，而这不是他们预期中的手写任务。
+
+缓解方式：
+
+- 第一版接受这一表现；
+- 通过 `isSyntheticDefault` 标记为后续 UI 隐藏、弱化或替换文案预留能力。
+
+### 风险：习惯、显式任务、独立事项混排时上下文判断出错
+
+如果默认任务被过度当作普通持久任务上下文使用，后续内容可能被错误归属。
+
+缓解方式：
+
+- 显式任务与习惯的上下文切换规则继续保持最高优先级；
+- 通过 parser 测试覆盖混排文档场景。
+
+### 风险：任务级链接或任务级番茄钟误挂到默认任务
+
+缓解方式：
+
+- 不为默认任务额外扩展超出“承载事项”以外的新行为；
+- 坚持“独立事项邻近内容优先归事项”的规则。
+
+### 风险：重复事项创建时误把默认任务写回 Markdown
+
+如果实现时把“默认任务”当成真实任务去序列化，完成独立事项后可能会在原文档中凭空写出 `📋 未分类` 一类内容，污染用户笔记结构。
+
+缓解方式：
+
+- 明确默认任务仅存在于运行时解析结果中；
+- 重复事项创建逻辑只基于当前事项 block 定位信息进行 sibling 插入；
+- 为“独立事项重复创建”补充专门测试，验证生成结果中不出现虚拟任务标题。
+
+## 落地顺序
+
+1. 在 parser 中支持创建和复用默认任务；
+2. 调整空项目判定，让“只有独立事项的文档”视为有效；
+3. 调整 `getAllDocs()` 的空目录兜底扫描条件；
+4. 验证并适配重复事项创建链路，确保独立事项完成后下次 occurrence 以 sibling 形式写回；
+5. 同步适配 MCP 的候选文档发现与回归测试；
+6. 增加 standalone-only、mixed-document、standalone-recurring 的测试；
+7. 更新用户文档；
+8. 后续再评估是否需要在 UI 层或 MCP 输出层对 `isSyntheticDefault` 做特殊展示优化。
+
+## 结论
+
+通过“解析阶段合成一个文档级默认任务”的方式支持独立事项，保持现有数据模型和下游消费层基本不变。
