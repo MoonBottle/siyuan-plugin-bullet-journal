@@ -190,19 +190,22 @@ describe('MobileWeixinSheet', () => {
 
   it('stops polling on unmount', async () => {
     vi.useFakeTimers();
-    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     mockAiStore.clawBotLoginStatus = 'pending';
     mockAiStore.clawBotConfig.qrcodeUrl = 'https://example.com/qr';
+    mockAiStore.pollClawBotLogin = vi.fn().mockResolvedValue(false);
 
     const mounted = mountSheet();
     await flush();
 
+    await vi.advanceTimersByTimeAsync(100);
+
     mounted.unmount();
 
-    expect(clearIntervalSpy).toHaveBeenCalled();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
 
-    clearIntervalSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
     vi.useRealTimers();
   });
 });

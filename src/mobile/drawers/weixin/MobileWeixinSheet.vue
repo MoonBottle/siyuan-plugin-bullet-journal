@@ -137,7 +137,7 @@ const aiStore = useAIStore();
 
 const isLoading = ref(false);
 const isChecking = ref(false);
-const pollInterval = ref<number | null>(null);
+const pollTimeout = ref<number | null>(null);
 
 const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
@@ -243,22 +243,36 @@ function handleUserClick(conversationId: string, userId: string) {
 
 function startPolling() {
   stopPolling();
-  pollInterval.value = window.setInterval(async () => {
+  let stopped = false;
+
+  async function poll() {
+    if (stopped) return;
     if (loginStatus.value === 'pending' || loginStatus.value === 'scaned') {
-      const success = await aiStore.pollClawBotLogin();
-      if (success) {
-        stopPolling();
+      try {
+        const success = await aiStore.pollClawBotLogin();
+        if (success) {
+          stopPolling();
+          return;
+        }
+      } catch {
+        // 继续轮询
+      }
+      if (!stopped) {
+        pollTimeout.value = window.setTimeout(poll, 1000) as unknown as number;
       }
     } else {
       stopPolling();
     }
-  }, 3000) as unknown as number;
+  }
+
+  poll();
+  pollTimeout.value = -1 as unknown as number;
 }
 
 function stopPolling() {
-  if (pollInterval.value) {
-    clearInterval(pollInterval.value);
-    pollInterval.value = null;
+  if (pollTimeout.value) {
+    clearTimeout(pollTimeout.value);
+    pollTimeout.value = null;
   }
 }
 
