@@ -8,6 +8,8 @@ const mockAiStore = {
   currentConversation: { id: 'conv-1', title: '新对话', messages: [], createdAt: 1, updatedAt: 1 },
   currentConversationId: 'conv-1',
   showToolCallsEnabled: false,
+  isClawBotConnected: false,
+  hasUnreadWeixin: false,
   loadSettings: vi.fn(),
   getConversationsList: vi.fn(),
   createConversation: vi.fn(),
@@ -53,6 +55,24 @@ vi.mock('@/components/ai/ChatPanel.vue', () => ({
     setup(_, { expose }) {
       expose({ focusInput: vi.fn() });
       return () => h('div', { 'data-testid': 'chat-panel-stub' }, 'chat');
+    },
+  }),
+}));
+
+vi.mock('@/components/icons/WeixinIcon.vue', () => ({
+  default: defineComponent({
+    name: 'WeixinIconStub',
+    setup() {
+      return () => h('svg', { 'data-testid': 'weixin-icon-stub' });
+    },
+  }),
+}));
+
+vi.mock('@/mobile/drawers/weixin/MobileWeixinSheet.vue', () => ({
+  default: defineComponent({
+    name: 'MobileWeixinSheetStub',
+    setup(_, { emit }) {
+      return () => h('div', { 'data-testid': 'weixin-sheet-stub' });
     },
   }),
 }));
