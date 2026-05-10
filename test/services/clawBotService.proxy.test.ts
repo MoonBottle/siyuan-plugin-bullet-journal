@@ -92,4 +92,48 @@ describe('ClawBotService proxy transport', () => {
       expect.objectContaining({ method: 'POST' }),
     );
   });
+
+  it('includes /ilink prefix when using original baseUrl without proxy', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ next_key_buf: '', add_msgs: [] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    const service = new ClawBotService({
+      enabled: true,
+      loginStatus: 'connected',
+      token: 'bot-token',
+      baseUrl: 'https://ilinkai.weixin.qq.com',
+      cdnBaseUrl: 'https://cdn.weixin.qq.com',
+    });
+
+    await service.startLogin();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ilinkai.weixin.qq.com/ilink/bot/get_bot_qrcode?bot_type=3',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('includes /ilink prefix for sendmessage without proxy', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ ret: 0 }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    const service = new ClawBotService({
+      enabled: true,
+      loginStatus: 'connected',
+      token: 'bot-token',
+      baseUrl: 'https://ilinkai.weixin.qq.com',
+      cdnBaseUrl: 'https://cdn.weixin.qq.com',
+    });
+
+    await service.sendTextMessage('user@im.wechat', 'Hello');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ilinkai.weixin.qq.com/ilink/bot/sendmessage',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
 });

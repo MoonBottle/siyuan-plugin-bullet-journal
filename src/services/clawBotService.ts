@@ -122,7 +122,11 @@ export class ClawBotService {
 
     const baseUrl = target === 'ilink' ? this.config.baseUrl : this.config.cdnBaseUrl;
     const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl.slice(1) : pathOrUrl;
-    return `${baseUrl}/${normalizedPath}`;
+
+    const needsPrefix = target === 'ilink' && !baseUrl.endsWith('/ilink');
+    const prefix = needsPrefix ? '/ilink' : '';
+
+    return `${baseUrl}${prefix}/${normalizedPath}`;
   }
 
   private async requestIlink(path: string, init: RequestInit): Promise<Response> {
