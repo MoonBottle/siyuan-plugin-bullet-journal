@@ -37,10 +37,10 @@
             </span>
             <span class="conversation-select__item-title">{{ conversation.title }}</span>
             <span
-              v-if="conversation.source === 'weixin' && conversation.weixinUserName"
+              v-if="conversation.source === 'weixin' && conversation.weixinUserId"
               class="conversation-select__status-badge"
-              :class="`conversation-select__status-badge--${getWeixinStatus(conversation.weixinUserName).tone}`"
-            >{{ getWeixinStatus(conversation.weixinUserName).label }}</span>
+              :class="`conversation-select__status-badge--${getWeixinStatus(conversation.weixinUserId).tone}`"
+            >{{ getWeixinStatus(conversation.weixinUserId).label }}</span>
             <button
               class="conversation-select__delete-btn"
               @click.stop="deleteConversation(conversation.id)"
@@ -65,6 +65,7 @@ interface ConversationListItem {
   id: string;
   title: string;
   source?: 'local' | 'weixin';
+  weixinUserId?: string;
   weixinUserName?: string;
 }
 
