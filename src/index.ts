@@ -96,6 +96,7 @@ import {
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService";
 import { CleanupManager } from "@/utils/cleanupManager";
+import { createClawBotProxyServer, type ProxyServerInstance } from "@/services/clawBotProxyServer";
 import {
   type FloatingPomodoroLabels,
   type FloatingPomodoroSourceState,
@@ -183,6 +184,8 @@ export default class TaskAssistantPlugin extends Plugin {
   private processingTaskCompletions = new Map<string, Promise<void>>();
   /** 移动端提醒调试开关，仅当前前端会话有效 */
   private mobileReminderDebugModeEnabled = false;
+  /** ClawBot 本地代理服务实例 */
+  private clawBotProxy: ProxyServerInstance | null = null;
 
   public isMobileReminderDebugMode(): boolean {
     return this.mobileReminderDebugModeEnabled;
@@ -390,7 +393,14 @@ export default class TaskAssistantPlugin extends Plugin {
       const aiStore = useAIStore(pinia);
       await aiStore.initializeStorage(this);
 
-      await aiStore.initializeClawBot(this);
+      try {
+        this.clawBotProxy = await createClawBotProxyServer();
+        console.log("[Task Assistant] ClawBot proxy started on port", this.clawBotProxy.port);
+      } catch (proxyError) {
+        console.error("[Task Assistant] Failed to start ClawBot proxy:", proxyError);
+      }
+
+      await aiStore.initializeClawBot(this, this.clawBotProxy?.baseUrl);
       console.log("[Task Assistant] ClawBot initialized from plugin onload");
     } catch (error) {
       console.error("[Task Assistant] Failed to initialize ClawBot:", error);
@@ -556,6 +566,17 @@ export default class TaskAssistantPlugin extends Plugin {
     mobileNotificationScheduler.detachRuntime();
     // 停止提醒服务
     reminderService.stop();
+
+    // 停止 ClawBot 本地代理
+    if (this.clawBotProxy) {
+      try {
+        await this.clawBotProxy.stop();
+        this.clawBotProxy = null;
+        console.log("[Task Assistant] ClawBot proxy stopped");
+      } catch (error) {
+        console.error("[Task Assistant] Failed to stop ClawBot proxy:", error);
+      }
+    }
 
     debugState.activeInstanceIds = debugState.activeInstanceIds.filter(
       (id) => id !== this.debugInstanceId,

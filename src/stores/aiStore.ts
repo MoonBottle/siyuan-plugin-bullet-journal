@@ -822,7 +822,7 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 初始化 ClawBot 服务
    */
-  async function initializeClawBot(pluginInstance: any) {
+  async function initializeClawBot(pluginInstance: any, proxyBaseUrl?: string) {
     console.log('[AIStore] initializeClawBot');
     
     // 保存 plugin 实例引用
@@ -831,6 +831,13 @@ export const useAIStore = defineStore('ai', () => {
     if (!isClawBotAllowedOnCurrentFrontend()) {
       stopClawBotHealthCheck();
       return;
+    }
+
+    // 如果代理已启动，覆盖 baseUrl / cdnBaseUrl
+    if (proxyBaseUrl) {
+      clawBotConfig.value.baseUrl = `${proxyBaseUrl}/ilink`;
+      clawBotConfig.value.cdnBaseUrl = `${proxyBaseUrl}/cdn`;
+      console.log('[AIStore] ClawBot proxy active:', proxyBaseUrl);
     }
     
     // 从单独文件加载所有配置（包括 enabled）
