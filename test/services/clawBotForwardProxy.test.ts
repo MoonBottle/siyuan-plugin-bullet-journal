@@ -164,6 +164,9 @@ describe('clawBotForwardProxy', () => {
 
       const result = await isForwardProxyAvailable();
       expect(result).toBe(true);
+
+      const callBody = (fetchSyncPost as ReturnType<typeof vi.fn>).mock.calls[0][1];
+      expect(callBody.url).toContain('get_bot_qrcode');
     });
 
     it('returns false when kernel returns error', async () => {

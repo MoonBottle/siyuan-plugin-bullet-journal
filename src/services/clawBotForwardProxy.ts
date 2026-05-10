@@ -76,7 +76,7 @@ export async function forwardProxyLongPoll(params: Omit<ForwardProxyParams, 'tim
 export async function isForwardProxyAvailable(): Promise<boolean> {
   try {
     const response = await fetchSyncPost(API_PATH, {
-      url: 'https://ilinkai.weixin.qq.com/ilink/bot/getconfig',
+      url: 'https://ilinkai.weixin.qq.com/ilink/bot/get_bot_qrcode?bot_type=3',
       method: 'GET',
       timeout: 3000,
     }) as any;
