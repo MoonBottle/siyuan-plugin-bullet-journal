@@ -779,7 +779,7 @@ describe('recurringService', () => {
         repeatRule: { type: 'daily' },
         task: {
           id: 'task-default',
-          name: '未分类',
+          name: '默认任务',
           level: 'L1',
           items: [],
           lineNumber: 1,
@@ -791,7 +791,7 @@ describe('recurringService', () => {
 
       expect(mockInsertBlock).toHaveBeenCalledWith(
         'markdown',
-        expect.not.stringContaining('📋 未分类'),
+        expect.not.stringContaining('📋 默认任务'),
         undefined,
         'pomodoro-block',
         undefined,

@@ -12,7 +12,7 @@ import { t } from '@/i18n';
 function createSyntheticDefaultTask(lineNumber: number, docId: string): Task {
   return {
     id: `task-synthetic-${docId}`,
-    name: t('common.uncategorized'),
+    name: t('common.defaultTask'),
     level: 'L1',
     items: [],
     lineNumber,

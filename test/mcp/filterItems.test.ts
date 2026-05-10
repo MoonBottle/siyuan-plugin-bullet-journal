@@ -188,7 +188,7 @@ describe('executeFilterItems - groupId 过滤', () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
       content: '整理日报',
-      taskName: 'Uncategorized',
+      taskName: 'Default Task',
       projectName: 'Daily Note',
     });
 

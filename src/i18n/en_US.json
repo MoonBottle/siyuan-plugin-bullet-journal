@@ -539,6 +539,7 @@
     "minutes": "min",
     "hours": "h",
     "uncategorized": "Uncategorized",
+    "defaultTask": "Default Task",
     "help": "Help",
     "notebookName": "Task Assistant",
     "notebookCreateFailed": "Failed to create notebook"

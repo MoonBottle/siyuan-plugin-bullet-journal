@@ -110,7 +110,7 @@ describe('parseKramdown 独立事项解析', () => {
 
     expect(project).not.toBeNull();
     expect(project!.tasks).toHaveLength(1);
-    expect(project!.tasks[0].name).toBe('未分类');
+    expect(project!.tasks[0].name).toBe('默认任务');
     expect(project!.tasks[0].isSyntheticDefault).toBe(true);
     expect(project!.tasks[0].items).toHaveLength(1);
     expect(project!.tasks[0].items[0]).toMatchObject({
@@ -175,7 +175,7 @@ Make the parser changes in three pieces:
 function createSyntheticDefaultTask(lineNumber: number, docId: string): Task {
   return {
     id: `task-default-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    name: '未分类',
+      name: '默认任务',
     level: 'L1',
     items: [],
     lineNumber,
@@ -295,7 +295,7 @@ it('全库扫描时应发现只有独立事项的文档', async () => {
   expect(result.items).toHaveLength(1);
   expect(result.items[0]).toMatchObject({
     content: '整理日报',
-    taskName: '未分类',
+    taskName: '默认任务',
     projectName: 'Daily Note',
   });
 });
@@ -404,7 +404,7 @@ it('独立事项创建下次 occurrence 时不应写出虚拟任务标题', asyn
     repeatRule: { type: 'daily' },
     task: {
       id: 'task-default',
-      name: '未分类',
+      name: '默认任务',
       level: 'L1',
       items: [],
       lineNumber: 1,
@@ -416,7 +416,7 @@ it('独立事项创建下次 occurrence 时不应写出虚拟任务标题', asyn
 
   expect(mockInsertBlock).toHaveBeenCalledWith(
     'markdown',
-    expect.not.stringContaining('📋 未分类'),
+    expect.not.stringContaining('📋 默认任务'),
     undefined,
     'pomodoro-block',
     undefined,
@@ -494,14 +494,14 @@ Edit `docs/user-guide/data-format.md` in these places:
 复盘会议 @2026-05-09 18:00
 ```
 
-这类事项会被插件自动归入一个内部默认任务（如“未分类”），因此仍会正常出现在 Todo、日历、甘特图、提醒和重复事项功能中。
+这类事项会被插件自动归入一个内部默认任务（如“默认任务”），因此仍会正常出现在 Todo、日历、甘特图、提醒和重复事项功能中。
 ```
 
 3. In `## 任务与事项的关系`, add one paragraph clarifying that explicit tasks are recommended for project decomposition, while daily-note capture may use standalone items directly.
 
 - [ ] **Step 3: Review the rendered markdown content manually**
 
-Run: `Select-String -Path 'docs\\user-guide\\data-format.md' -Pattern '独立事项','未分类','任务与事项的关系' -Context 2,4`
+Run: `Select-String -Path 'docs\\user-guide\\data-format.md' -Pattern '独立事项','默认任务','任务与事项的关系' -Context 2,4`
 
 Expected: output shows the new standalone-item section and the updated relationship wording.
 

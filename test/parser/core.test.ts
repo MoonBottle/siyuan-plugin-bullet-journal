@@ -1242,7 +1242,7 @@ describe('parseKramdown 独立事项解析', () => {
 
     expect(project).not.toBeNull();
     expect(project!.tasks).toHaveLength(1);
-    expect(project!.tasks[0].name).toBe('未分类');
+    expect(project!.tasks[0].name).toBe('默认任务');
     expect(project!.tasks[0].isSyntheticDefault).toBe(true);
     expect(project!.tasks[0].items).toHaveLength(1);
     expect(project!.tasks[0].items[0]).toMatchObject({
@@ -1314,7 +1314,7 @@ Write summary @2026-05-09
     const project = parseKramdown(kramdown, 'standalone-doc-en');
 
     expect(project).not.toBeNull();
-    expect(project!.tasks[0].name).toBe('Uncategorized');
+    expect(project!.tasks[0].name).toBe('Default Task');
 
     initI18n('zh_CN');
   });

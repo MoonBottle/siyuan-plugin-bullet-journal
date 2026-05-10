@@ -562,6 +562,7 @@
     "minutes": "分钟",
     "hours": "小时",
     "uncategorized": "未分类",
+    "defaultTask": "默认任务",
     "help": "帮助",
     "notebookName": "任务助手",
     "notebookCreateFailed": "创建笔记本失败"
