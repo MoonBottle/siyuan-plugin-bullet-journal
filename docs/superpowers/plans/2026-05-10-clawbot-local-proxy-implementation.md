@@ -106,6 +106,24 @@
 
 ---
 
+### Task 7: forwardProxy 运行时修复
+
+- [x] **Step 1: 修复 payloadEncoding** — 移除 `payloadEncoding: 'text'` 默认值，让内核用 `"json"` 编码正确发送请求体（`case "text":` 是空分支导致 `getupdates` 返回 `ret: -1`）
+- [x] **Step 2: 修复探测端点** — `isForwardProxyAvailable()` 从 `getconfig`（需 token）改为 `get_bot_qrcode`（无需 token），避免触发微信 `-14` 错误
+- [x] **Step 3: Commit** — `fix: 移除 payloadEncoding text 默认值` + `fix: 探测改用无需 token 的端点`
+
+---
+
+### Task 8: 微信会话常显 + 状态 tag + 点击清零未读
+
+- [x] **Step 1: WeixinLoginDialog.vue** — 会话列表常显、每个会话项添加状态 tag、点击调用 `clearWeixinUnread`
+- [x] **Step 2: MobileWeixinSheet.vue** — 同上
+- [x] **Step 3: aiStore 新增 `clearWeixinUnread(userId)`** — 清零指定用户的未读计数并更新 `unreadCount`
+- [x] **Step 4: 更新测试** — MobileWeixinSheet.test.ts 适配新 mock 和文案
+- [x] **Step 5: Commit** — `feat: 微信会话常显+状态tag+点击清零未读`
+
+---
+
 ## 验证摘要
 
 ```
@@ -115,6 +133,7 @@ npm run build      → MCP bundle + Plugin bundle ✓ (no node:http warning)
 
 ## Self-Review
 
-- **Spec coverage:** forwardProxy 封装、前端 transport、插件入口探测、错误反馈、微信会话状态、桌面/移动端状态展示、测试与验证均已映射到 Task 1-6。
+- **Spec coverage:** forwardProxy 封装、前端 transport、插件入口探测、错误反馈、微信会话状态、桌面/移动端状态展示、会话常显+状态tag+未读清零、测试与验证均已映射到 Task 1-8。
 - **方案变更:** 原方案 A（node:http 本地代理）因运行时限制失败，已替换为方案 D（思源内核 forwardProxy），spec 和 plan 均已同步更新。
-- **Type consistency:** 统一使用 `getWeixinConversationStatus`、`forwardProxy request failed`、`active/stale/waiting/offline` 作为共享接口与状态名。
+- **运行时修复:** Task 7 记录了 `payloadEncoding` 和探测端点的两个生产环境问题及修复。
+- **Type consistency:** 统一使用 `getWeixinConversationStatus`、`clearWeixinUnread`、`forwardProxy request failed`、`active/stale/waiting/offline` 作为共享接口与状态名。

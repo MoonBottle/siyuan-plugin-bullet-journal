@@ -237,6 +237,15 @@
 
 不把会话状态额外铺到登录弹窗或底部 Sheet 的用户列表中，避免同一信息在多个区域重复。
 
+### 连接弹框/Sheet 中的微信会话列表
+
+桌面端 `WeixinLoginDialog.vue` 和移动端 `MobileWeixinSheet.vue` 中的微信会话列表：
+
+- **常显**：只要存在微信会话就显示列表，不区分连接/未连接状态
+- **状态 tag 常显**：每个会话项在用户名右侧显示状态 tag（进行中/需恢复/等待中/不可用）
+- **未读数清零**：点击会话项切换到对应会话时，立即清零该用户的未读数（`clearWeixinUnread`），小红点消失
+- 标题统一为「微信会话 (N)」
+
 ### 文案与视觉
 
 状态文案保持短文本：
@@ -298,6 +307,8 @@
 
 新增统一的微信会话状态派生入口 `getWeixinConversationStatus(userId)`，负责把现有会话数据和全局连接状态转成 UI 可直接消费的状态对象。
 
+新增 `clearWeixinUnread(userId)` 方法，在用户点击会话项时清零该用户的未读计数。
+
 输出统一结构：
 
 - `status`
@@ -320,6 +331,8 @@
 
 - 微信会话列表项显示状态徽标
 - 当前微信会话头部显示状态摘要
+- 登录弹框/Sheet 中微信会话常显 + 状态 tag 常显
+- 点击会话项清零未读数（`clearWeixinUnread`）
 - 明确显示代理不可用类错误
 - 保持现有登录、断开、用户切换交互不变
 
@@ -391,6 +404,9 @@
 
 4. **认证要求**  
    `forwardProxy` 需要 Admin 角色。本机访问（127.0.0.1）自动放行，但远程访问需确保已认证。
+
+5. **payloadEncoding 默认值**  
+   内核 `forwardProxy` 的 `payloadEncoding` 默认值为 `"json"`（走 `default:` 分支调用 `SetBody`）。**不能传 `"text"`**——`case "text":` 是空分支，不会设置请求体，导致微信 API 返回 `ret: -1`。封装层 `clawBotForwardProxy.ts` 不传 `payloadEncoding`，让内核使用默认值。
 
 ## 成功标准
 
