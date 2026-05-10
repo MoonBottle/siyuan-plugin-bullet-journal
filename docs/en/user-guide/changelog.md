@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.13.4] - 2026-05-09
+
+### Features
+
+- **Standalone Item Support**: Items can now be recognized directly in documents without creating tasks
+  - Standalone items in documents are automatically grouped into default tasks, lowering the barrier to entry
+- **ClawBot WeChat Integration Enhanced**:
+  - Removed mobile ClawBot restrictions, now available on mobile devices
+- **AI Chat Experience Optimization**: Auto-scroll to bottom after switching conversations
+
+### Fixes
+
+- **Multi-line Item Parsing**: Fixed formatting issues when adding dates to soft-wrapped items with associated block references
+- **Type Definitions**: Added missing `habits` field to Project interface
+
+### Tests
+
+- Increased test case timeout and added parameter checks
+- Added test coverage for standalone item write-back scenarios
+- Added MobileWeixinSheet component tests
+
+### Dev
+
+- **Mobile Development Debugging**: Added mobile development debug console for easier troubleshooting
+
 ## [0.13.3] - 2026-05-08
 
 ### Features
