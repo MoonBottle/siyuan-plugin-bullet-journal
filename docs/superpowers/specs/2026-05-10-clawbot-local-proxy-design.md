@@ -192,6 +192,76 @@
 
 这样不会把本地代理暴露给局域网其他设备。
 
+## 微信会话状态
+
+除了解决移动端跨域外，桌面端和移动端的微信会话都需要补充统一的会话状态展示。该状态以**微信会话可用性**为主，`ClawBot` 全局连接状态为辅。
+
+### 状态集合
+
+统一收敛为 4 个状态：
+
+1. `active`：上下文可用，最近正常收发
+2. `stale`：会话存在，但上下文已失效，需要重新建立
+3. `waiting`：已连接，但尚未形成稳定会话上下文
+4. `offline`：`ClawBot` 未连接、代理不可用，或当前会话暂不可工作
+
+不再拆出更多状态，避免 UI 和判断逻辑膨胀。
+
+### 状态来源与优先级
+
+状态派生优先级如下：
+
+1. **全局连接能力优先**
+   - 本地代理不可用，或 `ClawBot` 未连接 -> `offline`
+2. **单会话上下文状态其次**
+   - `contextState === 'active'` -> `active`
+   - `contextState === 'stale'` -> `stale`
+   - 最近发生上下文错误，且尚未恢复 -> `stale`
+   - 其余已连接但未稳定 -> `waiting`
+
+该设计复用现有 `weixinConversationMap` 中已存在的数据，不新增第二套并行状态机。重点使用：
+
+- `contextState`
+- `lastInboundAt`
+- `lastOutboundAt`
+- `lastContextErrorAt`
+
+### 展示位置
+
+会话状态展示限定在两处：
+
+1. **微信会话列表项**
+   - 桌面端 `ConversationSelect.vue`
+   - 移动端会话列表页中的微信会话项
+   - 在每个微信会话条目上显示状态徽标
+   - 未读数继续保留，状态徽标不能抢占未读提示的优先级
+
+2. **当前会话头部摘要**
+   - 桌面端 `AiChatDock.vue`
+   - 移动端 `MobileAiPanel.vue`
+   - 仅当当前会话 `source === 'weixin'` 时显示
+   - 本地会话不显示该摘要
+
+不把会话状态额外铺到登录弹窗或底部 Sheet 的用户列表中，避免同一信息在多个区域重复。
+
+### 文案与视觉
+
+状态文案保持短文本：
+
+- `active` -> `进行中`
+- `stale` -> `需恢复`
+- `waiting` -> `等待中`
+- `offline` -> `不可用`
+
+推荐视觉语义：
+
+- `active`：绿色
+- `stale`：橙色
+- `waiting`：中性蓝灰
+- `offline`：灰色或灰红
+
+状态摘要保持单行，不扩成说明段落。详细失败原因继续通过错误提示和连接面板展示。
+
 ## 前端改造
 
 ### 1. `src/services/clawBotService.ts`
@@ -224,15 +294,33 @@
 
 不要求改动其他业务模块的使用方式。
 
-### 3. UI 层
+### 3. `src/stores/aiStore.ts`
+
+新增统一的微信会话状态派生入口，负责把现有会话数据和全局连接状态转成 UI 可直接消费的状态对象。
+
+建议输出统一结构，例如：
+
+- `status`
+- `label`
+- `tone`
+- `detail?`
+
+组件层只消费标准化结果，不自己实现状态判断逻辑。这样桌面端和移动端可以共用同一套派生规则。
+
+### 4. UI 层
 
 涉及文件：
 
+- `src/components/ai/ConversationSelect.vue`
+- `src/tabs/AiChatDock.vue`
+- `src/mobile/panels/MobileAiPanel.vue`
 - `src/components/ai/WeixinLoginDialog.vue`
 - `src/mobile/drawers/weixin/MobileWeixinSheet.vue`
 
 改动目标：
 
+- 微信会话列表项显示状态徽标
+- 当前微信会话头部显示状态摘要
 - 明确显示“本地代理不可用”类错误
 - 保持现有登录、断开、用户切换交互不变
 
@@ -259,6 +347,13 @@
 3. 请求头、query、body 是否按现有契约透传
 4. 代理不可用时是否返回稳定错误
 
+补充 `aiStore` 或状态派生 helper 测试：
+
+1. 连接断开时微信会话是否派生为 `offline`
+2. `contextState === 'active'` 是否派生为 `active`
+3. `contextState === 'stale'` 或最近上下文错误是否派生为 `stale`
+4. 已连接但上下文未稳定是否派生为 `waiting`
+
 ### 集成测试
 
 新增代理服务测试：
@@ -280,6 +375,7 @@
 
 - UI 不再出现浏览器原生跨域错误导致的空白失败
 - 代理错误会转成可见、可重试的业务错误
+- 桌面端和移动端微信会话都能显示一致的状态标签
 
 ## 改动文件清单
 
@@ -287,10 +383,15 @@
 |------|------|------|
 | `src/services/clawBotService.ts` | 修改 | 收敛请求入口并接入本地代理 |
 | `src/index.ts` | 修改 | 管理 ClawBot 本地代理生命周期 |
+| `src/stores/aiStore.ts` | 修改 | 新增微信会话状态派生入口 |
+| `src/components/ai/ConversationSelect.vue` | 修改 | 列表项显示微信会话状态 |
+| `src/tabs/AiChatDock.vue` | 修改 | 当前微信会话显示状态摘要 |
+| `src/mobile/panels/MobileAiPanel.vue` | 修改 | 当前微信会话显示状态摘要 |
 | `src/components/ai/WeixinLoginDialog.vue` | 修改 | 展示代理不可用错误 |
 | `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 修改 | 展示代理不可用错误 |
 | `src/services/` 下新增代理服务文件 | 新建 | 实现本地 HTTP 代理 |
 | `test/services/` 相关测试 | 修改/新建 | 覆盖代理转发与错误映射 |
+| `test/stores/` 与 `test/tabs/` / `test/mobile/` 相关测试 | 修改/新建 | 覆盖会话状态派生与渲染 |
 
 ## 风险与约束
 
