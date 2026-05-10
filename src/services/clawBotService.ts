@@ -117,7 +117,7 @@ export class ClawBotService {
     return `${this.config.cdnBaseUrl}/${pathOrUrl}`;
   }
 
-  private async requestIlink(path: string, method: string, body?: any): Promise<{ status: number; data: any }> {
+  private async requestIlink(path: string, method: string, body?: any, timeout?: number): Promise<{ status: number; data: any }> {
     const headers = buildHeaders(this.config.token, body ? JSON.stringify(body) : undefined);
     const headerEntries = Object.entries(headers).map(([k, v]) => ({ [k]: v }));
 
@@ -127,6 +127,7 @@ export class ClawBotService {
       headers: headerEntries,
       payload: body ?? '',
       contentType: 'application/json',
+      timeout,
     });
 
     let parsed: any;
@@ -210,10 +211,16 @@ export class ClawBotService {
     let scanedPrinted = false;
 
     while (Date.now() - startTime < timeoutMs) {
+      if (this.config.loginStatus !== 'pending' && this.config.loginStatus !== 'scaned') {
+        return false;
+      }
+
       try {
         const { status, data } = await this.requestIlink(
           `bot/get_qrcode_status?qrcode=${encodeURIComponent(qrcode)}`,
           'GET',
+          undefined,
+          15000,
         );
 
         if (status !== 200) {
