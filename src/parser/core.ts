@@ -127,6 +127,7 @@ function isTagInBackticks(content: string, tag: string): boolean {
  * 任务行：包含 #任务、#task 或 📋
  */
 function isNextItemOrTaskLine(content: string): boolean {
+  if (isStandaloneBlockRefLine(stripListAndBlockAttr(content))) return false;
   const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋');
   const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
   if (hasTaskTag && notInBackticks) return true;
@@ -411,6 +412,11 @@ export function parseKramdown(
         const lineContent = blockLines[idx];
         if (isNextItemOrTaskLine(lineContent)) break;
         const strippedLineContent = stripListAndBlockAttr(lineContent);
+        if (isStandaloneBlockRefLine(strippedLineContent)) {
+          const { links } = parseBlockRefs(strippedLineContent);
+          itemLinks.push(...links);
+          continue;
+        }
         const links = extractMarkdownLinks(strippedLineContent, block.blockId);
         if (links.length > 0 && !lineContent.includes('@')) {
           itemLinks.push(...links);

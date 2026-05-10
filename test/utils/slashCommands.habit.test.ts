@@ -72,10 +72,11 @@ vi.mock('@/utils/protyleWriterDom', () => ({
 
 import { showHabitCreateDialog } from '@/utils/dialog';
 import { checkIn, checkInCount } from '@/services/habitService';
-import { processLineText } from '@/utils/slashCommandUtils';
+import { processLineText, extractDatesFromBlock } from '@/utils/slashCommandUtils';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
 import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
+import { updateBlockDateTime } from '@/utils/fileUtils';
 
 const projectStoreMock = {
   getHabits: vi.fn(() => []),
@@ -234,6 +235,41 @@ describe('habit slash commands', () => {
     handler({} as any, node);
 
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), undefined);
+  });
+
+  it('/jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {
+    vi.mocked(extractDatesFromBlock).mockResolvedValue([{ date: '2026-04-29' }] as any);
+    vi.mocked(updateBlockDateTime).mockResolvedValue(true as any);
+    vi.mocked(processLineText).mockImplementation((text: string) => text.replace('/jt', '').trimEnd());
+
+    const handler = getActionHandler('today', {} as any, ['/jt']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-today');
+    const textNode = document.createTextNode('测试独立事项 📅2026-04-29 /jt');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(updateBlockDateTime).toHaveBeenCalled();
+    expect(textNode.textContent).toBe('测试独立事项 📅2026-04-29');
+    expect(protyle.transaction).not.toHaveBeenCalled();
   });
 
   it('/dk 应调用真实打卡逻辑而不是 placeholder', async () => {

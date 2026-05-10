@@ -29,10 +29,64 @@ export async function extractDatesFromBlock(
   blockId: string
 ): Promise<Array<{ date: string; startDateTime?: string; endDateTime?: string }>> {
   const pinia = getSharedPinia();
-  if (!pinia) return [];
+  if (!pinia) {
+    console.log('[JTDBG][extractDatesFromBlock] no pinia', { blockId });
+    return [];
+  }
 
   const projectStore = useProjectStore(pinia);
   const item = projectStore.getItemByBlockId(blockId);
+  console.log('[JTDBG][extractDatesFromBlock] lookup', {
+    blockId,
+    found: !!item,
+    item: item
+      ? {
+          blockId: item.blockId,
+          content: item.content,
+          date: item.date,
+          startDateTime: item.startDateTime,
+          endDateTime: item.endDateTime,
+          siblingItems: item.siblingItems,
+          lastBlockId: item.lastBlockId,
+          listItemBlockId: item.listItemBlockId,
+          isTaskList: item.isTaskList,
+        }
+      : null,
+  });
+  console.log(`[JTDBG][extractDatesFromBlock][lookup.json] ${JSON.stringify({
+    blockId,
+    found: !!item,
+    item: item
+      ? {
+          blockId: item.blockId,
+          content: item.content,
+          date: item.date,
+          startDateTime: item.startDateTime,
+          endDateTime: item.endDateTime,
+          siblingItems: item.siblingItems,
+          lastBlockId: item.lastBlockId,
+          listItemBlockId: item.listItemBlockId,
+          isTaskList: item.isTaskList,
+        }
+      : null,
+  })}`);
+  console.log(`[JTDBG] extractDatesFromBlock.lookup ${JSON.stringify({
+    blockId,
+    found: !!item,
+    item: item
+      ? {
+          blockId: item.blockId,
+          content: item.content,
+          date: item.date,
+          startDateTime: item.startDateTime,
+          endDateTime: item.endDateTime,
+          siblingItems: item.siblingItems,
+          lastBlockId: item.lastBlockId,
+          listItemBlockId: item.listItemBlockId,
+          isTaskList: item.isTaskList,
+        }
+      : null,
+  })}`);
 
   if (item) {
     const items: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
@@ -46,9 +100,22 @@ export async function extractDatesFromBlock(
         endDateTime: s.endDateTime
       })));
     }
+    console.log('[JTDBG][extractDatesFromBlock] result', {
+      blockId,
+      items,
+    });
+    console.log(`[JTDBG][extractDatesFromBlock][result.json] ${JSON.stringify({
+      blockId,
+      items,
+    })}`);
+    console.log(`[JTDBG] extractDatesFromBlock.result ${JSON.stringify({
+      blockId,
+      items,
+    })}`);
     return items;
   }
 
+  console.log('[JTDBG][extractDatesFromBlock] no item found', { blockId });
   return [];
 }
 

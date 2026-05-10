@@ -570,6 +570,27 @@ describe('parseKramdown 事项链接解析', () => {
       }
     ]);
   });
+
+  it('事项同块续行中的整行块引用：正确关联到事项 links', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }测试独立事项 📅2026-05-09 📌 🔁每天
+    ((20260510074935-sch6ybk '测试独立事项2  📌 📅2026-05-10 14:45~17:30 ✅'))
+  {: id="after-i1" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.tasks[0].items[0].links).toEqual([
+      {
+        name: '测试独立事项2  📌 📅2026-05-10 14:45~17:30 ✅',
+        url: 'siyuan://blocks/20260510074935-sch6ybk',
+        type: 'block-ref'
+      }
+    ]);
+  });
 });
 
 describe('parseKramdown 有序列表解析', () => {

@@ -8,6 +8,7 @@ import { sql, getBlockKramdown, getBlockByID, updateBlock } from '@/api';
 import type { ItemStatus, PriorityLevel, ItemDateTimeInfo, TimePrecision } from '@/types/models';
 import { t } from '@/i18n';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
+import { isStandaloneBlockRefLine } from '@/parser/lineParser';
 import { processLineText } from '@/utils/slashCommandUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 import { generatePriorityMarker, stripPriorityMarker } from '@/parser/priorityParser';
@@ -57,6 +58,68 @@ function formatTimeToSeconds(timeStr: string): string {
   const seconds = match[3] || '00';
 
   return `${hours}:${minutes}:${seconds}`;
+}
+
+function findPrimaryItemLineIndex(lines: string[]): number {
+  let fallbackIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmedLine = rawLine.trim();
+    if (!trimmedLine || trimmedLine.startsWith('{:') || trimmedLine.startsWith('🍅')) {
+      continue;
+    }
+
+    const strippedLine = stripListAndBlockAttr(rawLine);
+    if (!strippedLine || isStandaloneBlockRefLine(strippedLine)) {
+      continue;
+    }
+
+    if (fallbackIndex === -1) {
+      fallbackIndex = i;
+    }
+
+    if (/(?:@|📅)\d{4}-\d{2}-\d{2}/.test(strippedLine)) {
+      return i;
+    }
+  }
+
+  return fallbackIndex;
+}
+
+function isListItemLine(line: string): boolean {
+  return /^\s*([-]|\d+\.)\s+/.test(line);
+}
+
+function findBlockStartLineIndex(lines: string[], blockRaw: string): number {
+  const rawLines = blockRaw.split('\n');
+  if (rawLines.length === 0 || rawLines.length > lines.length) {
+    return -1;
+  }
+
+  for (let start = 0; start <= lines.length - rawLines.length; start++) {
+    let matches = true;
+    for (let offset = 0; offset < rawLines.length; offset++) {
+      if (lines[start + offset] !== rawLines[offset]) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) {
+      return start;
+    }
+  }
+
+  return -1;
+}
+
+function jtDbgLine(label: string, payload: Record<string, unknown>): void {
+  try {
+    console.log(`[JTDBG] ${label} ${JSON.stringify(payload)}`);
+  }
+  catch (error) {
+    console.log(`[JTDBG] ${label} stringify-failed`, error);
+  }
 }
 
 function formatTimeForPrecision(timeStr: string, precision: TimePrecision = 'second'): string {
@@ -444,29 +507,212 @@ export async function updateBlockDateTime(
   if (!blockId) return false;
 
   try {
+    console.log('[fileUtils.updateBlockDateTime] start', {
+      blockId,
+      newDate,
+      newStartTime,
+      newEndTime,
+      allDay,
+      originalDate,
+      siblingItems,
+      status,
+      timePrecision,
+    });
+
     // 统一先查父块：若父块 kramdown 中含 blockId 对应块且该块事项行有 [ ]/[x]，则用父块 kramdown（避免内容子块无 [x] 导致错误添加 #已完成）
     let kramdown: string | null = null;
     let targetBlockId = blockId;
+    let targetItemBlockRaw: string | null = null;
+    let usedParentDocumentContext = false;
     const block = await getBlockByID(blockId);
+    console.log('[fileUtils.updateBlockDateTime] getBlockByID', {
+      blockId,
+      block,
+    });
+    console.log('[JTDBG][updateBlockDateTime] getBlockByID', {
+      blockId,
+      block,
+    });
+    jtDbgLine('updateBlockDateTime.getBlockByID', {
+      blockId,
+      block,
+    });
     if (block?.parent_id) {
       const parentResult = await getBlockKramdown(block.parent_id);
+      console.log('[fileUtils.updateBlockDateTime] parent kramdown candidate', {
+        parentId: block.parent_id,
+        hasParentKramdown: !!parentResult?.kramdown,
+        parentKramdownPreview: parentResult?.kramdown?.slice(0, 400),
+      });
+      console.log('[JTDBG][updateBlockDateTime] parent candidate', {
+        blockId,
+        parentId: block.parent_id,
+        hasParentKramdown: !!parentResult?.kramdown,
+        parentKramdown: parentResult?.kramdown,
+      });
+      jtDbgLine('updateBlockDateTime.parentCandidate', {
+        blockId,
+        parentId: block.parent_id,
+        hasParentKramdown: !!parentResult?.kramdown,
+        parentKramdownLength: parentResult?.kramdown?.length ?? 0,
+        parentKramdownLines: parentResult?.kramdown?.split('\n') ?? [],
+      });
       if (parentResult?.kramdown) {
         const blocks = parseKramdownBlocks(parentResult.kramdown);
         const itemBlockIndex = blocks.findIndex((b) => b.blockId === blockId);
         const itemBlock = itemBlockIndex >= 0 ? blocks[itemBlockIndex] : null;
+        usedParentDocumentContext = blocks.length > 1;
+        if (itemBlock) {
+          targetItemBlockRaw = itemBlock.raw;
+        }
+        console.log('[fileUtils.updateBlockDateTime] parent blocks parsed', {
+          blockId,
+          parentId: block.parent_id,
+          parsedBlocks: blocks.map((b, index) => ({
+            index,
+            blockId: b.blockId,
+            contentPreview: b.content.slice(0, 160),
+          })),
+          itemBlockIndex,
+          itemBlockPreview: itemBlock?.content.slice(0, 200),
+        });
+        console.log('[JTDBG][updateBlockDateTime] parent parsed blocks', {
+          blockId,
+          parentId: block.parent_id,
+          parsedBlocks: blocks.map((b, index) => ({
+            index,
+            blockId: b.blockId,
+            content: b.content,
+            raw: b.raw,
+          })),
+          itemBlockIndex,
+        });
+        console.log(`[JTDBG][updateBlockDateTime][parentBlocks.json] ${JSON.stringify({
+          blockId,
+          parentId: block.parent_id,
+          parsedBlocks: blocks.map((b, index) => ({
+            index,
+            blockId: b.blockId,
+            content: b.content,
+            raw: b.raw,
+          })),
+          itemBlockIndex,
+        })}`);
+        jtDbgLine('updateBlockDateTime.parentBlocks', {
+          blockId,
+          parentId: block.parent_id,
+          parsedBlockCount: blocks.length,
+          parsedBlocks: blocks.map((b, index) => ({
+            index,
+            blockId: b.blockId,
+            content: b.content,
+            raw: b.raw,
+          })),
+          itemBlockIndex,
+          itemBlockContent: itemBlock?.content ?? null,
+        });
         // 当 blockId 为内容子块时，事项行可能在前一块（列表项块）中
         const blocksToCheck = itemBlock
           ? (itemBlockIndex > 0 ? [itemBlock, blocks[itemBlockIndex - 1]] : [itemBlock])
           : [];
+        console.log('[JTDBG][updateBlockDateTime] blocksToCheck', {
+          blockId,
+          blocksToCheck: blocksToCheck.map((checkBlock) => ({
+            blockId: checkBlock.blockId,
+            content: checkBlock.content,
+          })),
+        });
+        console.log(`[JTDBG][updateBlockDateTime][blocksToCheck.json] ${JSON.stringify({
+          blockId,
+          blocksToCheck: blocksToCheck.map((checkBlock) => ({
+            blockId: checkBlock.blockId,
+            content: checkBlock.content,
+          })),
+        })}`);
+        jtDbgLine('updateBlockDateTime.blocksToCheck', {
+          blockId,
+          blocksToCheck: blocksToCheck.map((checkBlock, index) => ({
+            index,
+            blockId: checkBlock.blockId,
+            content: checkBlock.content,
+            lines: checkBlock.content.split('\n'),
+          })),
+        });
         for (const checkBlock of blocksToCheck) {
           const linesToCheck = checkBlock.content.split('\n');
           for (const line of linesToCheck) {
             const trimmed = line.trim();
-            if (trimmed.startsWith('{:')) continue;
-            if (trimmed.startsWith('🍅')) continue;
-            if ((trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed) && isTaskListFormat(trimmed)) {
+            const skipAttr = trimmed.startsWith('{:');
+            const skipPomodoro = trimmed.startsWith('🍅');
+            const hasDateMarker = trimmed.includes('@') || trimmed.includes('📅');
+            const hasDateValue = /\d{4}-\d{2}-\d{2}/.test(trimmed);
+            const taskListFormat = isTaskListFormat(trimmed);
+            const listItemFormat = isListItemLine(line);
+            const strippedLine = stripListAndBlockAttr(line);
+            console.log('[JTDBG][updateBlockDateTime] inspect parent line', {
+              blockId,
+              parentId: block.parent_id,
+              checkBlockId: checkBlock.blockId,
+              line,
+              trimmed,
+              strippedLine,
+              skipAttr,
+              skipPomodoro,
+              hasDateMarker,
+              hasDateValue,
+              taskListFormat,
+              listItemFormat,
+            });
+            console.log(`[JTDBG][updateBlockDateTime][inspectLine.json] ${JSON.stringify({
+              blockId,
+              parentId: block.parent_id,
+              checkBlockId: checkBlock.blockId,
+              line,
+              trimmed,
+              strippedLine,
+              skipAttr,
+              skipPomodoro,
+              hasDateMarker,
+              hasDateValue,
+              taskListFormat,
+              listItemFormat,
+            })}`);
+            jtDbgLine('updateBlockDateTime.inspectParentLine', {
+              blockId,
+              parentId: block.parent_id,
+              checkBlockId: checkBlock.blockId,
+              line,
+              trimmed,
+              strippedLine,
+              skipAttr,
+              skipPomodoro,
+              hasDateMarker,
+              hasDateValue,
+              taskListFormat,
+              listItemFormat,
+            });
+            if (skipAttr) continue;
+            if (skipPomodoro) continue;
+            if (hasDateMarker && hasDateValue && (taskListFormat || listItemFormat)) {
               kramdown = parentResult.kramdown;
               targetBlockId = block.parent_id;
+              console.log('[fileUtils.updateBlockDateTime] chose parent kramdown', {
+                targetBlockId,
+                reasonLine: trimmed,
+                checkBlockId: checkBlock.blockId,
+              });
+              console.log('[JTDBG][updateBlockDateTime] chose parent kramdown', {
+                blockId,
+                targetBlockId,
+                reasonLine: trimmed,
+                checkBlockId: checkBlock.blockId,
+              });
+              jtDbgLine('updateBlockDateTime.choseParent', {
+                blockId,
+                targetBlockId,
+                reasonLine: trimmed,
+                checkBlockId: checkBlock.blockId,
+              });
               break;
             }
           }
@@ -481,6 +727,26 @@ export async function updateBlockDateTime(
         return false;
       }
       kramdown = result.kramdown;
+      console.log('[fileUtils.updateBlockDateTime] chose direct block kramdown', {
+        targetBlockId,
+        kramdownPreview: kramdown.slice(0, 400),
+      });
+      console.log('[JTDBG][updateBlockDateTime] chose direct block', {
+        blockId,
+        targetBlockId,
+        kramdown,
+      });
+      jtDbgLine('updateBlockDateTime.choseDirect', {
+        blockId,
+        targetBlockId,
+        kramdownLength: kramdown.length,
+        kramdownLines: kramdown.split('\n'),
+      });
+      console.log(`[JTDBG][updateBlockDateTime][directBlock.json] ${JSON.stringify({
+        blockId,
+        targetBlockId,
+        kramdown,
+      })}`);
     }
 
     // 按行分割，处理多行内容
@@ -491,6 +757,30 @@ export async function updateBlockDateTime(
 
     // 使用父块时需保留完整格式（含块属性行），走多行逻辑；否则无番茄钟时用单行逻辑
     const useMultiLineForStructure = targetBlockId !== blockId && lines.length > 1;
+    console.log('[fileUtils.updateBlockDateTime] structure decision', {
+      targetBlockId,
+      originalBlockId: blockId,
+      lineCount: lines.length,
+      hasTomatoClock,
+      useMultiLineForStructure,
+      lines: lines.map((line, index) => ({ index, line })),
+    });
+    console.log('[JTDBG][updateBlockDateTime] structure', {
+      blockId,
+      targetBlockId,
+      lineCount: lines.length,
+      hasTomatoClock,
+      useMultiLineForStructure,
+      lines,
+    });
+    jtDbgLine('updateBlockDateTime.structure', {
+      blockId,
+      targetBlockId,
+      lineCount: lines.length,
+      hasTomatoClock,
+      useMultiLineForStructure,
+      lines,
+    });
 
     // 如果没有番茄钟行且不需要保留结构，使用单行处理逻辑
     if (!hasTomatoClock && !useMultiLineForStructure) {
@@ -521,20 +811,42 @@ export async function updateBlockDateTime(
       return true;
     }
 
-    // 有番茄钟行的情况：找到包含 @日期 的事项行（不是番茄钟行，不是块属性行）
-    let itemLineIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      // 跳过块属性行 {: ...}
-      if (line.trim().startsWith('{:')) continue;
-      // 跳过番茄钟行（以 🍅 开头）
-      if (line.trim().startsWith('🍅')) continue;
-      // 包含 @日期 或 📅日期 的行是事项行
-      if (/(?:@|📅)\d{4}-\d{2}-\d{2}/.test(line)) {
-        itemLineIndex = i;
-        break;
+    // 多行事项优先锁定主事项行，而不是扫描第一个带日期的续行
+    let itemLineIndex = findPrimaryItemLineIndex(lines);
+    let targetBlockStartLineIndex = -1;
+    let targetBlockRelativeLineIndex = -1;
+    if (targetBlockId !== blockId && targetItemBlockRaw) {
+      targetBlockStartLineIndex = findBlockStartLineIndex(lines, targetItemBlockRaw);
+      if (targetBlockStartLineIndex >= 0) {
+        targetBlockRelativeLineIndex = findPrimaryItemLineIndex(targetItemBlockRaw.split('\n'));
+        if (targetBlockRelativeLineIndex >= 0) {
+          itemLineIndex = targetBlockStartLineIndex + targetBlockRelativeLineIndex;
+        }
       }
     }
+    console.log('[fileUtils.updateBlockDateTime] selected primary line', {
+      targetBlockId,
+      itemLineIndex,
+      targetBlockStartLineIndex,
+      targetBlockRelativeLineIndex,
+      selectedLine: itemLineIndex >= 0 ? lines[itemLineIndex] : null,
+    });
+    console.log('[JTDBG][updateBlockDateTime] selected primary line', {
+      blockId,
+      targetBlockId,
+      itemLineIndex,
+      targetBlockStartLineIndex,
+      targetBlockRelativeLineIndex,
+      selectedLine: itemLineIndex >= 0 ? lines[itemLineIndex] : null,
+    });
+    jtDbgLine('updateBlockDateTime.selectedPrimaryLine', {
+      blockId,
+      targetBlockId,
+      itemLineIndex,
+      targetBlockStartLineIndex,
+      targetBlockRelativeLineIndex,
+      selectedLine: itemLineIndex >= 0 ? lines[itemLineIndex] : null,
+    });
 
     // 如果没有找到事项行，使用单行处理逻辑作为回退
     if (itemLineIndex === -1) {
@@ -618,6 +930,22 @@ export async function updateBlockDateTime(
 
     // 智能合并为最优表达式
     const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
+    console.log('[fileUtils.updateBlockDateTime] rebuilt item expression', {
+      itemLine,
+      cleanedItemLine,
+      itemContent,
+      dedupedItems,
+      optimizedExpr,
+    });
+    console.log('[JTDBG][updateBlockDateTime] rebuilt expression', {
+      blockId,
+      targetBlockId,
+      itemLine,
+      cleanedItemLine,
+      itemContent,
+      dedupedItems,
+      optimizedExpr,
+    });
 
     // 检测原始内容是否使用任务列表格式
     const isTaskList = isTaskListFormat(itemLine);
@@ -645,14 +973,47 @@ export async function updateBlockDateTime(
     lines[itemLineIndex] = newItemLine;
 
     // 重新组合所有行
-    const newContent = lines.join('\n');
+    let newContent = lines.join('\n');
+    let finalTargetBlockId = targetBlockId;
+
+    if (usedParentDocumentContext && targetItemBlockRaw) {
+      const updatedBlocks = parseKramdownBlocks(newContent);
+      const updatedItemBlock = updatedBlocks.find(candidate => candidate.blockId === blockId);
+      if (updatedItemBlock) {
+        console.log('[JTDBG][updateBlockDateTime] collapse parent doc writeback to current block', {
+          blockId,
+          targetBlockId,
+          finalTargetBlockId: blockId,
+          updatedItemBlockRaw: updatedItemBlock.raw,
+        });
+        jtDbgLine('updateBlockDateTime.collapseParentDocWriteback', {
+          blockId,
+          targetBlockId,
+          finalTargetBlockId: blockId,
+          updatedItemBlockRaw: updatedItemBlock.raw,
+        });
+        newContent = updatedItemBlock.raw;
+        finalTargetBlockId = blockId;
+      }
+    }
+    console.log('[fileUtils.updateBlockDateTime] final content', {
+      targetBlockId: finalTargetBlockId,
+      newItemLine,
+      newContent,
+    });
+    console.log('[JTDBG][updateBlockDateTime] final content', {
+      blockId,
+      targetBlockId: finalTargetBlockId,
+      newItemLine,
+      newContent,
+    });
 
     // 更新块（使用 targetBlockId：父块解析时更新父块）
     // 多行逻辑中 lines 已包含属性行 {: ...}，updateBlock 的 kramdown 会保留属性
     if (writer) {
-      return await writer(newContent, targetBlockId);
+      return await writer(newContent, finalTargetBlockId);
     }
-    await updateBlock('markdown', newContent, targetBlockId);
+    await updateBlock('markdown', newContent, finalTargetBlockId);
 
     return true;
   } catch (error) {
