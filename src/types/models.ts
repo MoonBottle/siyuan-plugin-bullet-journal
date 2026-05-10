@@ -91,6 +91,7 @@ export interface Project {
   name: string;            // 项目名称
   description?: string;    // 项目描述
   tasks: Task[];           // 任务列表
+  habits: Habit[];         // 习惯列表
   path: string;            // 文档路径
   groupId?: string;        // 分组 ID
   links?: Link[];          // 项目链接
