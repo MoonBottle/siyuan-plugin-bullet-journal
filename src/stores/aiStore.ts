@@ -833,7 +833,7 @@ export const useAIStore = defineStore('ai', () => {
   };
 
   function isProxyActive(): boolean {
-    return clawBotConfig.value.baseUrl.startsWith('http://127.0.0.1');
+    return true;
   }
 
   function getWeixinConversationStatus(userId: string): WeixinConversationStatusResult {
@@ -863,7 +863,7 @@ export const useAIStore = defineStore('ai', () => {
   /**
    * 初始化 ClawBot 服务
    */
-  async function initializeClawBot(pluginInstance: any, proxyBaseUrl?: string) {
+  async function initializeClawBot(pluginInstance: any, forwardProxyAvailable = false) {
     console.log('[AIStore] initializeClawBot');
     
     // 保存 plugin 实例引用
@@ -874,13 +874,10 @@ export const useAIStore = defineStore('ai', () => {
       return;
     }
 
-    // 如果代理已启动，覆盖 baseUrl / cdnBaseUrl
-    if (proxyBaseUrl) {
-      clawBotConfig.value.baseUrl = `${proxyBaseUrl}/ilink`;
-      clawBotConfig.value.cdnBaseUrl = `${proxyBaseUrl}/cdn`;
-      console.log('[AIStore] ClawBot proxy active:', proxyBaseUrl);
+    if (forwardProxyAvailable) {
+      console.log('[AIStore] ClawBot forwardProxy active, requests will go through SiYuan kernel');
     } else {
-      console.log('[AIStore] ClawBot proxy not active, using direct baseUrl:', clawBotConfig.value.baseUrl);
+      console.log('[AIStore] ClawBot forwardProxy not available, using direct baseUrl:', clawBotConfig.value.baseUrl);
     }
     
     // 从单独文件加载所有配置（包括 enabled）

@@ -1,139 +1,129 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClawBotService } from '@/services/clawBotService';
 
-describe('ClawBotService proxy transport', () => {
-  let fetchMock: ReturnType<typeof vi.fn>;
+vi.mock('@/services/clawBotForwardProxy', () => ({
+  forwardProxy: vi.fn(),
+  forwardProxyBinary: vi.fn(),
+  forwardProxyLongPoll: vi.fn(),
+}));
 
+import { forwardProxy, forwardProxyLongPoll, forwardProxyBinary } from '@/services/clawBotForwardProxy';
+
+describe('ClawBotService forwardProxy transport', () => {
   beforeEach(() => {
-    fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+    vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
+  function mockForwardProxySuccess(body: any, status = 200) {
+    (forwardProxy as ReturnType<typeof vi.fn>).mockResolvedValue({
+      status,
+      contentType: 'application/json',
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+      bodyEncoding: 'text',
+      headers: {},
+      url: '',
+      elapsed: 10,
+    });
+  }
 
-  it('requests local proxy for getupdates', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ next_key_buf: '', add_msgs: [] }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }));
+  it('sends startLogin through forwardProxy', async () => {
+    mockForwardProxySuccess({ qrcode_img_content: 'qr-data', qrcode: 'session-key' });
 
     const service = new ClawBotService({
       enabled: true,
       loginStatus: 'connected',
       token: 'bot-token',
-      baseUrl: 'http://127.0.0.1:18965/clawbot/ilink',
-      cdnBaseUrl: 'http://127.0.0.1:18965/clawbot/cdn',
     });
 
-    await service.startLogin();
+    const result = await service.startLogin();
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://127.0.0.1:18965/clawbot/ilink/bot/get_bot_qrcode?bot_type=3',
-      expect.objectContaining({ method: 'GET' }),
-    );
+    expect(result.qrcodeUrl).toBe('qr-data');
+    expect(result.sessionKey).toBe('session-key');
+
+    const callArgs = (forwardProxy as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.url).toContain('/ilink/bot/get_bot_qrcode');
+    expect(callArgs.method).toBe('GET');
   });
 
-  it('uses proxy for sendmessage', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ ret: 0 }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }));
+  it('sends sendTextMessage through forwardProxy', async () => {
+    mockForwardProxySuccess({ ret: 0 });
 
     const service = new ClawBotService({
       enabled: true,
       loginStatus: 'connected',
       token: 'bot-token',
-      baseUrl: 'http://127.0.0.1:18965/clawbot/ilink',
-      cdnBaseUrl: 'http://127.0.0.1:18965/clawbot/cdn',
     });
 
     await service.sendTextMessage('user@im.wechat', 'Hello');
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://127.0.0.1:18965/clawbot/ilink/bot/sendmessage',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    const callArgs = (forwardProxy as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.url).toContain('/ilink/bot/sendmessage');
+    expect(callArgs.method).toBe('POST');
   });
 
-  it('maps proxy connection failures to a stable error message', async () => {
-    fetchMock.mockRejectedValue(new TypeError('fetch failed'));
+  it('sends notifyGatewayStart through forwardProxy', async () => {
+    mockForwardProxySuccess({ ret: 0 });
 
     const service = new ClawBotService({
       enabled: true,
       loginStatus: 'connected',
       token: 'bot-token',
-      baseUrl: 'http://127.0.0.1:18965/clawbot/ilink',
-      cdnBaseUrl: 'http://127.0.0.1:18965/clawbot/cdn',
-    });
-
-    await expect(service.startLogin()).rejects.toThrow('ClawBot local proxy unavailable');
-  });
-
-  it('routes getconfig through proxy', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ ret: 0 }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }));
-
-    const service = new ClawBotService({
-      enabled: true,
-      loginStatus: 'connected',
-      token: 'bot-token',
-      baseUrl: 'http://127.0.0.1:18965/clawbot/ilink',
-      cdnBaseUrl: 'http://127.0.0.1:18965/clawbot/cdn',
     });
 
     await service.notifyGatewayStart();
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://127.0.0.1:18965/clawbot/ilink/bot/msg/notifystart',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    const callArgs = (forwardProxy as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.url).toContain('/ilink/bot/msg/notifystart');
+    expect(callArgs.method).toBe('POST');
   });
 
-  it('includes /ilink prefix when using original baseUrl without proxy', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ next_key_buf: '', add_msgs: [] }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }));
+  it('throws on forwardProxy failure', async () => {
+    (forwardProxy as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('forwardProxy request failed'),
+    );
 
     const service = new ClawBotService({
       enabled: true,
       loginStatus: 'connected',
       token: 'bot-token',
-      baseUrl: 'https://ilinkai.weixin.qq.com',
-      cdnBaseUrl: 'https://cdn.weixin.qq.com',
     });
 
-    await service.startLogin();
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://ilinkai.weixin.qq.com/ilink/bot/get_bot_qrcode?bot_type=3',
-      expect.objectContaining({ method: 'GET' }),
-    );
+    await expect(service.startLogin()).rejects.toThrow('forwardProxy request failed');
   });
 
-  it('includes /ilink prefix for sendmessage without proxy', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ ret: 0 }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }));
+  it('preserves upstream error status codes', async () => {
+    mockForwardProxySuccess({ errcode: -14 }, 401);
 
     const service = new ClawBotService({
       enabled: true,
       loginStatus: 'connected',
       token: 'bot-token',
-      baseUrl: 'https://ilinkai.weixin.qq.com',
-      cdnBaseUrl: 'https://cdn.weixin.qq.com',
     });
 
-    await service.sendTextMessage('user@im.wechat', 'Hello');
+    await expect(service.startLogin()).rejects.toThrow('401');
+  });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://ilinkai.weixin.qq.com/ilink/bot/sendmessage',
-      expect.objectContaining({ method: 'POST' }),
-    );
+  it('uses long poll transport for getUpdates', async () => {
+    (forwardProxyLongPoll as ReturnType<typeof vi.fn>).mockResolvedValue({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ret: 0, msgs: [], get_updates_buf: 'buf' }),
+      bodyEncoding: 'text',
+      headers: {},
+      url: '',
+      elapsed: 25000,
+    });
+
+    const service = new ClawBotService({
+      enabled: true,
+      loginStatus: 'connected',
+      token: 'bot-token',
+    });
+
+    const result = await (service as any).getUpdates({ get_updates_buf: '' });
+
+    expect(result.ret).toBe(0);
+    expect(forwardProxyLongPoll).toHaveBeenCalled();
+    expect(forwardProxy).not.toHaveBeenCalled();
   });
 });

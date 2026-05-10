@@ -96,7 +96,7 @@ import {
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService";
 import { CleanupManager } from "@/utils/cleanupManager";
-import { createClawBotProxyServer, canStartProxy, type ProxyServerInstance } from "@/services/clawBotProxyServer";
+import { isForwardProxyAvailable } from "@/services/clawBotForwardProxy";
 import {
   type FloatingPomodoroLabels,
   type FloatingPomodoroSourceState,
@@ -184,8 +184,6 @@ export default class TaskAssistantPlugin extends Plugin {
   private processingTaskCompletions = new Map<string, Promise<void>>();
   /** 移动端提醒调试开关，仅当前前端会话有效 */
   private mobileReminderDebugModeEnabled = false;
-  /** ClawBot 本地代理服务实例 */
-  private clawBotProxy: ProxyServerInstance | null = null;
 
   public isMobileReminderDebugMode(): boolean {
     return this.mobileReminderDebugModeEnabled;
@@ -393,30 +391,10 @@ export default class TaskAssistantPlugin extends Plugin {
       const aiStore = useAIStore(pinia);
       await aiStore.initializeStorage(this);
 
-      try {
-        console.log("[Task Assistant] ClawBot proxy check:", {
-          isElectron: this.isElectron,
-          isMobile: this.isMobile,
-          isBrowser: this.isBrowser,
-          isLocal: this.isLocal,
-          platform: this.platform,
-        });
-        if (canStartProxy()) {
-          this.clawBotProxy = await createClawBotProxyServer();
-          console.log("[Task Assistant] ClawBot proxy started on port", this.clawBotProxy.port);
-        } else {
-          console.log("[Task Assistant] ClawBot proxy not available (node:http unsupported), using direct requests");
-        }
-      } catch (proxyError) {
-        console.error("[Task Assistant] Failed to start ClawBot proxy:", proxyError);
-      }
+      const proxyAvailable = await isForwardProxyAvailable();
+      console.log("[Task Assistant] ClawBot forwardProxy available:", proxyAvailable);
 
-      console.log("[Task Assistant] ClawBot proxy result:", {
-        hasProxy: !!this.clawBotProxy,
-        proxyBaseUrl: this.clawBotProxy?.baseUrl ?? 'none',
-      });
-
-      await aiStore.initializeClawBot(this, this.clawBotProxy?.baseUrl);
+      await aiStore.initializeClawBot(this, proxyAvailable);
       console.log("[Task Assistant] ClawBot initialized from plugin onload");
     } catch (error) {
       console.error("[Task Assistant] Failed to initialize ClawBot:", error);
@@ -582,16 +560,6 @@ export default class TaskAssistantPlugin extends Plugin {
     mobileNotificationScheduler.detachRuntime();
     // 停止提醒服务
     reminderService.stop();
-
-    // 停止 ClawBot 本地代理
-    if (this.clawBotProxy) {
-      this.clawBotProxy.stop().then(() => {
-        this.clawBotProxy = null;
-        console.log("[Task Assistant] ClawBot proxy stopped");
-      }).catch((error) => {
-        console.error("[Task Assistant] Failed to stop ClawBot proxy:", error);
-      });
-    }
 
     debugState.activeInstanceIds = debugState.activeInstanceIds.filter(
       (id) => id !== this.debugInstanceId,

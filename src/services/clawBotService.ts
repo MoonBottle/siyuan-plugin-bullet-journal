@@ -20,20 +20,12 @@ import {
   type WeixinApiCommonResp
 } from '@/types/clawbot';
 import { aes128EcbEncrypt, aes128EcbDecrypt, generateAesKey, base64Encode, base64Decode, md5, bytesToHex } from '@/utils/crypto';
+import { forwardProxy, forwardProxyBinary, forwardProxyLongPoll } from '@/services/clawBotForwardProxy';
 
 const DEFAULT_BASE_URL = 'https://ilinkai.weixin.qq.com';
 const DEFAULT_CDN_BASE_URL = 'https://cdn.weixin.qq.com';
 const DEFAULT_BOT_TYPE = '3';
 const CHANNEL_VERSION = '2.1.1';
-
-type ClawBotRequestTarget = 'ilink' | 'cdn';
-
-function normalizeProxyUnavailable(error: unknown): Error {
-  if (error instanceof TypeError) {
-    return new Error('ClawBot local proxy unavailable');
-  }
-  return error instanceof Error ? error : new Error(String(error));
-}
 
 export class ClawBotApiError extends Error {
   code: number;
@@ -114,35 +106,68 @@ export class ClawBotService {
 
   // ========== Transport 层 ==========
 
-  private buildProxyUrl(target: ClawBotRequestTarget, pathOrUrl: string): string {
-    if (target === 'cdn' && /^https?:\/\//.test(pathOrUrl)) {
-      const url = new URL(pathOrUrl);
-      return `${this.config.cdnBaseUrl}${url.pathname}${url.search}`;
-    }
-
-    const baseUrl = target === 'ilink' ? this.config.baseUrl : this.config.cdnBaseUrl;
-    const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl.slice(1) : pathOrUrl;
-
-    const needsPrefix = target === 'ilink' && !baseUrl.endsWith('/ilink');
-    const prefix = needsPrefix ? '/ilink' : '';
-
-    return `${baseUrl}${prefix}/${normalizedPath}`;
+  private buildTargetUrl(path: string): string {
+    return `${this.config.baseUrl}/ilink/${path}`;
   }
 
-  private async requestIlink(path: string, init: RequestInit): Promise<Response> {
-    try {
-      return await fetch(this.buildProxyUrl('ilink', path), init);
-    } catch (error) {
-      throw normalizeProxyUnavailable(error);
+  private buildCdnUrl(pathOrUrl: string): string {
+    if (/^https?:\/\//.test(pathOrUrl)) {
+      return pathOrUrl;
     }
+    return `${this.config.cdnBaseUrl}/${pathOrUrl}`;
   }
 
-  private async requestCdn(pathOrUrl: string, init?: RequestInit): Promise<Response> {
+  private async requestIlink(path: string, method: string, body?: any): Promise<{ status: number; data: any }> {
+    const headers = buildHeaders(this.config.token, body ? JSON.stringify(body) : undefined);
+    const headerEntries = Object.entries(headers).map(([k, v]) => ({ [k]: v }));
+
+    const result = await forwardProxy({
+      url: this.buildTargetUrl(path),
+      method,
+      headers: headerEntries,
+      payload: body ?? '',
+      contentType: 'application/json',
+    });
+
+    let parsed: any;
     try {
-      return await fetch(this.buildProxyUrl('cdn', pathOrUrl), init);
-    } catch (error) {
-      throw normalizeProxyUnavailable(error);
+      parsed = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
+    } catch {
+      parsed = result.body;
     }
+
+    return { status: result.status, data: parsed };
+  }
+
+  private async requestIlinkLongPoll(path: string, body: any): Promise<{ status: number; data: any }> {
+    const headers = buildHeaders(this.config.token, JSON.stringify(body));
+    const headerEntries = Object.entries(headers).map(([k, v]) => ({ [k]: v }));
+
+    const result = await forwardProxyLongPoll({
+      url: this.buildTargetUrl(path),
+      method: 'POST',
+      headers: headerEntries,
+      payload: body,
+      contentType: 'application/json',
+    });
+
+    let parsed: any;
+    try {
+      parsed = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
+    } catch {
+      parsed = result.body;
+    }
+
+    return { status: result.status, data: parsed };
+  }
+
+  private async requestCdn(pathOrUrl: string): Promise<ArrayBuffer> {
+    const result = await forwardProxyBinary({
+      url: this.buildCdnUrl(pathOrUrl),
+      method: 'GET',
+      contentType: 'application/octet-stream',
+    });
+    return result.body;
   }
 
   // ========== 登录流程 ==========
@@ -152,26 +177,23 @@ export class ClawBotService {
    */
   async startLogin(): Promise<{ qrcodeUrl: string; sessionKey: string }> {
     try {
-      const response = await this.requestIlink(
+      const { status, data } = await this.requestIlink(
         `bot/get_bot_qrcode?bot_type=${DEFAULT_BOT_TYPE}`,
-        {
-          method: 'GET',
-          headers: buildHeaders()
-        }
+        'GET',
       );
 
-      if (!response.ok) {
-        throw new Error(`获取二维码失败: ${response.status}`);
+      if (status !== 200) {
+        throw new Error(`获取二维码失败: ${status}`);
       }
 
-      const data: QRCodeResponse = await response.json();
+      const qrcodeData: QRCodeResponse = data;
       
       this.config.loginStatus = 'pending';
-      this.config.qrcodeUrl = data.qrcode_img_content;
+      this.config.qrcodeUrl = qrcodeData.qrcode_img_content;
 
       return {
-        qrcodeUrl: data.qrcode_img_content,
-        sessionKey: data.qrcode
+        qrcodeUrl: qrcodeData.qrcode_img_content,
+        sessionKey: qrcodeData.qrcode
       };
     } catch (error) {
       this.config.loginStatus = 'error';
@@ -189,22 +211,19 @@ export class ClawBotService {
 
     while (Date.now() - startTime < timeoutMs) {
       try {
-        const response = await this.requestIlink(
+        const { status, data } = await this.requestIlink(
           `bot/get_qrcode_status?qrcode=${encodeURIComponent(qrcode)}`,
-          {
-            method: 'GET',
-            headers: buildHeaders()
-          }
+          'GET',
         );
 
-        if (!response.ok) {
+        if (status !== 200) {
           await new Promise(r => setTimeout(r, 2000));
           continue;
         }
 
-        const data: QRStatusResponse = await response.json();
+        const statusData: QRStatusResponse = data;
 
-        switch (data.status) {
+        switch (statusData.status) {
           case 'scaned':
             if (!scanedPrinted) {
               this.config.loginStatus = 'scaned';
@@ -213,14 +232,14 @@ export class ClawBotService {
             break;
 
           case 'confirmed':
-            if (data.ilink_bot_id && data.bot_token) {
+            if (statusData.ilink_bot_id && statusData.bot_token) {
               this.config = {
                 ...this.config,
-                accountId: data.ilink_bot_id,
-                token: data.bot_token,
-                userId: data.ilink_user_id,
+                accountId: statusData.ilink_bot_id,
+                token: statusData.bot_token,
+                userId: statusData.ilink_user_id,
                 loginStatus: 'connected',
-                baseUrl: data.baseurl || this.config.baseUrl
+                baseUrl: statusData.baseurl || this.config.baseUrl
               };
               return true;
             }
@@ -400,29 +419,21 @@ export class ClawBotService {
    * GetUpdates 请求
    */
   private async getUpdates(params: GetUpdatesReq & { timeoutMs?: number }): Promise<GetUpdatesResp> {
-    const timeout = params.timeoutMs || 35000;
-    const body = JSON.stringify({
+    const body = {
       get_updates_buf: params.get_updates_buf || '',
       base_info: buildBaseInfo()
-    });
+    };
 
     try {
-      const response = await this.requestIlink('bot/getupdates', {
-        method: 'POST',
-        headers: buildHeaders(this.config.token, body),
-        body,
-        signal: this.abortController?.signal
-      });
+      const { status, data } = await this.requestIlinkLongPoll('bot/getupdates', body);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      if (status !== 200) {
+        throw new Error(`HTTP ${status}`);
       }
 
-      const data = await response.json();
       console.log('[ClawBot] getUpdates 原始响应:', JSON.stringify(data).slice(0, 500));
       return data;
     } catch (error) {
-      // 超时是正常现象，返回空响应
       if (error instanceof Error && error.name === 'AbortError') {
         return { ret: 0, msgs: [], get_updates_buf: params.get_updates_buf };
       }
@@ -547,13 +558,7 @@ export class ClawBotService {
       throw new Error('媒体 URL 不存在');
     }
 
-    // 下载加密文件
-    const response = await this.requestCdn(media.full_url);
-    if (!response.ok) {
-      throw new Error(`下载媒体失败: ${response.status}`);
-    }
-
-    const encryptedData = new Uint8Array(await response.arrayBuffer());
+    const encryptedData = new Uint8Array(await this.requestCdn(media.full_url));
 
     // 解密
     if (media.aes_key) {
@@ -592,19 +597,15 @@ export class ClawBotService {
       }
     };
 
-    const body = JSON.stringify({ ...req, base_info: buildBaseInfo() });
+    const body = { ...req, base_info: buildBaseInfo() };
 
-    const response = await this.requestIlink('bot/sendmessage', {
-      method: 'POST',
-      headers: buildHeaders(this.config.token, body),
-      body
-    });
+    const { status, data } = await this.requestIlink('bot/sendmessage', 'POST', body);
 
-    const responseText = await response.text();
-    console.log('[ClawBot] sendTextMessage response:', { status: response.status, body: responseText.substring(0, 500) });
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
+    console.log('[ClawBot] sendTextMessage response:', { status, body: responseText.substring(0, 500) });
 
-    if (!response.ok) {
-      throw new Error(`发送消息失败: ${response.status} ${responseText}`);
+    if (status !== 200) {
+      throw new Error(`发送消息失败: ${status} ${responseText}`);
     }
 
     this.assertApiSuccess(responseText, 'sendmessage');
@@ -639,21 +640,17 @@ export class ClawBotService {
       throw new Error('未登录');
     }
 
-    const body = JSON.stringify({ base_info: buildBaseInfo() });
-    const response = await this.requestIlink('bot/msg/notifystart', {
-      method: 'POST',
-      headers: buildHeaders(this.config.token, body),
-      body
-    });
+    const body = { base_info: buildBaseInfo() };
+    const { status, data } = await this.requestIlink('bot/msg/notifystart', 'POST', body);
 
-    const responseText = await response.text();
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
     console.log('[ClawBot] notifyGatewayStart response:', {
-      status: response.status,
+      status,
       body: responseText.substring(0, 500)
     });
 
-    if (!response.ok) {
-      throw new Error(`网关保活失败: ${response.status} ${responseText}`);
+    if (status !== 200) {
+      throw new Error(`网关保活失败: ${status} ${responseText}`);
     }
 
     this.assertApiSuccess(responseText, 'notifystart');
@@ -739,16 +736,12 @@ export class ClawBotService {
         }
       };
 
-      const body = JSON.stringify({ ...req, base_info: buildBaseInfo() });
+      const body = { ...req, base_info: buildBaseInfo() };
 
-      const response = await this.requestIlink('bot/sendmessage', {
-        method: 'POST',
-        headers: buildHeaders(this.config.token, body),
-        body
-      });
+      const { status } = await this.requestIlink('bot/sendmessage', 'POST', body);
 
-      if (!response.ok) {
-        throw new Error(`发送媒体消息失败: ${response.status}`);
+      if (status !== 200) {
+        throw new Error(`发送媒体消息失败: ${status}`);
       }
     }
   }
@@ -767,7 +760,7 @@ export class ClawBotService {
     const encryptedMd5 = await md5(encrypted);
 
     // 3. 获取上传 URL
-    const getUploadUrlReq = {
+    const body = {
       filekey: encryptedMd5,
       media_type: this.getUploadMediaType(file),
       to_user_id: toUserId,
@@ -778,30 +771,24 @@ export class ClawBotService {
       base_info: buildBaseInfo()
     };
 
-    const body = JSON.stringify(getUploadUrlReq);
-    const response = await this.requestIlink('bot/getuploadurl', {
-      method: 'POST',
-      headers: buildHeaders(this.config.token, body),
-      body
-    });
+    const { status, data: uploadInfo } = await this.requestIlink('bot/getuploadurl', 'POST', body);
 
-    if (!response.ok) {
-      throw new Error(`获取上传 URL 失败: ${response.status}`);
+    if (status !== 200) {
+      throw new Error(`获取上传 URL 失败: ${status}`);
     }
 
-    const uploadInfo = await response.json();
-
-    // 4. 上传文件到 CDN
-    const uploadResponse = await fetch(uploadInfo.upload_full_url, {
+    // 4. 上传文件到 CDN（通过 forwardProxy）
+    const uploadResult = await forwardProxy({
+      url: uploadInfo.upload_full_url,
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/octet-stream'
-      },
-      body: encrypted
+      contentType: 'application/octet-stream',
+      payload: Array.from(encrypted).map(b => String.fromCharCode(b)).join(''),
+      payloadEncoding: 'base64',
+      timeout: 30000,
     });
 
-    if (!uploadResponse.ok) {
-      throw new Error(`上传文件失败: ${uploadResponse.status}`);
+    if (uploadResult.status < 200 || uploadResult.status >= 300) {
+      throw new Error(`上传文件失败: ${uploadResult.status}`);
     }
 
     return {
@@ -873,57 +860,49 @@ export class ClawBotService {
   }
 
   private async fetchConfig(toUserId: string, contextToken?: string): Promise<GetConfigResp> {
-    const body = JSON.stringify({
+    const body = {
       ilink_user_id: toUserId,
       context_token: contextToken,
       base_info: buildBaseInfo()
-    });
+    };
 
-    const response = await this.requestIlink('bot/getconfig', {
-      method: 'POST',
-      headers: buildHeaders(this.config.token, body),
-      body
-    });
+    const { status, data } = await this.requestIlink('bot/getconfig', 'POST', body);
 
-    const responseText = await response.text();
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
     console.log('[ClawBot] getConfig response:', {
       toUserId,
-      status: response.status,
+      status,
       body: responseText.substring(0, 500)
     });
 
-    if (!response.ok) {
-      throw new Error(`探测会话失败: ${response.status} ${responseText}`);
+    if (status !== 200) {
+      throw new Error(`探测会话失败: ${status} ${responseText}`);
     }
 
     this.assertApiSuccess(responseText, 'getconfig');
     return (this.parseApiResponse(responseText) ?? { ret: 0 }) as GetConfigResp;
   }
 
-  private async sendTypingStatus(toUserId: string, typingTicket: string, status: 1 | 2): Promise<void> {
-    const body = JSON.stringify({
+  private async sendTypingStatus(toUserId: string, typingTicket: string, statusValue: 1 | 2): Promise<void> {
+    const body = {
       ilink_user_id: toUserId,
       typing_ticket: typingTicket,
-      status,
+      status: statusValue,
       base_info: buildBaseInfo()
-    });
+    };
 
-    const response = await this.requestIlink('bot/sendtyping', {
-      method: 'POST',
-      headers: buildHeaders(this.config.token, body),
-      body
-    });
+    const { status, data } = await this.requestIlink('bot/sendtyping', 'POST', body);
 
-    const responseText = await response.text();
+    const responseText = typeof data === 'string' ? data : JSON.stringify(data);
     console.log('[ClawBot] sendTyping response:', {
       toUserId,
-      status: response.status,
-      typingStatus: status,
+      status,
+      typingStatus: statusValue,
       body: responseText.substring(0, 500)
     });
 
-    if (!response.ok) {
-      throw new Error(`发送输入态失败: ${response.status} ${responseText}`);
+    if (status !== 200) {
+      throw new Error(`发送输入态失败: ${status} ${responseText}`);
     }
 
     this.assertApiSuccess(responseText, 'sendtyping');

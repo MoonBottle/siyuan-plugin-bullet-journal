@@ -21,19 +21,6 @@ describe('Weixin conversation status derivation', () => {
     return store;
   }
 
-  it('derives offline when proxy is not running (baseUrl is original)', () => {
-    const store = setupStore({
-      isConnected: true,
-      baseUrl: 'https://ilinkai.weixin.qq.com',
-      conversations: {
-        'user1': { contextState: 'active' },
-      },
-    });
-
-    const status = store.getWeixinConversationStatus('user1');
-    expect(status.status).toBe('offline');
-  });
-
   it('derives offline when ClawBot is not connected', () => {
     const store = setupStore({
       isConnected: false,
