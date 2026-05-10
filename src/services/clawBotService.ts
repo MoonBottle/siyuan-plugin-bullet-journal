@@ -26,6 +26,15 @@ const DEFAULT_CDN_BASE_URL = 'https://cdn.weixin.qq.com';
 const DEFAULT_BOT_TYPE = '3';
 const CHANNEL_VERSION = '2.1.1';
 
+type ClawBotRequestTarget = 'ilink' | 'cdn';
+
+function normalizeProxyUnavailable(error: unknown): Error {
+  if (error instanceof TypeError) {
+    return new Error('ClawBot local proxy unavailable');
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 export class ClawBotApiError extends Error {
   code: number;
   kind: 'context_stale' | 'session_expired' | 'api';
@@ -103,6 +112,35 @@ export class ClawBotService {
     return error instanceof ClawBotApiError && error.kind === 'context_stale';
   }
 
+  // ========== Transport 层 ==========
+
+  private buildProxyUrl(target: ClawBotRequestTarget, pathOrUrl: string): string {
+    if (target === 'cdn' && /^https?:\/\//.test(pathOrUrl)) {
+      const url = new URL(pathOrUrl);
+      return `${this.config.cdnBaseUrl}${url.pathname}${url.search}`;
+    }
+
+    const baseUrl = target === 'ilink' ? this.config.baseUrl : this.config.cdnBaseUrl;
+    const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl.slice(1) : pathOrUrl;
+    return `${baseUrl}/${normalizedPath}`;
+  }
+
+  private async requestIlink(path: string, init: RequestInit): Promise<Response> {
+    try {
+      return await fetch(this.buildProxyUrl('ilink', path), init);
+    } catch (error) {
+      throw normalizeProxyUnavailable(error);
+    }
+  }
+
+  private async requestCdn(pathOrUrl: string, init?: RequestInit): Promise<Response> {
+    try {
+      return await fetch(this.buildProxyUrl('cdn', pathOrUrl), init);
+    } catch (error) {
+      throw normalizeProxyUnavailable(error);
+    }
+  }
+
   // ========== 登录流程 ==========
 
   /**
@@ -110,8 +148,8 @@ export class ClawBotService {
    */
   async startLogin(): Promise<{ qrcodeUrl: string; sessionKey: string }> {
     try {
-      const response = await fetch(
-        `${this.config.baseUrl}/ilink/bot/get_bot_qrcode?bot_type=${DEFAULT_BOT_TYPE}`,
+      const response = await this.requestIlink(
+        `bot/get_bot_qrcode?bot_type=${DEFAULT_BOT_TYPE}`,
         {
           method: 'GET',
           headers: buildHeaders()
@@ -147,8 +185,8 @@ export class ClawBotService {
 
     while (Date.now() - startTime < timeoutMs) {
       try {
-        const response = await fetch(
-          `${this.config.baseUrl}/ilink/bot/get_qrcode_status?qrcode=${encodeURIComponent(qrcode)}`,
+        const response = await this.requestIlink(
+          `bot/get_qrcode_status?qrcode=${encodeURIComponent(qrcode)}`,
           {
             method: 'GET',
             headers: buildHeaders()
@@ -365,7 +403,7 @@ export class ClawBotService {
     });
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/ilink/bot/getupdates`, {
+      const response = await this.requestIlink('bot/getupdates', {
         method: 'POST',
         headers: buildHeaders(this.config.token, body),
         body,
@@ -506,7 +544,7 @@ export class ClawBotService {
     }
 
     // 下载加密文件
-    const response = await fetch(media.full_url);
+    const response = await this.requestCdn(media.full_url);
     if (!response.ok) {
       throw new Error(`下载媒体失败: ${response.status}`);
     }
@@ -552,7 +590,7 @@ export class ClawBotService {
 
     const body = JSON.stringify({ ...req, base_info: buildBaseInfo() });
 
-    const response = await fetch(`${this.config.baseUrl}/ilink/bot/sendmessage`, {
+    const response = await this.requestIlink('bot/sendmessage', {
       method: 'POST',
       headers: buildHeaders(this.config.token, body),
       body
@@ -598,7 +636,7 @@ export class ClawBotService {
     }
 
     const body = JSON.stringify({ base_info: buildBaseInfo() });
-    const response = await fetch(`${this.config.baseUrl}/ilink/bot/msg/notifystart`, {
+    const response = await this.requestIlink('bot/msg/notifystart', {
       method: 'POST',
       headers: buildHeaders(this.config.token, body),
       body
@@ -699,7 +737,7 @@ export class ClawBotService {
 
       const body = JSON.stringify({ ...req, base_info: buildBaseInfo() });
 
-      const response = await fetch(`${this.config.baseUrl}/ilink/bot/sendmessage`, {
+      const response = await this.requestIlink('bot/sendmessage', {
         method: 'POST',
         headers: buildHeaders(this.config.token, body),
         body
@@ -737,7 +775,7 @@ export class ClawBotService {
     };
 
     const body = JSON.stringify(getUploadUrlReq);
-    const response = await fetch(`${this.config.baseUrl}/ilink/bot/getuploadurl`, {
+    const response = await this.requestIlink('bot/getuploadurl', {
       method: 'POST',
       headers: buildHeaders(this.config.token, body),
       body
@@ -837,7 +875,7 @@ export class ClawBotService {
       base_info: buildBaseInfo()
     });
 
-    const response = await fetch(`${this.config.baseUrl}/ilink/bot/getconfig`, {
+    const response = await this.requestIlink('bot/getconfig', {
       method: 'POST',
       headers: buildHeaders(this.config.token, body),
       body
@@ -866,7 +904,7 @@ export class ClawBotService {
       base_info: buildBaseInfo()
     });
 
-    const response = await fetch(`${this.config.baseUrl}/ilink/bot/sendtyping`, {
+    const response = await this.requestIlink('bot/sendtyping', {
       method: 'POST',
       headers: buildHeaders(this.config.token, body),
       body
