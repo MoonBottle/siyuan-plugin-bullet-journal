@@ -54,17 +54,21 @@
 
               <div v-if="connectedUsers.length > 0" class="weixin-sheet__users">
                 <div class="weixin-sheet__users-title">
-                  最近消息 ({{ connectedUsers.length }} 个对话)
+                  微信会话 ({{ connectedUsers.length }})
                 </div>
                 <div class="weixin-sheet__users-list">
                   <div
                     v-for="user in connectedUsers"
                     :key="user.id"
                     class="weixin-sheet__user-item"
-                    @click="handleUserClick(user.conversationId)"
+                    @click="handleUserClick(user.conversationId, user.id)"
                   >
                     <span class="weixin-sheet__user-icon">📱</span>
                     <span class="weixin-sheet__user-name">{{ user.name }}</span>
+                    <span
+                      class="weixin-sheet__user-status"
+                      :class="`weixin-sheet__user-status--${user.status.tone}`"
+                    >{{ user.status.label }}</span>
                     <span v-if="user.unread > 0" class="weixin-sheet__user-unread">
                       {{ user.unread }}
                     </span>
@@ -167,7 +171,7 @@ const statusText = computed(() => {
 });
 
 const connectedUsers = computed(() => {
-  const users: Array<{ id: string; name: string; conversationId: string; unread: number }> = [];
+  const users: Array<{ id: string; name: string; conversationId: string; unread: number; status: any }> = [];
 
   const conversationMap = aiStore.weixinConversationMap || {};
   const unreadMessages = aiStore.unreadWeixinMessages || {};
@@ -181,6 +185,7 @@ const connectedUsers = computed(() => {
       name: map.userName || `用户 ${userId.slice(0, 8)}`,
       conversationId: map.conversationId,
       unread,
+      status: aiStore.getWeixinConversationStatus(userId),
     });
   }
 
@@ -231,7 +236,8 @@ async function handleDisconnect() {
   stopPolling();
 }
 
-function handleUserClick(conversationId: string) {
+function handleUserClick(conversationId: string, userId: string) {
+  aiStore.clearWeixinUnread(userId);
   emit('switch-conversation', conversationId);
   close();
 }
@@ -527,6 +533,34 @@ onUnmounted(() => {
   flex: 1;
   font-size: 14px;
   color: var(--b3-theme-on-background);
+}
+
+.weixin-sheet__user-status {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+  line-height: 1.4;
+
+  &--positive {
+    background: rgba(7, 193, 96, 0.15);
+    color: #07c160;
+  }
+
+  &--warning {
+    background: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+  }
+
+  &--neutral {
+    background: rgba(100, 116, 139, 0.15);
+    color: #64748b;
+  }
+
+  &--negative {
+    background: rgba(144, 144, 144, 0.15);
+    color: #909090;
+  }
 }
 
 .weixin-sheet__user-unread {

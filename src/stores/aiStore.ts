@@ -860,6 +860,14 @@ export const useAIStore = defineStore('ai', () => {
     return WEIXIN_STATUS_MAP.waiting;
   }
 
+  function clearWeixinUnread(userId: string) {
+    if (unreadWeixinMessages.value[userId]) {
+      delete unreadWeixinMessages.value[userId];
+      clawBotStats.value.unreadCount = Object.values(unreadWeixinMessages.value)
+        .reduce((a, b) => a + b, 0);
+    }
+  }
+
   /**
    * 初始化 ClawBot 服务
    */
@@ -1508,6 +1516,7 @@ export const useAIStore = defineStore('ai', () => {
     unreadWeixinMessages,
     initializeClawBot,
     getWeixinConversationStatus,
+    clearWeixinUnread,
     startClawBotLogin,
     pollClawBotLogin,
     disconnectClawBot,

@@ -163,11 +163,16 @@ describe('MobileWeixinSheet', () => {
       },
     };
     mockAiStore.unreadWeixinMessages = { user1: 2 };
+    mockAiStore.getWeixinConversationStatus = vi.fn().mockReturnValue({
+      status: 'active',
+      label: '进行中',
+      tone: 'positive',
+    });
 
     const mounted = mountSheet();
     await flush();
 
-    expect(document.body.textContent).toContain('最近消息');
+    expect(document.body.textContent).toContain('微信会话');
     expect(document.body.textContent).toContain('Test User');
     expect(document.body.querySelector('.weixin-sheet__user-unread')?.textContent?.trim()).toBe('2');
 
