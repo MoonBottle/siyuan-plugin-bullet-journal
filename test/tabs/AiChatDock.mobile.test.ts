@@ -16,6 +16,7 @@ const mockAiStore = {
   showToolCallsEnabled: false,
   isClawBotConnected: false,
   hasUnreadWeixin: false,
+  getWeixinConversationStatus: vi.fn(),
   providers: [],
   activeProviderId: null,
   initializeStorage: vi.fn().mockResolvedValue(undefined),
@@ -181,6 +182,13 @@ function mountDock() {
   };
 }
 
+async function flushDock() {
+  await Promise.resolve();
+  await nextTick();
+  await Promise.resolve();
+  await nextTick();
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   document.body.innerHTML = '';
@@ -189,6 +197,23 @@ beforeEach(() => {
   mockAiStore.currentConversationId = 'conv-1';
   mockAiStore.isClawBotConnected = false;
   mockAiStore.hasUnreadWeixin = false;
+  mockAiStore.getWeixinConversationStatus.mockReset();
+  mockAiStore.getWeixinConversationStatus.mockReturnValue({
+    status: 'active',
+    label: '进行中',
+    tone: 'positive',
+  });
+  mockAiStore.getConversationsList.mockResolvedValue([
+    {
+      id: 'conv-1',
+      title: 'Test',
+      createdAt: 1,
+      updatedAt: 1,
+      messageCount: 0,
+      fileSize: 10,
+      hasSkillExecutions: false,
+    },
+  ]);
   ;(globalThis as any).BroadcastChannel = vi.fn(() => ({ close: vi.fn() }));
 });
 
@@ -201,7 +226,7 @@ describe('AiChatDock mobile clawbot gating', () => {
     mockPlugin.isMobile = true;
 
     const mounted = mountDock();
-    await nextTick();
+    await flushDock();
 
     expect(mounted.container.querySelector('.weixin-btn')).toBeNull();
     expect(mounted.container.querySelector('[data-testid="weixin-login-dialog-stub"]')).toBeNull();
@@ -213,12 +238,38 @@ describe('AiChatDock mobile clawbot gating', () => {
     mockPlugin.isMobile = false;
 
     const mounted = mountDock();
-    await nextTick();
+    await flushDock();
 
     expect(mounted.container.querySelector('[data-testid="conversation-select-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('.weixin-btn')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="weixin-icon-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="weixin-login-dialog-stub"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('uses weixinUserId for the current weixin conversation status on desktop', async () => {
+    mockPlugin.isMobile = false;
+    mockAiStore.currentConversationId = 'conv-weixin';
+    mockAiStore.getConversationsList.mockResolvedValue([
+      {
+        id: 'conv-weixin',
+        title: '微信会话',
+        createdAt: 1,
+        updatedAt: 2,
+        messageCount: 1,
+        fileSize: 10,
+        hasSkillExecutions: false,
+        source: 'weixin',
+        weixinUserId: 'user@im.wechat',
+        weixinUserName: '展示名',
+      },
+    ]);
+
+    const mounted = mountDock();
+    await flushDock();
+
+    expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalledWith('user@im.wechat');
 
     mounted.unmount();
   });

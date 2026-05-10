@@ -12,8 +12,10 @@ const mockAiStore = {
     errorMessage: '',
     accountId: '',
   },
+  clawBotForwardProxyAvailable: true,
   weixinConversationMap: {} as Record<string, any>,
   unreadWeixinMessages: {} as Record<string, number>,
+  getWeixinConversationStatus: vi.fn(),
   startClawBotLogin: vi.fn(),
   pollClawBotLogin: vi.fn(),
   disconnectClawBot: vi.fn(),
@@ -48,9 +50,16 @@ describe('MobileWeixinSheet', () => {
     document.body.innerHTML = '';
     mockAiStore.clawBotLoginStatus = 'none';
     mockAiStore.isClawBotConnected = false;
+    mockAiStore.clawBotForwardProxyAvailable = true;
     mockAiStore.clawBotConfig = { qrcodeUrl: '', errorMessage: '', accountId: '' };
     mockAiStore.weixinConversationMap = {};
     mockAiStore.unreadWeixinMessages = {};
+    mockAiStore.getWeixinConversationStatus.mockReset();
+    mockAiStore.getWeixinConversationStatus.mockReturnValue({
+      status: 'active',
+      label: '进行中',
+      tone: 'positive',
+    });
     mockAiStore.startClawBotLogin.mockResolvedValue({ qrcodeUrl: 'https://example.com/qr', sessionKey: 'sk' });
     mockAiStore.pollClawBotLogin.mockResolvedValue(true);
     mockAiStore.disconnectClawBot.mockResolvedValue(undefined);

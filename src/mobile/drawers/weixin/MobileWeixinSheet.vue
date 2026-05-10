@@ -143,11 +143,10 @@ const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
 const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
 const errorMessage = computed(() => {
-  const config = aiStore.clawBotConfig;
-  if (config.baseUrl && !config.baseUrl.startsWith('http://127.0.0.1')) {
+  if (!aiStore.clawBotForwardProxyAvailable && aiStore.clawBotLoginStatus !== 'connected') {
     return '本地代理不可用，请重新加载插件';
   }
-  return config.errorMessage;
+  return aiStore.clawBotConfig.errorMessage;
 });
 const accountId = computed(() => aiStore.clawBotConfig.accountId);
 

@@ -10,6 +10,7 @@ const mockAiStore = {
   showToolCallsEnabled: false,
   isClawBotConnected: false,
   hasUnreadWeixin: false,
+  getWeixinConversationStatus: vi.fn(),
   loadSettings: vi.fn(),
   getConversationsList: vi.fn(),
   createConversation: vi.fn(),
@@ -119,6 +120,12 @@ describe('MobileAiPanel', () => {
     document.body.innerHTML = '';
     mockAiStore.currentConversation = { id: 'conv-1', title: '新对话', messages: [], createdAt: 1, updatedAt: 1 };
     mockAiStore.currentConversationId = 'conv-1';
+    mockAiStore.getWeixinConversationStatus.mockReset();
+    mockAiStore.getWeixinConversationStatus.mockReturnValue({
+      status: 'active',
+      label: '进行中',
+      tone: 'positive',
+    });
     mockAiStore.loadSettings.mockReset();
     mockAiStore.createConversation.mockResolvedValue('conv-new');
     mockAiStore.switchConversation.mockResolvedValue(undefined);
@@ -163,6 +170,31 @@ describe('MobileAiPanel', () => {
       activeProviderId: 'provider-1',
       showToolCalls: true,
     });
+
+    mounted.unmount();
+  });
+
+  it('uses weixinUserId to derive the current weixin conversation status', async () => {
+    mockAiStore.currentConversationId = 'conv-weixin';
+    mockAiStore.getConversationsList.mockResolvedValue([
+      {
+        id: 'conv-weixin',
+        title: '微信会话',
+        createdAt: 1,
+        updatedAt: 2,
+        messageCount: 1,
+        fileSize: 10,
+        hasSkillExecutions: false,
+        source: 'weixin',
+        weixinUserId: 'user@im.wechat',
+        weixinUserName: '展示名',
+      },
+    ]);
+
+    const mounted = mountPanel();
+    await flushPanelUpdates();
+
+    expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalledWith('user@im.wechat');
 
     mounted.unmount();
   });

@@ -89,6 +89,7 @@ export const useAIStore = defineStore('ai', () => {
     unreadCount: 0,
     connectedUsers: 0
   });
+  const clawBotForwardProxyAvailable = ref(true);
   
   // 当前登录会话 Key
   let currentQRSessionKey: string | null = null;
@@ -832,8 +833,36 @@ export const useAIStore = defineStore('ai', () => {
     offline: { status: 'offline', label: '不可用', tone: 'negative' },
   };
 
+  async function restoreWeixinConversationMapFromStorage() {
+    if (!storageService) {
+      return;
+    }
+
+    const conversations = await storageService.loadConversationsList();
+    const weixinConversations = conversations.filter(
+      conversation => conversation.source === 'weixin' && conversation.weixinUserId,
+    );
+
+    for (const conversation of weixinConversations) {
+      if (!conversation.weixinUserId || weixinConversationMap.value[conversation.weixinUserId]) {
+        continue;
+      }
+
+      weixinConversationMap.value[conversation.weixinUserId] = {
+        ilinkUserId: conversation.weixinUserId,
+        conversationId: conversation.id,
+        contextToken: undefined,
+        contextState: 'unknown',
+        lastMessageAt: conversation.updatedAt || 0,
+        userName: conversation.weixinUserName,
+      };
+    }
+
+    clawBotStats.value.connectedUsers = Object.keys(weixinConversationMap.value).length;
+  }
+
   function isProxyActive(): boolean {
-    return true;
+    return clawBotForwardProxyAvailable.value;
   }
 
   function getWeixinConversationStatus(userId: string): WeixinConversationStatusResult {
@@ -876,6 +905,7 @@ export const useAIStore = defineStore('ai', () => {
     
     // 保存 plugin 实例引用
     plugin = pluginInstance;
+    clawBotForwardProxyAvailable.value = forwardProxyAvailable;
 
     if (!isClawBotAllowedOnCurrentFrontend()) {
       stopClawBotHealthCheck();
@@ -913,6 +943,8 @@ export const useAIStore = defineStore('ai', () => {
         clawBotConfig.value.cdnBaseUrl = loginState.cdnBaseUrl;
       }
     }
+
+    await restoreWeixinConversationMapFromStorage();
     
     // 检查是否启用
     if (!clawBotConfig.value.enabled) {
@@ -1390,24 +1422,12 @@ export const useAIStore = defineStore('ai', () => {
       if (userIds.length === 0 && storageService) {
         console.log('[AIStore] 内存 map 为空，尝试从持久化恢复...');
         try {
+          await restoreWeixinConversationMapFromStorage();
           const conversations = await storageService.loadConversationsList();
-          console.log('[AIStore] 加载到会话列表:', conversations.length, '条');
           const weixinConvos = conversations.filter(
             (c: any) => c.source === 'weixin' && c.weixinUserId
           );
           console.log('[AIStore] 微信会话:', weixinConvos.length, '条', weixinConvos.map((c: any) => ({ id: c.id, source: c.source, weixinUserId: c.weixinUserId })));
-          for (const c of weixinConvos) {
-            if (!weixinConversationMap.value[c.weixinUserId]) {
-              weixinConversationMap.value[c.weixinUserId] = {
-                ilinkUserId: c.weixinUserId,
-                conversationId: c.id,
-                contextToken: undefined,
-                contextState: 'unknown',
-                lastMessageAt: c.updatedAt || 0,
-                userName: c.weixinUserName
-              };
-            }
-          }
           userIds = Object.keys(weixinConversationMap.value);
           console.log('[AIStore] 恢复后 userIds:', userIds);
         } catch (err) {
@@ -1514,6 +1534,7 @@ export const useAIStore = defineStore('ai', () => {
     clawBotLoginStatus,
     hasUnreadWeixin,
     unreadWeixinMessages,
+    clawBotForwardProxyAvailable,
     initializeClawBot,
     getWeixinConversationStatus,
     clearWeixinUnread,

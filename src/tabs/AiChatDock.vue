@@ -183,8 +183,8 @@ const currentConversation = computed(() => {
 
 const currentWeixinStatus = computed(() => {
   const conv = currentConversation.value;
-  if (!conv || conv.source !== 'weixin' || !conv.weixinUserName) return null;
-  return aiStore.getWeixinConversationStatus(conv.weixinUserName);
+  if (!conv || conv.source !== 'weixin' || !conv.weixinUserId) return null;
+  return aiStore.getWeixinConversationStatus(conv.weixinUserId);
 });
 const clawBotTooltip = computed(() => {
   if (isClawBotConnected.value) {

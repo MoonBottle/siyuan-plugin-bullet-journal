@@ -401,6 +401,50 @@ describe('aiStore clawbot context management', () => {
     expect(conversations.find(c => c.source === 'weixin')).toBeDefined()
   })
 
+  it('restores weixin conversation map from persisted conversations during clawbot init', async () => {
+    const store = useAIStore()
+    const loadWechatLoginState = vi.fn().mockResolvedValue({
+      enabled: true,
+      token: 'token',
+      accountId: 'account',
+      loginStatus: 'connected',
+    })
+
+    mockStorageService.loadConversationsList.mockResolvedValue([
+      {
+        id: 'conv-weixin',
+        title: 'Weixin',
+        createdAt: 2,
+        updatedAt: 20,
+        messageCount: 1,
+        fileSize: 20,
+        hasSkillExecutions: false,
+        source: 'weixin',
+        weixinUserId: 'user@im.wechat',
+        weixinUserName: '微信用户',
+      },
+    ])
+
+    await store.initializeStorage({
+      isMobile: true,
+      loadWechatLoginState,
+    })
+
+    expect(Object.keys(store.weixinConversationMap)).toHaveLength(0)
+
+    await store.initializeClawBot({
+      isMobile: true,
+      loadWechatLoginState,
+    })
+
+    expect(store.weixinConversationMap['user@im.wechat']).toMatchObject({
+      ilinkUserId: 'user@im.wechat',
+      conversationId: 'conv-weixin',
+      userName: '微信用户',
+      contextState: 'unknown',
+    })
+  })
+
   it('uses the first user message as the title for a new untitled conversation', async () => {
     const store = useAIStore()
     await store.initializeStorage({})
