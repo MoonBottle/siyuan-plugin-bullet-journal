@@ -36,6 +36,11 @@
               📱
             </span>
             <span class="conversation-select__item-title">{{ conversation.title }}</span>
+            <span
+              v-if="conversation.source === 'weixin' && conversation.weixinUserName"
+              class="conversation-select__status-badge"
+              :class="`conversation-select__status-badge--${getWeixinStatus(conversation.weixinUserName).tone}`"
+            >{{ getWeixinStatus(conversation.weixinUserName).label }}</span>
             <button
               class="conversation-select__delete-btn"
               @click.stop="deleteConversation(conversation.id)"
@@ -54,6 +59,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
 import { t } from '@/i18n';
+import { useAIStore } from '@/stores';
 
 interface ConversationListItem {
   id: string;
@@ -69,6 +75,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const aiStore = useAIStore();
+
 const emit = defineEmits<{
   select: [conversationId: string];
   delete: [conversationId: string];
@@ -79,6 +87,10 @@ const isOpen = ref(false);
 const menuRef = ref<HTMLElement>();
 const triggerRef = ref<HTMLElement>();
 const menuStyle = ref<Record<string, string>>({});
+
+function getWeixinStatus(userId: string) {
+  return aiStore.getWeixinConversationStatus(userId);
+}
 
 // 当前对话标题
 const currentConversationTitle = computed(() => {
@@ -255,6 +267,35 @@ const vClickOutside = {
   &__source-icon {
     margin-right: 4px;
     font-size: 12px;
+  }
+
+  &__status-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-right: 6px;
+    white-space: nowrap;
+    line-height: 1.4;
+
+    &--positive {
+      background: rgba(7, 193, 96, 0.15);
+      color: #07c160;
+    }
+
+    &--warning {
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+    }
+
+    &--neutral {
+      background: rgba(100, 116, 139, 0.15);
+      color: #64748b;
+    }
+
+    &--negative {
+      background: rgba(144, 144, 144, 0.15);
+      color: #909090;
+    }
   }
 
   &__item.is-weixin {

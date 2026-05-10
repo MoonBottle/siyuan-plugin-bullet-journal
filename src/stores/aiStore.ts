@@ -819,6 +819,47 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
   
+  type WeixinConversationStatusResult = {
+    status: 'active' | 'stale' | 'waiting' | 'offline';
+    label: string;
+    tone: 'positive' | 'warning' | 'neutral' | 'negative';
+  };
+
+  const WEIXIN_STATUS_MAP: Record<string, WeixinConversationStatusResult> = {
+    active: { status: 'active', label: '进行中', tone: 'positive' },
+    stale: { status: 'stale', label: '需恢复', tone: 'warning' },
+    waiting: { status: 'waiting', label: '等待中', tone: 'neutral' },
+    offline: { status: 'offline', label: '不可用', tone: 'negative' },
+  };
+
+  function isProxyActive(): boolean {
+    return clawBotConfig.value.baseUrl.startsWith('http://127.0.0.1');
+  }
+
+  function getWeixinConversationStatus(userId: string): WeixinConversationStatusResult {
+    if (!clawBotStats.value.isConnected || !isProxyActive()) {
+      return WEIXIN_STATUS_MAP.offline;
+    }
+
+    const conv = (weixinConversationMap.value as Record<string, any>)?.[userId];
+    if (!conv) {
+      return WEIXIN_STATUS_MAP.offline;
+    }
+
+    if (conv.contextState === 'active') {
+      if (conv.lastContextErrorAt && Date.now() - conv.lastContextErrorAt < 5 * 60 * 1000) {
+        return WEIXIN_STATUS_MAP.stale;
+      }
+      return WEIXIN_STATUS_MAP.active;
+    }
+
+    if (conv.contextState === 'stale' || conv.lastContextErrorAt) {
+      return WEIXIN_STATUS_MAP.stale;
+    }
+
+    return WEIXIN_STATUS_MAP.waiting;
+  }
+
   /**
    * 初始化 ClawBot 服务
    */
@@ -1467,6 +1508,7 @@ export const useAIStore = defineStore('ai', () => {
     hasUnreadWeixin,
     unreadWeixinMessages,
     initializeClawBot,
+    getWeixinConversationStatus,
     startClawBotLogin,
     pollClawBotLogin,
     disconnectClawBot,

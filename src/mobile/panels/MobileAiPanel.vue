@@ -54,6 +54,14 @@
         </button>
       </header>
 
+      <div
+        v-if="currentWeixinStatus && currentConversation?.source === 'weixin'"
+        class="mobile-ai-panel__weixin-status"
+        :class="`mobile-ai-panel__weixin-status--${currentWeixinStatus.tone}`"
+      >
+        {{ currentWeixinStatus.label }}
+      </div>
+
       <ChatPanel
         ref="chatPanelRef"
         class="mobile-ai-panel__chat-panel"
@@ -123,6 +131,18 @@ const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
 const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
 const currentTitle = computed(() => {
   return aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle;
+});
+
+const currentConversation = computed(() => {
+  const convId = aiStore.currentConversationId;
+  if (!convId) return null;
+  return conversationsList.value.find(c => c.id === convId) || null;
+});
+
+const currentWeixinStatus = computed(() => {
+  const conv = currentConversation.value;
+  if (!conv || conv.source !== 'weixin' || !conv.weixinUserName) return null;
+  return aiStore.getWeixinConversationStatus(conv.weixinUserName);
 });
 
 function loadAISettingsFromPlugin() {
@@ -270,6 +290,33 @@ onMounted(async () => {
   }
 
   &__chat-panel {
+
+  &__weixin-status {
+    font-size: 11px;
+    padding: 2px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter);
+
+    &--positive {
+      background: rgba(7, 193, 96, 0.08);
+      color: #07c160;
+    }
+
+    &--warning {
+      background: rgba(255, 152, 0, 0.08);
+      color: #ff9800;
+    }
+
+    &--neutral {
+      background: rgba(100, 116, 139, 0.08);
+      color: #64748b;
+    }
+
+    &--negative {
+      background: rgba(144, 144, 144, 0.08);
+      color: #909090;
+    }
+  }
     flex: 1;
     min-height: 0;
   }
