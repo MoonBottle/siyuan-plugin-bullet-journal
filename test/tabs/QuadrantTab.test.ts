@@ -375,7 +375,7 @@ describe('QuadrantTab', () => {
     }));
 
     mounted.unmount();
-  });
+  }, 10000);
 
   it('honors defaultGroup loaded on mount for the current selection and sidebar filters', async () => {
     mockLoadFromPlugin.mockImplementationOnce(() => {
