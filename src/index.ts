@@ -390,11 +390,6 @@ export default class TaskAssistantPlugin extends Plugin {
       const aiStore = useAIStore(pinia);
       await aiStore.initializeStorage(this);
 
-      if (this.isMobile) {
-        console.log("[Task Assistant] Skip ClawBot initialization on mobile");
-        return;
-      }
-
       await aiStore.initializeClawBot(this);
       console.log("[Task Assistant] ClawBot initialized from plugin onload");
     } catch (error) {
