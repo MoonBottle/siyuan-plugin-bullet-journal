@@ -96,7 +96,7 @@ import {
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService";
 import { CleanupManager } from "@/utils/cleanupManager";
-import { createClawBotProxyServer, type ProxyServerInstance } from "@/services/clawBotProxyServer";
+import { createClawBotProxyServer, canStartProxy, type ProxyServerInstance } from "@/services/clawBotProxyServer";
 import {
   type FloatingPomodoroLabels,
   type FloatingPomodoroSourceState,
@@ -394,8 +394,12 @@ export default class TaskAssistantPlugin extends Plugin {
       await aiStore.initializeStorage(this);
 
       try {
-        this.clawBotProxy = await createClawBotProxyServer();
-        console.log("[Task Assistant] ClawBot proxy started on port", this.clawBotProxy.port);
+        if (canStartProxy()) {
+          this.clawBotProxy = await createClawBotProxyServer();
+          console.log("[Task Assistant] ClawBot proxy started on port", this.clawBotProxy.port);
+        } else {
+          console.log("[Task Assistant] ClawBot proxy not available (node:http unsupported), using direct requests");
+        }
       } catch (proxyError) {
         console.error("[Task Assistant] Failed to start ClawBot proxy:", proxyError);
       }

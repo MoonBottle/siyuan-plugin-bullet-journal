@@ -64,6 +64,15 @@ function filterHeaders(headers: Record<string, string | string[] | undefined>): 
   return result;
 }
 
+export function canStartProxy(): boolean {
+  try {
+    const http = require('node:http');
+    return typeof http?.createServer === 'function';
+  } catch {
+    return false;
+  }
+}
+
 export async function createClawBotProxyServer(options: CreateProxyOptions = {}): Promise<ProxyServerInstance> {
   const preferredPort = options.preferredPort ?? DEFAULT_PORT;
   const maxPort = options.maxPort ?? DEFAULT_MAX_PORT;
