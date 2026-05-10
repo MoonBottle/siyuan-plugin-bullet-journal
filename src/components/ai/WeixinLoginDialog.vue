@@ -149,7 +149,13 @@ const pollInterval = ref<number | null>(null);
 const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
 const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
-const errorMessage = computed(() => aiStore.clawBotConfig.errorMessage);
+const errorMessage = computed(() => {
+  const config = aiStore.clawBotConfig;
+  if (!config.baseUrl.startsWith('http://127.0.0.1')) {
+    return '本地代理不可用，请重新加载插件';
+  }
+  return config.errorMessage;
+});
 const accountId = computed(() => aiStore.clawBotConfig.accountId);
 
 const statusText = computed(() => {
