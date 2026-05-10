@@ -21,6 +21,18 @@
         >
           <svg class="mobile-ai-panel__icon-svg"><use xlink:href="#iconHistory"></use></svg>
         </button>
+        <button
+          class="mobile-ai-panel__icon-button"
+          :class="{ 'mobile-ai-panel__icon-button--weixin-active': isClawBotConnected }"
+          type="button"
+          aria-label="微信 ClawBot"
+          @click="showWeixinSheet = true"
+        >
+          <span class="mobile-ai-panel__weixin-wrap">
+            <WeixinIcon :is-connected="isClawBotConnected" />
+            <span v-if="hasUnreadWeixin" class="mobile-ai-panel__unread-badge"></span>
+          </span>
+        </button>
         <div class="mobile-ai-panel__title">{{ currentTitle }}</div>
         <button
           class="mobile-ai-panel__icon-button"
@@ -73,15 +85,22 @@
       icon="iconTrashcan"
       @confirm="handleConfirmClear"
     />
+
+    <MobileWeixinSheet
+      v-model="showWeixinSheet"
+      @switch-conversation="handleWeixinSwitch"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
 import ChatPanel from '@/components/ai/ChatPanel.vue';
+import WeixinIcon from '@/components/icons/WeixinIcon.vue';
 import { t } from '@/i18n';
 import { getCurrentPlugin } from '@/main';
 import MobileConfirmDrawer from '@/mobile/drawers/confirm/MobileConfirmDrawer.vue';
+import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue';
 import MobileAiConversationListPage from '@/mobile/components/ai/MobileAiConversationListPage.vue';
 import { useAIStore, useProjectStore, useSettingsStore } from '@/stores';
 import type { ConversationIndexItem } from '@/services/conversationStorageService';
@@ -95,10 +114,13 @@ const conversationsList = ref<ConversationIndexItem[]>([]);
 const isLoadingHistory = ref(false);
 const showDeleteConfirm = ref(false);
 const showClearConfirm = ref(false);
+const showWeixinSheet = ref(false);
 const chatPanelRef = ref<InstanceType<typeof ChatPanel> | null>(null);
 const pendingDeleteConversationId = ref<string | null>(null);
 
 const allItems = computed(() => projectStore.items || []);
+const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
+const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
 const currentTitle = computed(() => {
   return aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle;
 });
@@ -184,6 +206,14 @@ async function handleConfirmClear() {
   await aiStore.clearCurrentConversation();
 }
 
+async function handleWeixinSwitch(conversationId: string) {
+  showWeixinSheet.value = false;
+  await aiStore.switchConversation(conversationId);
+  viewMode.value = 'chat';
+  await nextTick();
+  chatPanelRef.value?.focusInput?.();
+}
+
 onMounted(async () => {
   loadAISettingsFromPlugin();
   await ensureConversation();
@@ -199,7 +229,7 @@ onMounted(async () => {
 
   &__header {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: auto auto 1fr auto auto;
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
@@ -242,6 +272,25 @@ onMounted(async () => {
   &__chat-panel {
     flex: 1;
     min-height: 0;
+  }
+
+  &__icon-button--weixin-active {
+    color: #07c160;
+  }
+
+  &__weixin-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  &__unread-badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--b3-theme-error, #ef4444);
   }
 }
 </style>
