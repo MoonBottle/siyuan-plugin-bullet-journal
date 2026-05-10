@@ -39,9 +39,14 @@ export async function forwardProxy(params: ForwardProxyParams): Promise<ForwardP
     contentType: params.contentType ?? 'application/json',
     headers: params.headers ?? [],
     payload: params.payload ?? '',
-    payloadEncoding: params.payloadEncoding ?? 'text',
-    responseEncoding: params.responseEncoding ?? 'text',
   };
+
+  if (params.payloadEncoding) {
+    body.payloadEncoding = params.payloadEncoding;
+  }
+  if (params.responseEncoding) {
+    body.responseEncoding = params.responseEncoding;
+  }
 
   const response = await fetchSyncPost(API_PATH, body) as any;
 
