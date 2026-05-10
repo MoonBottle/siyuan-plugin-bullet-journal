@@ -203,6 +203,7 @@ async function handleSelectConversation(conversationId: string) {
   await aiStore.switchConversation(conversationId);
   viewMode.value = 'chat';
   await nextTick();
+  chatPanelRef.value?.scrollToBottom?.();
   chatPanelRef.value?.focusInput?.();
 }
 
@@ -252,6 +253,7 @@ async function handleWeixinSwitch(conversationId: string) {
   await aiStore.switchConversation(conversationId);
   viewMode.value = 'chat';
   await nextTick();
+  chatPanelRef.value?.scrollToBottom?.();
   chatPanelRef.value?.focusInput?.();
 }
 

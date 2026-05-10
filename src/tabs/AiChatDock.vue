@@ -248,6 +248,8 @@ async function handleWeixinConversationSwitch(conversationId: string) {
 
   await aiStore.switchConversation(conversationId);
   await refreshConversationsList();
+  await nextTick();
+  chatPanelRef.value?.scrollToBottom?.();
 }
 
 // 获取所有事项

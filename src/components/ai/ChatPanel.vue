@@ -510,7 +510,8 @@ async function handleInsertToNote(message: ChatMessageType) {
 }
 
 defineExpose({
-  focusInput
+  focusInput,
+  scrollToBottom,
 });
 
 // 格式化时间
