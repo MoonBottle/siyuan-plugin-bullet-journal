@@ -1,4 +1,4 @@
-# ClawBot 本地代理设计
+# ClawBot 代理设计
 
 日期: 2026-05-10
 
@@ -16,13 +16,13 @@
 
 这不是前端 `fetch` 参数问题，而是浏览器安全边界问题。只要请求仍由前端页面直接发往微信域名，移动端就会持续失败。
 
-目标是为 `ClawBot` 增加一条独立于 MCP 的本地 HTTP 代理链路，使前端只请求本地地址，由插件内代理服务完成对微信接口和 CDN 的转发。
+目标是为 `ClawBot` 增加一条独立于 MCP 的代理链路，使前端通过思源内核的 `forwardProxy` API 完成对微信接口和 CDN 的转发，避免跨域问题。
 
 ## 目标
 
 1. 解决移动端 `ClawBot` 登录、长轮询、发消息、媒体下载的跨域问题
 2. 不修改 `ClawBot` 上层业务流程和会话状态模型
-3. 不引入 MCP 依赖，不要求思源 API token
+3. 不引入 MCP 依赖，不要求思源 API token（本机访问自动放行）
 4. 让桌面端和移动端使用同一条请求链路，减少双轨维护
 
 ## 非目标
@@ -34,25 +34,24 @@
 
 ## 方案选择
 
-选择**方案 A：插件内常驻本地 HTTP 代理 + `ClawBotService` 统一 transport 层**。
+选择**方案 D：利用思源内核 `forwardProxy` API + `ClawBotService` 统一 transport 层**。
 
 备选方案对比：
 
 ### 方案 A：插件内常驻本地代理
 
-- 插件 `onload()` 启动本地 HTTP 服务
+- 插件 `onload()` 启动本地 HTTP 服务（`node:http`）
 - `ClawBotService` 所有请求统一改走本地代理
 
 优点：
 
 - 和 `ClawBot` 功能完全解耦，不依赖 MCP
-- 对现有 UI、store、消息处理链路最透明
-- 一次收敛所有微信接口，避免后续继续补 `sendmessage`、`getuploadurl`、`sendtyping` 等跨域洞
 
 缺点：
 
+- **SiYuan 插件运行在浏览器渲染进程，`node:http.createServer` 不可用**（已验证失败）
 - 需要处理端口占用与服务生命周期
-- 需要新增一层本地转发代码
+- 移动端 WebView 可能无法访问 `127.0.0.1`
 
 ### 方案 B：只代理已报错接口
 
@@ -65,7 +64,7 @@
 缺点：
 
 - 只是局部修补，后续仍会在其他微信接口上继续撞到同类 CORS 问题
-- 前端会长期处于“部分直连、部分代理”的混合状态
+- 前端会长期处于"部分直连、部分代理"的混合状态
 
 ### 方案 C：独立 companion 服务
 
@@ -78,96 +77,99 @@
 缺点：
 
 - 部署和运维成本更高
-- 与“只解决 ClawBot”目标相比过重
+- 与"只解决 ClawBot"目标相比过重
 
-最终选用方案 A。
+### 方案 D：思源内核 forwardProxy（最终选用）
+
+- 利用思源内核已有的 `/api/network/forwardProxy` API
+- `ClawBotService` 所有请求通过 `fetchSyncPost` 发到本地内核，由内核 Go 服务完成对微信域名的转发
+
+优点：
+
+- **无需额外启动本地服务**，内核已在运行
+- 内核是本地 Go HTTP 服务，不受浏览器 CORS 限制
+- 桌面端和移动端完全统一链路
+- 本机访问自动通过认证（`CheckAuth` 中间件对 127.0.0.1 自动放行）
+- 无端口探测、无生命周期管理
+- 构建产物不再依赖 `node:http`，消除 externalized 警告
+
+缺点：
+
+- 响应体通过 JSON 包裹（`{code, msg, data: {body, status, ...}}`），需在 transport 层解包
+- 默认超时 7s，长轮询需显式设置大 `timeout`（60s）
+- 二进制响应需用 `base64` 编解码
+- 一次性读取全部响应体，无流式传输
 
 ## 总体设计
 
 系统分为两层：
 
 1. **前端业务层**：保留现有 `ClawBotService`、`aiStore`、`WeixinLoginDialog`、`MobileWeixinSheet`
-2. **本地代理层**：新增插件内 HTTP 代理服务，仅负责请求转发和 CORS 响应
+2. **内核代理层**：利用思源内核 `/api/network/forwardProxy`，负责请求转发
 
 职责边界如下：
 
 - `ClawBotService` 继续负责登录状态、token、会话映射、长轮询控制、错误语义映射
-- 本地代理只负责接收本地请求、转发到微信域名、返回结果
-- 代理不持有 `ClawBot` 业务状态，不管理会话、不缓存 token、不存储消息
+- 内核代理只负责接收本地请求、转发到微信域名、返回结果
+- 内核不持有 `ClawBot` 业务状态，不管理会话、不缓存 token、不存储消息
 
 ## 接口边界
 
-前端统一请求本地基址：
+前端通过思源 SDK 的 `fetchSyncPost('/api/network/forwardProxy', ...)` 发起请求。
 
-- `http://127.0.0.1:<port>/clawbot`
+请求参数中 `url` 字段使用完整微信 URL：
 
-代理层只开放两类前缀：
+- `https://ilinkai.weixin.qq.com/ilink/bot/...`
+- `https://cdn.weixin.qq.com/...`
 
-1. `GET/POST /clawbot/ilink/...`
-2. `GET /clawbot/cdn/...`
-
-映射规则：
-
-- `/clawbot/ilink/...` -> `https://ilinkai.weixin.qq.com/ilink/...`
-- `/clawbot/cdn/...` -> `https://cdn.weixin.qq.com/...`
-
-代理不提供通用 URL 透传接口，前端不能传任意目标地址。
+代理不提供通用 URL 透传接口，前端只能传入微信域名 URL。`clawBotForwardProxy.ts` 封装层负责构建正确参数。
 
 ## 需要纳入代理的 ClawBot 请求
 
-现有 `ClawBotService` 中以下请求统一切到代理层：
+现有 `ClawBotService` 中以下请求统一切到 `forwardProxy`：
 
 1. 登录二维码：`get_bot_qrcode`
 2. 扫码状态：`get_qrcode_status`
-3. 长轮询：`getupdates`
+3. 长轮询：`getupdates`（timeout: 60000ms）
 4. 发消息：`sendmessage`
 5. 消息通知开始：`msg/notifystart`
 6. 上传前签名：`getuploadurl`
-7. 远端配置：`getconfig`
-8. 输入中状态：`sendtyping`
-9. CDN 媒体下载：当前 `media.full_url` 对应资源
+7. 上传文件到 CDN：`upload_full_url`（PUT 请求）
+8. 远端配置：`getconfig`
+9. 输入中状态：`sendtyping`
+10. CDN 媒体下载：当前 `media.full_url` 对应资源（base64 编解码）
 
-这样做后，`ClawBotService` 不再直接请求微信域名或 CDN 域名。
+这样做后，`ClawBotService` 不再直接 `fetch` 微信域名或 CDN 域名。
 
-## 生命周期与端口策略
+## 内核 forwardProxy 能力
 
-本地代理按插件生命周期常驻：
+思源内核的 `/api/network/forwardProxy` 提供以下能力：
 
-- 插件 `onload()` 启动代理
-- 插件 `onunload()` 停止代理
+- 支持 `GET` / `POST` / `PUT` 等任意 HTTP 方法
+- 自定义请求头透传（`headers` 参数）
+- 请求体编码支持：`text`、`base64`、`hex` 等
+- 响应体编码支持：`text`、`base64`、`hex` 等（二进制用 `base64`）
+- 自定义超时（默认 7000ms，长轮询需设置 60000ms）
+- SSRF 防护：仅允许公网域名（`ilinkai.weixin.qq.com` 和 `cdn.weixin.qq.com` 均为公网）
+- 认证：本机 127.0.0.1 访问自动放行
 
-端口策略：
+限制：
 
-1. 默认优先尝试固定端口，例如 `127.0.0.1:18965`
-2. 端口占用时，在小范围内顺延探测，例如 `18965-18975`
-3. 启动成功后，把实际监听地址写入插件运行时配置，供 `ClawBotService` 读取
-
-不做按需启动，原因：
-
-- `ClawBot` 已有登录轮询、健康检查、长轮询逻辑
-- 按需拉起会让状态切换复杂化，并增加首次连接延迟
+- 一次性读取全部响应体（`io.ReadAll`），无流式传输
+- 不支持 WebSocket / SSE
+- 响应体通过 JSON 包裹返回
 
 ## 失败处理
 
-### 代理未启动
+### forwardProxy 不可用
 
-- `ClawBotService` 直接返回“本地代理不可用”错误
-- UI 显示明确错误，不回退直连微信域名
-
-不做直连回退的原因：
-
-- 移动端直连本就会被 CORS 拦截
-- 回退只会把稳定错误重新变成浏览器原生的模糊报错
-
-### 代理运行中断
-
-- 停止长轮询
-- 保留现有登录状态，但额外显示“代理不可达/连接中断”
-- 允许用户手动重试
+- `isForwardProxyAvailable()` 探测失败时记录日志
+- `ClawBotService` 通过 `forwardProxy()` 抛出的错误传播到 UI
+- UI 显示明确错误
 
 ### 上游微信接口失败
 
-- 代理尽量保留原始状态码和响应体
+- 内核 `forwardProxy` 保留原始状态码和响应体
 - `ClawBotService` 继续按现有规则映射为：
   - `context_stale`
   - `session_expired`
@@ -175,22 +177,13 @@
 
 ## 安全边界
 
-代理层必须限制为白名单转发：
-
 1. 只允许目标域名：
    - `https://ilinkai.weixin.qq.com`
    - `https://cdn.weixin.qq.com`
-2. 只允许 `ClawBot` 需要的路径前缀
-3. 不允许前端自定义上游域名
-4. 不持久化 token
-5. 日志中不输出敏感头和完整凭证
-
-监听地址限制：
-
-- 仅监听 `127.0.0.1`
-- 不绑定 `0.0.0.0`
-
-这样不会把本地代理暴露给局域网其他设备。
+2. `clawBotForwardProxy.ts` 封装层不暴露通用 URL 透传接口
+3. 不持久化 token
+4. 日志中不输出敏感头和完整凭证
+5. 内核自带 SSRF 防护（阻止访问内网 IP）
 
 ## 微信会话状态
 
@@ -203,7 +196,7 @@
 1. `active`：上下文可用，最近正常收发
 2. `stale`：会话存在，但上下文已失效，需要重新建立
 3. `waiting`：已连接，但尚未形成稳定会话上下文
-4. `offline`：`ClawBot` 未连接、代理不可用，或当前会话暂不可工作
+4. `offline`：`ClawBot` 未连接或当前会话暂不可工作
 
 不再拆出更多状态，避免 UI 和判断逻辑膨胀。
 
@@ -212,7 +205,7 @@
 状态派生优先级如下：
 
 1. **全局连接能力优先**
-   - 本地代理不可用，或 `ClawBot` 未连接 -> `offline`
+   - `ClawBot` 未连接 -> `offline`
 2. **单会话上下文状态其次**
    - `contextState === 'active'` -> `active`
    - `contextState === 'stale'` -> `stale`
@@ -264,50 +257,56 @@
 
 ## 前端改造
 
-### 1. `src/services/clawBotService.ts`
+### 1. `src/services/clawBotForwardProxy.ts`
+
+新增封装层，负责：
+
+- 构建 `forwardProxy` 请求参数
+- 解包内核 JSON 响应（`{code, msg, data: {body, status, ...}}`）
+- `forwardProxy()`：普通请求
+- `forwardProxyBinary()`：二进制请求（base64 编解码）
+- `forwardProxyLongPoll()`：长轮询请求（timeout: 60000ms）
+- `isForwardProxyAvailable()`：探测可用性
+
+### 2. `src/services/clawBotService.ts`
 
 这是本次前端改造的核心文件。
 
 改造方向：
 
-1. 收敛所有分散的 `fetch(...)` 调用到统一请求入口
-2. 新增代理基址配置和 URL 构建逻辑
-3. 将 CDN 下载 URL 改写为本地代理路径
+1. 收敛所有分散的 `fetch(...)` 调用到统一 transport 入口
+2. transport 层使用 `forwardProxy` / `forwardProxyLongPoll` / `forwardProxyBinary`
+3. 将 CDN 下载 URL 通过 `forwardProxyBinary` 获取
 4. 保留现有业务错误映射和返回模型
 
-建议新增的内部结构：
+新增内部结构：
 
-- `buildProxyUrl(kind, pathOrUrl)`
-- `requestIlink(...)`
-- `requestCdn(...)`
-- `requestJson(...)`
+- `requestIlink(path, method, body?)`：通过 `forwardProxy` 发送 ilink 请求
+- `requestIlinkLongPoll(path, body)`：通过 `forwardProxyLongPoll` 发送长轮询
+- `requestCdn(pathOrUrl)`：通过 `forwardProxyBinary` 下载二进制内容
 
-这样可以把“请求发到哪里”和“业务要什么数据”分离。
+### 3. 插件运行时入口
 
-### 2. 插件运行时入口
+在 `src/index.ts` 的 `initClawBot` 中：
 
-在插件入口中新增 `ClawBot` 本地代理的启动与停止管理：
+- 调用 `isForwardProxyAvailable()` 探测
+- 将探测结果传递给 `aiStore.initializeClawBot()`
 
-- `onload()` 启动
-- `onunload()` 清理
-- 将代理地址注入 `aiStore` 或 `ClawBotService` 初始化路径
+无需管理代理服务生命周期（无本地服务需启停）。
 
-不要求改动其他业务模块的使用方式。
+### 4. `src/stores/aiStore.ts`
 
-### 3. `src/stores/aiStore.ts`
+新增统一的微信会话状态派生入口 `getWeixinConversationStatus(userId)`，负责把现有会话数据和全局连接状态转成 UI 可直接消费的状态对象。
 
-新增统一的微信会话状态派生入口，负责把现有会话数据和全局连接状态转成 UI 可直接消费的状态对象。
-
-建议输出统一结构，例如：
+输出统一结构：
 
 - `status`
 - `label`
 - `tone`
-- `detail?`
 
 组件层只消费标准化结果，不自己实现状态判断逻辑。这样桌面端和移动端可以共用同一套派生规则。
 
-### 4. UI 层
+### 5. UI 层
 
 涉及文件：
 
@@ -321,55 +320,40 @@
 
 - 微信会话列表项显示状态徽标
 - 当前微信会话头部显示状态摘要
-- 明确显示“本地代理不可用”类错误
+- 明确显示代理不可用类错误
 - 保持现有登录、断开、用户切换交互不变
-
-## 后端代理实现要求
-
-代理服务本身应满足以下要求：
-
-1. 支持 `GET` / `POST` / `OPTIONS`
-2. 为本地前端响应补齐必要 CORS 头
-3. 正确转发 query string、JSON body、二进制响应
-4. 透传 `Authorization`、`AuthorizationType`、`iLink-*`、`X-WECHAT-UIN` 等必要头
-5. 对上传、下载和长轮询场景都可工作
-
-对于 `getupdates` 这类长轮询请求，代理不应引入短超时，避免比上游更早截断连接。
 
 ## 测试设计
 
 ### 单元测试
 
-补充 `ClawBotService` 相关测试：
+补充 `clawBotForwardProxy` 封装层测试：
 
-1. 移动端 / 统一链路下请求是否改走本地代理
-2. `ilink` 与 `cdn` 路径映射是否正确
-3. 请求头、query、body 是否按现有契约透传
-4. 代理不可用时是否返回稳定错误
+1. GET 请求通过 forwardProxy 转发
+2. POST 请求带 JSON body 和自定义 headers 转发
+3. 上游错误状态码保留
+4. 长轮询使用自定义 timeout
+5. 二进制响应 base64 解码正确
+6. 可用性探测正确处理成功/失败
 
-补充 `aiStore` 或状态派生 helper 测试：
+补充 `ClawBotService` transport 测试：
 
-1. 连接断开时微信会话是否派生为 `offline`
-2. `contextState === 'active'` 是否派生为 `active`
-3. `contextState === 'stale'` 或最近上下文错误是否派生为 `stale`
-4. 已连接但上下文未稳定是否派生为 `waiting`
+1. startLogin 通过 forwardProxy
+2. sendTextMessage 通过 forwardProxy
+3. notifyGatewayStart 通过 forwardProxy
+4. forwardProxy 失败时错误传播
+5. getUpdates 使用 longPoll transport
 
-### 集成测试
+补充 `aiStore` 状态派生测试：
 
-新增代理服务测试：
-
-1. `get_bot_qrcode` 转发成功
-2. `getupdates` 长轮询可透传
-3. `sendmessage` JSON body 可透传
-4. CDN 媒体下载可返回二进制内容
+1. 连接断开时微信会话派生为 `offline`
+2. `contextState === 'active'` 派生为 `active`
+3. `contextState === 'stale'` 或最近上下文错误派生为 `stale`
+4. 已连接但上下文未稳定派生为 `waiting`
 
 ### 回归测试
 
-保留并补强现有移动端 `ClawBot` 相关测试：
-
-- `test/tabs/AiChatDock.mobile.test.ts`
-- `test/mobile/drawers/weixin/MobileWeixinSheet.test.ts`
-- `test/stores/aiStore.clawbot.test.ts`
+保留并补强现有移动端 `ClawBot` 相关测试。
 
 重点验证：
 
@@ -381,31 +365,32 @@
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `src/services/clawBotService.ts` | 修改 | 收敛请求入口并接入本地代理 |
-| `src/index.ts` | 修改 | 管理 ClawBot 本地代理生命周期 |
+| `src/services/clawBotForwardProxy.ts` | 新建 | 封装内核 forwardProxy API |
+| `src/services/clawBotService.ts` | 修改 | 收敛请求入口并接入 forwardProxy transport |
+| `src/index.ts` | 修改 | 探测 forwardProxy 可用性 |
 | `src/stores/aiStore.ts` | 修改 | 新增微信会话状态派生入口 |
 | `src/components/ai/ConversationSelect.vue` | 修改 | 列表项显示微信会话状态 |
 | `src/tabs/AiChatDock.vue` | 修改 | 当前微信会话显示状态摘要 |
 | `src/mobile/panels/MobileAiPanel.vue` | 修改 | 当前微信会话显示状态摘要 |
 | `src/components/ai/WeixinLoginDialog.vue` | 修改 | 展示代理不可用错误 |
 | `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 修改 | 展示代理不可用错误 |
-| `src/services/` 下新增代理服务文件 | 新建 | 实现本地 HTTP 代理 |
-| `test/services/` 相关测试 | 修改/新建 | 覆盖代理转发与错误映射 |
-| `test/stores/` 与 `test/tabs/` / `test/mobile/` 相关测试 | 修改/新建 | 覆盖会话状态派生与渲染 |
+| `test/services/clawBotForwardProxy.test.ts` | 新建 | 覆盖 forwardProxy 封装 |
+| `test/services/clawBotService.proxy.test.ts` | 新建 | 覆盖 transport 转发 |
+| `test/stores/weixinConversationStatus.test.ts` | 新建 | 覆盖会话状态派生 |
 
 ## 风险与约束
 
-1. **SiYuan 插件运行时能力约束**  
-   本方案依赖插件运行时能够拉起本地 HTTP 服务。如果宿主环境不允许监听本地端口，需要重新评估为宿主桥接方案。
+1. **forwardProxy 超时**  
+   默认 7000ms 对长轮询不够。使用 `timeout: 60000` 参数覆盖。需确认内核不会在更上层截断。
 
-2. **端口探测与可达性**  
-   需要确保移动端运行环境可以访问 `127.0.0.1:<port>`。如果宿主 WebView 对 localhost 有限制，需要在实现阶段验证并记录结果。
+2. **响应体一次性读取**  
+   `forwardProxy` 通过 `io.ReadAll` 读取全部响应体后返回。大文件（图片/视频）可能导致内存压力。
 
-3. **长轮询资源占用**  
-   `getupdates` 为持续性请求，代理实现需避免错误的超时、缓冲或连接复用策略导致消息延迟。
+3. **base64 编解码开销**  
+   二进制响应需先 base64 编码再解码，约增加 33% 传输体积和编解码 CPU。
 
-4. **媒体下载体积**  
-   CDN 媒体请求可能较大，代理需要正确处理流式或二进制响应，避免按 JSON 读取。
+4. **认证要求**  
+   `forwardProxy` 需要 Admin 角色。本机访问（127.0.0.1）自动放行，但远程访问需确保已认证。
 
 ## 成功标准
 
@@ -415,3 +400,4 @@
 2. 移动端可正常完成扫码、收消息、发消息、下载媒体
 3. 桌面端 `ClawBot` 仍可正常工作
 4. `ClawBot` 功能链路不依赖 MCP，也不需要思源 API token
+5. 构建产物不再依赖 `node:http`
