@@ -366,7 +366,7 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   function isClawBotAllowedOnCurrentFrontend() {
-    return !getPluginInstance()?.isMobile;
+    return true;
   }
 
   function filterVisibleConversations(conversations: ConversationIndexItem[]) {
