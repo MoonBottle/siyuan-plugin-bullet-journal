@@ -260,6 +260,8 @@ async function handleWeixinSwitch(conversationId: string) {
 onMounted(async () => {
   loadAISettingsFromPlugin();
   await ensureConversation();
+  await nextTick();
+  chatPanelRef.value?.scrollToBottom?.();
 });
 </script>
 
