@@ -87,7 +87,8 @@ export class MarkdownParser {
         WHERE type = 'd'
         AND id IN (
           SELECT DISTINCT root_id FROM blocks
-          WHERE (content LIKE '%#任务%' OR content LIKE '%#task%' OR content LIKE '%📋%' OR content LIKE '%🎯%')
+          WHERE (content LIKE '%#任务%' OR content LIKE '%#task%' OR content LIKE '%📋%' OR content LIKE '%🎯%'
+            OR content LIKE '%@20%' OR content LIKE '%📅20%')
           AND root_id IS NOT NULL AND root_id != ''
           AND type IN ('p', 'h', 'l', 'i')
         )

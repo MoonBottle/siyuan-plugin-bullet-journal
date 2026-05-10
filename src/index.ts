@@ -96,6 +96,7 @@ import {
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService";
 import { CleanupManager } from "@/utils/cleanupManager";
+import { isForwardProxyAvailable } from "@/services/clawBotForwardProxy";
 import {
   type FloatingPomodoroLabels,
   type FloatingPomodoroSourceState,
@@ -390,12 +391,10 @@ export default class TaskAssistantPlugin extends Plugin {
       const aiStore = useAIStore(pinia);
       await aiStore.initializeStorage(this);
 
-      if (this.isMobile) {
-        console.log("[Task Assistant] Skip ClawBot initialization on mobile");
-        return;
-      }
+      const proxyAvailable = await isForwardProxyAvailable();
+      console.log("[Task Assistant] ClawBot forwardProxy available:", proxyAvailable);
 
-      await aiStore.initializeClawBot(this);
+      await aiStore.initializeClawBot(this, proxyAvailable);
       console.log("[Task Assistant] ClawBot initialized from plugin onload");
     } catch (error) {
       console.error("[Task Assistant] Failed to initialize ClawBot:", error);

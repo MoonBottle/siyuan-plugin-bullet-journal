@@ -8,6 +8,9 @@ const mockAiStore = {
   currentConversation: { id: 'conv-1', title: '新对话', messages: [], createdAt: 1, updatedAt: 1 },
   currentConversationId: 'conv-1',
   showToolCallsEnabled: false,
+  isClawBotConnected: false,
+  hasUnreadWeixin: false,
+  getWeixinConversationStatus: vi.fn(),
   loadSettings: vi.fn(),
   getConversationsList: vi.fn(),
   createConversation: vi.fn(),
@@ -57,6 +60,24 @@ vi.mock('@/components/ai/ChatPanel.vue', () => ({
   }),
 }));
 
+vi.mock('@/components/icons/WeixinIcon.vue', () => ({
+  default: defineComponent({
+    name: 'WeixinIconStub',
+    setup() {
+      return () => h('svg', { 'data-testid': 'weixin-icon-stub' });
+    },
+  }),
+}));
+
+vi.mock('@/mobile/drawers/weixin/MobileWeixinSheet.vue', () => ({
+  default: defineComponent({
+    name: 'MobileWeixinSheetStub',
+    setup(_, { emit }) {
+      return () => h('div', { 'data-testid': 'weixin-sheet-stub' });
+    },
+  }),
+}));
+
 function mountPanel() {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -99,6 +120,12 @@ describe('MobileAiPanel', () => {
     document.body.innerHTML = '';
     mockAiStore.currentConversation = { id: 'conv-1', title: '新对话', messages: [], createdAt: 1, updatedAt: 1 };
     mockAiStore.currentConversationId = 'conv-1';
+    mockAiStore.getWeixinConversationStatus.mockReset();
+    mockAiStore.getWeixinConversationStatus.mockReturnValue({
+      status: 'active',
+      label: '可用',
+      tone: 'positive',
+    });
     mockAiStore.loadSettings.mockReset();
     mockAiStore.createConversation.mockResolvedValue('conv-new');
     mockAiStore.switchConversation.mockResolvedValue(undefined);
@@ -143,6 +170,57 @@ describe('MobileAiPanel', () => {
       activeProviderId: 'provider-1',
       showToolCalls: true,
     });
+
+    mounted.unmount();
+  });
+
+  it('uses weixinUserId to derive the current weixin conversation status', async () => {
+    mockAiStore.currentConversationId = 'conv-weixin';
+    mockAiStore.getConversationsList.mockResolvedValue([
+      {
+        id: 'conv-weixin',
+        title: '微信会话',
+        createdAt: 1,
+        updatedAt: 2,
+        messageCount: 1,
+        fileSize: 10,
+        hasSkillExecutions: false,
+        source: 'weixin',
+        weixinUserId: 'user@im.wechat',
+        weixinUserName: '展示名',
+      },
+    ]);
+
+    const mounted = mountPanel();
+    await flushPanelUpdates();
+
+    expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalledWith('user@im.wechat');
+
+    mounted.unmount();
+  });
+
+  it('shows the current weixin conversation name in the mobile header and hides active status text', async () => {
+    mockAiStore.currentConversationId = 'conv-weixin';
+    mockAiStore.getConversationsList.mockResolvedValue([
+      {
+        id: 'conv-weixin',
+        title: '微信: 展示名',
+        createdAt: 1,
+        updatedAt: 2,
+        messageCount: 1,
+        fileSize: 10,
+        hasSkillExecutions: false,
+        source: 'weixin',
+        weixinUserId: 'user@im.wechat',
+        weixinUserName: '展示名',
+      },
+    ]);
+
+    const mounted = mountPanel();
+    await flushPanelUpdates();
+
+    expect(mounted.container.textContent).toContain('展示名');
+    expect(mounted.container.textContent).not.toContain('可用');
 
     mounted.unmount();
   });

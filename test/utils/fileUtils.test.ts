@@ -621,6 +621,70 @@ describe('updateBlockDateTime', () => {
     );
   });
 
+  it('多行事项含续行块引用：追加日期时应更新首行而不是续行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="xxx"}测试独立事项 📌 🔁每天
+  ((20260510074935-sch6ybk '测试独立事项2  📌  '))
+  {: id="yyy"}
+
+  🍅0,2026-05-10 08:16:45~08:16:49`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-05-09',
+      undefined,
+      undefined,
+      true,
+    );
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `测试独立事项 📌 🔁每天 📅2026-05-09
+  ((20260510074935-sch6ybk '测试独立事项2  📌  '))
+  {: id="yyy"}
+
+  🍅0,2026-05-10 08:16:45~08:16:49`,
+      'block-1'
+    );
+  });
+
+  it('多行事项首行已有日期时，追加新日期应仍更新首行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `- {: id="20260510081416-q80f7z6" updated="20260510081707"}测试独立事项 📅2026-05-09 📌 🔁每天
+  ((20260510074935-sch6ybk '测试独立事项2  📌 📅2026-05-10 14:45~17:30 ✅'))
+  {: id="20260510081416-3xlqggy" updated="20260510081707"}
+
+  🍅0,2026-05-10 08:16:45~08:16:49
+  {: id="20260510081726-s96dbjq" updated="20260510081726"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      '20260510081416-3xlqggy',
+      '2026-05-10',
+      undefined,
+      undefined,
+      true,
+      undefined,
+      [{ date: '2026-05-09' }],
+    );
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `测试独立事项  📌 🔁每天 📅2026-05-09~05-10
+  ((20260510074935-sch6ybk '测试独立事项2  📌 📅2026-05-10 14:45~17:30 ✅'))
+  {: id="20260510081416-3xlqggy" updated="20260510081707"}
+
+  🍅0,2026-05-10 08:16:45~08:16:49
+  {: id="20260510081726-s96dbjq" updated="20260510081726"}`,
+      '20260510081416-3xlqggy'
+    );
+  });
+
   it('内容子块：从父块解析 kramdown，拖动日期不应添加 ✅ 标签', async () => {
     mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
     mockGetBlockKramdown.mockImplementation((id: string) => {
@@ -655,6 +719,88 @@ describe('updateBlockDateTime', () => {
       `- {: id="parent-block-1"}[x] ddd 📅2026-03-15
   {: id="content-block-1"}`,
       'parent-block-1'
+    );
+  });
+
+  it('普通列表项内容子块：追加日期时应更新父块首行', async () => {
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'parent-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="parent-block-1" updated="20260510140228"}测试独立事项  📌 📅2026-05-09 🔁每天 /jt
+  ((20260510074935-sch6ybk '测试独立事项2  📌  '))
+  {: id="content-block-1" updated="20260510140228"}`
+        });
+      }
+      return Promise.resolve({
+        kramdown: `测试独立事项  📌 📅2026-05-09 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140228"}`
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'content-block-1',
+      '2026-05-10',
+      undefined,
+      undefined,
+      true,
+      undefined,
+      [{ date: '2026-05-09' }],
+    );
+
+    expect(result).toBe(true);
+    expect(mockGetBlockKramdown).toHaveBeenCalledWith('parent-block-1');
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1" updated="20260510140228"}测试独立事项  📌 📅2026-05-09~05-10 🔁每天 /jt
+  ((20260510074935-sch6ybk '测试独立事项2  📌  '))
+  {: id="content-block-1" updated="20260510140228"}`,
+      'parent-block-1'
+    );
+  });
+
+  it('非列表内容子块：父级为 doc 时，应只借父文档定位并写回当前块', async () => {
+    mockGetBlockByID.mockResolvedValue({ parent_id: 'doc-block-1' });
+    mockGetBlockKramdown.mockImplementation((id: string) => {
+      if (id === 'doc-block-1') {
+        return Promise.resolve({
+          kramdown: `- {: id="list-parent-1" updated="20260510140926"}测试独立事项  📌 📅2026-05-09 🔁每天
+  ((20260510074935-sch6ybk "测试独立事项2  📌  "))
+  {: id="list-content-1" updated="20260510140926"}
+{: id="list-sep-1" updated="20260510140926"}
+
+测试独立事项  📌 📅2026-05-09 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`
+        });
+      }
+      return Promise.resolve({
+        kramdown: `测试独立事项  📌 📅2026-05-09 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`
+      });
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'content-block-1',
+      '2026-05-10',
+      undefined,
+      undefined,
+      true,
+      undefined,
+      [{ date: '2026-05-09' }],
+    );
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `测试独立事项  📌 📅2026-05-09~05-10 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`,
+      'content-block-1'
     );
   });
 });

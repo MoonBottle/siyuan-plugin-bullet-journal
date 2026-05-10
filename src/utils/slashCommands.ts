@@ -27,12 +27,13 @@ import type { Habit, Item, ProjectDirectory, PriorityLevel } from '@/types/model
 import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
+import { getHPathByID, getBlockByID, getBlockKramdown, renameDocByID, updateBlock } from '@/api';
 import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
 import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
 import { checkIn, checkInCount } from '@/services/habitService';
 import type { CheckInRecord } from '@/types/models';
 import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
+import { parseKramdownBlocks } from '@/parser/core';
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
@@ -63,9 +64,15 @@ export function deleteSlashCommandContent(
   protyle: any,
   filters: string[],
   suffix?: string,
-  additionalTransform?: (text: string) => string
+  additionalTransform?: (text: string) => string,
+  persist: boolean = true,
 ): void {
-  console.log('[SlashCommand] deleteSlashCommandContent called', { filters, suffix });
+  console.log('[SlashCommand] deleteSlashCommandContent called', { filters, suffix, persist });
+  console.log('[JTDBG][deleteSlashCommandContent] called', {
+    filters,
+    suffix,
+    persist,
+  });
 
   // 获取编辑器元素
   const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
@@ -131,6 +138,11 @@ export function deleteSlashCommandContent(
   // 处理行文本
   let newLineText = processLineText(lineText, filters);
   console.log('[SlashCommand] Processed line text:', { newLineText });
+  console.log('[JTDBG][deleteSlashCommandContent] processed', {
+    lineText,
+    newLineText,
+    persist,
+  });
 
   // 如果有 suffix，处理标记追加
   if (suffix) {
@@ -165,6 +177,11 @@ export function deleteSlashCommandContent(
     // 更新文本
     const newText = textContent.substring(0, lineStart) + newLineText + textContent.substring(lineEnd);
     textNode.textContent = newText;
+    console.log('[JTDBG][deleteSlashCommandContent] appliedText', {
+      oldText: textContent,
+      newText,
+      persist,
+    });
 
     // 更新块的 updated 属性
     const now = new Date();
@@ -173,9 +190,21 @@ export function deleteSlashCommandContent(
 
     // 提交事务以持久化修改
     const newHTML = blockElement.outerHTML;
-    if (newHTML !== oldHTML) {
+    if (persist && newHTML !== oldHTML) {
       protyle.toolbar?.setInlineMark?.(protyle, '', 'clear', {});
       updateTransaction(protyle, blockId, newHTML, oldHTML);
+      console.log('[JTDBG][deleteSlashCommandContent] persisted', {
+        blockId,
+        oldHTML,
+        newHTML,
+      });
+    } else {
+      console.log('[JTDBG][deleteSlashCommandContent] skippedPersist', {
+        blockId,
+        persist,
+        htmlChanged: newHTML !== oldHTML,
+        newHTML,
+      });
     }
   }
 }
@@ -600,18 +629,58 @@ export function getActionHandler(
   switch (action) {
     case 'today':
       return (protyle, nodeElement) => {
+        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null;
+        console.log('[SlashCommand] today handler target', {
+          nodeTag: nodeElement.tagName,
+          nodeType: nodeElement.getAttribute('data-type'),
+          nodeBlockId: nodeElement.getAttribute('data-node-id'),
+          nodeClass: nodeElement.className,
+          innerParagraphBlockId: innerParagraph?.getAttribute('data-node-id'),
+          innerParagraphType: innerParagraph?.getAttribute('data-type'),
+          textPreview: (nodeElement.textContent || '').slice(0, 120),
+        });
+        console.log('[JTDBG][slash.today] target', {
+          nodeTag: nodeElement.tagName,
+          nodeType: nodeElement.getAttribute('data-type'),
+          nodeBlockId: nodeElement.getAttribute('data-node-id'),
+          nodeClass: nodeElement.className,
+          innerParagraphBlockId: innerParagraph?.getAttribute('data-node-id'),
+          innerParagraphType: innerParagraph?.getAttribute('data-type'),
+          outerHTML: nodeElement.outerHTML.slice(0, 500),
+          textPreview: (nodeElement.textContent || '').slice(0, 200),
+        });
         const blockId = nodeElement.getAttribute('data-node-id');
         const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
         markAsTodayItem(protyle, nodeElement, filter, writer);
       };
     case 'tomorrow':
       return (protyle, nodeElement) => {
+        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null;
+        console.log('[SlashCommand] tomorrow handler target', {
+          nodeTag: nodeElement.tagName,
+          nodeType: nodeElement.getAttribute('data-type'),
+          nodeBlockId: nodeElement.getAttribute('data-node-id'),
+          nodeClass: nodeElement.className,
+          innerParagraphBlockId: innerParagraph?.getAttribute('data-node-id'),
+          innerParagraphType: innerParagraph?.getAttribute('data-type'),
+          textPreview: (nodeElement.textContent || '').slice(0, 120),
+        });
         const blockId = nodeElement.getAttribute('data-node-id');
         const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
         markAsTomorrowItem(protyle, nodeElement, filter, writer);
       };
     case 'date':
       return (protyle, nodeElement) => {
+        const innerParagraph = nodeElement.querySelector('[data-type="NodeParagraph"][data-node-id]') as HTMLElement | null;
+        console.log('[SlashCommand] date handler target', {
+          nodeTag: nodeElement.tagName,
+          nodeType: nodeElement.getAttribute('data-type'),
+          nodeBlockId: nodeElement.getAttribute('data-node-id'),
+          nodeClass: nodeElement.className,
+          innerParagraphBlockId: innerParagraph?.getAttribute('data-node-id'),
+          innerParagraphType: innerParagraph?.getAttribute('data-type'),
+          textPreview: (nodeElement.textContent || '').slice(0, 120),
+        });
         const blockId = nodeElement.getAttribute('data-node-id');
         const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
         markAsDateItem(protyle, nodeElement, filter, writer);
@@ -942,6 +1011,10 @@ async function markAsTodayItem(
   // 从 pinia 中获取已有日期时间信息
   const existingItems = await extractDatesFromBlock(blockId);
   console.log('[SlashCommand] markAsTodayItem: existing items', existingItems);
+  console.log('[JTDBG][slash.today] existingItems', {
+    blockId,
+    existingItems,
+  });
 
   // 检查今天是否已存在
   const todayItem = existingItems.find(item => item.date === today);
@@ -959,6 +1032,12 @@ async function markAsTodayItem(
     existingItemsCount: existingItems.length,
     hasWriter: !!writer
   });
+  console.log('[JTDBG][slash.today] call updateBlockDateTime', {
+    blockId,
+    today,
+    existingItems,
+    hasWriter: !!writer,
+  });
 
   // 使用 updateBlockDateTime 添加今日日期
   const success = await updateBlockDateTime(
@@ -974,8 +1053,13 @@ async function markAsTodayItem(
   );
 
   console.log('[SlashCommand] markAsTodayItem: updateBlockDateTime result', success);
+  console.log('[JTDBG][slash.today] updateBlockDateTime result', {
+    blockId,
+    success,
+  });
 
   if (success) {
+    deleteSlashCommandContent(protyle, filter, undefined, undefined, false);
     showMessage(t('slash').markSuccess, 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1023,6 +1107,7 @@ async function markAsTomorrowItem(
   );
 
   if (success) {
+    deleteSlashCommandContent(protyle, filter, undefined, undefined, false);
     showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1073,6 +1158,7 @@ async function markAsDateItem(
       );
 
       if (success) {
+        deleteSlashCommandContent(protyle, filter, undefined, undefined, false);
         showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
       } else {
         showMessage(t('slash').markFailed, 2000, 'error');
@@ -1129,6 +1215,11 @@ function createProtyleWriter(
   return async (content: string, targetBlockId: string): Promise<boolean> => {
     try {
       console.log(`[SlashCommand] Writer called`, { content, targetBlockId, currentBlockId });
+      console.log('[JTDBG][protyleWriter] called', {
+        currentBlockId,
+        targetBlockId,
+        content,
+      });
 
       // 去掉块属性行 {: id="..." }，再判断是否单行
       const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
@@ -1138,12 +1229,29 @@ function createProtyleWriter(
 
       const safeForFastPath = isProtyleBlockSafeForWriterFastPath(nodeElement);
       console.log(`[SlashCommand] Writer decision params`, { isSameBlock, isSingleLine, textContent, safeForFastPath });
+      console.log('[JTDBG][protyleWriter] decision', {
+        currentBlockId,
+        targetBlockId,
+        isSameBlock,
+        isSingleLine,
+        safeForFastPath,
+        textContent,
+      });
 
       if (isSameBlock && isSingleLine && safeForFastPath) {
         const textNode = findFirstProtyleVisibleTextNode(nodeElement);
         if (!textNode) {
+          console.log('[JTDBG][protyleWriter] fastPathNoTextNodeFallbackApi', {
+            currentBlockId,
+            targetBlockId,
+          });
           await waitForProtyleTransactionsFlush();
-          await updateBlock('markdown', content, targetBlockId);
+          const updateResult = await updateBlock('markdown', content, targetBlockId);
+          console.log('[JTDBG][protyleWriter] fastPathNoTextNodeFallbackApiResult', {
+            currentBlockId,
+            targetBlockId,
+            updateResult,
+          });
           return true;
         }
 
@@ -1153,22 +1261,82 @@ function createProtyleWriter(
 
         const newHTML = nodeElement.outerHTML;
         if (newHTML !== oldHTML) {
+          console.log('[JTDBG][protyleWriter] fastPathTransaction', {
+            currentBlockId,
+            targetBlockId,
+            oldHTML,
+            newHTML,
+          });
           protyle.transaction(
             [{ id: targetBlockId, data: newHTML, action: 'update' }],
             [{ id: targetBlockId, data: oldHTML, action: 'update' }],
           );
         }
+        else {
+          console.log('[JTDBG][protyleWriter] fastPathSkippedBecauseHtmlUnchanged', {
+            currentBlockId,
+            targetBlockId,
+            textContent,
+          });
+        }
         return true;
       }
 
       // Complex case: wait for queue to flush, then API
+      console.log('[JTDBG][protyleWriter] complexPathApi', {
+        currentBlockId,
+        targetBlockId,
+        content,
+      });
       await waitForProtyleTransactionsFlush();
-      await updateBlock('markdown', content, targetBlockId);
+      const updateResult = await updateBlock('markdown', content, targetBlockId);
+      console.log('[JTDBG][protyleWriter] complexPathApiResult', {
+        currentBlockId,
+        targetBlockId,
+        updateResult,
+      });
+      const targetKramdownResult = await getBlockKramdown(targetBlockId);
+      console.log('[JTDBG][protyleWriter] complexPathReadbackTarget', {
+        currentBlockId,
+        targetBlockId,
+        hasKramdown: !!targetKramdownResult?.kramdown,
+        kramdownPreview: targetKramdownResult?.kramdown?.slice(0, 500),
+      });
+      if (targetKramdownResult?.kramdown) {
+        const targetBlocks = parseKramdownBlocks(targetKramdownResult.kramdown);
+        const currentParsedBlock = targetBlocks.find(block => block.blockId === currentBlockId);
+        console.log('[JTDBG][protyleWriter] complexPathReadbackTargetAnalysis', {
+          currentBlockId,
+          targetBlockId,
+          targetContainsExpectedRange: targetKramdownResult.kramdown.includes('📅2026-05-09~05-10'),
+          targetContainsOriginalDateOnly: targetKramdownResult.kramdown.includes('📅2026-05-09 🔁每天'),
+          parsedBlockCount: targetBlocks.length,
+          currentParsedBlockContent: currentParsedBlock?.content,
+          currentParsedBlockRaw: currentParsedBlock?.raw,
+        });
+      }
+      const currentBlockResult = await getBlockByID(currentBlockId);
+      console.log('[JTDBG][protyleWriter] complexPathReadbackCurrentBlock', {
+        currentBlockId,
+        targetBlockId,
+        currentBlockContent: currentBlockResult?.content,
+        currentBlockMarkdown: currentBlockResult?.markdown,
+      });
       return true;
     }
     catch (error) {
       console.error('[Task Assistant] ProtyleWriter error:', error);
-      await updateBlock('markdown', content, targetBlockId);
+      console.log('[JTDBG][protyleWriter] errorFallbackApi', {
+        currentBlockId,
+        targetBlockId,
+        error,
+      });
+      const updateResult = await updateBlock('markdown', content, targetBlockId);
+      console.log('[JTDBG][protyleWriter] errorFallbackApiResult', {
+        currentBlockId,
+        targetBlockId,
+        updateResult,
+      });
       return true;
     }
   };

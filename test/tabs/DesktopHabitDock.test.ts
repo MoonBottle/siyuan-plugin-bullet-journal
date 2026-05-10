@@ -430,6 +430,8 @@ describe('DesktopHabitDock', () => {
     expect(checkIn).toHaveBeenCalledWith(
       expect.objectContaining({ blockId: 'habit-1' }),
       dayjs().format('YYYY-MM-DD'),
+      undefined,
+      'day',
     );
     expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
 
@@ -463,6 +465,8 @@ describe('DesktopHabitDock', () => {
       expect.objectContaining({ blockId: 'habit-1' }),
       dayjs().format('YYYY-MM-DD'),
       1,
+      undefined,
+      'day',
     );
     expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
 

@@ -91,6 +91,7 @@ export interface Project {
   name: string;            // 项目名称
   description?: string;    // 项目描述
   tasks: Task[];           // 任务列表
+  habits: Habit[];         // 习惯列表
   path: string;            // 文档路径
   groupId?: string;        // 分组 ID
   links?: Link[];          // 项目链接
@@ -111,6 +112,7 @@ export interface Task {
   docId?: string;          // 所属文档 ID
   blockId?: string;        // 块 ID（用于精确定位）
   pomodoros?: PomodoroRecord[]; // 任务级别番茄钟记录
+  isSyntheticDefault?: boolean; // 运行时标记：是否为解析器合成的默认任务
 }
 
 // 事项状态

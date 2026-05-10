@@ -7,6 +7,20 @@ import { LineParser, createLink, isStandaloneBlockRefLine, parseBlockRefs } from
 import { parseHabitLine, parseCheckInRecordLine, isHabitLine } from './habitParser';
 import { processLineText } from '@/utils/stringUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
+import { t } from '@/i18n';
+
+function createSyntheticDefaultTask(lineNumber: number, docId: string): Task {
+  return {
+    id: `task-synthetic-${docId}`,
+    name: t('common.uncategorized'),
+    level: 'L1',
+    items: [],
+    lineNumber,
+    docId,
+    pomodoros: [],
+    isSyntheticDefault: true,
+  };
+}
 
 export interface KramdownBlock {
   content: string;
@@ -113,6 +127,7 @@ function isTagInBackticks(content: string, tag: string): boolean {
  * 任务行：包含 #任务、#task 或 📋
  */
 function isNextItemOrTaskLine(content: string): boolean {
+  if (isStandaloneBlockRefLine(stripListAndBlockAttr(content))) return false;
   const hasTaskTag = content.includes('#任务') || content.includes('#task') || content.includes('📋');
   const notInBackticks = !isTagInBackticks(content, '#任务') && !isTagInBackticks(content, '#task');
   if (hasTaskTag && notInBackticks) return true;
@@ -176,6 +191,8 @@ export function parseKramdown(
   let currentTask: Task | null = null;
   let currentItem: Item | null = null;
   let currentHabit: Habit | null = null;
+  // 每篇文档最多一个运行时合成任务，仅当存在无显式任务上下文的独立事项时创建
+  let syntheticDefaultTask: Task | null = null;
   let lineNumber = 0;
   /** 当前任务是否已遇到第一个事项，用于停止收集任务链接 */
   let hasSeenItemForCurrentTask = false;
@@ -378,8 +395,9 @@ export function parseKramdown(
       }
     }
 
-    // 解析工作事项（在当前任务下，包含 @ 或 📅 但不是任务标记）
-    if (currentTask && (content.includes('@') || content.includes('📅')) && !hasTaskTag) {
+    // 解析工作事项（包含 @ 或 📅 但不是任务标记）
+    if ((content.includes('@') || content.includes('📅')) && !hasTaskTag) {
+      const targetTask = currentTask ?? (syntheticDefaultTask ||= createSyntheticDefaultTask(lineNumber, docId));
       hasSeenItemForCurrentTask = true;
       // 收集事项下方的链接行：当前事项行之后到下一个事项/任务行之间的所有链接行
       // 非链接行（如说明文字）跳过不中断，仅在遇到下一事项/任务行时停止
@@ -394,6 +412,11 @@ export function parseKramdown(
         const lineContent = blockLines[idx];
         if (isNextItemOrTaskLine(lineContent)) break;
         const strippedLineContent = stripListAndBlockAttr(lineContent);
+        if (isStandaloneBlockRefLine(strippedLineContent)) {
+          const { links } = parseBlockRefs(strippedLineContent);
+          itemLinks.push(...links);
+          continue;
+        }
         const links = extractMarkdownLinks(strippedLineContent, block.blockId);
         if (links.length > 0 && !lineContent.includes('@')) {
           itemLinks.push(...links);
@@ -454,9 +477,13 @@ export function parseKramdown(
         item.isTaskList = isTaskList; // 设置任务列表格式标记
         item.listItemBlockId = listItemBlockId; // 设置列表项块 ID（如果有）
 
-        currentTask.items.push(item);
+        targetTask.items.push(item);
         currentItem = item;
         lastBlockType = 'item';
+      }
+
+      if (!currentTask && syntheticDefaultTask) {
+        currentTask = syntheticDefaultTask;
       }
     }
   }
@@ -476,7 +503,12 @@ export function parseKramdown(
     }
   }
 
-  if (project.tasks.length === 0 && project.pomodoros!.length === 0 && project.habits.length === 0) {
+  const hasTaskContent = project.tasks.some(task =>
+    // 有事项的内容，或有日期的任务，或非合成的真实任务（空任务也算有效内容）
+    task.items.length > 0 || Boolean(task.date) || !task.isSyntheticDefault
+  );
+
+  if (!hasTaskContent && project.pomodoros!.length === 0 && project.habits.length === 0) {
     return null;
   }
 

@@ -2,9 +2,18 @@
   <div class="fn__flex-1 fn__flex-column ai-chat-dock">
     <!-- 头部工具栏 -->
     <div class="block__icons">
-      <div class="block__logo">
+      <div class="block__logo ai-chat-dock__title-block">
         <AiAssistantIcon class="block__logoicon" />
-        {{ t('aiChat').title }}
+        <div class="ai-chat-dock__title-copy">
+          <div class="ai-chat-dock__title-text">{{ currentHeaderTitle }}</div>
+          <div
+            v-if="currentHeaderStatus"
+            class="ai-chat-dock__title-status"
+            :class="`ai-chat-dock__title-status--${currentHeaderStatus.tone}`"
+          >
+            {{ currentHeaderStatus.label }}
+          </div>
+        </div>
       </div>
       <span class="fn__flex-1 fn__space"></span>
 
@@ -165,6 +174,54 @@ const openSkillManager = () => {
 // ClawBot 状态
 const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
 const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
+
+const currentConversation = computed(() => {
+  const convId = aiStore.currentConversationId;
+  if (!convId) return null;
+  return conversationsList.value.find(c => c.id === convId) || null;
+});
+
+const currentWeixinStatus = computed(() => {
+  const conv = currentConversation.value;
+  if (!conv || conv.source !== 'weixin' || !conv.weixinUserId) return null;
+  return aiStore.getWeixinConversationStatus(conv.weixinUserId);
+});
+
+const currentWeixinConversationName = computed(() => {
+  const conv = currentConversation.value;
+  if (!conv || conv.source !== 'weixin') {
+    return '';
+  }
+
+  const userName = conv.weixinUserName?.trim();
+  if (userName) {
+    return userName;
+  }
+
+  return conv.title.replace(/^微信:\s*/, '').trim() || conv.title;
+});
+
+const currentHeaderTitle = computed(() => {
+  if (currentConversation.value?.source === 'weixin') {
+    return currentWeixinConversationName.value || '微信会话';
+  }
+
+  return t('aiChat').title;
+});
+
+const currentHeaderStatus = computed(() => {
+  if (currentConversation.value?.source !== 'weixin') {
+    return null;
+  }
+
+  const status = currentWeixinStatus.value;
+  if (!status || status.status === 'active') {
+    return null;
+  }
+
+  return status;
+});
+
 const clawBotTooltip = computed(() => {
   if (isClawBotConnected.value) {
     return '微信已连接';
@@ -191,6 +248,8 @@ async function handleWeixinConversationSwitch(conversationId: string) {
 
   await aiStore.switchConversation(conversationId);
   await refreshConversationsList();
+  await nextTick();
+  chatPanelRef.value?.scrollToBottom?.();
 }
 
 // 获取所有事项
@@ -456,6 +515,37 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  &__title-block {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  &__title-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__title-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__title-status {
+    font-size: 11px;
+    line-height: 1.3;
+
+    &--warning {
+      color: #ff9800;
+    }
+
+    &--negative {
+      color: #909090;
+    }
+  }
 
   &__conversation-select {
     margin-right: 8px;

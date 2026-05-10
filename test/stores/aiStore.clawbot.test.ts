@@ -306,7 +306,7 @@ describe('aiStore clawbot context management', () => {
     expect(store.weixinConversationMap['user@im.wechat'].lastKeepaliveAt).toBeTypeOf('number')
   })
 
-  it('does not initialize clawbot monitoring on mobile', async () => {
+  it('initializes clawbot monitoring on mobile', async () => {
     const store = useAIStore()
     const loadWechatLoginState = vi.fn().mockResolvedValue({
       enabled: true,
@@ -325,12 +325,12 @@ describe('aiStore clawbot context management', () => {
       loadWechatLoginState,
     })
 
-    expect(mockUseClawBotService).not.toHaveBeenCalled()
-    expect(mockClawBotService.startMonitoring).not.toHaveBeenCalled()
-    expect(mockClawBotService.onMessage).not.toHaveBeenCalled()
+    expect(mockUseClawBotService).toHaveBeenCalled()
+    expect(mockClawBotService.startMonitoring).toHaveBeenCalled()
+    expect(mockClawBotService.onMessage).toHaveBeenCalled()
   })
 
-  it('does not send wechat notifications on mobile', async () => {
+  it('sends wechat notifications on mobile', async () => {
     const store = useAIStore()
     await store.initializeStorage({ isMobile: true })
 
@@ -350,10 +350,10 @@ describe('aiStore clawbot context management', () => {
 
     await store.sendWechatNotification('hello')
 
-    expect(mockClawBotService.sendTextMessage).not.toHaveBeenCalled()
+    expect(mockClawBotService.sendTextMessage).toHaveBeenCalled()
   })
 
-  it('ignores inbound wechat messages on mobile', async () => {
+  it('handles inbound wechat messages on mobile', async () => {
     const store = useAIStore()
     await store.initializeStorage({ isMobile: true })
 
@@ -364,11 +364,11 @@ describe('aiStore clawbot context management', () => {
       item_list: [{ type: 1, text_item: { text: 'hello' } }],
     })
 
-    expect(store.weixinConversationMap['user@im.wechat']).toBeUndefined()
-    expect(mockStorageService.createConversation).not.toHaveBeenCalled()
+    expect(store.weixinConversationMap['user@im.wechat']).toBeDefined()
+    expect(store.weixinConversationMap['user@im.wechat'].contextToken).toBe('fresh-token')
   })
 
-  it('filters wechat conversations from conversation list on mobile', async () => {
+  it('shows wechat conversations in conversation list on mobile', async () => {
     const store = useAIStore()
     mockStorageService.loadConversationsList.mockResolvedValue([
       {
@@ -397,8 +397,52 @@ describe('aiStore clawbot context management', () => {
 
     const conversations = await store.getConversationsList()
 
-    expect(conversations).toHaveLength(1)
-    expect(conversations[0].id).toBe('conv-normal')
+    expect(conversations).toHaveLength(2)
+    expect(conversations.find(c => c.source === 'weixin')).toBeDefined()
+  })
+
+  it('restores weixin conversation map from persisted conversations during clawbot init', async () => {
+    const store = useAIStore()
+    const loadWechatLoginState = vi.fn().mockResolvedValue({
+      enabled: true,
+      token: 'token',
+      accountId: 'account',
+      loginStatus: 'connected',
+    })
+
+    mockStorageService.loadConversationsList.mockResolvedValue([
+      {
+        id: 'conv-weixin',
+        title: 'Weixin',
+        createdAt: 2,
+        updatedAt: 20,
+        messageCount: 1,
+        fileSize: 20,
+        hasSkillExecutions: false,
+        source: 'weixin',
+        weixinUserId: 'user@im.wechat',
+        weixinUserName: '微信用户',
+      },
+    ])
+
+    await store.initializeStorage({
+      isMobile: true,
+      loadWechatLoginState,
+    })
+
+    expect(Object.keys(store.weixinConversationMap)).toHaveLength(0)
+
+    await store.initializeClawBot({
+      isMobile: true,
+      loadWechatLoginState,
+    })
+
+    expect(store.weixinConversationMap['user@im.wechat']).toMatchObject({
+      ilinkUserId: 'user@im.wechat',
+      conversationId: 'conv-weixin',
+      userName: '微信用户',
+      contextState: 'unknown',
+    })
   })
 
   it('uses the first user message as the title for a new untitled conversation', async () => {

@@ -1,88 +1,86 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   ClawBotApiError,
   ClawBotService,
 } from '@/services/clawBotService'
 
+vi.mock('@/services/clawBotForwardProxy', () => ({
+  forwardProxy: vi.fn(),
+  forwardProxyBinary: vi.fn(),
+  forwardProxyLongPoll: vi.fn(),
+}));
+
+import { forwardProxy } from '@/services/clawBotForwardProxy';
+
 describe('ClawBotService.sendTextMessage', () => {
-  const originalFetch = globalThis.fetch
-
   beforeEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  afterEach(() => {
-    globalThis.fetch = originalFetch
-  })
+  function mockForwardProxy(body: any, status = 200) {
+    (forwardProxy as ReturnType<typeof vi.fn>).mockResolvedValue({
+      status,
+      contentType: 'application/json',
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+      bodyEncoding: 'text',
+      headers: {},
+      url: '',
+      elapsed: 10,
+    });
+  }
 
   it('treats HTTP 200 with res -2 as a stale context failure', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify({ res: -2, msg: 'stale context' }),
-    })
-
-    globalThis.fetch = fetchMock as typeof fetch
+    mockForwardProxy({ res: -2, msg: 'stale context' });
 
     const service = new ClawBotService({
       token: 'token',
       baseUrl: 'https://example.com',
       loginStatus: 'connected',
-    })
+    });
 
     await expect(service.sendTextMessage('user@im.wechat', 'hello', 'stale-token'))
       .rejects.toMatchObject({
         code: -2,
         kind: 'context_stale',
-      })
+      });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-  })
+    expect(forwardProxy).toHaveBeenCalledTimes(1);
+  });
 
   it('marks login as expired when sendmessage returns errcode -14', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify({ errcode: -14, errmsg: 'session expired' }),
-    })
-
-    globalThis.fetch = fetchMock as typeof fetch
+    mockForwardProxy({ errcode: -14, errmsg: 'session expired' });
 
     const service = new ClawBotService({
       token: 'token',
       baseUrl: 'https://example.com',
       loginStatus: 'connected',
-    })
+    });
 
     await expect(service.sendTextMessage('user@im.wechat', 'hello'))
       .rejects.toMatchObject({
         code: -14,
         kind: 'session_expired',
-      })
+      });
 
-    expect(service.getConfig().loginStatus).toBe('expired')
-    expect(service.getConfig().errorMessage).toContain('会话已过期')
-  })
+    expect(service.getConfig().loginStatus).toBe('expired');
+    expect(service.getConfig().errorMessage).toContain('会话已过期');
+  });
 
   it('sends gateway notifyStart heartbeat successfully', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify({ ret: 0 }),
-    })
-
-    globalThis.fetch = fetchMock as typeof fetch
+    mockForwardProxy({ ret: 0 });
 
     const service = new ClawBotService({
       token: 'token',
-      baseUrl: 'https://example.com',
+      baseUrl: 'https://example.com/ilink',
+      cdnBaseUrl: 'https://example.com/cdn',
       loginStatus: 'connected',
-    })
+    });
 
-    await expect(service.notifyGatewayStart()).resolves.toEqual({ ret: 0 })
+    await expect(service.notifyGatewayStart()).resolves.toEqual({ ret: 0 });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0]?.[0]).toContain('/ilink/bot/msg/notifystart')
-  })
+    expect(forwardProxy).toHaveBeenCalledTimes(1);
+    const callArgs = (forwardProxy as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.url).toContain('/ilink/bot/msg/notifystart');
+  });
 })

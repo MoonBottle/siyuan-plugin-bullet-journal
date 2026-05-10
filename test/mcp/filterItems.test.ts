@@ -6,6 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { executeFilterItems, filterItems } from '@/mcp/filterItems';
 import type { SiYuanClient } from '@/mcp/siyuan-client';
 import type { Item, Project, ProjectDirectory, Task } from '@/types/models';
+import { initI18n } from '@/i18n';
 
 function createMockItem(overrides: Partial<Item> & { status: Item['status'] }): Item {
   return {
@@ -160,5 +161,37 @@ describe('executeFilterItems - groupId 过滤', () => {
       content: '事项内容',
       projectName: '测试项目'
     });
+  });
+
+  it('全库扫描时应发现只有独立事项的文档', async () => {
+    initI18n('en_US');
+
+    const client = {
+      sql: vi.fn().mockResolvedValue([
+        {
+          id: 'doc-standalone',
+          path: '日记/2026-05-09',
+          notebookId: 'notebook-1',
+        },
+      ]),
+      getBlockKramdown: vi.fn().mockResolvedValue(`## Daily Note
+{: id="doc-block" type="doc" }
+整理日报 @2026-05-09
+{: id="item-1" updated="20260509100000" }`),
+    } as unknown as SiYuanClient;
+
+    const result = await executeFilterItems(client, [], {
+      startDate: '2026-05-09',
+      endDate: '2026-05-09',
+    }, 'full');
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      content: '整理日报',
+      taskName: 'Uncategorized',
+      projectName: 'Daily Note',
+    });
+
+    initI18n('zh_CN');
   });
 });

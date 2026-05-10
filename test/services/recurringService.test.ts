@@ -763,5 +763,40 @@ describe('recurringService', () => {
         undefined,
       );
     });
+
+    it('独立事项创建下次 occurrence 时不应写出虚拟任务标题', async () => {
+      mockInsertBlock.mockResolvedValue([{ id: 'new-block-id' }]);
+
+      const item: Item = {
+        id: '1',
+        content: '整理日报',
+        date: '2026-05-09',
+        status: 'completed',
+        lineNumber: 1,
+        docId: 'doc1',
+        blockId: 'item-block',
+        lastBlockId: 'pomodoro-block',
+        repeatRule: { type: 'daily' },
+        task: {
+          id: 'task-default',
+          name: '未分类',
+          level: 'L1',
+          items: [],
+          lineNumber: 1,
+          isSyntheticDefault: true,
+        },
+      };
+
+      await createNextOccurrence({} as any, item);
+
+      expect(mockInsertBlock).toHaveBeenCalledWith(
+        'markdown',
+        expect.not.stringContaining('📋 未分类'),
+        undefined,
+        'pomodoro-block',
+        undefined,
+      );
+      expect(mockInsertBlock.mock.calls[0][1]).toContain('📅2026-05-10');
+    });
   });
 });

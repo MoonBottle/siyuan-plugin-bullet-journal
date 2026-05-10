@@ -48,6 +48,7 @@ export default defineConfig(({
     resolve: {
       alias: {
         "@": resolve(__dirname, "src"),
+        ...(!isWatch ? { "vconsole": resolve(__dirname, "src/mobile/utils/vconsole.stub.ts") } : {}),
       },
     },
 

@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
+import VConsole from 'vconsole';
 import MobileBottomTabBar from '@/mobile/components/navigation/MobileBottomTabBar.vue';
 import MobileCreateFab from '@/mobile/components/navigation/MobileCreateFab.vue';
 import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue';
@@ -85,6 +86,10 @@ onMounted(() => {
     handleShellNavigate(pendingTarget);
   }
   unsubscribeShellNavigate = eventBus.on(Events.MOBILE_MAIN_SHELL_NAVIGATE, handleShellNavigate);
+
+  if (process.env.DEV_MODE === 'true') {
+    new VConsole();
+  }
 });
 
 onUnmounted(() => {

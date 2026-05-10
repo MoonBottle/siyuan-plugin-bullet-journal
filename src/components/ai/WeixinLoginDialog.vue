@@ -35,19 +35,12 @@
         <!-- 二维码区域 -->
         <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-login-dialog__qrcode">
           <div class="weixin-login-dialog__qrcode-wrapper">
-            <iframe 
-              :src="qrcodeUrl" 
-              sandbox="allow-same-origin allow-scripts"
-              scrolling="no"
-            ></iframe>
+            <canvas ref="qrcodeCanvasRef"></canvas>
           </div>
           <p>请使用微信扫描上方二维码</p>
           <p class="weixin-login-dialog__qrcode-hint">
             如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
           </p>
-          <!-- <div class="weixin-login-dialog__qrcode-fallback">
-            <a :href="qrcodeUrl" target="_blank" class="weixin-login-dialog__qrcode-link">在新窗口打开二维码</a>
-          </div> -->
         </div>
 
         <!-- 已连接状态 -->
@@ -63,20 +56,24 @@
           </div>
         </div>
 
-        <!-- 连接用户列表 -->
+        <!-- 连接用户列表（常显） -->
         <div v-if="connectedUsers.length > 0" class="weixin-login-dialog__users">
           <div class="weixin-login-dialog__users-title">
-            最近消息 ({{ connectedUsers.length }} 个对话)
+            微信会话 ({{ connectedUsers.length }})
           </div>
           <div class="weixin-login-dialog__users-list">
             <div 
               v-for="user in connectedUsers" 
               :key="user.id"
               class="weixin-login-dialog__user-item"
-              @click="handleUserClick(user.conversationId)"
+              @click="handleUserClick(user.conversationId, user.id)"
             >
               <span class="weixin-login-dialog__user-icon">📱</span>
               <span class="weixin-login-dialog__user-name">{{ user.name }}</span>
+              <span
+                class="weixin-login-dialog__user-status"
+                :class="`weixin-login-dialog__user-status--${user.status.tone}`"
+              >{{ user.status.label }}</span>
               <span v-if="user.unread > 0" class="weixin-login-dialog__user-unread">
                 {{ user.unread }}
               </span>
@@ -132,8 +129,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useAIStore } from '@/stores';
+import QRCode from 'qrcode';
 
 const emit = defineEmits<{
   close: [];
@@ -144,12 +142,31 @@ const aiStore = useAIStore();
 
 const isLoading = ref(false);
 const isChecking = ref(false);
-const pollInterval = ref<number | null>(null);
+const pollTimeout = ref<number | null>(null);
+const qrcodeCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
 const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
-const errorMessage = computed(() => aiStore.clawBotConfig.errorMessage);
+
+watch(qrcodeUrl, async (url) => {
+  if (!url) return;
+  await nextTick();
+  if (qrcodeCanvasRef.value) {
+    QRCode.toCanvas(qrcodeCanvasRef.value, url, {
+      width: 200,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+    });
+  }
+}, { immediate: true });
+
+const errorMessage = computed(() => {
+  if (!aiStore.clawBotForwardProxyAvailable && aiStore.clawBotLoginStatus !== 'connected') {
+    return '本地代理不可用，请重新加载插件';
+  }
+  return aiStore.clawBotConfig.errorMessage;
+});
 const accountId = computed(() => aiStore.clawBotConfig.accountId);
 
 const statusText = computed(() => {
@@ -172,7 +189,7 @@ const statusText = computed(() => {
 });
 
 const connectedUsers = computed(() => {
-  const users: Array<{ id: string; name: string; conversationId: string; unread: number }> = [];
+  const users: Array<{ id: string; name: string; conversationId: string; unread: number; status: any }> = [];
   
   const conversationMap = aiStore.weixinConversationMap || {};
   const unreadMessages = aiStore.unreadWeixinMessages || {};
@@ -185,7 +202,8 @@ const connectedUsers = computed(() => {
       id: userId,
       name: map.userName || `用户 ${userId.slice(0, 8)}`,
       conversationId: map.conversationId,
-      unread
+      unread,
+      status: aiStore.getWeixinConversationStatus(userId),
     });
   }
   
@@ -247,7 +265,8 @@ function handleClose() {
 }
 
 // 点击用户切换到对应会话
-function handleUserClick(conversationId: string) {
+function handleUserClick(conversationId: string, userId: string) {
+  aiStore.clearWeixinUnread(userId);
   emit('switch-conversation', conversationId);
   emit('close');
 }
@@ -255,23 +274,37 @@ function handleUserClick(conversationId: string) {
 // 开始自动轮询
 function startPolling() {
   stopPolling();
-  pollInterval.value = window.setInterval(async () => {
+  let stopped = false;
+
+  async function poll() {
+    if (stopped) return;
     if (loginStatus.value === 'pending' || loginStatus.value === 'scaned') {
-      const success = await aiStore.pollClawBotLogin();
-      if (success) {
-        stopPolling();
+      try {
+        const success = await aiStore.pollClawBotLogin();
+        if (success) {
+          stopPolling();
+          return;
+        }
+      } catch {
+        // 继续轮询
+      }
+      if (!stopped) {
+        pollTimeout.value = window.setTimeout(poll, 1000) as unknown as number;
       }
     } else {
       stopPolling();
     }
-  }, 3000) as unknown as number;
+  }
+
+  poll();
+  pollTimeout.value = -1 as unknown as number;
 }
 
 // 停止轮询
 function stopPolling() {
-  if (pollInterval.value) {
-    clearInterval(pollInterval.value);
-    pollInterval.value = null;
+  if (pollTimeout.value) {
+    clearTimeout(pollTimeout.value);
+    pollTimeout.value = null;
   }
 }
 
@@ -421,22 +454,18 @@ onUnmounted(() => {
     margin-bottom: 20px;
 
     &-wrapper {
-      width: 250px;
-      height: 250px;
-      overflow: hidden;
+      width: 200px;
+      height: 200px;
       border: 1px solid var(--b3-theme-surface-lighter);
       border-radius: 8px;
       background: #fff;
-      position: relative;
       margin: 0 auto;
-      
-      iframe {
-        position: absolute;
-        top: -263px;
-        left: -15px;
-        width: 280px;
-        height: 600px;
-        border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      canvas {
+        display: block;
       }
     }
 
@@ -556,6 +585,34 @@ onUnmounted(() => {
     flex: 1;
     font-size: 13px;
     color: var(--b3-theme-on-background);
+  }
+
+  &__user-status {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    white-space: nowrap;
+    line-height: 1.4;
+
+    &--positive {
+      background: rgba(7, 193, 96, 0.15);
+      color: #07c160;
+    }
+
+    &--warning {
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+    }
+
+    &--neutral {
+      background: rgba(100, 116, 139, 0.15);
+      color: #64748b;
+    }
+
+    &--negative {
+      background: rgba(144, 144, 144, 0.15);
+      color: #909090;
+    }
   }
 
   &__user-unread {
