@@ -5,6 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { parseKramdown, stripListAndBlockAttr } from '@/parser/core';
+import { initI18n } from '@/i18n';
 
 describe('stripListAndBlockAttr', () => {
   // ========== 基础列表处理 ==========
@@ -1280,4 +1281,21 @@ describe('parseKramdown 独立事项解析', () => {
     expect(item.listItemBlockId).toBe('list-parent-id');
     expect(item.content).toBe('整理日报');
   });
+
+  it('英文 locale 下默认任务名应使用国际化文案', () => {
+    initI18n('en_US');
+
+    const kramdown = `## Daily Note
+{: id="doc-block" type="doc" }
+Write summary @2026-05-09
+{: id="item-1" updated="20260509100000" }`;
+
+    const project = parseKramdown(kramdown, 'standalone-doc-en');
+
+    expect(project).not.toBeNull();
+    expect(project!.tasks[0].name).toBe('Uncategorized');
+
+    initI18n('zh_CN');
+  });
+
 });

@@ -7,11 +7,12 @@ import { LineParser, createLink, isStandaloneBlockRefLine, parseBlockRefs } from
 import { parseHabitLine, parseCheckInRecordLine, isHabitLine } from './habitParser';
 import { processLineText } from '@/utils/stringUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
+import { t } from '@/i18n';
 
 function createSyntheticDefaultTask(lineNumber: number, docId: string): Task {
   return {
     id: `task-synthetic-${docId}`,
-    name: '未分类', // isSyntheticDefault 标记供 UI 层按需替换为 i18n 翻译
+    name: t('common.uncategorized'),
     level: 'L1',
     items: [],
     lineNumber,
