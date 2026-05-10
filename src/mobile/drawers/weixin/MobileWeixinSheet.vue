@@ -32,11 +32,7 @@
 
               <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-sheet__qrcode">
                 <div class="weixin-sheet__qrcode-wrapper">
-                  <iframe
-                    :src="qrcodeUrl"
-                    sandbox="allow-same-origin allow-scripts"
-                    scrolling="no"
-                  ></iframe>
+                  <canvas ref="qrcodeCanvasRef"></canvas>
                 </div>
                 <p class="weixin-sheet__qrcode-hint">请使用微信扫描上方二维码</p>
                 <p class="weixin-sheet__qrcode-link">
@@ -121,8 +117,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import { useAIStore } from '@/stores';
+import QRCode from 'qrcode';
 
 defineProps<{
   modelValue: boolean;
@@ -138,10 +135,24 @@ const aiStore = useAIStore();
 const isLoading = ref(false);
 const isChecking = ref(false);
 const pollTimeout = ref<number | null>(null);
+const qrcodeCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
 const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
+
+watch(qrcodeUrl, async (url) => {
+  if (!url) return;
+  await nextTick();
+  if (qrcodeCanvasRef.value) {
+    QRCode.toCanvas(qrcodeCanvasRef.value, url, {
+      width: 200,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+    });
+  }
+}, { immediate: true });
+
 const errorMessage = computed(() => {
   if (!aiStore.clawBotForwardProxyAvailable && aiStore.clawBotLoginStatus !== 'connected') {
     return '本地代理不可用，请重新加载插件';
@@ -439,22 +450,18 @@ onUnmounted(() => {
 }
 
 .weixin-sheet__qrcode-wrapper {
-  width: 220px;
-  height: 220px;
-  overflow: hidden;
+  width: 200px;
+  height: 200px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 8px;
   background: #fff;
-  position: relative;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  iframe {
-    position: absolute;
-    top: -263px;
-    left: -30px;
-    width: 280px;
-    height: 600px;
-    border: none;
+  canvas {
+    display: block;
   }
 }
 

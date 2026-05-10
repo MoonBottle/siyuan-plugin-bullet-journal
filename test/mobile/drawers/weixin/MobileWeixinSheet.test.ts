@@ -2,6 +2,14 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, nextTick } from 'vue';
+
+vi.mock('qrcode', () => ({
+  default: {
+    toCanvas: vi.fn().mockImplementation((_canvas: any, _text: string, _opts: any) => {}),
+  },
+  toCanvas: vi.fn().mockImplementation(() => {}),
+}));
+
 import MobileWeixinSheet from '@/mobile/drawers/weixin/MobileWeixinSheet.vue';
 
 const mockAiStore = {
@@ -103,16 +111,15 @@ describe('MobileWeixinSheet', () => {
     mounted.unmount();
   });
 
-  it('shows qrcode iframe when loginStatus is pending', async () => {
+  it('shows qrcode canvas when loginStatus is pending', async () => {
     mockAiStore.clawBotLoginStatus = 'pending';
     mockAiStore.clawBotConfig.qrcodeUrl = 'https://example.com/qr';
 
     const mounted = mountSheet();
     await flush();
 
-    const iframe = document.body.querySelector('.weixin-sheet__qrcode-wrapper iframe');
-    expect(iframe).not.toBeNull();
-    expect(iframe?.getAttribute('src')).toBe('https://example.com/qr');
+    const canvas = document.body.querySelector('.weixin-sheet__qrcode-wrapper canvas');
+    expect(canvas).not.toBeNull();
     expect(document.body.textContent).toContain('刷新二维码');
     expect(document.body.textContent).toContain('我已扫码');
 

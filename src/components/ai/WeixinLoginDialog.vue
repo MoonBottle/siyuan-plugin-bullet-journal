@@ -35,19 +35,12 @@
         <!-- 二维码区域 -->
         <div v-if="loginStatus === 'pending' && qrcodeUrl" class="weixin-login-dialog__qrcode">
           <div class="weixin-login-dialog__qrcode-wrapper">
-            <iframe 
-              :src="qrcodeUrl" 
-              sandbox="allow-same-origin allow-scripts"
-              scrolling="no"
-            ></iframe>
+            <canvas ref="qrcodeCanvasRef"></canvas>
           </div>
           <p>请使用微信扫描上方二维码</p>
           <p class="weixin-login-dialog__qrcode-hint">
             如果二维码无法显示，<a :href="qrcodeUrl" target="_blank">点击此处打开</a>
           </p>
-          <!-- <div class="weixin-login-dialog__qrcode-fallback">
-            <a :href="qrcodeUrl" target="_blank" class="weixin-login-dialog__qrcode-link">在新窗口打开二维码</a>
-          </div> -->
         </div>
 
         <!-- 已连接状态 -->
@@ -136,8 +129,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useAIStore } from '@/stores';
+import QRCode from 'qrcode';
 
 const emit = defineEmits<{
   close: [];
@@ -149,10 +143,24 @@ const aiStore = useAIStore();
 const isLoading = ref(false);
 const isChecking = ref(false);
 const pollTimeout = ref<number | null>(null);
+const qrcodeCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const loginStatus = computed(() => aiStore.clawBotLoginStatus);
 const isConnected = computed(() => aiStore.isClawBotConnected);
 const qrcodeUrl = computed(() => aiStore.clawBotConfig.qrcodeUrl);
+
+watch(qrcodeUrl, async (url) => {
+  if (!url) return;
+  await nextTick();
+  if (qrcodeCanvasRef.value) {
+    QRCode.toCanvas(qrcodeCanvasRef.value, url, {
+      width: 200,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+    });
+  }
+}, { immediate: true });
+
 const errorMessage = computed(() => {
   if (!aiStore.clawBotForwardProxyAvailable && aiStore.clawBotLoginStatus !== 'connected') {
     return '本地代理不可用，请重新加载插件';
@@ -446,22 +454,18 @@ onUnmounted(() => {
     margin-bottom: 20px;
 
     &-wrapper {
-      width: 250px;
-      height: 250px;
-      overflow: hidden;
+      width: 200px;
+      height: 200px;
       border: 1px solid var(--b3-theme-surface-lighter);
       border-radius: 8px;
       background: #fff;
-      position: relative;
       margin: 0 auto;
-      
-      iframe {
-        position: absolute;
-        top: -263px;
-        left: -15px;
-        width: 280px;
-        height: 600px;
-        border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      canvas {
+        display: block;
       }
     }
 
