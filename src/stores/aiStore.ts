@@ -879,6 +879,8 @@ export const useAIStore = defineStore('ai', () => {
       clawBotConfig.value.baseUrl = `${proxyBaseUrl}/ilink`;
       clawBotConfig.value.cdnBaseUrl = `${proxyBaseUrl}/cdn`;
       console.log('[AIStore] ClawBot proxy active:', proxyBaseUrl);
+    } else {
+      console.log('[AIStore] ClawBot proxy not active, using direct baseUrl:', clawBotConfig.value.baseUrl);
     }
     
     // 从单独文件加载所有配置（包括 enabled）

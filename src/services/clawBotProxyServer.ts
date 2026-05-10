@@ -67,8 +67,16 @@ function filterHeaders(headers: Record<string, string | string[] | undefined>): 
 export function canStartProxy(): boolean {
   try {
     const http = require('node:http');
-    return typeof http?.createServer === 'function';
-  } catch {
+    console.log('[ClawBot Proxy] node:http require result:', {
+      type: typeof http,
+      hasCreateServer: typeof http?.createServer,
+      keys: http ? Object.keys(http).slice(0, 10) : [],
+    });
+    const result = typeof http?.createServer === 'function';
+    console.log('[ClawBot Proxy] canStartProxy:', result);
+    return result;
+  } catch (err) {
+    console.log('[ClawBot Proxy] node:http require failed:', err);
     return false;
   }
 }

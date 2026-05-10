@@ -394,6 +394,13 @@ export default class TaskAssistantPlugin extends Plugin {
       await aiStore.initializeStorage(this);
 
       try {
+        console.log("[Task Assistant] ClawBot proxy check:", {
+          isElectron: this.isElectron,
+          isMobile: this.isMobile,
+          isBrowser: this.isBrowser,
+          isLocal: this.isLocal,
+          platform: this.platform,
+        });
         if (canStartProxy()) {
           this.clawBotProxy = await createClawBotProxyServer();
           console.log("[Task Assistant] ClawBot proxy started on port", this.clawBotProxy.port);
@@ -403,6 +410,11 @@ export default class TaskAssistantPlugin extends Plugin {
       } catch (proxyError) {
         console.error("[Task Assistant] Failed to start ClawBot proxy:", proxyError);
       }
+
+      console.log("[Task Assistant] ClawBot proxy result:", {
+        hasProxy: !!this.clawBotProxy,
+        proxyBaseUrl: this.clawBotProxy?.baseUrl ?? 'none',
+      });
 
       await aiStore.initializeClawBot(this, this.clawBotProxy?.baseUrl);
       console.log("[Task Assistant] ClawBot initialized from plugin onload");
