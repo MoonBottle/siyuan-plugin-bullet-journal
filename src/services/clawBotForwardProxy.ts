@@ -1,5 +1,3 @@
-import { fetchSyncPost } from 'siyuan';
-
 type ForwardProxyParams = {
   url: string;
   method?: string;
@@ -31,6 +29,14 @@ const API_PATH = '/api/network/forwardProxy';
 const DEFAULT_TIMEOUT = 7000;
 const LONG_POLL_TIMEOUT = 60000;
 
+async function rawForwardProxyRequest(body: Record<string, any>): Promise<any> {
+  const resp = await fetch(API_PATH, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return await resp.json();
+}
+
 export async function forwardProxy(params: ForwardProxyParams): Promise<ForwardProxyResult> {
   const body: Record<string, any> = {
     url: params.url,
@@ -48,7 +54,7 @@ export async function forwardProxy(params: ForwardProxyParams): Promise<ForwardP
     body.responseEncoding = params.responseEncoding;
   }
 
-  const response = await fetchSyncPost(API_PATH, body) as any;
+  const response = await rawForwardProxyRequest(body);
 
   if (response?.code !== 0) {
     throw new Error(response?.msg ?? 'forwardProxy request failed');
@@ -80,11 +86,11 @@ export async function forwardProxyLongPoll(params: Omit<ForwardProxyParams, 'tim
 
 export async function isForwardProxyAvailable(): Promise<boolean> {
   try {
-    const response = await fetchSyncPost(API_PATH, {
+    const response = await rawForwardProxyRequest({
       url: 'https://ilinkai.weixin.qq.com/ilink/bot/get_bot_qrcode?bot_type=3',
       method: 'GET',
       timeout: 3000,
-    }) as any;
+    });
     return response?.code === 0;
   } catch {
     return false;
