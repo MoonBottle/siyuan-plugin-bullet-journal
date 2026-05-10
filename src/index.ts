@@ -569,13 +569,12 @@ export default class TaskAssistantPlugin extends Plugin {
 
     // 停止 ClawBot 本地代理
     if (this.clawBotProxy) {
-      try {
-        await this.clawBotProxy.stop();
+      this.clawBotProxy.stop().then(() => {
         this.clawBotProxy = null;
         console.log("[Task Assistant] ClawBot proxy stopped");
-      } catch (error) {
+      }).catch((error) => {
         console.error("[Task Assistant] Failed to stop ClawBot proxy:", error);
-      }
+      });
     }
 
     debugState.activeInstanceIds = debugState.activeInstanceIds.filter(

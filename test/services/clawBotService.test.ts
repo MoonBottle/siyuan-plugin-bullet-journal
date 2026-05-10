@@ -76,7 +76,8 @@ describe('ClawBotService.sendTextMessage', () => {
 
     const service = new ClawBotService({
       token: 'token',
-      baseUrl: 'https://example.com',
+      baseUrl: 'https://example.com/ilink',
+      cdnBaseUrl: 'https://example.com/cdn',
       loginStatus: 'connected',
     })
 
