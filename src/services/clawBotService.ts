@@ -220,7 +220,7 @@ export class ClawBotService {
           `bot/get_qrcode_status?qrcode=${encodeURIComponent(qrcode)}`,
           'GET',
           undefined,
-          15000,
+          35000,
         );
 
         if (status !== 200) {
