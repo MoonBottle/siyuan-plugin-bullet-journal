@@ -123,7 +123,7 @@ describe('MobileAiPanel', () => {
     mockAiStore.getWeixinConversationStatus.mockReset();
     mockAiStore.getWeixinConversationStatus.mockReturnValue({
       status: 'active',
-      label: '进行中',
+      label: '可用',
       tone: 'positive',
     });
     mockAiStore.loadSettings.mockReset();
@@ -195,6 +195,32 @@ describe('MobileAiPanel', () => {
     await flushPanelUpdates();
 
     expect(mockAiStore.getWeixinConversationStatus).toHaveBeenCalledWith('user@im.wechat');
+
+    mounted.unmount();
+  });
+
+  it('shows the current weixin conversation name in the mobile header and hides active status text', async () => {
+    mockAiStore.currentConversationId = 'conv-weixin';
+    mockAiStore.getConversationsList.mockResolvedValue([
+      {
+        id: 'conv-weixin',
+        title: '微信: 展示名',
+        createdAt: 1,
+        updatedAt: 2,
+        messageCount: 1,
+        fileSize: 10,
+        hasSkillExecutions: false,
+        source: 'weixin',
+        weixinUserId: 'user@im.wechat',
+        weixinUserName: '展示名',
+      },
+    ]);
+
+    const mounted = mountPanel();
+    await flushPanelUpdates();
+
+    expect(mounted.container.textContent).toContain('展示名');
+    expect(mounted.container.textContent).not.toContain('可用');
 
     mounted.unmount();
   });

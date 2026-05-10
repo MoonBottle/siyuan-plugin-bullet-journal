@@ -191,14 +191,13 @@
 
 ### 状态集合
 
-统一收敛为 4 个状态：
+会话状态收敛为 2 个主状态，外加 1 个全局覆盖状态：
 
-1. `active`：上下文可用，最近正常收发
+1. `active`：上下文正常，可继续沿用当前会话
 2. `stale`：会话存在，但上下文已失效，需要重新建立
-3. `waiting`：已连接，但尚未形成稳定会话上下文
-4. `offline`：`ClawBot` 未连接或当前会话暂不可工作
+3. `offline`：`ClawBot` 未连接、代理不可用，或当前会话暂不可工作
 
-不再拆出更多状态，避免 UI 和判断逻辑膨胀。
+不再保留 `waiting` 一类中间态。对于“已有会话但尚未收到新消息”的场景，UI 不额外展示过渡状态，默认按可用处理，直到收到明确失效信号。
 
 ### 状态来源与优先级
 
@@ -210,7 +209,7 @@
    - `contextState === 'active'` -> `active`
    - `contextState === 'stale'` -> `stale`
    - 最近发生上下文错误，且尚未恢复 -> `stale`
-   - 其余已连接但未稳定 -> `waiting`
+   - 其余已连接会话默认视为 `active`
 
 该设计复用现有 `weixinConversationMap` 中已存在的数据，不新增第二套并行状态机。重点使用：
 
@@ -242,7 +241,7 @@
 桌面端 `WeixinLoginDialog.vue` 和移动端 `MobileWeixinSheet.vue` 中的微信会话列表：
 
 - **常显**：只要存在微信会话就显示列表，不区分连接/未连接状态
-- **状态 tag 常显**：每个会话项在用户名右侧显示状态 tag（进行中/需恢复/等待中/不可用）
+- **状态 tag 常显**：每个会话项在用户名右侧显示状态 tag（可用/需恢复/不可用）
 - **未读数清零**：点击会话项切换到对应会话时，立即清零该用户的未读数（`clearWeixinUnread`），小红点消失
 - 标题统一为「微信会话 (N)」
 
@@ -250,19 +249,17 @@
 
 状态文案保持短文本：
 
-- `active` -> `进行中`
+- `active` -> `可用`
 - `stale` -> `需恢复`
-- `waiting` -> `等待中`
 - `offline` -> `不可用`
 
 推荐视觉语义：
 
 - `active`：绿色
 - `stale`：橙色
-- `waiting`：中性蓝灰
 - `offline`：灰色或灰红
 
-状态摘要保持单行，不扩成说明段落。详细失败原因继续通过错误提示和连接面板展示。
+移动端状态改为当前会话标题下的小字，仅在 `stale` / `offline` 时显示。桌面端头部显示当前微信会话名，状态作为次级小字，不再单独占一行。详细失败原因继续通过错误提示和连接面板展示。
 
 ## 前端改造
 
@@ -330,7 +327,7 @@
 改动目标：
 
 - 微信会话列表项显示状态徽标
-- 当前微信会话头部显示状态摘要
+- 当前微信会话头部展示会话名，异常状态以下级文字显示
 - 登录弹框/Sheet 中微信会话常显 + 状态 tag 常显
 - 点击会话项清零未读数（`clearWeixinUnread`）
 - 明确显示代理不可用类错误
@@ -362,7 +359,7 @@
 1. 连接断开时微信会话派生为 `offline`
 2. `contextState === 'active'` 派生为 `active`
 3. `contextState === 'stale'` 或最近上下文错误派生为 `stale`
-4. 已连接但上下文未稳定派生为 `waiting`
+4. 已连接且无失效信号时派生为 `active`
 
 ### 回归测试
 
@@ -383,8 +380,8 @@
 | `src/index.ts` | 修改 | 探测 forwardProxy 可用性 |
 | `src/stores/aiStore.ts` | 修改 | 新增微信会话状态派生入口 |
 | `src/components/ai/ConversationSelect.vue` | 修改 | 列表项显示微信会话状态 |
-| `src/tabs/AiChatDock.vue` | 修改 | 当前微信会话显示状态摘要 |
-| `src/mobile/panels/MobileAiPanel.vue` | 修改 | 当前微信会话显示状态摘要 |
+| `src/tabs/AiChatDock.vue` | 修改 | 头部显示当前微信会话名，异常状态以下级文字显示 |
+| `src/mobile/panels/MobileAiPanel.vue` | 修改 | 头部显示当前微信会话名，异常状态以下级文字显示 |
 | `src/components/ai/WeixinLoginDialog.vue` | 修改 | 展示代理不可用错误 |
 | `src/mobile/drawers/weixin/MobileWeixinSheet.vue` | 修改 | 展示代理不可用错误 |
 | `test/services/clawBotForwardProxy.test.ts` | 新建 | 覆盖 forwardProxy 封装 |

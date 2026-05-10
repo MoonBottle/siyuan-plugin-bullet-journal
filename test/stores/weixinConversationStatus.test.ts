@@ -43,7 +43,7 @@ describe('Weixin conversation status derivation', () => {
 
     const status = store.getWeixinConversationStatus('user1');
     expect(status.status).toBe('active');
-    expect(status.label).toBe('进行中');
+    expect(status.label).toBe('可用');
     expect(status.tone).toBe('positive');
   });
 
@@ -76,7 +76,7 @@ describe('Weixin conversation status derivation', () => {
     expect(status.status).toBe('stale');
   });
 
-  it('derives waiting when connected but no stable context', () => {
+  it('treats an existing connected conversation without explicit context state as active', () => {
     const store = setupStore({
       isConnected: true,
       conversations: {
@@ -85,9 +85,9 @@ describe('Weixin conversation status derivation', () => {
     });
 
     const status = store.getWeixinConversationStatus('user1');
-    expect(status.status).toBe('waiting');
-    expect(status.label).toBe('等待中');
-    expect(status.tone).toBe('neutral');
+    expect(status.status).toBe('active');
+    expect(status.label).toBe('可用');
+    expect(status.tone).toBe('positive');
   });
 
   it('derives offline for unknown user', () => {

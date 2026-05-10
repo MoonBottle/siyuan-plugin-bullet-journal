@@ -821,15 +821,14 @@ export const useAIStore = defineStore('ai', () => {
   }
   
   type WeixinConversationStatusResult = {
-    status: 'active' | 'stale' | 'waiting' | 'offline';
+    status: 'active' | 'stale' | 'offline';
     label: string;
-    tone: 'positive' | 'warning' | 'neutral' | 'negative';
+    tone: 'positive' | 'warning' | 'negative';
   };
 
   const WEIXIN_STATUS_MAP: Record<string, WeixinConversationStatusResult> = {
-    active: { status: 'active', label: '进行中', tone: 'positive' },
+    active: { status: 'active', label: '可用', tone: 'positive' },
     stale: { status: 'stale', label: '需恢复', tone: 'warning' },
-    waiting: { status: 'waiting', label: '等待中', tone: 'neutral' },
     offline: { status: 'offline', label: '不可用', tone: 'negative' },
   };
 
@@ -886,7 +885,7 @@ export const useAIStore = defineStore('ai', () => {
       return WEIXIN_STATUS_MAP.stale;
     }
 
-    return WEIXIN_STATUS_MAP.waiting;
+    return WEIXIN_STATUS_MAP.active;
   }
 
   function clearWeixinUnread(userId: string) {

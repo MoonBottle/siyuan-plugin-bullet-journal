@@ -33,7 +33,16 @@
             <span v-if="hasUnreadWeixin" class="mobile-ai-panel__unread-badge"></span>
           </span>
         </button>
-        <div class="mobile-ai-panel__title">{{ currentTitle }}</div>
+        <div class="mobile-ai-panel__title-block">
+          <div class="mobile-ai-panel__title">{{ currentTitle }}</div>
+          <div
+            v-if="currentHeaderStatus"
+            class="mobile-ai-panel__title-status"
+            :class="`mobile-ai-panel__title-status--${currentHeaderStatus.tone}`"
+          >
+            {{ currentHeaderStatus.label }}
+          </div>
+        </div>
         <button
           class="mobile-ai-panel__icon-button"
           data-testid="mobile-ai-new-conversation"
@@ -53,14 +62,6 @@
           <svg class="mobile-ai-panel__icon-svg mobile-ai-panel__icon-svg--danger"><use xlink:href="#iconTrashcan"></use></svg>
         </button>
       </header>
-
-      <div
-        v-if="currentWeixinStatus && currentConversation?.source === 'weixin'"
-        class="mobile-ai-panel__weixin-status"
-        :class="`mobile-ai-panel__weixin-status--${currentWeixinStatus.tone}`"
-      >
-        {{ currentWeixinStatus.label }}
-      </div>
 
       <ChatPanel
         ref="chatPanelRef"
@@ -130,6 +131,13 @@ const allItems = computed(() => projectStore.items || []);
 const isClawBotConnected = computed(() => aiStore.isClawBotConnected);
 const hasUnreadWeixin = computed(() => aiStore.hasUnreadWeixin);
 const currentTitle = computed(() => {
+  const conv = currentConversation.value;
+  if (conv?.source === 'weixin') {
+    return conv.weixinUserName?.trim()
+      || conv.title.replace(/^微信:\s*/, '').trim()
+      || '微信会话';
+  }
+
   return aiStore.currentConversation?.title || t('aiChat').defaultConversationTitle;
 });
 
@@ -143,6 +151,19 @@ const currentWeixinStatus = computed(() => {
   const conv = currentConversation.value;
   if (!conv || conv.source !== 'weixin' || !conv.weixinUserId) return null;
   return aiStore.getWeixinConversationStatus(conv.weixinUserId);
+});
+
+const currentHeaderStatus = computed(() => {
+  if (currentConversation.value?.source !== 'weixin') {
+    return null;
+  }
+
+  const status = currentWeixinStatus.value;
+  if (!status || status.status === 'active') {
+    return null;
+  }
+
+  return status;
 });
 
 function loadAISettingsFromPlugin() {
@@ -279,6 +300,13 @@ onMounted(async () => {
     }
   }
 
+  &__title-block {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
   &__title {
     min-width: 0;
     overflow: hidden;
@@ -289,34 +317,22 @@ onMounted(async () => {
     font-weight: 600;
   }
 
-  &__chat-panel {
-
-  &__weixin-status {
+  &__title-status {
+    margin-top: 2px;
     font-size: 11px;
-    padding: 2px 10px;
-    text-align: center;
-    border-bottom: 1px solid var(--b3-theme-surface-lighter);
-
-    &--positive {
-      background: rgba(7, 193, 96, 0.08);
-      color: #07c160;
-    }
+    line-height: 1.3;
+    color: var(--b3-theme-on-surface-light);
 
     &--warning {
-      background: rgba(255, 152, 0, 0.08);
       color: #ff9800;
     }
 
-    &--neutral {
-      background: rgba(100, 116, 139, 0.08);
-      color: #64748b;
-    }
-
     &--negative {
-      background: rgba(144, 144, 144, 0.08);
       color: #909090;
     }
   }
+
+  &__chat-panel {
     flex: 1;
     min-height: 0;
   }
