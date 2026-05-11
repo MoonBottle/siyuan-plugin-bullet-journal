@@ -998,6 +998,7 @@
     "dueTomorrow": "Check in tomorrow",
     "dueOn": "Next {date}",
     "noNeedToday": "No check-in needed today",
+    "clickableDateHint": "Click to check in, right-click for more actions",
     "createSuccess": "Habit created",
     "createFailed": "Failed to create habit"
   }

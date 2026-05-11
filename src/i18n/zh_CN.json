@@ -1039,6 +1039,7 @@
     "dueTomorrow": "明天再打卡",
     "dueOn": "下次 {date}",
     "noNeedToday": "今天无需打卡",
+    "clickableDateHint": "点击可打卡，右键可更多操作",
     "createSuccess": "习惯已创建",
     "createFailed": "创建习惯失败"
   }

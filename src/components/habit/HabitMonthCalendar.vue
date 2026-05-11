@@ -20,8 +20,6 @@
             'habit-month-calendar__cell--missed': cell.status === 'missed',
             'habit-month-calendar__cell--partial': cell.status === 'partial',
           }]"
-          @click="handleCellClick(cell)"
-          @contextmenu="handleCellContextMenu($event, cell)"
         >
           <template v-if="cell.date">
             <span
@@ -31,7 +29,13 @@
             >
               {{ cell.dayNum }}
             </span>
-            <div class="habit-month-calendar__marker">
+            <div
+              class="habit-month-calendar__marker"
+              :class="{ 'habit-month-calendar__marker--interactive': cell.interactive }"
+              :title="cell.interactive ? t('habit').clickableDateHint : undefined"
+              @click="handleCellClick(cell)"
+              @contextmenu="handleCellContextMenu($event, cell)"
+            >
               <span
                 v-if="cell.status === 'completed'"
                 class="habit-month-calendar__check"
@@ -396,6 +400,16 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   cursor: default;
+}
+
+.habit-month-calendar__marker--interactive,
+.habit-month-calendar__marker--interactive .habit-month-calendar__check,
+.habit-month-calendar__marker--interactive .habit-month-calendar__missed,
+.habit-month-calendar__marker--interactive .habit-month-calendar__empty-dot,
+.habit-month-calendar__marker--interactive .habit-month-calendar__progress-ring,
+.habit-month-calendar__marker--interactive .habit-month-calendar__progress-track,
+.habit-month-calendar__marker--interactive .habit-month-calendar__progress-value {
+  cursor: pointer;
 }
 
 .habit-month-calendar__check,

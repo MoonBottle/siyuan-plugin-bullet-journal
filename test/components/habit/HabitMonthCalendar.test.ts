@@ -208,7 +208,8 @@ describe('HabitMonthCalendar', () => {
     await nextTick();
 
     const cell = getCell(mounted.container, '2026-04-12');
-    cell?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const marker = cell?.querySelector('.habit-month-calendar__marker') as HTMLDivElement | null;
+    marker?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(mounted.events.reset).toEqual(['2026-04-12']);
     expect(mounted.events.primary).toEqual([]);
@@ -231,7 +232,8 @@ describe('HabitMonthCalendar', () => {
     await nextTick();
 
     const cell = getCell(mounted.container, '2026-04-12');
-    cell?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+    const marker = cell?.querySelector('.habit-month-calendar__marker') as HTMLDivElement | null;
+    marker?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
     await nextTick();
 
     const action = mounted.container.querySelector('[data-action="mark-missed"]') as HTMLButtonElement | null;
@@ -239,6 +241,28 @@ describe('HabitMonthCalendar', () => {
     action?.click();
 
     expect(mounted.events.missed).toEqual(['2026-04-12']);
+    mounted.unmount();
+  });
+
+  it('interactive day exposes pointer hint title', async () => {
+    const habit: Habit = {
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [],
+    };
+
+    const mounted = mountCalendar(habit);
+    await nextTick();
+
+    const cell = getCell(mounted.container, '2026-04-12');
+    const marker = cell?.querySelector('.habit-month-calendar__marker') as HTMLDivElement | null;
+    expect(marker?.classList.contains('habit-month-calendar__marker--interactive')).toBe(true);
+    expect(marker?.getAttribute('title')).toBe('点击可打卡，右键可更多操作');
+
     mounted.unmount();
   });
 });
