@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createApp, nextTick } from 'vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import type { Habit } from '@/types/models';
+import { SY_ICON_TOOLTIP_ID } from '@/utils/dialog';
 
 function mountCalendar(habit: Habit, currentDate = '2026-04-30') {
   const container = document.createElement('div');
@@ -244,7 +245,7 @@ describe('HabitMonthCalendar', () => {
     mounted.unmount();
   });
 
-  it('interactive day exposes pointer hint title', async () => {
+  it('interactive day shows custom tooltip on marker hover', async () => {
     const habit: Habit = {
       name: '早起',
       docId: 'doc-1',
@@ -261,7 +262,17 @@ describe('HabitMonthCalendar', () => {
     const cell = getCell(mounted.container, '2026-04-12');
     const marker = cell?.querySelector('.habit-month-calendar__marker') as HTMLDivElement | null;
     expect(marker?.classList.contains('habit-month-calendar__marker--interactive')).toBe(true);
-    expect(marker?.getAttribute('title')).toBe('点击可打卡，右键可更多操作');
+    marker?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    await nextTick();
+
+    const tooltip = document.getElementById(SY_ICON_TOOLTIP_ID);
+    expect(tooltip).not.toBeNull();
+    expect(tooltip?.textContent).toBe('点击可打卡，右键可更多操作');
+    expect(tooltip?.classList.contains('visible')).toBe(true);
+
+    marker?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    await nextTick();
+    expect(tooltip?.classList.contains('visible')).toBe(false);
 
     mounted.unmount();
   });

@@ -32,7 +32,8 @@
             <div
               class="habit-month-calendar__marker"
               :class="{ 'habit-month-calendar__marker--interactive': cell.interactive }"
-              :title="cell.interactive ? t('habit').clickableDateHint : undefined"
+              @mouseenter="handleMarkerMouseEnter($event, cell)"
+              @mouseleave="handleMarkerMouseLeave"
               @click="handleCellClick(cell)"
               @contextmenu="handleCellContextMenu($event, cell)"
             >
@@ -43,13 +44,16 @@
               >
                 ✓
               </span>
-              <span
+              <svg
                 v-else-if="cell.status === 'missed'"
                 class="habit-month-calendar__missed"
                 data-testid="habit-month-missed"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
               >
-                ✖
-              </span>
+                <path d="M6 6 14 14" />
+                <path d="M14 6 6 14" />
+              </svg>
               <svg
                 v-else-if="cell.status === 'partial'"
                 class="habit-month-calendar__progress-ring"
@@ -104,6 +108,7 @@ import { t } from '@/i18n';
 import type { Habit, HabitStats } from '@/types/models';
 import { getHabitDayState } from '@/domain/habit/habitCompletion';
 import { isDateEligibleForHabit, isHabitActiveOnDate } from '@/domain/habit/habitPeriod';
+import { hideIconTooltip, showIconTooltip } from '@/utils/dialog';
 
 const props = defineProps<{
   habit: Habit;
@@ -271,12 +276,25 @@ function handleMenuAction() {
   emit('month-cell-reset', date);
 }
 
+function handleMarkerMouseEnter(event: MouseEvent, cell: CalendarCell) {
+  if (!cell.interactive) {
+    return;
+  }
+
+  showIconTooltip(event.currentTarget as HTMLElement, t('habit').clickableDateHint);
+}
+
+function handleMarkerMouseLeave() {
+  hideIconTooltip();
+}
+
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick);
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick);
+  hideIconTooltip();
 });
 </script>
 
@@ -432,9 +450,15 @@ onUnmounted(() => {
 }
 
 .habit-month-calendar__missed {
-  color: var(--b3-card-error-color, var(--b3-theme-error));
-  font-size: 13px;
-  line-height: 1;
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+
+.habit-month-calendar__missed path {
+  stroke: #d96b78;
+  stroke-width: 2.4;
+  stroke-linecap: round;
 }
 
 .habit-month-calendar__empty-dot {
