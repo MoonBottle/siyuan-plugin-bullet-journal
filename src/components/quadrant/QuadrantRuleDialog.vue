@@ -59,7 +59,7 @@
       <button
         data-testid="quadrant-rule-save"
         class="b3-button b3-button--text"
-        @click="$emit('save', panel)"
+        @click="handleSave"
       >
         {{ t('common').save }}
       </button>
@@ -68,11 +68,12 @@
 </template>
 
 <script setup lang="ts">
+import { reactive } from 'vue';
 import { t } from '@/i18n';
 import { showConfirmDialog } from '@/utils/dialog';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
 
-const { panel } = defineProps<{
+const props = defineProps<{
   panel: QuadrantPanelConfig;
 }>();
 
@@ -81,6 +82,15 @@ const emit = defineEmits<{
   (event: 'reset-defaults'): void;
   (event: 'close'): void;
 }>();
+
+const panel = reactive<QuadrantPanelConfig>({
+  id: props.panel.id,
+  title: props.panel.title,
+  rules: {
+    priority: Array.isArray(props.panel.rules.priority) ? [...props.panel.rules.priority] : [],
+    date: Array.isArray(props.panel.rules.date) ? [...props.panel.rules.date] : [],
+  },
+});
 
 const priorityOptions = [
   { value: 'high', label: t('quadrant').priorityHigh },
@@ -102,6 +112,17 @@ function handleResetDefaults() {
     t('quadrant').resetConfirm,
     () => emit('reset-defaults'),
   );
+}
+
+function handleSave() {
+  emit('save', {
+    id: panel.id,
+    title: panel.title,
+    rules: {
+      priority: [...panel.rules.priority],
+      date: [...panel.rules.date],
+    },
+  });
 }
 </script>
 
