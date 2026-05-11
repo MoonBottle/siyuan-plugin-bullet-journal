@@ -306,7 +306,13 @@
       "copyButton": "Copy MCP Config",
       "copySuccess": "MCP config copied to clipboard",
       "copyFailed": "Copy failed, please copy manually",
-      "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop"
+      "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop",
+      "httpCopyButton": "Copy HTTP MCP Config (Experimental)",
+      "httpTooltip": "Requires SiYuan v3.7.0+, no Node.js or Token needed",
+      "httpDescription": "HTTP MCP service based on SiYuan kernel plugin. No Node.js installation or Token configuration required. Just paste into your AI client's MCP config.",
+      "httpCopySuccess": "HTTP MCP config copied to clipboard",
+      "httpCopyFailed": "Copy failed, please copy manually",
+      "mobileHint": "MCP config must be copied on desktop"
     },
     "ai": {
       "title": "AI Service Config",

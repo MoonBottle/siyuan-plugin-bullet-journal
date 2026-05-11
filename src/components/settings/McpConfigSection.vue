@@ -11,6 +11,12 @@
         :text="(t('settings') as any).mcp?.copyButton ?? '复制 MCP 配置'"
         @click="copyMcpConfig"
       />
+      <SySettingsActionButton
+        icon="iconCopy"
+        :text="(t('settings') as any).mcp?.httpCopyButton ?? '复制 HTTP MCP 配置（实验性）'"
+        :title="(t('settings') as any).mcp?.httpTooltip ?? '思源版本 3.7.0 以上可用'"
+        @click="copyHttpMcpConfig"
+      />
     </SySettingsSection>
   </template>
 
@@ -35,6 +41,13 @@
         <button class="ios-action-btn" @click="copyMcpConfig">
           <svg><use xlink:href="#iconCopy"></use></svg>
           {{ (t('settings') as any).mcp?.copyButton ?? '复制 MCP 配置' }}
+        </button>
+        <button
+          class="ios-action-btn ios-action-btn--experimental"
+          :title="(t('settings') as any).mcp?.httpTooltip ?? '思源版本 3.7.0 以上可用'"
+          @click="copyHttpMcpConfig"
+        >
+          🧪 {{ (t('settings') as any).mcp?.httpCopyButton ?? '复制 HTTP MCP 配置（实验性）' }}
         </button>
       </div>
     </div>
@@ -82,6 +95,24 @@ async function copyMcpConfig() {
     showMessage((t('settings') as any).mcp?.copySuccess ?? 'MCP 配置已复制到剪贴板', 3000, 'info');
   } catch (err) {
     showMessage((t('settings') as any).mcp?.copyFailed ?? '复制失败，请手动复制', 3000, 'error');
+  }
+}
+
+async function copyHttpMcpConfig() {
+  const mcpConfig = {
+    mcpServers: {
+      'sy-task-assistant': {
+        url: 'http://127.0.0.1:6806/plugin/private/siyuan-plugin-bullet-journal/mcp',
+      },
+    },
+  };
+
+  const configStr = JSON.stringify(mcpConfig, null, 2);
+  try {
+    await navigator.clipboard.writeText(configStr);
+    showMessage((t('settings') as any).mcp?.httpCopySuccess ?? 'HTTP MCP 配置已复制到剪贴板', 3000, 'info');
+  } catch (err) {
+    showMessage((t('settings') as any).mcp?.httpCopyFailed ?? '复制失败，请手动复制', 3000, 'error');
   }
 }
 </script>
@@ -179,5 +210,10 @@ async function copyMcpConfig() {
 
 .ios-action-btn:active {
   opacity: 0.9;
+}
+
+.ios-action-btn--experimental {
+  background: #5856d6;
+  margin-top: 12px;
 }
 </style>

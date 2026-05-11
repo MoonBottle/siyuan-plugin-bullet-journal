@@ -306,7 +306,13 @@
       "copyButton": "复制 MCP 配置",
       "copySuccess": "MCP 配置已复制到剪贴板",
       "copyFailed": "复制失败，请手动复制",
-      "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版"
+      "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版",
+      "httpCopyButton": "复制 HTTP MCP 配置（实验性）",
+      "httpTooltip": "思源版本 3.7.0 以上可用，无需 Node.js 和 Token 配置",
+      "httpDescription": "基于思源内核插件的 HTTP MCP 服务，无需安装 Node.js，无需配置 Token。在 AI 客户端的 MCP 配置中粘贴即可使用。",
+      "httpCopySuccess": "HTTP MCP 配置已复制到剪贴板",
+      "httpCopyFailed": "复制失败，请手动复制",
+      "mobileHint": "MCP 配置需要在桌面端复制后使用"
     },
     "ai": {
       "title": "AI 服务配置",
