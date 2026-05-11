@@ -811,6 +811,7 @@ const props = withDefaults(defineProps<{
   completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
   includeNoPriority?: boolean;
+  overrideItems?: Item[];
   displayMode?: 'default' | 'embedded';
   previewTriggerMode?: TodoSidebarPreviewTriggerMode;
   enableDrag?: boolean;
@@ -828,6 +829,7 @@ const props = withDefaults(defineProps<{
   completedDateRange: null,
   priorities: () => [],
   includeNoPriority: false,
+  overrideItems: undefined,
   displayMode: 'default',
   previewTriggerMode: 'hover',
   enableDrag: false,
@@ -945,8 +947,20 @@ const abandonedItems = computed(() => {
   });
 });
 
-// 获取所有过滤后的事项
 const groupedFilteredItems = computed(() => {
+  if (props.overrideItems) {
+    let items = [...props.overrideItems];
+    if (projectStore.hideCompleted) {
+      items = items.filter(item => item.status !== 'completed');
+    }
+    if (projectStore.hideAbandoned) {
+      items = items.filter(item => item.status !== 'abandoned');
+    }
+    return {
+      pinnedItems: items.filter(item => item.pinned),
+      regularItems: items.filter(item => !item.pinned),
+    };
+  }
   return projectStore.getGroupedFilteredAndSortedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,

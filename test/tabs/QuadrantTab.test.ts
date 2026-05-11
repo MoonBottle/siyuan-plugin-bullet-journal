@@ -13,7 +13,6 @@ const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
 const nativePreviewOpenCalls: Array<Record<string, any>> = [];
 const mockRefresh = vi.fn(() => Promise.resolve());
-const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
 const mockShowMessage = vi.fn();
 const mockLoadFromPlugin = vi.fn();
 const mockSaveToPlugin = vi.fn();
@@ -21,24 +20,7 @@ const mockEventBusOn = vi.fn(() => () => {});
 const mockCreateRefreshChannelGuard = vi.fn(() => ({ dispose: vi.fn() }));
 const menuAddItem = vi.fn();
 const menuOpen = vi.fn();
-const mockGetFilteredAndSortedItems = vi.fn((filters?: {
-  priorities?: string[];
-  includeNoPriority?: boolean;
-}) => {
-  if (filters?.includeNoPriority) {
-    return [{ id: 'q4' }];
-  }
-  if (filters?.priorities?.[0] === 'high') {
-    return [{ id: 'q1a' }, { id: 'q1b' }];
-  }
-  if (filters?.priorities?.[0] === 'medium') {
-    return [{ id: 'q2' }];
-  }
-  if (filters?.priorities?.[0] === 'low') {
-    return [{ id: 'q3' }, { id: 'q3b' }, { id: 'q3c' }];
-  }
-  return [];
-});
+const mockGetFilteredAndSortedItems = vi.fn(() => []);
 
 const mockPlugin = { name: 'plugin' };
 const mockApp = { name: 'app' };
@@ -72,15 +54,30 @@ const mockProjectStore = {
     mockProjectStore.hideAbandoned = !mockProjectStore.hideAbandoned;
   }),
   getFilteredAndSortedItems: mockGetFilteredAndSortedItems,
-  getItemByBlockId: vi.fn((blockId: string) => ({
-    id: `item-for-${blockId}`,
-    content: `item-for-${blockId}`,
-    date: '2026-05-01',
-    lineNumber: 1,
-    blockId,
-    docId: 'doc-1',
-    status: 'pending',
-  })),
+};
+
+const mockQuadrantConfigStore = {
+  loaded: false,
+  config: {
+    version: 1,
+    panels: [
+      { id: 'q1', title: 'My Q1', rules: { priority: ['high'] } },
+      { id: 'q2', title: 'My Q2', rules: { priority: ['medium'], date: ['today'] } },
+      { id: 'q3', title: 'My Q3', rules: { priority: ['low'] } },
+      { id: 'q4', title: 'My Q4', rules: { priority: ['none'] } },
+    ],
+  },
+  panels: [
+    { id: 'q1', title: 'My Q1', rules: { priority: ['high'] } },
+    { id: 'q2', title: 'My Q2', rules: { priority: ['medium'], date: ['today'] } },
+    { id: 'q3', title: 'My Q3', rules: { priority: ['low'] } },
+    { id: 'q4', title: 'My Q4', rules: { priority: ['none'] } },
+  ],
+  loadConfig: vi.fn(async () => {
+    mockQuadrantConfigStore.loaded = true;
+  }),
+  savePanel: vi.fn(),
+  resetAll: vi.fn(),
 };
 
 vi.mock('@/main', () => ({
@@ -106,14 +103,6 @@ vi.mock('@/utils/dialog', async (importOriginal) => {
   };
 });
 
-vi.mock('@/utils/fileUtils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/utils/fileUtils')>();
-  return {
-    ...actual,
-    updateBlockPriority: mockUpdateBlockPriority,
-  };
-});
-
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
   Events: { DATA_REFRESH: 'data:refresh' },
@@ -127,6 +116,10 @@ vi.mock('@/utils/refreshChannelGuard', () => ({
 vi.mock('@/stores', () => ({
   useProjectStore: () => mockProjectStore,
   useSettingsStore: () => mockSettingsStore,
+}));
+
+vi.mock('@/stores/quadrantConfigStore', () => ({
+  useQuadrantConfigStore: () => mockQuadrantConfigStore,
 }));
 
 vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
@@ -160,6 +153,7 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
       searchQuery: { type: String, default: '' },
       priorities: { type: Array, default: () => [] },
       includeNoPriority: { type: Boolean, default: false },
+      overrideItems: { type: Array, default: undefined },
       displayMode: { type: String, default: 'default' },
       enableDrag: { type: Boolean, default: false },
       onItemDragStart: { type: Function, default: undefined },
@@ -176,6 +170,7 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
           searchQuery: props.searchQuery,
           priorities: [...props.priorities],
           includeNoPriority: props.includeNoPriority,
+          overrideItems: props.overrideItems ? [...props.overrideItems] : undefined,
           displayMode: props.displayMode,
           enableDrag: props.enableDrag,
           onItemDragStart: props.onItemDragStart,
@@ -208,30 +203,6 @@ vi.mock('@/utils/nativeBlockPreview', () => ({
     isOpen: vi.fn(() => false),
   }),
 }));
-
-function createDropEvent(payload?: Record<string, unknown>) {
-  const event = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
-  Object.defineProperty(event, 'dataTransfer', {
-    value: {
-      dropEffect: 'none',
-      getData: (type: string) => type === 'application/json' && payload
-        ? JSON.stringify(payload)
-        : '',
-    },
-  });
-  return event;
-}
-
-function createDragOverEvent() {
-  const event = new Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
-  Object.defineProperty(event, 'dataTransfer', {
-    value: {
-      dropEffect: 'none',
-      getData: () => '',
-    },
-  });
-  return event;
-}
 
 function mountQuadrantTab() {
   const container = document.createElement('div');
@@ -278,15 +249,8 @@ describe('QuadrantTab', () => {
     mockProjectStore.loading = false;
     mockProjectStore.hideCompleted = false;
     mockProjectStore.hideAbandoned = false;
-    mockProjectStore.getItemByBlockId.mockReturnValue({
-      id: 'item-1',
-      content: 'item-for-block-1',
-      date: '2026-05-01',
-      lineNumber: 1,
-      blockId: 'block-1',
-      docId: 'doc-1',
-      status: 'pending',
-    });
+    mockGetFilteredAndSortedItems.mockReturnValue([]);
+    mockQuadrantConfigStore.loaded = false;
     (globalThis as any).BroadcastChannel = vi.fn(function () {
       return {
         onmessage: null,
@@ -295,89 +259,33 @@ describe('QuadrantTab', () => {
     });
   });
 
-  it('renders four quadrant panels with embedded TodoSidebar filters', async () => {
+  it('renders four quadrant panels with config-driven titles and disabled drag', async () => {
+    mockGetFilteredAndSortedItems.mockReturnValue([]);
     const mounted = await mountQuadrantTab();
     await nextTick();
 
     expect(mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')).toHaveLength(4);
     expect(mounted.container.querySelectorAll('[data-testid="todo-sidebar-stub"]')).toHaveLength(4);
     expect(Array.from(mounted.container.querySelectorAll('.quadrant-panel__title')).map(node => node.textContent)).toEqual([
-      'Important & Urgent',
-      'Important, Not Urgent',
-      'Urgent, Not Important',
-      'Neither Urgent nor Important',
+      'My Q1',
+      'My Q2',
+      'My Q3',
+      'My Q4',
     ]);
 
     expect(todoSidebarProps).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      priorities: ['high'],
-      includeNoPriority: false,
+      enableDrag: false,
       displayMode: 'embedded',
-      enableDrag: true,
-      onItemDragStart: expect.any(Function),
-      onItemDragEnd: expect.any(Function),
-      onItemHoverStart: expect.any(Function),
-      onItemHoverEnd: expect.any(Function),
-      onItemPreviewClick: expect.any(Function),
       previewTriggerMode: 'click',
-    }));
-    expect(todoSidebarProps).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      priorities: ['medium'],
-      includeNoPriority: false,
-      displayMode: 'embedded',
-      enableDrag: true,
-      onItemDragStart: expect.any(Function),
-      onItemDragEnd: expect.any(Function),
-      onItemHoverStart: expect.any(Function),
-      onItemHoverEnd: expect.any(Function),
       onItemPreviewClick: expect.any(Function),
-      previewTriggerMode: 'click',
-    }));
-    expect(todoSidebarProps).toHaveBeenNthCalledWith(3, expect.objectContaining({
-      priorities: ['low'],
-      includeNoPriority: false,
-      displayMode: 'embedded',
-      enableDrag: true,
-      onItemDragStart: expect.any(Function),
-      onItemDragEnd: expect.any(Function),
-      onItemHoverStart: expect.any(Function),
-      onItemHoverEnd: expect.any(Function),
-      onItemPreviewClick: expect.any(Function),
-      previewTriggerMode: 'click',
-    }));
-    expect(todoSidebarProps).toHaveBeenNthCalledWith(4, expect.objectContaining({
-      priorities: [],
-      includeNoPriority: true,
-      displayMode: 'embedded',
-      enableDrag: true,
-      onItemDragStart: expect.any(Function),
-      onItemDragEnd: expect.any(Function),
-      onItemHoverStart: expect.any(Function),
-      onItemHoverEnd: expect.any(Function),
-      onItemPreviewClick: expect.any(Function),
-      previewTriggerMode: 'click',
     }));
 
-    expect(mockGetFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
-      priorities: ['high'],
-      includeNoPriority: false,
-    }));
-    expect(mockGetFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
-      priorities: ['medium'],
-      includeNoPriority: false,
-    }));
-    expect(mockGetFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
-      priorities: ['low'],
-      includeNoPriority: false,
-    }));
-    expect(mockGetFilteredAndSortedItems).toHaveBeenCalledWith(expect.objectContaining({
-      priorities: undefined,
-      includeNoPriority: true,
-    }));
+    expect(mockQuadrantConfigStore.loadConfig).toHaveBeenCalledTimes(1);
 
     mounted.unmount();
   }, 10000);
 
-  it('honors defaultGroup loaded on mount for the current selection and sidebar filters', async () => {
+  it('honors defaultGroup loaded on mount', async () => {
     mockLoadFromPlugin.mockImplementationOnce(() => {
       mockSettingsStore.defaultGroup = 'group-b';
     });
@@ -387,9 +295,6 @@ describe('QuadrantTab', () => {
 
     const groupSelect = mounted.container.querySelector('[data-testid="quadrant-group-select"]') as HTMLSelectElement;
     expect(groupSelect.value).toBe('group-b');
-    expect(todoSidebarProps).toHaveBeenLastCalledWith(expect.objectContaining({
-      groupId: 'group-b',
-    }));
 
     mounted.unmount();
   });
@@ -411,7 +316,6 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     mockRefresh.mockClear();
-    todoSidebarProps.mockClear();
 
     const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh;
     await onRefresh?.({
@@ -421,9 +325,6 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     expect(groupSelect.value).toBe('group-a');
-    expect(todoSidebarProps).not.toHaveBeenCalledWith(expect.objectContaining({
-      groupId: 'group-c',
-    }));
 
     mounted.unmount();
   });
@@ -440,7 +341,6 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     mockRefresh.mockClear();
-    todoSidebarProps.mockClear();
 
     const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh;
     await onRefresh?.({
@@ -450,9 +350,6 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     expect(groupSelect.value).toBe('');
-    expect(todoSidebarProps).not.toHaveBeenCalledWith(expect.objectContaining({
-      groupId: 'group-a',
-    }));
 
     mounted.unmount();
   });
@@ -521,7 +418,6 @@ describe('QuadrantTab', () => {
 
     mockLoadFromPlugin.mockClear();
     mockRefresh.mockClear();
-    todoSidebarProps.mockClear();
 
     const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh;
     await onRefresh?.({
@@ -533,81 +429,16 @@ describe('QuadrantTab', () => {
 
     expect(mockLoadFromPlugin).not.toHaveBeenCalled();
     expect(mockRefresh).toHaveBeenCalledWith(mockPlugin, 'dirs', ['updated-dir']);
-    expect(mounted.container.querySelector('[data-testid="quadrant-group-select"]')).toHaveProperty('value', 'group-b');
-    expect(todoSidebarProps).toHaveBeenLastCalledWith(expect.objectContaining({
-      groupId: 'group-b',
-    }));
 
     mounted.unmount();
   });
 
-  it('maps a drop on the no-priority quadrant to updateBlockPriority(undefined) and refreshes', async () => {
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const dropTarget = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[3] as HTMLElement;
-    dropTarget.dispatchEvent(createDropEvent({
-      blockId: 'block-a',
-      itemId: 'item-a',
-      priority: 'medium',
-    }));
-    await nextTick();
-
-    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-a', undefined);
-    expect(mockRefresh).toHaveBeenCalledWith(mockPlugin, 'all', []);
-
-    mounted.unmount();
-  });
-
-  it('ignores drops into the same priority quadrant', async () => {
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const highPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[0] as HTMLElement;
-    highPanel.dispatchEvent(createDropEvent({
-      blockId: 'block-a',
-      itemId: 'item-a',
-      priority: 'high',
-    }));
-    await nextTick();
-
-    expect(mockUpdateBlockPriority).not.toHaveBeenCalled();
-    expect(mockRefresh).not.toHaveBeenCalled();
-
-    mounted.unmount();
-  });
-
-  it('uses TodoSidebar drag callbacks as the first payload source for drops', async () => {
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const { onItemDragStart, onItemDragEnd } = todoSidebarProps.mock.calls[0][0];
-    onItemDragStart({
-      blockId: 'block-b',
-      itemId: 'item-b',
-      priority: 'low',
-    });
-
-    const mediumPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[1] as HTMLElement;
-    mediumPanel.dispatchEvent(createDropEvent());
-    await nextTick();
-
-    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-b', 'medium');
-
-    onItemDragEnd();
-    expect(mediumPanel.classList.contains('quadrant-panel--drop-active')).toBe(false);
-
-    mounted.unmount();
-  });
-
-  it('passes hover preview callbacks into embedded todo sidebars', async () => {
+  it('passes preview click callback into embedded todo sidebars', async () => {
     const mounted = await mountQuadrantTab();
     await nextTick();
 
     const sidebarProps = getLatestTodoSidebarProps();
 
-    expect(sidebarProps.onItemHoverStart).toBeTypeOf('function');
-    expect(sidebarProps.onItemHoverEnd).toBeTypeOf('function');
     expect(sidebarProps.onItemPreviewClick).toBeTypeOf('function');
     expect(sidebarProps.previewTriggerMode).toBe('click');
 
@@ -663,71 +494,6 @@ describe('QuadrantTab', () => {
     mounted.unmount();
   });
 
-  it('suppresses preview opening while drag is active', async () => {
-    vi.useFakeTimers();
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const sidebarProps = getLatestTodoSidebarProps();
-    const anchorEl = document.createElement('div');
-
-    sidebarProps.onItemDragStart?.({
-      blockId: 'block-1',
-      itemId: 'item-1',
-      priority: 'high',
-    });
-    sidebarProps.onItemHoverStart?.({
-      blockId: 'block-1',
-      itemId: 'item-1',
-      anchorEl,
-    });
-
-    vi.runAllTimers();
-    await nextTick();
-
-    expect(nativePreviewOpen).not.toHaveBeenCalled();
-
-    mounted.unmount();
-    vi.useRealTimers();
-  });
-
-  it('closes an open preview when dragging starts after hover activation', async () => {
-    vi.useFakeTimers();
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const sidebarProps = getLatestTodoSidebarProps();
-    const anchorEl = document.createElement('div');
-
-    sidebarProps.onItemHoverStart?.({
-      blockId: 'block-1',
-      itemId: 'item-1',
-      anchorEl,
-    });
-
-    vi.advanceTimersByTime(120);
-    await nextTick();
-
-    expect(nativePreviewOpen).toHaveBeenCalledWith(expect.objectContaining({
-      app: mockApp,
-      blockId: 'block-1',
-      anchorEl,
-      onHoverChange: expect.any(Function),
-    }));
-
-    sidebarProps.onItemDragStart?.({
-      blockId: 'block-1',
-      itemId: 'item-1',
-      priority: 'high',
-    });
-    await nextTick();
-
-    expect(nativePreviewClose).toHaveBeenCalled();
-
-    mounted.unmount();
-    vi.useRealTimers();
-  });
-
   it('does not let a stale panel destruction callback clear a newer preview target', async () => {
     const mounted = await mountQuadrantTab();
     await nextTick();
@@ -736,14 +502,14 @@ describe('QuadrantTab', () => {
     const anchorA = document.createElement('div');
     const anchorB = document.createElement('div');
 
-    sidebarProps.onItemHoverStart?.({
+    sidebarProps.onItemPreviewClick?.({
       blockId: 'block-a',
       itemId: 'item-a',
       anchorEl: anchorA,
     });
     await nextTick();
 
-    sidebarProps.onItemHoverStart?.({
+    sidebarProps.onItemPreviewClick?.({
       blockId: 'block-b',
       itemId: 'item-b',
       anchorEl: anchorB,
@@ -766,70 +532,6 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     expect(nativePreviewClose).not.toHaveBeenCalled();
-
-    mounted.unmount();
-  });
-
-  it('shows and clears active drop state during dragover and dragleave', async () => {
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const lowPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[2] as HTMLElement;
-    const dragOverEvent = createDragOverEvent();
-    lowPanel.dispatchEvent(dragOverEvent);
-    await nextTick();
-
-    expect(dragOverEvent.defaultPrevented).toBe(true);
-    expect((dragOverEvent.dataTransfer as DataTransfer).dropEffect).toBe('move');
-    expect(lowPanel.classList.contains('quadrant-panel--drop-active')).toBe(true);
-
-    lowPanel.dispatchEvent(new Event('dragleave', { bubbles: true }));
-    await nextTick();
-
-    expect(lowPanel.classList.contains('quadrant-panel--drop-active')).toBe(false);
-
-    mounted.unmount();
-  });
-
-  it('keeps active drop state when dragleave moves to a child inside the same panel', async () => {
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const lowPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[2] as HTMLElement;
-    lowPanel.dispatchEvent(createDragOverEvent());
-    await nextTick();
-
-    const child = lowPanel.querySelector('.quadrant-panel__body') as HTMLElement;
-    const dragLeaveEvent = new Event('dragleave', { bubbles: true }) as DragEvent;
-    Object.defineProperty(dragLeaveEvent, 'relatedTarget', {
-      value: child,
-      configurable: true,
-    });
-
-    lowPanel.dispatchEvent(dragLeaveEvent);
-    await nextTick();
-
-    expect(lowPanel.classList.contains('quadrant-panel--drop-active')).toBe(true);
-
-    mounted.unmount();
-  });
-
-  it('shows a failure message and does not refresh when priority update fails', async () => {
-    mockUpdateBlockPriority.mockResolvedValueOnce(false);
-    const mounted = await mountQuadrantTab();
-    await nextTick();
-
-    const mediumPanel = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')[1] as HTMLElement;
-    mediumPanel.dispatchEvent(createDropEvent({
-      blockId: 'block-c',
-      itemId: 'item-c',
-      priority: 'low',
-    }));
-    await nextTick();
-
-    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-c', 'medium');
-    expect(mockRefresh).not.toHaveBeenCalled();
-    expect(mockShowMessage).toHaveBeenCalled();
 
     mounted.unmount();
   });
