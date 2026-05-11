@@ -122,6 +122,11 @@ vi.mock('@/stores/quadrantConfigStore', () => ({
   useQuadrantConfigStore: () => mockQuadrantConfigStore,
 }));
 
+const mockOpenQuadrantRuleDialog = vi.fn();
+vi.mock('@/components/quadrant/openQuadrantRuleDialog', () => ({
+  openQuadrantRuleDialog: mockOpenQuadrantRuleDialog,
+}));
+
 vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   default: defineComponent({
     name: 'SySelectStub',
@@ -532,6 +537,57 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     expect(nativePreviewClose).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('opens the edit dialog when clicking the edit button on a panel', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const editButton = mounted.container.querySelector('[data-testid="quadrant-edit-button-q1"]') as HTMLElement;
+    expect(editButton).toBeTruthy();
+    editButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mockOpenQuadrantRuleDialog).toHaveBeenCalledTimes(1);
+    expect(mockOpenQuadrantRuleDialog).toHaveBeenCalledWith(expect.objectContaining({
+      panel: expect.objectContaining({ id: 'q1' }),
+    }));
+
+    mounted.unmount();
+  });
+
+  it('save handler in edit dialog calls quadrantConfigStore.savePanel', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const editButton = mounted.container.querySelector('[data-testid="quadrant-edit-button-q2"]') as HTMLElement;
+    editButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    const { onSave } = mockOpenQuadrantRuleDialog.mock.calls[0][0];
+    await onSave({ id: 'q2', title: 'Custom Q2', rules: { priority: ['medium'] } });
+
+    expect(mockQuadrantConfigStore.savePanel).toHaveBeenCalledWith('q2', expect.objectContaining({
+      title: 'Custom Q2',
+    }));
+
+    mounted.unmount();
+  });
+
+  it('reset defaults handler calls quadrantConfigStore.resetAll', async () => {
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const editButton = mounted.container.querySelector('[data-testid="quadrant-edit-button-q3"]') as HTMLElement;
+    editButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    const { onResetDefaults } = mockOpenQuadrantRuleDialog.mock.calls[0][0];
+    await onResetDefaults();
+
+    expect(mockQuadrantConfigStore.resetAll).toHaveBeenCalledTimes(1);
 
     mounted.unmount();
   });

@@ -53,6 +53,14 @@
         <header class="quadrant-panel__header">
           <h2 class="quadrant-panel__title">{{ panel.title }}</h2>
           <span class="quadrant-panel__count">{{ panelCounts[index] }}</span>
+          <span
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            :data-testid="`quadrant-edit-button-${panel.id}`"
+            :aria-label="t('quadrant').editPanel"
+            @click="openQuadrantEditor(panel)"
+          >
+            <svg><use xlink:href="#iconEdit"></use></svg>
+          </span>
         </header>
 
         <div class="quadrant-panel__body">
@@ -86,6 +94,7 @@ import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
 import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
+import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
 
 const props = withDefaults(defineProps<{
@@ -104,7 +113,6 @@ const selectedGroup = ref(settingsStore.defaultGroup || '');
 const isSelectedGroupDefaultDriven = ref(true);
 const searchQuery = ref('');
 const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebar> | null>>([]);
-const editingPanel = ref<QuadrantPanelConfig | null>(null);
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
@@ -148,6 +156,18 @@ const selectedGroupModel = computed({
     isSelectedGroupDefaultDriven.value = false;
   },
 });
+
+function openQuadrantEditor(panel: QuadrantPanelConfig) {
+  openQuadrantRuleDialog({
+    panel: JSON.parse(JSON.stringify(panel)),
+    onSave: async (nextPanel) => {
+      await quadrantConfigStore.savePanel(nextPanel.id, nextPanel);
+    },
+    onResetDefaults: async () => {
+      await quadrantConfigStore.resetAll();
+    },
+  });
+}
 
 function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebar> | null) {
   sidebarRefs.value[index] = instance;
