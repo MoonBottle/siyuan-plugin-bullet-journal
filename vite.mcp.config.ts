@@ -16,7 +16,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: false,
     // 添加 sourcemap 便于调试
-    sourcemap: true,
+    sourcemap: false,
     // 标记为 SSR 构建（Node 环境）
     ssr: true,
     lib: {
