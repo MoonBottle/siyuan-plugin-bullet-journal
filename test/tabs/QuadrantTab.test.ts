@@ -321,6 +321,22 @@ describe('QuadrantTab', () => {
     mounted.unmount();
   });
 
+  it('keeps drag enabled when only panel titles differ from defaults', async () => {
+    mockQuadrantConfigStore.panels = [
+      { id: 'q1', title: 'My Q1', rules: { priority: ['high'] } },
+      { id: 'q2', title: 'My Q2', rules: { priority: ['medium'] } },
+      { id: 'q3', title: 'My Q3', rules: { priority: ['low'] } },
+      { id: 'q4', title: 'My Q4', rules: { priority: ['none'] } },
+    ];
+
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    expect(getLatestTodoSidebarProps().enableDrag).toBe(true);
+
+    mounted.unmount();
+  });
+
   it('updates item priority when dropping into another default quadrant', async () => {
     mockGetFilteredAndSortedItems.mockReturnValue([
       { id: 'item-q1', blockId: 'block-q1', status: 'pending', priority: 'high' },

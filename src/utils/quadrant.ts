@@ -61,8 +61,7 @@ function isSamePriorityRule(a?: PriorityLevel[], b?: PriorityLevel[]) {
 
 function isDefaultQuadrantPanel(panel: QuadrantPanelConfig) {
   const defaultPanel = getDefaultQuadrantPanel(panel.id);
-  return panel.title === defaultPanel.title
-    && isSamePriorityRule(panel.rules.priority, defaultPanel.rules.priority)
+  return isSamePriorityRule(panel.rules.priority, defaultPanel.rules.priority)
     && !panel.rules.date?.length;
 }
 
