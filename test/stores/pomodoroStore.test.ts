@@ -332,6 +332,40 @@ describe('pomodoroStore mobile scheduling', () => {
 
     expect(mockCancelPomodoroBreakEnd).toHaveBeenCalledTimes(1);
   });
+
+  it('completePomodoro on mobile still triggers the unified completion notification path', async () => {
+    const store = usePomodoroStore();
+    const plugin = { isMobile: true };
+    const showPomodoroCompleteNotificationMock = vi.mocked(
+      (await import('@/utils/notification')).showPomodoroCompleteNotification,
+    );
+
+    store.$patch({
+      activePomodoro: {
+        blockId: 'block-1',
+        rootId: 'doc-1',
+        itemId: 'item-1',
+        itemContent: 'Write tests',
+        startTime: new Date('2026-05-07T05:35:00').getTime(),
+        accumulatedSeconds: 25 * 60,
+        remainingSeconds: 0,
+        targetDurationMinutes: 25,
+        isPaused: false,
+        pauseCount: 0,
+        totalPausedSeconds: 0,
+        timerMode: 'countdown',
+      } as any,
+      timerInterval: 1,
+    });
+
+    await store.completePomodoro(plugin as any);
+
+    expect(showPomodoroCompleteNotificationMock).toHaveBeenCalledWith(
+      'Write tests',
+      25,
+      expect.any(Function),
+    );
+  });
 });
 
 describe('pomodoroStore restorePomodoro', () => {
@@ -412,6 +446,7 @@ describe('pomodoroStore restorePomodoro', () => {
 
   it('restorePomodoro clears stale mobile focus-end when the restored session is already expired', async () => {
     const store = usePomodoroStore();
+    mockCancelPomodoroFocusEnd.mockClear();
     mockLoadActivePomodoro.mockResolvedValue({
       blockId: 'b1',
       itemId: 'i1',

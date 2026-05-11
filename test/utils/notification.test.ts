@@ -4,6 +4,9 @@ const mockShowMessage = vi.fn();
 const mockSendNotification = vi.fn();
 const mockCancelNotification = vi.fn();
 const mockWechatNotification = vi.fn().mockResolvedValue(undefined);
+const mockPluginState = {
+  isMobile: false,
+};
 
 vi.mock('siyuan', () => ({
   platformUtils: {
@@ -28,7 +31,7 @@ vi.mock('@/i18n', () => ({
 }));
 
 vi.mock('@/main', () => ({
-  getCurrentPlugin: () => ({ isMobile: false }),
+  getCurrentPlugin: () => mockPluginState,
 }));
 
 vi.mock('@/utils/sharedPinia', () => ({
@@ -61,6 +64,7 @@ describe('notification utility', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     (globalThis as any).window = globalThis;
+    mockPluginState.isMobile = false;
   });
 
   it('prefers native immediate notification over browser Notification', async () => {
@@ -186,6 +190,17 @@ describe('notification utility', () => {
       timeoutType: 'never',
     });
     expect(mockShowMessage).not.toHaveBeenCalled();
+    expect(mockWechatNotification).toHaveBeenCalledWith('Pomodoro Complete\nWrite tests 25');
+  });
+
+  it('showPomodoroCompleteNotification still sends wechat notification on mobile', async () => {
+    mockPluginState.isMobile = true;
+    mockSendNotification.mockResolvedValueOnce(404);
+
+    const { showPomodoroCompleteNotification } = await import('@/utils/notification');
+    const result = await showPomodoroCompleteNotification('Write tests', 25);
+
+    expect(result).toBe(404);
     expect(mockWechatNotification).toHaveBeenCalledWith('Pomodoro Complete\nWrite tests 25');
   });
 });
