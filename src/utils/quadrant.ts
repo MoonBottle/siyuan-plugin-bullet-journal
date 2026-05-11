@@ -1,4 +1,5 @@
 import type { PriorityLevel } from '@/types/models';
+import type { QuadrantConfigFile, QuadrantPanelId } from '@/types/quadrant';
 import type { WorkbenchQuadrantKey } from '@/types/workbench';
 
 export type QuadrantDefinition = {
@@ -37,4 +38,25 @@ export const QUADRANT_DEFINITIONS: QuadrantDefinition[] = [
 
 export function getQuadrantDefinition(key: WorkbenchQuadrantKey | undefined): QuadrantDefinition {
   return QUADRANT_DEFINITIONS.find(item => item.key === key) ?? QUADRANT_DEFINITIONS[0];
+}
+
+export const DEFAULT_QUADRANT_CONFIG: QuadrantConfigFile = {
+  version: 1,
+  panels: [
+    { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
+    { id: 'q2', title: '重要不紧急', rules: { priority: ['medium'] } },
+    { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
+    { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
+  ],
+};
+
+export function getDefaultQuadrantPanel(id: QuadrantPanelId) {
+  return DEFAULT_QUADRANT_CONFIG.panels.find(panel => panel.id === id)!;
+}
+
+export function mapLegacyWorkbenchQuadrantKey(key?: string): QuadrantPanelId {
+  if (key === 'medium') return 'q2';
+  if (key === 'low') return 'q3';
+  if (key === 'none') return 'q4';
+  return 'q1';
 }
