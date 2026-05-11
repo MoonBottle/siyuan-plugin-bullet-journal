@@ -48,27 +48,39 @@
         v-for="(panel, index) in panels"
         :key="panel.id"
         class="quadrant-panel"
+        :class="{ 'quadrant-panel--drag-over': dragEnabled && dragOverPanelId === panel.id }"
         data-testid="quadrant-panel"
+        @dragover="handleQuadrantDragOver(panel.id, $event)"
+        @dragleave="handleQuadrantDragLeave(panel.id, $event)"
+        @drop="handleQuadrantDrop(panel.id, $event)"
       >
         <header class="quadrant-panel__header">
-          <h2 class="quadrant-panel__title">{{ panel.title }}</h2>
-          <span class="quadrant-panel__count">{{ panelCounts[index] }}</span>
+          <div class="quadrant-panel__header-main">
+            <h2 class="quadrant-panel__title">{{ panel.title }}</h2>
+            <span class="quadrant-panel__count">{{ panelCounts[index] }}</span>
+          </div>
           <span
-            class="block__icon b3-tooltips b3-tooltips__sw"
+            class="block__icon b3-tooltips b3-tooltips__sw quadrant-panel__more"
             :data-testid="`quadrant-edit-button-${panel.id}`"
-            :aria-label="t('quadrant').editPanel"
+            :aria-label="t('common').more"
             @click="openQuadrantEditor(panel)"
           >
-            <svg><use xlink:href="#iconEdit"></use></svg>
+            <svg><use xlink:href="#iconMore"></use></svg>
           </span>
         </header>
 
         <div class="quadrant-panel__body">
-          <TodoSidebar
+          <TodoSidebarList
             :ref="instance => setSidebarRef(index, instance)"
-            :override-items="quadrantAssignments[panel.id]"
+            :items="quadrantAssignments[panel.id]"
+            :has-any-items-raw="allFilteredItems.length > 0"
+            :has-active-filters="Boolean(searchQuery.trim())"
+            empty-state-mode="panel"
+            :empty-state-title="t('quadrant').noTodos"
             preview-trigger-mode="click"
-            :enable-drag="false"
+            :enable-drag="dragEnabled"
+            :on-item-drag-start="handleItemDragStart"
+            :on-item-drag-end="handleItemDragEnd"
             :on-item-preview-click="handleItemPreviewClick"
             display-mode="embedded"
           />
@@ -84,7 +96,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Menu } from 'siyuan';
 import { getCurrentPlugin, useApp, usePlugin } from '@/main';
 import { useProjectStore, useSettingsStore } from '@/stores';
-import TodoSidebar from '@/components/todo/TodoSidebar.vue';
+import TodoSidebarList from '@/components/todo/TodoSidebarList.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { t } from '@/i18n';
@@ -95,7 +107,11 @@ import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
 import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
 import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
+import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant';
+import { updateBlockPriority } from '@/utils/fileUtils';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
+import type { PriorityLevel } from '@/types/models';
+import type { TodoSidebarDragPayload } from '@/components/todo/todoSidebarTypes';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
@@ -112,7 +128,7 @@ const quadrantConfigStore = useQuadrantConfigStore();
 const selectedGroup = ref(settingsStore.defaultGroup || '');
 const isSelectedGroupDefaultDriven = ref(true);
 const searchQuery = ref('');
-const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebar> | null>>([]);
+const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebarList> | null>>([]);
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
@@ -122,6 +138,8 @@ const nativePreview = createNativeBlockPreviewController();
 const showHeaderTitle = computed(() => !props.embedded);
 
 const panels = computed(() => quadrantConfigStore.panels);
+const dragEnabled = computed(() => isDefaultPriorityQuadrantConfig(panels.value));
+const dragOverPanelId = ref<string | null>(null);
 
 const allFilteredItems = computed(() => {
   return projectStore.getFilteredAndSortedItems({
@@ -169,7 +187,7 @@ function openQuadrantEditor(panel: QuadrantPanelConfig) {
   });
 }
 
-function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebar> | null) {
+function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebarList> | null) {
   sidebarRefs.value[index] = instance;
 }
 
@@ -179,6 +197,74 @@ function handleItemPreviewClick(payload: {
   anchorEl: HTMLElement;
 }) {
   preview.showNow(payload);
+}
+
+function handleItemDragStart(_payload: TodoSidebarDragPayload, _event: DragEvent) {
+  if (!dragEnabled.value) return;
+}
+
+function handleItemDragEnd() {
+  dragOverPanelId.value = null;
+}
+
+function getPanelTargetPriority(panelId: string): PriorityLevel | undefined {
+  switch (panelId) {
+    case 'q1': return 'high';
+    case 'q2': return 'medium';
+    case 'q3': return 'low';
+    case 'q4': return undefined;
+    default: return undefined;
+  }
+}
+
+function parseDragPayload(event: DragEvent): TodoSidebarDragPayload | null {
+  const rawPayload = event.dataTransfer?.getData('application/json');
+  if (!rawPayload) return null;
+
+  try {
+    const payload = JSON.parse(rawPayload) as TodoSidebarDragPayload;
+    if (!payload?.blockId) return null;
+    return payload;
+  }
+  catch {
+    return null;
+  }
+}
+
+function handleQuadrantDragOver(panelId: string, event: DragEvent) {
+  if (!dragEnabled.value || !parseDragPayload(event)) return;
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  dragOverPanelId.value = panelId;
+}
+
+function handleQuadrantDragLeave(panelId: string, event: DragEvent) {
+  if (dragOverPanelId.value !== panelId) return;
+
+  const currentTarget = event.currentTarget as HTMLElement | null;
+  const relatedTarget = event.relatedTarget;
+  if (currentTarget && relatedTarget instanceof Node && currentTarget.contains(relatedTarget)) {
+    return;
+  }
+
+  dragOverPanelId.value = null;
+}
+
+async function handleQuadrantDrop(panelId: string, event: DragEvent) {
+  if (!dragEnabled.value) return;
+
+  const payload = parseDragPayload(event);
+  dragOverPanelId.value = null;
+  if (!payload) return;
+
+  event.preventDefault();
+
+  const targetPriority = getPanelTargetPriority(panelId);
+  if (payload.priority === targetPriority) return;
+
+  await updateBlockPriority(payload.blockId, targetPriority);
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
@@ -452,6 +538,7 @@ onUnmounted(() => {
   padding: 8px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -475,22 +562,45 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--b3-border-color);
 }
 
+.quadrant-panel__header-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
 .quadrant-panel__title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
+  min-width: 0;
 }
 
 .quadrant-panel__count {
   font-size: 12px;
   color: var(--b3-theme-on-surface);
   opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.quadrant-panel__more {
+  opacity: 1;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .quadrant-panel__body {
   flex: 1;
   min-height: 0;
   overflow: auto;
+}
+
+.quadrant-panel--drag-over {
+  border-color: var(--b3-theme-primary);
+  background: var(--b3-theme-primary-lightest);
 }
 </style>

@@ -8,6 +8,7 @@ import { initI18n } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 
 const todoSidebarProps = vi.fn();
+const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
 const nativePreviewOpen = vi.fn();
 const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
@@ -103,6 +104,10 @@ vi.mock('@/utils/dialog', async (importOriginal) => {
   };
 });
 
+vi.mock('@/utils/fileUtils', () => ({
+  updateBlockPriority: mockUpdateBlockPriority,
+}));
+
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
   Events: { DATA_REFRESH: 'data:refresh' },
@@ -150,15 +155,13 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   }),
 }));
 
-vi.mock('@/components/todo/TodoSidebar.vue', () => ({
+vi.mock('@/components/todo/TodoSidebarList.vue', () => ({
   default: defineComponent({
-    name: 'TodoSidebarStub',
+    name: 'TodoSidebarListStub',
     props: {
-      groupId: { type: String, default: '' },
-      searchQuery: { type: String, default: '' },
-      priorities: { type: Array, default: () => [] },
-      includeNoPriority: { type: Boolean, default: false },
-      overrideItems: { type: Array, default: undefined },
+      items: { type: Array, default: () => [] },
+      hasAnyItemsRaw: { type: Boolean, default: false },
+      hasActiveFilters: { type: Boolean, default: false },
       displayMode: { type: String, default: 'default' },
       enableDrag: { type: Boolean, default: false },
       onItemDragStart: { type: Function, default: undefined },
@@ -171,11 +174,9 @@ vi.mock('@/components/todo/TodoSidebar.vue', () => ({
     setup(props, { expose }) {
       watchEffect(() => {
         todoSidebarProps({
-          groupId: props.groupId,
-          searchQuery: props.searchQuery,
-          priorities: [...props.priorities],
-          includeNoPriority: props.includeNoPriority,
-          overrideItems: props.overrideItems ? [...props.overrideItems] : undefined,
+          items: [...props.items],
+          hasAnyItemsRaw: props.hasAnyItemsRaw,
+          hasActiveFilters: props.hasActiveFilters,
           displayMode: props.displayMode,
           enableDrag: props.enableDrag,
           onItemDragStart: props.onItemDragStart,
@@ -255,7 +256,14 @@ describe('QuadrantTab', () => {
     mockProjectStore.hideCompleted = false;
     mockProjectStore.hideAbandoned = false;
     mockGetFilteredAndSortedItems.mockReturnValue([]);
+    mockUpdateBlockPriority.mockResolvedValue(true);
     mockQuadrantConfigStore.loaded = false;
+    mockQuadrantConfigStore.panels = [
+      { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
+      { id: 'q2', title: '重要不紧急', rules: { priority: ['medium'] } },
+      { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
+      { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
+    ];
     (globalThis as any).BroadcastChannel = vi.fn(function () {
       return {
         onmessage: null,
@@ -264,31 +272,96 @@ describe('QuadrantTab', () => {
     });
   });
 
-  it('renders four quadrant panels with config-driven titles and disabled drag', async () => {
-    mockGetFilteredAndSortedItems.mockReturnValue([]);
+  it('renders four quadrant panels with config-driven titles and enables drag for default priority config', async () => {
+    mockGetFilteredAndSortedItems.mockReturnValue([
+      { id: 'item-q1', blockId: 'block-q1', status: 'pending', priority: 'high' },
+      { id: 'item-q4', blockId: 'block-q4', status: 'pending' },
+    ]);
     const mounted = await mountQuadrantTab();
     await nextTick();
 
     expect(mounted.container.querySelectorAll('[data-testid="quadrant-panel"]')).toHaveLength(4);
     expect(mounted.container.querySelectorAll('[data-testid="todo-sidebar-stub"]')).toHaveLength(4);
     expect(Array.from(mounted.container.querySelectorAll('.quadrant-panel__title')).map(node => node.textContent)).toEqual([
-      'My Q1',
-      'My Q2',
-      'My Q3',
-      'My Q4',
+      '重要且紧急',
+      '重要不紧急',
+      '紧急不重要',
+      '不重要不紧急',
     ]);
 
     expect(todoSidebarProps).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      enableDrag: false,
+      items: [expect.objectContaining({ id: 'item-q1' })],
+      enableDrag: true,
       displayMode: 'embedded',
       previewTriggerMode: 'click',
       onItemPreviewClick: expect.any(Function),
+    }));
+    expect(todoSidebarProps).toHaveBeenNthCalledWith(4, expect.objectContaining({
+      items: [expect.objectContaining({ id: 'item-q4' })],
     }));
 
     expect(mockQuadrantConfigStore.loadConfig).toHaveBeenCalledTimes(1);
 
     mounted.unmount();
   }, 10000);
+
+  it('disables drag when any panel uses custom rules', async () => {
+    mockQuadrantConfigStore.panels = [
+      { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
+      { id: 'q2', title: '重要不紧急', rules: { priority: ['medium'], date: ['today'] } },
+      { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
+      { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
+    ];
+
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    expect(getLatestTodoSidebarProps().enableDrag).toBe(false);
+
+    mounted.unmount();
+  });
+
+  it('updates item priority when dropping into another default quadrant', async () => {
+    mockGetFilteredAndSortedItems.mockReturnValue([
+      { id: 'item-q1', blockId: 'block-q1', status: 'pending', priority: 'high' },
+    ]);
+
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const panels = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]');
+    const targetPanel = panels[1] as HTMLElement;
+
+    const dragData = new Map<string, string>();
+    const dataTransfer = {
+      getData: (type: string) => dragData.get(type) ?? '',
+      setData: (type: string, value: string) => dragData.set(type, value),
+      dropEffect: 'move',
+      effectAllowed: 'move',
+    };
+    dragData.set('application/json', JSON.stringify({
+      blockId: 'block-q1',
+      itemId: 'item-q1',
+      priority: 'high',
+    }));
+
+    const dragOverEvent = new Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(dragOverEvent, 'dataTransfer', { value: dataTransfer });
+    targetPanel.dispatchEvent(dragOverEvent);
+    await nextTick();
+
+    expect(targetPanel.classList.contains('quadrant-panel--drag-over')).toBe(true);
+
+    const dropEvent = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(dropEvent, 'dataTransfer', { value: dataTransfer });
+    targetPanel.dispatchEvent(dropEvent);
+    await nextTick();
+
+    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-q1', 'medium');
+    expect(targetPanel.classList.contains('quadrant-panel--drag-over')).toBe(false);
+
+    mounted.unmount();
+  });
 
   it('honors defaultGroup loaded on mount', async () => {
     mockLoadFromPlugin.mockImplementationOnce(() => {
@@ -355,6 +428,20 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     expect(groupSelect.value).toBe('');
+
+    mounted.unmount();
+  });
+
+  it('does not treat group selection as a filter-empty state trigger in quadrant panels', async () => {
+    mockSettingsStore.defaultGroup = 'group-b';
+
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const groupSelect = mounted.container.querySelector('[data-testid="quadrant-group-select"]') as HTMLSelectElement;
+    expect(groupSelect.value).toBe('group-b');
+
+    expect(getLatestTodoSidebarProps().hasActiveFilters).toBe(false);
 
     mounted.unmount();
   });

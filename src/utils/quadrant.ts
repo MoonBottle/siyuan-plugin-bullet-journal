@@ -1,5 +1,5 @@
 import type { PriorityLevel } from '@/types/models';
-import type { QuadrantConfigFile, QuadrantPanelId } from '@/types/quadrant';
+import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId } from '@/types/quadrant';
 import type { WorkbenchQuadrantKey } from '@/types/workbench';
 
 export type QuadrantDefinition = {
@@ -52,6 +52,23 @@ export const DEFAULT_QUADRANT_CONFIG: QuadrantConfigFile = {
 
 export function getDefaultQuadrantPanel(id: QuadrantPanelId) {
   return DEFAULT_QUADRANT_CONFIG.panels.find(panel => panel.id === id)!;
+}
+
+function isSamePriorityRule(a?: PriorityLevel[], b?: PriorityLevel[]) {
+  if ((a?.length ?? 0) !== (b?.length ?? 0)) return false;
+  return (a ?? []).every((value, index) => value === (b ?? [])[index]);
+}
+
+function isDefaultQuadrantPanel(panel: QuadrantPanelConfig) {
+  const defaultPanel = getDefaultQuadrantPanel(panel.id);
+  return panel.title === defaultPanel.title
+    && isSamePriorityRule(panel.rules.priority, defaultPanel.rules.priority)
+    && !panel.rules.date?.length;
+}
+
+export function isDefaultPriorityQuadrantConfig(panels: QuadrantPanelConfig[]) {
+  if (panels.length !== DEFAULT_QUADRANT_CONFIG.panels.length) return false;
+  return panels.every(isDefaultQuadrantPanel);
 }
 
 export function mapLegacyWorkbenchQuadrantKey(key?: string): QuadrantPanelId {

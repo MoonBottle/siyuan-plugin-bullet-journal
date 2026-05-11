@@ -5,8 +5,10 @@
       <span>{{ panel?.title }}</span>
     </div>
     <div class="workbench-widget-quadrant__content" data-testid="workbench-widget-quadrant-content">
-      <TodoSidebar
-        :override-items="panelItems"
+      <TodoSidebarList
+        :items="panelItems"
+        :has-any-items-raw="allFilteredItems.length > 0"
+        :has-active-filters="Boolean(quadrantConfig.groupId)"
         display-mode="embedded"
         preview-trigger-mode="click"
         :on-item-preview-click="handleItemPreviewClick"
@@ -17,7 +19,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, watch } from 'vue';
-import TodoSidebar from '@/components/todo/TodoSidebar.vue';
+import TodoSidebarList from '@/components/todo/TodoSidebarList.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { useApp, usePlugin } from '@/main';
 import type { WorkbenchQuadrantWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
@@ -146,7 +148,10 @@ watch(
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
+  if (!quadrantConfigStore.loaded) {
+    await quadrantConfigStore.loadConfig();
+  }
   document.addEventListener('pointerdown', handleDocumentPointerDown, true);
 });
 

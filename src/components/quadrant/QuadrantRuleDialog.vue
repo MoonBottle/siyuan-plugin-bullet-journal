@@ -2,11 +2,7 @@
   <div class="quadrant-rule-dialog">
     <div class="quadrant-rule-dialog__field">
       <label class="quadrant-rule-dialog__label">{{ t('quadrant').panelTitle }}</label>
-      <input
-        v-model="draft.title"
-        data-testid="quadrant-rule-title-input"
-        class="b3-text-field fn__block"
-      />
+      <div class="quadrant-rule-dialog__title">{{ panel.title }}</div>
     </div>
 
     <div class="quadrant-rule-dialog__field">
@@ -18,7 +14,7 @@
           class="quadrant-rule-dialog__checkbox-label"
         >
           <input
-            v-model="draft.rules.priority"
+            v-model="panel.rules.priority"
             type="checkbox"
             :value="option.value"
           />
@@ -36,7 +32,7 @@
           class="quadrant-rule-dialog__checkbox-label"
         >
           <input
-            v-model="draft.rules.date"
+            v-model="panel.rules.date"
             type="checkbox"
             :value="option.value"
           />
@@ -63,7 +59,7 @@
       <button
         data-testid="quadrant-rule-save"
         class="b3-button b3-button--text"
-        @click="$emit('save', draft)"
+        @click="$emit('save', panel)"
       >
         {{ t('common').save }}
       </button>
@@ -72,12 +68,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
 import { t } from '@/i18n';
 import { showConfirmDialog } from '@/utils/dialog';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
 
-const props = defineProps<{
+const { panel } = defineProps<{
   panel: QuadrantPanelConfig;
 }>();
 
@@ -86,15 +81,6 @@ const emit = defineEmits<{
   (event: 'reset-defaults'): void;
   (event: 'close'): void;
 }>();
-
-const draft = reactive<QuadrantPanelConfig>({
-  id: props.panel.id,
-  title: props.panel.title,
-  rules: {
-    priority: [...(props.panel.rules.priority ?? [])],
-    date: [...(props.panel.rules.date ?? [])],
-  },
-});
 
 const priorityOptions = [
   { value: 'high', label: t('quadrant').priorityHigh },
@@ -123,14 +109,18 @@ function handleResetDefaults() {
 .quadrant-rule-dialog {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
   gap: 16px;
-  padding: 8px 0;
+  min-width: 0;
+  padding: 16px 20px 20px;
 }
 
 .quadrant-rule-dialog__field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .quadrant-rule-dialog__label {
@@ -139,10 +129,24 @@ function handleResetDefaults() {
   color: var(--b3-theme-on-background);
 }
 
+.quadrant-rule-dialog__title {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  box-sizing: border-box;
+  width: 100%;
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  font-size: 14px;
+  color: var(--b3-theme-on-background);
+}
+
 .quadrant-rule-dialog__checkbox-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px 16px;
 }
 
 .quadrant-rule-dialog__checkbox-label {
@@ -152,13 +156,15 @@ function handleResetDefaults() {
   font-size: 13px;
   color: var(--b3-theme-on-background);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .quadrant-rule-dialog__footer {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--b3-border-color);
 }
 </style>

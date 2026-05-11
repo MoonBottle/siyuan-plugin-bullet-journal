@@ -11,6 +11,7 @@ export function openQuadrantRuleDialog(options: {
   onResetDefaults: () => void | Promise<void>;
 }): Dialog {
   const mountEl = document.createElement('div');
+  mountEl.className = 'quadrant-rule-dialog-host';
   let app: ReturnType<typeof createApp> | null = null;
   let isSaving = false;
 
@@ -54,6 +55,11 @@ export function openQuadrantRuleDialog(options: {
   }
   app.mount(mountEl);
 
-  dialog.element.querySelector('.b3-dialog__body')?.appendChild(mountEl);
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body') as HTMLElement | null;
+  if (bodyEl) {
+    bodyEl.style.padding = '0';
+    bodyEl.style.overflow = 'hidden';
+    bodyEl.appendChild(mountEl);
+  }
   return dialog;
 }

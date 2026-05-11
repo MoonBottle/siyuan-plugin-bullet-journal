@@ -68,9 +68,12 @@ const quadrantConfigStore = useQuadrantConfigStore();
 const selectedQuadrant = ref(mapLegacyWorkbenchQuadrantKey(props.initialConfig.quadrant));
 const selectedGroup = ref(props.initialConfig.groupId ?? '');
 
-onMounted(() => {
+onMounted(async () => {
   if (!settingsStore.loaded) {
     settingsStore.loadFromPlugin();
+  }
+  if (!quadrantConfigStore.loaded) {
+    await quadrantConfigStore.loadConfig();
   }
 });
 

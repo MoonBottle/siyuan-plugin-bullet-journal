@@ -78,31 +78,28 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   }),
 }));
 
-vi.mock('@/components/todo/TodoSidebar.vue', () => ({
+vi.mock('@/components/todo/TodoSidebarList.vue', () => ({
   default: defineComponent({
-    name: 'TodoSidebarStub',
+    name: 'TodoSidebarListStub',
     props: [
-      'groupId',
-      'priorities',
-      'includeNoPriority',
-      'overrideItems',
+      'items',
+      'hasAnyItemsRaw',
+      'hasActiveFilters',
       'previewTriggerMode',
       'onItemPreviewClick',
     ],
     setup(props) {
       todoSidebarProps({
-        groupId: props.groupId,
-        priorities: props.priorities,
-        includeNoPriority: props.includeNoPriority,
-        overrideItems: props.overrideItems,
+        items: props.items,
+        hasAnyItemsRaw: props.hasAnyItemsRaw,
+        hasActiveFilters: props.hasActiveFilters,
         previewTriggerMode: props.previewTriggerMode,
         onItemPreviewClick: props.onItemPreviewClick,
       });
 
       return () => h('div', {
         'data-testid': 'quadrant-widget-todo-sidebar',
-        'data-group-id': props.groupId,
-        'data-override-items-count': String(props.overrideItems?.length ?? 0),
+        'data-items-count': String(props.items?.length ?? 0),
       });
     },
   }),
@@ -302,7 +299,7 @@ describe('QuadrantSummaryWidget', () => {
     expect(mounted.container.textContent).toContain('不重要不紧急');
 
     const sidebar = mounted.container.querySelector('[data-testid="quadrant-widget-todo-sidebar"]');
-    expect(sidebar?.getAttribute('data-override-items-count')).toBe('1');
+    expect(sidebar?.getAttribute('data-items-count')).toBe('1');
 
     mounted.unmount();
   });
