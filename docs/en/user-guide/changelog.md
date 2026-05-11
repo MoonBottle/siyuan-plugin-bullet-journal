@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.13.5] - 2026-05-11
+
+### Features
+
+- **Custom Quadrant Rules**: Support custom quadrant classification rules for flexible task categorization logic
+- **Habit Missed Check-in Marking**: Support explicitly marking habits as missed
+  - In the habit calendar, a day can be marked as missed, reflecting actual execution more accurately
+- **MCP Kernel Plugin (Experimental)**: New HTTP MCP service based on the SiYuan kernel plugin, supported on SiYuan 3.7.0 and above
+- **Todo Date Filtering**: Added This Week and This Month filters
+
+### Fixes
+
+- **ClawBot**: Fixed mobile pomodoro notifications not triggering correctly
+
 ## [0.13.4] - 2026-05-09
 
 ### Features
