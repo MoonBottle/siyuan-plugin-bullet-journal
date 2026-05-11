@@ -51,8 +51,8 @@
                 viewBox="0 0 20 20"
                 aria-hidden="true"
               >
-                <path d="M6 6 14 14" />
-                <path d="M14 6 6 14" />
+                <path d="M7 7 13 13" />
+                <path d="M13 7 7 13" />
               </svg>
               <svg
                 v-else-if="cell.status === 'partial'"
@@ -452,12 +452,17 @@ onUnmounted(() => {
 .habit-month-calendar__missed {
   width: 20px;
   height: 20px;
+  border-radius: 50%;
+  background: rgba(217, 107, 120, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   overflow: visible;
 }
 
 .habit-month-calendar__missed path {
   stroke: #d96b78;
-  stroke-width: 2.4;
+  stroke-width: 2;
   stroke-linecap: round;
 }
 
