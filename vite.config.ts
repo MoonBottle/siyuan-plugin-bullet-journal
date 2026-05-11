@@ -92,12 +92,11 @@ export default defineConfig(({
           // 插件设置生成的 MCP 配置指向插件根目录下的 mcp-server.js，
           // 因此只要输出到工作空间插件目录，就必须同步复制最新的 MCP 构建产物。
           ...(siyuanWorkspacePath
-            ? [{ src: "./dist/mcp-server.js", dest: "./" }]
+            ? [
+                { src: "./dist/mcp-server.js", dest: "./" },
+                { src: "./dist/kernel.js", dest: "./" },
+              ]
             : []),
-          {
-            src: "./dist/kernel.js",
-            dest: "./",
-          },
           {
             src: "./src/i18n/**",
             dest: "./i18n/",
