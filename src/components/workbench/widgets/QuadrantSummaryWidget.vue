@@ -2,13 +2,13 @@
   <div class="workbench-widget-quadrant" data-testid="workbench-widget-quadrant">
     <div class="workbench-widget-quadrant__meta">
       <span>{{ openItemsCount }}</span>
-      <span>{{ t(quadrant.titleKey) }}</span>
+      <span>{{ panel?.title }}</span>
     </div>
     <div class="workbench-widget-quadrant__content" data-testid="workbench-widget-quadrant-content">
-      <TodoSidebar
-        :group-id="quadrantConfig.groupId ?? ''"
-        :priorities="quadrant.priorities"
-        :include-no-priority="quadrant.includeNoPriority"
+      <TodoSidebarList
+        :items="panelItems"
+        :has-any-items-raw="allFilteredItems.length > 0"
+        :has-active-filters="Boolean(quadrantConfig.groupId)"
         display-mode="embedded"
         preview-trigger-mode="click"
         :on-item-preview-click="handleItemPreviewClick"
@@ -19,13 +19,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, watch } from 'vue';
-import TodoSidebar from '@/components/todo/TodoSidebar.vue';
+import TodoSidebarList from '@/components/todo/TodoSidebarList.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
-import { t } from '@/i18n';
 import { useApp, usePlugin } from '@/main';
 import type { WorkbenchQuadrantWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import { getQuadrantDefinition } from '@/utils/quadrant';
+import { mapLegacyWorkbenchQuadrantKey } from '@/utils/quadrant';
+import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
+import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
 import { useSafeProjectStore } from './useSafeProjectStore';
 
 const props = defineProps<{
@@ -35,6 +36,7 @@ const props = defineProps<{
 const app = useApp();
 const plugin = usePlugin() as any;
 const projectStore = useSafeProjectStore();
+const quadrantConfigStore = useQuadrantConfigStore();
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
@@ -45,18 +47,27 @@ const nativePreview = createNativeBlockPreviewController();
 const quadrantConfig = computed(() => {
   return (props.widget?.config ?? {}) as WorkbenchQuadrantWidgetConfig;
 });
-const quadrant = computed(() => getQuadrantDefinition(quadrantConfig.value.quadrant));
 
-const openItemsCount = computed(() => {
-  if (!projectStore) {
-    return 0;
-  }
+const quadrantId = computed(() => mapLegacyWorkbenchQuadrantKey(quadrantConfig.value.quadrant));
+const panel = computed(() => quadrantConfigStore.panels.find(item => item.id === quadrantId.value));
 
+const allFilteredItems = computed(() => {
+  if (!projectStore) return [];
   return projectStore.getFilteredAndSortedItems({
     groupId: quadrantConfig.value.groupId ?? '',
-    priorities: quadrant.value.priorities.length > 0 ? quadrant.value.priorities : undefined,
-    includeNoPriority: quadrant.value.includeNoPriority,
-  }).filter(item => item.status !== 'completed' && item.status !== 'abandoned').length;
+  });
+});
+
+const assignments = computed(() => {
+  return assignItemsToQuadrants(allFilteredItems.value, quadrantConfigStore.panels);
+});
+
+const panelItems = computed(() => {
+  return panel.value ? assignments.value[panel.value.id] : [];
+});
+
+const openItemsCount = computed(() => {
+  return panelItems.value.filter(item => item.status !== 'completed' && item.status !== 'abandoned').length;
 });
 
 function handleItemPreviewClick(payload: {
@@ -137,7 +148,10 @@ watch(
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
+  if (!quadrantConfigStore.loaded) {
+    await quadrantConfigStore.loadConfig();
+  }
   document.addEventListener('pointerdown', handleDocumentPointerDown, true);
 });
 

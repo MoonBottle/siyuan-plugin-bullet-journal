@@ -56,10 +56,6 @@ function sendWechatNotification(title: string, body: string): void {
       console.warn('[Notification] getSharedPinia() returned null');
       return;
     }
-    if (getCurrentPlugin()?.isMobile) {
-      console.log('[Notification] mobile frontend detected, skip wechat notification');
-      return;
-    }
     const aiStore = useAIStore(pinia);
     console.log('[Notification] got aiStore, calling sendWechatNotification...');
     aiStore.sendWechatNotification(`${title}\n${body}`).then(() => {

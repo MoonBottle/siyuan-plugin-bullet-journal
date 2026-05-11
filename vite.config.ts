@@ -95,6 +95,10 @@ export default defineConfig(({
             ? [{ src: "./dist/mcp-server.js", dest: "./" }]
             : []),
           {
+            src: "./dist/kernel.js",
+            dest: "./",
+          },
+          {
             src: "./src/i18n/**",
             dest: "./i18n/",
           },

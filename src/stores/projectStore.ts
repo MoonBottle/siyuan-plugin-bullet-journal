@@ -247,6 +247,21 @@ function buildTodoTagOptions(items: Item[]): TodoTagOption[] {
 
 import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
+import { writeMcpCache } from '@/mcp/mcpCacheWriter';
+
+let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null;
+function debouncedWriteMcpCache(
+  projects: Project[],
+  items: Item[],
+  groups: Array<{ id: string; name: string }>
+) {
+  if (mcpCacheTimer) clearTimeout(mcpCacheTimer);
+  mcpCacheTimer = setTimeout(() => {
+    writeMcpCache(projects, items, groups).catch((err) => {
+      console.error('[Task Assistant] Failed to write MCP cache:', err);
+    });
+  }, 2000);
+}
 
 interface ProjectState {
   // 项目列表（唯一数据源）
@@ -792,6 +807,8 @@ export const useProjectStore = defineStore('project', {
         console.log('[Task Assistant] Total projects loaded:', this.projects.length);
 
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
+        const settingsStore = useSettingsStore();
+        debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
       } catch (error) {
         console.error('[Task Assistant] Failed to load projects:', error);
       } finally {
@@ -854,6 +871,8 @@ export const useProjectStore = defineStore('project', {
 
         this.currentDate = newDate;
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
+        const settingsStore = useSettingsStore();
+        debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
       } catch (error) {
         console.error('[Task Assistant] Refresh failed, falling back to full refresh:', {
           refreshKey: this.refreshKey,

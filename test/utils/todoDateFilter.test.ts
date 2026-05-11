@@ -13,10 +13,31 @@ describe('buildTodoDateRange', () => {
     });
   });
 
-  it('week 使用 currentDate 起算 7 天窗口', () => {
+  it('recent7 使用 currentDate 起算 7 天窗口', () => {
+    expect(buildTodoDateRange('recent7', '2026-04-07', '2026-04-01', '2026-04-30')).toEqual({
+      start: '1970-01-01',
+      end: '2026-04-13',
+    });
+  });
+
+  it('week 兼容旧值并映射到 recent7', () => {
     expect(buildTodoDateRange('week', '2026-04-07', '2026-04-01', '2026-04-30')).toEqual({
       start: '1970-01-01',
       end: '2026-04-13',
+    });
+  });
+
+  it('thisWeek 使用自然周周日作为结束日期', () => {
+    expect(buildTodoDateRange('thisWeek', '2026-04-07', '2026-04-01', '2026-04-30')).toEqual({
+      start: '1970-01-01',
+      end: '2026-04-12',
+    });
+  });
+
+  it('thisMonth 使用自然月月末作为结束日期', () => {
+    expect(buildTodoDateRange('thisMonth', '2026-04-07', '2026-04-01', '2026-04-30')).toEqual({
+      start: '1970-01-01',
+      end: '2026-04-30',
     });
   });
 
@@ -40,10 +61,31 @@ describe('buildCompletedTodoDateRange', () => {
     });
   });
 
-  it('week 使用 currentDate 到未来 6 天', () => {
+  it('recent7 使用 currentDate 到未来 6 天', () => {
+    expect(buildCompletedTodoDateRange('recent7', '2026-04-07', null)).toEqual({
+      start: '2026-04-07',
+      end: '2026-04-13',
+    });
+  });
+
+  it('week 兼容旧值并映射到 recent7', () => {
     expect(buildCompletedTodoDateRange('week', '2026-04-07', null)).toEqual({
       start: '2026-04-07',
       end: '2026-04-13',
+    });
+  });
+
+  it('thisWeek 使用自然周起止日期', () => {
+    expect(buildCompletedTodoDateRange('thisWeek', '2026-04-07', null)).toEqual({
+      start: '2026-04-06',
+      end: '2026-04-12',
+    });
+  });
+
+  it('thisMonth 使用自然月起止日期', () => {
+    expect(buildCompletedTodoDateRange('thisMonth', '2026-04-07', null)).toEqual({
+      start: '2026-04-01',
+      end: '2026-04-30',
     });
   });
 
@@ -57,7 +99,8 @@ describe('buildCompletedTodoDateRange', () => {
   });
 });
 
-it('类型仅支持预设四种过滤模式', () => {
-  const type: TodoDateFilterType = 'today';
-  expect(type).toBe('today');
+it('类型支持新的日期预设并保留旧 week 兼容值', () => {
+  const types: TodoDateFilterType[] = ['today', 'thisWeek', 'thisMonth', 'recent7', 'all', 'custom', 'week'];
+  expect(types).toContain('thisWeek');
+  expect(types).toContain('recent7');
 });

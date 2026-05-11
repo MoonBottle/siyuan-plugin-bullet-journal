@@ -143,6 +143,8 @@ export type HabitFrequency = {
   daysOfWeek?: number[];         // 每周指定周几（0=周日, 1=周一, ...）
 };
 
+export type HabitRecordStatus = 'completed' | 'missed';
+
 // 打卡记录
 export interface CheckInRecord {
   content: string;               // 打卡日志内容（默认等于习惯名，用户可自定义修改）
@@ -156,6 +158,7 @@ export interface CheckInRecord {
   unit?: string;                 // 单位
   // 所属习惯引用
   habitId: string;               // 所属习惯的 blockId
+  status?: HabitRecordStatus;    // completed=正常打卡，missed=显式未打卡
 }
 
 // 习惯
@@ -183,6 +186,7 @@ export interface HabitDayState {
   date: string;
   hasRecord: boolean;
   isCompleted: boolean;
+  isMissed?: boolean;
   currentValue?: number;
   targetValue?: number;
 }

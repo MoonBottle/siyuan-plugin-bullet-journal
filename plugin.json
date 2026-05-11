@@ -7,6 +7,7 @@
   "disabledInPublish": true,
   "backends": ["all"],
   "frontends": ["all"],
+  "kernels": ["all"],
   "displayName": {
     "default": "Task Assistant",
     "zh_CN": "任务助手"

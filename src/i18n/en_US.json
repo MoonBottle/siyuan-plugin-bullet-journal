@@ -97,6 +97,22 @@
   "quadrant": {
     "title": "Quadrant",
     "placeholder": "Quadrant view is coming soon",
+    "editPanel": "Edit Panel",
+    "resetDefaults": "Reset Defaults",
+    "resetConfirm": "Reset all four panels to default priority configuration?",
+    "panelTitle": "Panel Title",
+    "priorityRule": "Priority Rule",
+    "dateRule": "Date Rule",
+    "priorityHigh": "High",
+    "priorityMedium": "Medium",
+    "priorityLow": "Low",
+    "priorityNone": "None",
+    "dateOverdue": "Overdue",
+    "dateToday": "Today",
+    "dateTomorrow": "Tomorrow",
+    "dateThisWeek": "This Week",
+    "dateThisMonth": "This Month",
+    "dateRecent7": "Next 7 Days",
     "panels": {
       "high": "Important & Urgent",
       "medium": "Important, Not Urgent",
@@ -191,8 +207,9 @@
       "title": "Date Filter",
       "today": "Today",
       "tomorrow": "Tomorrow",
-      "thisWeek": "Next 7 Days",
+      "thisWeek": "This Week",
       "thisMonth": "This Month",
+      "recent7": "Next 7 Days",
       "all": "All",
       "custom": "Custom"
     },
@@ -306,7 +323,13 @@
       "copyButton": "Copy MCP Config",
       "copySuccess": "MCP config copied to clipboard",
       "copyFailed": "Copy failed, please copy manually",
-      "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop"
+      "workspaceUnavailable": "Cannot get workspace path, please use SiYuan desktop",
+      "httpCopyButton": "Copy HTTP MCP Config (Experimental)",
+      "httpTooltip": "Requires SiYuan v3.7.0+, no Node.js or Token needed",
+      "httpDescription": "HTTP MCP service based on SiYuan kernel plugin. No Node.js installation or Token configuration required. Just paste into your AI client's MCP config.",
+      "httpCopySuccess": "HTTP MCP config copied to clipboard",
+      "httpCopyFailed": "Copy failed, please copy manually",
+      "mobileHint": "MCP config must be copied on desktop"
     },
     "ai": {
       "title": "AI Service Config",
@@ -973,6 +996,13 @@
     "recordUpdateFailed": "Failed to update check-in record",
     "recordEmptyError": "Check-in record content cannot be empty",
     "recordFormatError": "Enter a valid check-in record format",
+    "markMissed": "Missed",
+    "resetRecord": "Reset",
+    "dueToday": "Due today",
+    "dueTomorrow": "Check in tomorrow",
+    "dueOn": "Next {date}",
+    "noNeedToday": "No check-in needed today",
+    "clickableDateHint": "Click to check in, right-click for more actions",
     "createSuccess": "Habit created",
     "createFailed": "Failed to create habit"
   }

@@ -22,7 +22,7 @@
 
       <div v-if="habit.type !== 'binary'" class="habit-list-item__progress">
         <div class="habit-list-item__progress-bar">
-        <div
+          <div
             class="habit-list-item__progress-fill"
             :style="{ width: progressPercent + '%' }"
           ></div>
@@ -30,6 +30,14 @@
         <span class="habit-list-item__progress-text">
           {{ dayCurrentValue }}/{{ habit.target || 0 }}{{ habit.unit || '' }}
         </span>
+      </div>
+
+      <div
+        class="habit-list-item__meta"
+        :class="{ 'habit-list-item__meta--due': isDueToday }"
+        data-testid="habit-list-item-meta"
+      >
+        {{ frequencySummary }} · {{ scheduleHint }}
       </div>
     </div>
 
@@ -119,14 +127,18 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { getHabitEndDate } from '@/domain/habit/habitPeriod';
+import { getNextEligibleHabitDate } from '@/domain/habit/habitStatus';
 import { t } from '@/i18n';
 import type { Habit, HabitDayState, HabitPeriodState, HabitStats } from '@/types/models';
+import dayjs from '@/utils/dayjs';
 
 const props = defineProps<{
   habit: Habit;
   dayState: HabitDayState;
   periodState: HabitPeriodState;
   stats?: HabitStats;
+  currentDate?: string;
   isMobile?: boolean;
   readonlyActions?: boolean;
 }>();
@@ -174,6 +186,81 @@ const progressPercent = computed(() => {
 });
 
 const actionProgress = computed(() => progressPercent.value / 100);
+
+const referenceDate = computed(() => props.currentDate || props.dayState.date);
+
+const frequencySummary = computed(() => {
+  const frequency = props.habit.frequency;
+  if (!frequency || frequency.type === 'daily') {
+    return t('habit').freqDaily;
+  }
+
+  if (frequency.type === 'every_n_days') {
+    return t('habit').freqEveryNDays.replace('N', String(frequency.interval || 2));
+  }
+
+  if (frequency.type === 'weekly') {
+    return t('habit').freqWeekly;
+  }
+
+  if (frequency.type === 'n_per_week') {
+    return t('habit').freqNPerWeek.replace('N', String(frequency.daysPerWeek || 1));
+  }
+
+  if (frequency.type === 'weekly_days') {
+    const labels = t('calendar').weekDays;
+    const days = (frequency.daysOfWeek || [])
+      .map(day => labels[(day + 6) % 7] || '')
+      .filter(Boolean)
+      .join('、');
+    return days ? `${t('habit').freqWeekly}${days}` : t('habit').freqWeeklyDays;
+  }
+
+  return t('habit').frequencyLabel;
+});
+
+const isDueToday = computed(() => {
+  return !props.habit.archivedAt
+    && props.periodState.eligibleToday
+    && !props.periodState.isCompleted
+    && !props.dayState.isCompleted
+    && !props.dayState.isMissed;
+});
+
+const scheduleHint = computed(() => {
+  if (props.habit.archivedAt) {
+    return t('habit').archived;
+  }
+
+  const endDate = getHabitEndDate(props.habit);
+  if (endDate && referenceDate.value > endDate) {
+    return t('habit').completed;
+  }
+
+  if (isDueToday.value) {
+    return t('habit').dueToday;
+  }
+
+  if (!props.periodState.eligibleToday) {
+    return t('habit').noNeedToday;
+  }
+
+  let searchFrom = dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD');
+  if (props.habit.frequency?.type === 'weekly' || props.habit.frequency?.type === 'n_per_week') {
+    searchFrom = dayjs(props.periodState.periodEnd).add(1, 'day').format('YYYY-MM-DD');
+  }
+
+  const nextDate = getNextEligibleHabitDate(props.habit, searchFrom);
+  if (!nextDate) {
+    return t('habit').completed;
+  }
+
+  if (nextDate === dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD')) {
+    return t('habit').dueTomorrow;
+  }
+
+  return t('habit').dueOn.replace('{date}', dayjs(nextDate).format('M月D日'));
+});
 
 function handleMainClick() {
   emit('open-detail', props.habit);
@@ -258,6 +345,20 @@ function handleMainClick() {
   font-size: 12px;
   color: var(--b3-theme-on-surface-light);
   white-space: nowrap;
+}
+
+.habit-list-item__meta {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--b3-theme-on-surface-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.habit-list-item__meta--due {
+  color: var(--b3-theme-primary);
+  font-weight: 500;
 }
 
 .habit-list-item__actions {

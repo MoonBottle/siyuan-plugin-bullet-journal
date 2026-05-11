@@ -454,7 +454,7 @@ describe('DashboardCanvas', () => {
     expect(mockOpenQuadrantWidgetConfigDialog).toHaveBeenCalledWith({
       initialConfig: {
         groupId: 'group-a',
-        quadrant: 'medium',
+        quadrant: 'q2',
       },
       onConfirm: expect.any(Function),
     });
@@ -462,11 +462,11 @@ describe('DashboardCanvas', () => {
     const configureOptions = mockOpenQuadrantWidgetConfigDialog.mock.calls[0][0];
     await configureOptions.onConfirm({
       groupId: 'group-b',
-      quadrant: 'low',
+      quadrant: 'q3',
     });
     expect(store.updateWidgetConfig).toHaveBeenCalledWith('dashboard-1', 'widget-1', {
       groupId: 'group-b',
-      quadrant: 'low',
+      quadrant: 'q3',
     });
 
     mounted.unmount();

@@ -228,12 +228,13 @@ import { ref, watch, computed } from 'vue';
 import { useSettingsStore } from '@/stores';
 import { t } from '@/i18n';
 import type { PriorityLevel } from '@/types/models';
+import type { TodoDateFilterType } from '@/utils/todoDateFilter';
 import dayjs from '@/utils/dayjs';
 
 const props = defineProps<{
   modelValue: boolean;
   selectedGroup: string;
-  dateFilter: 'today' | 'week' | 'all' | 'custom';
+  dateFilter: TodoDateFilterType;
   dateRange: { start: string; end: string } | null;
   priorities: PriorityLevel[];
 }>();
@@ -241,7 +242,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
   'update:selectedGroup': [value: string];
-  'update:dateFilter': [value: 'today' | 'week' | 'all' | 'custom'];
+  'update:dateFilter': [value: TodoDateFilterType];
   'update:dateRange': [value: { start: string; end: string } | null];
   'update:priorities': [value: PriorityLevel[]];
   'apply': [];
@@ -281,7 +282,9 @@ watch(() => props.modelValue, (val) => {
 
 const dateOptions = [
   { value: 'today', label: t('todo').dateFilter?.today || '今天' },
-  { value: 'week', label: t('todo').dateFilter?.thisWeek || '近7天' },
+  { value: 'thisWeek', label: t('todo').dateFilter?.thisWeek || '本周' },
+  { value: 'thisMonth', label: t('todo').dateFilter?.thisMonth || '本月' },
+  { value: 'recent7', label: t('todo').dateFilter?.recent7 || '近7天' },
   { value: 'all', label: t('todo').dateFilter?.all || '全部' },
   { value: 'custom', label: t('todo').dateFilter?.custom || '自定义' },
 ];
@@ -360,7 +363,7 @@ const closeDateFilterSheet = () => {
   showDateFilterSheet.value = false;
 };
 
-const selectDateFilter = (value: 'today' | 'week' | 'all' | 'custom') => {
+const selectDateFilter = (value: TodoDateFilterType) => {
   localDateFilter.value = value;
   closeDateFilterSheet();
 };

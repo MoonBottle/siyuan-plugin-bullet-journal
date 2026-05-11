@@ -45,6 +45,33 @@ describe('getHabitDayState', () => {
     expect(state.currentValue).toBe(7);
     expect(state.isCompleted).toBe(false);
   });
+
+  it('存在未打卡记录时，该日应标记为 missed', () => {
+    const habit = mkHabit({
+      type: 'binary',
+      records: [mkRecord('2026-04-09', { status: 'missed', content: '早起' })],
+    });
+    const state = getHabitDayState(habit, '2026-04-09');
+
+    expect(state.hasRecord).toBe(true);
+    expect(state.isMissed).toBe(true);
+    expect(state.isCompleted).toBe(false);
+  });
+
+  it('未打卡应覆盖计数型未达标进度', () => {
+    const habit = mkHabit({
+      records: [
+        mkRecord('2026-04-09', { currentValue: 3, targetValue: 8, unit: '杯' }),
+        mkRecord('2026-04-09', { status: 'missed', content: '喝水' }),
+      ],
+    });
+    const state = getHabitDayState(habit, '2026-04-09');
+
+    expect(state.hasRecord).toBe(true);
+    expect(state.isMissed).toBe(true);
+    expect(state.isCompleted).toBe(false);
+    expect(state.currentValue).toBeUndefined();
+  });
 });
 
 describe('getHabitPeriodState', () => {

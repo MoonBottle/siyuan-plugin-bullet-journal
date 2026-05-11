@@ -26,7 +26,7 @@ export type WorkbenchWidgetType =
   | 'miniCalendar'
   | 'pomodoroStats';
 
-export type WorkbenchQuadrantKey = 'high' | 'medium' | 'low' | 'none';
+export type WorkbenchQuadrantKey = 'q1' | 'q2' | 'q3' | 'q4';
 export type WorkbenchPomodoroStatsSectionKey =
   | 'overview'
   | 'annualHeatmap'

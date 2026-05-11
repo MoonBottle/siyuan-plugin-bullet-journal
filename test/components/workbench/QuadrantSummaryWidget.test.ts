@@ -14,6 +14,28 @@ const nativePreviewContainsTarget = vi.fn(() => false);
 const mockPlugin = { name: 'plugin' };
 const mockApp = { name: 'app' };
 
+const mockQuadrantConfigStore = {
+  loaded: true,
+  config: {
+    version: 1,
+    panels: [
+      { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
+      { id: 'q2', title: 'Follow-up', rules: { priority: ['medium'] } },
+      { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
+      { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
+    ],
+  },
+  panels: [
+    { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
+    { id: 'q2', title: 'Follow-up', rules: { priority: ['medium'] } },
+    { id: 'q3', title: '紧急不重要', rules: { priority: ['low'] } },
+    { id: 'q4', title: '不重要不紧急', rules: { priority: ['none'] } },
+  ],
+  loadConfig: vi.fn(),
+  savePanel: vi.fn(),
+  resetAll: vi.fn(),
+};
+
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => mockPlugin),
   useApp: vi.fn(() => mockApp),
@@ -26,6 +48,10 @@ vi.mock('@/utils/nativeBlockPreview', () => ({
     containsTarget: nativePreviewContainsTarget,
     isOpen: vi.fn(() => false),
   }),
+}));
+
+vi.mock('@/stores/quadrantConfigStore', () => ({
+  useQuadrantConfigStore: () => mockQuadrantConfigStore,
 }));
 
 vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
@@ -52,30 +78,28 @@ vi.mock('@/components/SiyuanTheme/SySelect.vue', () => ({
   }),
 }));
 
-vi.mock('@/components/todo/TodoSidebar.vue', () => ({
+vi.mock('@/components/todo/TodoSidebarList.vue', () => ({
   default: defineComponent({
-    name: 'TodoSidebarStub',
+    name: 'TodoSidebarListStub',
     props: [
-      'groupId',
-      'priorities',
-      'includeNoPriority',
+      'items',
+      'hasAnyItemsRaw',
+      'hasActiveFilters',
       'previewTriggerMode',
       'onItemPreviewClick',
     ],
     setup(props) {
       todoSidebarProps({
-        groupId: props.groupId,
-        priorities: props.priorities,
-        includeNoPriority: props.includeNoPriority,
+        items: props.items,
+        hasAnyItemsRaw: props.hasAnyItemsRaw,
+        hasActiveFilters: props.hasActiveFilters,
         previewTriggerMode: props.previewTriggerMode,
         onItemPreviewClick: props.onItemPreviewClick,
       });
 
       return () => h('div', {
         'data-testid': 'quadrant-widget-todo-sidebar',
-        'data-group-id': props.groupId,
-        'data-priorities': JSON.stringify(props.priorities ?? []),
-        'data-include-no-priority': String(Boolean(props.includeNoPriority)),
+        'data-items-count': String(props.items?.length ?? 0),
       });
     },
   }),
@@ -217,12 +241,12 @@ describe('QuadrantWidgetConfigDialog', () => {
     const mounted = await mountDialog({
       initialConfig: {
         groupId: 'group-a',
-        quadrant: 'high',
+        quadrant: 'q1',
       },
     });
 
     const quadrantSelect = mounted.container.querySelector('[data-testid="quadrant-widget-select"]') as HTMLSelectElement;
-    quadrantSelect.value = 'none';
+    quadrantSelect.value = 'q4';
     quadrantSelect.dispatchEvent(new Event('change'));
     await nextTick();
 
@@ -235,8 +259,25 @@ describe('QuadrantWidgetConfigDialog', () => {
 
     expect(mounted.onConfirm).toHaveBeenCalledWith({
       groupId: 'group-b',
-      quadrant: 'none',
+      quadrant: 'q4',
     });
+
+    mounted.unmount();
+  });
+
+  it('maps legacy workbench keys to q1-q4', async () => {
+    const settingsStore = useSettingsStore();
+    settingsStore.loaded = true;
+    settingsStore.groups = [];
+
+    const mounted = await mountDialog({
+      initialConfig: {
+        quadrant: 'high',
+      },
+    });
+
+    const quadrantSelect = mounted.container.querySelector('[data-testid="quadrant-widget-select"]') as HTMLSelectElement;
+    expect(quadrantSelect.value).toBe('q1');
 
     mounted.unmount();
   });
@@ -249,27 +290,35 @@ describe('QuadrantSummaryWidget', () => {
     vi.clearAllMocks();
   });
 
-  it('renders a single configured quadrant with embedded todo filtering', async () => {
+  it('renders the configured panel title in the summary widget', async () => {
     const mounted = await mountWidget({
       groupId: 'group-b',
-      quadrant: 'none',
+      quadrant: 'q4',
     });
 
-    expect(mounted.container.textContent).toContain('1');
-    expect(mounted.container.textContent).toContain('Neither Urgent nor Important');
+    expect(mounted.container.textContent).toContain('不重要不紧急');
 
     const sidebar = mounted.container.querySelector('[data-testid="quadrant-widget-todo-sidebar"]');
-    expect(sidebar?.getAttribute('data-group-id')).toBe('group-b');
-    expect(sidebar?.getAttribute('data-priorities')).toBe('[]');
-    expect(sidebar?.getAttribute('data-include-no-priority')).toBe('true');
+    expect(sidebar?.getAttribute('data-items-count')).toBe('1');
+
+    mounted.unmount();
+  });
+
+  it('renders custom panel title from config', async () => {
+    const mounted = await mountWidget({
+      groupId: '',
+      quadrant: 'q2',
+    });
+
+    expect(mounted.container.textContent).toContain('Follow-up');
 
     mounted.unmount();
   });
 
   it('wires click-trigger preview callbacks and opens native preview from card clicks', async () => {
     const mounted = await mountWidget({
-      groupId: 'group-b',
-      quadrant: 'none',
+      groupId: '',
+      quadrant: 'q4',
     });
 
     const sidebarPropsCall = todoSidebarProps.mock.calls.at(-1)?.[0];

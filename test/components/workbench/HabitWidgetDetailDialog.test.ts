@@ -46,7 +46,10 @@ vi.mock('@/composables/useHabitWorkspace', () => ({
     displaySelectedStats: null,
     refreshHabits,
     selectHabitById,
+    handleMonthCellPrimaryAction: vi.fn(),
+    markHabitMissedForDate: vi.fn(),
     openSelectedHabitDoc: vi.fn(),
+    resetHabitRecordForDate: vi.fn(),
   }),
 }));
 

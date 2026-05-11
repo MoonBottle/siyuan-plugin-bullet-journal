@@ -97,6 +97,22 @@
   "quadrant": {
     "title": "四象限",
     "placeholder": "四象限视图即将推出",
+    "editPanel": "编辑象限",
+    "resetDefaults": "恢复默认",
+    "resetConfirm": "确定恢复四个象限为默认配置？",
+    "panelTitle": "象限标题",
+    "priorityRule": "优先级规则",
+    "dateRule": "日期规则",
+    "priorityHigh": "高",
+    "priorityMedium": "中",
+    "priorityLow": "低",
+    "priorityNone": "无",
+    "dateOverdue": "已过期",
+    "dateToday": "今天",
+    "dateTomorrow": "明天",
+    "dateThisWeek": "本周",
+    "dateThisMonth": "本月",
+    "dateRecent7": "近7天",
     "panels": {
       "high": "重要且紧急",
       "medium": "重要不紧急",
@@ -191,8 +207,9 @@
       "title": "日期筛选",
       "today": "今天",
       "tomorrow": "明天",
-      "thisWeek": "近7天",
+      "thisWeek": "本周",
       "thisMonth": "本月",
+      "recent7": "近7天",
       "all": "全部",
       "custom": "自定义"
     },
@@ -306,7 +323,13 @@
       "copyButton": "复制 MCP 配置",
       "copySuccess": "MCP 配置已复制到剪贴板",
       "copyFailed": "复制失败，请手动复制",
-      "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版"
+      "workspaceUnavailable": "无法获取工作空间路径，请使用思源桌面版",
+      "httpCopyButton": "复制 HTTP MCP 配置（实验性）",
+      "httpTooltip": "思源版本 3.7.0 以上可用，无需 Node.js 和 Token 配置",
+      "httpDescription": "基于思源内核插件的 HTTP MCP 服务，无需安装 Node.js，无需配置 Token。在 AI 客户端的 MCP 配置中粘贴即可使用。",
+      "httpCopySuccess": "HTTP MCP 配置已复制到剪贴板",
+      "httpCopyFailed": "复制失败，请手动复制",
+      "mobileHint": "MCP 配置需要在桌面端复制后使用"
     },
     "ai": {
       "title": "AI 服务配置",
@@ -1014,6 +1037,13 @@
     "recordUpdateFailed": "更新打卡记录失败",
     "recordEmptyError": "打卡记录内容不能为空",
     "recordFormatError": "请输入有效的打卡记录格式",
+    "markMissed": "未打卡",
+    "resetRecord": "重置",
+    "dueToday": "今天该打卡了",
+    "dueTomorrow": "明天再打卡",
+    "dueOn": "下次 {date}",
+    "noNeedToday": "今天无需打卡",
+    "clickableDateHint": "点击可打卡，右键可更多操作",
     "createSuccess": "习惯已创建",
     "createFailed": "创建习惯失败"
   }

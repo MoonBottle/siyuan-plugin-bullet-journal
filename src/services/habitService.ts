@@ -6,6 +6,7 @@ import { insertBlock, updateBlock, deleteBlock, getBlockKramdown } from '@/api';
 import type { HabitCheckInTimePrecision } from '@/settings/types';
 import type { Habit, CheckInRecord } from '@/types/models';
 import { formatHabitCompletedAtForMarkdown } from '@/utils/habitDateTime';
+import { getHabitRecordStatus, getRecordsForDate } from '@/domain/habit/habitStatus';
 
 const HABIT_ARCHIVE_MARKER_RE = /\s*📦\d{4}-\d{2}-\d{2}\s*$/;
 
@@ -38,6 +39,10 @@ function replaceHabitDefinitionLine(
   return lines.join('\n');
 }
 
+function isToday(date: string): boolean {
+  return date === formatHabitCompletedAtForMarkdown('day');
+}
+
 export function findInsertAfterBlockId(habit: Habit, date: string): string {
   const sortedRecords = [...habit.records].sort((a, b) => a.date.localeCompare(b.date));
   if (sortedRecords.length === 0) {
@@ -67,7 +72,7 @@ function buildCompletedAtMarkdown(
   date: string,
   precision: HabitCheckInTimePrecision = 'day',
 ): string {
-  if (precision === 'day') {
+  if (precision === 'day' || !isToday(date)) {
     return date;
   }
 
@@ -94,6 +99,37 @@ export function buildCheckInMarkdown(
   return `${habit.name} ${value}/${target}${unit} 📅${completedAt}`;
 }
 
+export function buildMissedCheckInMarkdown(
+  habit: Habit,
+  date: string,
+  precision: HabitCheckInTimePrecision = 'day',
+): string {
+  const completedAt = buildCompletedAtMarkdown(date, precision);
+  return `${habit.name} 📅${completedAt} ❌`;
+}
+
+export function getRecordForDate(habit: Habit, date: string): CheckInRecord | null {
+  const records = getRecordsForDate(habit, date);
+  if (records.length === 0) {
+    return null;
+  }
+
+  const missedRecord = records.find(record => getHabitRecordStatus(record) === 'missed');
+  if (missedRecord) {
+    return missedRecord;
+  }
+
+  if (habit.type === 'binary') {
+    return records[0];
+  }
+
+  return records.reduce((best, record) => {
+    const bestValue = best.currentValue ?? 0;
+    const currentValue = record.currentValue ?? 0;
+    return currentValue >= bestValue ? record : best;
+  });
+}
+
 /**
  * 二元型打卡
  * 创建新的打卡记录 block
@@ -110,7 +146,7 @@ export async function checkIn(
   }
 
   // 检查是否已存在该日期的打卡记录
-  const existingRecord = habit.records.find(r => r.date === date);
+  const existingRecord = getRecordForDate(habit, date);
   if (existingRecord) {
     console.log('[HabitService] Already checked in for', date);
     return false;
@@ -148,11 +184,16 @@ export async function checkInCount(
     return false;
   }
 
-  const existingRecord = habit.records.find(r => r.date === date);
+  const dayRecord = getRecordForDate(habit, date);
 
-  if (existingRecord) {
+  if (dayRecord) {
+    if (getHabitRecordStatus(dayRecord) === 'missed') {
+      console.log('[HabitService] Missed record exists for', date);
+      return false;
+    }
+
     // 更新现有记录
-    const currentValue = (existingRecord.currentValue ?? 0) + incrementBy;
+    const currentValue = (dayRecord.currentValue ?? 0) + incrementBy;
     return await setCheckInValue(habit, date, currentValue, writer, precision);
   }
 
@@ -191,9 +232,14 @@ export async function setCheckInValue(
     return false;
   }
 
-  const existingRecord = habit.records.find(r => r.date === date);
+  const existingRecord = getRecordForDate(habit, date);
 
   if (existingRecord) {
+    if (getHabitRecordStatus(existingRecord) === 'missed') {
+      console.log('[HabitService] Missed record exists for', date);
+      return false;
+    }
+
     // 更新现有记录 block
     const markdown = buildCheckInMarkdown(habit, date, value, precision);
 
@@ -238,6 +284,38 @@ export async function deleteCheckIn(record: CheckInRecord): Promise<boolean> {
     console.error('[HabitService] deleteCheckIn failed:', error);
     return false;
   }
+}
+
+export async function markHabitMissed(
+  habit: Habit,
+  date: string,
+  writer?: HabitBlockWriter,
+  precision: HabitCheckInTimePrecision = 'day',
+): Promise<boolean> {
+  const existingRecord = getRecordForDate(habit, date);
+  if (existingRecord) {
+    console.log('[HabitService] Record already exists for', date);
+    return false;
+  }
+
+  const markdown = buildMissedCheckInMarkdown(habit, date, precision);
+  const previousId = findInsertAfterBlockId(habit, date);
+
+  try {
+    if (writer) {
+      return await writer.insertAfter(markdown, previousId);
+    }
+
+    const result = await insertBlock('markdown', markdown, undefined, previousId);
+    return isSuccessfulBlockOperationResult(result);
+  } catch (error) {
+    console.error('[HabitService] markHabitMissed failed:', error);
+    return false;
+  }
+}
+
+export async function resetHabitRecord(record: CheckInRecord): Promise<boolean> {
+  return await deleteCheckIn(record);
 }
 
 export async function getCheckInMarkdown(record: CheckInRecord): Promise<string | null> {

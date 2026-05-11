@@ -10,7 +10,10 @@ const {
   archiveHabit,
   checkIn,
   checkInCount,
+  getRecordForDate,
+  markHabitMissed,
   openDocumentAtLine,
+  resetHabitRecord,
   showMessage,
   calculateAllHabitStats,
   calculateHabitStats,
@@ -19,7 +22,10 @@ const {
   archiveHabit: vi.fn(),
   checkIn: vi.fn(),
   checkInCount: vi.fn(),
+  getRecordForDate: vi.fn(),
+  markHabitMissed: vi.fn(),
   openDocumentAtLine: vi.fn(),
+  resetHabitRecord: vi.fn(),
   showMessage: vi.fn(),
   calculateAllHabitStats: vi.fn((habits: Array<{ blockId: string }>) => {
     return new Map(habits.map(habit => [habit.blockId, {
@@ -54,6 +60,9 @@ vi.mock('@/services/habitService', () => ({
   archiveHabit,
   checkIn,
   checkInCount,
+  getRecordForDate,
+  markHabitMissed,
+  resetHabitRecord,
   unarchiveHabit,
 }));
 
@@ -90,6 +99,9 @@ describe('useHabitWorkspace', () => {
     vi.clearAllMocks();
     checkIn.mockResolvedValue(false);
     checkInCount.mockResolvedValue(false);
+    getRecordForDate.mockReturnValue(null);
+    markHabitMissed.mockResolvedValue(false);
+    resetHabitRecord.mockResolvedValue(false);
     archiveHabit.mockResolvedValue(false);
     unarchiveHabit.mockResolvedValue(false);
   });
@@ -340,6 +352,56 @@ describe('useHabitWorkspace', () => {
     expect(checkInCount).toHaveBeenCalledWith(habit, initialSelectedDate, 1, undefined, 'day');
     expect(openDocumentAtLine).toHaveBeenNthCalledWith(2, 'doc-1', undefined, 'habit-a');
     expect(calculateHabitStats).toHaveBeenCalled();
+  });
+
+  it('routes missed and reset actions through the shared helpers', async () => {
+    const projectStore = useProjectStore();
+    const settingsStore = useSettingsStore();
+    settingsStore.scanMode = 'folder';
+    settingsStore.directories = [];
+    projectStore.currentDate = '2026-05-08';
+    projectStore.projects = [{
+      id: 'project-a',
+      name: 'Project A',
+      items: [],
+      tasks: [],
+      habits: [createHabit({
+        blockId: 'habit-a',
+        records: [{
+          content: '早起',
+          date: '2026-05-04',
+          docId: 'doc-1',
+          blockId: 'record-2026-05-04',
+          habitId: 'habit-a',
+          status: 'missed',
+        }],
+      })],
+      links: [],
+      groupId: 'group-a',
+    } as any];
+
+    markHabitMissed.mockResolvedValue(true);
+    resetHabitRecord.mockResolvedValue(true);
+    getRecordForDate.mockReturnValue({
+      content: '早起',
+      date: '2026-05-04',
+      docId: 'doc-1',
+      blockId: 'record-2026-05-04',
+      habitId: 'habit-a',
+      status: 'missed',
+    });
+
+    const { useHabitWorkspace } = await import('@/composables/useHabitWorkspace');
+    const workspace = useHabitWorkspace();
+    const habit = workspace.habits.value[0];
+
+    await workspace.markHabitMissedForDate(habit, '2026-05-06');
+    await workspace.resetHabitRecordForDate(habit, '2026-05-04');
+
+    expect(markHabitMissed).toHaveBeenCalledWith(habit, '2026-05-06', undefined, 'day');
+    expect(resetHabitRecord).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'record-2026-05-04',
+    }));
   });
 
   it('keeps archived habits selectable from the full store collection', async () => {

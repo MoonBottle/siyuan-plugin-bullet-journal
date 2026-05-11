@@ -45,33 +45,42 @@
 
     <div class="quadrant-grid">
       <section
-        v-for="(quadrant, index) in quadrants"
-        :key="quadrant.key"
+        v-for="(panel, index) in panels"
+        :key="panel.id"
         class="quadrant-panel"
-        :class="{ 'quadrant-panel--drop-active': activeDropQuadrant === quadrant.key }"
+        :class="{ 'quadrant-panel--drag-over': dragEnabled && dragOverPanelId === panel.id }"
         data-testid="quadrant-panel"
-        @dragover="handleQuadrantDragOver($event, quadrant)"
-        @dragleave="handleQuadrantDragLeave($event, quadrant.key)"
-        @drop="handleQuadrantDrop($event, quadrant)"
+        @dragover="handleQuadrantDragOver(panel.id, $event)"
+        @dragleave="handleQuadrantDragLeave(panel.id, $event)"
+        @drop="handleQuadrantDrop(panel.id, $event)"
       >
         <header class="quadrant-panel__header">
-          <h2 class="quadrant-panel__title">{{ t(quadrant.titleKey) }}</h2>
-          <span class="quadrant-panel__count">{{ panelCounts[index] }}</span>
+          <div class="quadrant-panel__header-main">
+            <h2 class="quadrant-panel__title">{{ panel.title }}</h2>
+            <span class="quadrant-panel__count">{{ panelCounts[index] }}</span>
+          </div>
+          <span
+            class="block__icon b3-tooltips b3-tooltips__sw quadrant-panel__more"
+            :data-testid="`quadrant-edit-button-${panel.id}`"
+            :aria-label="t('common').more"
+            @click="openQuadrantEditor(panel)"
+          >
+            <svg><use xlink:href="#iconMore"></use></svg>
+          </span>
         </header>
 
         <div class="quadrant-panel__body">
-          <TodoSidebar
+          <TodoSidebarList
             :ref="instance => setSidebarRef(index, instance)"
-            :group-id="selectedGroup"
-            :search-query="searchQuery"
-            :priorities="quadrant.priorities"
-            :include-no-priority="quadrant.includeNoPriority"
+            :items="quadrantAssignments[panel.id]"
+            :has-any-items-raw="allFilteredItems.length > 0"
+            :has-active-filters="Boolean(searchQuery.trim())"
+            empty-state-mode="panel"
+            :empty-state-title="t('quadrant').noTodos"
             preview-trigger-mode="click"
-            :enable-drag="true"
+            :enable-drag="dragEnabled"
             :on-item-drag-start="handleItemDragStart"
             :on-item-drag-end="handleItemDragEnd"
-            :on-item-hover-start="preview.scheduleShow"
-            :on-item-hover-end="preview.scheduleHide"
             :on-item-preview-click="handleItemPreviewClick"
             display-mode="embedded"
           />
@@ -87,17 +96,22 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Menu } from 'siyuan';
 import { getCurrentPlugin, useApp, usePlugin } from '@/main';
 import { useProjectStore, useSettingsStore } from '@/stores';
-import type { PriorityLevel } from '@/types/models';
-import TodoSidebar from '@/components/todo/TodoSidebar.vue';
+import TodoSidebarList from '@/components/todo/TodoSidebarList.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { t } from '@/i18n';
 import { showMessage } from '@/utils/dialog';
 import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
-import { updateBlockPriority } from '@/utils/fileUtils';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
-import { QUADRANT_DEFINITIONS } from '@/utils/quadrant';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
+import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
+import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
+import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
+import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant';
+import { updateBlockPriority } from '@/utils/fileUtils';
+import type { QuadrantPanelConfig } from '@/types/quadrant';
+import type { PriorityLevel } from '@/types/models';
+import type { TodoSidebarDragPayload } from '@/components/todo/todoSidebarTypes';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
@@ -105,30 +119,16 @@ const props = withDefaults(defineProps<{
   embedded: false,
 });
 
-type QuadrantConfig = {
-  key: string;
-  titleKey: string;
-  priorities: PriorityLevel[];
-  includeNoPriority: boolean;
-};
-
-type QuadrantDragPayload = {
-  blockId: string;
-  itemId: string;
-  priority?: PriorityLevel;
-};
-
 const plugin = usePlugin() as any;
 const app = useApp();
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
+const quadrantConfigStore = useQuadrantConfigStore();
 
 const selectedGroup = ref(settingsStore.defaultGroup || '');
 const isSelectedGroupDefaultDriven = ref(true);
 const searchQuery = ref('');
-const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebar> | null>>([]);
-const draggedItem = ref<QuadrantDragPayload | null>(null);
-const activeDropQuadrant = ref<string | null>(null);
+const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebarList> | null>>([]);
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
@@ -137,7 +137,25 @@ const preview = useBlockFocusPreview({
 const nativePreview = createNativeBlockPreviewController();
 const showHeaderTitle = computed(() => !props.embedded);
 
-const quadrants: QuadrantConfig[] = QUADRANT_DEFINITIONS;
+const panels = computed(() => quadrantConfigStore.panels);
+const dragEnabled = computed(() => isDefaultPriorityQuadrantConfig(panels.value));
+const dragOverPanelId = ref<string | null>(null);
+const draggedItem = ref<TodoSidebarDragPayload | null>(null);
+
+const allFilteredItems = computed(() => {
+  return projectStore.getFilteredAndSortedItems({
+    groupId: selectedGroup.value,
+    searchQuery: searchQuery.value,
+  });
+});
+
+const quadrantAssignments = computed(() => {
+  return assignItemsToQuadrants(allFilteredItems.value, panels.value);
+});
+
+const panelCounts = computed(() => {
+  return panels.value.map(panel => quadrantAssignments.value[panel.id].length);
+});
 
 const groupOptions = computed(() => {
   const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
@@ -158,50 +176,20 @@ const selectedGroupModel = computed({
   },
 });
 
-const panelCounts = computed(() => {
-  return quadrants.map((quadrant) => {
-    return projectStore.getFilteredAndSortedItems({
-      groupId: selectedGroup.value,
-      searchQuery: searchQuery.value,
-      priorities: quadrant.priorities.length > 0 ? quadrant.priorities : undefined,
-      includeNoPriority: quadrant.includeNoPriority,
-    }).length;
+function openQuadrantEditor(panel: QuadrantPanelConfig) {
+  openQuadrantRuleDialog({
+    panel: JSON.parse(JSON.stringify(panel)),
+    onSave: async (nextPanel) => {
+      await quadrantConfigStore.savePanel(nextPanel.id, nextPanel);
+    },
+    onResetDefaults: async () => {
+      await quadrantConfigStore.resetAll();
+    },
   });
-});
+}
 
-function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebar> | null) {
+function setSidebarRef(index: number, instance: InstanceType<typeof TodoSidebarList> | null) {
   sidebarRefs.value[index] = instance;
-}
-
-function getQuadrantPriority(quadrant: QuadrantConfig): PriorityLevel | undefined {
-  if (quadrant.includeNoPriority) {
-    return undefined;
-  }
-  return quadrant.priorities[0];
-}
-
-function parseDragPayload(raw: string | undefined): QuadrantDragPayload | null {
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as QuadrantDragPayload;
-  }
-  catch {
-    return null;
-  }
-}
-
-function handleItemDragStart(payload: QuadrantDragPayload) {
-  draggedItem.value = payload;
-  preview.setDragActive(true);
-}
-
-function handleItemDragEnd() {
-  draggedItem.value = null;
-  activeDropQuadrant.value = null;
-  preview.setDragActive(false);
 }
 
 function handleItemPreviewClick(payload: {
@@ -210,6 +198,88 @@ function handleItemPreviewClick(payload: {
   anchorEl: HTMLElement;
 }) {
   preview.showNow(payload);
+}
+
+function handleItemDragStart(_payload: TodoSidebarDragPayload, _event: DragEvent) {
+  if (!dragEnabled.value) return;
+  draggedItem.value = _payload;
+  preview.setDragActive(true);
+}
+
+function handleItemDragEnd() {
+  draggedItem.value = null;
+  dragOverPanelId.value = null;
+  preview.setDragActive(false);
+}
+
+function getPanelTargetPriority(panelId: string): PriorityLevel | undefined {
+  switch (panelId) {
+    case 'q1': return 'high';
+    case 'q2': return 'medium';
+    case 'q3': return 'low';
+    case 'q4': return undefined;
+    default: return undefined;
+  }
+}
+
+function parseDragPayload(event: DragEvent): TodoSidebarDragPayload | null {
+  const rawPayload = event.dataTransfer?.getData('application/json');
+  if (!rawPayload) return null;
+
+  try {
+    const payload = JSON.parse(rawPayload) as TodoSidebarDragPayload;
+    if (!payload?.blockId) return null;
+    return payload;
+  }
+  catch {
+    return null;
+  }
+}
+
+function handleQuadrantDragOver(panelId: string, event: DragEvent) {
+  if (!dragEnabled.value) return;
+  const payload = draggedItem.value ?? parseDragPayload(event);
+  if (!payload) return;
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  dragOverPanelId.value = panelId;
+}
+
+function handleQuadrantDragLeave(panelId: string, event: DragEvent) {
+  if (dragOverPanelId.value !== panelId) return;
+
+  const currentTarget = event.currentTarget as HTMLElement | null;
+  const relatedTarget = event.relatedTarget;
+  if (currentTarget && relatedTarget instanceof Node && currentTarget.contains(relatedTarget)) {
+    return;
+  }
+
+  dragOverPanelId.value = null;
+}
+
+async function handleQuadrantDrop(panelId: string, event: DragEvent) {
+  if (!dragEnabled.value) return;
+
+  event.preventDefault();
+
+  const payload = draggedItem.value ?? parseDragPayload(event);
+  dragOverPanelId.value = null;
+  draggedItem.value = null;
+  preview.setDragActive(false);
+  if (!payload) return;
+
+  const targetPriority = getPanelTargetPriority(panelId);
+  if (payload.priority === targetPriority) return;
+
+  const success = await updateBlockPriority(payload.blockId, targetPriority);
+  if (!success || !plugin) {
+    showMessage(t('common').actionFailed, 'error');
+    return;
+  }
+
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
@@ -222,59 +292,6 @@ function handleDocumentPointerDown(event: PointerEvent) {
   }
 
   preview.forceClose();
-}
-
-function handleQuadrantDragOver(event: DragEvent, quadrant: QuadrantConfig) {
-  event.preventDefault();
-  activeDropQuadrant.value = quadrant.key;
-
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move';
-  }
-}
-
-function handleQuadrantDragLeave(event: DragEvent, quadrantKey: string) {
-  const currentTarget = event.currentTarget;
-  const relatedTarget = event.relatedTarget;
-
-  if (
-    currentTarget instanceof HTMLElement
-    && relatedTarget instanceof Node
-    && currentTarget.contains(relatedTarget)
-  ) {
-    return;
-  }
-
-  if (activeDropQuadrant.value === quadrantKey) {
-    activeDropQuadrant.value = null;
-  }
-}
-
-async function handleQuadrantDrop(event: DragEvent, quadrant: QuadrantConfig) {
-  event.preventDefault();
-
-  const payload = draggedItem.value ?? parseDragPayload(event.dataTransfer?.getData('application/json'));
-  activeDropQuadrant.value = null;
-
-  if (!payload?.blockId) {
-    return;
-  }
-
-  const targetPriority = getQuadrantPriority(quadrant);
-  if (payload.priority === targetPriority) {
-    draggedItem.value = null;
-    return;
-  }
-
-  const success = await updateBlockPriority(payload.blockId, targetPriority);
-  draggedItem.value = null;
-
-  if (!success || !plugin) {
-    showMessage(t('common').actionFailed, 'error');
-    return;
-  }
-
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 }
 
 function syncSelectedGroupWithDefault() {
@@ -439,11 +456,13 @@ watch(
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
   settingsStore.loadFromPlugin();
   syncSelectedGroupWithDefault();
   projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
   projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
+
+  await quadrantConfigStore.loadConfig();
 
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 
@@ -534,6 +553,7 @@ onUnmounted(() => {
   padding: 8px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -546,11 +566,6 @@ onUnmounted(() => {
   border-radius: var(--b3-border-radius);
   overflow: hidden;
   transition: border-color 0.15s ease, background-color 0.15s ease;
-
-  &.quadrant-panel--drop-active {
-    border-color: var(--b3-theme-primary);
-    background: var(--b3-theme-primary-lightest);
-  }
 }
 
 .quadrant-panel__header {
@@ -562,22 +577,45 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--b3-border-color);
 }
 
+.quadrant-panel__header-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
 .quadrant-panel__title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
+  min-width: 0;
 }
 
 .quadrant-panel__count {
   font-size: 12px;
   color: var(--b3-theme-on-surface);
   opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.quadrant-panel__more {
+  opacity: 1;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .quadrant-panel__body {
   flex: 1;
   min-height: 0;
   overflow: auto;
+}
+
+.quadrant-panel--drag-over {
+  border-color: var(--b3-theme-primary);
+  background: var(--b3-theme-primary-lightest);
 }
 </style>
