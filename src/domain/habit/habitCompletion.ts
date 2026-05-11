@@ -4,18 +4,18 @@ import type {
   HabitDayState,
   HabitPeriodState,
 } from '@/types/models';
+import { getHabitRecordStatus, getRecordsForDate, hasMissedRecord } from './habitStatus';
 import { getHabitPeriod, isDateEligibleForHabit } from './habitPeriod';
 
 export function isHabitRecordCompleted(record: CheckInRecord, habit: Habit): boolean {
+  if (getHabitRecordStatus(record) === 'missed')
+    return false;
+
   if (habit.type === 'binary')
     return true;
 
   const target = habit.target ?? record.targetValue ?? 0;
   return (record.currentValue ?? 0) >= target;
-}
-
-function getRecordsForDate(habit: Habit, date: string): CheckInRecord[] {
-  return habit.records.filter(record => record.date === date);
 }
 
 function getBestRecordForDate(habit: Habit, date: string): CheckInRecord | null {
@@ -34,6 +34,25 @@ function getBestRecordForDate(habit: Habit, date: string): CheckInRecord | null 
 }
 
 export function getHabitDayState(habit: Habit, date: string): HabitDayState {
+  const records = getRecordsForDate(habit, date);
+  if (records.length === 0) {
+    return {
+      date,
+      hasRecord: false,
+      isCompleted: false,
+      isMissed: false,
+    };
+  }
+
+  if (hasMissedRecord(habit, date)) {
+    return {
+      date,
+      hasRecord: true,
+      isCompleted: false,
+      isMissed: true,
+    };
+  }
+
   const bestRecord = getBestRecordForDate(habit, date);
 
   if (!bestRecord) {
@@ -41,6 +60,7 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
       date,
       hasRecord: false,
       isCompleted: false,
+      isMissed: false,
     };
   }
 
@@ -48,6 +68,7 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
     date,
     hasRecord: true,
     isCompleted: isHabitRecordCompleted(bestRecord, habit),
+    isMissed: false,
     currentValue: bestRecord.currentValue,
     targetValue: habit.target ?? bestRecord.targetValue,
   };

@@ -9,13 +9,17 @@ vi.mock('@/api', () => ({
 
 import {
   archiveHabit,
+  buildMissedCheckInMarkdown,
   checkIn,
   checkInCount,
-  setCheckInValue,
-  deleteCheckIn,
   buildCheckInMarkdown,
+  deleteCheckIn,
   findInsertAfterBlockId,
   getCheckInMarkdown,
+  getRecordForDate,
+  markHabitMissed,
+  resetHabitRecord,
+  setCheckInValue,
   unarchiveHabit,
   updateCheckInMarkdown,
 } from '@/services/habitService';
@@ -71,24 +75,46 @@ describe('buildCheckInMarkdown', () => {
     expect(md).toBe('喝水 8/8杯 📅2026-04-07');
   });
 
-  it('分钟精度：保留所选日期并写入当前时间到分钟', () => {
+  it('今日分钟精度：保留今日并写入当前时间到分钟', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-08T09:30:45'));
 
     const habit = mkHabit({ name: '早起', type: 'binary' });
-    const md = buildCheckInMarkdown(habit, '2026-04-07', undefined, 'minute');
+    const md = buildCheckInMarkdown(habit, '2026-05-08', undefined, 'minute');
 
-    expect(md).toBe('早起 📅2026-04-07 09:30');
+    expect(md).toBe('早起 📅2026-05-08 09:30');
   });
 
-  it('秒精度：保留所选日期并写入当前时间到秒', () => {
+  it('非今日补打卡不应写入秒级时间', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-08T09:30:45'));
 
     const habit = mkHabit({ name: '喝水', type: 'count', target: 8, unit: '杯' });
     const md = buildCheckInMarkdown(habit, '2026-04-07', 3, 'second');
 
-    expect(md).toBe('喝水 3/8杯 📅2026-04-07 09:30:45');
+    expect(md).toBe('喝水 3/8杯 📅2026-04-07');
+  });
+
+  it('构建未打卡 markdown 使用行末 ❌', () => {
+    const habit = mkHabit({ name: '早起', type: 'binary' });
+
+    expect(buildMissedCheckInMarkdown(habit, '2026-04-07')).toBe('早起 📅2026-04-07 ❌');
+  });
+
+  it('非今日未打卡即使分钟精度也只写到日', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-08T09:30:45'));
+    const habit = mkHabit({ name: '早起', type: 'binary' });
+
+    expect(buildMissedCheckInMarkdown(habit, '2026-04-07', 'minute')).toBe('早起 📅2026-04-07 ❌');
+  });
+
+  it('今日未打卡可保留分钟精度', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-08T09:30:45'));
+    const habit = mkHabit({ name: '早起', type: 'binary' });
+
+    expect(buildMissedCheckInMarkdown(habit, '2026-05-08', 'minute')).toBe('早起 📅2026-05-08 09:30 ❌');
   });
 });
 
@@ -320,6 +346,46 @@ describe('findInsertAfterBlockId', () => {
   });
 });
 
+describe('markHabitMissed', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('为历史未打卡选择最近前序 record 作为插入位置', async () => {
+    const habit = mkHabit({
+      records: [
+        mkRecord('2026-04-03', { blockId: 'r3' }),
+        mkRecord('2026-04-05', { blockId: 'r5' }),
+      ],
+    });
+    const writer = {
+      insertAfter: vi.fn().mockResolvedValue(true),
+      update: vi.fn().mockResolvedValue(true),
+    };
+
+    const result = await markHabitMissed(habit, '2026-04-04', writer);
+
+    expect(result).toBe(true);
+    expect(writer.insertAfter).toHaveBeenCalledWith('早起 📅2026-04-04 ❌', 'r3');
+  });
+});
+
+describe('getRecordForDate', () => {
+  it('同日同时存在 missed 和 count 记录时优先返回 missed', () => {
+    const habit = mkHabit({
+      type: 'count',
+      target: 8,
+      unit: '杯',
+      records: [
+        mkRecord('2026-04-07', { currentValue: 3, targetValue: 8, unit: '杯', blockId: 'count-record' }),
+        mkRecord('2026-04-07', { status: 'missed', content: '喝水', blockId: 'missed-record' }),
+      ],
+    });
+
+    expect(getRecordForDate(habit, '2026-04-07')?.blockId).toBe('missed-record');
+  });
+});
+
 describe('deleteCheckIn', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -341,6 +407,22 @@ describe('deleteCheckIn', () => {
     const result = await deleteCheckIn(record);
 
     expect(result).toBe(false);
+  });
+});
+
+describe('resetHabitRecord', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('重置沿用 deleteCheckIn 删除当前记录块', async () => {
+    const record = mkRecord('2026-04-07', { status: 'missed' });
+    (deleteBlock as any).mockResolvedValue(successfulBlockResult);
+
+    const result = await resetHabitRecord(record);
+
+    expect(result).toBe(true);
+    expect(deleteBlock).toHaveBeenCalledWith('record-2026-04-07');
   });
 });
 

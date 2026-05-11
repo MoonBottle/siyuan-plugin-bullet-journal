@@ -60,6 +60,9 @@
           :current-date="currentDate"
           :view-month="viewMonth"
           @update:view-month="emit('update:viewMonth', $event)"
+          @month-cell-primary="emit('month-cell-primary', $event)"
+          @month-cell-mark-missed="emit('month-cell-mark-missed', $event)"
+          @month-cell-reset="emit('month-cell-reset', $event)"
         />
 
         <HabitStatsCards :stats="stats" />
@@ -137,6 +140,9 @@ const emit = defineEmits<{
   unarchive: [];
   'open-doc': [];
   'update:viewMonth': [value: string];
+  'month-cell-primary': [value: string];
+  'month-cell-mark-missed': [value: string];
+  'month-cell-reset': [value: string];
 }>();
 
 const headerTitle = computed(() => props.title || props.selectedHabit?.name || '');

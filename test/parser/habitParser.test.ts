@@ -202,6 +202,40 @@ describe('parseCheckInRecordLine', () => {
     expect(result!.unit).toBe('杯');
     expect(result!.date).toBe('2026-05-01');
   });
+
+  it('解析行末未打卡语法', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 ❌', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      content: '早起',
+      date: '2026-04-06',
+      completedAt: '2026-04-06',
+      habitId: 'habit-block-1',
+      status: 'missed',
+    });
+  });
+
+  it('解析带分钟精度的行末未打卡语法', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 07:30 ❌', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      date: '2026-04-06',
+      completedAt: '2026-04-06 07:30',
+      status: 'missed',
+    });
+  });
+
+  it('未打卡的计数型记录不提取计数字段', () => {
+    const result = parseCheckInRecordLine('喝水 📅2026-04-06 ❌', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      content: '喝水',
+      status: 'missed',
+    });
+    expect(result?.currentValue).toBeUndefined();
+    expect(result?.targetValue).toBeUndefined();
+    expect(result?.unit).toBeUndefined();
+  });
 });
 
 describe('parseHabitRecordLine', () => {
@@ -219,5 +253,11 @@ describe('parseHabitRecordLine', () => {
     const result = parseHabitRecordLine('喝水 3/8杯 📅2026-04-06', 'habit-block-1');
     expect(result).not.toBeNull();
     expect(result!.currentValue).toBe(3);
+  });
+
+  it('二元型未打卡记录也应识别为习惯打卡记录', () => {
+    const result = parseHabitRecordLine('早起 📅2026-04-06 ❌', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe('missed');
   });
 });

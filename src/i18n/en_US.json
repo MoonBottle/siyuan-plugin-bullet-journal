@@ -992,6 +992,12 @@
     "recordUpdateFailed": "Failed to update check-in record",
     "recordEmptyError": "Check-in record content cannot be empty",
     "recordFormatError": "Enter a valid check-in record format",
+    "markMissed": "Missed",
+    "resetRecord": "Reset",
+    "dueToday": "Due today",
+    "dueTomorrow": "Check in tomorrow",
+    "dueOn": "Next {date}",
+    "noNeedToday": "No check-in needed today",
     "createSuccess": "Habit created",
     "createFailed": "Failed to create habit"
   }

@@ -104,6 +104,9 @@
         @unarchive="unarchiveSelectedHabit"
         @open-doc="openSelectedHabitDoc"
         @update:view-month="selectedViewMonth = $event"
+        @month-cell-primary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
+        @month-cell-mark-missed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
+        @month-cell-reset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
       />
     </section>
   </div>
@@ -148,7 +151,10 @@ const {
   selectHabit,
   checkInHabit,
   incrementHabit,
+  handleMonthCellPrimaryAction,
+  markHabitMissedForDate,
   openSelectedHabitDoc,
+  resetHabitRecordForDate,
   archiveSelectedHabit,
   unarchiveSelectedHabit,
 } = useHabitWorkspace();

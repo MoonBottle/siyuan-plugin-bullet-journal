@@ -21,6 +21,7 @@
           :day-state="habitDayStateMap.get(habit.blockId)!"
           :period-state="habitPeriodStateMap.get(habit.blockId)!"
           :stats="habitStatsMap.get(habit.blockId)"
+          :current-date="currentDate"
           :is-mobile="itemOpenBehavior === 'detail'"
           :readonly-actions="archivedList"
           @check-in="emit('check-in', $event)"

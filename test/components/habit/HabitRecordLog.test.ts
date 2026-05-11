@@ -294,4 +294,36 @@ describe('HabitRecordLog', () => {
 
     mounted.unmount();
   });
+
+  it('shows missed records with a trailing ❌ in the monthly log', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [
+        {
+          content: '早起',
+          date: '2026-04-10',
+          docId: 'doc-1',
+          blockId: 'record-10',
+          habitId: 'habit-1',
+          status: 'missed',
+        },
+      ],
+    };
+
+    const mounted = mountComponent({
+      habit,
+      viewMonth: '2026-04',
+    });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('早起 ❌');
+
+    mounted.unmount();
+  });
 });

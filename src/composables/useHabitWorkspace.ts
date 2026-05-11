@@ -12,6 +12,9 @@ import {
   archiveHabit,
   checkIn,
   checkInCount,
+  getRecordForDate,
+  markHabitMissed,
+  resetHabitRecord,
   unarchiveHabit,
 } from '@/services/habitService';
 import { useProjectStore } from '@/stores/projectStore';
@@ -228,6 +231,65 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     return success;
   }
 
+  async function markHabitMissedForDate(habit: Habit, date: string) {
+    if (isHabitArchived(habit)) {
+      showMessage(t('habit.archivedCannotCheckIn'));
+      return false;
+    }
+
+    const success = await markHabitMissed(habit, date, undefined, habitCheckInTimePrecision.value);
+    if (!success) {
+      return false;
+    }
+
+    if (selectedHabit.value?.blockId === habit.blockId) {
+      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
+      syncSelectedHabit();
+    }
+
+    return true;
+  }
+
+  async function resetHabitRecordForDate(habit: Habit, date: string) {
+    const record = getRecordForDate(habit, date);
+    if (!record) {
+      return false;
+    }
+
+    const success = await resetHabitRecord(record);
+    if (!success) {
+      return false;
+    }
+
+    if (selectedHabit.value?.blockId === habit.blockId) {
+      selectedStatsCache.value = calculateHabitStats(habit, currentDate.value, selectedViewMonth.value);
+      syncSelectedHabit();
+    }
+
+    return true;
+  }
+
+  async function handleMonthCellPrimaryAction(habit: Habit, date: string) {
+    const record = getRecordForDate(habit, date);
+    if (record?.status === 'missed') {
+      return await resetHabitRecordForDate(habit, date);
+    }
+
+    if (habit.type === 'binary') {
+      if (isHabitArchived(habit)) {
+        showMessage(t('habit.archivedCannotCheckIn'));
+        return false;
+      }
+      return await checkIn(habit, date, undefined, habitCheckInTimePrecision.value);
+    }
+
+    if (isHabitArchived(habit)) {
+      showMessage(t('habit.archivedCannotCheckIn'));
+      return false;
+    }
+    return await checkInCount(habit, date, 1, undefined, habitCheckInTimePrecision.value);
+  }
+
   return {
     selectedDate,
     selectedViewMonth,
@@ -254,5 +316,8 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     openSelectedHabitDoc,
     archiveSelectedHabit,
     unarchiveSelectedHabit,
+    markHabitMissedForDate,
+    resetHabitRecordForDate,
+    handleMonthCellPrimaryAction,
   };
 }

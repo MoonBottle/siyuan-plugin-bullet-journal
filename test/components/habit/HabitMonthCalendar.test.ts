@@ -8,15 +8,24 @@ import type { Habit } from '@/types/models';
 function mountCalendar(habit: Habit, currentDate = '2026-04-30') {
   const container = document.createElement('div');
   document.body.appendChild(container);
+  const events = {
+    primary: [] as string[],
+    reset: [] as string[],
+    missed: [] as string[],
+  };
 
   const app = createApp(HabitMonthCalendar, {
     habit,
     currentDate,
+    onMonthCellPrimary: (date: string) => events.primary.push(date),
+    onMonthCellReset: (date: string) => events.reset.push(date),
+    onMonthCellMarkMissed: (date: string) => events.missed.push(date),
   });
   app.mount(container);
 
   return {
     container,
+    events,
     unmount() {
       app.unmount();
       container.remove();
@@ -149,6 +158,87 @@ describe('HabitMonthCalendar', () => {
     expect(cell?.querySelector('[data-testid="habit-month-check"]')).not.toBeNull();
     expect(cell?.querySelector('[data-testid="habit-month-progress-ring"]')).toBeNull();
 
+    mounted.unmount();
+  });
+
+  it('missed day renders a cross marker', async () => {
+    const habit: Habit = {
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '早起',
+        date: '2026-04-12',
+        habitId: 'habit-1',
+        blockId: 'record-1',
+        status: 'missed',
+      }],
+    };
+
+    const mounted = mountCalendar(habit);
+    await nextTick();
+
+    const cell = getCell(mounted.container, '2026-04-12');
+    expect(cell?.querySelector('[data-testid="habit-month-missed"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('first left click on a missed day emits reset instead of primary action', async () => {
+    const habit: Habit = {
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '早起',
+        date: '2026-04-12',
+        habitId: 'habit-1',
+        blockId: 'record-1',
+        status: 'missed',
+      }],
+    };
+
+    const mounted = mountCalendar(habit);
+    await nextTick();
+
+    const cell = getCell(mounted.container, '2026-04-12');
+    cell?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(mounted.events.reset).toEqual(['2026-04-12']);
+    expect(mounted.events.primary).toEqual([]);
+
+    mounted.unmount();
+  });
+
+  it('blank day context menu offers missed action', async () => {
+    const habit: Habit = {
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [],
+    };
+
+    const mounted = mountCalendar(habit);
+    await nextTick();
+
+    const cell = getCell(mounted.container, '2026-04-12');
+    cell?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+    await nextTick();
+
+    const action = mounted.container.querySelector('[data-action="mark-missed"]') as HTMLButtonElement | null;
+    expect(action).not.toBeNull();
+    action?.click();
+
+    expect(mounted.events.missed).toEqual(['2026-04-12']);
     mounted.unmount();
   });
 });

@@ -1033,6 +1033,12 @@
     "recordUpdateFailed": "更新打卡记录失败",
     "recordEmptyError": "打卡记录内容不能为空",
     "recordFormatError": "请输入有效的打卡记录格式",
+    "markMissed": "未打卡",
+    "resetRecord": "重置",
+    "dueToday": "今天该打卡了",
+    "dueTomorrow": "明天再打卡",
+    "dueOn": "下次 {date}",
+    "noNeedToday": "今天无需打卡",
     "createSuccess": "习惯已创建",
     "createFailed": "创建习惯失败"
   }

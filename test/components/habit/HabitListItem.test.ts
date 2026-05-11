@@ -739,4 +739,104 @@ describe('HabitListItem', () => {
 
     mounted.unmount();
   });
+
+  it('renders frequency and due-state helper text at the bottom-left', async () => {
+    const habit: Habit = {
+      name: '喝水',
+      type: 'count',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-10',
+      hasRecord: false,
+      isCompleted: false,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-10',
+      periodEnd: '2026-04-10',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-10' });
+    await nextTick();
+
+    const meta = mounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+    expect(meta).not.toBeNull();
+    expect(meta?.textContent).toContain('每天');
+    expect(meta?.textContent).toContain('今天该打卡了');
+
+    mounted.unmount();
+  });
+
+  it('uses stronger helper style when due today and softer text when today is not eligible', async () => {
+    const habit: Habit = {
+      name: '周报',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'weekly_days', daysOfWeek: [1, 3, 5] },
+    };
+
+    const dueMounted = mountComponent({
+      habit,
+      currentDate: '2026-04-10',
+      dayState: {
+        date: '2026-04-10',
+        hasRecord: false,
+        isCompleted: false,
+      },
+      periodState: {
+        periodType: 'week',
+        periodStart: '2026-04-07',
+        periodEnd: '2026-04-13',
+        requiredCount: 3,
+        completedCount: 0,
+        remainingCount: 3,
+        isCompleted: false,
+        eligibleToday: true,
+      },
+    });
+    await nextTick();
+    const dueMeta = dueMounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+    expect(dueMeta?.classList.contains('habit-list-item__meta--due')).toBe(true);
+    dueMounted.unmount();
+
+    const notDueMounted = mountComponent({
+      habit,
+      currentDate: '2026-04-09',
+      dayState: {
+        date: '2026-04-09',
+        hasRecord: false,
+        isCompleted: false,
+      },
+      periodState: {
+        periodType: 'week',
+        periodStart: '2026-04-07',
+        periodEnd: '2026-04-13',
+        requiredCount: 3,
+        completedCount: 0,
+        remainingCount: 3,
+        isCompleted: false,
+        eligibleToday: false,
+      },
+    });
+    await nextTick();
+    const notDueMeta = notDueMounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+    expect(notDueMeta?.classList.contains('habit-list-item__meta--due')).toBe(false);
+    expect(notDueMeta?.textContent).toContain('今天无需打卡');
+    notDueMounted.unmount();
+  });
 });

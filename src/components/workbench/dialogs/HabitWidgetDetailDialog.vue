@@ -18,6 +18,9 @@
       @refresh="refreshHabits"
       @open-doc="openSelectedHabitDoc"
       @update:view-month="selectedViewMonth = $event"
+      @month-cell-primary="selectedHabit && handleMonthCellPrimaryAction(selectedHabit, $event)"
+      @month-cell-mark-missed="selectedHabit && markHabitMissedForDate(selectedHabit, $event)"
+      @month-cell-reset="selectedHabit && resetHabitRecordForDate(selectedHabit, $event)"
     />
   </div>
 </template>
@@ -54,7 +57,10 @@ const {
   displaySelectedStats,
   refreshHabits,
   selectHabitById,
+  handleMonthCellPrimaryAction,
+  markHabitMissedForDate,
   openSelectedHabitDoc,
+  resetHabitRecordForDate,
 } = useHabitWorkspace({
   groupId: () => props.groupId,
 });

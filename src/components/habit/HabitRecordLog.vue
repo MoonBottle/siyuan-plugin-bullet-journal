@@ -14,7 +14,7 @@
       >
         <div class="habit-record-log__date">{{ formatRecordDate(record) }}</div>
         <div class="habit-record-log__content">
-          <span class="habit-record-log__text">{{ record.content }}</span>
+          <span class="habit-record-log__text">{{ formatRecordContent(record) }}</span>
           <span v-if="habit.type === 'count' && record.currentValue !== undefined" class="habit-record-log__count">
             {{ record.currentValue }}/{{ habit.target || record.targetValue || 0 }}{{ habit.unit || record.unit || '' }}
           </span>
@@ -64,6 +64,12 @@ function formatRecordDate(record: CheckInRecord): string {
     record.completedAt || record.date,
     settingsStore.habitCheckInTimePrecision || 'day',
   );
+}
+
+function formatRecordContent(record: CheckInRecord): string {
+  return record.status === 'missed'
+    ? `${record.content} ❌`
+    : record.content;
 }
 
 async function handleOpenRecord(record: CheckInRecord, event: MouseEvent) {

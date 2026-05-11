@@ -17,8 +17,11 @@
           :class="['habit-month-calendar__cell', {
             'habit-month-calendar__cell--empty': !cell.date,
             'habit-month-calendar__cell--completed': cell.status === 'completed',
+            'habit-month-calendar__cell--missed': cell.status === 'missed',
             'habit-month-calendar__cell--partial': cell.status === 'partial',
           }]"
+          @click="handleCellClick(cell)"
+          @contextmenu="handleCellContextMenu($event, cell)"
         >
           <template v-if="cell.date">
             <span
@@ -35,6 +38,13 @@
                 data-testid="habit-month-check"
               >
                 ✓
+              </span>
+              <span
+                v-else-if="cell.status === 'missed'"
+                class="habit-month-calendar__missed"
+                data-testid="habit-month-missed"
+              >
+                ✖
               </span>
               <svg
                 v-else-if="cell.status === 'partial'"
@@ -58,15 +68,38 @@
         </div>
       </div>
     </div>
+    <div
+      v-if="contextMenu.visible"
+      class="habit-month-calendar__menu"
+      :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+    >
+      <button
+        v-if="contextMenu.action === 'mark-missed'"
+        class="habit-month-calendar__menu-item"
+        data-action="mark-missed"
+        @click="handleMenuAction"
+      >
+        未打卡
+      </button>
+      <button
+        v-else
+        class="habit-month-calendar__menu-item"
+        data-action="reset-record"
+        @click="handleMenuAction"
+      >
+        重置
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import dayjs from '@/utils/dayjs';
 import { t } from '@/i18n';
 import type { Habit, HabitStats } from '@/types/models';
-import { isRecordCompleted } from '@/utils/habitStatsUtils';
+import { getHabitDayState } from '@/domain/habit/habitCompletion';
+import { isDateEligibleForHabit, isHabitActiveOnDate } from '@/domain/habit/habitPeriod';
 
 const props = defineProps<{
   habit: Habit;
@@ -77,6 +110,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:viewMonth': [value: string];
+  'month-cell-primary': [value: string];
+  'month-cell-mark-missed': [value: string];
+  'month-cell-reset': [value: string];
 }>();
 
 const viewMonth = ref(props.viewMonth || props.currentDate.substring(0, 7));
@@ -106,13 +142,28 @@ function nextMonth() {
   emit('update:viewMonth', viewMonth.value);
 }
 
-type CellStatus = 'completed' | 'partial' | 'none' | null;
+type CellStatus = 'completed' | 'missed' | 'partial' | 'none' | null;
 type CalendarCell = {
   date: string;
   dayNum: number;
   status: CellStatus;
   progress: number;
+  interactive: boolean;
 };
+
+const contextMenu = ref<{
+  visible: boolean;
+  x: number;
+  y: number;
+  date: string;
+  action: 'mark-missed' | 'reset-record';
+}>({
+  visible: false,
+  x: 0,
+  y: 0,
+  date: '',
+  action: 'mark-missed',
+});
 
 const progressCircumference = 2 * Math.PI * 8;
 
@@ -128,22 +179,24 @@ const calendarCells = computed(() => {
 
   // 前面的空白
   for (let i = 0; i < offset; i++) {
-    cells.push({ date: '', dayNum: 0, status: null, progress: 0 });
+    cells.push({ date: '', dayNum: 0, status: null, progress: 0, interactive: false });
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
     const date = viewMonth.value + '-' + String(d).padStart(2, '0');
     const records = props.habit.records.filter(r => r.date === date);
+    const dayState = getHabitDayState(props.habit, date);
     let status: CellStatus = 'none';
     let progress = 0;
+    const interactive = isHabitActiveOnDate(props.habit, date) && isDateEligibleForHabit(props.habit, date);
 
     if (records.length > 0) {
-      if (props.habit.type === 'binary') {
+      if (dayState.isMissed) {
+        status = 'missed';
+      } else if (props.habit.type === 'binary') {
         status = 'completed';
       } else {
-        // 计数型：检查是否达标
-        const anyCompleted = records.some(r => isRecordCompleted(r, props.habit));
-        if (anyCompleted) {
+        if (dayState.isCompleted) {
           status = 'completed';
           progress = 1;
         } else {
@@ -155,10 +208,71 @@ const calendarCells = computed(() => {
       }
     }
 
-    cells.push({ date, dayNum: d, status, progress });
+    cells.push({ date, dayNum: d, status, progress, interactive });
   }
 
   return cells;
+});
+
+function closeContextMenu() {
+  contextMenu.value.visible = false;
+}
+
+function handleDocumentClick() {
+  closeContextMenu();
+}
+
+function handleCellClick(cell: CalendarCell) {
+  closeContextMenu();
+  if (!cell.date || !cell.interactive) {
+    return;
+  }
+
+  if (cell.status === 'missed') {
+    emit('month-cell-reset', cell.date);
+    return;
+  }
+
+  emit('month-cell-primary', cell.date);
+}
+
+function handleCellContextMenu(event: MouseEvent, cell: CalendarCell) {
+  if (!cell.date || !cell.interactive) {
+    closeContextMenu();
+    return;
+  }
+
+  event.preventDefault();
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    date: cell.date,
+    action: cell.status === 'none' ? 'mark-missed' : 'reset-record',
+  };
+}
+
+function handleMenuAction() {
+  const { action, date } = contextMenu.value;
+  closeContextMenu();
+  if (!date) {
+    return;
+  }
+
+  if (action === 'mark-missed') {
+    emit('month-cell-mark-missed', date);
+    return;
+  }
+
+  emit('month-cell-reset', date);
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick);
 });
 </script>
 
@@ -285,6 +399,7 @@ const calendarCells = computed(() => {
 }
 
 .habit-month-calendar__check,
+.habit-month-calendar__missed,
 .habit-month-calendar__empty-dot {
   width: 20px;
   height: 20px;
@@ -299,6 +414,12 @@ const calendarCells = computed(() => {
   background: var(--b3-theme-primary-light);
   color: var(--b3-theme-on-primary);
   font-size: 14px;
+  line-height: 1;
+}
+
+.habit-month-calendar__missed {
+  color: var(--b3-card-error-color, var(--b3-theme-error));
+  font-size: 13px;
   line-height: 1;
 }
 
@@ -329,5 +450,32 @@ const calendarCells = computed(() => {
 .habit-month-calendar__progress-value {
   stroke: var(--b3-theme-primary);
   stroke-linecap: round;
+}
+
+.habit-month-calendar__menu {
+  position: fixed;
+  z-index: 20;
+  min-width: 88px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  box-shadow: var(--b3-dialog-shadow);
+  padding: 4px;
+}
+
+.habit-month-calendar__menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.habit-month-calendar__menu-item:hover {
+  background: var(--b3-theme-surface-lighter);
 }
 </style>

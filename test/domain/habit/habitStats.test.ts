@@ -106,4 +106,33 @@ describe('calculateHabitStats', () => {
 
     expect(stats.monthlyCompletionRate).toBeCloseTo(1 / 31, 5);
   });
+
+  it('未打卡记录不应计入 monthlyCheckins 和 totalCheckins', () => {
+    const habit = mkHabit({
+      frequency: { type: 'daily' },
+      records: [
+        mkRecord('2026-04-03'),
+        mkRecord('2026-04-04', { status: 'missed' }),
+      ],
+    });
+    const stats = calculateHabitStats(habit, '2026-04-10');
+
+    expect(stats.totalCheckins).toBe(1);
+    expect(stats.monthlyCheckins).toBe(1);
+  });
+
+  it('未打卡周期应打断 streak', () => {
+    const habit = mkHabit({
+      frequency: { type: 'daily' },
+      records: [
+        mkRecord('2026-04-03'),
+        mkRecord('2026-04-04', { status: 'missed' }),
+        mkRecord('2026-04-05'),
+      ],
+    });
+    const stats = calculateHabitStats(habit, '2026-04-05');
+
+    expect(stats.longestStreak).toBe(1);
+    expect(stats.currentStreak).toBe(1);
+  });
 });

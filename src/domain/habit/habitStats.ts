@@ -1,6 +1,7 @@
 import type { Habit, HabitStats } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { getHabitDayState, getHabitPeriodState, isHabitRecordCompleted } from './habitCompletion';
+import { getRecordsForDate } from './habitStatus';
 import { getHabitEndDate, getHabitPeriod, isDateEligibleForHabit, isHabitActiveOnDate } from './habitPeriod';
 
 type CompletionWindow = {
@@ -19,9 +20,9 @@ function getCompletedRecordDates(habit: Habit, startDate?: string, endDate?: str
     if (endDate && date > endDate)
       return false;
 
-    const records = habit.records.filter(record => record.date === date);
+    const records = getRecordsForDate(habit, date);
     if (habit.type === 'binary')
-      return records.length > 0;
+      return records.some(record => isHabitRecordCompleted(record, habit));
 
     return records.some(record => isHabitRecordCompleted(record, habit));
   });
