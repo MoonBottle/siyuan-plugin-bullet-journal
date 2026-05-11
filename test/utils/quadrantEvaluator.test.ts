@@ -43,15 +43,41 @@ describe('quadrantEvaluator', () => {
     expect(matchesQuadrantPanel(mkItem({ priority: 'high', date: '2026-05-12' }), panel, '2026-05-11')).toBe(false);
   });
 
-  it('classifies overdue/today/tomorrow/undated buckets', () => {
+  it('classifies overdue/today/tomorrow buckets', () => {
     expect(getQuadrantDateBucket(mkItem({ date: '2026-05-10', status: 'pending' }), '2026-05-11')).toBe('overdue');
     expect(getQuadrantDateBucket(mkItem({ date: '2026-05-11' }), '2026-05-11')).toBe('today');
     expect(getQuadrantDateBucket(mkItem({ date: '2026-05-12' }), '2026-05-11')).toBe('tomorrow');
-    expect(getQuadrantDateBucket(mkItem({ date: '' }), '2026-05-11')).toBe('undated');
   });
 
   it('does not classify completed items as overdue', () => {
-    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-10', status: 'completed' }), '2026-05-11')).toBe('undated');
+    expect(getQuadrantDateBucket(mkItem({ date: '2026-05-10', status: 'completed' }), '2026-05-11')).toBe(null);
+  });
+
+  it('matches thisWeek/thisMonth/recent7 date rules', () => {
+    const weekPanel: QuadrantPanelConfig = {
+      id: 'q1',
+      title: '本周',
+      rules: { date: ['thisWeek'] },
+    };
+    const monthPanel: QuadrantPanelConfig = {
+      id: 'q2',
+      title: '本月',
+      rules: { date: ['thisMonth'] },
+    };
+    const recentPanel: QuadrantPanelConfig = {
+      id: 'q3',
+      title: '近7天',
+      rules: { date: ['recent7'] },
+    };
+
+    expect(matchesQuadrantPanel(mkItem({ date: '2026-05-17' }), weekPanel, '2026-05-11')).toBe(true);
+    expect(matchesQuadrantPanel(mkItem({ date: '2026-05-18' }), weekPanel, '2026-05-11')).toBe(false);
+
+    expect(matchesQuadrantPanel(mkItem({ date: '2026-05-31' }), monthPanel, '2026-05-11')).toBe(true);
+    expect(matchesQuadrantPanel(mkItem({ date: '2026-06-01' }), monthPanel, '2026-05-11')).toBe(false);
+
+    expect(matchesQuadrantPanel(mkItem({ date: '2026-05-17' }), recentPanel, '2026-05-11')).toBe(true);
+    expect(matchesQuadrantPanel(mkItem({ date: '2026-05-18' }), recentPanel, '2026-05-11')).toBe(false);
   });
 
   it('assigns each item to the first matching panel only', () => {

@@ -149,7 +149,9 @@ const priorityOptions = [
 
 const dateFilterOptions = [
   { value: 'today', label: t('todo.dateFilter.today') },
-  { value: 'week', label: t('todo.dateFilter.thisWeek') },
+  { value: 'thisWeek', label: t('todo.dateFilter.thisWeek') },
+  { value: 'thisMonth', label: t('todo.dateFilter.thisMonth') },
+  { value: 'recent7', label: t('todo.dateFilter.recent7') },
   { value: 'all', label: t('todo.dateFilter.all') },
   { value: 'custom', label: t('todo.dateFilter.custom') },
 ];

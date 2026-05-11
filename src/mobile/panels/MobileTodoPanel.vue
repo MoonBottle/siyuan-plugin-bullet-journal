@@ -316,7 +316,7 @@ const completedDateRange = computed(() => {
 watch(
   () => projectStore.currentDate,
   () => {
-    if (state.dateFilter === 'today' || state.dateFilter === 'week') {
+    if (state.dateFilter !== 'all' && state.dateFilter !== 'custom') {
       applyFilters({ silent: true });
     }
   },

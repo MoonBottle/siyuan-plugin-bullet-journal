@@ -110,7 +110,9 @@
     "dateOverdue": "Overdue",
     "dateToday": "Today",
     "dateTomorrow": "Tomorrow",
-    "dateUndated": "Undated",
+    "dateThisWeek": "This Week",
+    "dateThisMonth": "This Month",
+    "dateRecent7": "Next 7 Days",
     "panels": {
       "high": "Important & Urgent",
       "medium": "Important, Not Urgent",
@@ -205,8 +207,9 @@
       "title": "Date Filter",
       "today": "Today",
       "tomorrow": "Tomorrow",
-      "thisWeek": "Next 7 Days",
+      "thisWeek": "This Week",
       "thisMonth": "This Month",
+      "recent7": "Next 7 Days",
       "all": "All",
       "custom": "Custom"
     },

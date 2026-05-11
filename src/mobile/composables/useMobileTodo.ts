@@ -1,6 +1,7 @@
 // src/tabs/mobile/composables/useMobileTodo.ts
 import { computed, reactive } from 'vue';
 import type { Item, PriorityLevel } from '@/types/models';
+import type { TodoDateFilterType } from '@/utils/todoDateFilter';
 
 export interface DateRange {
   start: string;
@@ -11,7 +12,7 @@ export interface MobileTodoState {
   // Search & filters
   searchQuery: string;
   selectedGroup: string;
-  dateFilterType: 'today' | 'week' | 'all' | 'custom';
+  dateFilterType: TodoDateFilterType;
   dateRange: DateRange | null;
   selectedPriorities: PriorityLevel[];
   

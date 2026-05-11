@@ -27,13 +27,14 @@ describe('quadrantConfigService', () => {
   it('normalizes incomplete panel arrays', async () => {
     mockLoadData.mockResolvedValueOnce(JSON.stringify({
       version: 1,
-      panels: [{ id: 'q1', title: 'Mine', rules: { priority: ['high'] } }],
+      panels: [{ id: 'q1', title: 'Mine', rules: { priority: ['high'], date: ['undated', 'today'] } }],
     }));
     const { loadQuadrantConfig } = await import('@/services/quadrantConfigService');
     const config = await loadQuadrantConfig();
 
     expect(config.panels).toHaveLength(4);
     expect(config.panels[0].title).toBe('Mine');
+    expect(config.panels[0].rules.date).toEqual(['today']);
     expect(config.panels[3].id).toBe('q4');
   });
 

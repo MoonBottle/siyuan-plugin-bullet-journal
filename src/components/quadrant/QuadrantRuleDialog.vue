@@ -103,7 +103,9 @@ const dateOptions = [
   { value: 'overdue', label: t('quadrant').dateOverdue },
   { value: 'today', label: t('quadrant').dateToday },
   { value: 'tomorrow', label: t('quadrant').dateTomorrow },
-  { value: 'undated', label: t('quadrant').dateUndated },
+  { value: 'thisWeek', label: t('quadrant').dateThisWeek },
+  { value: 'thisMonth', label: t('quadrant').dateThisMonth },
+  { value: 'recent7', label: t('quadrant').dateRecent7 },
 ];
 
 function handleResetDefaults() {

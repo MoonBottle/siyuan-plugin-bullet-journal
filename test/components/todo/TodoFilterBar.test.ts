@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp, defineComponent, h, nextTick, ref } from 'vue';
 import { initI18n } from '@/i18n';
+import type { TodoDateFilterType } from '@/utils/todoDateFilter';
 
 async function mountFilterBar(extraProps: Record<string, unknown> = {}) {
   const { default: TodoFilterBar } = await import('@/components/todo/TodoFilterBar.vue');
@@ -10,7 +11,7 @@ async function mountFilterBar(extraProps: Record<string, unknown> = {}) {
   document.body.appendChild(container);
 
   const selectedGroup = ref('group-a');
-  const dateFilterType = ref<'today' | 'week' | 'all' | 'custom'>('today');
+  const dateFilterType = ref<TodoDateFilterType>('today');
   const selectedPriorities = ref(['high']);
   const searchQuery = ref(String(extraProps.searchQuery ?? 'abc'));
   const tagQuery = ref(String(extraProps.tagQuery ?? ''));

@@ -13,9 +13,9 @@ export interface QuadrantAssignmentResult {
   unassigned: Item[];
 }
 
-export function getQuadrantDateBucket(item: Item, today: string): QuadrantDateValue {
+export function getQuadrantDateBucket(item: Item, today: string): Extract<QuadrantDateValue, 'overdue' | 'today' | 'tomorrow'> | null {
   if (!item.date)
-    return 'undated';
+    return null;
 
   const itemDate = dayjs(item.date);
   const base = dayjs(today);
@@ -26,7 +26,42 @@ export function getQuadrantDateBucket(item: Item, today: string): QuadrantDateVa
     return 'today';
   if (itemDate.isSame(base.add(1, 'day'), 'day'))
     return 'tomorrow';
-  return 'undated';
+  return null;
+}
+
+function getWeekRange(today: string) {
+  const base = dayjs(today);
+  const offset = (base.day() + 6) % 7;
+  const start = base.subtract(offset, 'day');
+  return {
+    start,
+    end: start.add(6, 'day'),
+  };
+}
+
+export function matchesQuadrantDateValue(item: Item, value: QuadrantDateValue, today: string): boolean {
+  if (!item.date) {
+    return false;
+  }
+
+  const itemDate = dayjs(item.date);
+  const base = dayjs(today);
+
+  if (value === 'overdue')
+    return item.status !== 'completed' && itemDate.isBefore(base, 'day');
+  if (value === 'today')
+    return itemDate.isSame(base, 'day');
+  if (value === 'tomorrow')
+    return itemDate.isSame(base.add(1, 'day'), 'day');
+  if (value === 'recent7')
+    return (itemDate.isSame(base, 'day') || itemDate.isAfter(base, 'day')) && (itemDate.isSame(base.add(6, 'day'), 'day') || itemDate.isBefore(base.add(6, 'day'), 'day'));
+  if (value === 'thisWeek') {
+    const { start, end } = getWeekRange(today);
+    return (itemDate.isSame(start, 'day') || itemDate.isAfter(start, 'day')) && (itemDate.isSame(end, 'day') || itemDate.isBefore(end, 'day'));
+  }
+  const monthStart = base.startOf('month');
+  const monthEnd = base.endOf('month');
+  return (itemDate.isSame(monthStart, 'day') || itemDate.isAfter(monthStart, 'day')) && (itemDate.isSame(monthEnd, 'day') || itemDate.isBefore(monthEnd, 'day'));
 }
 
 export function matchesQuadrantPanel(item: Item, panel: QuadrantPanelConfig, today: string): boolean {
@@ -34,8 +69,7 @@ export function matchesQuadrantPanel(item: Item, panel: QuadrantPanelConfig, tod
   if (panel.rules.priority?.length && !panel.rules.priority.includes(priority))
     return false;
 
-  const dateBucket = getQuadrantDateBucket(item, today);
-  if (panel.rules.date?.length && !panel.rules.date.includes(dateBucket))
+  if (panel.rules.date?.length && !panel.rules.date.some(value => matchesQuadrantDateValue(item, value, today)))
     return false;
 
   return true;

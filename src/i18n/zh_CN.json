@@ -110,7 +110,9 @@
     "dateOverdue": "已过期",
     "dateToday": "今天",
     "dateTomorrow": "明天",
-    "dateUndated": "无日期",
+    "dateThisWeek": "本周",
+    "dateThisMonth": "本月",
+    "dateRecent7": "近7天",
     "panels": {
       "high": "重要且紧急",
       "medium": "重要不紧急",
@@ -205,8 +207,9 @@
       "title": "日期筛选",
       "today": "今天",
       "tomorrow": "明天",
-      "thisWeek": "近7天",
+      "thisWeek": "本周",
       "thisMonth": "本月",
+      "recent7": "近7天",
       "all": "全部",
       "custom": "自定义"
     },

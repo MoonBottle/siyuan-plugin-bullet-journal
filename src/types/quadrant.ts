@@ -1,6 +1,6 @@
 export type QuadrantPanelId = 'q1' | 'q2' | 'q3' | 'q4';
 export type QuadrantPriorityValue = 'high' | 'medium' | 'low' | 'none';
-export type QuadrantDateValue = 'overdue' | 'today' | 'tomorrow' | 'undated';
+export type QuadrantDateValue = 'overdue' | 'today' | 'tomorrow' | 'thisWeek' | 'thisMonth' | 'recent7';
 
 export interface QuadrantRuleChain {
   priority?: QuadrantPriorityValue[];

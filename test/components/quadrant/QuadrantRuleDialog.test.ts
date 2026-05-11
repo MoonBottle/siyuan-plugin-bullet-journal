@@ -18,7 +18,9 @@ vi.mock('@/i18n', () => ({
         dateOverdue: '已过期',
         dateToday: '今天',
         dateTomorrow: '明天',
-        dateUndated: '无日期',
+        dateThisWeek: '本周',
+        dateThisMonth: '本月',
+        dateRecent7: '近7天',
         resetDefaults: '恢复默认',
         editPanel: '编辑象限',
         resetConfirm: '恢复全部默认？',
@@ -108,6 +110,28 @@ describe('QuadrantRuleDialog', () => {
         date: ['today', 'tomorrow'],
       }),
     }));
+
+    mounted.unmount();
+  });
+
+  it('renders updated date options and no longer shows undated', async () => {
+    const mounted = mountDialog({
+      panel: {
+        id: 'q1',
+        title: '重要且紧急',
+        rules: {
+          priority: ['high'],
+          date: [],
+        },
+      },
+    });
+
+    await nextTick();
+
+    expect(mounted.container.querySelector('input[value="thisWeek"]')).not.toBeNull();
+    expect(mounted.container.querySelector('input[value="thisMonth"]')).not.toBeNull();
+    expect(mounted.container.querySelector('input[value="recent7"]')).not.toBeNull();
+    expect(mounted.container.querySelector('input[value="undated"]')).toBeNull();
 
     mounted.unmount();
   });

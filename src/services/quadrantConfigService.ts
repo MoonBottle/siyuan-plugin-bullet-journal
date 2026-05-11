@@ -3,6 +3,8 @@ import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId } from '@
 import { DEFAULT_QUADRANT_CONFIG, getDefaultQuadrantPanel } from '@/utils/quadrant';
 
 const QUADRANT_CONFIG_FILENAME = 'quadrant-config.json';
+const VALID_PRIORITIES = new Set(['high', 'medium', 'low', 'none']);
+const VALID_DATES = new Set(['overdue', 'today', 'tomorrow', 'thisWeek', 'thisMonth', 'recent7']);
 
 function normalizePanel(panelId: QuadrantPanelId, panel?: Partial<QuadrantPanelConfig>): QuadrantPanelConfig {
   const fallback = getDefaultQuadrantPanel(panelId);
@@ -10,8 +12,12 @@ function normalizePanel(panelId: QuadrantPanelId, panel?: Partial<QuadrantPanelC
     id: panelId,
     title: typeof panel?.title === 'string' && panel.title.trim() ? panel.title : fallback.title,
     rules: {
-      priority: Array.isArray(panel?.rules?.priority) ? panel.rules.priority : fallback.rules.priority,
-      date: Array.isArray(panel?.rules?.date) ? panel.rules.date : fallback.rules.date,
+      priority: Array.isArray(panel?.rules?.priority)
+        ? panel.rules.priority.filter(priority => VALID_PRIORITIES.has(priority))
+        : fallback.rules.priority,
+      date: Array.isArray(panel?.rules?.date)
+        ? panel.rules.date.filter(date => VALID_DATES.has(date))
+        : fallback.rules.date,
     },
   };
 }
