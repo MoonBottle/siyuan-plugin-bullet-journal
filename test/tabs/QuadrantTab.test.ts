@@ -379,6 +379,51 @@ describe('QuadrantTab', () => {
     mounted.unmount();
   });
 
+  it('accepts drop after dragstart even when dragover dataTransfer cannot expose payload', async () => {
+    mockGetFilteredAndSortedItems.mockReturnValue([
+      { id: 'item-q1', blockId: 'block-q1', status: 'pending', priority: 'high' },
+    ]);
+
+    const mounted = await mountQuadrantTab();
+    await nextTick();
+
+    const latestProps = getLatestTodoSidebarProps();
+    latestProps.onItemDragStart?.({
+      blockId: 'block-q1',
+      itemId: 'item-q1',
+      priority: 'high',
+    }, new Event('dragstart') as DragEvent);
+
+    const panels = mounted.container.querySelectorAll('[data-testid="quadrant-panel"]');
+    const targetPanel = panels[1] as HTMLElement;
+
+    const dragOverEvent = new Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(dragOverEvent, 'dataTransfer', {
+      value: {
+        getData: () => '',
+        dropEffect: 'none',
+        effectAllowed: 'move',
+      },
+    });
+    targetPanel.dispatchEvent(dragOverEvent);
+    await nextTick();
+
+    expect(targetPanel.classList.contains('quadrant-panel--drag-over')).toBe(true);
+
+    const dropEvent = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(dropEvent, 'dataTransfer', {
+      value: {
+        getData: () => '',
+      },
+    });
+    targetPanel.dispatchEvent(dropEvent);
+    await nextTick();
+
+    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-q1', 'medium');
+
+    mounted.unmount();
+  });
+
   it('honors defaultGroup loaded on mount', async () => {
     mockLoadFromPlugin.mockImplementationOnce(() => {
       mockSettingsStore.defaultGroup = 'group-b';

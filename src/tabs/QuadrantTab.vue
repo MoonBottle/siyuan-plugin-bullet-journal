@@ -140,6 +140,7 @@ const showHeaderTitle = computed(() => !props.embedded);
 const panels = computed(() => quadrantConfigStore.panels);
 const dragEnabled = computed(() => isDefaultPriorityQuadrantConfig(panels.value));
 const dragOverPanelId = ref<string | null>(null);
+const draggedItem = ref<TodoSidebarDragPayload | null>(null);
 
 const allFilteredItems = computed(() => {
   return projectStore.getFilteredAndSortedItems({
@@ -201,10 +202,14 @@ function handleItemPreviewClick(payload: {
 
 function handleItemDragStart(_payload: TodoSidebarDragPayload, _event: DragEvent) {
   if (!dragEnabled.value) return;
+  draggedItem.value = _payload;
+  preview.setDragActive(true);
 }
 
 function handleItemDragEnd() {
+  draggedItem.value = null;
   dragOverPanelId.value = null;
+  preview.setDragActive(false);
 }
 
 function getPanelTargetPriority(panelId: string): PriorityLevel | undefined {
@@ -232,7 +237,9 @@ function parseDragPayload(event: DragEvent): TodoSidebarDragPayload | null {
 }
 
 function handleQuadrantDragOver(panelId: string, event: DragEvent) {
-  if (!dragEnabled.value || !parseDragPayload(event)) return;
+  if (!dragEnabled.value) return;
+  const payload = draggedItem.value ?? parseDragPayload(event);
+  if (!payload) return;
   event.preventDefault();
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = 'move';
@@ -255,16 +262,24 @@ function handleQuadrantDragLeave(panelId: string, event: DragEvent) {
 async function handleQuadrantDrop(panelId: string, event: DragEvent) {
   if (!dragEnabled.value) return;
 
-  const payload = parseDragPayload(event);
-  dragOverPanelId.value = null;
-  if (!payload) return;
-
   event.preventDefault();
+
+  const payload = draggedItem.value ?? parseDragPayload(event);
+  dragOverPanelId.value = null;
+  draggedItem.value = null;
+  preview.setDragActive(false);
+  if (!payload) return;
 
   const targetPriority = getPanelTargetPriority(panelId);
   if (payload.priority === targetPriority) return;
 
-  await updateBlockPriority(payload.blockId, targetPriority);
+  const success = await updateBlockPriority(payload.blockId, targetPriority);
+  if (!success || !plugin) {
+    showMessage(t('common').actionFailed, 'error');
+    return;
+  }
+
+  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
