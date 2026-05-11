@@ -54,7 +54,8 @@ import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/Workbenc
 import { t } from '@/i18n';
 import { useSettingsStore } from '@/stores';
 import type { WorkbenchQuadrantWidgetConfig } from '@/types/workbench';
-import { QUADRANT_DEFINITIONS } from '@/utils/quadrant';
+import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
+import { mapLegacyWorkbenchQuadrantKey } from '@/utils/quadrant';
 
 const props = defineProps<{
   initialConfig: WorkbenchQuadrantWidgetConfig;
@@ -63,7 +64,8 @@ const props = defineProps<{
 }>();
 
 const settingsStore = useSettingsStore();
-const selectedQuadrant = ref(props.initialConfig.quadrant ?? 'high');
+const quadrantConfigStore = useQuadrantConfigStore();
+const selectedQuadrant = ref(mapLegacyWorkbenchQuadrantKey(props.initialConfig.quadrant));
 const selectedGroup = ref(props.initialConfig.groupId ?? '');
 
 onMounted(() => {
@@ -73,9 +75,9 @@ onMounted(() => {
 });
 
 const quadrantOptions = computed(() => {
-  return QUADRANT_DEFINITIONS.map(item => ({
-    value: item.key,
-    label: t(item.titleKey),
+  return quadrantConfigStore.panels.map(panel => ({
+    value: panel.id,
+    label: panel.title,
   }));
 });
 

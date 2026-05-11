@@ -12,6 +12,7 @@ import { openCalendarWidgetConfigDialog } from '@/workbench/calendarWidgetConfig
 import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
 import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
 import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
+import { mapLegacyWorkbenchQuadrantKey } from '@/utils/quadrant';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
 type WorkbenchWidgetConfigContext = {
@@ -67,19 +68,19 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
       defaultSize: { w: 6, h: 4 },
       minSize: { w: 4, h: 3 },
       createDefaultConfig: (): WorkbenchQuadrantWidgetConfig => ({
-        quadrant: 'high',
+        quadrant: 'q1',
       }),
       openConfigDialog: ({ widget, onUpdateConfig }) => {
         const quadrantConfig = widget.config as WorkbenchQuadrantWidgetConfig;
         openQuadrantWidgetConfigDialog({
           initialConfig: {
             groupId: quadrantConfig.groupId,
-            quadrant: quadrantConfig.quadrant ?? 'high',
+            quadrant: mapLegacyWorkbenchQuadrantKey(quadrantConfig.quadrant),
           },
           onConfirm: async (nextConfig) => {
             await onUpdateConfig({
               groupId: nextConfig.groupId,
-              quadrant: nextConfig.quadrant ?? 'high',
+              quadrant: nextConfig.quadrant ?? 'q1',
             });
           },
         });

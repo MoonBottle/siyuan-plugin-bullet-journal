@@ -55,6 +55,7 @@ export function getDefaultQuadrantPanel(id: QuadrantPanelId) {
 }
 
 export function mapLegacyWorkbenchQuadrantKey(key?: string): QuadrantPanelId {
+  if (key === 'q1' || key === 'q2' || key === 'q3' || key === 'q4') return key;
   if (key === 'medium') return 'q2';
   if (key === 'low') return 'q3';
   if (key === 'none') return 'q4';
