@@ -55,6 +55,7 @@
       >
         <WorkbenchWidgetCard
           :title="item.widget.title || getWidgetDefinition(item.widget.type).name"
+          :subtitle="widgetTitleMeta[item.id]"
           :show-configure="Boolean(getWidgetDefinition(item.widget.type).openConfigDialog)"
           :data-testid="`workbench-widget-card-${item.id}`"
           @configure="handleConfigureWidget(item.id)"
@@ -64,6 +65,7 @@
           <component
             :is="widgetComponents[item.widget.type]"
             :widget="item.widget"
+            :on-title-meta-change="(value: string) => handleWidgetTitleMetaChange(item.id, value)"
           />
         </WorkbenchWidgetCard>
       </GridItem>
@@ -72,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { GridItem, GridLayout } from 'grid-layout-plus';
 import type { Layout } from 'grid-layout-plus';
 import WorkbenchWidgetCard from '@/components/workbench/dashboard/WorkbenchWidgetCard.vue';
@@ -130,6 +132,7 @@ const dashboard = computed(() => {
 
 const widgets = computed(() => dashboard.value?.widgets ?? []);
 const widgetMap = computed(() => new Map(widgets.value.map(widget => [widget.id, widget])));
+const widgetTitleMeta = reactive<Record<string, string>>({});
 const liveLayout = ref<Layout>([]);
 const renderedWidgets = computed(() => {
   return liveLayout.value
@@ -163,6 +166,15 @@ const widgetComponents: Record<WorkbenchWidgetType, Component> = {
 
 function normalizeLayout(widget: WorkbenchWidgetInstance) {
   return normalizeWidgetLayout(widget.layout);
+}
+
+function handleWidgetTitleMetaChange(widgetId: string, value?: string) {
+  if (!value) {
+    delete widgetTitleMeta[widgetId];
+    return;
+  }
+
+  widgetTitleMeta[widgetId] = value;
 }
 
 function toLayoutModel(widget: WorkbenchWidgetInstance) {

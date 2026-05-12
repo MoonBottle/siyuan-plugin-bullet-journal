@@ -4,10 +4,6 @@
     class="workbench-widget-todo-list"
     data-testid="workbench-widget-todo-list"
   >
-    <div class="workbench-widget-todo-list__meta">
-      <span>{{ openItemsCount }}</span>
-      <span>{{ t('todo').title }}</span>
-    </div>
     <div class="workbench-widget-todo-list__search">
       <svg class="workbench-widget-todo-list__search-icon"><use xlink:href="#iconSearch"></use></svg>
       <input
@@ -71,6 +67,7 @@ import { useSafeProjectStore } from './useSafeProjectStore';
 
 const props = defineProps<{
   widget?: WorkbenchWidgetInstance;
+  onTitleMetaChange?: (value: string) => void;
 }>();
 
 const app = useApp();
@@ -137,6 +134,16 @@ const openItemsCount = computed(() => {
       : undefined,
   }).filter(item => item.status !== 'completed' && item.status !== 'abandoned').length;
 });
+
+watch(
+  openItemsCount,
+  (count) => {
+    props.onTitleMetaChange?.(`${count} 项`);
+  },
+  {
+    immediate: true,
+  },
+);
 
 function handleItemPreviewClick(payload: TodoSidebarHoverPayload) {
   preview.showNow(payload);
@@ -256,25 +263,11 @@ onUnmounted(() => {
 .workbench-widget-todo-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-}
-
-.workbench-widget-todo-list__meta {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  color: var(--b3-theme-on-surface);
-  flex-shrink: 0;
-
-  span:first-child {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--b3-theme-on-background);
-  }
 }
 
 .workbench-widget-todo-list__search {
@@ -284,7 +277,7 @@ onUnmounted(() => {
   width: calc(100% - 16px - var(--todo-scrollbar-gutter-width, 0px));
   margin-left: 8px;
   box-sizing: border-box;
-  padding: 6px 10px;
+  padding: 5px 10px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);
@@ -356,8 +349,8 @@ onUnmounted(() => {
 }
 
 .workbench-widget-todo-list__tag-filter :deep(.tag-search-box) {
-  min-height: 32px;
-  padding: 3px 10px;
+  min-height: 30px;
+  padding: 2px 10px;
 }
 
 .workbench-widget-todo-list__tag-filter :deep(.tag-dropdown) {
