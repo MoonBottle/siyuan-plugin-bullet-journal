@@ -36,7 +36,7 @@ vi.mock('@/main', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: vi.fn(() => () => {}), emit: vi.fn() },
-  Events: { DATA_REFRESH: 'data:refresh' },
+  Events: { SETTINGS_CHANGED: 'settings:changed' },
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
 }));
 

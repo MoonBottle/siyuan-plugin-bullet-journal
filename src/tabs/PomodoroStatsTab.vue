@@ -79,7 +79,7 @@ onMounted(async () => {
   console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
   settingsStore.loadFromPlugin();
 
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);

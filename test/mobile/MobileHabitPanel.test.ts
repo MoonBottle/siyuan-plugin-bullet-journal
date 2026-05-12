@@ -159,7 +159,7 @@ vi.mock('@/services/habitService', () => ({
 vi.mock('@/utils/eventBus', () => ({
   DATA_REFRESH_CHANNEL: 'habit-refresh-test',
   Events: {
-    DATA_REFRESH: 'data:refresh',
+    DATA_REFRESHED: 'data:refreshed',
     REFRESH_REQUESTED: 'refresh:requested',
     HABIT_DOCK_NAVIGATE: 'habit-dock:navigate',
   },

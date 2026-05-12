@@ -68,4 +68,40 @@ describe('createRefreshChannelGuard', () => {
     expect(fakeChannel.close).not.toHaveBeenCalled();
     expect(onRefresh).toHaveBeenCalledWith({ scanMode: 'full' });
   });
+
+  it('forwards settings-changed payload when the plugin instance is still current', () => {
+    const fakeChannel = createFakeChannel();
+    const onRefresh = vi.fn();
+
+    createRefreshChannelGuard({
+      channel: fakeChannel,
+      plugin: { debugInstanceId: 'plugin-1' },
+      getCurrentPlugin: () => ({ debugInstanceId: 'plugin-1' }),
+      onRefresh,
+      viewName: 'DesktopTodoDock',
+    });
+
+    fakeChannel.onmessage?.({ data: { type: 'SETTINGS_CHANGED', scanMode: 'full' } });
+
+    expect(fakeChannel.close).not.toHaveBeenCalled();
+    expect(onRefresh).toHaveBeenCalledWith({ scanMode: 'full' });
+  });
+
+  it('forwards data-refreshed notifications without payload as undefined', () => {
+    const fakeChannel = createFakeChannel();
+    const onRefresh = vi.fn();
+
+    createRefreshChannelGuard({
+      channel: fakeChannel,
+      plugin: { debugInstanceId: 'plugin-1' },
+      getCurrentPlugin: () => ({ debugInstanceId: 'plugin-1' }),
+      onRefresh,
+      viewName: 'DesktopHabitDock',
+    });
+
+    fakeChannel.onmessage?.({ data: { type: 'DATA_REFRESHED' } });
+
+    expect(fakeChannel.close).not.toHaveBeenCalled();
+    expect(onRefresh).toHaveBeenCalledWith(undefined);
+  });
 });

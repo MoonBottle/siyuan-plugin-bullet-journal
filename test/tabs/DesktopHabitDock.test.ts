@@ -535,7 +535,7 @@ describe('DesktopHabitDock', () => {
     mounted.unmount();
   });
 
-  it('reacts to data refresh events by syncing selected habit locally', async () => {
+  it('reacts to data-refreshed events by syncing selected habit locally', async () => {
     const mounted = mountDock();
 
     mounted.container.querySelector('[data-testid="habit-list-item-main"]')
@@ -543,7 +543,7 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     mounted.projectStore.projects[0].habits = [createHabit({ name: '更新后的习惯' })];
-    eventBus.emit(Events.DATA_REFRESH);
+    eventBus.emit(Events.DATA_REFRESHED);
     await nextTick();
     await nextTick();
 

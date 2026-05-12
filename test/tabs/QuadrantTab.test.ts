@@ -111,7 +111,7 @@ vi.mock('@/utils/fileUtils', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
-  Events: { DATA_REFRESH: 'data:refresh', REFRESH_REQUESTED: 'refresh:requested' },
+  Events: { SETTINGS_CHANGED: 'settings:changed', REFRESH_REQUESTED: 'refresh:requested' },
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
 }));
 
@@ -545,13 +545,13 @@ describe('QuadrantTab', () => {
     mounted.unmount();
   });
 
-  it('subscribes to same-context refresh events and reloads settings without forcing a project refresh', async () => {
+  it('subscribes to same-context settings-changed events and reloads settings without forcing a project refresh', async () => {
     const mounted = await mountQuadrantTab();
     await nextTick();
 
-    expect(mockEventBusOn).toHaveBeenCalledWith('data:refresh', expect.any(Function));
+    expect(mockEventBusOn).toHaveBeenCalledWith('settings:changed', expect.any(Function));
 
-    const refreshHandler = mockEventBusOn.mock.calls.find(call => call[0] === 'data:refresh')?.[1];
+    const refreshHandler = mockEventBusOn.mock.calls.find(call => call[0] === 'settings:changed')?.[1];
     await refreshHandler?.();
 
     expect(mockLoadFromPlugin).toHaveBeenCalled();

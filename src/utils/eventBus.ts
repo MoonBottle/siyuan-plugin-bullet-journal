@@ -75,6 +75,26 @@ export function broadcastDataRefresh(payload?: object): void {
   }
 }
 
+export function broadcastSettingsChanged(payload?: object): void {
+  try {
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    channel.postMessage({ type: 'SETTINGS_CHANGED', ...payload });
+    channel.close();
+  } catch {
+    // 忽略不支持或跨源场景
+  }
+}
+
+export function broadcastDataRefreshed(): void {
+  try {
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    channel.postMessage({ type: 'DATA_REFRESHED' });
+    channel.close();
+  } catch {
+    // 忽略不支持或跨源场景
+  }
+}
+
 export function broadcastPluginUnloading(pluginInstanceId?: string): void {
   try {
     const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);

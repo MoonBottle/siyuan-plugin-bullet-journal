@@ -25,7 +25,7 @@ vi.mock('@/utils/eventBus', () => ({
     }),
   },
   Events: {
-    DATA_REFRESH: 'data:refresh',
+    DATA_REFRESHED: 'data:refreshed',
   },
 }));
 
@@ -112,14 +112,14 @@ describe('HabitWidgetDetailDialog', () => {
     mounted.unmount();
   });
 
-  it('reselects the dialog habit when data refresh events arrive', async () => {
+  it('reselects the dialog habit when data-refreshed events arrive', async () => {
     const mounted = await mountDialog();
 
     expect(selectHabitById).toHaveBeenCalledWith('habit-1');
-    expect(eventBusOn).toHaveBeenCalledWith('data:refresh', expect.any(Function));
+    expect(eventBusOn).toHaveBeenCalledWith('data:refreshed', expect.any(Function));
     selectHabitById.mockClear();
 
-    await eventHandlers.get('data:refresh')?.();
+    await eventHandlers.get('data:refreshed')?.();
 
     expect(refreshHabits).not.toHaveBeenCalled();
     expect(selectHabitById).toHaveBeenCalledWith('habit-1');

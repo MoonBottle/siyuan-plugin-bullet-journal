@@ -91,7 +91,7 @@ vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
-  Events: { DATA_REFRESH: 'data:refresh' },
+  Events: { SETTINGS_CHANGED: 'settings:changed' },
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
 }));
 
@@ -236,13 +236,13 @@ describe('WorkbenchTab shell', () => {
     mounted.unmount();
   }, 10000);
 
-  it('subscribes to same-context refresh events and reloads settings without refreshing projects directly', async () => {
+  it('subscribes to same-context settings-changed events and reloads settings without refreshing projects directly', async () => {
     const mounted = await mountWorkbenchTab();
     await nextTick();
 
-    expect(mockEventBusOn).toHaveBeenCalledWith('data:refresh', expect.any(Function));
+    expect(mockEventBusOn).toHaveBeenCalledWith('settings:changed', expect.any(Function));
 
-    const refreshHandler = mockEventBusOn.mock.calls.find(call => call[0] === 'data:refresh')?.[1];
+    const refreshHandler = mockEventBusOn.mock.calls.find(call => call[0] === 'settings:changed')?.[1];
     await refreshHandler?.();
 
     expect(mockSettingsLoadFromPlugin).toHaveBeenCalled();

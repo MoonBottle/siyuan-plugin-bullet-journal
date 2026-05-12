@@ -213,7 +213,7 @@ let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = n
 onMounted(async () => {
   console.log('[Task Assistant] CalendarTab onMounted');
   // 优先订阅事件，确保 afterOpen 触发时能收到 CALENDAR_NAVIGATE
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
   unsubscribeNavigate = eventBus.on(Events.CALENDAR_NAVIGATE, handleCalendarNavigate);
   unsubscribeChangeView = eventBus.on(Events.CALENDAR_CHANGE_VIEW, handleCalendarChangeView);
 

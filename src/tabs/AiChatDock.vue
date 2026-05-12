@@ -450,7 +450,7 @@ onMounted(async () => {
   }
 
   // 监听数据刷新事件
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
 
   // 跨上下文：Dock 可能在 iframe 中，用 BroadcastChannel 接收
   try {

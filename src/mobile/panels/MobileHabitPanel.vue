@@ -257,7 +257,7 @@ let unsubscribeHabitNavigate: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 
 onMounted(() => {
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
   unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
 
   const pendingTarget = consumePendingHabitDockTarget();
@@ -267,7 +267,11 @@ onMounted(() => {
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    refreshChannel.onmessage = () => handleDataRefresh();
+    refreshChannel.onmessage = (event) => {
+      if (event.data?.type === 'DATA_REFRESHED') {
+        void handleDataRefresh();
+      }
+    };
   } catch {
     // ignore
   }

@@ -7,6 +7,8 @@ import {
   eventBus,
   Events,
   broadcastDataRefresh,
+  broadcastDataRefreshed,
+  broadcastSettingsChanged,
   broadcastPluginUnloading,
   type RefreshRequestPayload,
 } from "@/utils/eventBus";
@@ -900,6 +902,10 @@ export default class TaskAssistantPlugin extends Plugin {
   }
 
   private emitLegacyRefreshSignals(payload?: Record<string, unknown>) {
+    if (payload && Object.keys(payload).length > 0) {
+      eventBus.emit(Events.SETTINGS_CHANGED, payload);
+      broadcastSettingsChanged(payload);
+    }
     this.suppressLegacyDataRefreshHandling += 1;
     eventBus.emit(Events.DATA_REFRESH, payload);
     this.suppressLegacyDataRefreshHandling -= 1;
@@ -913,6 +919,9 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     await this.requestRefreshNow(request);
     this.emitLegacyRefreshSignals(request.payload);
+    if (request.type !== "settings-only") {
+      broadcastDataRefreshed();
+    }
   }
 
   private createLocalMutationRefreshRequest(payload?: {
