@@ -136,10 +136,6 @@ describe('exampleDocUtils', () => {
     expect(content).toContain('### 习惯');
     expect(content).toContain('创建或编辑习惯，推荐使用 /xg；需要打卡时，用 /dk 添加今天的打卡记录');
     expect(content).toContain('晨间拉伸 📅2026-05-12');
-    expect(content).toContain('### 多日期');
-    expect(content).toContain('培训准备 #任务');
-    expect(content).toContain('培训准备 #任务\n\n整理培训资料 📅2026-05-12, 2026-05-13');
-    expect(content).toContain('先写事项内容，再补多个日期');
     expect(content).toContain('### 链接');
     expect(content).toContain('发布说明整理 #任务');
     expect(content).toContain('查看接口变更 📅2026-05-12\n\n[需求文档](https://example.com/spec)');
@@ -174,6 +170,15 @@ describe('exampleDocUtils', () => {
     expect(recurringIndex).toBeGreaterThan(reminderIndex);
     expect(moreIndex).toBeGreaterThan(recurringIndex);
     expect(slashIndex).toBeGreaterThan(moreIndex);
+
+    expect(content.indexOf('在斜杠命令里')).toBeLessThan(content.indexOf('整理日报 📅2026-05-12'));
+    expect(content.indexOf('事项完成后，可用 /wc')).toBeLessThan(content.indexOf('整理会议结论 📅2026-05-12 #已完成'));
+    expect(content.indexOf('专注结束后会自动在事项下追加一条番茄记录')).toBeLessThan(content.indexOf('番茄专注示例 📅2026-05-12 10:00~10:25'));
+    expect(content.indexOf('先把事项内容写出来，再用 /yxj')).toBeLessThan(content.indexOf('首页细化 #任务'));
+    expect(content.indexOf('先写事项内容，再用 /tx')).toBeLessThan(content.indexOf('评审准备 #任务'));
+    expect(content.indexOf('先写事项内容，再用 /cf')).toBeLessThan(content.indexOf('工作日例行 #任务'));
+    expect(content.indexOf('创建或编辑习惯，推荐使用 /xg')).toBeLessThan(content.indexOf('晨间拉伸 🎯2026-05-12 🔄每天'));
+    expect(content.indexOf('先写事项，再把相关链接放在下面')).toBeLessThan(content.indexOf('发布说明整理 #任务'));
   });
 
   it('builds a layered English onboarding example', async () => {
@@ -215,10 +220,6 @@ describe('exampleDocUtils', () => {
     expect(content).toContain('### Habits');
     expect(content).toContain('Create or edit habits with /habit, and use /checkin to add a check-in record');
     expect(content).toContain('Morning stretch 📅2026-05-12');
-    expect(content).toContain('### Multiple Dates');
-    expect(content).toContain('Workshop prep #任务');
-    expect(content).toContain('Workshop prep #任务\n\nPrepare workshop material 📅2026-05-12, 2026-05-13');
-    expect(content).toContain('then add more dates when one item belongs to multiple days');
     expect(content).toContain('### Links');
     expect(content).toContain('Release notes review #任务');
     expect(content).toContain('Review API changes 📅2026-05-12\n\n[Spec doc](https://example.com/spec)');
@@ -233,6 +234,15 @@ describe('exampleDocUtils', () => {
     expect(content).not.toContain('/jt');
     expect(content).not.toContain('/xg');
     expect(content).not.toContain('This is an abandoned item');
+
+    expect(content.indexOf('In slash commands, /today adds')).toBeLessThan(content.indexOf('Write daily summary 📅2026-05-12'));
+    expect(content.indexOf('When an item is done, use /done')).toBeLessThan(content.indexOf('Finish meeting notes 📅2026-05-12 #已完成'));
+    expect(content.indexOf('After a focus session, the pomodoro record')).toBeLessThan(content.indexOf('Pomodoro focus example 📅2026-05-12 10:00~10:25'));
+    expect(content.indexOf('use /priority to add the priority marker')).toBeLessThan(content.indexOf('Homepage polish #任务'));
+    expect(content.indexOf('use /reminder to attach a reminder time')).toBeLessThan(content.indexOf('Design review prep #任务'));
+    expect(content.indexOf('use /recurring to turn it into a repeating item')).toBeLessThan(content.indexOf('Workday routine #任务'));
+    expect(content.indexOf('Create or edit habits with /habit')).toBeLessThan(content.indexOf('Morning stretch 🎯2026-05-12 🔄daily'));
+    expect(content.indexOf('Put the item first, then keep the related link under it')).toBeLessThan(content.indexOf('Release notes review #任务'));
   });
 
   it('passes the structured content into document creation', async () => {

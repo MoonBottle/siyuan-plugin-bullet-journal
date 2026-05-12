@@ -58,29 +58,28 @@ export function generateExampleContent(): string {
 
 ## Quick Start
 
-Start by writing an item. Then type / in the editor to open slash commands, and use /today or /tomorrow to add a date:
+> In slash commands, /today adds today's date to the current line, and /tomorrow adds tomorrow's date.
+> Start by writing an item. Then type / in the editor to open slash commands, and use /today or /tomorrow to add a date.
 
 Write daily summary ${dateMarker}${today}
 
 Follow up on release issues ${dateMarker}${tomorrow}
 
-> In slash commands, /today adds today's date to the current line, and /tomorrow adds tomorrow's date.
-
 ## Item Status
+
+> When an item is done, use /done to mark the current line as completed. If you no longer plan to do it, use /abandon to mark it as abandoned.
 
 Finish meeting notes ${dateMarker}${today} ${completedTag}
 
 Drop outdated draft ${dateMarker}${yesterday} ❌
 
-> When an item is done, use /done to mark the current line as completed. If you no longer plan to do it, use /abandon to mark it as abandoned.
-
 ## Items and Pomodoro
+
+> After a focus session, the pomodoro record is added under the item automatically. You can also write it manually.
 
 Pomodoro focus example ${dateMarker}${today} 10:00~10:25
 
 🍅${today} 10:00:00~10:25:00 First focus record
-
-> After a focus session, the pomodoro record is added under the item automatically. You can also write it manually.
 
 ## Tasks and Items
 
@@ -97,59 +96,51 @@ Check the release checklist ${dateMarker}${today}
 
 ## Priority
 
+> Write the item content normally, then use /priority to add the priority marker.
+> Priority markers use 🔥 for high priority, 🌱 for medium priority, and 🍃 for low priority.
+
 Homepage polish ${taskTag}
 
 Design the homepage draft ${dateMarker}${today} 🔥
 
-> Write the item content normally, then use /priority to add the priority marker.
-> Priority markers use 🔥 for high priority, 🌱 for medium priority, and 🍃 for low priority.
-
 ## Reminders
+
+> Write the item content first, then use /reminder to attach a reminder time.
+> Here, ⏰14:00 means a reminder is set for 14:00.
 
 Design review prep ${taskTag}
 
 Review visual draft ${dateMarker}${today} ⏰14:00
 
-> Write the item content first, then use /reminder to attach a reminder time.
-> Here, ⏰14:00 means a reminder is set for 14:00.
-
 ## Recurring
+
+> Write the item content first, then use /recurring to turn it into a repeating item.
+> Here, 🔁workday means that after you mark this item as done, the plugin will automatically create the next workday occurrence.
 
 Workday routine ${taskTag}
 
 Daily status sync ${dateMarker}${today} 🔁workday
 
-> Write the item content first, then use /recurring to turn it into a repeating item.
-> Here, 🔁workday means that after you mark this item as done, the plugin will automatically create the next workday occurrence.
-
 ## More Examples
 
 ### Habits
+
+> Create or edit habits with /habit, and use /checkin to add a check-in record.
 
 Morning stretch 🎯${today} 🔄daily
 
 Morning stretch ${dateMarker}${today}
 
-> Create or edit habits with /habit, and use /checkin to add a check-in record.
-
-### Multiple Dates
-
-Workshop prep ${taskTag}
-
-Prepare workshop material ${dateMarker}${today}, ${tomorrow}
-
-> Start with the item text, then add more dates when one item belongs to multiple days.
-
 ### Links
+
+> Put the item first, then keep the related link under it so the context stays clear.
+> Links added this way appear in the item details. Press Ctrl and left-click the item line to open it.
 
 Release notes review ${taskTag}
 
 Review API changes ${dateMarker}${today}
 
 [Spec doc](https://example.com/spec)
-
-> Put the item first, then keep the related link under it so the context stays clear.
-> Links added this way appear in the item details. Press Ctrl and left-click the item line to open it.
 
 ## Common Slash Commands
 
@@ -172,29 +163,28 @@ Review API changes ${dateMarker}${today}
 
 ## 快速开始
 
-先写事项内容。然后在编辑器里输入 / 打开斜杠命令，用 /jt 或 /mt 给当前行补日期：
+> 在斜杠命令里，/jt 会把当前行标记为今天的事项，/mt 会把当前行标记为明天的事项。
+> 先写事项内容。然后在编辑器里输入 / 打开斜杠命令，用 /jt 或 /mt 给当前行补日期。
 
 整理日报 ${dateMarker}${today}
 
 跟进发布问题 ${dateMarker}${tomorrow}
 
-> 在斜杠命令里，/jt 会把当前行标记为今天的事项，/mt 会把当前行标记为明天的事项。
-
 ## 事项状态
+
+> 事项完成后，可用 /wc 把当前行标记为已完成；不再处理时，可用 /fq 标记为已放弃。
 
 整理会议结论 ${dateMarker}${today} ${completedTag}
 
 放弃旧方案 ${dateMarker}${yesterday} ❌
 
-> 事项完成后，可用 /wc 把当前行标记为已完成；不再处理时，可用 /fq 标记为已放弃。
-
 ## 事项和番茄钟
+
+> 专注结束后会自动在事项下追加一条番茄记录，也可以手写。
 
 番茄专注示例 ${dateMarker}${today} 10:00~10:25
 
 🍅${today} 10:00:00~10:25:00 第一次专注记录
-
-> 专注结束后会自动在事项下追加一条番茄记录，也可以手写。
 
 ## 任务和事项
 
@@ -211,59 +201,51 @@ Review API changes ${dateMarker}${today}
 
 ## 优先级
 
+> 先把事项内容写出来，再用 /yxj 添加优先级标记。
+> 优先级标记里，🔥 表示高优先级，🌱 表示中优先级，🍃 表示低优先级。
+
 首页细化 ${taskTag}
 
 设计首页原型 ${dateMarker}${today} 🔥
 
-> 先把事项内容写出来，再用 /yxj 添加优先级标记。
-> 优先级标记里，🔥 表示高优先级，🌱 表示中优先级，🍃 表示低优先级。
-
 ## 提醒
+
+> 先写事项内容，再用 /tx 补一个提醒时间。
+> 这里的 ⏰14:00 表示会在 14:00 提醒你。
 
 评审准备 ${taskTag}
 
 评审视觉稿 ${dateMarker}${today} ⏰14:00
 
-> 先写事项内容，再用 /tx 补一个提醒时间。
-> 这里的 ⏰14:00 表示会在 14:00 提醒你。
-
 ## 重复
+
+> 先写事项内容，再用 /cf 把它变成重复事项。
+> 这里的 🔁工作日 表示：当你把当前事项标记为完成后，插件会自动生成下一次工作日事项。
 
 工作日例行 ${taskTag}
 
 同步每日进展 ${dateMarker}${today} 🔁工作日
 
-> 先写事项内容，再用 /cf 把它变成重复事项。
-> 这里的 🔁工作日 表示：当你把当前事项标记为完成后，插件会自动生成下一次工作日事项。
-
 ## 更多玩法
 
 ### 习惯
+
+> 创建或编辑习惯，推荐使用 /xg；需要打卡时，用 /dk 添加今天的打卡记录。
 
 晨间拉伸 🎯${today} 🔄每天
 
 晨间拉伸 ${dateMarker}${today}
 
-> 创建或编辑习惯，推荐使用 /xg；需要打卡时，用 /dk 添加今天的打卡记录。
-
-### 多日期
-
-培训准备 ${taskTag}
-
-整理培训资料 ${dateMarker}${today}, ${tomorrow}
-
-> 先写事项内容，再补多个日期，表示同一件事会在不同日期处理。
-
 ### 链接
+
+> 先写事项，再把相关链接放在下面，避免链接脱离上下文。
+> 这样添加的链接会显示在事项详情里。按住 Ctrl 后左键点击事项行，即可打开事项详情。
 
 发布说明整理 ${taskTag}
 
 查看接口变更 ${dateMarker}${today}
 
 [需求文档](https://example.com/spec)
-
-> 先写事项，再把相关链接放在下面，避免链接脱离上下文。
-> 这样添加的链接会显示在事项详情里。按住 Ctrl 后左键点击事项行，即可打开事项详情。
 
 ## 常用斜杠命令
 
