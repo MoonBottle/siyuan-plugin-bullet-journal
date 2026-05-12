@@ -68,7 +68,7 @@ Review meeting notes ${dateMarker}${today} 18:00
 
 Follow up on release issues ${dateMarker}${tomorrow}
 
-> Skip manual dates with /jt /today and /mt /tomorrow
+> Skip manual dates with /today and /tomorrow
 
 ## Items and Pomodoro
 
@@ -84,39 +84,67 @@ Homepage refresh ${taskTag} @L1
 
 Review user feedback ${dateMarker}${yesterday} ${completedTag}
 
-Design the homepage draft ${dateMarker}${today} 🔥
-
-Review visual draft ${dateMarker}${tomorrow} ⏰14:00
-
 Release prep ${taskTag} @L1
 
 Check the release checklist ${dateMarker}${today}
 
+> Here, ${taskTag} marks a task, and @L1 is its level. The lines with ${dateMarker} dates below it are the actual items.
+> You can always start with standalone items first. When they start to pile up, use /task to organize them. Mark completed items with /done.
+
+## Priority
+
+Design the homepage draft ${dateMarker}${today} 🔥
+
+> Write the item content normally, then use /priority to add the priority marker.
+> Here, 🔥 means this item should be handled first.
+
+## Reminders
+
+Review visual draft ${dateMarker}${tomorrow} ⏰14:00
+
+> Write the item content first, then use /reminder to attach a reminder time.
+> Here, ⏰14:00 means a reminder is set for 14:00.
+
+## Recurring
+
 Weekly release review ${dateMarker}${tomorrow} 🔁weekly
 
-> When items start to pile up, use /rw /task to organize them. Mark completed items with /wc /done.
+> Write the item content first, then use /recurring to turn it into a repeating item.
+> Here, 🔁weekly means this item will come back every week.
 
 ## More Examples
 
+### Habits
+
 Morning stretch 🎯${today} 🔄daily
 
-> Create or edit habits with /xg /habit
+> Create or edit habits with /habit instead of typing the markers manually.
+
+### Multiple Dates
 
 Prepare workshop material ${dateMarker}${today}, ${tomorrow}
 
+> Start with the item text, then add more dates when one item belongs to multiple days.
+
+### Links
+
+Review API changes ${dateMarker}${tomorrow}
+
 [Spec doc](https://example.com/spec)
+
+> Put the item first, then keep the related link under it so the context stays clear.
 
 ## Common Slash Commands
 
-- /jt /today: Add today's item
-- /mt /tomorrow: Add tomorrow's item
-- /rw /task: Mark as task
-- /wc /done: Mark as done
-- /xg /habit: Create or edit habits
-- /xq /detail: Open item details
-- /tx /reminder: Set reminder
-- /cf /recurring: Set recurring
-- /zz /focus: Start pomodoro
+- /today: Add today's item
+- /tomorrow: Add tomorrow's item
+- /task: Mark as task
+- /done: Mark as done
+- /habit: Create or edit habits
+- /detail: Open item details
+- /reminder: Set reminder
+- /recurring: Set recurring
+- /focus: Start pomodoro
 `;
   }
 
@@ -134,7 +162,7 @@ Prepare workshop material ${dateMarker}${today}, ${tomorrow}
 
 跟进发布问题 ${dateMarker}${tomorrow}
 
-> 不想手写日期时，可用 /jt /today 和 /mt /tomorrow
+> 不想手写日期时，可用 /jt 和 /mt
 
 ## 事项和番茄钟
 
@@ -150,39 +178,67 @@ Prepare workshop material ${dateMarker}${today}, ${tomorrow}
 
 整理需求反馈 ${dateMarker}${yesterday} ${completedTag}
 
-设计首页原型 ${dateMarker}${today} 🔥
-
-评审视觉稿 ${dateMarker}${tomorrow} ⏰14:00
-
 发布准备 ${taskTag} @L1
 
 检查发布清单 ${dateMarker}${today}
 
+> 这里的 ${taskTag} 表示“任务”，@L1 表示任务级别；下面带 ${dateMarker} 日期的行是这个任务里的具体事项。
+> 你也可以先写普通事项；待办变多后，再用 /rw 把内容整理成任务，完成事项可用 /wc
+
+## 优先级
+
+设计首页原型 ${dateMarker}${today} 🔥
+
+> 先把事项内容写出来，再用 /yx 添加优先级标记。
+> 这里的 🔥 表示这件事需要更早处理。
+
+## 提醒
+
+评审视觉稿 ${dateMarker}${tomorrow} ⏰14:00
+
+> 先写事项内容，再用 /tx 补一个提醒时间。
+> 这里的 ⏰14:00 表示会在 14:00 提醒你。
+
+## 重复
+
 发布例行检查 ${dateMarker}${tomorrow} 🔁每周
 
-> 待办变多后，再用 /rw /task 把内容整理成任务；完成事项可用 /wc /done
+> 先写事项内容，再用 /cf 把它变成重复事项。
+> 这里的 🔁每周 表示这件事会每周再次出现。
 
 ## 更多玩法
 
+### 习惯
+
 晨间拉伸 🎯${today} 🔄每天
 
-> 创建或编辑习惯，推荐使用 /xg /habit
+> 创建或编辑习惯，推荐使用 /xg，不建议一开始手写这些标记。
+
+### 多日期
 
 整理培训资料 ${dateMarker}${today}, ${tomorrow}
 
+> 先写事项内容，再补多个日期，表示同一件事会在不同日期处理。
+
+### 链接
+
+查看接口变更 ${dateMarker}${tomorrow}
+
 [需求文档](https://example.com/spec)
+
+> 先写事项，再把相关链接放在下面，避免链接脱离上下文。
 
 ## 常用斜杠命令
 
-- /jt /today：添加今日事项
-- /mt /tomorrow：添加明日事项
-- /rw /task：标记为任务
-- /wc /done：标记为完成
-- /xg /habit：创建或编辑习惯
-- /xq /detail：查看事项详情
-- /tx /reminder：设置提醒
-- /cf /recurring：设置重复
-- /zz /focus：开始番茄钟
+- /jt：添加今日事项
+- /mt：添加明日事项
+- /rw：标记为任务
+- /wc：标记为完成
+- /xg：创建或编辑习惯
+- /xq：查看事项详情
+- /tx：设置提醒
+- /cf：设置重复
+- /zz：开始番茄钟
 `;
 }
 
