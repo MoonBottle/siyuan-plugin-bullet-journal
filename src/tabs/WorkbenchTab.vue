@@ -3,11 +3,14 @@
     <WorkbenchSidebar
       :entries="workbenchStore.entries"
       :active-entry-id="currentActiveEntryId"
+      :collapsed="workbenchStore.sidebarCollapsed"
       @select="handleSelect"
       @create-dashboard="handleCreateDashboard"
       @create-view="handleCreateView"
       @rename-entry="handleRenameEntry"
       @delete-entry="handleDeleteEntry"
+      @reorder-entries="handleReorderEntries"
+      @toggle-sidebar="handleToggleSidebar"
     />
     <section class="workbench-tab__main">
       <div v-if="currentActiveEntry" class="workbench-tab__toolbar">
@@ -101,6 +104,14 @@ async function handleRenameEntry(id: string, title: string) {
 
 async function handleDeleteEntry(id: string) {
   await workbenchStore.deleteEntry(id);
+}
+
+async function handleReorderEntries(orderedIds: string[]) {
+  await workbenchStore.reorderEntries(orderedIds);
+}
+
+async function handleToggleSidebar() {
+  await workbenchStore.toggleSidebar();
 }
 
 function toggleWidgetMenu() {
