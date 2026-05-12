@@ -12,6 +12,7 @@ export function createEmptyWorkbenchSettings(): WorkbenchSettings {
     entries: [],
     dashboards: [],
     activeEntryId: null,
+    sidebarCollapsed: false,
   };
 }
 
