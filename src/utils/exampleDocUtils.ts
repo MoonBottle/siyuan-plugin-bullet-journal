@@ -60,15 +60,13 @@ Start with the first half. The rest shows more features when you need them.
 
 ## Quick Start
 
-You can also add standalone items in a daily note:
+Start by writing an item. Then type / in the editor to open slash commands, and use /today or /tomorrow to add a date:
 
 Write daily summary ${dateMarker}${today}
 
-Review meeting notes ${dateMarker}${today} 18:00
-
 Follow up on release issues ${dateMarker}${tomorrow}
 
-> Skip manual dates with /today and /tomorrow
+> In slash commands, /today adds today's date to the current line, and /tomorrow adds tomorrow's date.
 
 ## Items and Pomodoro
 
@@ -80,15 +78,15 @@ Pomodoro focus example ${dateMarker}${today} 10:00~10:25
 
 ## Tasks and Items
 
-Homepage refresh ${taskTag} @L1
+Homepage refresh ${taskTag}
 
 Review user feedback ${dateMarker}${yesterday} ${completedTag}
 
-Release prep ${taskTag} @L1
+Release prep ${taskTag}
 
 Check the release checklist ${dateMarker}${today}
 
-> Here, ${taskTag} marks a task, and @L1 is its level. The lines with ${dateMarker} dates below it are the actual items.
+> Here, ${taskTag} marks a task. The lines with ${dateMarker} dates below it are the actual items.
 > You can always start with standalone items first. When they start to pile up, use /task to organize them. Mark completed items with /done.
 
 ## Priority
@@ -118,15 +116,21 @@ Weekly release review ${dateMarker}${tomorrow} 🔁weekly
 
 Morning stretch 🎯${today} 🔄daily
 
-> Create or edit habits with /habit instead of typing the markers manually.
+Morning stretch ${dateMarker}${today}
+
+> Create or edit habits with /habit, and use /checkin to add a check-in record.
 
 ### Multiple Dates
+
+Workshop prep ${taskTag}
 
 Prepare workshop material ${dateMarker}${today}, ${tomorrow}
 
 > Start with the item text, then add more dates when one item belongs to multiple days.
 
 ### Links
+
+Release notes review ${taskTag}
 
 Review API changes ${dateMarker}${tomorrow}
 
@@ -141,7 +145,9 @@ Review API changes ${dateMarker}${tomorrow}
 - /task: Mark as task
 - /done: Mark as done
 - /habit: Create or edit habits
+- /checkin: Add a habit check-in
 - /detail: Open item details
+- /priority: Set priority
 - /reminder: Set reminder
 - /recurring: Set recurring
 - /focus: Start pomodoro
@@ -150,19 +156,15 @@ Review API changes ${dateMarker}${tomorrow}
 
   return `## 任务助手示例
 
-先看前半部分就能开始使用；后半部分展示更多能力。
-
 ## 快速开始
 
-你也可以在 daily note 里直接写独立事项：
+先写事项内容。然后在编辑器里输入 / 打开斜杠命令，用 /jt 或 /mt 给当前行补日期：
 
 整理日报 ${dateMarker}${today}
 
-复盘会议 ${dateMarker}${today} 18:00
-
 跟进发布问题 ${dateMarker}${tomorrow}
 
-> 不想手写日期时，可用 /jt 和 /mt
+> 在斜杠命令里，/jt 会把当前行标记为今天的事项，/mt 会把当前行标记为明天的事项。
 
 ## 事项和番茄钟
 
@@ -174,22 +176,22 @@ Review API changes ${dateMarker}${tomorrow}
 
 ## 任务和事项
 
-首页改版 ${taskTag} @L1
+首页改版 ${taskTag}
 
 整理需求反馈 ${dateMarker}${yesterday} ${completedTag}
 
-发布准备 ${taskTag} @L1
+发布准备 ${taskTag}
 
 检查发布清单 ${dateMarker}${today}
 
-> 这里的 ${taskTag} 表示“任务”，@L1 表示任务级别；下面带 ${dateMarker} 日期的行是这个任务里的具体事项。
+> 这里的 ${taskTag} 表示“任务”；下面带 ${dateMarker} 日期的行是这个任务里的具体事项。
 > 你也可以先写普通事项；待办变多后，再用 /rw 把内容整理成任务，完成事项可用 /wc
 
 ## 优先级
 
 设计首页原型 ${dateMarker}${today} 🔥
 
-> 先把事项内容写出来，再用 /yx 添加优先级标记。
+> 先把事项内容写出来，再用 /yxj 添加优先级标记。
 > 这里的 🔥 表示这件事需要更早处理。
 
 ## 提醒
@@ -212,15 +214,21 @@ Review API changes ${dateMarker}${tomorrow}
 
 晨间拉伸 🎯${today} 🔄每天
 
-> 创建或编辑习惯，推荐使用 /xg，不建议一开始手写这些标记。
+晨间拉伸 ${dateMarker}${today}
+
+> 创建或编辑习惯，推荐使用 /xg；需要打卡时，用 /dk 添加今天的打卡记录。
 
 ### 多日期
+
+培训准备 ${taskTag}
 
 整理培训资料 ${dateMarker}${today}, ${tomorrow}
 
 > 先写事项内容，再补多个日期，表示同一件事会在不同日期处理。
 
 ### 链接
+
+发布说明整理 ${taskTag}
 
 查看接口变更 ${dateMarker}${tomorrow}
 
@@ -235,7 +243,9 @@ Review API changes ${dateMarker}${tomorrow}
 - /rw：标记为任务
 - /wc：标记为完成
 - /xg：创建或编辑习惯
+- /dk：添加习惯打卡
 - /xq：查看事项详情
+- /yxj：设置优先级
 - /tx：设置提醒
 - /cf：设置重复
 - /zz：开始番茄钟
