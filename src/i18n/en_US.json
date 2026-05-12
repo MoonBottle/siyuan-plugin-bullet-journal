@@ -1002,6 +1002,10 @@
     "dueTomorrow": "Check in tomorrow",
     "dueOn": "Next {date}",
     "noNeedToday": "No check-in needed today",
+    "selectedDayCompleted": "Checked in that day",
+    "selectedDayNotNeeded": "No check-in needed that day",
+    "selectedDayPending": "Pending that day",
+    "selectedDayMissed": "Missed that day",
     "clickableDateHint": "Click to check in, right-click for more actions",
     "createSuccess": "Habit created",
     "createFailed": "Failed to create habit"

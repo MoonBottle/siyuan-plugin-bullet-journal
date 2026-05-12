@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import HabitListItem from '@/components/habit/HabitListItem.vue';
 import type { Habit, HabitDayState, HabitPeriodState, HabitStats } from '@/types/models';
@@ -40,6 +40,12 @@ function mountComponent(props: Record<string, unknown>, emits: EmitSpies = {}) {
 
 afterEach(() => {
   document.body.innerHTML = '';
+  vi.useRealTimers();
+});
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-04-12T10:00:00+08:00'));
 });
 
 describe('HabitListItem', () => {
@@ -525,7 +531,7 @@ describe('HabitListItem', () => {
     mounted.unmount();
   });
 
-  it('binary daily completed state does not render redundant checked copy', async () => {
+  it('binary historical completed state shows selected-day status copy', async () => {
     const habit: Habit = {
       name: '早起',
       type: 'binary',
@@ -556,7 +562,7 @@ describe('HabitListItem', () => {
     await nextTick();
 
     const text = mounted.container.textContent || '';
-    expect(text).not.toContain('已打卡');
+    expect(text).toContain('当日已打卡');
     expect(mounted.container.querySelector('[data-testid="habit-action-check"]')).not.toBeNull();
 
     mounted.unmount();
@@ -599,7 +605,7 @@ describe('HabitListItem', () => {
     mounted.unmount();
   });
 
-  it('count daily completed state keeps progress only without redundant checked copy', async () => {
+  it('count historical completed state keeps progress and shows selected-day status copy', async () => {
     const habit: Habit = {
       name: '喝水',
       type: 'count',
@@ -634,7 +640,7 @@ describe('HabitListItem', () => {
     await nextTick();
 
     const text = mounted.container.textContent || '';
-    expect(text).not.toContain('已打卡');
+    expect(text).toContain('当日已打卡');
     expect(text).toContain('8/8杯');
     expect(mounted.container.querySelector('[data-testid="habit-action-check"]')).not.toBeNull();
 
@@ -768,7 +774,7 @@ describe('HabitListItem', () => {
       eligibleToday: true,
     };
 
-    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-10' });
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' });
     await nextTick();
 
     const meta = mounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
@@ -792,9 +798,9 @@ describe('HabitListItem', () => {
 
     const dueMounted = mountComponent({
       habit,
-      currentDate: '2026-04-10',
+      currentDate: '2026-04-12',
       dayState: {
-        date: '2026-04-10',
+        date: '2026-04-12',
         hasRecord: false,
         isCompleted: false,
       },
@@ -816,9 +822,9 @@ describe('HabitListItem', () => {
 
     const notDueMounted = mountComponent({
       habit,
-      currentDate: '2026-04-09',
+      currentDate: '2026-04-12',
       dayState: {
-        date: '2026-04-09',
+        date: '2026-04-12',
         hasRecord: false,
         isCompleted: false,
       },
@@ -838,5 +844,94 @@ describe('HabitListItem', () => {
     expect(notDueMeta?.classList.contains('habit-list-item__meta--due')).toBe(false);
     expect(notDueMeta?.textContent).toContain('今天无需打卡');
     notDueMounted.unmount();
+  });
+
+  it('uses selected-day status copy when viewing a historical completed date', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      records: [{
+        content: '早起',
+        date: '2026-04-10',
+        habitId: 'habit-1',
+        blockId: 'record-1',
+      }],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+
+    const mounted = mountComponent({
+      habit,
+      currentDate: '2026-04-10',
+      dayState: {
+        date: '2026-04-10',
+        hasRecord: true,
+        isCompleted: true,
+      },
+      periodState: {
+        periodType: 'day',
+        periodStart: '2026-04-10',
+        periodEnd: '2026-04-10',
+        requiredCount: 1,
+        completedCount: 1,
+        remainingCount: 0,
+        isCompleted: true,
+        eligibleToday: true,
+      },
+    });
+    await nextTick();
+
+    const meta = mounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+    expect(meta?.textContent).toContain('每天');
+    expect(meta?.textContent).toContain('当日已打卡');
+    expect(meta?.textContent).not.toContain('今天该打卡了');
+    expect(meta?.textContent).not.toContain('明天再打卡');
+    expect(meta?.textContent).not.toContain('下次');
+
+    mounted.unmount();
+  });
+
+  it('binary items reserve the same helper-text baseline row as count items', async () => {
+    const habit: Habit = {
+      name: '早起',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+
+    const mounted = mountComponent({
+      habit,
+      currentDate: '2026-04-12',
+      dayState: {
+        date: '2026-04-12',
+        hasRecord: false,
+        isCompleted: false,
+      },
+      periodState: {
+        periodType: 'day',
+        periodStart: '2026-04-12',
+        periodEnd: '2026-04-12',
+        requiredCount: 1,
+        completedCount: 0,
+        remainingCount: 1,
+        isCompleted: false,
+        eligibleToday: true,
+      },
+    });
+    await nextTick();
+
+    const placeholder = mounted.container.querySelector('.habit-list-item__progress--placeholder') as HTMLDivElement | null;
+    const meta = mounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+
+    expect(placeholder).not.toBeNull();
+    expect(meta).not.toBeNull();
+    expect(meta?.previousElementSibling).toBe(placeholder);
+
+    mounted.unmount();
   });
 });

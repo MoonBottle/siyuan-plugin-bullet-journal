@@ -1043,6 +1043,10 @@
     "dueTomorrow": "明天再打卡",
     "dueOn": "下次 {date}",
     "noNeedToday": "今天无需打卡",
+    "selectedDayCompleted": "当日已打卡",
+    "selectedDayNotNeeded": "当日无需打卡",
+    "selectedDayPending": "当日待打卡",
+    "selectedDayMissed": "当日未打卡",
     "clickableDateHint": "点击可打卡，右键可更多操作",
     "createSuccess": "习惯已创建",
     "createFailed": "创建习惯失败"

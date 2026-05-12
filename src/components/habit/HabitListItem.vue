@@ -31,6 +31,11 @@
           {{ dayCurrentValue }}/{{ habit.target || 0 }}{{ habit.unit || '' }}
         </span>
       </div>
+      <div
+        v-else
+        class="habit-list-item__progress habit-list-item__progress--placeholder"
+        aria-hidden="true"
+      ></div>
 
       <div
         class="habit-list-item__meta"
@@ -188,6 +193,8 @@ const progressPercent = computed(() => {
 const actionProgress = computed(() => progressPercent.value / 100);
 
 const referenceDate = computed(() => props.currentDate || props.dayState.date);
+const actualToday = computed(() => dayjs().format('YYYY-MM-DD'));
+const isReferenceToday = computed(() => referenceDate.value === actualToday.value);
 
 const frequencySummary = computed(() => {
   const frequency = props.habit.frequency;
@@ -220,6 +227,10 @@ const frequencySummary = computed(() => {
 });
 
 const isDueToday = computed(() => {
+  if (!isReferenceToday.value) {
+    return false;
+  }
+
   return !props.habit.archivedAt
     && props.periodState.eligibleToday
     && !props.periodState.isCompleted
@@ -237,12 +248,30 @@ const scheduleHint = computed(() => {
     return t('habit').completed;
   }
 
-  if (isDueToday.value) {
-    return t('habit').dueToday;
+  if (!isReferenceToday.value) {
+    if (props.dayState.isCompleted) {
+      return t('habit').selectedDayCompleted;
+    }
+
+    if (props.dayState.isMissed) {
+      return t('habit').selectedDayMissed;
+    }
+
+    if (!props.periodState.eligibleToday) {
+      return t('habit').selectedDayNotNeeded;
+    }
+
+    return t('habit').selectedDayPending;
   }
 
-  if (!props.periodState.eligibleToday) {
-    return t('habit').noNeedToday;
+  if (isReferenceToday.value) {
+    if (isDueToday.value) {
+      return t('habit').dueToday;
+    }
+
+    if (!props.periodState.eligibleToday) {
+      return t('habit').noNeedToday;
+    }
   }
 
   let searchFrom = dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD');
@@ -255,7 +284,7 @@ const scheduleHint = computed(() => {
     return t('habit').completed;
   }
 
-  if (nextDate === dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD')) {
+  if (isReferenceToday.value && nextDate === dayjs(referenceDate.value).add(1, 'day').format('YYYY-MM-DD')) {
     return t('habit').dueTomorrow;
   }
 
@@ -324,6 +353,11 @@ function handleMainClick() {
   align-items: center;
   gap: 8px;
   margin-top: 2px;
+  min-height: 22px;
+}
+
+.habit-list-item__progress--placeholder {
+  visibility: hidden;
 }
 
 .habit-list-item__progress-bar {
