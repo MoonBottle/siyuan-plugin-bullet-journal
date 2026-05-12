@@ -61,8 +61,9 @@ vi.mock('@/parser/priorityParser', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { emit: vi.fn(), on: vi.fn() },
-  Events: {},
-  broadcastDataRefresh: vi.fn(),
+  Events: {
+    REFRESH_REQUESTED: 'refresh:requested',
+  },
 }));
 
 vi.mock('@/utils/protyleWriterDom', () => ({
@@ -75,7 +76,7 @@ import { checkIn, checkInCount } from '@/services/habitService';
 import { processLineText, extractDatesFromBlock } from '@/utils/slashCommandUtils';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
-import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events } from '@/utils/eventBus';
 import { updateBlockDateTime } from '@/utils/fileUtils';
 
 const projectStoreMock = {
@@ -365,8 +366,10 @@ describe('habit slash commands', () => {
 
     await handler({} as any, node);
 
-    expect(vi.mocked(eventBus.emit)).toHaveBeenCalledWith(Events.DATA_REFRESH);
-    expect(vi.mocked(broadcastDataRefresh)).toHaveBeenCalled();
+    expect(vi.mocked(eventBus.emit)).toHaveBeenCalledWith(Events.REFRESH_REQUESTED, {
+      type: 'full',
+      reason: 'slash-command:habit-data',
+    });
   });
 
   it('/dk 在计数型习惯定义行上应基于 store 中同 habit 当日 record 做 +1，而不是创建重复 record', async () => {

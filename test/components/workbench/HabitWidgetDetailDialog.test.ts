@@ -112,15 +112,17 @@ describe('HabitWidgetDetailDialog', () => {
     mounted.unmount();
   });
 
-  it('refreshes the dialog workspace when data refresh events arrive', async () => {
+  it('reselects the dialog habit when data refresh events arrive', async () => {
     const mounted = await mountDialog();
 
     expect(selectHabitById).toHaveBeenCalledWith('habit-1');
     expect(eventBusOn).toHaveBeenCalledWith('data:refresh', expect.any(Function));
+    selectHabitById.mockClear();
 
     await eventHandlers.get('data:refresh')?.();
 
-    expect(refreshHabits).toHaveBeenCalledTimes(1);
+    expect(refreshHabits).not.toHaveBeenCalled();
+    expect(selectHabitById).toHaveBeenCalledWith('habit-1');
 
     mounted.unmount();
   });

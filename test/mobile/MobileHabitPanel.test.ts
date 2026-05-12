@@ -7,11 +7,10 @@ import dayjs from '@/utils/dayjs';
 
 const {
   archiveHabit,
-  broadcastDataRefresh,
   habits,
+  mockPlugin,
   projectStore,
   settingsStore,
-  eventBusEmit,
   eventBusOn,
   consumePendingHabitDockTarget,
   dayStateByHabitId,
@@ -67,10 +66,11 @@ const {
       },
     },
     archiveHabit: vi.fn(),
-    broadcastDataRefresh: vi.fn(),
+    mockPlugin: {
+      requestDataRefresh: vi.fn(() => Promise.resolve()),
+    },
     checkIn: vi.fn(),
     checkInCount: vi.fn(),
-    eventBusEmit: vi.fn(),
     unarchiveHabit: vi.fn(),
   };
 });
@@ -81,7 +81,7 @@ vi.mock('@/stores', () => ({
 }));
 
 vi.mock('@/main', () => ({
-  usePlugin: () => null,
+  usePlugin: () => mockPlugin,
 }));
 
 vi.mock('@/i18n', () => ({
@@ -160,12 +160,12 @@ vi.mock('@/utils/eventBus', () => ({
   DATA_REFRESH_CHANNEL: 'habit-refresh-test',
   Events: {
     DATA_REFRESH: 'data:refresh',
+    REFRESH_REQUESTED: 'refresh:requested',
     HABIT_DOCK_NAVIGATE: 'habit-dock:navigate',
   },
-  broadcastDataRefresh,
   eventBus: {
-    emit: eventBusEmit,
     on: eventBusOn,
+    emit: vi.fn(),
   },
 }));
 
@@ -362,7 +362,7 @@ afterEach(() => {
   checkIn.mockResolvedValue(false);
   checkInCount.mockResolvedValue(false);
   archiveHabit.mockResolvedValue(false);
-  broadcastDataRefresh.mockReset();
+  mockPlugin.requestDataRefresh.mockClear();
   unarchiveHabit.mockResolvedValue(false);
 });
 
@@ -480,8 +480,10 @@ describe('MobileHabitPanel', () => {
     await nextTick();
 
     expect(archiveHabit).toHaveBeenCalledWith(habits[0], dayjs().format('YYYY-MM-DD'));
-    expect(eventBusEmit).toHaveBeenCalledWith('data:refresh');
-    expect(broadcastDataRefresh).toHaveBeenCalledTimes(1);
+    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+      type: 'full',
+      reason: 'mobile-habit:archive',
+    });
 
     mounted.unmount();
   });
@@ -505,8 +507,10 @@ describe('MobileHabitPanel', () => {
       blockId: 'habit-1',
       archivedAt: '2026-05-04',
     }));
-    expect(eventBusEmit).toHaveBeenCalledWith('data:refresh');
-    expect(broadcastDataRefresh).toHaveBeenCalledTimes(1);
+    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+      type: 'full',
+      reason: 'mobile-habit:unarchive',
+    });
 
     mounted.unmount();
   });

@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { showMessage } from 'siyuan';
-import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
+import { eventBus, Events } from '@/utils/eventBus';
 import { t } from '@/i18n';
 import type { SettingsData } from '@/settings/types';
 import { defaultSettings } from '@/settings/types';
@@ -352,8 +352,11 @@ async function handleSave() {
       showPomodoroTotal: settings.showPomodoroTotal ?? true,
       todoDock: settings.todoDock ?? settingsStore.todoDock,
     });
-    eventBus.emit(Events.DATA_REFRESH, settings);
-    broadcastDataRefresh(settings as object);
+    eventBus.emit(Events.REFRESH_REQUESTED, {
+      type: 'full',
+      reason: 'settings-dialog:save',
+      payload: settings as Record<string, unknown>,
+    });
     // 触发设置变更事件，通知插件主类更新 UI（如番茄钟显示/隐藏）
     eventBus.emit(Events.SETTINGS_CHANGED, settings);
     showMessage(t('common').saveSuccess, 3000, 'info');

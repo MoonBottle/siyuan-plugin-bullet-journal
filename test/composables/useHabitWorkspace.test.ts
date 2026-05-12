@@ -53,7 +53,7 @@ const {
 })); 
 
 vi.mock('@/main', () => ({
-  usePlugin: vi.fn(() => ({ debugInstanceId: 'plugin-1' })),
+  usePlugin: vi.fn(() => ({ debugInstanceId: 'plugin-1', requestDataRefresh: vi.fn().mockResolvedValue(undefined) })),
 }));
 
 vi.mock('@/services/habitService', () => ({
@@ -283,7 +283,6 @@ describe('useHabitWorkspace', () => {
     settingsStore.scanMode = 'folder';
     settingsStore.directories = [];
     projectStore.currentDate = '2026-05-02';
-    projectStore.refresh = vi.fn().mockResolvedValue(undefined) as any;
     projectStore.projects = [{
       id: 'project-a',
       name: 'Project A',
@@ -311,7 +310,6 @@ describe('useHabitWorkspace', () => {
 
     await workspace.refreshHabits();
 
-    expect(projectStore.refresh).toHaveBeenCalled();
     expect(workspace.selectedHabit.value).not.toBe(originalHabit);
     expect(workspace.selectedHabit.value?.name).toBe('After Refresh');
   });

@@ -11,8 +11,8 @@ import { TAB_TYPES } from '@/constants';
 const mockPlugin = { name: 'plugin' };
 const mockApp = { name: 'app' };
 const mockLoad = vi.fn(() => Promise.resolve());
-const mockProjectRefresh = vi.fn(() => Promise.resolve());
 const mockSettingsLoadFromPlugin = vi.fn();
+const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
 const mockEventBusOn = vi.fn(() => () => {});
 const mockRefreshChannelDispose = vi.fn();
 const mockCreateRefreshChannelGuard = vi.fn(() => ({
@@ -59,20 +59,19 @@ const mockSettingsStore = {
   loaded: true,
   scanMode: 'all',
   directories: [],
+  sidebarCollapsed: false,
   loadFromPlugin: mockSettingsLoadFromPlugin,
   $patch: vi.fn((patch: Record<string, unknown>) => Object.assign(mockSettingsStore, patch)),
 };
-const mockProjectStore = {
-  refresh: mockProjectRefresh,
-};
+const mockProjectStore = {};
 
 vi.mock('@/main', async () => {
   const actual = await vi.importActual<typeof import('@/main')>('@/main');
   return {
     ...actual,
-    usePlugin: vi.fn(() => mockPlugin),
+    usePlugin: vi.fn(() => ({ ...mockPlugin, requestDataRefresh: mockRequestDataRefresh })),
     useApp: vi.fn(() => mockApp),
-    getCurrentPlugin: vi.fn(() => mockPlugin),
+    getCurrentPlugin: vi.fn(() => ({ ...mockPlugin, requestDataRefresh: mockRequestDataRefresh })),
   };
 });
 
@@ -162,6 +161,8 @@ describe('WorkbenchTab shell', () => {
     mockSettingsStore.loaded = true;
     mockSettingsStore.scanMode = 'all';
     mockSettingsStore.directories = [];
+    mockSettingsStore.sidebarCollapsed = false;
+    mockRequestDataRefresh.mockClear();
     mockEntries.value = [
       {
         id: 'entry-dashboard',
@@ -230,12 +231,12 @@ describe('WorkbenchTab shell', () => {
 
     expect(mounted.container.querySelector('[data-testid="workbench-sidebar"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="workbench-content-host"]')).not.toBeNull();
-    expect(mockLoad).toHaveBeenCalledWith(mockPlugin);
+    expect(mockLoad).toHaveBeenCalledWith(expect.objectContaining({ name: 'plugin' }));
 
     mounted.unmount();
   }, 10000);
 
-  it('subscribes to same-context refresh events and reloads settings before refreshing projects', async () => {
+  it('subscribes to same-context refresh events and reloads settings without refreshing projects directly', async () => {
     const mounted = await mountWorkbenchTab();
     await nextTick();
 
@@ -245,27 +246,24 @@ describe('WorkbenchTab shell', () => {
     await refreshHandler?.();
 
     expect(mockSettingsLoadFromPlugin).toHaveBeenCalled();
-    expect(mockProjectRefresh).toHaveBeenCalledWith(mockPlugin, 'all', []);
 
     mounted.unmount();
   });
 
-  it('sets up BroadcastChannel refresh handling and refreshes projects from payload', async () => {
+  it('sets up BroadcastChannel refresh handling and applies payload without refreshing projects directly', async () => {
     const mounted = await mountWorkbenchTab();
     await nextTick();
 
     expect(globalThis.BroadcastChannel).toHaveBeenCalledWith('task-assistant-refresh');
     expect(mockCreateRefreshChannelGuard).toHaveBeenCalledWith(expect.objectContaining({
       channel: expect.any(Object),
-      plugin: mockPlugin,
+      plugin: expect.objectContaining({ name: 'plugin' }),
       getCurrentPlugin: expect.any(Function),
       onRefresh: expect.any(Function),
       viewName: 'WorkbenchTab',
     }));
 
     mockSettingsLoadFromPlugin.mockClear();
-    mockProjectRefresh.mockClear();
-
     const onRefresh = mockCreateRefreshChannelGuard.mock.calls[0]?.[0]?.onRefresh;
     await onRefresh?.({
       scanMode: 'dirs',
@@ -274,7 +272,6 @@ describe('WorkbenchTab shell', () => {
     await nextTick();
 
     expect(mockSettingsLoadFromPlugin).not.toHaveBeenCalled();
-    expect(mockProjectRefresh).toHaveBeenCalledWith(mockPlugin, 'dirs', ['updated-dir']);
 
     mounted.unmount();
   });

@@ -1086,9 +1086,12 @@ export default class TaskAssistantPlugin extends Plugin {
             3000,
             "info",
           );
-          console.log("[Task Assistant] Emitting DATA_REFRESH event");
-          eventBus.emit(Events.DATA_REFRESH);
-          broadcastDataRefresh(this.getSettings() as object);
+          console.log("[Task Assistant] Requesting refresh after setting project directories");
+          void this.requestDataRefresh({
+            type: "full",
+            reason: "index:set-project-directories",
+            payload: this.getSettings() as Record<string, unknown>,
+          });
         } else {
           showMessage(
             (t("common") as any).dirsExist ?? t("common").dirsExist,
@@ -2313,9 +2316,10 @@ export default class TaskAssistantPlugin extends Plugin {
 
     if (success) {
       console.log("[Task Assistant] Next occurrence created successfully");
-      // 触发数据刷新
-      eventBus.emit(Events.DATA_REFRESH);
-      broadcastDataRefresh();
+      void this.requestDataRefresh({
+        type: "full",
+        reason: "index:create-next-occurrence",
+      });
     } else {
       console.log("[Task Assistant] Failed to create next occurrence");
     }
