@@ -54,25 +54,40 @@
           {{ t('habit.archived') }}
         </div>
 
-        <HabitMonthCalendar
-          :habit="selectedHabit"
-          :stats="stats"
-          :current-date="currentDate"
-          :view-month="viewMonth"
-          @update:view-month="emit('update:viewMonth', $event)"
-          @month-cell-primary="emit('month-cell-primary', $event)"
-          @month-cell-mark-missed="emit('month-cell-mark-missed', $event)"
-          @month-cell-reset="emit('month-cell-reset', $event)"
-        />
+        <div
+          class="habit-workspace-detail-pane__section habit-workspace-detail-pane__section--calendar"
+          data-testid="habit-detail-calendar-section"
+        >
+          <HabitMonthCalendar
+            :habit="selectedHabit"
+            :stats="stats"
+            :current-date="currentDate"
+            :view-month="viewMonth"
+            @update:view-month="emit('update:viewMonth', $event)"
+            @month-cell-primary="emit('month-cell-primary', $event)"
+            @month-cell-mark-missed="emit('month-cell-mark-missed', $event)"
+            @month-cell-reset="emit('month-cell-reset', $event)"
+          />
+        </div>
 
-        <HabitStatsCards :stats="stats" />
+        <div
+          class="habit-workspace-detail-pane__section habit-workspace-detail-pane__section--stats"
+          data-testid="habit-detail-stats-section"
+        >
+          <HabitStatsCards :stats="stats" />
+        </div>
 
-        <HabitRecordLog
-          :habit="selectedHabit"
-          :view-month="viewMonth"
-          :preview-trigger-mode="recordPreviewTriggerMode"
-          :on-record-preview-click="onRecordPreviewClick"
-        />
+        <div
+          class="habit-workspace-detail-pane__section habit-workspace-detail-pane__section--log"
+          data-testid="habit-detail-log-section"
+        >
+          <HabitRecordLog
+            :habit="selectedHabit"
+            :view-month="viewMonth"
+            :preview-trigger-mode="recordPreviewTriggerMode"
+            :on-record-preview-click="onRecordPreviewClick"
+          />
+        </div>
       </div>
     </template>
 
@@ -191,6 +206,19 @@ const headerTitle = computed(() => props.title || props.selectedHabit?.name || '
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.habit-workspace-detail-pane__section {
+  min-width: 0;
+}
+
+.habit-workspace-detail-pane__section--calendar,
+.habit-workspace-detail-pane__section--stats {
+  flex: 0 0 auto;
+}
+
+.habit-workspace-detail-pane__section--log {
+  min-height: 0;
 }
 
 .habit-workspace-detail-pane__archived-tip {

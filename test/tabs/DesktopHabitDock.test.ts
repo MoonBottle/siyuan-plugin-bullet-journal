@@ -563,12 +563,16 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     const content = mounted.container.querySelector('[data-testid="habit-detail-content"]');
+    const calendarSection = mounted.container.querySelector('[data-testid="habit-detail-calendar-section"]');
+    const statsSection = mounted.container.querySelector('[data-testid="habit-detail-stats-section"]');
     const calendar = mounted.container.querySelector('[data-testid="habit-month-calendar-stub"]');
     const stats = mounted.container.querySelector('[data-testid="habit-stats-stub"]');
 
     expect(mounted.container.querySelector('.habit-detail__today')).toBeNull();
-    expect(content?.firstElementChild).toBe(calendar);
-    expect(content?.children[1]).toBe(stats);
+    expect(content?.firstElementChild).toBe(calendarSection);
+    expect(content?.children[1]).toBe(statsSection);
+    expect(calendarSection?.firstElementChild).toBe(calendar);
+    expect(statsSection?.firstElementChild).toBe(stats);
 
     mounted.unmount();
   });
