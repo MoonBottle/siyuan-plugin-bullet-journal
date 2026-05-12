@@ -408,7 +408,7 @@ const recurringText = computed(() => {
   if (!repeatRule.value) {
     return t('mobile.detail.setRecurring') || '设置重复';
   }
-  const rule = generateRepeatRuleMarker(repeatRule.value);
+  const rule = generateRepeatRuleMarker(repeatRule.value, { includeEmoji: false });
   const end = generateEndConditionMarker(endCondition.value);
   return end ? `${rule} ${end}` : rule;
 });

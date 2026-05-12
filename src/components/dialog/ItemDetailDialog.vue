@@ -410,7 +410,7 @@ const hasRecurring = computed(() => !!props.item.repeatRule);
 const canSetRecurring = computed(() => !props.item.siblingItems?.length); // 多日期事项不能设置重复
 const recurringText = computed(() => {
   if (!hasRecurring.value) return t('recurring.setRecurring');
-  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule);
+  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule, { includeEmoji: false });
   const endMarker = generateEndConditionMarker(props.item.endCondition);
   return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker;
 });
