@@ -3,12 +3,24 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
-  it('registers LOCAL_DATA_MUTATED and routes it through a directed refresh request', () => {
+  it('registers LOCAL_DATA_MUTATED and routes it through requestDataRefresh with a directed refresh request', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.scheduleRefresh\(\{\s*type:\s*["']directed["']/s,
+      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.requestDataRefresh\(\{\s*type:\s*["']directed["']/s,
     );
+  });
+
+  it('keeps requestDataRefresh as a thin facade over the coordinator without local scheduling state', () => {
+    const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+
+    expect(indexSource).toMatch(
+      /public async requestDataRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.requestRefreshNow\(request\);[\s\S]*this\.emitLegacyRefreshSignals\(request\.payload\);[\s\S]*\}/s,
+    );
+    expect(indexSource).not.toContain('private refreshTimeout:');
+    expect(indexSource).not.toContain('private scheduledRefreshRequest:');
+    expect(indexSource).not.toContain('private scheduledRefreshResolvers:');
+    expect(indexSource).not.toContain('private mergeRefreshRequest(');
   });
 
   it('runs reminder scheduling only after DATA_REFRESHED', () => {
