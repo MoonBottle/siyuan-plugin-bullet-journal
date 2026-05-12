@@ -921,7 +921,6 @@ onUnmounted(() => {
 
 .completed-item .item-title,
 .abandoned-item .item-title {
-  text-decoration: line-through;
   opacity: 0.6;
 }
 

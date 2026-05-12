@@ -101,7 +101,7 @@ const handleContextMenu = (event: MouseEvent) => {
     border-left: 3px solid var(--b3-theme-success);
 
     :deep(.card-content) {
-      text-decoration: line-through;
+      opacity: 0.6;
     }
   }
 
@@ -109,7 +109,7 @@ const handleContextMenu = (event: MouseEvent) => {
     border-left: 3px solid var(--b3-theme-on-surface);
 
     :deep(.card-content) {
-      text-decoration: line-through;
+      opacity: 0.6;
       color: var(--b3-theme-on-surface);
     }
   }
