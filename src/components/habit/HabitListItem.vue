@@ -62,7 +62,7 @@
     <div class="habit-list-item__actions">
       <button
         v-if="!isMobile"
-        class="habit-calendar-btn"
+        class="habit-calendar-btn b3-tooltips b3-tooltips__n"
         data-testid="habit-list-item-open-doc"
         :aria-label="t('todo').openDoc"
         @click.stop="emit('open-doc', habit)"
@@ -77,6 +77,8 @@
           :class="['habit-action-btn', {
             'habit-action-btn--done': dayState.isCompleted,
             'habit-action-btn--binary': true,
+            'b3-tooltips': true,
+            'b3-tooltips__n': true,
           }]"
           :disabled="dayState.isCompleted"
           data-testid="habit-list-item-check-in"
@@ -105,6 +107,8 @@
           :class="['habit-action-btn', {
             'habit-action-btn--done': dayState.isCompleted,
             'habit-action-btn--count': true,
+            'b3-tooltips': true,
+            'b3-tooltips__n': true,
           }]"
           :disabled="dayState.isCompleted"
           data-testid="habit-list-item-increment"

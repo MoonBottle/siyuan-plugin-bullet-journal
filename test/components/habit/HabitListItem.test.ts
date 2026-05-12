@@ -788,6 +788,49 @@ describe('HabitListItem', () => {
     mounted.unmount();
   });
 
+  it('icon action buttons expose tooltip classes for hover hints', async () => {
+    const habit: Habit = {
+      name: '喝水',
+      type: 'count',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+    };
+
+    const mounted = mountComponent({
+      habit,
+      currentDate: '2026-04-12',
+      dayState: {
+        date: '2026-04-12',
+        hasRecord: false,
+        isCompleted: false,
+      },
+      periodState: {
+        periodType: 'day',
+        periodStart: '2026-04-12',
+        periodEnd: '2026-04-12',
+        requiredCount: 1,
+        completedCount: 0,
+        remainingCount: 1,
+        isCompleted: false,
+        eligibleToday: true,
+      },
+    });
+    await nextTick();
+
+    const openDoc = mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]') as HTMLButtonElement | null;
+    const increment = mounted.container.querySelector('[data-testid="habit-list-item-increment"]') as HTMLButtonElement | null;
+
+    expect(openDoc?.classList.contains('b3-tooltips')).toBe(true);
+    expect(increment?.classList.contains('b3-tooltips')).toBe(true);
+
+    mounted.unmount();
+  });
+
   it('uses stronger helper style when due today and softer text when today is not eligible', async () => {
     const habit: Habit = {
       name: '周报',
