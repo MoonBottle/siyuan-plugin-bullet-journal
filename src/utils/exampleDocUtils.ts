@@ -56,8 +56,6 @@ export function generateExampleContent(): string {
   if (isEn) {
     return `## Task Assistant Example
 
-Start with the first half. The rest shows more features when you need them.
-
 ## Quick Start
 
 Start by writing an item. Then type / in the editor to open slash commands, and use /today or /tomorrow to add a date:
@@ -67,6 +65,14 @@ Write daily summary ${dateMarker}${today}
 Follow up on release issues ${dateMarker}${tomorrow}
 
 > In slash commands, /today adds today's date to the current line, and /tomorrow adds tomorrow's date.
+
+## Item Status
+
+Finish meeting notes ${dateMarker}${today} ${completedTag}
+
+Drop outdated draft ${dateMarker}${yesterday} ❌
+
+> When an item is done, use /done to mark the current line as completed. If you no longer plan to do it, use /abandon to mark it as abandoned.
 
 ## Items and Pomodoro
 
@@ -91,12 +97,16 @@ Check the release checklist ${dateMarker}${today}
 
 ## Priority
 
+Homepage polish ${taskTag}
+
 Design the homepage draft ${dateMarker}${today} 🔥
 
 > Write the item content normally, then use /priority to add the priority marker.
-> Here, 🔥 means this item should be handled first.
+> Priority markers use 🔥 for high priority, 🌱 for medium priority, and 🍃 for low priority.
 
 ## Reminders
+
+Design review prep ${taskTag}
 
 Review visual draft ${dateMarker}${tomorrow} ⏰14:00
 
@@ -105,10 +115,12 @@ Review visual draft ${dateMarker}${tomorrow} ⏰14:00
 
 ## Recurring
 
+Weekly operations ${taskTag}
+
 Weekly release review ${dateMarker}${tomorrow} 🔁weekly
 
 > Write the item content first, then use /recurring to turn it into a repeating item.
-> Here, 🔁weekly means this item will come back every week.
+> Here, 🔁weekly means that after you mark this item as done, the plugin will automatically create the next weekly occurrence.
 
 ## More Examples
 
@@ -132,11 +144,12 @@ Prepare workshop material ${dateMarker}${today}, ${tomorrow}
 
 Release notes review ${taskTag}
 
-Review API changes ${dateMarker}${tomorrow}
+Review API changes ${dateMarker}${today}
 
 [Spec doc](https://example.com/spec)
 
 > Put the item first, then keep the related link under it so the context stays clear.
+> Links added this way appear in the item details. Press Ctrl and left-click the item line to open it.
 
 ## Common Slash Commands
 
@@ -144,6 +157,7 @@ Review API changes ${dateMarker}${tomorrow}
 - /tomorrow: Add tomorrow's item
 - /task: Mark as task
 - /done: Mark as done
+- /abandon: Mark as abandoned
 - /habit: Create or edit habits
 - /checkin: Add a habit check-in
 - /detail: Open item details
@@ -165,6 +179,14 @@ Review API changes ${dateMarker}${tomorrow}
 跟进发布问题 ${dateMarker}${tomorrow}
 
 > 在斜杠命令里，/jt 会把当前行标记为今天的事项，/mt 会把当前行标记为明天的事项。
+
+## 事项状态
+
+整理会议结论 ${dateMarker}${today} ${completedTag}
+
+放弃旧方案 ${dateMarker}${yesterday} ❌
+
+> 事项完成后，可用 /wc 把当前行标记为已完成；不再处理时，可用 /fq 标记为已放弃。
 
 ## 事项和番茄钟
 
@@ -189,12 +211,16 @@ Review API changes ${dateMarker}${tomorrow}
 
 ## 优先级
 
+首页细化 ${taskTag}
+
 设计首页原型 ${dateMarker}${today} 🔥
 
 > 先把事项内容写出来，再用 /yxj 添加优先级标记。
-> 这里的 🔥 表示这件事需要更早处理。
+> 优先级标记里，🔥 表示高优先级，🌱 表示中优先级，🍃 表示低优先级。
 
 ## 提醒
+
+评审准备 ${taskTag}
 
 评审视觉稿 ${dateMarker}${tomorrow} ⏰14:00
 
@@ -203,10 +229,12 @@ Review API changes ${dateMarker}${tomorrow}
 
 ## 重复
 
+每周例行 ${taskTag}
+
 发布例行检查 ${dateMarker}${tomorrow} 🔁每周
 
 > 先写事项内容，再用 /cf 把它变成重复事项。
-> 这里的 🔁每周 表示这件事会每周再次出现。
+> 这里的 🔁每周 表示：当你把当前事项标记为完成后，插件会自动生成下一次每周事项。
 
 ## 更多玩法
 
@@ -230,11 +258,12 @@ Review API changes ${dateMarker}${tomorrow}
 
 发布说明整理 ${taskTag}
 
-查看接口变更 ${dateMarker}${tomorrow}
+查看接口变更 ${dateMarker}${today}
 
 [需求文档](https://example.com/spec)
 
 > 先写事项，再把相关链接放在下面，避免链接脱离上下文。
+> 这样添加的链接会显示在事项详情里。按住 Ctrl 后左键点击事项行，即可打开事项详情。
 
 ## 常用斜杠命令
 
@@ -242,6 +271,7 @@ Review API changes ${dateMarker}${tomorrow}
 - /mt：添加明日事项
 - /rw：标记为任务
 - /wc：标记为完成
+- /fq：标记为放弃
 - /xg：创建或编辑习惯
 - /dk：添加习惯打卡
 - /xq：查看事项详情
