@@ -145,6 +145,7 @@ describe('workbenchStore', () => {
       entries: store.entries,
       dashboards: store.dashboards,
       activeEntryId: entry.id,
+      sidebarCollapsed: false,
     });
   });
 
@@ -178,6 +179,7 @@ describe('workbenchStore', () => {
         entries: store.entries,
         dashboards: [],
         activeEntryId: entry.id,
+        sidebarCollapsed: false,
       });
     },
   );
@@ -208,6 +210,7 @@ describe('workbenchStore', () => {
       entries: store.entries,
       dashboards: store.dashboards,
       activeEntryId: entry.id,
+      sidebarCollapsed: false,
     });
   });
 
@@ -261,6 +264,7 @@ describe('workbenchStore', () => {
       ],
       dashboards: [],
       activeEntryId: viewEntry.id,
+      sidebarCollapsed: false,
     });
   });
 
@@ -312,6 +316,7 @@ describe('workbenchStore', () => {
       entries: [first, second],
       dashboards: [],
       activeEntryId: second.id,
+      sidebarCollapsed: false,
     });
   });
 
@@ -352,6 +357,7 @@ describe('workbenchStore', () => {
       entries: [],
       dashboards: store.dashboards,
       activeEntryId: null,
+      sidebarCollapsed: false,
     });
   });
 
@@ -408,6 +414,7 @@ describe('workbenchStore', () => {
       entries: [],
       dashboards: store.dashboards,
       activeEntryId: null,
+      sidebarCollapsed: false,
     });
   });
 
@@ -436,6 +443,7 @@ describe('workbenchStore', () => {
       entries: [],
       dashboards: store.dashboards,
       activeEntryId: null,
+      sidebarCollapsed: false,
     });
   });
 
@@ -464,6 +472,7 @@ describe('workbenchStore', () => {
       entries: [],
       dashboards: store.dashboards,
       activeEntryId: null,
+      sidebarCollapsed: false,
     });
   });
 
@@ -506,6 +515,7 @@ describe('workbenchStore', () => {
       entries: [],
       dashboards: store.dashboards,
       activeEntryId: null,
+      sidebarCollapsed: false,
     });
   });
 
@@ -534,6 +544,7 @@ describe('workbenchStore', () => {
       entries: [],
       dashboards: store.dashboards,
       activeEntryId: null,
+      sidebarCollapsed: false,
     });
   });
 
@@ -572,5 +583,105 @@ describe('workbenchStore', () => {
         priorities: ['high'],
       },
     });
+  });
+
+  it('load restores sidebarCollapsed from storage', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+
+    mockLoadWorkbenchSettings.mockResolvedValueOnce({
+      entries: [],
+      dashboards: [],
+      activeEntryId: null,
+      sidebarCollapsed: true,
+    } satisfies WorkbenchSettings);
+
+    await store.load(plugin);
+
+    expect(store.sidebarCollapsed).toBe(true);
+  });
+
+  it('load defaults sidebarCollapsed to false when not in storage', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+
+    mockLoadWorkbenchSettings.mockResolvedValueOnce({
+      entries: [],
+      dashboards: [],
+      activeEntryId: null,
+    } satisfies WorkbenchSettings);
+
+    await store.load(plugin);
+
+    expect(store.sidebarCollapsed).toBe(false);
+  });
+
+  it('toggleSidebar flips sidebarCollapsed and persists', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+
+    expect(store.sidebarCollapsed).toBe(false);
+
+    await store.toggleSidebar();
+
+    expect(store.sidebarCollapsed).toBe(true);
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, expect.objectContaining({
+      sidebarCollapsed: true,
+    }));
+
+    await store.toggleSidebar();
+
+    expect(store.sidebarCollapsed).toBe(false);
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, expect.objectContaining({
+      sidebarCollapsed: false,
+    }));
+  });
+
+  it('reorderEntries reorders entries by given ids and persists', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const first = createEntry({ id: 'entry-1', order: 0 });
+    const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' });
+    const third = createEntry({ id: 'entry-3', title: 'Calendar', icon: 'iconCalendar', order: 2, viewType: 'calendar' });
+
+    store.entries = [first, second, third];
+
+    await store.reorderEntries(['entry-3', 'entry-1', 'entry-2']);
+
+    expect(store.entries.map(e => e.id)).toEqual(['entry-3', 'entry-1', 'entry-2']);
+    expect(store.entries.map(e => e.order)).toEqual([0, 1, 2]);
+    expect(mockSaveWorkbenchSettings).toHaveBeenCalledWith(plugin, expect.objectContaining({
+      entries: store.entries,
+    }));
+  });
+
+  it('reorderEntries preserves entries not in orderedIds at the end', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const first = createEntry({ id: 'entry-1', order: 0 });
+    const second = createEntry({ id: 'entry-2', title: 'Habit', icon: 'iconCheck', order: 1, viewType: 'habit' });
+
+    store.entries = [first, second];
+
+    await store.reorderEntries(['entry-2']);
+
+    expect(store.entries.map(e => e.id)).toEqual(['entry-2', 'entry-1']);
+    expect(store.entries.map(e => e.order)).toEqual([0, 1]);
+  });
+
+  it('reorderEntries ignores unknown ids', async () => {
+    const plugin = createPlugin();
+    const store = useWorkbenchStore();
+    store.bindPlugin(plugin);
+    const first = createEntry({ id: 'entry-1', order: 0 });
+
+    store.entries = [first];
+
+    await store.reorderEntries(['entry-1', 'nonexistent']);
+
+    expect(store.entries.map(e => e.id)).toEqual(['entry-1']);
   });
 });

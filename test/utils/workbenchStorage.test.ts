@@ -48,6 +48,7 @@ describe('workbenchStorage', () => {
       entries: [],
       dashboards: [],
       activeEntryId: null,
+      sidebarCollapsed: false,
     });
   });
 
@@ -78,5 +79,43 @@ describe('workbenchStorage', () => {
 
     expect(saved).toBe(true);
     expect(plugin._getStored()).toBe(JSON.stringify(settings, null, 2));
+  });
+
+  it('loadWorkbenchSettings normalizes sidebarCollapsed field', async () => {
+    const plugin = createMockPlugin({
+      entries: [],
+      dashboards: [],
+      activeEntryId: null,
+      sidebarCollapsed: true,
+    }) as any;
+
+    const settings = await loadWorkbenchSettings(plugin);
+
+    expect(settings.sidebarCollapsed).toBe(true);
+  });
+
+  it('loadWorkbenchSettings defaults sidebarCollapsed to false when missing', async () => {
+    const plugin = createMockPlugin({
+      entries: [],
+      dashboards: [],
+      activeEntryId: null,
+    }) as any;
+
+    const settings = await loadWorkbenchSettings(plugin);
+
+    expect(settings.sidebarCollapsed).toBe(false);
+  });
+
+  it('loadWorkbenchSettings defaults sidebarCollapsed to false for invalid type', async () => {
+    const plugin = createMockPlugin({
+      entries: [],
+      dashboards: [],
+      activeEntryId: null,
+      sidebarCollapsed: 'yes',
+    }) as any;
+
+    const settings = await loadWorkbenchSettings(plugin);
+
+    expect(settings.sidebarCollapsed).toBe(false);
   });
 });

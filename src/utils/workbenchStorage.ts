@@ -26,6 +26,7 @@ function normalizeWorkbenchSettings(value: unknown): WorkbenchSettings {
     entries: Array.isArray(raw.entries) ? raw.entries : [],
     dashboards: Array.isArray(raw.dashboards) ? raw.dashboards : [],
     activeEntryId: typeof raw.activeEntryId === 'string' ? raw.activeEntryId : null,
+    sidebarCollapsed: typeof raw.sidebarCollapsed === 'boolean' ? raw.sidebarCollapsed : false,
   };
 }
 
