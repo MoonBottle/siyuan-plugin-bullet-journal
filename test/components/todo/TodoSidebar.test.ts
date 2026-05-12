@@ -22,6 +22,8 @@ const mockProjectStore = {
   loading: false,
   getDisplayItems: vi.fn(() => [pendingItem]),
   getFilteredAndSortedItems: vi.fn(() => [pendingItem]),
+  getFilteredCompletedItems: vi.fn(() => []),
+  getFilteredAbandonedItems: vi.fn(() => []),
 };
 
 vi.mock('@/stores', () => ({
@@ -90,6 +92,8 @@ afterEach(() => {
   mockProjectStore.loading = false;
   mockProjectStore.getDisplayItems.mockReturnValue([pendingItem]);
   mockProjectStore.getFilteredAndSortedItems.mockReturnValue([pendingItem]);
+  mockProjectStore.getFilteredCompletedItems.mockReturnValue([]);
+  mockProjectStore.getFilteredAbandonedItems.mockReturnValue([]);
 });
 
 describe('TodoSidebar', () => {
@@ -132,6 +136,50 @@ describe('TodoSidebar', () => {
       items: [],
       hasAnyItemsRaw: false,
       hasActiveFilters: false,
+    }));
+
+    mounted.unmount();
+  });
+
+  it('uses completedDateRange for completed and abandoned items instead of broad pending dateRange', async () => {
+    const completedItem: Item = {
+      ...pendingItem,
+      id: 'item-2',
+      blockId: 'block-2',
+      status: 'completed',
+      date: '2026-05-01',
+    };
+    const abandonedItem: Item = {
+      ...pendingItem,
+      id: 'item-3',
+      blockId: 'block-3',
+      status: 'abandoned',
+      date: '2026-05-01',
+    };
+
+    mockProjectStore.getFilteredAndSortedItems.mockReturnValue([pendingItem, completedItem, abandonedItem]);
+    mockProjectStore.getFilteredCompletedItems.mockReturnValue([completedItem]);
+    mockProjectStore.getFilteredAbandonedItems.mockReturnValue([abandonedItem]);
+
+    const mounted = mountSidebar({
+      dateRange: { start: '1970-01-01', end: '2026-05-01' },
+      completedDateRange: { start: '2026-05-01', end: '2026-05-01' },
+    });
+
+    await nextTick();
+
+    expect(mockProjectStore.getFilteredCompletedItems).toHaveBeenCalledWith(expect.objectContaining({
+      dateRange: { start: '2026-05-01', end: '2026-05-01' },
+    }));
+    expect(mockProjectStore.getFilteredAbandonedItems).toHaveBeenCalledWith(expect.objectContaining({
+      dateRange: { start: '2026-05-01', end: '2026-05-01' },
+    }));
+    expect(todoSidebarListProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      items: [
+        expect.objectContaining({ id: 'item-1', status: 'pending' }),
+        expect.objectContaining({ id: 'item-2', status: 'completed' }),
+        expect.objectContaining({ id: 'item-3', status: 'abandoned' }),
+      ],
     }));
 
     mounted.unmount();
