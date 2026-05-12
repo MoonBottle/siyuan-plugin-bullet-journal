@@ -778,9 +778,12 @@ describe('HabitListItem', () => {
     await nextTick();
 
     const meta = mounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+    const status = mounted.container.querySelector('[data-testid="habit-list-item-meta-status"]') as HTMLSpanElement | null;
     expect(meta).not.toBeNull();
     expect(meta?.textContent).toContain('每天');
     expect(meta?.textContent).toContain('今天该打卡了');
+    expect(status?.classList.contains('habit-list-item__meta-status--today')).toBe(true);
+    expect(status?.getAttribute('data-marker')).toBe('dot');
 
     mounted.unmount();
   });
@@ -817,7 +820,10 @@ describe('HabitListItem', () => {
     });
     await nextTick();
     const dueMeta = dueMounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+    const dueStatus = dueMounted.container.querySelector('[data-testid="habit-list-item-meta-status"]') as HTMLSpanElement | null;
     expect(dueMeta?.classList.contains('habit-list-item__meta--due')).toBe(true);
+    expect(dueStatus?.classList.contains('habit-list-item__meta-status--today')).toBe(true);
+    expect(dueStatus?.getAttribute('data-marker')).toBe('dot');
     dueMounted.unmount();
 
     const notDueMounted = mountComponent({
@@ -841,8 +847,11 @@ describe('HabitListItem', () => {
     });
     await nextTick();
     const notDueMeta = notDueMounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
+    const notDueStatus = notDueMounted.container.querySelector('[data-testid="habit-list-item-meta-status"]') as HTMLSpanElement | null;
     expect(notDueMeta?.classList.contains('habit-list-item__meta--due')).toBe(false);
     expect(notDueMeta?.textContent).toContain('今天无需打卡');
+    expect(notDueStatus?.classList.contains('habit-list-item__meta-status--today')).toBe(true);
+    expect(notDueStatus?.getAttribute('data-marker')).toBe('dot');
     notDueMounted.unmount();
   });
 
@@ -886,6 +895,11 @@ describe('HabitListItem', () => {
     const meta = mounted.container.querySelector('[data-testid="habit-list-item-meta"]') as HTMLDivElement | null;
     expect(meta?.textContent).toContain('每天');
     expect(meta?.textContent).toContain('当日已打卡');
+    expect(meta?.classList.contains('habit-list-item__meta--selected-day')).toBe(true);
+    const status = mounted.container.querySelector('[data-testid="habit-list-item-meta-status"]') as HTMLSpanElement | null;
+    expect(status?.classList.contains('habit-list-item__meta-status--selected-day')).toBe(true);
+    expect(status?.classList.contains('habit-list-item__meta-status--completed')).toBe(true);
+    expect(status?.getAttribute('data-marker')).toBe('check');
     expect(meta?.textContent).not.toContain('今天该打卡了');
     expect(meta?.textContent).not.toContain('明天再打卡');
     expect(meta?.textContent).not.toContain('下次');

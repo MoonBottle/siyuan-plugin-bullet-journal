@@ -39,10 +39,23 @@
 
       <div
         class="habit-list-item__meta"
-        :class="{ 'habit-list-item__meta--due': isDueToday }"
+        :class="metaClassNames"
         data-testid="habit-list-item-meta"
       >
-        {{ frequencySummary }} · {{ scheduleHint }}
+        <span class="habit-list-item__meta-frequency">{{ frequencySummary }}</span>
+        <span class="habit-list-item__meta-separator">·</span>
+        <span
+          class="habit-list-item__meta-status"
+          :class="metaStatusClassNames"
+          :data-marker="metaStatusMarker"
+          data-testid="habit-list-item-meta-status"
+        >
+          <span
+            class="habit-list-item__meta-status-marker"
+            aria-hidden="true"
+          ></span>
+          {{ scheduleHint }}
+        </span>
       </div>
     </div>
 
@@ -238,6 +251,26 @@ const isDueToday = computed(() => {
     && !props.dayState.isMissed;
 });
 
+const selectedDayStatusKind = computed<'completed' | 'missed' | 'not-needed' | 'pending' | null>(() => {
+  if (isReferenceToday.value) {
+    return null;
+  }
+
+  if (props.dayState.isCompleted) {
+    return 'completed';
+  }
+
+  if (props.dayState.isMissed) {
+    return 'missed';
+  }
+
+  if (!props.periodState.eligibleToday) {
+    return 'not-needed';
+  }
+
+  return 'pending';
+});
+
 const scheduleHint = computed(() => {
   if (props.habit.archivedAt) {
     return t('habit').archived;
@@ -289,6 +322,39 @@ const scheduleHint = computed(() => {
   }
 
   return t('habit').dueOn.replace('{date}', dayjs(nextDate).format('M月D日'));
+});
+
+const metaClassNames = computed(() => ({
+  'habit-list-item__meta--due': isDueToday.value,
+  'habit-list-item__meta--selected-day': selectedDayStatusKind.value !== null,
+}));
+
+const metaStatusClassNames = computed(() => ({
+  'habit-list-item__meta-status--today': isReferenceToday.value,
+  'habit-list-item__meta-status--selected-day': selectedDayStatusKind.value !== null,
+  'habit-list-item__meta-status--completed': selectedDayStatusKind.value === 'completed',
+  'habit-list-item__meta-status--missed': selectedDayStatusKind.value === 'missed',
+  'habit-list-item__meta-status--not-needed': selectedDayStatusKind.value === 'not-needed',
+  'habit-list-item__meta-status--pending': selectedDayStatusKind.value === 'pending',
+}));
+
+const metaStatusMarker = computed(() => {
+  if (isReferenceToday.value) {
+    return 'dot';
+  }
+
+  switch (selectedDayStatusKind.value) {
+    case 'completed':
+      return 'check';
+    case 'missed':
+      return 'minus';
+    case 'not-needed':
+      return 'dash';
+    case 'pending':
+      return 'ring';
+    default:
+      return 'dot';
+  }
 });
 
 function handleMainClick() {
@@ -385,14 +451,127 @@ function handleMainClick() {
   margin-top: 10px;
   font-size: 11px;
   color: var(--b3-theme-on-surface-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.habit-list-item__meta-frequency,
+.habit-list-item__meta-separator {
+  flex: 0 0 auto;
+}
+
+.habit-list-item__meta-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--b3-theme-surface);
+  border: 1px solid var(--b3-theme-surface-lighter);
+}
+
 .habit-list-item__meta--due {
   color: var(--b3-theme-primary);
   font-weight: 500;
+}
+
+.habit-list-item__meta--selected-day {
+  color: var(--b3-theme-on-surface-light);
+}
+
+.habit-list-item__meta-status-marker {
+  position: relative;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+}
+
+.habit-list-item__meta-status-marker::before,
+.habit-list-item__meta-status-marker::after {
+  content: '';
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.habit-list-item__meta-status[data-marker='dot'] .habit-list-item__meta-status-marker::before {
+  inset: 2px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.habit-list-item__meta-status[data-marker='ring'] .habit-list-item__meta-status-marker::before {
+  inset: 1px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: transparent;
+}
+
+.habit-list-item__meta-status[data-marker='dash'] .habit-list-item__meta-status-marker::before,
+.habit-list-item__meta-status[data-marker='minus'] .habit-list-item__meta-status-marker::before {
+  left: 1px;
+  right: 1px;
+  top: 4px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.habit-list-item__meta-status[data-marker='check'] .habit-list-item__meta-status-marker::before {
+  left: 3px;
+  top: 4px;
+  width: 2px;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: rotate(-45deg);
+  transform-origin: center;
+}
+
+.habit-list-item__meta-status[data-marker='check'] .habit-list-item__meta-status-marker::after {
+  left: 5px;
+  top: 2px;
+  width: 2px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: rotate(45deg);
+  transform-origin: center;
+}
+
+.habit-list-item__meta-status--today {
+  color: var(--b3-theme-on-surface-light);
+}
+
+.habit-list-item__meta-status--selected-day {
+  color: var(--b3-theme-on-surface-light);
+}
+
+.habit-list-item__meta--due .habit-list-item__meta-status,
+.habit-list-item__meta-status--pending,
+.habit-list-item__meta-status--missed {
+  color: var(--b3-theme-primary);
+}
+
+.habit-list-item__meta--due .habit-list-item__meta-status {
+  background: var(--b3-theme-primary-lightest);
+  border-color: rgba(128, 162, 255, 0.26);
+}
+
+.habit-list-item__meta-status--completed {
+  color: var(--b3-theme-primary);
+  background: var(--b3-theme-primary-lightest);
+  border-color: rgba(128, 162, 255, 0.22);
+}
+
+.habit-list-item__meta-status--not-needed {
+  color: var(--b3-theme-on-surface-light);
 }
 
 .habit-list-item__actions {
