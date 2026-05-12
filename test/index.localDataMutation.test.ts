@@ -3,11 +3,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
-  it('registers LOCAL_DATA_MUTATED and routes it through scheduleRefresh', () => {
+  it('registers LOCAL_DATA_MUTATED and routes it through a directed refresh request', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,\s*\(\)\s*=>\s*\{\s*this\.scheduleRefresh\(\);\s*\}\s*\)/s,
+      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.scheduleRefresh\(\{\s*type:\s*["']directed["']/s,
     );
   });
 

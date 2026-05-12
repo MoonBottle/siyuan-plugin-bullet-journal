@@ -53,6 +53,11 @@ class EventBus {
 
 export const eventBus = new EventBus();
 
+export type RefreshRequestPayload
+  = | { type: 'settings-only'; payload?: Record<string, unknown> }
+    | { type: 'directed'; docIds: string[]; reason?: string; payload?: Record<string, unknown> }
+    | { type: 'full'; reason: string; payload?: Record<string, unknown> };
+
 /** BroadcastChannel 名称，用于跨 iframe/上下文通知（如 Dock 与主窗口分离时） */
 export const DATA_REFRESH_CHANNEL = 'siyuan-bullet-journal-data-refresh';
 
@@ -83,6 +88,7 @@ export function broadcastPluginUnloading(pluginInstanceId?: string): void {
 // 事件类型
 export const Events = {
   DATA_REFRESH: 'data:refresh',
+  REFRESH_REQUESTED: 'refresh:requested',
   LOCAL_DATA_MUTATED: 'data:mutated',
   DATA_REFRESHED: 'data:refreshed', // 数据已刷新完成（用于通知其他模块）
   SETTINGS_CHANGED: 'settings:changed',

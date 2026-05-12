@@ -231,7 +231,9 @@ function handleBackToActiveList() {
 }
 
 const handleDataRefresh = async () => {
-  await refreshHabits();
+  if (selectedHabit.value) {
+    selectHabitById(selectedHabit.value.blockId, selectedDate.value);
+  }
 };
 
 let unsubscribeRefresh: (() => void) | null = null;

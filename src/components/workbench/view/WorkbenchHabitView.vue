@@ -216,7 +216,9 @@ function handleNativePreviewDestroyed({
 }
 
 const handleDataRefresh = async () => {
-  await refreshHabits();
+  if (selectedHabit.value) {
+    selectHabit(selectedHabit.value, selectedDate.value);
+  }
 };
 
 let unsubscribeRefresh: (() => void) | null = null;

@@ -88,7 +88,6 @@ import {
 import { useProjectStore, useSettingsStore } from '@/stores';
 import type { Habit, HabitStats } from '@/types/models';
 import {
-  broadcastDataRefresh,
   eventBus,
   Events,
   DATA_REFRESH_CHANNEL,
@@ -100,7 +99,7 @@ import {
 } from '@/utils/habitDockNavigation';
 import dayjs from '@/utils/dayjs';
 
-const plugin = usePlugin();
+const plugin = usePlugin() as any;
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 const initialDate = projectStore.currentDate || dayjs().format('YYYY-MM-DD');
@@ -197,7 +196,10 @@ async function refreshHabits() {
   if (!plugin)
     return;
 
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  await plugin.requestDataRefresh?.({
+    type: 'full',
+    reason: 'mobile-habit:manual-refresh',
+  });
   syncSelectedHabit();
 }
 
@@ -225,8 +227,10 @@ async function handleArchiveSelectedHabit() {
 
   const success = await archiveHabit(state.selectedHabit, dayjs().format('YYYY-MM-DD'));
   if (success) {
-    eventBus.emit(Events.DATA_REFRESH);
-    broadcastDataRefresh();
+    await plugin?.requestDataRefresh?.({
+      type: 'full',
+      reason: 'mobile-habit:archive',
+    });
   }
 }
 
@@ -237,13 +241,15 @@ async function handleUnarchiveSelectedHabit() {
 
   const success = await unarchiveHabit(state.selectedHabit);
   if (success) {
-    eventBus.emit(Events.DATA_REFRESH);
-    broadcastDataRefresh();
+    await plugin?.requestDataRefresh?.({
+      type: 'full',
+      reason: 'mobile-habit:unarchive',
+    });
   }
 }
 
 const handleDataRefresh = async () => {
-  await refreshHabits();
+  syncSelectedHabit();
 };
 
 let unsubscribeRefresh: (() => void) | null = null;

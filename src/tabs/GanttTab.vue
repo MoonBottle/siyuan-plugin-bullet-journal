@@ -107,7 +107,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 事件取消订阅函数
@@ -166,7 +165,10 @@ onUnmounted(() => {
 
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'gantt-tab:manual-refresh',
+    });
     showMessage(t('common').dataRefreshed);
   }
 };

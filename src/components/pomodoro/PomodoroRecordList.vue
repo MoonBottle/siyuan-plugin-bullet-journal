@@ -52,7 +52,7 @@ import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import { t } from '@/i18n';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 
-const plugin = usePlugin();
+const plugin = usePlugin() as any;
 
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
@@ -152,8 +152,10 @@ async function handleCreateExample() {
   try {
     const docId = await createExampleDocument();
     if (docId && plugin) {
-      // 刷新项目数据
-      await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+      await plugin.requestDataRefresh?.({
+        type: 'full',
+        reason: 'pomodoro-record-list:create-example',
+      });
     }
   } finally {
     isProcessing.value = false;

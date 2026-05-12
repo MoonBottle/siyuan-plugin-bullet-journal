@@ -307,7 +307,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     }
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 新建对话

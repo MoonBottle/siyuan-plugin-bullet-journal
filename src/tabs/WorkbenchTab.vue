@@ -160,7 +160,6 @@ async function handleDataRefresh(payload?: Record<string, unknown>) {
   }
 
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 }
 
 onMounted(async () => {

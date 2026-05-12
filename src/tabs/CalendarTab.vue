@@ -171,7 +171,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 日历导航处理函数（仅当前 Tab 可见时处理，避免多 Tab 重复跳转）
@@ -274,7 +273,10 @@ onUnmounted(() => {
 
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'calendar-tab:manual-refresh',
+    });
     showMessage(t('common').dataRefreshed);
   }
 };

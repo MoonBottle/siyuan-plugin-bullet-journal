@@ -72,13 +72,15 @@ const handleDataRefresh = async () => {
   console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroDock', plugin));
   if (!plugin) return;
   settingsStore.loadFromPlugin();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'pomodoro-dock:manual-refresh',
+    });
     showMessage(t('common').dataRefreshed);
   }
 };

@@ -130,7 +130,7 @@ const emit = defineEmits<{
   'open-pomodoro': [{ blockId?: string }]
 }>();
 
-const plugin = usePlugin();
+const plugin = usePlugin() as any;
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 const { openItem, openProject, openTask } = useItemDetail();
@@ -219,7 +219,10 @@ const updateSelectedItems = () => {
 };
 
 const handleRefresh = async () => {
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  await plugin?.requestDataRefresh?.({
+    type: 'full',
+    reason: 'mobile-todo:manual-refresh',
+  });
   updateSelectedItems();
   showMessage(t('common').dataRefreshed);
 };
@@ -384,7 +387,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
 
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
   updateSelectedItems();
 };
 
@@ -398,10 +400,6 @@ onMounted(async () => {
   settingsStore.loadFromPlugin();
   projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
   projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
-
-  if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
-  }
 
   unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 

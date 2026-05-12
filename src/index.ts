@@ -8,6 +8,7 @@ import {
   Events,
   broadcastDataRefresh,
   broadcastPluginUnloading,
+  type RefreshRequestPayload,
 } from "@/utils/eventBus";
 import { createApp } from "vue";
 import { createPinia } from "pinia";
@@ -106,6 +107,7 @@ import {
   applyFloatingPomodoroViewState,
   createFloatingPomodoroMarkup,
 } from "@/utils/floatingPomodoroDom";
+import { createRefreshCoordinator } from "@/services/refreshCoordinator";
 
 let PluginInfo = {
   version: "",
@@ -163,7 +165,11 @@ export default class TaskAssistantPlugin extends Plugin {
   public readonly debugInstanceId = `ta-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   private refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+  private scheduledRefreshRequest: RefreshRequestPayload | null = null;
+  private scheduledRefreshResolvers: Array<() => void> = [];
   private restorePomodoroTimeout: ReturnType<typeof setTimeout> | null = null;
+  private refreshCoordinator: ReturnType<typeof createRefreshCoordinator> | null = null;
+  private suppressLegacyDataRefreshHandling = 0;
   private readonly cleanupManager = new CleanupManager();
   private hasCompletedOnload = false;
 
@@ -271,6 +277,7 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     console.log("[Task Assistant] Starting initial loadProjects...");
     const projectStore = useProjectStore(pinia);
+    this.initRefreshCoordinator();
     if (this.isMobile) {
       mobileNotificationScheduler.attachRuntime(projectStore);
     }
@@ -530,7 +537,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * 数据变化回调 - 思源会在数据索引完成后调用
    */
   onDataChanged() {
-    this.scheduleRefresh();
+    this.scheduleRefresh({ type: "full", reason: "onDataChanged" });
   }
 
   onunload() {
@@ -889,6 +896,117 @@ export default class TaskAssistantPlugin extends Plugin {
    */
   public getEnabledDirectories(): ProjectDirectory[] {
     return settings.directories.filter((d) => d.enabled);
+  }
+
+  private getProjectStore() {
+    const pinia = getSharedPinia();
+    if (!pinia) return null;
+    return useProjectStore(pinia);
+  }
+
+  private mergeRefreshRequest(
+    current: RefreshRequestPayload | null,
+    next: RefreshRequestPayload,
+  ): RefreshRequestPayload {
+    if (!current) return next;
+
+    const payload = {
+      ...(("payload" in current && current.payload) ? current.payload : {}),
+      ...(("payload" in next && next.payload) ? next.payload : {}),
+    };
+    const mergedPayload = Object.keys(payload).length > 0 ? payload : undefined;
+
+    if (current.type === "full" || next.type === "full") {
+      return {
+        type: "full",
+        reason: current.type === "full" ? current.reason : next.reason,
+        payload: mergedPayload,
+      };
+    }
+
+    if (current.type === "directed" || next.type === "directed") {
+      const docIds = new Set<string>();
+      if (current.type === "directed") {
+        current.docIds.forEach(docId => docIds.add(docId));
+      }
+      if (next.type === "directed") {
+        next.docIds.forEach(docId => docIds.add(docId));
+      }
+      return {
+        type: "directed",
+        docIds: Array.from(docIds),
+        reason: current.type === "directed" ? current.reason : next.reason,
+        payload: mergedPayload,
+      };
+    }
+
+    return {
+      type: "settings-only",
+      payload: mergedPayload,
+    };
+  }
+
+  private requestRefreshNow(request: RefreshRequestPayload) {
+    return this.refreshCoordinator?.request(request);
+  }
+
+  public requestDataRefresh(request: RefreshRequestPayload) {
+    return this.scheduleRefresh(request);
+  }
+
+  private createLocalMutationRefreshRequest(payload?: {
+    blockId?: string;
+  }): RefreshRequestPayload {
+    const blockId = payload?.blockId;
+    if (!blockId) {
+      return {
+        type: "full",
+        reason: "local-mutation-missing-block-id",
+      };
+    }
+
+    const docId = this.getProjectStore()?.getItemByBlockId(blockId)?.docId;
+    if (docId) {
+      return {
+        type: "directed",
+        docIds: [docId],
+        reason: "local-mutation",
+      };
+    }
+
+    return {
+      type: "full",
+      reason: "local-mutation-unresolved-doc",
+    };
+  }
+
+  private initRefreshCoordinator() {
+    this.refreshCoordinator = createRefreshCoordinator({
+      runFullRefresh: async () => {
+        const projectStore = this.getProjectStore();
+        if (!projectStore) return;
+        const currentSettings = this.getSettings();
+        await projectStore.refresh(
+          this,
+          currentSettings.scanMode || "full",
+          currentSettings.directories,
+          { forceFull: true },
+        );
+      },
+      runDirectedRefresh: async (docIds) => {
+        const projectStore = this.getProjectStore();
+        if (!projectStore) return;
+        dirtyDocTracker.markDirty(docIds);
+        const currentSettings = this.getSettings();
+        await projectStore.refresh(
+          this,
+          currentSettings.scanMode || "full",
+          currentSettings.directories,
+        );
+      },
+      applySettingsOnly: async () => {},
+      emitRefreshed: () => {},
+    });
   }
 
   /**
@@ -1691,8 +1809,28 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerEventListeners() {
     // 监听 WebSocket 消息，用于检测数据变化
     this.registerPluginEventListener("ws-main", this.onWsMain);
-    this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, () => {
-      this.scheduleRefresh();
+    this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, (payload?: {
+      blockId?: string;
+    }) => {
+      this.scheduleRefresh(this.createLocalMutationRefreshRequest(payload));
+    });
+    this.registerAppEventListener(
+      Events.REFRESH_REQUESTED,
+      (request?: RefreshRequestPayload) => {
+        if (!request) return;
+        this.scheduleRefresh(request);
+      },
+    );
+    this.registerAppEventListener(Events.DATA_REFRESH, (payload?: object) => {
+      if (this.suppressLegacyDataRefreshHandling > 0) {
+        return;
+      }
+      if (payload && Object.keys(payload).length > 0) {
+        this.scheduleRefresh({
+          type: "settings-only",
+          payload: payload as Record<string, unknown>,
+        });
+      }
     });
     this.registerAppEventListener(Events.DATA_REFRESHED, () => {
       if (this.isMobile) {
@@ -1787,7 +1925,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh",
       );
       this.handleDocRemove(data);
-      this.scheduleRefresh();
+      this.scheduleRefresh({ type: "full", reason: "removeDoc" });
       return;
     }
 
@@ -1803,7 +1941,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> full refresh branch for cmd:",
         data.cmd,
       );
-      this.scheduleRefresh();
+      this.scheduleRefresh({ type: "full", reason: data.cmd });
       return;
     }
 
@@ -2230,39 +2368,70 @@ export default class TaskAssistantPlugin extends Plugin {
     });
 
     if (rootIDs.length > 0) {
-      dirtyDocTracker.markDirty(rootIDs);
       console.log(
         "[Task Assistant] ws-main directed refresh for docs:",
         rootIDs,
       );
+      this.scheduleRefresh({
+        type: "directed",
+        docIds: rootIDs,
+        reason: data?.cmd || "ws-main-directed",
+      });
+      return;
     } else {
       console.warn(
         "[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs",
       );
+      this.scheduleRefresh({
+        type: "full",
+        reason: `${data?.cmd || "ws-main"}:missing-rootIDs`,
+      });
+      return;
     }
-    this.scheduleRefresh();
   }
 
   /**
    * 延迟刷新（防抖）
    */
-  private scheduleRefresh() {
+  private scheduleRefresh(request: RefreshRequestPayload) {
     console.log("[Task Assistant] scheduleRefresh called:", {
       hadPendingTimer: Boolean(this.refreshTimeout),
       dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
+      request,
     });
 
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
 
-    this.refreshTimeout = setTimeout(() => {
-      console.log("[Task Assistant] scheduleRefresh timer fired:", {
-        dirtyDocsAtEmit: dirtyDocTracker.getDirtyDocs(),
-      });
-      eventBus.emit(Events.DATA_REFRESH);
-      broadcastDataRefresh();
-    }, 150);
+    this.scheduledRefreshRequest = this.mergeRefreshRequest(
+      this.scheduledRefreshRequest,
+      request,
+    );
+
+    return new Promise<void>((resolve) => {
+      this.scheduledRefreshResolvers.push(resolve);
+      this.refreshTimeout = setTimeout(async () => {
+        const scheduledRequest = this.scheduledRefreshRequest;
+        const resolvers = [...this.scheduledRefreshResolvers];
+        this.scheduledRefreshRequest = null;
+        this.scheduledRefreshResolvers = [];
+        console.log("[Task Assistant] scheduleRefresh timer fired:", {
+          dirtyDocsAtEmit: dirtyDocTracker.getDirtyDocs(),
+          request: scheduledRequest,
+        });
+        if (!scheduledRequest) {
+          resolvers.forEach(done => done());
+          return;
+        }
+        await this.requestRefreshNow(scheduledRequest);
+        this.suppressLegacyDataRefreshHandling += 1;
+        eventBus.emit(Events.DATA_REFRESH, scheduledRequest.payload);
+        this.suppressLegacyDataRefreshHandling -= 1;
+        broadcastDataRefresh(scheduledRequest.payload);
+        resolvers.forEach(done => done());
+      }, 150);
+    });
   }
 
   // ============================================
