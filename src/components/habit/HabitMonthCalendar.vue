@@ -2,9 +2,9 @@
   <div class="habit-month-calendar">
     <div class="habit-month-calendar__grid">
       <div class="habit-month-calendar__header">
-        <button class="habit-month-calendar__nav habit-month-calendar__nav--prev" @click="prevMonth">‹</button>
+        <button class="habit-month-calendar__nav habit-month-calendar__nav--prev block__icon" @click="prevMonth">‹</button>
         <span class="habit-month-calendar__title">{{ title }}</span>
-        <button class="habit-month-calendar__nav habit-month-calendar__nav--next" @click="nextMonth">›</button>
+        <button class="habit-month-calendar__nav habit-month-calendar__nav--next block__icon" @click="nextMonth">›</button>
       </div>
       <div class="habit-month-calendar__weekdays">
         <span v-for="d in weekDayLabels" :key="d" class="habit-month-calendar__weekday">{{ d }}</span>
@@ -323,10 +323,13 @@ onUnmounted(() => {
   height: 28px;
   border: none;
   border-radius: 6px;
-  background: var(--b3-theme-surface-lighter);
-  color: var(--b3-theme-on-surface);
+  background: transparent;
+  color: var(--b3-theme-on-background);
   cursor: pointer;
+  opacity: 1;
   font-size: 16px;
+  line-height: 1;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,7 +337,7 @@ onUnmounted(() => {
 }
 
 .habit-month-calendar__nav:hover {
-  background: var(--b3-theme-surface-light);
+  background: transparent;
 }
 
 .habit-month-calendar__nav--prev {

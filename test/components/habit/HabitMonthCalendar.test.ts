@@ -276,4 +276,25 @@ describe('HabitMonthCalendar', () => {
 
     mounted.unmount();
   });
+
+  it('month navigation buttons use the same plain icon-button class as the detail back action', async () => {
+    const habit: Habit = {
+      name: '早起',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+      records: [],
+    };
+
+    const mounted = mountCalendar(habit);
+    await nextTick();
+
+    const navButtons = Array.from(mounted.container.querySelectorAll('.habit-month-calendar__nav')) as HTMLButtonElement[];
+    expect(navButtons).toHaveLength(2);
+    expect(navButtons.every(button => button.classList.contains('block__icon'))).toBe(true);
+
+    mounted.unmount();
+  });
 });
