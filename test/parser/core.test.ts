@@ -1033,6 +1033,34 @@ describe('parseKramdown lastBlockId 解析', () => {
     expect(project!.tasks[0].items[0].lastBlockId).toBe('content2');
   });
 
+  it('事项相关内容应在新分节和习惯前停止', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+- {: id="t1" }任务A #任务#
+{: id="after-t" }
+  - {: id="i1" }同步每日进展 @2026-03-30 🔁工作日
+{: id="after-i1" }
+> 先写事项内容，再用 /cf 把它变成重复事项。
+{: id="quote-1" }
+> 这里的 🔁工作日 表示：当你把当前事项标记为完成后，插件会自动生成下一次工作日事项。
+{: id="quote-2" }
+## 更多玩法
+{: id="more-heading" }
+晨间拉伸 🎯2026-03-30 🔄每天
+{: id="habit-1" }
+晨间拉伸 📅2026-03-30
+{: id="record-1" }`;
+
+    const project = parseKramdown(kramdown, 'test-doc');
+
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+    expect(project!.habits).toHaveLength(1);
+    expect(project!.tasks[0].items[0].blockId).toBe('after-i1');
+    expect(project!.tasks[0].items[0].lastBlockId).toBe('quote-2');
+  });
+
   it('事项和事项相关内容都是文本块：lastBlockId 正确记录', () => {
     // 场景：事项本身是普通文本块（不是列表项），事项相关内容也是普通文本块
     const kramdown = `## 项目

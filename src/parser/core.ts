@@ -135,6 +135,17 @@ function isNextItemOrTaskLine(content: string): boolean {
   return false;
 }
 
+function isItemRelatedContentBoundary(content: string): boolean {
+  if (isNextItemOrTaskLine(content)) return true;
+  if (content.startsWith('#')) return true;
+
+  const cleanedContent = stripListAndBlockAttr(content);
+  const cleanedContentWithoutSlash = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
+  if (isHabitLine(cleanedContentWithoutSlash)) return true;
+
+  return false;
+}
+
 /**
  * 检查一行是否是番茄钟行
  */
@@ -410,7 +421,7 @@ export function parseKramdown(
       const blockLines = block.content.split('\n').map(l => l.trim()).filter(Boolean);
       for (let idx = 1; idx < blockLines.length; idx++) {
         const lineContent = blockLines[idx];
-        if (isNextItemOrTaskLine(lineContent)) break;
+        if (isItemRelatedContentBoundary(lineContent)) break;
         const strippedLineContent = stripListAndBlockAttr(lineContent);
         if (isStandaloneBlockRefLine(strippedLineContent)) {
           const { links } = parseBlockRefs(strippedLineContent);
@@ -428,7 +439,7 @@ export function parseKramdown(
         const nextBlock = blocks[nextBlockIndex];
         const nextContent = nextBlock.content.split('\n')[0].trim();
 
-        if (isNextItemOrTaskLine(nextContent)) break;
+        if (isItemRelatedContentBoundary(nextContent)) break;
 
         // 每个块都是当前事项的相关内容，更新最后一个相关块索引
         lastRelatedBlockIndex = nextBlockIndex;
