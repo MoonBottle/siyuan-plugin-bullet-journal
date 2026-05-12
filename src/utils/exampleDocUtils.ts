@@ -108,19 +108,19 @@ Design the homepage draft ${dateMarker}${today} 🔥
 
 Design review prep ${taskTag}
 
-Review visual draft ${dateMarker}${tomorrow} ⏰14:00
+Review visual draft ${dateMarker}${today} ⏰14:00
 
 > Write the item content first, then use /reminder to attach a reminder time.
 > Here, ⏰14:00 means a reminder is set for 14:00.
 
 ## Recurring
 
-Weekly operations ${taskTag}
+Workday routine ${taskTag}
 
-Weekly release review ${dateMarker}${tomorrow} 🔁weekly
+Daily status sync ${dateMarker}${today} 🔁workday
 
 > Write the item content first, then use /recurring to turn it into a repeating item.
-> Here, 🔁weekly means that after you mark this item as done, the plugin will automatically create the next weekly occurrence.
+> Here, 🔁workday means that after you mark this item as done, the plugin will automatically create the next workday occurrence.
 
 ## More Examples
 
@@ -222,19 +222,19 @@ Review API changes ${dateMarker}${today}
 
 评审准备 ${taskTag}
 
-评审视觉稿 ${dateMarker}${tomorrow} ⏰14:00
+评审视觉稿 ${dateMarker}${today} ⏰14:00
 
 > 先写事项内容，再用 /tx 补一个提醒时间。
 > 这里的 ⏰14:00 表示会在 14:00 提醒你。
 
 ## 重复
 
-每周例行 ${taskTag}
+工作日例行 ${taskTag}
 
-发布例行检查 ${dateMarker}${tomorrow} 🔁每周
+同步每日进展 ${dateMarker}${today} 🔁工作日
 
 > 先写事项内容，再用 /cf 把它变成重复事项。
-> 这里的 🔁每周 表示：当你把当前事项标记为完成后，插件会自动生成下一次每周事项。
+> 这里的 🔁工作日 表示：当你把当前事项标记为完成后，插件会自动生成下一次工作日事项。
 
 ## 更多玩法
 
