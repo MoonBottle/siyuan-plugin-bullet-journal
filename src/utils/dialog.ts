@@ -44,6 +44,61 @@ const LINK_NAME_MAX_LEN = 12;
 export const SY_LINK_TOOLTIP_ID = 'sy-dialog-link-tooltip';
 export const SY_ICON_TOOLTIP_ID = 'sy-icon-tooltip';
 
+let activeIconTooltipTrigger: HTMLElement | null = null;
+let activeIconTooltipCleanup: (() => void) | null = null;
+let activeIconTooltipObserver: MutationObserver | null = null;
+
+function clearIconTooltipTracking(): void {
+  activeIconTooltipCleanup?.();
+  activeIconTooltipCleanup = null;
+  activeIconTooltipObserver?.disconnect();
+  activeIconTooltipObserver = null;
+  activeIconTooltipTrigger = null;
+}
+
+function watchIconTooltipTrigger(trigger: HTMLElement): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined')
+    return;
+
+  const hideOnInteraction = () => {
+    hideIconTooltip();
+  };
+
+  const hideWhenDocumentHidden = () => {
+    if (document.hidden) {
+      hideIconTooltip();
+    }
+  };
+
+  document.addEventListener('pointerdown', hideOnInteraction, true);
+  window.addEventListener('blur', hideOnInteraction);
+  window.addEventListener('resize', hideOnInteraction);
+  window.addEventListener('scroll', hideOnInteraction, true);
+  document.addEventListener('visibilitychange', hideWhenDocumentHidden);
+
+  activeIconTooltipCleanup = () => {
+    document.removeEventListener('pointerdown', hideOnInteraction, true);
+    window.removeEventListener('blur', hideOnInteraction);
+    window.removeEventListener('resize', hideOnInteraction);
+    window.removeEventListener('scroll', hideOnInteraction, true);
+    document.removeEventListener('visibilitychange', hideWhenDocumentHidden);
+  };
+
+  if (typeof MutationObserver !== 'undefined' && document.body) {
+    activeIconTooltipObserver = new MutationObserver(() => {
+      if (activeIconTooltipTrigger !== trigger)
+        return;
+      if (!trigger.isConnected) {
+        hideIconTooltip();
+      }
+    });
+    activeIconTooltipObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+}
+
 /** 供 Vue 等组件使用：格式化链接显示，返回截断后的 display 和可选的 fullText（用于 tooltip） */
 export function formatLinkForDisplay(name: string): { display: string; fullText?: string } {
   if (!name || name.length <= LINK_NAME_MAX_LEN) {
@@ -90,7 +145,8 @@ export function hideLinkTooltip(): void {
 
 /** 供 SyButton 等图标按钮使用：显示 tooltip（挂载 body，不被 overflow 裁剪） */
 export function showIconTooltip(el: HTMLElement, text: string): void {
-  if (!text) return;
+  if (!text || typeof document === 'undefined') return;
+  clearIconTooltipTracking();
   let tip = document.getElementById(SY_ICON_TOOLTIP_ID);
   if (!tip) {
     tip = document.createElement('div');
@@ -106,6 +162,8 @@ export function showIconTooltip(el: HTMLElement, text: string): void {
   tip.style.top = `${rect.top - 4}px`;
   tip.style.transform = 'translate(-50%, -100%)';
   tip.classList.add('visible');
+  activeIconTooltipTrigger = el;
+  watchIconTooltipTrigger(el);
   requestAnimationFrame(() => {
     const tipRect = tip!.getBoundingClientRect();
     // 确保 tooltip 不会超出视口右边界
@@ -121,6 +179,8 @@ export function showIconTooltip(el: HTMLElement, text: string): void {
 
 /** 供 SyButton 等图标按钮使用：隐藏 tooltip */
 export function hideIconTooltip(): void {
+  clearIconTooltipTracking();
+  if (typeof document === 'undefined') return;
   const tip = document.getElementById(SY_ICON_TOOLTIP_ID);
   if (tip) tip.classList.remove('visible');
 }

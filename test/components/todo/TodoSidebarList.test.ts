@@ -1,11 +1,17 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp, h, nextTick } from 'vue';
+import { createApp, h, nextTick, ref } from 'vue';
 import TodoSidebarList from '@/components/todo/TodoSidebarList.vue';
 import type { Item } from '@/types/models';
 
 const mockToggleItemPinned = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const mockUpdateBlockContent = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+const mockUpdateBlockDateTime = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+
+vi.mock('siyuan', async () => {
+  return await import('../../__mocks__/siyuan');
+});
 const pendingItem: Item = {
   id: 'item-1',
   content: '处理优先级',
@@ -122,16 +128,21 @@ vi.mock('@/utils/dateRangeUtils', () => ({
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
-  updateBlockContent: vi.fn(),
-  updateBlockDateTime: vi.fn(),
+  updateBlockContent: mockUpdateBlockContent,
+  updateBlockDateTime: mockUpdateBlockDateTime,
   updateBlockPriority: vi.fn(),
 }));
 
-vi.mock('@/utils/dialog', () => ({
-  showItemDetailModal: vi.fn(),
-  showDatePickerDialog: vi.fn(),
-  createDialog: vi.fn(),
-}));
+vi.mock('@/utils/dialog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/dialog')>();
+
+  return {
+    ...actual,
+    showItemDetailModal: vi.fn(),
+    showDatePickerDialog: vi.fn(),
+    createDialog: vi.fn(),
+  };
+});
 
 vi.mock('@/utils/contextMenu', () => ({
   showContextMenu: vi.fn(),
@@ -185,12 +196,47 @@ function mountList(props: Record<string, unknown>) {
   };
 }
 
+function mountReactiveList(initialItems: Item[]) {
+  const items = ref(initialItems);
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+
+  const app = createApp({
+    setup() {
+      return {
+        items,
+      };
+    },
+    render() {
+      return h(TodoSidebarList, {
+        items: this.items,
+        hasAnyItemsRaw: true,
+      });
+    },
+  });
+
+  app.mount(container);
+
+  return {
+    container,
+    items,
+    unmount() {
+      app.unmount();
+      container.remove();
+    },
+  };
+}
+
 afterEach(() => {
   document.body.innerHTML = '';
   vi.clearAllMocks();
   mockProjectStore.hideCompleted = false;
   mockProjectStore.hideAbandoned = false;
   mockToggleItemPinned.mockClear();
+  mockUpdateBlockContent.mockReset();
+  mockUpdateBlockContent.mockResolvedValue(true);
+  mockUpdateBlockDateTime.mockReset();
+  mockUpdateBlockDateTime.mockResolvedValue(true);
 });
 
 describe('TodoSidebarList', () => {
@@ -292,6 +338,38 @@ describe('TodoSidebarList', () => {
 
     expect(projectEl?.textContent?.trim()).toBe('🔥项目A');
     expect(contentEl?.textContent?.trim()).toBe('⏳ 处理优先级');
+
+    mounted.unmount();
+  });
+
+  it('hides the shared icon tooltip after clicking complete when the action row is removed', async () => {
+    const { SY_ICON_TOOLTIP_ID } = await import('@/utils/dialog');
+    const mounted = mountReactiveList([pendingItem]);
+
+    mockUpdateBlockContent.mockImplementationOnce(async () => {
+      mounted.items.value = [];
+      return true;
+    });
+
+    await nextTick();
+
+    const completeAction = mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="完成"]') as HTMLSpanElement | null;
+    expect(completeAction).not.toBeNull();
+
+    completeAction?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    await nextTick();
+
+    const tooltip = document.getElementById(SY_ICON_TOOLTIP_ID);
+    expect(tooltip).not.toBeNull();
+    expect(tooltip?.textContent).toBe('完成');
+    expect(tooltip?.classList.contains('visible')).toBe(true);
+
+    completeAction?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await nextTick();
+
+    expect(mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="完成"]')).toBeNull();
+    expect(tooltip?.classList.contains('visible')).toBe(false);
 
     mounted.unmount();
   });
