@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  eventBus,
+  Events,
+} from '@/utils/eventBus';
+import {
   RefreshReasons,
   WS_MAIN_FULL_REFRESH_COMMANDS,
   createDirectedRefreshRequest,
@@ -8,11 +12,9 @@ import {
   createSettingsOnlyRefreshRequest,
   createWsMainFullRefreshReason,
   createWsMainDirectedRefreshReason,
-  eventBus,
-  Events,
   isWsMainFullRefreshCommand,
   submitRefreshRequest,
-} from '@/utils/eventBus';
+} from '@/utils/refreshRequests';
 
 describe('refresh request helpers', () => {
   it('creates a full refresh request with optional payload', () => {

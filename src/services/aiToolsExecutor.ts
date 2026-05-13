@@ -23,7 +23,7 @@ import {
   RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
-} from '@/utils/eventBus';
+} from '@/utils/refreshRequests';
 
 /**
  * 筛选事项参数

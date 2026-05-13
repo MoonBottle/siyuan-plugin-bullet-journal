@@ -66,12 +66,15 @@ vi.mock('@/parser/priorityParser', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { emit: mockEventBusEmit, on: mockEventBusOn },
+  Events: {
+    REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
+  },
+}));
+
+vi.mock('@/utils/refreshRequests', () => ({
   RefreshReasons: {
     SLASH_COMMAND_HABIT_DATA: 'slash-command:habit-data',
     SLASH_COMMAND_SET_PROJECT_DIR: 'slash-command:set-project-dir',
-  },
-  Events: {
-    REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   },
   createFullRefreshRequest: vi.fn((reason: string, payload?: Record<string, unknown>) => (
     payload === undefined ? { type: 'full', reason } : { type: 'full', reason, payload }

@@ -9,6 +9,8 @@ import {
   broadcastDataRefreshed,
   broadcastSettingsChanged,
   broadcastPluginUnloading,
+} from "@/utils/eventBus";
+import {
   RefreshReasons,
   createWsMainFullRefreshReason,
   createDirectedRefreshRequest,
@@ -17,7 +19,7 @@ import {
   createWsMainDirectedRefreshReason,
   isWsMainFullRefreshCommand,
   type RefreshRequestPayload,
-} from "@/utils/eventBus";
+} from "@/utils/refreshRequests";
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import { getSharedPinia, setSharedPinia } from "@/utils/sharedPinia";

@@ -32,7 +32,7 @@ import {
   RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
-} from '@/utils/eventBus';
+} from '@/utils/refreshRequests';
 import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
 import { checkIn, checkInCount } from '@/services/habitService';
 import type { CheckInRecord } from '@/types/models';

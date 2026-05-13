@@ -8,12 +8,11 @@ import { appendBlock, setBlockAttrs, getBlockAttrs } from '@/api';
 import { showMessage } from '@/utils/dialog';
 import { showPomodoroCompleteNotification } from '@/utils/notification';
 import {
-  eventBus,
-  Events,
   RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
-} from '@/utils/eventBus';
+} from '@/utils/refreshRequests';
+import { eventBus, Events } from '@/utils/eventBus';
 import {
   saveActivePomodoro,
   loadActivePomodoro,

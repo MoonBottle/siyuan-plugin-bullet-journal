@@ -1,4 +1,4 @@
-import type { RefreshRequestPayload } from '@/utils/eventBus';
+import type { RefreshRequestPayload } from '@/utils/refreshRequests';
 
 type RefreshCoordinatorSnapshot = {
   docIds: string[];

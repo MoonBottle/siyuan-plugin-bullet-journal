@@ -109,10 +109,12 @@ import { showMessage } from 'siyuan';
 import {
   eventBus,
   Events,
+} from '@/utils/eventBus';
+import {
   RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
-} from '@/utils/eventBus';
+} from '@/utils/refreshRequests';
 import { t } from '@/i18n';
 import type { SettingsData } from '@/settings/types';
 import { defaultSettings } from '@/settings/types';

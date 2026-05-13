@@ -14,12 +14,15 @@ vi.mock('@/utils/eventBus', () => ({
   eventBus: {
     emit: vi.fn(),
   },
-  RefreshReasons: {
-    SETTINGS_DIALOG_SAVE: 'settings-dialog:save',
-  },
   Events: {
     SETTINGS_CHANGED: 'settings:changed',
     REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
+  },
+}));
+
+vi.mock('@/utils/refreshRequests', () => ({
+  RefreshReasons: {
+    SETTINGS_DIALOG_SAVE: 'settings-dialog:save',
   },
   createFullRefreshRequest: vi.fn((reason: string, payload?: Record<string, unknown>) => (
     payload === undefined ? { type: 'full', reason } : { type: 'full', reason, payload }
