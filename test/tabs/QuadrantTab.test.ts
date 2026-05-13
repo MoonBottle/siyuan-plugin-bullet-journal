@@ -111,7 +111,7 @@ vi.mock('@/utils/fileUtils', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
-  Events: { SETTINGS_CHANGED: 'settings:changed', REFRESH_REQUESTED: 'refresh:requested' },
+  Events: { SETTINGS_CHANGED: 'settings:changed', REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted' },
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
 }));
 

@@ -352,7 +352,7 @@ async function handleSave() {
       showPomodoroTotal: settings.showPomodoroTotal ?? true,
       todoDock: settings.todoDock ?? settingsStore.todoDock,
     });
-    eventBus.emit(Events.REFRESH_REQUESTED, {
+    eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, {
       type: 'full',
       reason: 'settings-dialog:save',
       payload: settings as Record<string, unknown>,

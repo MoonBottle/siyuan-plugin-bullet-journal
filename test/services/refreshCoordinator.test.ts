@@ -19,11 +19,11 @@ describe('refreshCoordinator', () => {
         }
       }),
       applySettingsOnly: vi.fn(),
-      emitRefreshed: vi.fn(),
+      emitRefreshCompleted: vi.fn(),
     });
 
-    const first = coordinator.request({ type: 'directed', docIds: ['doc-1'] });
-    const second = coordinator.request({ type: 'directed', docIds: ['doc-2'] });
+    const first = coordinator.submit({ type: 'directed', docIds: ['doc-1'] });
+    const second = coordinator.submit({ type: 'directed', docIds: ['doc-2'] });
 
     releaseFirstRun();
     await Promise.all([first, second]);
@@ -44,11 +44,11 @@ describe('refreshCoordinator', () => {
       runFullRefresh,
       runDirectedRefresh,
       applySettingsOnly: vi.fn(),
-      emitRefreshed: vi.fn(),
+      emitRefreshCompleted: vi.fn(),
     });
 
-    const first = coordinator.request({ type: 'directed', docIds: ['doc-1'] });
-    const second = coordinator.request({ type: 'full', reason: 'moveDoc' });
+    const first = coordinator.submit({ type: 'directed', docIds: ['doc-1'] });
+    const second = coordinator.submit({ type: 'full', reason: 'moveDoc' });
 
     releaseFirstRun();
     await Promise.all([first, second]);
@@ -66,10 +66,10 @@ describe('refreshCoordinator', () => {
       runFullRefresh,
       runDirectedRefresh,
       applySettingsOnly,
-      emitRefreshed: vi.fn(),
+      emitRefreshCompleted: vi.fn(),
     });
 
-    await coordinator.request({
+    await coordinator.submit({
       type: 'settings-only',
       payload: { calendarDefaultView: 'timeGridWeek' },
     });

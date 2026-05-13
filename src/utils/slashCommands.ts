@@ -285,7 +285,7 @@ function findHabitAndRecordByRecordBlockId(blockId?: string): { habit: Habit; re
 }
 
 function notifyHabitDataRefresh(): void {
-  eventBus.emit(Events.REFRESH_REQUESTED, {
+  eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, {
     type: 'full',
     reason: 'slash-command:habit-data',
   });
@@ -586,7 +586,7 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
     settingsStore.directories.push(newDir);
     settingsStore.saveToPlugin();
 
-    eventBus.emit(Events.REFRESH_REQUESTED, {
+    eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, {
       type: 'full',
       reason: 'slash-command:set-project-dir',
       payload: settingsStore.$state as Record<string, unknown>,

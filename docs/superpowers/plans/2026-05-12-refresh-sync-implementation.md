@@ -223,7 +223,7 @@ describe('refreshCoordinator', () => {
         calls.push('directed');
       }),
       applySettingsOnly: vi.fn(),
-      emitRefreshed: vi.fn(),
+      emitRefreshCompleted: vi.fn(),
     });
 
     const first = coordinator.request({ type: 'directed', docIds: ['doc-1'] });
@@ -243,7 +243,7 @@ describe('refreshCoordinator', () => {
       runFullRefresh,
       runDirectedRefresh,
       applySettingsOnly: vi.fn(),
-      emitRefreshed: vi.fn(),
+      emitRefreshCompleted: vi.fn(),
     });
 
     await coordinator.request({ type: 'directed', docIds: ['doc-1'] });
@@ -275,7 +275,7 @@ type RefreshCoordinatorOptions = {
   runFullRefresh: () => Promise<void>;
   runDirectedRefresh: (docIds: string[]) => Promise<void>;
   applySettingsOnly: (payload?: Record<string, unknown>) => Promise<void> | void;
-  emitRefreshed: () => void;
+  emitRefreshCompleted: () => void;
 };
 
 export function createRefreshCoordinator(options: RefreshCoordinatorOptions) {
@@ -331,7 +331,7 @@ export function createRefreshCoordinator(options: RefreshCoordinatorOptions) {
           await options.applySettingsOnly(snapshot.payload);
         }
 
-        options.emitRefreshed();
+        options.emitRefreshCompleted();
       }
     }
     finally {
@@ -363,7 +363,7 @@ consumeDirtyDocs(): string[] {
 In `src/utils/eventBus.ts`, add an explicit refresh request event:
 
 ```ts
-REFRESH_REQUESTED: 'refresh:requested',
+REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
 ```
 
 - [ ] **Step 5: Run coordinator tests**
@@ -440,7 +440,7 @@ this.refreshCoordinator = createRefreshCoordinator({
   applySettingsOnly: async () => {
     // no-op here; views patch their settings store
   },
-  emitRefreshed: () => {
+  emitRefreshCompleted: () => {
     eventBus.emit(Events.DATA_REFRESHED, { plugin: this, items: projectStore.items });
   },
 });
@@ -560,7 +560,7 @@ For each view:
 ```ts
 const handleRefresh = async () => {
   if (!plugin) return;
-  eventBus.emit(Events.REFRESH_REQUESTED, { type: 'full', reason: 'manual-view-refresh' });
+  eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, { type: 'full', reason: 'manual-view-refresh' });
 };
 ```
 
@@ -585,7 +585,7 @@ unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
 Where a workflow truly needs an immediate data pull after an explicit user action, replace it with:
 
 ```ts
-eventBus.emit(Events.REFRESH_REQUESTED, { type: 'directed', docIds: [docId], reason: 'habit-action' });
+eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, { type: 'directed', docIds: [docId], reason: 'habit-action' });
 ```
 
 - [ ] **Step 4: Run the affected UI-focused tests**
@@ -644,7 +644,7 @@ it('applies settings-only payloads without running project refresh', async () =>
     runFullRefresh,
     runDirectedRefresh,
     applySettingsOnly,
-    emitRefreshed: vi.fn(),
+    emitRefreshCompleted: vi.fn(),
   });
 
   await coordinator.request({
@@ -708,6 +708,5 @@ No spec section is left without an implementing task.
 
 - Coordinator request type name: `RefreshRequest` / `RefreshRequestPayload`
 - Completion signal remains `Events.DATA_REFRESHED`
-- Request signal added as `Events.REFRESH_REQUESTED`
+- Request signal added as `Events.REFRESH_REQUEST_SUBMITTED`
 - Atomic store entry points remain `refreshFull()`, `refreshDirtyDocs()`, `applyProjects()`, `removeProjectsByIds()`
-

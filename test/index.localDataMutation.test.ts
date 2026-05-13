@@ -3,19 +3,19 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
-  it('registers LOCAL_DATA_MUTATED and routes it through requestDataRefresh with a directed refresh request', () => {
+  it('registers LOCAL_DATA_MUTATED and routes it through processRefreshRequest with a local mutation refresh request', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.requestDataRefresh\(\{\s*type:\s*["']directed["']/s,
+      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.processRefreshRequest\(this\.createLocalMutationRefreshRequest\(payload\)\);/s,
     );
   });
 
-  it('keeps requestDataRefresh as a thin facade over the coordinator without local scheduling state', () => {
+  it('keeps processRefreshRequest as a thin facade over the coordinator without local scheduling state', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /public async requestDataRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.requestRefreshNow\(request\);[\s\S]*this\.emitRefreshSignals\(request\);[\s\S]*\}/s,
+      /public async processRefreshRequest\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.enqueueRefreshRequest\(request\);[\s\S]*this\.emitRefreshCompletionSignals\(request\);[\s\S]*\}/s,
     );
     expect(indexSource).not.toContain('private refreshTimeout:');
     expect(indexSource).not.toContain('private scheduledRefreshRequest:');
@@ -44,6 +44,15 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
     expect(indexSource).not.toMatch(/this\.registerAppEventListener\(\s*Events\.DATA_REFRESH\b/);
     expect(indexSource).not.toContain('broadcastDataRefresh(');
     expect(indexSource).not.toContain('emitLegacyRefreshSignals');
+  });
+
+  it('subscribes to refresh request submission events with the renamed event constant', () => {
+    const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+
+    expect(indexSource).toMatch(
+      /this\.registerAppEventListener\(\s*Events\.REFRESH_REQUEST_SUBMITTED,[\s\S]*void this\.processRefreshRequest\(request\);/s,
+    );
+    expect(indexSource).not.toContain('Events.REFRESH_REQUESTED');
   });
 
   it('merges habitCheckInTimePrecision when loading settings from disk', () => {

@@ -629,7 +629,7 @@ async function executeCreateProject(
     settingsStore.directories.push(newDir);
     settingsStore.saveToPlugin();
 
-    eventBus.emit(Events.REFRESH_REQUESTED, {
+    eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, {
       type: 'full',
       reason: 'ai-tools:create-project-doc',
     });

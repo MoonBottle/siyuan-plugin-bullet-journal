@@ -10,7 +10,7 @@ type RefreshCoordinatorOptions = {
   runFullRefresh: (payload?: Record<string, unknown>) => Promise<void>;
   runDirectedRefresh: (docIds: string[], payload?: Record<string, unknown>) => Promise<void>;
   applySettingsOnly: (payload?: Record<string, unknown>) => Promise<void> | void;
-  emitRefreshed: () => void;
+  emitRefreshCompleted: () => void;
 };
 
 function mergePayload(
@@ -78,7 +78,7 @@ export function createRefreshCoordinator(options: RefreshCoordinatorOptions) {
           await options.applySettingsOnly(snapshot.payload);
         }
 
-        options.emitRefreshed();
+        options.emitRefreshCompleted();
       }
     } finally {
       running = false;
@@ -87,7 +87,7 @@ export function createRefreshCoordinator(options: RefreshCoordinatorOptions) {
   }
 
   return {
-    async request(request: RefreshRequestPayload) {
+    async submit(request: RefreshRequestPayload) {
       mergeRequest(request);
       if (!drainPromise) {
         drainPromise = drain();

@@ -649,7 +649,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
-        eventBus.emit(Events.REFRESH_REQUESTED, {
+        eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, {
           type: 'full',
           reason: 'pomodoro-store:save-record',
         });

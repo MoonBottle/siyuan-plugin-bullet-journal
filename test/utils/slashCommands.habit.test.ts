@@ -62,7 +62,7 @@ vi.mock('@/parser/priorityParser', () => ({
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { emit: vi.fn(), on: vi.fn() },
   Events: {
-    REFRESH_REQUESTED: 'refresh:requested',
+    REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   },
 }));
 
@@ -366,7 +366,7 @@ describe('habit slash commands', () => {
 
     await handler({} as any, node);
 
-    expect(vi.mocked(eventBus.emit)).toHaveBeenCalledWith(Events.REFRESH_REQUESTED, {
+    expect(vi.mocked(eventBus.emit)).toHaveBeenCalledWith(Events.REFRESH_REQUEST_SUBMITTED, {
       type: 'full',
       reason: 'slash-command:habit-data',
     });

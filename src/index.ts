@@ -534,7 +534,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * 数据变化回调 - 思源会在数据索引完成后调用
    */
   onDataChanged() {
-    void this.requestDataRefresh({ type: "full", reason: "onDataChanged" });
+    void this.processRefreshRequest({ type: "full", reason: "onDataChanged" });
   }
 
   onunload() {
@@ -895,11 +895,11 @@ export default class TaskAssistantPlugin extends Plugin {
     return useProjectStore(pinia);
   }
 
-  private requestRefreshNow(request: RefreshRequestPayload) {
-    return this.refreshCoordinator?.request(request);
+  private enqueueRefreshRequest(request: RefreshRequestPayload) {
+    return this.refreshCoordinator?.submit(request);
   }
 
-  private emitRefreshSignals(request: RefreshRequestPayload) {
+  private emitRefreshCompletionSignals(request: RefreshRequestPayload) {
     const payload = request.payload;
     if (payload && Object.keys(payload).length > 0) {
       eventBus.emit(Events.SETTINGS_CHANGED, payload);
@@ -910,13 +910,13 @@ export default class TaskAssistantPlugin extends Plugin {
     }
   }
 
-  public async requestDataRefresh(request: RefreshRequestPayload) {
-    console.log("[Task Assistant] requestDataRefresh called:", {
+  public async processRefreshRequest(request: RefreshRequestPayload) {
+    console.log("[Task Assistant] processRefreshRequest called:", {
       dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
       request,
     });
-    await this.requestRefreshNow(request);
-    this.emitRefreshSignals(request);
+    await this.enqueueRefreshRequest(request);
+    this.emitRefreshCompletionSignals(request);
   }
 
   private createLocalMutationRefreshRequest(payload?: {
@@ -970,7 +970,7 @@ export default class TaskAssistantPlugin extends Plugin {
         );
       },
       applySettingsOnly: async () => {},
-      emitRefreshed: () => {},
+      emitRefreshCompleted: () => {},
     });
   }
 
@@ -1052,7 +1052,7 @@ export default class TaskAssistantPlugin extends Plugin {
             "info",
           );
           console.log("[Task Assistant] Requesting refresh after setting project directories");
-          void this.requestDataRefresh({
+          void this.processRefreshRequest({
             type: "full",
             reason: "index:set-project-directories",
             payload: this.getSettings() as Record<string, unknown>,
@@ -1780,13 +1780,13 @@ export default class TaskAssistantPlugin extends Plugin {
     this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, (payload?: {
       blockId?: string;
     }) => {
-      void this.requestDataRefresh(this.createLocalMutationRefreshRequest(payload));
+      void this.processRefreshRequest(this.createLocalMutationRefreshRequest(payload));
     });
     this.registerAppEventListener(
-      Events.REFRESH_REQUESTED,
+      Events.REFRESH_REQUEST_SUBMITTED,
       (request?: RefreshRequestPayload) => {
         if (!request) return;
-        void this.requestDataRefresh(request);
+        void this.processRefreshRequest(request);
       },
     );
     this.registerAppEventListener(Events.DATA_REFRESHED, () => {
@@ -1882,7 +1882,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh",
       );
       this.handleDocRemove(data);
-      void this.requestDataRefresh({ type: "full", reason: "removeDoc" });
+      void this.processRefreshRequest({ type: "full", reason: "removeDoc" });
       return;
     }
 
@@ -1898,7 +1898,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> full refresh branch for cmd:",
         data.cmd,
       );
-      void this.requestDataRefresh({ type: "full", reason: data.cmd });
+      void this.processRefreshRequest({ type: "full", reason: data.cmd });
       return;
     }
 
@@ -2270,7 +2270,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
     if (success) {
       console.log("[Task Assistant] Next occurrence created successfully");
-      void this.requestDataRefresh({
+      void this.processRefreshRequest({
         type: "full",
         reason: "index:create-next-occurrence",
       });
@@ -2330,7 +2330,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] ws-main directed refresh for docs:",
         rootIDs,
       );
-      void this.requestDataRefresh({
+      void this.processRefreshRequest({
         type: "directed",
         docIds: rootIDs,
         reason: data?.cmd || "ws-main-directed",
@@ -2340,7 +2340,7 @@ export default class TaskAssistantPlugin extends Plugin {
       console.warn(
         "[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs",
       );
-      void this.requestDataRefresh({
+      void this.processRefreshRequest({
         type: "full",
         reason: `${data?.cmd || "ws-main"}:missing-rootIDs`,
       });

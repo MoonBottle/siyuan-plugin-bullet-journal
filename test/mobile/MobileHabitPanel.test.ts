@@ -160,7 +160,7 @@ vi.mock('@/utils/eventBus', () => ({
   DATA_REFRESH_CHANNEL: 'habit-refresh-test',
   Events: {
     DATA_REFRESHED: 'data:refreshed',
-    REFRESH_REQUESTED: 'refresh:requested',
+    REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
     HABIT_DOCK_NAVIGATE: 'habit-dock:navigate',
   },
   eventBus: {
