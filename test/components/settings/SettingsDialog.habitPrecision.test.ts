@@ -16,7 +16,12 @@ vi.mock('@/utils/eventBus', () => ({
   },
   Events: {
     SETTINGS_CHANGED: 'settings:changed',
+    REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   },
+  createFullRefreshRequest: vi.fn((reason: string, payload?: Record<string, unknown>) => (
+    payload === undefined ? { type: 'full', reason } : { type: 'full', reason, payload }
+  )),
+  submitRefreshRequest: vi.fn(),
 }));
 
 vi.mock('@/components/settings/DirectoryConfigSection.vue', () => ({ default: { name: 'SectionStub', render: () => null } }));

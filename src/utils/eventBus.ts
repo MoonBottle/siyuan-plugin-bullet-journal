@@ -58,6 +58,42 @@ export type RefreshRequestPayload
     | { type: 'directed'; docIds: string[]; reason?: string; payload?: Record<string, unknown> }
     | { type: 'full'; reason: string; payload?: Record<string, unknown> };
 
+export function createSettingsOnlyRefreshRequest(
+  payload?: Record<string, unknown>,
+): RefreshRequestPayload {
+  return payload === undefined
+    ? { type: 'settings-only' }
+    : { type: 'settings-only', payload };
+}
+
+export function createDirectedRefreshRequest(
+  docIds: string[],
+  options?: { reason?: string; payload?: Record<string, unknown> },
+): RefreshRequestPayload {
+  const request: RefreshRequestPayload = {
+    type: 'directed',
+    docIds,
+  };
+
+  if (options?.reason) {
+    request.reason = options.reason;
+  }
+  if (options?.payload) {
+    request.payload = options.payload;
+  }
+
+  return request;
+}
+
+export function createFullRefreshRequest(
+  reason: string,
+  payload?: Record<string, unknown>,
+): RefreshRequestPayload {
+  return payload === undefined
+    ? { type: 'full', reason }
+    : { type: 'full', reason, payload };
+}
+
 /** BroadcastChannel 名称，用于跨 iframe/上下文通知（如 Dock 与主窗口分离时） */
 export const DATA_REFRESH_CHANNEL = 'siyuan-bullet-journal-data-refresh';
 
@@ -114,3 +150,7 @@ export const Events = {
   BREAK_ENDED: 'break:ended',
   POMODORO_AUTO_EXTENDED: 'pomodoro:auto-extended', // 自动延迟番茄钟，通知弹窗关闭
 };
+
+export function submitRefreshRequest(request: RefreshRequestPayload): void {
+  eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, request);
+}

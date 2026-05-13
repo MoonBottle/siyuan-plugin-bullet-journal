@@ -7,7 +7,12 @@ import type { ActivePomodoro, ActivePomodoroData, Item, PendingPomodoroCompletio
 import { appendBlock, setBlockAttrs, getBlockAttrs } from '@/api';
 import { showMessage } from '@/utils/dialog';
 import { showPomodoroCompleteNotification } from '@/utils/notification';
-import { eventBus, Events } from '@/utils/eventBus';
+import {
+  eventBus,
+  Events,
+  createFullRefreshRequest,
+  submitRefreshRequest,
+} from '@/utils/eventBus';
 import {
   saveActivePomodoro,
   loadActivePomodoro,
@@ -649,10 +654,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
-        eventBus.emit(Events.REFRESH_REQUEST_SUBMITTED, {
-          type: 'full',
-          reason: 'pomodoro-store:save-record',
-        });
+        submitRefreshRequest(createFullRefreshRequest('pomodoro-store:save-record'));
         return true;
       } catch (error) {
         console.error('[Pomodoro] 保存记录失败:', error);

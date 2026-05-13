@@ -9,6 +9,8 @@ import {
   broadcastDataRefreshed,
   broadcastSettingsChanged,
   broadcastPluginUnloading,
+  createDirectedRefreshRequest,
+  createFullRefreshRequest,
   type RefreshRequestPayload,
 } from "@/utils/eventBus";
 import { createApp } from "vue";
@@ -534,7 +536,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * 数据变化回调 - 思源会在数据索引完成后调用
    */
   onDataChanged() {
-    void this.processRefreshRequest({ type: "full", reason: "onDataChanged" });
+    void this.processRefreshRequest(createFullRefreshRequest("onDataChanged"));
   }
 
   onunload() {
@@ -924,25 +926,17 @@ export default class TaskAssistantPlugin extends Plugin {
   }): RefreshRequestPayload {
     const blockId = payload?.blockId;
     if (!blockId) {
-      return {
-        type: "full",
-        reason: "local-mutation-missing-block-id",
-      };
+      return createFullRefreshRequest("local-mutation-missing-block-id");
     }
 
     const docId = this.getProjectStore()?.getItemByBlockId(blockId)?.docId;
     if (docId) {
-      return {
-        type: "directed",
-        docIds: [docId],
+      return createDirectedRefreshRequest([docId], {
         reason: "local-mutation",
-      };
+      });
     }
 
-    return {
-      type: "full",
-      reason: "local-mutation-unresolved-doc",
-    };
+    return createFullRefreshRequest("local-mutation-unresolved-doc");
   }
 
   private initRefreshCoordinator() {
@@ -1052,11 +1046,12 @@ export default class TaskAssistantPlugin extends Plugin {
             "info",
           );
           console.log("[Task Assistant] Requesting refresh after setting project directories");
-          void this.processRefreshRequest({
-            type: "full",
-            reason: "index:set-project-directories",
-            payload: this.getSettings() as Record<string, unknown>,
-          });
+          void this.processRefreshRequest(
+            createFullRefreshRequest(
+              "index:set-project-directories",
+              this.getSettings() as Record<string, unknown>,
+            ),
+          );
         } else {
           showMessage(
             (t("common") as any).dirsExist ?? t("common").dirsExist,
@@ -1882,7 +1877,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh",
       );
       this.handleDocRemove(data);
-      void this.processRefreshRequest({ type: "full", reason: "removeDoc" });
+      void this.processRefreshRequest(createFullRefreshRequest("removeDoc"));
       return;
     }
 
@@ -1898,7 +1893,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> full refresh branch for cmd:",
         data.cmd,
       );
-      void this.processRefreshRequest({ type: "full", reason: data.cmd });
+      void this.processRefreshRequest(createFullRefreshRequest(data.cmd));
       return;
     }
 
@@ -2270,10 +2265,9 @@ export default class TaskAssistantPlugin extends Plugin {
 
     if (success) {
       console.log("[Task Assistant] Next occurrence created successfully");
-      void this.processRefreshRequest({
-        type: "full",
-        reason: "index:create-next-occurrence",
-      });
+      void this.processRefreshRequest(
+        createFullRefreshRequest("index:create-next-occurrence"),
+      );
     } else {
       console.log("[Task Assistant] Failed to create next occurrence");
     }
@@ -2330,20 +2324,19 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] ws-main directed refresh for docs:",
         rootIDs,
       );
-      void this.processRefreshRequest({
-        type: "directed",
-        docIds: rootIDs,
-        reason: data?.cmd || "ws-main-directed",
-      });
+      void this.processRefreshRequest(
+        createDirectedRefreshRequest(rootIDs, {
+          reason: data?.cmd || "ws-main-directed",
+        }),
+      );
       return;
     } else {
       console.warn(
         "[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs",
       );
-      void this.processRefreshRequest({
-        type: "full",
-        reason: `${data?.cmd || "ws-main"}:missing-rootIDs`,
-      });
+      void this.processRefreshRequest(
+        createFullRefreshRequest(`${data?.cmd || "ws-main"}:missing-rootIDs`),
+      );
       return;
     }
   }

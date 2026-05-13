@@ -3,6 +3,11 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { showMessage } from 'siyuan';
 
+const { mockEventBusEmit, mockEventBusOn } = vi.hoisted(() => ({
+  mockEventBusEmit: vi.fn(),
+  mockEventBusOn: vi.fn(),
+}));
+
 vi.mock('@/utils/dialog', () => ({
   showDatePickerDialog: vi.fn(),
   showItemDetailModal: vi.fn(),
@@ -60,10 +65,14 @@ vi.mock('@/parser/priorityParser', () => ({
 }));
 
 vi.mock('@/utils/eventBus', () => ({
-  eventBus: { emit: vi.fn(), on: vi.fn() },
+  eventBus: { emit: mockEventBusEmit, on: mockEventBusOn },
   Events: {
     REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   },
+  createFullRefreshRequest: vi.fn((reason: string, payload?: Record<string, unknown>) => (
+    payload === undefined ? { type: 'full', reason } : { type: 'full', reason, payload }
+  )),
+  submitRefreshRequest: vi.fn((request: unknown) => mockEventBusEmit('refresh:request-submitted', request)),
 }));
 
 vi.mock('@/utils/protyleWriterDom', () => ({
