@@ -89,6 +89,8 @@
     "searchPlaceholder": "Search",
     "searchNoResultsTitle": "No matches found",
     "searchNoResultsDesc": "Try a different keyword",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
     "addWidget": "Add Widget",
     "habitDetailEmptyTitle": "Select a habit from the left",
     "habitDetailEmptyDesc": "Pick a habit to view its calendar, stats, and check-in log here",

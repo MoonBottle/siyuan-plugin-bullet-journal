@@ -67,7 +67,12 @@
       <button
         class="workbench-sidebar__header-toggle"
         :data-testid="collapsed ? 'workbench-sidebar-expand' : 'workbench-sidebar-collapse'"
+        :aria-label="collapsed ? t('workbench').expandSidebar : t('workbench').collapseSidebar"
         type="button"
+        @mouseenter="handleHeaderToggleMouseEnter"
+        @mouseleave="handleHeaderToggleMouseLeave"
+        @focus="handleHeaderToggleMouseEnter"
+        @blur="handleHeaderToggleMouseLeave"
         @click="emit('toggle-sidebar')"
       >
         <svg><use :xlink:href="collapsed ? '#iconRight' : '#iconLeft'"></use></svg>
@@ -420,6 +425,22 @@ function handleEntryMouseLeave() {
   hideIconTooltip();
 }
 
+function handleHeaderToggleMouseEnter(event: MouseEvent | FocusEvent) {
+  const target = event.currentTarget;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  showIconTooltip(
+    target,
+    props.collapsed ? t('workbench').expandSidebar : t('workbench').collapseSidebar,
+  );
+}
+
+function handleHeaderToggleMouseLeave() {
+  hideIconTooltip();
+}
+
 watch(searchQuery, () => {
   if (!normalizedSearchQuery.value) {
     closeSearch();
@@ -729,6 +750,13 @@ watch(searchQuery, () => {
   fill: currentColor;
 }
 
+.workbench-sidebar--collapsed .workbench-sidebar__header-toggle {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: 8px;
+}
+
 .workbench-sidebar__create-trigger-icon {
   display: inline-flex;
   align-items: center;
@@ -773,7 +801,8 @@ watch(searchQuery, () => {
 
 .workbench-sidebar--collapsed .workbench-sidebar__entry {
   justify-content: center;
-  padding: 10px;
+  padding: 8px;
+  aspect-ratio: 1;
 }
 
 .workbench-sidebar__entry-drag {
