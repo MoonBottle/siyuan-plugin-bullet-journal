@@ -10,10 +10,12 @@ import {
   broadcastSettingsChanged,
   broadcastPluginUnloading,
   RefreshReasons,
+  createWsMainFullRefreshReason,
   createDirectedRefreshRequest,
   createFullRefreshRequest,
   createMissingRootIdsRefreshReason,
   createWsMainDirectedRefreshReason,
+  isWsMainFullRefreshCommand,
   type RefreshRequestPayload,
 } from "@/utils/eventBus";
 import { createApp } from "vue";
@@ -1897,18 +1899,14 @@ export default class TaskAssistantPlugin extends Plugin {
     }
 
     // 全量刷新命令
-    const fullRefreshCmds = [
-      "txerr",
-      "refreshdoc",
-      "createdailynote",
-      "moveDoc",
-    ];
-    if (fullRefreshCmds.includes(data.cmd)) {
+    if (isWsMainFullRefreshCommand(data.cmd)) {
       console.log(
         "[Task Assistant] onWsMain -> full refresh branch for cmd:",
         data.cmd,
       );
-      void this.requestRefresh(createFullRefreshRequest(data.cmd));
+      void this.requestRefresh(
+        createFullRefreshRequest(createWsMainFullRefreshReason(data.cmd)),
+      );
       return;
     }
 

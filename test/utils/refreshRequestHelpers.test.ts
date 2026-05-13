@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   RefreshReasons,
+  WS_MAIN_FULL_REFRESH_COMMANDS,
   createDirectedRefreshRequest,
   createFullRefreshRequest,
   createMissingRootIdsRefreshReason,
   createSettingsOnlyRefreshRequest,
+  createWsMainFullRefreshReason,
   createWsMainDirectedRefreshReason,
   eventBus,
   Events,
+  isWsMainFullRefreshCommand,
   submitRefreshRequest,
 } from '@/utils/eventBus';
 
@@ -69,5 +72,14 @@ describe('refresh request helpers', () => {
     expect(createMissingRootIdsRefreshReason()).toBe('ws-main:missing-rootIDs');
     expect(createWsMainDirectedRefreshReason('savedoc')).toBe('savedoc');
     expect(createWsMainDirectedRefreshReason()).toBe('ws-main-directed');
+    expect(WS_MAIN_FULL_REFRESH_COMMANDS).toEqual([
+      'txerr',
+      'refreshdoc',
+      'createdailynote',
+      'moveDoc',
+    ]);
+    expect(isWsMainFullRefreshCommand('moveDoc')).toBe(true);
+    expect(isWsMainFullRefreshCommand('savedoc')).toBe(false);
+    expect(createWsMainFullRefreshReason('moveDoc')).toBe('moveDoc');
   });
 });

@@ -69,6 +69,16 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
     );
   });
 
+  it('delegates ws-main full refresh command matching and reason creation to helpers', () => {
+    const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+
+    expect(indexSource).toMatch(/if \(isWsMainFullRefreshCommand\(data\.cmd\)\)/);
+    expect(indexSource).toMatch(
+      /void this\.requestRefresh\([\s\S]*createFullRefreshRequest\(createWsMainFullRefreshReason\(data\.cmd\)\)[\s\S]*\);/s,
+    );
+    expect(indexSource).not.toMatch(/const fullRefreshCmds = \[/);
+  });
+
   it('merges habitCheckInTimePrecision when loading settings from disk', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 

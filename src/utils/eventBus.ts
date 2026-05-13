@@ -73,6 +73,23 @@ export const RefreshReasons = {
   POMODORO_STORE_SAVE_RECORD: 'pomodoro-store:save-record',
 } as const;
 
+export const WS_MAIN_FULL_REFRESH_COMMANDS = [
+  'txerr',
+  'refreshdoc',
+  'createdailynote',
+  'moveDoc',
+] as const;
+
+export function isWsMainFullRefreshCommand(cmd?: string): cmd is typeof WS_MAIN_FULL_REFRESH_COMMANDS[number] {
+  return typeof cmd === 'string' && WS_MAIN_FULL_REFRESH_COMMANDS.includes(
+    cmd as typeof WS_MAIN_FULL_REFRESH_COMMANDS[number],
+  );
+}
+
+export function createWsMainFullRefreshReason(cmd: typeof WS_MAIN_FULL_REFRESH_COMMANDS[number]): string {
+  return cmd;
+}
+
 export function createMissingRootIdsRefreshReason(cmd?: string): string {
   return `${cmd || 'ws-main'}:missing-rootIDs`;
 }
