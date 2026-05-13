@@ -43,6 +43,41 @@ describe('projectStore refresh flow', () => {
     expect(store.projects.map(project => project.id)).toEqual(['new-doc']);
   });
 
+  it('commits first-load projects in batches instead of per-item pushes', async () => {
+    const store = useProjectStore();
+    let releaseParse!: () => void;
+    const parseDone = new Promise<void>((resolve) => {
+      releaseParse = resolve;
+    });
+
+    vi.mocked(MarkdownParser).mockImplementation(function () {
+      return {
+        parseAllProjectsWithCallback: vi.fn(async (_plugin, onProjectReady) => {
+          for (let index = 1; index <= 60; index += 1) {
+            onProjectReady({
+              id: `doc-${index}`,
+              name: `Project ${index}`,
+              path: `/docs/${index}`,
+              tasks: [],
+              habits: [],
+            });
+          }
+          await parseDone;
+        }),
+      };
+    } as any);
+
+    const loadPromise = store.loadProjects({} as any, 'full', []);
+
+    expect(store.loading).toBe(true);
+    expect(store.projects).toHaveLength(50);
+
+    releaseParse();
+    await loadPromise;
+
+    expect(store.projects).toHaveLength(60);
+  });
+
   it('removes projects when directed refresh no longer returns a document', async () => {
     const store = useProjectStore();
     store.projects = [

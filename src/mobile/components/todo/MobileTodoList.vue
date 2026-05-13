@@ -19,7 +19,7 @@
       </div>
     </div>
     <div class="todo-content">
-      <SyLoading v-if="loading" :text="t('common').loading" />
+      <SyLoading v-if="showInitialLoading" :text="t('common').loading" />
       
       <!-- Empty states -->
       <div v-else-if="hasActiveFilters && filteredItems.length === 0" class="empty-guide">
@@ -345,6 +345,7 @@ const handleContainerTouchEnd = async () => {
 const projectStore = useProjectStore();
 const loading = computed(() => projectStore.loading);
 const hasAnyItems = computed(() => projectStore.getDisplayItems('').length > 0);
+const showInitialLoading = computed(() => loading.value && !hasAnyItems.value);
 
 // Long press handling
 let pressTimer: ReturnType<typeof setTimeout> | null = null;

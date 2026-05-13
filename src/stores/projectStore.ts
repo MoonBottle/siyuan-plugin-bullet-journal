@@ -250,6 +250,7 @@ import dayjs from '@/utils/dayjs';
 import { writeMcpCache } from '@/mcp/mcpCacheWriter';
 
 let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null;
+const INITIAL_LOAD_PROJECT_BATCH_SIZE = 25;
 function debouncedWriteMcpCache(
   projects: Project[],
   items: Item[],
@@ -783,6 +784,11 @@ export const useProjectStore = defineStore('project', {
       this.projects = nextProjects;
     },
 
+    appendProjects(nextProjects: Project[]) {
+      if (nextProjects.length === 0) return;
+      this.projects = [...this.projects, ...nextProjects];
+    },
+
     removeProjectsByIds(projectIds: string[]) {
       if (projectIds.length === 0) return;
       const idSet = new Set(projectIds);
@@ -823,14 +829,22 @@ export const useProjectStore = defineStore('project', {
       
       try {
         const parser = new MarkdownParser(enabledDirs, scanMode);
+        let pendingProjects: Project[] = [];
 
         await parser.parseAllProjectsWithCallback(_plugin, (project) => {
           // 全扫描模式下，需要根据路径匹配确定分组
           if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
             project.groupId = matchGroupId(project.path, enabledDirs);
           }
-          this.projects.push(project);
+          pendingProjects.push(project);
+
+          if (pendingProjects.length >= INITIAL_LOAD_PROJECT_BATCH_SIZE) {
+            this.appendProjects(pendingProjects);
+            pendingProjects = [];
+          }
         });
+
+        this.appendProjects(pendingProjects);
 
         this.currentDate = dayjs().format('YYYY-MM-DD');
         console.log('[Task Assistant] Total projects loaded:', this.projects.length);

@@ -257,6 +257,21 @@ describe('TodoSidebarList', () => {
     mounted.unmount();
   });
 
+  it('keeps rendered items visible while loading when partial results already exist', async () => {
+    const mounted = mountList({
+      items: [pendingItem],
+      hasAnyItemsRaw: true,
+      loading: true,
+    });
+
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="todo-loading-stub"]')).toBeNull();
+    expect(mounted.container.textContent).toContain('处理优先级');
+
+    mounted.unmount();
+  });
+
   it('emits drag-start payload for embedded cards when drag support is enabled', async () => {
     const onItemDragStart = vi.fn();
     const mounted = mountList({

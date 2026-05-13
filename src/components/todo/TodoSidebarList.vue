@@ -4,7 +4,7 @@
     :class="{ 'todo-sidebar--embedded': displayMode === 'embedded' }"
   >
     <div class="todo-content">
-      <SyLoading v-if="loading" :text="t('common').loading" />
+      <SyLoading v-if="showInitialLoading" :text="t('common').loading" />
 
       <!-- 空状态：有筛选条件但无结果 -->
       <div v-else-if="showPanelEmptyState" class="empty-guide">
@@ -851,6 +851,9 @@ const isProcessing = ref(false);
 const currentDate = computed(() => projectStore.currentDate);
 
 const loading = computed(() => props.loading ?? projectStore.loading);
+const showInitialLoading = computed(() => {
+  return loading.value && !hasAnyItemsRaw.value && visibleItemCount.value === 0;
+});
 
 // 折叠状态管理
 const collapsedSections = ref({
