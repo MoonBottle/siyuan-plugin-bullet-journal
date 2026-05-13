@@ -6,7 +6,6 @@ import { init, destroy } from "@/main";
 import {
   eventBus,
   Events,
-  broadcastDataRefresh,
   broadcastDataRefreshed,
   broadcastSettingsChanged,
   broadcastPluginUnloading,
@@ -168,7 +167,6 @@ export default class TaskAssistantPlugin extends Plugin {
 
   private restorePomodoroTimeout: ReturnType<typeof setTimeout> | null = null;
   private refreshCoordinator: ReturnType<typeof createRefreshCoordinator> | null = null;
-  private suppressLegacyDataRefreshHandling = 0;
   private readonly cleanupManager = new CleanupManager();
   private hasCompletedOnload = false;
 
@@ -901,15 +899,15 @@ export default class TaskAssistantPlugin extends Plugin {
     return this.refreshCoordinator?.request(request);
   }
 
-  private emitLegacyRefreshSignals(payload?: Record<string, unknown>) {
+  private emitRefreshSignals(request: RefreshRequestPayload) {
+    const payload = request.payload;
     if (payload && Object.keys(payload).length > 0) {
       eventBus.emit(Events.SETTINGS_CHANGED, payload);
       broadcastSettingsChanged(payload);
     }
-    this.suppressLegacyDataRefreshHandling += 1;
-    eventBus.emit(Events.DATA_REFRESH, payload);
-    this.suppressLegacyDataRefreshHandling -= 1;
-    broadcastDataRefresh(payload);
+    if (request.type !== "settings-only") {
+      broadcastDataRefreshed();
+    }
   }
 
   public async requestDataRefresh(request: RefreshRequestPayload) {
@@ -918,10 +916,7 @@ export default class TaskAssistantPlugin extends Plugin {
       request,
     });
     await this.requestRefreshNow(request);
-    this.emitLegacyRefreshSignals(request.payload);
-    if (request.type !== "settings-only") {
-      broadcastDataRefreshed();
-    }
+    this.emitRefreshSignals(request);
   }
 
   private createLocalMutationRefreshRequest(payload?: {
@@ -1794,17 +1789,6 @@ export default class TaskAssistantPlugin extends Plugin {
         void this.requestDataRefresh(request);
       },
     );
-    this.registerAppEventListener(Events.DATA_REFRESH, (payload?: object) => {
-      if (this.suppressLegacyDataRefreshHandling > 0) {
-        return;
-      }
-      if (payload && Object.keys(payload).length > 0) {
-        void this.requestDataRefresh({
-          type: "settings-only",
-          payload: payload as Record<string, unknown>,
-        });
-      }
-    });
     this.registerAppEventListener(Events.DATA_REFRESHED, () => {
       if (this.isMobile) {
         const pinia = getSharedPinia();

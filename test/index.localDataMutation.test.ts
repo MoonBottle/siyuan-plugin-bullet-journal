@@ -15,12 +15,13 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /public async requestDataRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.requestRefreshNow\(request\);[\s\S]*this\.emitLegacyRefreshSignals\(request\.payload\);[\s\S]*\}/s,
+      /public async requestDataRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.requestRefreshNow\(request\);[\s\S]*this\.emitRefreshSignals\(request\);[\s\S]*\}/s,
     );
     expect(indexSource).not.toContain('private refreshTimeout:');
     expect(indexSource).not.toContain('private scheduledRefreshRequest:');
     expect(indexSource).not.toContain('private scheduledRefreshResolvers:');
     expect(indexSource).not.toContain('private mergeRefreshRequest(');
+    expect(indexSource).not.toContain('private suppressLegacyDataRefreshHandling = 0;');
   });
 
   it('runs reminder scheduling only after DATA_REFRESHED', () => {
@@ -35,6 +36,14 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
     expect(indexSource).not.toMatch(
       /private scheduleRefresh\(\)\s*\{[\s\S]*reminderService\.scheduleRebuild\(\);[\s\S]*\}/s,
     );
+  });
+
+  it('does not register the retired DATA_REFRESH compatibility listener', () => {
+    const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+
+    expect(indexSource).not.toMatch(/this\.registerAppEventListener\(\s*Events\.DATA_REFRESH\b/);
+    expect(indexSource).not.toContain('broadcastDataRefresh(');
+    expect(indexSource).not.toContain('emitLegacyRefreshSignals');
   });
 
   it('merges habitCheckInTimePrecision when loading settings from disk', () => {

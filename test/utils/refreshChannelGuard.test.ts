@@ -44,7 +44,7 @@ describe('createRefreshChannelGuard', () => {
       viewName: 'DesktopTodoDock',
     });
 
-    fakeChannel.onmessage?.({ data: { type: 'DATA_REFRESH' } });
+    fakeChannel.onmessage?.({ data: { type: 'SETTINGS_CHANGED' } });
 
     expect(fakeChannel.close).toHaveBeenCalledTimes(1);
     expect(guard.isDisposed()).toBe(true);
@@ -63,7 +63,7 @@ describe('createRefreshChannelGuard', () => {
       viewName: 'DesktopTodoDock',
     });
 
-    fakeChannel.onmessage?.({ data: { type: 'DATA_REFRESH', scanMode: 'full' } });
+    fakeChannel.onmessage?.({ data: { type: 'SETTINGS_CHANGED', scanMode: 'full' } });
 
     expect(fakeChannel.close).not.toHaveBeenCalled();
     expect(onRefresh).toHaveBeenCalledWith({ scanMode: 'full' });

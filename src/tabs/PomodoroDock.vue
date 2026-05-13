@@ -253,7 +253,7 @@ onMounted(async () => {
       onRefresh: () => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('PomodoroDock', plugin),
-          data: { type: 'DATA_REFRESH' },
+          data: { type: 'DATA_REFRESHED' },
         });
         return handleDataRefresh();
       },

@@ -11,12 +11,10 @@ vi.mock('siyuan', () => ({
 }));
 
 vi.mock('@/utils/eventBus', () => ({
-  broadcastDataRefresh: vi.fn(),
   eventBus: {
     emit: vi.fn(),
   },
   Events: {
-    DATA_REFRESH: 'data:refresh',
     SETTINGS_CHANGED: 'settings:changed',
   },
 }));

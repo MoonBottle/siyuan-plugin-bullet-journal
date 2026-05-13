@@ -54,7 +54,7 @@ export function createRefreshChannelGuard(options: RefreshChannelGuardOptions) {
       return;
     }
 
-    if (data?.type === 'DATA_REFRESH' || data?.type === 'SETTINGS_CHANGED' || data?.type === 'DATA_REFRESHED') {
+    if (data?.type === 'SETTINGS_CHANGED' || data?.type === 'DATA_REFRESHED') {
       const { type: _type, ...rest } = data;
       options.onRefresh(Object.keys(rest).length > 0 ? rest : undefined);
     }

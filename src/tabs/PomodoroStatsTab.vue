@@ -90,7 +90,7 @@ onMounted(async () => {
       onRefresh: () => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('PomodoroStatsTab', plugin),
-          data: { type: 'DATA_REFRESH' },
+          data: { type: 'DATA_REFRESHED' },
         });
         return handleDataRefresh();
       },
