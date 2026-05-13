@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  RefreshReasons,
   createDirectedRefreshRequest,
   createFullRefreshRequest,
+  createMissingRootIdsRefreshReason,
   createSettingsOnlyRefreshRequest,
   eventBus,
   Events,
@@ -57,5 +59,12 @@ describe('refresh request helpers', () => {
 
     expect(emitSpy).toHaveBeenCalledWith(Events.REFRESH_REQUEST_SUBMITTED, request);
     emitSpy.mockRestore();
+  });
+
+  it('exports canonical refresh reasons and dynamic ws-main fallback reason helper', () => {
+    expect(RefreshReasons.ON_DATA_CHANGED).toBe('onDataChanged');
+    expect(RefreshReasons.SLASH_COMMAND_HABIT_DATA).toBe('slash-command:habit-data');
+    expect(createMissingRootIdsRefreshReason('savedoc')).toBe('savedoc:missing-rootIDs');
+    expect(createMissingRootIdsRefreshReason()).toBe('ws-main:missing-rootIDs');
   });
 });

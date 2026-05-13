@@ -14,6 +14,9 @@ vi.mock('@/utils/eventBus', () => ({
   eventBus: {
     emit: vi.fn(),
   },
+  RefreshReasons: {
+    SETTINGS_DIALOG_SAVE: 'settings-dialog:save',
+  },
   Events: {
     SETTINGS_CHANGED: 'settings:changed',
     REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',

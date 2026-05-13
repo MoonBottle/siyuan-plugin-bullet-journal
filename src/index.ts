@@ -9,8 +9,10 @@ import {
   broadcastDataRefreshed,
   broadcastSettingsChanged,
   broadcastPluginUnloading,
+  RefreshReasons,
   createDirectedRefreshRequest,
   createFullRefreshRequest,
+  createMissingRootIdsRefreshReason,
   type RefreshRequestPayload,
 } from "@/utils/eventBus";
 import { createApp } from "vue";
@@ -536,7 +538,9 @@ export default class TaskAssistantPlugin extends Plugin {
    * 数据变化回调 - 思源会在数据索引完成后调用
    */
   onDataChanged() {
-    void this.processRefreshRequest(createFullRefreshRequest("onDataChanged"));
+    void this.processRefreshRequest(
+      createFullRefreshRequest(RefreshReasons.ON_DATA_CHANGED),
+    );
   }
 
   onunload() {
@@ -926,17 +930,21 @@ export default class TaskAssistantPlugin extends Plugin {
   }): RefreshRequestPayload {
     const blockId = payload?.blockId;
     if (!blockId) {
-      return createFullRefreshRequest("local-mutation-missing-block-id");
+      return createFullRefreshRequest(
+        RefreshReasons.LOCAL_MUTATION_MISSING_BLOCK_ID,
+      );
     }
 
     const docId = this.getProjectStore()?.getItemByBlockId(blockId)?.docId;
     if (docId) {
       return createDirectedRefreshRequest([docId], {
-        reason: "local-mutation",
+        reason: RefreshReasons.LOCAL_MUTATION,
       });
     }
 
-    return createFullRefreshRequest("local-mutation-unresolved-doc");
+    return createFullRefreshRequest(
+      RefreshReasons.LOCAL_MUTATION_UNRESOLVED_DOC,
+    );
   }
 
   private initRefreshCoordinator() {
@@ -1048,7 +1056,7 @@ export default class TaskAssistantPlugin extends Plugin {
           console.log("[Task Assistant] Requesting refresh after setting project directories");
           void this.processRefreshRequest(
             createFullRefreshRequest(
-              "index:set-project-directories",
+              RefreshReasons.INDEX_SET_PROJECT_DIRECTORIES,
               this.getSettings() as Record<string, unknown>,
             ),
           );
@@ -1877,7 +1885,9 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh",
       );
       this.handleDocRemove(data);
-      void this.processRefreshRequest(createFullRefreshRequest("removeDoc"));
+      void this.processRefreshRequest(
+        createFullRefreshRequest(RefreshReasons.REMOVE_DOC),
+      );
       return;
     }
 
@@ -2266,7 +2276,7 @@ export default class TaskAssistantPlugin extends Plugin {
     if (success) {
       console.log("[Task Assistant] Next occurrence created successfully");
       void this.processRefreshRequest(
-        createFullRefreshRequest("index:create-next-occurrence"),
+        createFullRefreshRequest(RefreshReasons.INDEX_CREATE_NEXT_OCCURRENCE),
       );
     } else {
       console.log("[Task Assistant] Failed to create next occurrence");
@@ -2335,7 +2345,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs",
       );
       void this.processRefreshRequest(
-        createFullRefreshRequest(`${data?.cmd || "ws-main"}:missing-rootIDs`),
+        createFullRefreshRequest(createMissingRootIdsRefreshReason(data?.cmd)),
       );
       return;
     }

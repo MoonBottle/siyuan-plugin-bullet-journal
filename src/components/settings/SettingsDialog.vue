@@ -109,6 +109,7 @@ import { showMessage } from 'siyuan';
 import {
   eventBus,
   Events,
+  RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
 } from '@/utils/eventBus';
@@ -359,7 +360,7 @@ async function handleSave() {
     });
     submitRefreshRequest(
       createFullRefreshRequest(
-        'settings-dialog:save',
+        RefreshReasons.SETTINGS_DIALOG_SAVE,
         settings as Record<string, unknown>,
       ),
     );

@@ -66,6 +66,10 @@ vi.mock('@/parser/priorityParser', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { emit: mockEventBusEmit, on: mockEventBusOn },
+  RefreshReasons: {
+    SLASH_COMMAND_HABIT_DATA: 'slash-command:habit-data',
+    SLASH_COMMAND_SET_PROJECT_DIR: 'slash-command:set-project-dir',
+  },
   Events: {
     REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   },

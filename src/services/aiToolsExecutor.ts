@@ -19,7 +19,11 @@ import { SkillService } from './skillService';
 import * as siyuanAPI from '@/api';
 import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { createFullRefreshRequest, submitRefreshRequest } from '@/utils/eventBus';
+import {
+  RefreshReasons,
+  createFullRefreshRequest,
+  submitRefreshRequest,
+} from '@/utils/eventBus';
 
 /**
  * 筛选事项参数
@@ -629,7 +633,7 @@ async function executeCreateProject(
     settingsStore.directories.push(newDir);
     settingsStore.saveToPlugin();
 
-    submitRefreshRequest(createFullRefreshRequest('ai-tools:create-project-doc'));
+    submitRefreshRequest(createFullRefreshRequest(RefreshReasons.AI_TOOLS_CREATE_PROJECT_DOC));
 
     return {
       success: true,

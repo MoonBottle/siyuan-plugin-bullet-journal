@@ -29,6 +29,7 @@ import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, getBlockKramdown, renameDocByID, updateBlock } from '@/api';
 import {
+  RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
 } from '@/utils/eventBus';
@@ -288,7 +289,7 @@ function findHabitAndRecordByRecordBlockId(blockId?: string): { habit: Habit; re
 }
 
 function notifyHabitDataRefresh(): void {
-  submitRefreshRequest(createFullRefreshRequest('slash-command:habit-data'));
+  submitRefreshRequest(createFullRefreshRequest(RefreshReasons.SLASH_COMMAND_HABIT_DATA));
 }
 
 /**
@@ -588,7 +589,7 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
 
     submitRefreshRequest(
       createFullRefreshRequest(
-        'slash-command:set-project-dir',
+        RefreshReasons.SLASH_COMMAND_SET_PROJECT_DIR,
         settingsStore.$state as Record<string, unknown>,
       ),
     );

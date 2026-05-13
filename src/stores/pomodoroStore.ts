@@ -10,6 +10,7 @@ import { showPomodoroCompleteNotification } from '@/utils/notification';
 import {
   eventBus,
   Events,
+  RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
 } from '@/utils/eventBus';
@@ -654,7 +655,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         showMessage(t('pomodoro').completeMessage.replace('{content}', pending.itemContent ?? '').replace('{minutes}', String(pending.durationMinutes)));
 
-        submitRefreshRequest(createFullRefreshRequest('pomodoro-store:save-record'));
+        submitRefreshRequest(createFullRefreshRequest(RefreshReasons.POMODORO_STORE_SAVE_RECORD));
         return true;
       } catch (error) {
         console.error('[Pomodoro] 保存记录失败:', error);
