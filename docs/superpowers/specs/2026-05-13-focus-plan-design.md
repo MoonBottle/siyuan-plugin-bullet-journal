@@ -1,121 +1,121 @@
-# Focus Plan Design
+# 专注预算设计
 
-Date: 2026-05-13
-Status: Draft approved for implementation planning
-Scope: Pomodoro focus budget at item level, slash command entry, runtime parsing, and V1 review model
+日期：2026-05-13  
+状态：设计已确认，可进入实现计划  
+范围：事项级专注预算、斜杠命令入口、运行时解析，以及 V1 复盘模型
 
-## 1. Background
+## 1. 背景
 
-The project already has a fairly complete Pomodoro execution layer:
+当前项目的番茄钟执行层已经比较完整，已具备：
 
-- start focus from item context
-- countdown and stopwatch modes
-- pause, resume, cancel, complete
-- break flow and auto-extend
-- persistence and recovery
-- statistics and historical records
+- 从事项上下文开始专注
+- 倒计时与正计时
+- 暂停、继续、取消、完成
+- 休息流程与自动延长
+- 状态持久化与恢复
+- 统计与历史记录
 
-What is missing is the planning half of Pomodoro workflow. The current system can record how much focus happened, but it cannot express how much focus was expected before execution. That makes it hard to support a GTD-style loop of:
+当前缺少的是番茄工作法中的“计划”部分。系统可以记录已经发生了多少专注，但还不能在执行前表达“原本预计要投入多少专注”。这会导致 GTD 风格的闭环缺失：
 
-1. estimate work
-2. execute focus
-3. compare estimate vs actual
-4. adjust planning quality over time
+1. 先估算工作量
+2. 再执行专注
+3. 对比预计与实际
+4. 持续修正计划质量
 
-This design adds item-level focus planning while preserving the plugin's core principle: document markers remain the source of truth.
+本设计在不改变插件“文档标记即数据源”原则的前提下，为事项补充专注预算能力。
 
-## 2. Goals
+## 2. 目标
 
-V1 goals:
+V1 目标：
 
-1. Allow each item to store an estimated focus budget in document markup.
-2. Support two mutually exclusive estimate modes:
-   - estimated pomodoros
-   - estimated focus duration
-3. Provide a slash-command-driven editor for this estimate.
-4. Surface estimate vs actual in the existing Pomodoro and item workflows.
-5. Add a minimal daily review summary based on current item estimates and recorded Pomodoro time.
+1. 允许每个事项在文档标记中存储一个预计专注预算。
+2. 支持两种互斥的预计方式：
+   - 预计番茄数
+   - 预计专注时长
+3. 提供基于斜杠命令的预算编辑入口。
+4. 在现有番茄与事项流程中展示“预计 vs 实际”。
+5. 基于事项预算与番茄记录，提供一个最小可用的每日复盘摘要。
 
-## 3. Non-Goals
+## 3. 非目标
 
-V1 explicitly does not include:
+V1 明确不包含：
 
-- a separate persisted "today commitment list"
-- planned vs unplanned Pomodoro classification
-- interruption taxonomy
-- long-break rhythm logic after every four Pomodoros
-- weekly review workflow
-- full estimate display rollout to every calendar, gantt, and workbench surface
-- configurable estimate conversion ratio for one Pomodoro
+- 单独持久化“今日承诺清单”
+- 计划内 / 计划外番茄分类
+- 中断分类体系
+- 每四个番茄后的长休息节奏逻辑
+- 周复盘流程
+- 在日历、甘特、工作台等所有界面全量铺开预计信息
+- 自定义“1 个番茄等于多少分钟”的预计换算比例
 
-## 4. Product Decisions
+## 4. 产品决策
 
-### 4.1 Estimate granularity
+### 4.1 预计粒度
 
-Estimate is stored at item level.
+预计信息存储在事项层。
 
-Reasoning:
+原因：
 
-- Pomodoro execution already binds most naturally to items.
-- Items are the smallest actionable unit in the existing project/task/item model.
-- Task-level estimate aggregation can be derived later from item-level data.
+- 当前番茄执行天然是围绕事项展开的。
+- 事项是现有“项目 / 任务 / 事项”模型里最小的可执行单元。
+- 任务层的预计汇总可以后续从事项层派生，不必先做双层计划。
 
-### 4.2 One estimate per item
+### 4.2 每个事项只能有一个预计
 
-Each item may have exactly one focus estimate at a time.
+每个事项在任意时刻只能有一个专注预算。
 
-Allowed modes:
+允许的模式：
 
-- Pomodoro count
-- Focus duration
+- 番茄数
+- 专注时长
 
-Disallowed:
+不允许：
 
-- storing both estimate modes on the same item
+- 同一事项同时保存两种预计模式
 
-### 4.3 Document markers as source of truth
+### 4.3 文档标记仍是唯一真源
 
-Estimate is stored inline on the item line, not in child blocks and not in block attributes.
+预计信息以内联标记的形式写在事项主行，不写入子块，也不写入块属性。
 
-Reasoning:
+原因：
 
-- estimate is planning metadata that should remain visible beside the item text
-- users should be able to hand-edit it
-- it matches existing marker-driven plugin conventions
+- 预计属于计划元信息，应该和事项文本一起可见
+- 用户应当能手写和直接修改
+- 这与现有插件依赖文档标记驱动解析的模式一致
 
-### 4.4 Fixed normalization baseline
+### 4.4 固定归一化基准
 
-For comparison and summary calculations:
+在比较与汇总计算中，统一使用：
 
-- `1 Pomodoro = 25 minutes`
+- `1 个番茄 = 25 分钟`
 
-This baseline is fixed for estimate normalization and does not follow the user's current default focus duration setting.
+这个基准固定不变，不跟随用户当前默认专注时长设置变化。
 
-Reasoning:
+原因：
 
-- historical estimates must remain stable
-- otherwise changing default focus duration would silently change the meaning of old plans
+- 历史预计必须保持语义稳定
+- 否则用户修改默认专注时长后，历史预算的含义会被静默改写
 
-## 5. Markup Design
+## 5. 文档标记设计
 
-### 5.1 Canonical write-back forms
+### 5.1 规范写回格式
 
-The plugin writes back one of these canonical forms:
+插件最终写回的规范格式只有以下几种：
 
-- Pomodoro count: `🍅x3`
-- Duration under one hour: `⏳45m`
-- Duration with hours: `⏳1h10m`
+- 番茄数：`🍅x3`
+- 不足 1 小时的时长：`⏳45m`
+- 含小时的时长：`⏳1h10m`
 
-Examples:
+示例：
 
 ```text
-- Design coupon verification flow @2026-05-14 ⏳1h10m
-- Fix reminder duplicate trigger issue @2026-05-14 🍅x3
+- 设计优惠券核销流程 @2026-05-14 ⏳1h10m
+- 修复提醒重复触发问题 @2026-05-14 🍅x3
 ```
 
-### 5.2 Accepted input forms
+### 5.2 兼容输入格式
 
-Parser should accept these equivalent user-authored forms:
+解析器应兼容以下用户手写形式：
 
 - `🍅x3`
 - `🍅3`
@@ -124,29 +124,29 @@ Parser should accept these equivalent user-authored forms:
 - `⏳1h`
 - `⏳1h10m`
 
-Write-back must normalize them to canonical form:
+写回时统一规范化：
 
 - `🍅3 -> 🍅x3`
 - `⏳70m -> ⏳1h10m`
 
-### 5.3 Conflict handling
+### 5.3 冲突处理
 
-If a single item line contains both estimate styles:
+如果同一事项行同时出现两种预计：
 
 ```text
-- Example item @2026-05-14 ⏳1h 🍅x3
+- 示例事项 @2026-05-14 ⏳1h 🍅x3
 ```
 
-then:
+则：
 
-1. parsing should not fail the item
-2. the item should be marked as having estimate conflict
-3. UI should prompt the user to resolve it when opening the estimate editor
-4. saving from the estimate editor should keep only the selected mode and remove the other marker
+1. 解析不能导致事项失效
+2. 该事项应标记为“预计冲突”
+3. 打开预计编辑器时，UI 应提示用户修正
+4. 用户保存后，只保留当前选中的那一种，另一种标记被移除
 
-## 6. Runtime Model
+## 6. 运行时模型
 
-V1 adds an item-level runtime structure conceptually like:
+V1 在事项层新增一个运行时概念结构：
 
 ```ts
 interface FocusPlan {
@@ -158,277 +158,278 @@ interface FocusPlan {
 }
 ```
 
-Behavior:
+语义：
 
-- `type='pomodoro'` with `rawValue=3` means `normalizedMinutes=75`
-- `type='duration'` with `rawValue=70` means `normalizedMinutes=70`
-- `sourceText` preserves the parsed inline marker for debugging and UI display derivation
+- `type='pomodoro'` 且 `rawValue=3`，表示 `normalizedMinutes=75`
+- `type='duration'` 且 `rawValue=70`，表示 `normalizedMinutes=70`
+- `sourceText` 保留原始标记文本，便于调试和 UI 派生展示
 
-This structure is runtime/parser level data. It does not need to be persisted separately from document markup.
+这个结构只存在于运行时 / 解析结果中，不需要脱离文档标记单独持久化。
 
-## 7. Slash Command Design
+## 7. 斜杠命令设计
 
-### 7.1 New built-in commands
+### 7.1 新增内置命令
 
-Add a new built-in slash command action:
+新增一个内置斜杠动作：
 
 - `/focusplan`
 - `/yj`
 
-Meaning:
+含义：
 
-- set or clear estimated focus budget for the current item
+- 为当前事项设置或清除预计专注预算
 
-### 7.2 Trigger behavior
+### 7.2 触发行为
 
-The command only applies to valid item blocks.
+该命令仅对有效事项块生效。
 
-Flow:
+流程：
 
-1. user triggers `/focusplan` or `/yj`
-2. plugin resolves current block to an item
-3. if current block is not a valid item:
-   - no editor opens
-   - show a message like "当前块不是有效事项"
-4. if valid:
-   - open a lightweight estimate dialog
-   - prefill from existing parsed estimate if present
+1. 用户触发 `/focusplan` 或 `/yj`
+2. 插件解析当前块是否为事项
+3. 如果当前块不是有效事项：
+   - 不打开编辑器
+   - 直接提示“当前块不是有效事项”
+4. 如果是有效事项：
+   - 打开轻量预算弹框
+   - 若该事项已有预计，则自动回填
 
-This follows the same project pattern used by `/focus`, `/date`, `/setReminder`, and `/setPriority`.
+这一模式应与现有 `/focus`、`/date`、`/setReminder`、`/setPriority` 的交互风格保持一致。
 
-### 7.3 Estimate dialog
+### 7.3 预计编辑弹框
 
-Dialog layout:
+弹框结构：
 
-1. top selector:
+1. 顶部模式选择：
    - `预计时长`
    - `预计番茄`
-2. duration mode:
-   - hours input
-   - minutes input
-3. Pomodoro mode:
-   - single numeric input
-4. actions:
-   - confirm
-   - cancel
-   - clear estimate (only shown when the item already has an estimate)
+2. 时长模式：
+   - 小时输入
+   - 分钟输入
+3. 番茄模式：
+   - 单个数字输入
+4. 底部操作：
+   - 确定
+   - 取消
+   - 清除预计（仅当当前事项已有预计时显示）
 
-### 7.4 Dialog rules
+### 7.4 弹框规则
 
-Duration mode:
+时长模式：
 
-- total duration must be greater than zero
-- minutes should be normalized into a valid total
-- write-back uses canonical format:
+- 总时长必须大于 0
+- 分钟输入会被归一化为合法总时长
+- 写回采用规范格式：
   - `45m`
   - `1h10m`
 
-Pomodoro mode:
+番茄模式：
 
-- value must be a positive integer
-- write-back uses canonical format `🍅xN`
+- 必须为正整数
+- 写回采用规范格式 `🍅xN`
 
-Clear action:
+清除操作：
 
-- removes both `⏳...` and `🍅x...` markers from the current item line
+- 移除当前事项行上的所有 `⏳...` 与 `🍅x...` 标记
 
-## 8. Write-Back Rules
+## 8. 写回规则
 
-Estimate write-back happens on the current item line.
+预计信息写回当前事项主行。
 
-The update logic must:
+更新逻辑必须：
 
-1. parse the existing line
-2. remove any existing estimate markers from that line
-3. append the newly normalized marker if user confirmed
-4. leave other metadata intact:
-   - dates
-   - reminders
-   - recurring rules
-   - priority markers
-   - status markers
-   - tags and content
+1. 先解析当前行
+2. 移除当前行已有的预计标记
+3. 若用户确认保存，则追加新的规范化标记
+4. 保留其他元信息不变：
+   - 日期
+   - 提醒
+   - 重复规则
+   - 优先级
+   - 状态标记
+   - 标签与正文内容
 
-Result:
+结果应表现为：
 
-- estimate editing behaves like a focused metadata rewrite, not a freeform text replacement
+- 预计编辑是一次“局部元信息重写”
+- 不是自由文本整体替换
 
-## 9. Display Scope for V1
+## 9. V1 显示范围
 
-V1 should display focus estimate in these places only.
+V1 只在以下 5 个位置展示预计专注信息。
 
-### 9.1 Item detail dialog
+### 9.1 事项详情弹窗
 
-Show:
+显示：
 
-- estimated focus
-- actual focused time
-- variance
+- 预计专注
+- 实际专注
+- 偏差
 
-This is the main dense information surface for review.
+这里是信息最密集、最适合做复盘的主界面。
 
-### 9.2 Todo item card
+### 9.2 待办事项卡片
 
-Light display only:
+只做轻展示：
 
 - `预计 3 🍅`
 - `预计 1h10m`
 
-If actual focus exists, a compact progress form may also be shown:
+若已有实际专注，可补一个紧凑进度形式：
 
 - `50m / 1h10m`
 - `2 / 3 🍅`
 
-### 9.3 Pomodoro start dialog
+### 9.3 番茄开始弹框
 
-When starting focus on an item with an estimate, show:
+当事项已有预计时，开始专注前展示：
 
-- current estimate
-- optionally already accumulated actual focus for that item
+- 当前预计
+- 可选地展示该事项已累计的实际专注
 
-This helps the user understand progress before beginning a new session.
+让用户在开始前知道这轮专注处于该事项整体进度的哪个位置。
 
-### 9.4 Active Pomodoro view
+### 9.4 专注中界面
 
-Show a lightweight actual-vs-estimate progress hint for the current item:
+展示当前事项的轻量“实际 vs 预计”提示：
 
 - `累计 50m / 1h10m`
 - `累计 2 / 3 🍅`
 
-### 9.5 Pomodoro statistics view
+### 9.5 专注统计视图
 
-Add one new summary section dedicated to estimate review:
+在现有统计视图中新增一个“预计复盘”摘要区：
 
-- number of items with estimate today
-- total estimated focus today
-- total actual focus today
-- count of overrun / underrun / unfinished items
+- 今日有预计的事项数
+- 今日预计总专注
+- 今日实际总专注
+- 超支 / 低于预计 / 未完成事项数量
 
-## 10. Review Model
+## 10. 复盘模型
 
-### 10.1 Comparison unit
+### 10.1 比较单位
 
-All estimate vs actual comparison in V1 is done in minutes.
+V1 中所有“预计 vs 实际”的比较统一按分钟计算。
 
-Sources:
+来源：
 
-- estimate:
-  - duration estimate -> direct minutes
-  - Pomodoro estimate -> `count * 25`
-- actual:
-  - sum of recorded Pomodoro actual minutes for the item
+- 预计：
+  - 时长预计 -> 直接转分钟
+  - 番茄预计 -> `数量 * 25`
+- 实际：
+  - 该事项关联的番茄记录实际分钟数总和
 
-### 10.2 Review states
+### 10.2 复盘状态
 
-For an item with estimate, V1 assigns one of these states:
+对于带预计的事项，V1 赋予以下状态之一：
 
-- `not-started`: has estimate, no actual focus yet
-- `in-progress`: has estimate, has actual focus, item not completed
-- `matched`: item completed and actual is close to estimate
-- `overrun`: item completed and actual significantly exceeds estimate
-- `underrun`: item completed and actual significantly below estimate
+- `not-started`：有预计，但还没有任何实际专注
+- `in-progress`：有预计，有实际专注，但事项未完成
+- `matched`：事项已完成，且实际与预计接近
+- `overrun`：事项已完成，且实际明显超过预计
+- `underrun`：事项已完成，且实际明显低于预计
 
-### 10.3 Match threshold
+### 10.3 匹配阈值
 
-Use a fixed threshold:
+使用固定阈值：
 
-- if `abs(actualMinutes - estimatedMinutes) <= 25`, state is `matched`
+- 如果 `abs(actualMinutes - estimatedMinutes) <= 25`，则归类为 `matched`
 
-Reasoning:
+原因：
 
-- one standard Pomodoro is an acceptable planning tolerance band
-- this keeps the model simple and avoids noisy over-classification
+- 一个标准番茄可以视为合理的计划波动区间
+- 这样可以避免系统把轻微偏差过度分类
 
-## 11. Daily Summary Model
+## 11. 每日摘要模型
 
-V1 daily summary is derived, not separately persisted.
+V1 的每日摘要是推导结果，不额外持久化。
 
-Recommended summary values:
+建议输出：
 
-- today's total estimated minutes
-- today's total actual minutes
-- completed estimated items:
-  - matched count
-  - overrun count
-  - underrun count
-- unfinished estimated items for today
+- 今日预计总分钟数
+- 今日实际总分钟数
+- 今日已完成且有预计的事项中：
+  - matched 数量
+  - overrun 数量
+  - underrun 数量
+- 今日仍未完成但已有预计的事项列表
 
-This gives the user a minimal answer to:
+这样可以最小化回答以下问题：
 
-- how much focus was planned today
-- how much focus actually happened
-- which items were underestimated
-- which items remain unfinished
+- 今天原本计划投入多少专注？
+- 实际投入了多少？
+- 哪些事项明显低估？
+- 哪些事项还没做完？
 
-## 12. Parsing and Aggregation Notes
+## 12. 解析与聚合说明
 
-### 12.1 Multi-date items
+### 12.1 多日期事项
 
-The project already has logic for multi-date item representation and deduplication in some views.
+项目当前已经存在多日期事项的视图派生和去重逻辑。
 
-For V1:
+V1 规则：
 
-- focus estimate belongs to the item itself, not to each derived date representation
-- actual focus aggregation should continue following existing item/Pomodoro association rules
-- daily summary should avoid double-counting the same underlying item estimate across duplicated date projections
+- 专注预计属于事项本体，而不是属于每个派生日期副本
+- 实际专注聚合继续沿用现有事项 / 番茄关联规则
+- 每日摘要中必须避免同一底层事项预计被重复累计
 
-### 12.2 Historical Pomodoro records
+### 12.2 历史番茄记录
 
-No Pomodoro record format change is required for V1.
+V1 不要求修改现有番茄记录格式。
 
-Estimate is planning metadata. Actual focus continues to be derived from the existing `🍅` record system.
+预计信息是计划元数据，实际专注仍完全来自现有 `🍅` 记录体系。
 
-## 13. V1 Scope Checklist
+## 13. V1 范围清单
 
-Included:
+包含：
 
-- item-level focus estimate markers
-- slash command entry
-- estimate dialog
-- parser support
-- canonical write-back
-- estimate display in selected UI surfaces
-- estimate vs actual item review
-- minimal daily summary
+- 事项级专注预计标记
+- 斜杠命令入口
+- 预计编辑弹框
+- 解析支持
+- 规范写回
+- 在限定界面展示预计信息
+- 事项级“预计 vs 实际”复盘
+- 最小每日复盘摘要
 
-Excluded:
+不包含：
 
-- today-plan persistence
-- interruption reason capture
-- planned vs unplanned classification
-- long-break rhythm
-- weekly review workflow
-- global UI rollout
+- 今日计划持久化
+- 中断原因记录
+- 计划内 / 计划外分类
+- 长休息节奏
+- 周复盘流程
+- 全量 UI 铺开
 
-## 14. V2 Direction
+## 14. V2 方向
 
-After V1 proves stable, V2 can extend into full workflow support:
+在 V1 稳定后，V2 可继续补全为更完整的工作流：
 
-1. explicit today commitment list
-2. planned vs unplanned Pomodoro distinction
-3. interruption capture and classification
-4. long-break rhythm tracking
-5. weekly review and repeated underestimation analysis
+1. 显式的今日承诺清单
+2. 计划内 / 计划外番茄区分
+3. 中断记录与分类
+4. 长休息节奏跟踪
+5. 周复盘与长期低估分析
 
-These are intentionally deferred so V1 can stay focused on closing the planning gap in the current Pomodoro system.
+这些能力刻意延后，是为了让 V1 先聚焦解决“当前番茄系统没有计划层”的问题。
 
-## 15. Implementation Risks
+## 15. 实现风险
 
-1. inline marker rewrite must avoid damaging other metadata on the same item line
-2. estimate conflict parsing must be tolerant and never break item recognition
-3. multi-date item aggregation must avoid duplicated estimate totals
-4. display scope must stay intentionally narrow in V1 to avoid UI churn across the whole plugin
+1. 行内标记重写必须避免破坏同一行上的其他元信息
+2. 预计冲突解析必须容错，不能导致事项整体识别失败
+3. 多日期事项聚合必须避免预计总量重复计算
+4. V1 显示范围必须保持克制，避免在整个插件引发大面积 UI 扰动
 
-## 16. Recommendation
+## 16. 建议结论
 
-Implement V1 as a focused enhancement that turns the current Pomodoro module from "time recorder" into "plan then execute then review".
+V1 应作为一次聚焦增强，把当前番茄模块从“记录做了多少”升级为“先计划，再执行，再复盘”。
 
-The critical path is:
+关键路径是：
 
-1. item estimate markup
-2. slash command editor
-3. parser/runtime normalization
-4. selected UI display
-5. estimate vs actual review summary
+1. 事项预计标记
+2. 斜杠命令编辑器
+3. 解析与归一化
+4. 限定界面展示
+5. 预计 vs 实际复盘摘要
 
-This is the smallest useful step that materially improves Pomodoro planning quality without expanding into a full scheduling system.
+这是当前阶段最小但有价值的一步，既能补上计划层，又不会把系统直接推成一个重型日程规划器。
