@@ -269,8 +269,9 @@ describe('TodoSidebarList', () => {
 
     await nextTick();
 
-    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    const card = mounted.container.querySelector('.todo-list .ta-card') as HTMLDivElement | null;
     expect(card).not.toBeNull();
+    expect(card?.classList.contains('card')).toBe(false);
     expect(card?.getAttribute('draggable')).toBe('true');
 
     const setData = vi.fn();
@@ -306,8 +307,9 @@ describe('TodoSidebarList', () => {
 
     await nextTick();
 
-    const card = mounted.container.querySelector('.todo-list .card') as HTMLDivElement | null;
+    const card = mounted.container.querySelector('.todo-list .ta-card') as HTMLDivElement | null;
     expect(card).not.toBeNull();
+    expect(card?.classList.contains('card')).toBe(false);
 
     const clickEvent = new MouseEvent('click', {
       bubbles: true,
