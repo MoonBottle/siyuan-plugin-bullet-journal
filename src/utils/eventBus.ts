@@ -77,6 +77,10 @@ export function createMissingRootIdsRefreshReason(cmd?: string): string {
   return `${cmd || 'ws-main'}:missing-rootIDs`;
 }
 
+export function createWsMainDirectedRefreshReason(cmd?: string): string {
+  return cmd || 'ws-main-directed';
+}
+
 export function createSettingsOnlyRefreshRequest(
   payload?: Record<string, unknown>,
 ): RefreshRequestPayload {

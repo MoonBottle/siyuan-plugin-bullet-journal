@@ -3,11 +3,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
-  it('registers LOCAL_DATA_MUTATED and routes it through processRefreshRequest with a local mutation refresh request', () => {
+  it('registers LOCAL_DATA_MUTATED and routes it through requestRefresh with a local mutation refresh request', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.processRefreshRequest\(this\.createLocalMutationRefreshRequest\(payload\)\);/s,
+      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*this\.requestRefresh\(this\.createLocalMutationRefreshRequest\(payload\)\);/s,
     );
   });
 
@@ -50,9 +50,23 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /this\.registerAppEventListener\(\s*Events\.REFRESH_REQUEST_SUBMITTED,[\s\S]*void this\.processRefreshRequest\(request\);/s,
+      /this\.registerAppEventListener\(\s*Events\.REFRESH_REQUEST_SUBMITTED,[\s\S]*void this\.requestRefresh\(request\);/s,
     );
     expect(indexSource).not.toContain('Events.REFRESH_REQUESTED');
+  });
+
+  it('routes local mutation and ws-main refresh branches through requestRefresh helper', () => {
+    const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
+
+    expect(indexSource).toMatch(
+      /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*void this\.requestRefresh\(this\.createLocalMutationRefreshRequest\(payload\)\);/s,
+    );
+    expect(indexSource).toMatch(
+      /private requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\);[\s\S]*\}/s,
+    );
+    expect(indexSource).toMatch(
+      /createDirectedRefreshRequest\(rootIDs,\s*\{[\s\S]*reason: createWsMainDirectedRefreshReason\(data\?\.cmd\),[\s\S]*\}\)/s,
+    );
   });
 
   it('merges habitCheckInTimePrecision when loading settings from disk', () => {

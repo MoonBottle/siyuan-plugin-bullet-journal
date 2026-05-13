@@ -13,6 +13,7 @@ import {
   createDirectedRefreshRequest,
   createFullRefreshRequest,
   createMissingRootIdsRefreshReason,
+  createWsMainDirectedRefreshReason,
   type RefreshRequestPayload,
 } from "@/utils/eventBus";
 import { createApp } from "vue";
@@ -538,7 +539,7 @@ export default class TaskAssistantPlugin extends Plugin {
    * 数据变化回调 - 思源会在数据索引完成后调用
    */
   onDataChanged() {
-    void this.processRefreshRequest(
+    void this.requestRefresh(
       createFullRefreshRequest(RefreshReasons.ON_DATA_CHANGED),
     );
   }
@@ -925,6 +926,10 @@ export default class TaskAssistantPlugin extends Plugin {
     this.emitRefreshCompletionSignals(request);
   }
 
+  private requestRefresh(request: RefreshRequestPayload) {
+    return this.processRefreshRequest(request);
+  }
+
   private createLocalMutationRefreshRequest(payload?: {
     blockId?: string;
   }): RefreshRequestPayload {
@@ -1054,7 +1059,7 @@ export default class TaskAssistantPlugin extends Plugin {
             "info",
           );
           console.log("[Task Assistant] Requesting refresh after setting project directories");
-          void this.processRefreshRequest(
+          void this.requestRefresh(
             createFullRefreshRequest(
               RefreshReasons.INDEX_SET_PROJECT_DIRECTORIES,
               this.getSettings() as Record<string, unknown>,
@@ -1783,13 +1788,13 @@ export default class TaskAssistantPlugin extends Plugin {
     this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, (payload?: {
       blockId?: string;
     }) => {
-      void this.processRefreshRequest(this.createLocalMutationRefreshRequest(payload));
+      void this.requestRefresh(this.createLocalMutationRefreshRequest(payload));
     });
     this.registerAppEventListener(
       Events.REFRESH_REQUEST_SUBMITTED,
       (request?: RefreshRequestPayload) => {
         if (!request) return;
-        void this.processRefreshRequest(request);
+        void this.requestRefresh(request);
       },
     );
     this.registerAppEventListener(Events.DATA_REFRESHED, () => {
@@ -1885,7 +1890,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh",
       );
       this.handleDocRemove(data);
-      void this.processRefreshRequest(
+      void this.requestRefresh(
         createFullRefreshRequest(RefreshReasons.REMOVE_DOC),
       );
       return;
@@ -1903,7 +1908,7 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> full refresh branch for cmd:",
         data.cmd,
       );
-      void this.processRefreshRequest(createFullRefreshRequest(data.cmd));
+      void this.requestRefresh(createFullRefreshRequest(data.cmd));
       return;
     }
 
@@ -2275,7 +2280,7 @@ export default class TaskAssistantPlugin extends Plugin {
 
     if (success) {
       console.log("[Task Assistant] Next occurrence created successfully");
-      void this.processRefreshRequest(
+      void this.requestRefresh(
         createFullRefreshRequest(RefreshReasons.INDEX_CREATE_NEXT_OCCURRENCE),
       );
     } else {
@@ -2334,9 +2339,9 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] ws-main directed refresh for docs:",
         rootIDs,
       );
-      void this.processRefreshRequest(
+      void this.requestRefresh(
         createDirectedRefreshRequest(rootIDs, {
-          reason: data?.cmd || "ws-main-directed",
+          reason: createWsMainDirectedRefreshReason(data?.cmd),
         }),
       );
       return;
@@ -2344,7 +2349,7 @@ export default class TaskAssistantPlugin extends Plugin {
       console.warn(
         "[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs",
       );
-      void this.processRefreshRequest(
+      void this.requestRefresh(
         createFullRefreshRequest(createMissingRootIdsRefreshReason(data?.cmd)),
       );
       return;

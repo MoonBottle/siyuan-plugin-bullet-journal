@@ -5,6 +5,7 @@ import {
   createFullRefreshRequest,
   createMissingRootIdsRefreshReason,
   createSettingsOnlyRefreshRequest,
+  createWsMainDirectedRefreshReason,
   eventBus,
   Events,
   submitRefreshRequest,
@@ -66,5 +67,7 @@ describe('refresh request helpers', () => {
     expect(RefreshReasons.SLASH_COMMAND_HABIT_DATA).toBe('slash-command:habit-data');
     expect(createMissingRootIdsRefreshReason('savedoc')).toBe('savedoc:missing-rootIDs');
     expect(createMissingRootIdsRefreshReason()).toBe('ws-main:missing-rootIDs');
+    expect(createWsMainDirectedRefreshReason('savedoc')).toBe('savedoc');
+    expect(createWsMainDirectedRefreshReason()).toBe('ws-main-directed');
   });
 });
