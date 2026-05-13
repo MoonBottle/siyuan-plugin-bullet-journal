@@ -250,7 +250,8 @@ submitRefreshRequest(createFullRefreshRequest(...))
 用于首次加载：
 
 - 显示 loading
-- 逐项目流式装载
+- 分批流式装载
+- 当前实现按批次提交 `projects`，避免大目录下逐条 `push` 带来的高频响应式更新
 - 完成后 `eventBus.emit(DATA_REFRESHED)`
 - 写 MCP cache
 
@@ -266,6 +267,63 @@ submitRefreshRequest(createFullRefreshRequest(...))
 - 写 MCP cache
 
 这意味着“当前上下文内的数据完成通知”实际由 `projectStore` 发出，而不是由 `index.ts` 发出。
+
+## 6.1 三条刷新路径对照
+
+当前 `projectStore` 里和“数据重建”相关的主要有三条路径：
+
+| 路径 | 入口 | 是否首次加载 | 是否显示全屏 loading | 数据写入方式 |
+| --- | --- | --- | --- | --- |
+| `loadProjects()` | 插件 `onload()` 初始加载 | 是 | 是 | 分批追加写入 |
+| `refreshFull()` | `refresh()` 在 full path 下调用 | 否 | 否 | 完整构建后一次性替换 |
+| `refreshDirtyDocs()` | `refresh()` 在 directed path 下调用 | 否 | 否 | 仅更新脏文档对应项目 |
+
+### `loadProjects()`
+
+特点：
+
+- 只用于首次加载
+- 使用 `loading = true`
+- 现在会按批次把解析结果写入 `projects`
+- 目的是让首批数据更早可见，同时降低大目录下逐项响应式更新的开销
+
+### `refreshFull()`
+
+特点：
+
+- 用于非首次的全量刷新
+- 通过 `refresh()` 进入
+- 使用 `refreshing = true`
+- 不显示首次加载那种全屏 loading
+- 仍然是先完整构建 `nextProjects`，再 `applyProjects(nextProjects)` 一次性替换
+
+这意味着本次优化不会改变非首次全量刷新的替换策略。
+
+### `refreshDirtyDocs()`
+
+特点：
+
+- 用于定向刷新
+- 只重建脏文档对应的数据
+- 避免整个项目列表被全量替换
+
+## 6.2 Loading 与 Refreshing 的区别
+
+这两个状态在当前实现里语义不同：
+
+### `loading`
+
+- 代表首次加载中
+- 主要由 `loadProjects()` 使用
+- Todo 列表 / 移动端列表会根据它决定是否显示首次加载态
+
+### `refreshing`
+
+- 代表后台刷新中
+- 主要由 `refresh()` 使用
+- 不走首次加载的全屏 loading 逻辑
+
+也因此，这次“首次全量刷新分批展示”的优化只影响 `loading` 场景，不影响 `refreshing` 场景。
 
 ## 7. 同上下文与跨上下文分工
 

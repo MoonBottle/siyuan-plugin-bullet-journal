@@ -307,6 +307,60 @@
     </div>
 
     <section class="panel section" style="margin-top:24px;">
+      <h2>加载路径对照</h2>
+      <div class="two-col">
+        <div class="mini">
+          <h3><code>loadProjects()</code></h3>
+          <ul class="list muted">
+            <li>首次加载路径</li>
+            <li>使用 <code>loading = true</code></li>
+            <li>显示首次加载态</li>
+            <li>按批次追加写入 <code>projects</code></li>
+          </ul>
+        </div>
+        <div class="mini">
+          <h3><code>refreshFull()</code></h3>
+          <ul class="list muted">
+            <li>非首次全量刷新路径</li>
+            <li>通过 <code>refresh()</code> 进入</li>
+            <li>使用 <code>refreshing = true</code></li>
+            <li>完整构建后一次性替换 <code>projects</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="mini" style="margin-top:16px;">
+        <h3><code>refreshDirtyDocs()</code></h3>
+        <p class="muted">定向刷新路径，只重建脏文档对应的数据，避免整份项目列表被全量替换。</p>
+      </div>
+      <div class="note">
+        本次“首次全量刷新体验”优化只作用于 <code>loadProjects()</code>。非首次全量刷新仍然沿用
+        <code>refresh() -&gt; refreshFull()</code> 的一次性替换策略。
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>loading 与 refreshing</h2>
+      <div class="two-col">
+        <div class="mini">
+          <h3><code>loading</code></h3>
+          <ul class="list muted">
+            <li>表示首次加载中</li>
+            <li>由 <code>loadProjects()</code> 使用</li>
+            <li>用于决定是否显示首次加载态</li>
+          </ul>
+        </div>
+        <div class="mini">
+          <h3><code>refreshing</code></h3>
+          <ul class="list muted">
+            <li>表示后台刷新中</li>
+            <li>由 <code>refresh()</code> 使用</li>
+            <li>不走首次加载的全屏 loading 逻辑</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section">
       <h2>监听分流</h2>
       <div class="two-col">
         <div class="mini">
