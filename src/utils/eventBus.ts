@@ -56,14 +56,20 @@ export const eventBus = new EventBus();
 /** BroadcastChannel 名称，用于跨 iframe/上下文通知（如 Dock 与主窗口分离时） */
 export const DATA_REFRESH_CHANNEL = 'siyuan-bullet-journal-data-refresh';
 
-/**
- * 通过 BroadcastChannel 发送 DATA_REFRESH，供无法收到 eventBus 的上下文（如 Dock）接收。
- * 同上下文可不传 payload（各端 loadFromPlugin）；跨上下文传入完整设置对象以便对端 $patch。
- */
-export function broadcastDataRefresh(payload?: object): void {
+export function broadcastSettingsChanged(payload?: object): void {
   try {
     const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
-    channel.postMessage({ type: 'DATA_REFRESH', ...payload });
+    channel.postMessage({ type: 'SETTINGS_CHANGED', ...payload });
+    channel.close();
+  } catch {
+    // 忽略不支持或跨源场景
+  }
+}
+
+export function broadcastDataRefreshed(): void {
+  try {
+    const channel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
+    channel.postMessage({ type: 'DATA_REFRESHED' });
     channel.close();
   } catch {
     // 忽略不支持或跨源场景
@@ -82,7 +88,7 @@ export function broadcastPluginUnloading(pluginInstanceId?: string): void {
 
 // 事件类型
 export const Events = {
-  DATA_REFRESH: 'data:refresh',
+  REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   LOCAL_DATA_MUTATED: 'data:mutated',
   DATA_REFRESHED: 'data:refreshed', // 数据已刷新完成（用于通知其他模块）
   SETTINGS_CHANGED: 'settings:changed',

@@ -30,8 +30,7 @@ Task management plugin: Calendar and Gantt chart for planning, Todo and Pomodoro
 
 1. **Create Project Document** - Create a document in SiYuan to record project tasks
 2. **Write Task Format** - Use `#task` to mark tasks, `@date` to mark items
-3. **Configure Plugin** (optional, recommended) - Add directory paths to scan in settings, or right-click a node in the document tree and choose "Set as Task Assistant directory" to add quickly
-4. **View Tasks** - Access tasks through Calendar, Gantt, Project List, Todo Dock, Quadrant, Workbench, or Pomodoro panels
+3. **View Tasks** - Access tasks through Calendar, Gantt, Project List, Todo Dock, Quadrant, Workbench, or Pomodoro panels
 
 For detailed steps, see [Quick Start](https://github.com/MoonBottle/siyuan-plugin-bullet-journal/blob/main/docs/en/user-guide/quick-start.md).
 

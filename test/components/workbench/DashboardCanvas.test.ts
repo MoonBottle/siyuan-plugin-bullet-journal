@@ -58,8 +58,13 @@ vi.mock('@/components/workbench/widgets/TodoListWidget.vue', () => ({
         type: Object,
         required: false,
       },
+      onTitleMetaChange: {
+        type: Function,
+        required: false,
+      },
     },
-    setup() {
+    setup(props) {
+      props.onTitleMetaChange?.('6 项');
       return () => h('div', 'todo widget');
     },
   }),
@@ -615,6 +620,50 @@ describe('DashboardCanvas', () => {
     expect(mounted.container.innerHTML).toContain('data-min-w="4"');
     expect(mounted.container.innerHTML).toContain('data-min-h="3"');
     expect(mounted.container.innerHTML).toContain('data-max-w="12"');
+
+    mounted.unmount();
+  });
+
+  it('renders todo widget title subtitle from widget meta callback', async () => {
+    const store = useWorkbenchStore();
+    store.dashboards = [
+      {
+        id: 'dashboard-1',
+        title: 'Planning Board',
+        widgets: [
+          {
+            id: 'widget-1',
+            type: 'todoList',
+            title: 'Todo List',
+            layout: { x: 2, y: 1, w: 4, h: 3 },
+            config: {},
+          },
+          {
+            id: 'widget-2',
+            type: 'habitWeek',
+            title: 'Habit Week',
+            layout: { x: 6, y: 1, w: 6, h: 4 },
+            config: {},
+          },
+        ],
+      },
+    ];
+
+    const mounted = await mountCanvas({
+      id: 'entry-dashboard',
+      type: 'dashboard',
+      title: 'Planning Board',
+      icon: 'iconBoard',
+      order: 0,
+      dashboardId: 'dashboard-1',
+    });
+
+    const cardHtml = mounted.container.querySelector('[data-testid="workbench-widget-card-widget-1"]')?.textContent ?? '';
+    expect(cardHtml).toContain('Todo List');
+    expect(cardHtml).toContain('6 项');
+
+    const otherCard = mounted.container.querySelector('[data-testid="workbench-widget-card-widget-2"]');
+    expect(otherCard?.querySelector('.workbench-widget-card__subtitle')).toBeNull();
 
     mounted.unmount();
   });

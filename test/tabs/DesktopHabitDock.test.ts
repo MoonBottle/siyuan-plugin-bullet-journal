@@ -16,11 +16,15 @@ const {
   archiveHabit,
   checkIn,
   checkInCount,
+  mockPlugin,
   unarchiveHabit,
 } = vi.hoisted(() => ({
   archiveHabit: vi.fn(),
   checkIn: vi.fn(),
   checkInCount: vi.fn(),
+  mockPlugin: {
+    requestDataRefresh: vi.fn(() => Promise.resolve()),
+  },
   unarchiveHabit: vi.fn(),
 }));
 
@@ -29,7 +33,7 @@ vi.mock('@/utils/fileUtils', () => ({
 }));
 
 vi.mock('@/main', () => ({
-  usePlugin: vi.fn(() => ({})),
+  usePlugin: vi.fn(() => mockPlugin),
 }));
 
 vi.mock('@/services/habitService', () => ({
@@ -206,6 +210,7 @@ describe('DesktopHabitDock', () => {
     checkIn.mockResolvedValue(false);
     checkInCount.mockResolvedValue(false);
     unarchiveHabit.mockResolvedValue(false);
+    mockPlugin.requestDataRefresh.mockClear();
   });
 
   it('opening a list item main action enters detail mode', async () => {
@@ -295,14 +300,17 @@ describe('DesktopHabitDock', () => {
     mounted.unmount();
   });
 
-  it('refresh button calls projectStore.refresh', async () => {
+  it('refresh button requests data refresh through the plugin', async () => {
     const mounted = mountDock();
 
     mounted.container.querySelector('[data-testid="habit-dock-refresh-button"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mounted.projectStore.refresh).toHaveBeenCalled();
+    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+      type: 'full',
+      reason: 'habit-workspace:manual-refresh',
+    });
     mounted.unmount();
   });
 
@@ -377,7 +385,10 @@ describe('DesktopHabitDock', () => {
       expect.objectContaining({ blockId: 'habit-1' }),
       dayjs().format('YYYY-MM-DD'),
     );
-    expect(mounted.projectStore.refresh).toHaveBeenCalledTimes(1);
+    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+      type: 'full',
+      reason: 'habit-workspace:archive',
+    });
     mounted.unmount();
   });
 
@@ -404,7 +415,10 @@ describe('DesktopHabitDock', () => {
     expect(unarchiveHabit).toHaveBeenCalledWith(
       expect.objectContaining({ blockId: 'habit-1', archivedAt: '2026-05-04' }),
     );
-    expect(mounted.projectStore.refresh).toHaveBeenCalledTimes(1);
+    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+      type: 'full',
+      reason: 'habit-workspace:unarchive',
+    });
     mounted.unmount();
   });
 
@@ -521,15 +535,20 @@ describe('DesktopHabitDock', () => {
     mounted.unmount();
   });
 
-  it('reacts to data refresh events automatically', async () => {
+  it('reacts to data-refreshed events by syncing selected habit locally', async () => {
     const mounted = mountDock();
-    vi.mocked(mounted.projectStore.refresh).mockClear();
 
-    eventBus.emit(Events.DATA_REFRESH);
+    mounted.container.querySelector('[data-testid="habit-list-item-main"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.projectStore.projects[0].habits = [createHabit({ name: '更新后的习惯' })];
+    eventBus.emit(Events.DATA_REFRESHED);
     await nextTick();
     await nextTick();
 
-    expect(mounted.projectStore.refresh).toHaveBeenCalledTimes(1);
+    expect(mounted.projectStore.refresh).not.toHaveBeenCalled();
+    expect(mounted.container.querySelector('[data-testid="habit-detail-header"]')?.textContent).toContain('更新后的习惯');
     mounted.unmount();
   });
 
@@ -563,12 +582,16 @@ describe('DesktopHabitDock', () => {
     await nextTick();
 
     const content = mounted.container.querySelector('[data-testid="habit-detail-content"]');
+    const calendarSection = mounted.container.querySelector('[data-testid="habit-detail-calendar-section"]');
+    const statsSection = mounted.container.querySelector('[data-testid="habit-detail-stats-section"]');
     const calendar = mounted.container.querySelector('[data-testid="habit-month-calendar-stub"]');
     const stats = mounted.container.querySelector('[data-testid="habit-stats-stub"]');
 
     expect(mounted.container.querySelector('.habit-detail__today')).toBeNull();
-    expect(content?.firstElementChild).toBe(calendar);
-    expect(content?.children[1]).toBe(stats);
+    expect(content?.firstElementChild).toBe(calendarSection);
+    expect(content?.children[1]).toBe(statsSection);
+    expect(calendarSection?.firstElementChild).toBe(calendar);
+    expect(statsSection?.firstElementChild).toBe(stats);
 
     mounted.unmount();
   });

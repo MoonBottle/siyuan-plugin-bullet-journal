@@ -3,6 +3,11 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { showMessage } from 'siyuan';
 
+const { mockEventBusEmit, mockEventBusOn } = vi.hoisted(() => ({
+  mockEventBusEmit: vi.fn(),
+  mockEventBusOn: vi.fn(),
+}));
+
 vi.mock('@/utils/dialog', () => ({
   showDatePickerDialog: vi.fn(),
   showItemDetailModal: vi.fn(),
@@ -60,9 +65,21 @@ vi.mock('@/parser/priorityParser', () => ({
 }));
 
 vi.mock('@/utils/eventBus', () => ({
-  eventBus: { emit: vi.fn(), on: vi.fn() },
-  Events: {},
-  broadcastDataRefresh: vi.fn(),
+  eventBus: { emit: mockEventBusEmit, on: mockEventBusOn },
+  Events: {
+    REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
+  },
+}));
+
+vi.mock('@/utils/refreshRequests', () => ({
+  RefreshReasons: {
+    SLASH_COMMAND_HABIT_DATA: 'slash-command:habit-data',
+    SLASH_COMMAND_SET_PROJECT_DIR: 'slash-command:set-project-dir',
+  },
+  createFullRefreshRequest: vi.fn((reason: string, payload?: Record<string, unknown>) => (
+    payload === undefined ? { type: 'full', reason } : { type: 'full', reason, payload }
+  )),
+  submitRefreshRequest: vi.fn((request: unknown) => mockEventBusEmit('refresh:request-submitted', request)),
 }));
 
 vi.mock('@/utils/protyleWriterDom', () => ({
@@ -75,7 +92,7 @@ import { checkIn, checkInCount } from '@/services/habitService';
 import { processLineText, extractDatesFromBlock } from '@/utils/slashCommandUtils';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
-import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
+import { eventBus, Events } from '@/utils/eventBus';
 import { updateBlockDateTime } from '@/utils/fileUtils';
 
 const projectStoreMock = {
@@ -365,8 +382,10 @@ describe('habit slash commands', () => {
 
     await handler({} as any, node);
 
-    expect(vi.mocked(eventBus.emit)).toHaveBeenCalledWith(Events.DATA_REFRESH);
-    expect(vi.mocked(broadcastDataRefresh)).toHaveBeenCalled();
+    expect(vi.mocked(eventBus.emit)).toHaveBeenCalledWith(Events.REFRESH_REQUEST_SUBMITTED, {
+      type: 'full',
+      reason: 'slash-command:habit-data',
+    });
   });
 
   it('/dk 在计数型习惯定义行上应基于 store 中同 habit 当日 record 做 +1，而不是创建重复 record', async () => {

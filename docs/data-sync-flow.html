@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Sync Flow</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #18212f;
+      --muted: #5f6b7a;
+      --line: #cbd5e1;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --green: #0f766e;
+      --green-soft: #ccfbf1;
+      --orange: #b45309;
+      --orange-soft: #ffedd5;
+      --purple: #7c3aed;
+      --purple-soft: #ede9fe;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .wrap {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      color: var(--muted);
+      max-width: 980px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .panel h2 {
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .panel h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .list {
+      padding-left: 18px;
+      margin: 8px 0 0;
+    }
+    .list li + li {
+      margin-top: 6px;
+    }
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 6px;
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+    }
+    .tag-blue { background: var(--accent-soft); color: var(--accent); border-color: #bfdbfe; }
+    .tag-green { background: var(--green-soft); color: var(--green); border-color: #99f6e4; }
+    .tag-orange { background: var(--orange-soft); color: var(--orange); border-color: #fed7aa; }
+    .tag-purple { background: var(--purple-soft); color: var(--purple); border-color: #ddd6fe; }
+    .flow-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #fcfdff 0%, #f8fbff 100%);
+      border: 1px solid #d9e4f0;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: #f8fbff;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      background: #fbfdff;
+    }
+    .section + .section {
+      margin-top: 24px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      background: #f1f5f9;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>数据同步与触发流向</h1>
+      <p>
+        这份文档描述当前实现里的同步主链路：刷新请求如何生成、如何被合并、哪些地方真正刷新数据、
+        以及 <code>eventBus</code> 与 <code>BroadcastChannel</code> 如何把结果传回各视图。
+      </p>
+    </section>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>主刷新链路</h2>
+        <svg class="flow-svg" viewBox="0 0 1180 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="数据同步主流程图">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+            </marker>
+            <style>
+              .t{font: 13px sans-serif; fill:#162033}
+              .s{font: 12px sans-serif; fill:#536072}
+              .box{stroke:#cbd5e1; stroke-width:1.2}
+              .line{stroke:#64748b; stroke-width:1.6; fill:none; marker-end:url(#arrow)}
+              .line-d{stroke:#94a3b8; stroke-width:1.4; fill:none; stroke-dasharray:6 5; marker-end:url(#arrow)}
+            </style>
+          </defs>
+
+          <rect x="28" y="28" width="264" height="230" rx="14" fill="#eff6ff" class="box"/>
+          <text x="46" y="56" class="t">触发源</text>
+          <rect x="46" y="72" width="228" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="58" y="94" class="t">onDataChanged()</text>
+          <rect x="46" y="116" width="228" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="58" y="138" class="t">LOCAL_DATA_MUTATED</text>
+          <rect x="46" y="160" width="228" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="58" y="182" class="t">ws-main / savedoc / transactions</text>
+          <rect x="46" y="204" width="228" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="58" y="226" class="t">submitRefreshRequest(...)</text>
+
+          <rect x="334" y="28" width="252" height="230" rx="14" fill="#f5f3ff" class="box"/>
+          <text x="352" y="56" class="t">refreshRequests.ts</text>
+          <rect x="352" y="72" width="216" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="364" y="94" class="t">createFullRefreshRequest()</text>
+          <rect x="352" y="116" width="216" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="364" y="138" class="t">createDirectedRefreshRequest()</text>
+          <rect x="352" y="160" width="216" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="364" y="182" class="t">ws-main reason helpers</text>
+          <rect x="352" y="204" width="216" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="364" y="226" class="t">submitRefreshRequest()</text>
+
+          <rect x="628" y="28" width="248" height="230" rx="14" fill="#ecfeff" class="box"/>
+          <text x="646" y="56" class="t">index.ts</text>
+          <rect x="646" y="72" width="212" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="658" y="94" class="t">requestRefresh()</text>
+          <rect x="646" y="116" width="212" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="658" y="138" class="t">processRefreshRequest()</text>
+          <rect x="646" y="160" width="212" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="658" y="182" class="t">emitRefreshCompletionSignals()</text>
+          <rect x="646" y="204" width="212" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="658" y="226" class="t">handleDirectedRefresh()</text>
+
+          <rect x="920" y="28" width="232" height="230" rx="14" fill="#f0fdf4" class="box"/>
+          <text x="938" y="56" class="t">refreshCoordinator.ts</text>
+          <rect x="938" y="72" width="196" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="950" y="94" class="t">mergeRequest()</text>
+          <rect x="938" y="116" width="196" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="950" y="138" class="t">full &gt; directed &gt; settings</text>
+          <rect x="938" y="160" width="196" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="950" y="182" class="t">serialize drain()</text>
+          <rect x="938" y="204" width="196" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="950" y="226" class="t">submit(request)</text>
+
+          <rect x="180" y="312" width="308" height="170" rx="14" fill="#fff7ed" class="box"/>
+          <text x="198" y="340" class="t">projectStore.ts</text>
+          <rect x="198" y="356" width="272" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="210" y="378" class="t">loadProjects()</text>
+          <rect x="198" y="400" width="272" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="210" y="422" class="t">refresh() -> refreshDirtyDocs / refreshFull</text>
+          <rect x="198" y="444" width="272" height="24" rx="8" fill="#fff" class="box"/>
+          <text x="210" y="461" class="s">完成后本地 emit DATA_REFRESHED</text>
+
+          <rect x="548" y="312" width="280" height="170" rx="14" fill="#f8fafc" class="box"/>
+          <text x="566" y="340" class="t">eventBus.ts / BroadcastChannel</text>
+          <rect x="566" y="356" width="244" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="578" y="378" class="t">eventBus.emit(SETTINGS_CHANGED)</text>
+          <rect x="566" y="400" width="244" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="578" y="422" class="t">broadcastSettingsChanged()</text>
+          <rect x="566" y="444" width="244" height="24" rx="8" fill="#fff" class="box"/>
+          <text x="578" y="461" class="s">broadcastDataRefreshed()</text>
+
+          <rect x="860" y="312" width="292" height="270" rx="14" fill="#faf5ff" class="box"/>
+          <text x="878" y="340" class="t">视图消费侧</text>
+          <rect x="878" y="356" width="256" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="890" y="378" class="t">Todo / Calendar / Workbench / Gantt</text>
+          <rect x="878" y="400" width="256" height="24" rx="8" fill="#fff" class="box"/>
+          <text x="890" y="417" class="s">主要监听 SETTINGS_CHANGED</text>
+          <rect x="878" y="444" width="256" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="890" y="466" class="t">Habit / Pomodoro / Stats 视图</text>
+          <rect x="878" y="488" width="256" height="24" rx="8" fill="#fff" class="box"/>
+          <text x="890" y="505" class="s">主要监听 DATA_REFRESHED</text>
+          <rect x="878" y="532" width="256" height="34" rx="8" fill="#fff" class="box"/>
+          <text x="890" y="554" class="t">跨上下文通过 refreshChannelGuard</text>
+
+          <path d="M292 140 L334 140" class="line"/>
+          <path d="M586 140 L628 140" class="line"/>
+          <path d="M876 140 L920 140" class="line"/>
+          <path d="M1036 258 L1036 300" class="line"/>
+          <path d="M1036 300 L488 300 L488 400" class="line"/>
+          <path d="M334 482 L334 518 L688 518 L688 482" class="line"/>
+          <path d="M828 398 L860 398" class="line"/>
+          <path d="M488 432 L548 432" class="line"/>
+          <path d="M486 468 L548 468" class="line-d"/>
+          <path d="M828 418 L860 418" class="line"/>
+          <path d="M812 456 L860 456" class="line-d"/>
+
+          <text x="500" y="533" class="s">刷新完成后：有 payload 则发 SETTINGS_CHANGED，非 settings-only 则广播 DATA_REFRESHED</text>
+          <text x="196" y="500" class="s">同上下文 DATA_REFRESHED 来源在 projectStore，不在 processRefreshRequest</text>
+        </svg>
+
+        <div class="note">
+          主链路最容易混淆的地方是：<code>projectStore</code> 负责“本地 DATA_REFRESHED”，
+          而 <code>processRefreshRequest()</code> 负责“刷新完成后的 SETTINGS_CHANGED 与跨上下文广播”。
+        </div>
+      </div>
+
+      <div>
+        <section class="panel section">
+          <h2>刷新请求类型</h2>
+          <div class="tag tag-blue">settings-only</div>
+          <div class="tag tag-green">directed</div>
+          <div class="tag tag-orange">full</div>
+          <ul class="list muted">
+            <li><code>settings-only</code>: 仅设置变更，不要求重扫项目。</li>
+            <li><code>directed</code>: 附带 <code>docIds</code>，用于局部刷新。</li>
+            <li><code>full</code>: 全量刷新，常见于 <code>onDataChanged</code>、<code>removeDoc</code>、ws-main 全量命令。</li>
+          </ul>
+        </section>
+
+        <section class="panel section">
+          <h2>主要触发源</h2>
+          <ul class="list muted">
+            <li><code>onDataChanged()</code> -> full</li>
+            <li><code>Events.LOCAL_DATA_MUTATED</code> -> directed，失败回退 full</li>
+            <li><code>ws-main removeDoc</code> -> full</li>
+            <li><code>ws-main savedoc</code> -> directed</li>
+            <li><code>ws-main transactions/updateAttrs</code> -> directed</li>
+            <li><code>SettingsDialog / slashCommands / aiToolsExecutor / pomodoroStore</code> -> submitRefreshRequest</li>
+          </ul>
+        </section>
+
+        <section class="panel section">
+          <h2>ws-main 分流</h2>
+          <div class="mini">
+            <h3>全量刷新命令</h3>
+            <p class="muted"><code>txerr</code>, <code>refreshdoc</code>, <code>createdailynote</code>, <code>moveDoc</code></p>
+          </div>
+          <div class="mini" style="margin-top:12px;">
+            <h3>定向刷新命令</h3>
+            <p class="muted"><code>savedoc</code>，以及 <code>transactions</code> 中含 <code>updateAttrs</code> 的情况。</p>
+          </div>
+          <div class="mini" style="margin-top:12px;">
+            <h3>rootIDs 提取失败</h3>
+            <p class="muted">从 directed 降级为 full，reason 形如 <code>savedoc:missing-rootIDs</code>。</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel section" style="margin-top:24px;">
+      <h2>加载路径对照</h2>
+      <div class="two-col">
+        <div class="mini">
+          <h3><code>loadProjects()</code></h3>
+          <ul class="list muted">
+            <li>首次加载路径</li>
+            <li>使用 <code>loading = true</code></li>
+            <li>显示首次加载态</li>
+            <li>按批次追加写入 <code>projects</code></li>
+          </ul>
+        </div>
+        <div class="mini">
+          <h3><code>refreshFull()</code></h3>
+          <ul class="list muted">
+            <li>非首次全量刷新路径</li>
+            <li>通过 <code>refresh()</code> 进入</li>
+            <li>使用 <code>refreshing = true</code></li>
+            <li>完整构建后一次性替换 <code>projects</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="mini" style="margin-top:16px;">
+        <h3><code>refreshDirtyDocs()</code></h3>
+        <p class="muted">定向刷新路径，只重建脏文档对应的数据，避免整份项目列表被全量替换。</p>
+      </div>
+      <div class="note">
+        本次“首次全量刷新体验”优化只作用于 <code>loadProjects()</code>。非首次全量刷新仍然沿用
+        <code>refresh() -&gt; refreshFull()</code> 的一次性替换策略。
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>loading 与 refreshing</h2>
+      <div class="two-col">
+        <div class="mini">
+          <h3><code>loading</code></h3>
+          <ul class="list muted">
+            <li>表示首次加载中</li>
+            <li>由 <code>loadProjects()</code> 使用</li>
+            <li>用于决定是否显示首次加载态</li>
+          </ul>
+        </div>
+        <div class="mini">
+          <h3><code>refreshing</code></h3>
+          <ul class="list muted">
+            <li>表示后台刷新中</li>
+            <li>由 <code>refresh()</code> 使用</li>
+            <li>不走首次加载的全屏 loading 逻辑</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>监听分流</h2>
+      <div class="two-col">
+        <div class="mini">
+          <h3>主要监听 SETTINGS_CHANGED</h3>
+          <ul class="list muted">
+            <li>WorkbenchTab</li>
+            <li>QuadrantTab</li>
+            <li>ProjectTab</li>
+            <li>GanttTab</li>
+            <li>DesktopTodoDock</li>
+            <li>CalendarTab</li>
+            <li>AiChatDock</li>
+            <li>MobileTodoPanel</li>
+          </ul>
+        </div>
+        <div class="mini">
+          <h3>主要监听 DATA_REFRESHED</h3>
+          <ul class="list muted">
+            <li>PomodoroStatsTab</li>
+            <li>PomodoroDock</li>
+            <li>DesktopHabitDock</li>
+            <li>MobileHabitPanel</li>
+            <li>WorkbenchHabitView</li>
+            <li>HabitWidgetDetailDialog</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>当前实现里的注意点</h2>
+      <ul class="list muted">
+        <li>同上下文的 <code>DATA_REFRESHED</code> 由 <code>projectStore.loadProjects()/refresh()</code> 发出。</li>
+        <li>跨上下文的 <code>DATA_REFRESHED</code> 由 <code>processRefreshRequest() -> broadcastDataRefreshed()</code> 发出。</li>
+        <li><code>SettingsDialog.vue</code> 当前会直接发一次 <code>SETTINGS_CHANGED</code>，同时也会走正式 refresh request 流程，所以设置保存场景存在“即时通知 + 刷新完成通知”。</li>
+        <li><code>settings-only</code> 不会广播 <code>DATA_REFRESHED</code>。</li>
+        <li><code>refreshCoordinator</code> 会把连续请求压成串行批次，并在同一批次里用 <code>full &gt; directed &gt; settings-only</code> 规则决定执行路径。</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

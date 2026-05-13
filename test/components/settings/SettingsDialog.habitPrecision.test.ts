@@ -11,14 +11,23 @@ vi.mock('siyuan', () => ({
 }));
 
 vi.mock('@/utils/eventBus', () => ({
-  broadcastDataRefresh: vi.fn(),
   eventBus: {
     emit: vi.fn(),
   },
   Events: {
-    DATA_REFRESH: 'data:refresh',
     SETTINGS_CHANGED: 'settings:changed',
+    REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   },
+}));
+
+vi.mock('@/utils/refreshRequests', () => ({
+  RefreshReasons: {
+    SETTINGS_DIALOG_SAVE: 'settings-dialog:save',
+  },
+  createFullRefreshRequest: vi.fn((reason: string, payload?: Record<string, unknown>) => (
+    payload === undefined ? { type: 'full', reason } : { type: 'full', reason, payload }
+  )),
+  submitRefreshRequest: vi.fn(),
 }));
 
 vi.mock('@/components/settings/DirectoryConfigSection.vue', () => ({ default: { name: 'SectionStub', render: () => null } }));

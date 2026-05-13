@@ -231,7 +231,9 @@ function handleBackToActiveList() {
 }
 
 const handleDataRefresh = async () => {
-  await refreshHabits();
+  if (selectedHabit.value) {
+    selectHabitById(selectedHabit.value.blockId, selectedDate.value);
+  }
 };
 
 let unsubscribeRefresh: (() => void) | null = null;
@@ -240,7 +242,7 @@ let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
 onMounted(() => {
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
   unsubscribeHabitNavigate = eventBus.on(Events.HABIT_DOCK_NAVIGATE, applyHabitDockNavigation);
 
   const pendingTarget = consumePendingHabitDockTarget();

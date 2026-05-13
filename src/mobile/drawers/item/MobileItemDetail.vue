@@ -481,7 +481,7 @@ const reminderText = computed(() => {
 
 const recurringText = computed(() => {
   if (!hasRecurring.value) return t('mobile.detail.setRecurring') || '设置重复';
-  const rule = generateRepeatRuleMarker(props.item!.repeatRule!);
+  const rule = generateRepeatRuleMarker(props.item!.repeatRule!, { includeEmoji: false });
   const end = generateEndConditionMarker(props.item!.endCondition);
   return end ? `${rule} ${end}` : rule;
 });

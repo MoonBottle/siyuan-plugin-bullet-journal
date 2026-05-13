@@ -50,13 +50,16 @@ const range = ref<RangeType>('week');
 const rangeOffset = ref(0);
 const showHeader = computed(() => !props.embedded);
 
-const plugin = usePlugin();
+const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'pomodoro-stats:manual-refresh',
+    });
     showMessage(t('common').dataRefreshed);
   }
 };
@@ -66,7 +69,6 @@ const handleDataRefresh = async () => {
   console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroStatsTab', plugin));
   if (!plugin) return;
   settingsStore.loadFromPlugin();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 let unsubscribeRefresh: (() => void) | null = null;
@@ -77,7 +79,7 @@ onMounted(async () => {
   console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('PomodoroStatsTab', plugin));
   settingsStore.loadFromPlugin();
 
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -88,7 +90,7 @@ onMounted(async () => {
       onRefresh: () => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('PomodoroStatsTab', plugin),
-          data: { type: 'DATA_REFRESH' },
+          data: { type: 'DATA_REFRESHED' },
         });
         return handleDataRefresh();
       },

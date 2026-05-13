@@ -130,7 +130,7 @@ const emit = defineEmits<{
   'open-pomodoro': [{ blockId?: string }]
 }>();
 
-const plugin = usePlugin();
+const plugin = usePlugin() as any;
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 const { openItem, openProject, openTask } = useItemDetail();
@@ -219,7 +219,10 @@ const updateSelectedItems = () => {
 };
 
 const handleRefresh = async () => {
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  await plugin?.requestDataRefresh?.({
+    type: 'full',
+    reason: 'mobile-todo:manual-refresh',
+  });
   updateSelectedItems();
   showMessage(t('common').dataRefreshed);
 };
@@ -384,7 +387,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
 
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
   updateSelectedItems();
 };
 
@@ -399,11 +401,7 @@ onMounted(async () => {
   projectStore.hideCompleted = settingsStore.todoDock.hideCompleted;
   projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
 
-  if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
-  }
-
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -414,7 +412,7 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('MobileTodoPanel', plugin),
-          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
         });
         return handleDataRefresh(payload);
       },

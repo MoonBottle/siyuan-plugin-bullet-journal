@@ -41,7 +41,7 @@ function getExampleDocName(): string {
 /**
  * 生成示例文档的 Markdown 内容
  */
-function generateExampleContent(): string {
+export function generateExampleContent(): string {
   const today = getToday();
   const tomorrow = getTomorrow();
   const yesterday = getYesterday();
@@ -51,67 +51,216 @@ function generateExampleContent(): string {
 
   const taskTag = t('taskTag') || '#任务';
   const completedTag = t('statusTag').completed || '#已完成';
-  const abandonedTag = t('statusTag').abandoned || '#已放弃';
   const dateMarker = t('dateMarker') || '📅';
 
   if (isEn) {
-    return `This is a task ${taskTag}
+    return `## Task Assistant Example
 
-This is an all-day item ${dateMarker}${today}
+## Quick Start
 
-This is an item with time ${dateMarker}${today} 09:00:00~10:00:00
+> In slash commands, /today adds today's date to the current line, and /tomorrow adds tomorrow's date.
+> Start by writing an item. Then type / in the editor to open slash commands, and use /today or /tomorrow to add a date.
 
-This is a completed item ${dateMarker}${today} ${completedTag}
+Write daily summary ${dateMarker}${today}
 
-This is an abandoned item ${dateMarker}${today} ${abandonedTag}
+Follow up on release issues ${dateMarker}${tomorrow}
 
-🍅${today} 10:00:00~10:25:00 This is a pomodoro record
+## Item Status
 
-Running habit 🎯${today} 🔄daily
+> When an item is done, use /done to mark the current line as completed. If you no longer plan to do it, use /abandon to mark it as abandoned.
 
-Drink 8 glasses of water 🎯${today} 8 cups 🔄每天
+Finish meeting notes ${dateMarker}${today} ${completedTag}
 
-  > 📌 Quick Add with Slash Commands:
-Type /task then Enter → Mark as task
-Type /today then Enter → Add today's item
-Type /tomorrow then Enter → Add tomorrow's item
-Type /done then Enter → Mark as completed
-Type /cal then Enter → View calendar view
-Type /todo then Enter → View todo items
-Type /focus then Enter → Start pomodoro
-Type /habit then Enter → Create or edit habit
-Type /checkin then Enter → Habit check-in
-Type /habits then Enter → Open habit panel
+Drop outdated draft ${dateMarker}${yesterday} ❌
+
+## Items and Pomodoro
+
+> After a focus session, the pomodoro record is added under the item automatically. You can also write it manually.
+
+Pomodoro focus example ${dateMarker}${today} 10:00~10:25
+
+🍅${today} 10:00:00~10:25:00 First focus record
+
+## Tasks and Items
+
+Homepage refresh ${taskTag}
+
+Review user feedback ${dateMarker}${yesterday} ${completedTag}
+
+Release prep ${taskTag}
+
+Check the release checklist ${dateMarker}${today}
+
+> Here, ${taskTag} marks a task. The lines with ${dateMarker} dates below it are the actual items.
+> You can always start with standalone items first. When they start to pile up, use /task to organize them. Mark completed items with /done.
+
+## Priority
+
+> Write the item content normally, then use /priority to add the priority marker.
+> Priority markers use 🔥 for high priority, 🌱 for medium priority, and 🍃 for low priority.
+
+Homepage polish ${taskTag}
+
+Design the homepage draft ${dateMarker}${today} 🔥
+
+## Reminders
+
+> Write the item content first, then use /reminder to attach a reminder time.
+> Here, ⏰14:00 means a reminder is set for 14:00.
+
+Design review prep ${taskTag}
+
+Review visual draft ${dateMarker}${today} ⏰14:00
+
+## Recurring
+
+> Write the item content first, then use /recurring to turn it into a repeating item.
+> Here, 🔁workday means that after you mark this item as done, the plugin will automatically create the next workday occurrence.
+
+Workday routine ${taskTag}
+
+Daily status sync ${dateMarker}${today} 🔁workday
+
+## More Examples
+
+### Habits
+
+> Create or edit habits with /habit, and use /checkin to add a check-in record.
+
+Morning stretch 🎯${today} 🔄daily
+
+Morning stretch ${dateMarker}${today}
+
+### Links
+
+> Put the item first, then keep the related link under it so the context stays clear.
+> Links added this way appear in the item details. Press Ctrl and left-click the item line to open it.
+
+Release notes review ${taskTag}
+
+Review API changes ${dateMarker}${today}
+
+[Spec doc](https://example.com/spec)
+
+## Common Slash Commands
+
+- /today: Add today's item
+- /tomorrow: Add tomorrow's item
+- /task: Mark as task
+- /done: Mark as done
+- /abandon: Mark as abandoned
+- /habit: Create or edit habits
+- /checkin: Add a habit check-in
+- /detail: Open item details
+- /priority: Set priority
+- /reminder: Set reminder
+- /recurring: Set recurring
+- /focus: Start pomodoro
 `;
   }
 
-  return `这是一个任务 ${taskTag}
+  return `## 任务助手示例
 
-这是一个全天事项 ${dateMarker}${today}
+## 快速开始
 
-这是一个带时间的事项 ${dateMarker}${today} 09:00:00~10:00:00
+> 在斜杠命令里，/jt 会把当前行标记为今天的事项，/mt 会把当前行标记为明天的事项。
+> 先写事项内容。然后在编辑器里输入 / 打开斜杠命令，用 /jt 或 /mt 给当前行补日期。
 
-这是一个已完成的事项 ${dateMarker}${today} ${completedTag}
+整理日报 ${dateMarker}${today}
 
-这是一个已放弃的事项 ${dateMarker}${today} ${abandonedTag}
+跟进发布问题 ${dateMarker}${tomorrow}
 
-🍅${today} 10:00:00~10:25:00 这是一个番茄钟记录
+## 事项状态
 
-跑步习惯 🎯${today} 🔄每天
+> 事项完成后，可用 /wc 把当前行标记为已完成；不再处理时，可用 /fq 标记为已放弃。
 
-喝水8杯 🎯${today} 8杯 🔄每天
+整理会议结论 ${dateMarker}${today} ${completedTag}
 
-  > 📌 斜杠命令快速添加：
-输入 /rw 回车 → 标记为任务
-输入 /jt 回车 → 添加今日事项
-输入 /mt 回车 → 添加明日事项
-输入 /wc 回车 → 标记为完成
-输入 /rl 回车 → 查看日历视图
-输入 /todo 回车 → 查看待办事项
-输入 /zz 回车 → 开始番茄钟
-输入 /xg 回车 → 创建或编辑习惯
-输入 /dk 回车 → 习惯打卡
-输入 /xgd 回车 → 打开习惯面板
+放弃旧方案 ${dateMarker}${yesterday} ❌
+
+## 事项和番茄钟
+
+> 专注结束后会自动在事项下追加一条番茄记录，也可以手写。
+
+番茄专注示例 ${dateMarker}${today} 10:00~10:25
+
+🍅${today} 10:00:00~10:25:00 第一次专注记录
+
+## 任务和事项
+
+首页改版 ${taskTag}
+
+整理需求反馈 ${dateMarker}${yesterday} ${completedTag}
+
+发布准备 ${taskTag}
+
+检查发布清单 ${dateMarker}${today}
+
+> 这里的 ${taskTag} 表示“任务”；下面带 ${dateMarker} 日期的行是这个任务里的具体事项。
+> 你也可以先写普通事项；待办变多后，再用 /rw 把内容整理成任务，完成事项可用 /wc
+
+## 优先级
+
+> 先把事项内容写出来，再用 /yxj 添加优先级标记。
+> 优先级标记里，🔥 表示高优先级，🌱 表示中优先级，🍃 表示低优先级。
+
+首页细化 ${taskTag}
+
+设计首页原型 ${dateMarker}${today} 🔥
+
+## 提醒
+
+> 先写事项内容，再用 /tx 补一个提醒时间。
+> 这里的 ⏰14:00 表示会在 14:00 提醒你。
+
+评审准备 ${taskTag}
+
+评审视觉稿 ${dateMarker}${today} ⏰14:00
+
+## 重复
+
+> 先写事项内容，再用 /cf 把它变成重复事项。
+> 这里的 🔁工作日 表示：当你把当前事项标记为完成后，插件会自动生成下一次工作日事项。
+
+工作日例行 ${taskTag}
+
+同步每日进展 ${dateMarker}${today} 🔁工作日
+
+## 更多玩法
+
+### 习惯
+
+> 创建或编辑习惯，推荐使用 /xg；需要打卡时，用 /dk 添加今天的打卡记录。
+
+晨间拉伸 🎯${today} 🔄每天
+
+晨间拉伸 ${dateMarker}${today}
+
+### 链接
+
+> 先写事项，再把相关链接放在下面，避免链接脱离上下文。
+> 这样添加的链接会显示在事项详情里。按住 Ctrl 后左键点击事项行，即可打开事项详情。
+
+发布说明整理 ${taskTag}
+
+查看接口变更 ${dateMarker}${today}
+
+[需求文档](https://example.com/spec)
+
+## 常用斜杠命令
+
+- /jt：添加今日事项
+- /mt：添加明日事项
+- /rw：标记为任务
+- /wc：标记为完成
+- /fq：标记为放弃
+- /xg：创建或编辑习惯
+- /dk：添加习惯打卡
+- /xq：查看事项详情
+- /yxj：设置优先级
+- /tx：设置提醒
+- /cf：设置重复
+- /zz：开始番茄钟
 `;
 }
 

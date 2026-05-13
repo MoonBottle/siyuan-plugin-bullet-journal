@@ -358,8 +358,10 @@ const handleDone = async () => {
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
 
     if (success && plugin) {
-      // 刷新项目数据（会触发统一检测逻辑）
-      await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+      await plugin.requestDataRefresh?.({
+        type: 'full',
+        reason: 'pomodoro-active:complete-item',
+      });
     }
   } finally {
     isProcessing.value = false;
@@ -376,7 +378,10 @@ const handleAbandon = async () => {
     const tag = getStatusTag('abandoned');
     const success = await updateBlockContent(currentItem.value.blockId, tag);
     if (success && plugin) {
-      await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+      await plugin.requestDataRefresh?.({
+        type: 'full',
+        reason: 'pomodoro-active:abandon-item',
+      });
     }
   } finally {
     isProcessing.value = false;

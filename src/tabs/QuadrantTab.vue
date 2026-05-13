@@ -279,7 +279,10 @@ async function handleQuadrantDrop(panelId: string, event: DragEvent) {
     return;
   }
 
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  await plugin.requestDataRefresh?.({
+    type: 'full',
+    reason: 'quadrant-drop-update-priority',
+  });
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
@@ -304,7 +307,10 @@ function syncSelectedGroupWithDefault() {
 
 async function handleRefresh() {
   if (!plugin) return;
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+  await plugin.requestDataRefresh?.({
+    type: 'full',
+    reason: 'quadrant-tab:manual-refresh',
+  });
   showMessage(t('common').dataRefreshed);
 }
 
@@ -391,7 +397,6 @@ async function handleDataRefresh(payload?: Record<string, unknown>) {
   projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
 
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 }
 
 let unsubscribeRefresh: (() => void) | null = null;
@@ -464,7 +469,7 @@ onMounted(async () => {
 
   await quadrantConfigStore.loadConfig();
 
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);

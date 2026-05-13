@@ -6,9 +6,20 @@ import { init, destroy } from "@/main";
 import {
   eventBus,
   Events,
-  broadcastDataRefresh,
+  broadcastDataRefreshed,
+  broadcastSettingsChanged,
   broadcastPluginUnloading,
 } from "@/utils/eventBus";
+import {
+  RefreshReasons,
+  createWsMainFullRefreshReason,
+  createDirectedRefreshRequest,
+  createFullRefreshRequest,
+  createMissingRootIdsRefreshReason,
+  createWsMainDirectedRefreshReason,
+  isWsMainFullRefreshCommand,
+  type RefreshRequestPayload,
+} from "@/utils/refreshRequests";
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import { getSharedPinia, setSharedPinia } from "@/utils/sharedPinia";
@@ -106,6 +117,7 @@ import {
   applyFloatingPomodoroViewState,
   createFloatingPomodoroMarkup,
 } from "@/utils/floatingPomodoroDom";
+import { createRefreshCoordinator } from "@/services/refreshCoordinator";
 
 let PluginInfo = {
   version: "",
@@ -162,8 +174,8 @@ export default class TaskAssistantPlugin extends Plugin {
   public readonly version = version;
   public readonly debugInstanceId = `ta-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  private refreshTimeout: ReturnType<typeof setTimeout> | null = null;
   private restorePomodoroTimeout: ReturnType<typeof setTimeout> | null = null;
+  private refreshCoordinator: ReturnType<typeof createRefreshCoordinator> | null = null;
   private readonly cleanupManager = new CleanupManager();
   private hasCompletedOnload = false;
 
@@ -271,6 +283,7 @@ export default class TaskAssistantPlugin extends Plugin {
     });
     console.log("[Task Assistant] Starting initial loadProjects...");
     const projectStore = useProjectStore(pinia);
+    this.initRefreshCoordinator();
     if (this.isMobile) {
       mobileNotificationScheduler.attachRuntime(projectStore);
     }
@@ -530,7 +543,9 @@ export default class TaskAssistantPlugin extends Plugin {
    * 数据变化回调 - 思源会在数据索引完成后调用
    */
   onDataChanged() {
-    this.scheduleRefresh();
+    void this.requestRefresh(
+      createFullRefreshRequest(RefreshReasons.ON_DATA_CHANGED),
+    );
   }
 
   onunload() {
@@ -540,14 +555,8 @@ export default class TaskAssistantPlugin extends Plugin {
       instanceId: this.debugInstanceId,
       hasCompletedOnload: this.hasCompletedOnload,
       activeInstanceIdsBefore: [...debugState.activeInstanceIds],
-      refreshTimeoutPending: Boolean(this.refreshTimeout),
       restorePomodoroTimeoutPending: Boolean(this.restorePomodoroTimeout),
     });
-
-    if (this.refreshTimeout) {
-      clearTimeout(this.refreshTimeout);
-      this.refreshTimeout = null;
-    }
     if (this.restorePomodoroTimeout) {
       clearTimeout(this.restorePomodoroTimeout);
       this.restorePomodoroTimeout = null;
@@ -891,6 +900,91 @@ export default class TaskAssistantPlugin extends Plugin {
     return settings.directories.filter((d) => d.enabled);
   }
 
+  private getProjectStore() {
+    const pinia = getSharedPinia();
+    if (!pinia) return null;
+    return useProjectStore(pinia);
+  }
+
+  private enqueueRefreshRequest(request: RefreshRequestPayload) {
+    return this.refreshCoordinator?.submit(request);
+  }
+
+  private emitRefreshCompletionSignals(request: RefreshRequestPayload) {
+    const payload = request.payload;
+    if (payload && Object.keys(payload).length > 0) {
+      eventBus.emit(Events.SETTINGS_CHANGED, payload);
+      broadcastSettingsChanged(payload);
+    }
+    if (request.type !== "settings-only") {
+      broadcastDataRefreshed();
+    }
+  }
+
+  public async processRefreshRequest(request: RefreshRequestPayload) {
+    console.log("[Task Assistant] processRefreshRequest called:", {
+      dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
+      request,
+    });
+    await this.enqueueRefreshRequest(request);
+    this.emitRefreshCompletionSignals(request);
+  }
+
+  private requestRefresh(request: RefreshRequestPayload) {
+    return this.processRefreshRequest(request);
+  }
+
+  private createLocalMutationRefreshRequest(payload?: {
+    blockId?: string;
+  }): RefreshRequestPayload {
+    const blockId = payload?.blockId;
+    if (!blockId) {
+      return createFullRefreshRequest(
+        RefreshReasons.LOCAL_MUTATION_MISSING_BLOCK_ID,
+      );
+    }
+
+    const docId = this.getProjectStore()?.getItemByBlockId(blockId)?.docId;
+    if (docId) {
+      return createDirectedRefreshRequest([docId], {
+        reason: RefreshReasons.LOCAL_MUTATION,
+      });
+    }
+
+    return createFullRefreshRequest(
+      RefreshReasons.LOCAL_MUTATION_UNRESOLVED_DOC,
+    );
+  }
+
+  private initRefreshCoordinator() {
+    this.refreshCoordinator = createRefreshCoordinator({
+      runFullRefresh: async () => {
+        const projectStore = this.getProjectStore();
+        if (!projectStore) return;
+        const currentSettings = this.getSettings();
+        await projectStore.refresh(
+          this,
+          currentSettings.scanMode || "full",
+          currentSettings.directories,
+          { forceFull: true },
+        );
+      },
+      runDirectedRefresh: async (docIds) => {
+        const projectStore = this.getProjectStore();
+        if (!projectStore) return;
+        dirtyDocTracker.markDirty(docIds);
+        const currentSettings = this.getSettings();
+        await projectStore.refresh(
+          this,
+          currentSettings.scanMode || "full",
+          currentSettings.directories,
+        );
+      },
+      applySettingsOnly: async () => {},
+      emitRefreshCompleted: () => {},
+    });
+  }
+
   /**
    * 处理文档树右键菜单
    */
@@ -968,9 +1062,13 @@ export default class TaskAssistantPlugin extends Plugin {
             3000,
             "info",
           );
-          console.log("[Task Assistant] Emitting DATA_REFRESH event");
-          eventBus.emit(Events.DATA_REFRESH);
-          broadcastDataRefresh(this.getSettings() as object);
+          console.log("[Task Assistant] Requesting refresh after setting project directories");
+          void this.requestRefresh(
+            createFullRefreshRequest(
+              RefreshReasons.INDEX_SET_PROJECT_DIRECTORIES,
+              this.getSettings() as Record<string, unknown>,
+            ),
+          );
         } else {
           showMessage(
             (t("common") as any).dirsExist ?? t("common").dirsExist,
@@ -1691,9 +1789,18 @@ export default class TaskAssistantPlugin extends Plugin {
   private registerEventListeners() {
     // 监听 WebSocket 消息，用于检测数据变化
     this.registerPluginEventListener("ws-main", this.onWsMain);
-    this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, () => {
-      this.scheduleRefresh();
+    this.registerAppEventListener(Events.LOCAL_DATA_MUTATED, (payload?: {
+      blockId?: string;
+    }) => {
+      void this.requestRefresh(this.createLocalMutationRefreshRequest(payload));
     });
+    this.registerAppEventListener(
+      Events.REFRESH_REQUEST_SUBMITTED,
+      (request?: RefreshRequestPayload) => {
+        if (!request) return;
+        void this.requestRefresh(request);
+      },
+    );
     this.registerAppEventListener(Events.DATA_REFRESHED, () => {
       if (this.isMobile) {
         const pinia = getSharedPinia();
@@ -1787,23 +1894,21 @@ export default class TaskAssistantPlugin extends Plugin {
         "[Task Assistant] onWsMain -> removeDoc branch, scheduling refresh",
       );
       this.handleDocRemove(data);
-      this.scheduleRefresh();
+      void this.requestRefresh(
+        createFullRefreshRequest(RefreshReasons.REMOVE_DOC),
+      );
       return;
     }
 
     // 全量刷新命令
-    const fullRefreshCmds = [
-      "txerr",
-      "refreshdoc",
-      "createdailynote",
-      "moveDoc",
-    ];
-    if (fullRefreshCmds.includes(data.cmd)) {
+    if (isWsMainFullRefreshCommand(data.cmd)) {
       console.log(
         "[Task Assistant] onWsMain -> full refresh branch for cmd:",
         data.cmd,
       );
-      this.scheduleRefresh();
+      void this.requestRefresh(
+        createFullRefreshRequest(createWsMainFullRefreshReason(data.cmd)),
+      );
       return;
     }
 
@@ -2175,9 +2280,9 @@ export default class TaskAssistantPlugin extends Plugin {
 
     if (success) {
       console.log("[Task Assistant] Next occurrence created successfully");
-      // 触发数据刷新
-      eventBus.emit(Events.DATA_REFRESH);
-      broadcastDataRefresh();
+      void this.requestRefresh(
+        createFullRefreshRequest(RefreshReasons.INDEX_CREATE_NEXT_OCCURRENCE),
+      );
     } else {
       console.log("[Task Assistant] Failed to create next occurrence");
     }
@@ -2230,39 +2335,25 @@ export default class TaskAssistantPlugin extends Plugin {
     });
 
     if (rootIDs.length > 0) {
-      dirtyDocTracker.markDirty(rootIDs);
       console.log(
         "[Task Assistant] ws-main directed refresh for docs:",
         rootIDs,
       );
+      void this.requestRefresh(
+        createDirectedRefreshRequest(rootIDs, {
+          reason: createWsMainDirectedRefreshReason(data?.cmd),
+        }),
+      );
+      return;
     } else {
       console.warn(
         "[Task Assistant] handleDirectedRefresh found no rootIDs, refresh will continue without dirty docs",
       );
+      void this.requestRefresh(
+        createFullRefreshRequest(createMissingRootIdsRefreshReason(data?.cmd)),
+      );
+      return;
     }
-    this.scheduleRefresh();
-  }
-
-  /**
-   * 延迟刷新（防抖）
-   */
-  private scheduleRefresh() {
-    console.log("[Task Assistant] scheduleRefresh called:", {
-      hadPendingTimer: Boolean(this.refreshTimeout),
-      dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
-    });
-
-    if (this.refreshTimeout) {
-      clearTimeout(this.refreshTimeout);
-    }
-
-    this.refreshTimeout = setTimeout(() => {
-      console.log("[Task Assistant] scheduleRefresh timer fired:", {
-        dirtyDocsAtEmit: dirtyDocTracker.getDirtyDocs(),
-      });
-      eventBus.emit(Events.DATA_REFRESH);
-      broadcastDataRefresh();
-    }, 150);
   }
 
   // ============================================

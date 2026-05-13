@@ -199,7 +199,7 @@ vi.mock('@/utils/fileUtils', () => ({
 vi.mock('@/utils/eventBus', () => ({
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
   Events: {
-    DATA_REFRESH: 'DATA_REFRESH',
+    SETTINGS_CHANGED: 'settings:changed',
   },
   eventBus: {
     on: vi.fn(() => () => {}),

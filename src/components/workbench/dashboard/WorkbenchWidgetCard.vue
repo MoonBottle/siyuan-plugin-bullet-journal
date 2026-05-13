@@ -2,7 +2,10 @@
   <article class="workbench-widget-card" data-testid="workbench-widget-card">
     <span class="workbench-widget-card__drag" aria-hidden="true">::</span>
     <header class="workbench-widget-card__header">
-      <span class="workbench-widget-card__title">{{ title }}</span>
+      <div class="workbench-widget-card__title-wrap">
+        <span class="workbench-widget-card__title">{{ title }}</span>
+        <span v-if="subtitle" class="workbench-widget-card__subtitle">{{ subtitle }}</span>
+      </div>
       <div class="workbench-widget-card__controls">
         <div class="workbench-widget-card__menu-wrap">
           <button
@@ -60,6 +63,7 @@ import { t } from '@/i18n';
 
 defineProps<{
   title: string;
+  subtitle?: string;
   showConfigure?: boolean;
 }>();
 
@@ -114,9 +118,23 @@ function handleDelete() {
   gap: 12px;
 }
 
+.workbench-widget-card__title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
 .workbench-widget-card__title {
   font-weight: 500;
   color: var(--b3-theme-on-background);
+}
+
+.workbench-widget-card__subtitle {
+  color: var(--b3-theme-on-surface);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .workbench-widget-card__controls {

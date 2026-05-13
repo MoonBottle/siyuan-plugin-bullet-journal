@@ -14,6 +14,29 @@ const nativePreviewContainsTarget = vi.fn(() => false);
 const mockPlugin = { name: 'plugin' };
 const mockApp = { name: 'app' };
 
+function seedProjectItems(projectStore: ReturnType<typeof useProjectStore>, items: Array<Record<string, unknown>>) {
+  projectStore.projects = [
+    {
+      id: 'project-1',
+      name: 'Project A',
+      path: '/project-a',
+      groupId: 'group-a',
+      tasks: [
+        {
+          id: 'task-1',
+          name: 'Task A',
+          items: items.map(item => ({
+            date: '2026-05-02',
+            status: 'pending',
+            ...item,
+          })),
+        },
+      ],
+      habits: [],
+    } as any,
+  ];
+}
+
 vi.mock('@/main', () => ({
   usePlugin: vi.fn(() => mockPlugin),
   useApp: vi.fn(() => mockApp),
@@ -69,6 +92,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>, pinia: Pinia, 
   const { default: TodoListWidget } = await import('@/components/workbench/widgets/TodoListWidget.vue');
   const container = document.createElement('div');
   document.body.appendChild(container);
+  const onTitleMetaChange = vi.fn();
 
   const app = createApp(TodoListWidget, {
     widget: {
@@ -78,6 +102,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>, pinia: Pinia, 
       layout: { x: 0, y: 0, w: 6, h: 4 },
       config: widgetConfig,
     },
+    onTitleMetaChange,
     onOpenTodoView,
   });
 
@@ -86,6 +111,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>, pinia: Pinia, 
 
   return {
     container,
+    onTitleMetaChange,
     unmount() {
       app.unmount();
       container.remove();
@@ -143,11 +169,11 @@ describe('TodoListWidget', () => {
     setActivePinia(pinia);
     const projectStore = useProjectStore();
     projectStore.currentDate = '2026-05-02';
-    projectStore.getFilteredAndSortedItems = vi.fn(() => ([
-      { id: 'item-1', status: 'pending' },
+    seedProjectItems(projectStore, [
+      { id: 'item-1', status: 'pending', priority: 'high' },
       { id: 'item-2', status: 'completed' },
-      { id: 'item-3', status: 'pending' },
-    ])) as any;
+      { id: 'item-3', status: 'pending', priority: 'high' },
+    ]);
 
     const mounted = await mountWidget({
       preset: {
@@ -162,6 +188,7 @@ describe('TodoListWidget', () => {
     expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-search"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-group-id="group-a"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-display-mode="embedded"]')).not.toBeNull();
+    expect(mounted.container.querySelector('.workbench-widget-todo-list__meta')).toBeNull();
     expect(mounted.container.querySelector('.workbench-widget-todo-list__list')).toBeNull();
     const contentProps = todoContentPaneProps.mock.calls.at(-1)?.[0];
     expect(contentProps.searchQuery).toBe('');
@@ -169,6 +196,7 @@ describe('TodoListWidget', () => {
     expect(contentProps.sortRules).toEqual(undefined);
     expect(contentProps.previewTriggerMode).toBe('click');
     expect(contentProps.onItemPreviewClick).toBeTypeOf('function');
+    expect(mounted.onTitleMetaChange).toHaveBeenLastCalledWith('2 项');
 
     mounted.unmount();
   });
@@ -178,7 +206,7 @@ describe('TodoListWidget', () => {
     setActivePinia(pinia);
     const projectStore = useProjectStore();
     projectStore.currentDate = '2026-05-02';
-    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+    seedProjectItems(projectStore, []);
 
     const mounted = await mountWidget({
       preset: {
@@ -205,7 +233,7 @@ describe('TodoListWidget', () => {
     setActivePinia(pinia);
     const projectStore = useProjectStore();
     projectStore.currentDate = '2026-05-02';
-    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+    seedProjectItems(projectStore, []);
 
     await mountWidget({
       preset: {
@@ -229,11 +257,10 @@ describe('TodoListWidget', () => {
     setActivePinia(pinia);
     const projectStore = useProjectStore();
     projectStore.currentDate = '2026-05-02';
-    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
-    projectStore.getTodoTagOptions = vi.fn(() => [
-      { name: 'Alpha', count: 2 },
-      { name: 'Beta', count: 1 },
-    ]) as any;
+    seedProjectItems(projectStore, [
+      { id: 'item-1', tags: ['Alpha'] },
+      { id: 'item-2', tags: ['Alpha', 'Beta'] },
+    ]);
 
     const mounted = await mountWidget({
       preset: {
@@ -255,11 +282,10 @@ describe('TodoListWidget', () => {
     setActivePinia(pinia);
     const projectStore = useProjectStore();
     projectStore.currentDate = '2026-05-02';
-    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
-    projectStore.getTodoTagOptions = vi.fn(() => [
-      { name: 'Alpha', count: 2 },
-      { name: 'Beta', count: 1 },
-    ]) as any;
+    seedProjectItems(projectStore, [
+      { id: 'item-1', tags: ['Alpha'] },
+      { id: 'item-2', tags: ['Alpha', 'Beta'] },
+    ]);
 
     const mounted = await mountReactiveWidget({
       preset: {
@@ -287,7 +313,7 @@ describe('TodoListWidget', () => {
     setActivePinia(pinia);
     const projectStore = useProjectStore();
     projectStore.currentDate = '2026-05-02';
-    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+    seedProjectItems(projectStore, []);
     const onOpenTodoView = vi.fn();
 
     const mounted = await mountWidget({
@@ -306,7 +332,7 @@ describe('TodoListWidget', () => {
     setActivePinia(pinia);
     const projectStore = useProjectStore();
     projectStore.currentDate = '2026-05-02';
-    projectStore.getFilteredAndSortedItems = vi.fn(() => []) as any;
+    seedProjectItems(projectStore, []);
 
     await mountWidget({
       preset: {},

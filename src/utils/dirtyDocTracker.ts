@@ -23,6 +23,12 @@ class DirtyDocTracker {
     return Array.from(this.dirtyDocIds);
   }
 
+  consumeDirtyDocs(): string[] {
+    const docs = Array.from(this.dirtyDocIds);
+    this.dirtyDocIds.clear();
+    return docs;
+  }
+
   /**
    * 清除指定文档的脏标记
    * projectStore.refresh 完成后调用

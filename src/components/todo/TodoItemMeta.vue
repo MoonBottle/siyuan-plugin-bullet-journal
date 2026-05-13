@@ -64,10 +64,9 @@ const reminderText = computed(() => {
 
 const recurringText = computed(() => {
   if (!hasRecurring.value) return t('recurring.setRecurring');
-  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule);
+  const ruleMarker = generateRepeatRuleMarker(props.item.repeatRule, { includeEmoji: false });
   const endMarker = generateEndConditionMarker(props.item.endCondition);
-  const compactRuleMarker = ruleMarker.replace(/^🔁\s*/, '');
-  return endMarker ? `${compactRuleMarker} ${endMarker}` : compactRuleMarker;
+  return endMarker ? `${ruleMarker} ${endMarker}` : ruleMarker;
 });
 
 const reminderTooltip = computed(() => {

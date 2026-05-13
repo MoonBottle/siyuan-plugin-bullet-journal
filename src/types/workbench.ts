@@ -81,4 +81,5 @@ export interface WorkbenchSettings {
   entries: WorkbenchEntry[];
   dashboards: WorkbenchDashboard[];
   activeEntryId: string | null;
+  sidebarCollapsed?: boolean;
 }

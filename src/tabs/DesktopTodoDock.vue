@@ -376,13 +376,15 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'desktop-todo:manual-refresh',
+    });
     showMessage(t('common').dataRefreshed);
   }
 };
@@ -480,7 +482,7 @@ onMounted(async () => {
   projectStore.hideAbandoned = settingsStore.todoDock.hideAbandoned;
 
   // 监听数据刷新事件（同上下文）
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
 
   // 跨上下文：Dock 可能在 iframe 中，收不到主窗口的 eventBus，用 BroadcastChannel 接收
   try {
@@ -492,7 +494,7 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('DesktopTodoDock', plugin),
-          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
         });
         return handleDataRefresh(payload);
       },

@@ -28,7 +28,11 @@ import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, getBlockKramdown, renameDocByID, updateBlock } from '@/api';
-import { eventBus, Events, broadcastDataRefresh } from '@/utils/eventBus';
+import {
+  RefreshReasons,
+  createFullRefreshRequest,
+  submitRefreshRequest,
+} from '@/utils/refreshRequests';
 import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
 import { checkIn, checkInCount } from '@/services/habitService';
 import type { CheckInRecord } from '@/types/models';
@@ -285,8 +289,7 @@ function findHabitAndRecordByRecordBlockId(blockId?: string): { habit: Habit; re
 }
 
 function notifyHabitDataRefresh(): void {
-  eventBus.emit(Events.DATA_REFRESH);
-  broadcastDataRefresh();
+  submitRefreshRequest(createFullRefreshRequest(RefreshReasons.SLASH_COMMAND_HABIT_DATA));
 }
 
 /**
@@ -584,9 +587,12 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
     settingsStore.directories.push(newDir);
     settingsStore.saveToPlugin();
 
-    // 触发数据刷新
-    eventBus.emit(Events.DATA_REFRESH);
-    broadcastDataRefresh(settingsStore.$state as object);
+    submitRefreshRequest(
+      createFullRefreshRequest(
+        RefreshReasons.SLASH_COMMAND_SET_PROJECT_DIR,
+        settingsStore.$state as Record<string, unknown>,
+      ),
+    );
 
     showMessage(t('slash').setProjectDirSuccess, 3000, 'info');
   } catch (error) {

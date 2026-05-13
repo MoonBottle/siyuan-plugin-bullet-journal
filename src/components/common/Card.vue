@@ -1,22 +1,22 @@
 <template>
   <div
-    class="card"
+    class="ta-card"
     :class="cardClasses"
     @click="handleClick"
     @contextmenu.prevent="handleContextMenu"
   >
     <!-- Header Slot -->
-    <div v-if="showHeader" class="card-header">
+    <div v-if="showHeader" class="ta-card__header">
       <slot name="header"></slot>
     </div>
 
     <!-- Content Slot -->
-    <div class="card-content">
+    <div class="ta-card__content">
       <slot></slot>
     </div>
 
     <!-- Footer Slot -->
-    <div v-if="showFooter" class="card-footer">
+    <div v-if="showFooter" class="ta-card__footer">
       <slot name="footer"></slot>
     </div>
   </div>
@@ -74,7 +74,7 @@ const handleContextMenu = (event: MouseEvent) => {
 </script>
 
 <style lang="scss" scoped>
-.card {
+.ta-card {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -100,16 +100,16 @@ const handleContextMenu = (event: MouseEvent) => {
   &.status-completed {
     border-left: 3px solid var(--b3-theme-success);
 
-    :deep(.card-content) {
-      text-decoration: line-through;
+    :deep(.ta-card__content) {
+      opacity: 0.6;
     }
   }
 
   &.status-abandoned {
     border-left: 3px solid var(--b3-theme-on-surface);
 
-    :deep(.card-content) {
-      text-decoration: line-through;
+    :deep(.ta-card__content) {
+      opacity: 0.6;
       color: var(--b3-theme-on-surface);
     }
   }
@@ -130,7 +130,7 @@ const handleContextMenu = (event: MouseEvent) => {
   }
 }
 
-.card-header {
+.ta-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -144,11 +144,11 @@ const handleContextMenu = (event: MouseEvent) => {
   border-radius: var(--b3-border-radius) var(--b3-border-radius) 0 0;
 }
 
-.card-content {
+.ta-card__content {
   width: 100%;
 }
 
-.card-footer {
+.ta-card__footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;

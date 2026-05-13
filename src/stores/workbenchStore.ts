@@ -74,6 +74,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
   const entries = ref<WorkbenchEntry[]>([]);
   const dashboards = ref<WorkbenchDashboard[]>([]);
   const activeEntryId = ref<string | null>(null);
+  const sidebarCollapsed = ref(false);
   const boundPlugin = ref<WorkbenchPlugin>(null);
   const saveState = ref<'idle' | 'saved' | 'error'>('idle');
   const saveError = ref<string | null>(null);
@@ -87,6 +88,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       entries: entries.value,
       dashboards: dashboards.value,
       activeEntryId: activeEntryId.value,
+      sidebarCollapsed: sidebarCollapsed.value,
     };
   }
 
@@ -123,6 +125,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     const settings = await loadWorkbenchSettings(plugin);
     entries.value = normalizeOrders(settings.entries ?? []);
     dashboards.value = settings.dashboards ?? [];
+    sidebarCollapsed.value = settings.sidebarCollapsed ?? false;
 
     const hasActiveEntry = entries.value.some(entry => entry.id === settings.activeEntryId);
     activeEntryId.value = hasActiveEntry
@@ -225,6 +228,22 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     }
 
     activeEntryId.value = id;
+    await persist();
+  }
+
+  async function toggleSidebar(): Promise<void> {
+    sidebarCollapsed.value = !sidebarCollapsed.value;
+    await persist();
+  }
+
+  async function reorderEntries(orderedIds: string[]): Promise<void> {
+    const idSet = new Set(orderedIds);
+    const reordered = orderedIds
+      .map(id => entries.value.find(entry => entry.id === id))
+      .filter((entry): entry is WorkbenchEntry => entry !== undefined);
+
+    const unmatched = entries.value.filter(entry => !idSet.has(entry.id));
+    entries.value = normalizeOrders([...reordered, ...unmatched]);
     await persist();
   }
 
@@ -413,6 +432,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     dashboards,
     activeEntryId,
     activeEntry,
+    sidebarCollapsed,
     saveState,
     saveError,
     bindPlugin,
@@ -422,6 +442,8 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     renameEntry,
     deleteEntry,
     setActiveEntry,
+    toggleSidebar,
+    reorderEntries,
     addWidget,
     removeWidget,
     renameWidget,

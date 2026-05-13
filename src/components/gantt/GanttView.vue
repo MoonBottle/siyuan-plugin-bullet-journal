@@ -48,7 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const pomodoroStore = usePomodoroStore();
-const plugin = usePlugin();
+const plugin = usePlugin() as any;
 
 const ganttEl = ref<HTMLElement | null>(null);
 
@@ -253,7 +253,10 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         const success = await updateBlockContent(item.blockId, tag);
         // 注意：重复事项的自动创建由 WebSocket 处理器处理
         if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+          await plugin.requestDataRefresh?.({
+            type: 'full',
+            reason: 'gantt-view:complete',
+          });
         }
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),
@@ -271,7 +274,10 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
           item.status
         );
         if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+          await plugin.requestDataRefresh?.({
+            type: 'full',
+            reason: 'gantt-view:migrate-today',
+          });
         }
       },
       onMigrateTomorrow: async () => {
@@ -288,7 +294,10 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
           item.status
         );
         if (plugin) {
-          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+          await plugin.requestDataRefresh?.({
+            type: 'full',
+            reason: 'gantt-view:migrate-tomorrow',
+          });
         }
       },
       onMigrateCustom: async () => {
@@ -305,7 +314,10 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
             item.status
           );
           if (plugin) {
-            await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+            await plugin.requestDataRefresh?.({
+              type: 'full',
+              reason: 'gantt-view:migrate-custom',
+            });
           }
         });
       },
@@ -314,7 +326,10 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         const tag = getStatusTag('abandoned');
         const success = await updateBlockContent(item.blockId, tag);
         if (success && plugin) {
-          await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+          await plugin.requestDataRefresh?.({
+            type: 'full',
+            reason: 'gantt-view:abandon',
+          });
         }
       },
       onOpenDoc: () => {

@@ -107,7 +107,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     settingsStore.loadFromPlugin();
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 事件取消订阅函数
@@ -126,7 +125,7 @@ onMounted(async () => {
   }
 
   // 监听数据刷新事件（同上下文）
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
 
   // 跨上下文：Tab 可能与主窗口分离，用 BroadcastChannel 接收刷新
   try {
@@ -138,7 +137,7 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('GanttTab', plugin),
-          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
         });
         return handleDataRefresh(payload);
       },
@@ -166,7 +165,10 @@ onUnmounted(() => {
 
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'gantt-tab:manual-refresh',
+    });
     showMessage(t('common').dataRefreshed);
   }
 };

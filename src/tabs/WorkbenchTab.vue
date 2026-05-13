@@ -3,11 +3,14 @@
     <WorkbenchSidebar
       :entries="workbenchStore.entries"
       :active-entry-id="currentActiveEntryId"
+      :collapsed="workbenchStore.sidebarCollapsed"
       @select="handleSelect"
       @create-dashboard="handleCreateDashboard"
       @create-view="handleCreateView"
       @rename-entry="handleRenameEntry"
       @delete-entry="handleDeleteEntry"
+      @reorder-entries="handleReorderEntries"
+      @toggle-sidebar="handleToggleSidebar"
     />
     <section class="workbench-tab__main">
       <div v-if="currentActiveEntry" class="workbench-tab__toolbar">
@@ -103,6 +106,14 @@ async function handleDeleteEntry(id: string) {
   await workbenchStore.deleteEntry(id);
 }
 
+async function handleReorderEntries(orderedIds: string[]) {
+  await workbenchStore.reorderEntries(orderedIds);
+}
+
+async function handleToggleSidebar() {
+  await workbenchStore.toggleSidebar();
+}
+
 function toggleWidgetMenu() {
   isWidgetMenuOpen.value = !isWidgetMenuOpen.value;
 }
@@ -149,7 +160,6 @@ async function handleDataRefresh(payload?: Record<string, unknown>) {
   }
 
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 }
 
 onMounted(async () => {
@@ -158,7 +168,7 @@ onMounted(async () => {
   }
   await workbenchStore.load(plugin);
 
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);

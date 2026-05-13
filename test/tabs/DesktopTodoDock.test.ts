@@ -16,6 +16,7 @@ const todoContentPaneProps = vi.fn();
 const nativePreviewOpen = vi.fn();
 const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
+const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
 
 vi.mock('siyuan', () => ({
   Menu: vi.fn(function () {
@@ -28,14 +29,14 @@ vi.mock('siyuan', () => ({
 }));
 
 vi.mock('@/main', () => ({
-  usePlugin: vi.fn(() => ({})),
-  getCurrentPlugin: vi.fn(() => ({})),
+  usePlugin: vi.fn(() => ({ requestDataRefresh: mockRequestDataRefresh })),
+  getCurrentPlugin: vi.fn(() => ({ requestDataRefresh: mockRequestDataRefresh })),
   useApp: vi.fn(() => ({})),
 }));
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: vi.fn(() => () => {}), emit: vi.fn() },
-  Events: { DATA_REFRESH: 'data:refresh' },
+  Events: { SETTINGS_CHANGED: 'settings:changed' },
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
 }));
 
@@ -269,6 +270,7 @@ describe('DesktopTodoDock', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
+    mockRequestDataRefresh.mockClear();
     (globalThis as any).BroadcastChannel = vi.fn(() => ({ close: vi.fn() }));
   });
 
@@ -300,7 +302,7 @@ describe('DesktopTodoDock', () => {
     mounted.unmount();
   });
 
-  it('clicking the top-level refresh button calls projectStore.refresh', async () => {
+  it('clicking the top-level refresh button requests data refresh', async () => {
     const mounted = mountDock();
     await nextTick();
 
@@ -308,7 +310,7 @@ describe('DesktopTodoDock', () => {
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mounted.projectStore.refresh).toHaveBeenCalled();
+    expect(mockRequestDataRefresh).toHaveBeenCalled();
 
     mounted.unmount();
   });

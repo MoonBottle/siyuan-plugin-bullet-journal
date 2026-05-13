@@ -10,11 +10,15 @@ const {
   mockMenuOpen,
   mockShowConfirmDialog,
   mockShowInputDialog,
+  mockHideIconTooltip,
+  mockShowIconTooltip,
 } = vi.hoisted(() => ({
   mockMenuAddItem: vi.fn(),
   mockMenuOpen: vi.fn(),
   mockShowConfirmDialog: vi.fn((_title, _message, callback) => callback?.()),
   mockShowInputDialog: vi.fn((_title, _message, defaultValue, callback) => callback?.(defaultValue)),
+  mockHideIconTooltip: vi.fn(),
+  mockShowIconTooltip: vi.fn(),
 }));
 
 vi.mock('siyuan', () => ({
@@ -25,7 +29,9 @@ vi.mock('siyuan', () => ({
 }));
 
 vi.mock('@/utils/dialog', () => ({
+  hideIconTooltip: mockHideIconTooltip,
   showConfirmDialog: mockShowConfirmDialog,
+  showIconTooltip: mockShowIconTooltip,
   showInputDialog: mockShowInputDialog,
 }));
 
@@ -57,6 +63,7 @@ describe('WorkbenchSidebar', () => {
   async function mountSidebar(props?: Partial<{
     entries: WorkbenchEntry[];
     activeEntryId: string | null;
+    collapsed: boolean;
   }>) {
     const { default: WorkbenchSidebar } = await import('@/components/workbench/WorkbenchSidebar.vue');
     const container = document.createElement('div');
@@ -67,18 +74,21 @@ describe('WorkbenchSidebar', () => {
     const onCreateView = vi.fn();
     const onRenameEntry = vi.fn();
     const onDeleteEntry = vi.fn();
+    const onToggleSidebar = vi.fn();
 
     const app = createApp(defineComponent({
       render() {
         return h(WorkbenchSidebar, {
           entries,
           activeEntryId: 'entry-dashboard',
+          collapsed: false,
           ...props,
           onSelect,
           onCreateDashboard,
           onCreateView,
           onRenameEntry,
           onDeleteEntry,
+          onToggleSidebar,
         });
       },
     }));
@@ -93,6 +103,7 @@ describe('WorkbenchSidebar', () => {
       onCreateView,
       onRenameEntry,
       onDeleteEntry,
+      onToggleSidebar,
       unmount() {
         app.unmount();
         container.remove();
@@ -104,6 +115,8 @@ describe('WorkbenchSidebar', () => {
     const mounted = await mountSidebar();
 
     expect(mounted.container.querySelectorAll('[data-testid^="workbench-entry-"]')).toHaveLength(2);
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar-search-input"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar-collapse"]')).not.toBeNull();
     expect(
       mounted.container.querySelector('[data-testid="workbench-entry-entry-dashboard"]')?.getAttribute('data-active'),
     ).toBe('true');
@@ -186,5 +199,98 @@ describe('WorkbenchSidebar', () => {
     expect(mounted.onDeleteEntry).toHaveBeenCalledWith('entry-todo');
 
     mounted.unmount();
+  });
+
+  it('shows search popup results and selects an entry from the popup', async () => {
+    const mounted = await mountSidebar();
+    const searchInput = mounted.container.querySelector('[data-testid="workbench-sidebar-search-input"]') as HTMLInputElement;
+    searchInput.value = 'todo';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar-search-popup"]')).not.toBeNull();
+    expect(mounted.container.querySelectorAll('[data-testid^="workbench-search-result-"]')).toHaveLength(1);
+
+    (mounted.container.querySelector('[data-testid="workbench-search-result-entry-todo"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mounted.onSelect).toHaveBeenCalledWith('entry-todo');
+    expect(searchInput.value).toBe('');
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar-search-popup"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('shows an empty state when search has no matches', async () => {
+    const mounted = await mountSidebar();
+    const searchInput = mounted.container.querySelector('[data-testid="workbench-sidebar-search-input"]') as HTMLInputElement;
+    searchInput.value = '111';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar-search-popup"]')).not.toBeNull();
+    expect(mounted.container.textContent).toContain('No matches found');
+    expect(mounted.container.textContent).toContain('Try a different keyword');
+
+    mounted.unmount();
+  });
+
+  it('supports keyboard navigation and escape in search popup', async () => {
+    const mounted = await mountSidebar({
+      entries: [
+        ...entries,
+        {
+          id: 'entry-month',
+          type: 'view',
+          title: 'Monthly Overview',
+          icon: 'iconClock',
+          order: 2,
+          viewType: 'todo',
+        },
+      ],
+    });
+    const searchInput = mounted.container.querySelector('[data-testid="workbench-sidebar-search-input"]') as HTMLInputElement;
+    searchInput.value = 'o';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await nextTick();
+
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await nextTick();
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await nextTick();
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await nextTick();
+
+    expect(mounted.onSelect).toHaveBeenCalledWith('entry-month');
+
+    searchInput.value = 'todo';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await nextTick();
+
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar-search-popup"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('uses the top toggle button and hides search input when collapsed', async () => {
+    const mounted = await mountSidebar();
+
+    (mounted.container.querySelector('[data-testid="workbench-sidebar-collapse"]') as HTMLButtonElement).click();
+    expect(mounted.onToggleSidebar).toHaveBeenCalledTimes(1);
+    expect(mounted.container.querySelector('[data-testid="workbench-sidebar-expand-float"]')).toBeNull();
+
+    mounted.unmount();
+
+    const collapsedMounted = await mountSidebar({
+      collapsed: true,
+    });
+
+    expect(collapsedMounted.container.querySelector('[data-testid="workbench-sidebar-search-input"]')).toBeNull();
+    expect(collapsedMounted.container.querySelector('[data-testid="workbench-sidebar-expand"]')).not.toBeNull();
+
+    collapsedMounted.unmount();
   });
 });

@@ -21,7 +21,6 @@ import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Habit, HabitStats } from '@/types/models';
 import { showMessage } from '@/utils/dialog';
-import { broadcastDataRefresh, eventBus, Events } from '@/utils/eventBus';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import dayjs from '@/utils/dayjs';
 import {
@@ -37,7 +36,7 @@ type UseHabitWorkspaceOptions = {
 type HabitListMode = 'active' | 'archived';
 
 export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
-  const plugin = usePlugin();
+  const plugin = usePlugin() as any;
   const projectStore = useProjectStore();
   const settingsStore = useSettingsStore();
 
@@ -145,7 +144,10 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     if (!plugin) {
       return;
     }
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'habit-workspace:manual-refresh',
+    });
     syncSelectedHabit();
   }
 
@@ -212,8 +214,10 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
     const success = await archiveHabit(selectedHabit.value, dayjs().format('YYYY-MM-DD'));
     if (success) {
-      eventBus.emit(Events.DATA_REFRESH);
-      broadcastDataRefresh();
+      await plugin?.requestDataRefresh?.({
+        type: 'full',
+        reason: 'habit-workspace:archive',
+      });
     }
     return success;
   }
@@ -225,8 +229,10 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
     const success = await unarchiveHabit(selectedHabit.value);
     if (success) {
-      eventBus.emit(Events.DATA_REFRESH);
-      broadcastDataRefresh();
+      await plugin?.requestDataRefresh?.({
+        type: 'full',
+        reason: 'habit-workspace:unarchive',
+      });
     }
     return success;
   }

@@ -250,6 +250,7 @@ import dayjs from '@/utils/dayjs';
 import { writeMcpCache } from '@/mcp/mcpCacheWriter';
 
 let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null;
+const INITIAL_LOAD_PROJECT_BATCH_SIZE = 25;
 function debouncedWriteMcpCache(
   projects: Project[],
   items: Item[],
@@ -779,6 +780,40 @@ export const useProjectStore = defineStore('project', {
       this.projects = [];
     },
 
+    applyProjects(nextProjects: Project[]) {
+      this.projects = nextProjects;
+    },
+
+    appendProjects(nextProjects: Project[]) {
+      if (nextProjects.length === 0) return;
+      this.projects = [...this.projects, ...nextProjects];
+    },
+
+    removeProjectsByIds(projectIds: string[]) {
+      if (projectIds.length === 0) return;
+      const idSet = new Set(projectIds);
+      this.projects = this.projects.filter(project => !idSet.has(project.id));
+    },
+
+    async buildProjectsFromParser(
+      parser: MarkdownParser,
+      _plugin: any,
+      scanMode: ScanMode,
+      directories: ProjectDirectory[],
+    ): Promise<Project[]> {
+      const enabledDirs = directories.filter(d => d.enabled);
+      const nextProjects: Project[] = [];
+
+      await parser.parseAllProjectsWithCallback(_plugin, (project) => {
+        if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
+          project.groupId = matchGroupId(project.path, enabledDirs);
+        }
+        nextProjects.push(project);
+      });
+
+      return nextProjects;
+    },
+
     /**
      * 加载项目数据（首次加载，显示加载状态）
      * 流式更新：每解析完一个项目就立即显示
@@ -794,14 +829,22 @@ export const useProjectStore = defineStore('project', {
       
       try {
         const parser = new MarkdownParser(enabledDirs, scanMode);
+        let pendingProjects: Project[] = [];
 
         await parser.parseAllProjectsWithCallback(_plugin, (project) => {
           // 全扫描模式下，需要根据路径匹配确定分组
           if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
             project.groupId = matchGroupId(project.path, enabledDirs);
           }
-          this.projects.push(project);
+          pendingProjects.push(project);
+
+          if (pendingProjects.length >= INITIAL_LOAD_PROJECT_BATCH_SIZE) {
+            this.appendProjects(pendingProjects);
+            pendingProjects = [];
+          }
         });
+
+        this.appendProjects(pendingProjects);
 
         this.currentDate = dayjs().format('YYYY-MM-DD');
         console.log('[Task Assistant] Total projects loaded:', this.projects.length);
@@ -820,7 +863,12 @@ export const useProjectStore = defineStore('project', {
      * 刷新数据（后台刷新，不显示加载状态）
      * 支持定向刷新：只更新变更的项目，避免全量替换导致的 Vue 重渲染
      */
-    async refresh(_plugin: any, scanMode: ScanMode, directories: ProjectDirectory[]) {
+    async refresh(
+      _plugin: any,
+      scanMode: ScanMode,
+      directories: ProjectDirectory[],
+      options?: { forceFull?: boolean },
+    ) {
       // 如果正在刷新，跳过
       if (this.refreshing) {
         console.log('[Task Assistant] Refresh skipped because another refresh is in progress:', {
@@ -855,7 +903,7 @@ export const useProjectStore = defineStore('project', {
           dirtyDocCount: dirtyDocIds.length,
         });
 
-        if (dirtyDocIds.length > 0) {
+        if (!options?.forceFull && dirtyDocIds.length > 0) {
           // 定向刷新：只更新指定文档
           console.log('[Task Assistant] Refresh choosing directed refresh path');
           await this.refreshDirtyDocs(_plugin, scanMode, directories, dirtyDocIds);
@@ -906,18 +954,13 @@ export const useProjectStore = defineStore('project', {
 
       const enabledDirs = directories.filter(d => d.enabled);
       const parser = new MarkdownParser(enabledDirs, scanMode);
-
-      // 清空现有数据
-      this.projects = [];
-
-      // 流式解析（已使用 SQL 批量查询番茄钟）
-      await parser.parseAllProjectsWithCallback(_plugin, (project) => {
-        // 全扫描模式下，需要根据路径匹配确定分组
-        if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
-          project.groupId = matchGroupId(project.path, enabledDirs);
-        }
-        this.projects.push(project);
-      });
+      const nextProjects = await this.buildProjectsFromParser(
+        parser,
+        _plugin,
+        scanMode,
+        directories,
+      );
+      this.applyProjects(nextProjects);
 
       dirtyDocTracker.clearAll();
       console.log('[Task Assistant] Full refresh completed:', {
@@ -1006,6 +1049,7 @@ export const useProjectStore = defineStore('project', {
               path,
               finalGroupId,
             });
+            this.removeProjectsByIds([docId]);
           }
         } catch (error) {
           console.error(`[Task Assistant] Failed to refresh doc ${docId}:`, error);

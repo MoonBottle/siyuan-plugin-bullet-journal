@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<{
   selectedTags?: string[];
   sortRules?: TodoSortRule[];
   dateRange?: { start: string; end: string } | null;
+  completedDateRange?: { start: string; end: string } | null;
   priorities?: PriorityLevel[];
   includeNoPriority?: boolean;
   displayMode?: 'default' | 'embedded';
@@ -58,6 +59,7 @@ const props = withDefaults(defineProps<{
   selectedTags: () => [],
   sortRules: () => [],
   dateRange: null,
+  completedDateRange: null,
   priorities: () => [],
   includeNoPriority: false,
   displayMode: 'default',
@@ -78,7 +80,7 @@ const projectStore = useProjectStore();
 const todoSidebarListRef = ref<InstanceType<typeof TodoSidebarList> | null>(null);
 
 const items = computed<Item[]>(() => {
-  return projectStore.getFilteredAndSortedItems({
+  const pendingItems = projectStore.getFilteredAndSortedItems({
     groupId: props.groupId,
     searchQuery: props.searchQuery,
     selectedTags: props.selectedTags,
@@ -86,7 +88,29 @@ const items = computed<Item[]>(() => {
     priorities: props.priorities.length > 0 ? props.priorities : undefined,
     includeNoPriority: props.includeNoPriority,
     sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
+  }).filter(item => item.status !== 'completed' && item.status !== 'abandoned');
+
+  const completedItems = projectStore.getFilteredCompletedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    selectedTags: props.selectedTags,
+    dateRange: props.completedDateRange ?? props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
   });
+
+  const abandonedItems = projectStore.getFilteredAbandonedItems({
+    groupId: props.groupId,
+    searchQuery: props.searchQuery,
+    selectedTags: props.selectedTags,
+    dateRange: props.completedDateRange ?? props.dateRange,
+    priorities: props.priorities.length > 0 ? props.priorities : undefined,
+    includeNoPriority: props.includeNoPriority,
+    sortRules: props.sortRules.length > 0 ? props.sortRules : undefined,
+  });
+
+  return [...pendingItems, ...completedItems, ...abandonedItems];
 });
 
 const hasAnyItemsRaw = computed(() => {

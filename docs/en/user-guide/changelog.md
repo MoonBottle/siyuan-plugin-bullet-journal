@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.13.6] - 2026-05-13
+
+### Features
+
+- **Workbench Sidebar Enhancement**: Support sidebar collapse/expand and drag-and-drop reordering
+- **Workbench Card Subtitle**: Add subtitle support for workbench card components
+- **Habit List Status Markers**: Refactor habit list item metadata display, add status markers and date status text
+- **Todo Sidebar Date Filtering Enhancement**: Add independent date range filtering for completed/abandoned tasks
+
+### Fixes
+
+- **Item Parsing Boundary**: Correctly identify the boundary of item-related content, stop collecting associated content
+- **Workbench Initial Settings**: Fix missing sidebarCollapsed field in empty workbench settings
+
+### Refactors
+
+- **Data Refresh Mechanism Overhaul**: Unify data refresh event triggering, extract refresh request logic into an independent module, remove legacy debounce refresh logic
+- **Example Document Refactor**: Restructure example document generation logic, optimize onboarding experience for new users
+- **Habit Detail Pane**: Split detail pane into independent blocks, optimize component structure
+- **Card Component**: Rename card component class names to avoid naming conflicts
+- **Tooltip Lifecycle**: Optimize icon tooltip lifecycle management
+- **Recurring Rule Display**: Remove emoji prefix from recurring rule display
+- **Initial Loading Optimization**: Optimize initial loading logic and batch loading performance
+
+### Styles
+
+- **Habit List**: Unify month navigation button styles, add tooltip to action buttons
+- **Todo Card**: Remove strikethrough style for completed/abandoned items
+
 ## [0.13.5] - 2026-05-11
 
 ### Features

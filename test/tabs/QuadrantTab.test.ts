@@ -14,6 +14,7 @@ const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
 const nativePreviewOpenCalls: Array<Record<string, any>> = [];
 const mockRefresh = vi.fn(() => Promise.resolve());
+const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
 const mockShowMessage = vi.fn();
 const mockLoadFromPlugin = vi.fn();
 const mockSaveToPlugin = vi.fn();
@@ -23,7 +24,7 @@ const menuAddItem = vi.fn();
 const menuOpen = vi.fn();
 const mockGetFilteredAndSortedItems = vi.fn(() => []);
 
-const mockPlugin = { name: 'plugin' };
+const mockPlugin = { name: 'plugin', requestDataRefresh: mockRequestDataRefresh };
 const mockApp = { name: 'app' };
 const mockSettingsStore = {
   scanMode: 'all',
@@ -110,7 +111,7 @@ vi.mock('@/utils/fileUtils', () => ({
 
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
-  Events: { DATA_REFRESH: 'data:refresh' },
+  Events: { SETTINGS_CHANGED: 'settings:changed', REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted' },
   DATA_REFRESH_CHANNEL: 'task-assistant-refresh',
 }));
 
@@ -257,6 +258,7 @@ describe('QuadrantTab', () => {
     mockProjectStore.hideAbandoned = false;
     mockGetFilteredAndSortedItems.mockReturnValue([]);
     mockUpdateBlockPriority.mockResolvedValue(true);
+    mockRequestDataRefresh.mockClear();
     mockQuadrantConfigStore.loaded = false;
     mockQuadrantConfigStore.panels = [
       { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
@@ -507,7 +509,7 @@ describe('QuadrantTab', () => {
     mounted.unmount();
   });
 
-  it('clicking refresh calls projectStore.refresh', async () => {
+  it('clicking refresh requests data refresh through the plugin', async () => {
     const mounted = await mountQuadrantTab();
     await nextTick();
 
@@ -515,7 +517,10 @@ describe('QuadrantTab', () => {
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mockRefresh).toHaveBeenCalledWith(mockPlugin, 'all', []);
+    expect(mockRequestDataRefresh).toHaveBeenCalledWith({
+      type: 'full',
+      reason: 'quadrant-tab:manual-refresh',
+    });
 
     mounted.unmount();
   });
@@ -540,17 +545,17 @@ describe('QuadrantTab', () => {
     mounted.unmount();
   });
 
-  it('subscribes to same-context refresh events and reloads settings before refreshing', async () => {
+  it('subscribes to same-context settings-changed events and reloads settings without forcing a project refresh', async () => {
     const mounted = await mountQuadrantTab();
     await nextTick();
 
-    expect(mockEventBusOn).toHaveBeenCalledWith('data:refresh', expect.any(Function));
+    expect(mockEventBusOn).toHaveBeenCalledWith('settings:changed', expect.any(Function));
 
-    const refreshHandler = mockEventBusOn.mock.calls.find(call => call[0] === 'data:refresh')?.[1];
+    const refreshHandler = mockEventBusOn.mock.calls.find(call => call[0] === 'settings:changed')?.[1];
     await refreshHandler?.();
 
     expect(mockLoadFromPlugin).toHaveBeenCalled();
-    expect(mockRefresh).toHaveBeenCalledWith(mockPlugin, 'all', []);
+    expect(mockRefresh).not.toHaveBeenCalled();
 
     mounted.unmount();
   });
@@ -581,7 +586,7 @@ describe('QuadrantTab', () => {
     await nextTick();
 
     expect(mockLoadFromPlugin).not.toHaveBeenCalled();
-    expect(mockRefresh).toHaveBeenCalledWith(mockPlugin, 'dirs', ['updated-dir']);
+    expect(mockRefresh).not.toHaveBeenCalled();
 
     mounted.unmount();
   });

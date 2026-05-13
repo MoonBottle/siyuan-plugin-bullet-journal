@@ -282,9 +282,15 @@ export function checkEndCondition(
 /**
  * 生成重复规则标记（人类可读格式）
  * @param repeatRule 重复规则
+ * @param options 可选配置
+ * @param options.includeEmoji 是否在结果前包含 🔁 emoji，默认为 true
  * @returns 标记字符串
  */
-export function generateRepeatRuleMarker(repeatRule: RepeatRule): string {
+export function generateRepeatRuleMarker(
+  repeatRule: RepeatRule,
+  options?: { includeEmoji?: boolean }
+): string {
+  const { includeEmoji = true } = options ?? {};
   const { type, dayOfMonth, daysOfWeek } = repeatRule;
 
   // 获取基础类型文本
@@ -297,19 +303,20 @@ export function generateRepeatRuleMarker(repeatRule: RepeatRule): string {
   };
 
   const typeStr = typeMap[type] || type;
+  const prefix = includeEmoji ? '🔁' : '';
 
   if (type === 'monthly' && dayOfMonth !== undefined) {
-    return `🔁${t('recurring.generate.monthlyOnDay', { day: String(dayOfMonth) })}`;
+    return `${prefix}${t('recurring.generate.monthlyOnDay', { day: String(dayOfMonth) })}`;
   }
 
   if (type === 'weekly' && daysOfWeek && daysOfWeek.length > 0) {
     // 紧凑格式：使用单字（一、二、三...）连续排列
     const weekDayChars = ['日', '一', '二', '三', '四', '五', '六'];
     const dayChars = daysOfWeek.map(d => weekDayChars[d]).filter(Boolean);
-    return `🔁${t('recurring.parse.weeklyOnPrefix') || '每周'}${dayChars.join('')}`;
+    return `${prefix}${t('recurring.parse.weeklyOnPrefix') || '每周'}${dayChars.join('')}`;
   }
 
-  return `🔁${typeStr}`;
+  return `${prefix}${typeStr}`;
 }
 
 /**

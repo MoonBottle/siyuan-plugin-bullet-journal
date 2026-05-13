@@ -22,9 +22,9 @@ vi.mock('@/utils/eventBus', () => ({
     emit: vi.fn(),
   },
   Events: {
-    DATA_REFRESH: 'data:refresh',
+    DATA_REFRESHED: 'data:refreshed',
   },
-  broadcastDataRefresh: vi.fn(),
+  broadcastDataRefreshed: vi.fn(),
 }));
 
 describe('任务列表完成检测', () => {

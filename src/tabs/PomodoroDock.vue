@@ -72,13 +72,15 @@ const handleDataRefresh = async () => {
   console.log('[Task Assistant][ViewLifecycle] handleDataRefresh:', buildViewDebugContext('PomodoroDock', plugin));
   if (!plugin) return;
   settingsStore.loadFromPlugin();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
+    await plugin.requestDataRefresh?.({
+      type: 'full',
+      reason: 'pomodoro-dock:manual-refresh',
+    });
     showMessage(t('common').dataRefreshed);
   }
 };
@@ -230,7 +232,7 @@ onMounted(async () => {
   }
 
   // 监听数据刷新事件（同上下文）
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
 
   // 监听番茄钟恢复事件（从插件主逻辑触发）
   unsubscribePomodoroRestore = eventBus.on(Events.POMODORO_RESTORE, handlePomodoroRestore);
@@ -251,7 +253,7 @@ onMounted(async () => {
       onRefresh: () => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('PomodoroDock', plugin),
-          data: { type: 'DATA_REFRESH' },
+          data: { type: 'DATA_REFRESHED' },
         });
         return handleDataRefresh();
       },

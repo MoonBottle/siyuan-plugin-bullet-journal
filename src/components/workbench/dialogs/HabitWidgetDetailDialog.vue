@@ -122,14 +122,14 @@ function handleNativePreviewDestroyed({
 }
 
 const handleDataRefresh = async () => {
-  await refreshHabits();
+  selectHabitById(props.habitId);
 };
 
 let unsubscribeRefresh: (() => void) | null = null;
 
 onMounted(() => {
   selectHabitById(props.habitId);
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
 
   document.addEventListener('pointerdown', handleDocumentPointerDown, true);
 });

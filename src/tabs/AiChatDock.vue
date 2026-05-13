@@ -307,7 +307,6 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
     }
   }
   await nextTick();
-  await projectStore.refresh(plugin, settingsStore.scanMode, settingsStore.directories);
 };
 
 // 新建对话
@@ -451,7 +450,7 @@ onMounted(async () => {
   }
 
   // 监听数据刷新事件
-  unsubscribeRefresh = eventBus.on(Events.DATA_REFRESH, handleDataRefresh);
+  unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
 
   // 跨上下文：Dock 可能在 iframe 中，用 BroadcastChannel 接收
   try {
@@ -463,7 +462,7 @@ onMounted(async () => {
       onRefresh: (payload) => {
         console.log('[Task Assistant][ViewLifecycle] BroadcastChannel message:', {
           ...buildViewDebugContext('AiChatDock', plugin),
-          data: payload ? { type: 'DATA_REFRESH', ...payload } : { type: 'DATA_REFRESH' },
+          data: payload ? { type: 'SETTINGS_CHANGED', ...payload } : { type: 'SETTINGS_CHANGED' },
         });
         return handleDataRefresh(payload);
       },
