@@ -745,9 +745,11 @@ export const useProjectStore = defineStore('project', {
             blockId: item.blockId ?? item.id,
             date: item.date,
             estimatedMinutes: item.focusPlan!.normalizedMinutes,
-            actualMinutes: (item.pomodoros ?? []).reduce((sum, record) => {
-              return sum + (record.actualDurationMinutes ?? record.durationMinutes);
-            }, 0),
+            actualMinutes: (item.pomodoros ?? [])
+              .filter(record => record.date === state.currentDate)
+              .reduce((sum, record) => {
+                return sum + (record.actualDurationMinutes ?? record.durationMinutes);
+              }, 0),
             itemStatus: item.status,
             itemContent: item.content,
           })),

@@ -159,6 +159,35 @@ describe('projectStore 多日期事项', () => {
     expect(summary.actualMinutes).toBe(50);
     expect(summary.total).toBe(1);
   });
+
+  it('getTodayFocusPlanSummary 只统计当天的番茄记录，不混入历史记录', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-05-14', 'today-block', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        focusPlan: {
+          type: 'duration',
+          rawValue: 145,
+          normalizedMinutes: 145,
+          sourceText: '⏳2h25m',
+        },
+        pomodoros: [
+          { durationMinutes: 10, actualDurationMinutes: 10, date: '2026-05-13', id: 'p-old', startTime: '23:22:00' },
+        ] as any,
+      }),
+    ];
+
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-05-14',
+    });
+
+    const summary = (store as any).getTodayFocusPlanSummary('');
+
+    expect(summary.estimatedMinutes).toBe(145);
+    expect(summary.actualMinutes).toBe(0);
+  });
 });
 
 const mkPomodoro = (date: string, minutes: number, overrides?: Partial<PomodoroRecord>): PomodoroRecord =>
