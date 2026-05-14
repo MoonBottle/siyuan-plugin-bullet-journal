@@ -152,6 +152,8 @@ vi.mock('@/i18n', () => ({
         varianceTotal: '总偏差',
         plannedTotal: '预计总专注',
         todayList: '今日事项',
+        historyList: '历史事项',
+        futureList: '计划事项',
         expiredItems: '过期事项',
         detailTitle: '复盘详情',
         emptyTitle: '还没有预计事项',
@@ -160,6 +162,9 @@ vi.mock('@/i18n', () => ({
         pickerEmpty: '没有可设置预计的事项',
         detailEmptyTitle: '请选择',
         detailEmptyDesc: '请选择',
+        detailEmptyDescToday: '今日说明',
+        detailEmptyDescHistory: '历史说明',
+        detailEmptyDescFuture: '未来说明',
         actualVsPlan: '实际 / 预计',
         variance: '偏差',
         status: {
@@ -212,6 +217,7 @@ describe('FocusReviewView', () => {
     expect(mounted.container.textContent).toContain('整理日报');
     expect(mounted.container.textContent).toContain('1h 35m');
     expect(mounted.container.textContent).toContain('40m');
+    expect(mounted.container.textContent).toContain('今日事项');
     expect(mounted.container.textContent).toContain('事项详情');
     expect(mounted.container.textContent).toContain('专注记录');
     expect(mounted.container.querySelector('[data-testid="item-detail-content"]')?.textContent).toContain('整理日报');
@@ -222,6 +228,7 @@ describe('FocusReviewView', () => {
 
     expect(mounted.container.textContent).toContain('补材料');
     expect(mounted.container.textContent).toContain('0m / 25m');
+    expect(mounted.container.textContent).toContain('计划事项');
     expect(mounted.container.textContent).toContain('暂无记录');
 
     mounted.unmount();
@@ -273,9 +280,28 @@ describe('FocusReviewView', () => {
 
     expect(mounted.container.textContent).toContain('历史专注记录');
     expect(mounted.container.textContent).toContain('未预计');
+    expect(mounted.container.textContent).toContain('历史事项');
     expect(mounted.container.querySelector('[data-testid="focus-review-add-plan"]')).toBeNull();
     expect(mounted.container.querySelector('.focus-review-view__empty-action')).toBeNull();
 
+    mounted.unmount();
+  });
+
+  it('switches detail empty description with selected date context', async () => {
+    const mounted = await mountComponent();
+
+    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-16"]') as HTMLButtonElement).click();
+    await nextTick();
+    expect(mounted.container.textContent).toContain('未来说明');
+
+    const originalItems = [...mockProjectStore.items];
+    mockProjectStore.items = mockProjectStore.items.filter(item => item.id !== 'item-history-1');
+
+    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-13"]') as HTMLButtonElement).click();
+    await nextTick();
+    expect(mounted.container.textContent).toContain('历史说明');
+
+    mockProjectStore.items = originalItems;
     mounted.unmount();
   });
 });

@@ -19,8 +19,9 @@
           'focus-review-mini-calendar__cell--empty': !cell.date,
           'focus-review-mini-calendar__cell--today': cell.date === today,
           'focus-review-mini-calendar__cell--selected': cell.date === modelValue,
-          'focus-review-mini-calendar__cell--planned': cell.summary.total > 0,
+          'focus-review-mini-calendar__cell--planned': hasPlanned(cell.summary),
           'focus-review-mini-calendar__cell--focused': cell.summary.actualMinutes > 0,
+          'focus-review-mini-calendar__cell--unplanned-focus': hasFocusedOnly(cell.summary),
         }"
         :data-testid="cell.date ? `focus-review-calendar-cell-${cell.date}` : undefined"
         :disabled="!cell.date"
@@ -31,9 +32,13 @@
           <span class="focus-review-mini-calendar__day-num">{{ cell.dayNum }}</span>
           <span class="focus-review-mini-calendar__marker">
             <span
-              v-if="cell.summary.total > 0"
+              v-if="hasMarker(cell.summary)"
               class="focus-review-mini-calendar__dot"
-              :class="{ 'focus-review-mini-calendar__dot--active': cell.summary.actualMinutes > 0 }"
+              :class="{
+                'focus-review-mini-calendar__dot--planned': hasPlannedOnly(cell.summary),
+                'focus-review-mini-calendar__dot--focused': hasFocusedOnly(cell.summary),
+                'focus-review-mini-calendar__dot--hybrid': hasPlannedAndFocused(cell.summary),
+              }"
             ></span>
           </span>
         </template>
@@ -110,6 +115,30 @@ function prevMonth() {
 
 function nextMonth() {
   viewMonth.value = dayjs(`${viewMonth.value}-01`).add(1, 'month').format('YYYY-MM');
+}
+
+function hasPlanned(summary: FocusPlanDailySummary): boolean {
+  return summary.estimatedMinutes > 0;
+}
+
+function hasFocused(summary: FocusPlanDailySummary): boolean {
+  return summary.actualMinutes > 0;
+}
+
+function hasPlannedOnly(summary: FocusPlanDailySummary): boolean {
+  return hasPlanned(summary) && !hasFocused(summary);
+}
+
+function hasFocusedOnly(summary: FocusPlanDailySummary): boolean {
+  return !hasPlanned(summary) && hasFocused(summary);
+}
+
+function hasPlannedAndFocused(summary: FocusPlanDailySummary): boolean {
+  return hasPlanned(summary) && hasFocused(summary);
+}
+
+function hasMarker(summary: FocusPlanDailySummary): boolean {
+  return hasPlanned(summary) || hasFocused(summary);
 }
 
 function emptySummary(): FocusPlanDailySummary {
@@ -239,9 +268,20 @@ function emptySummary(): FocusPlanDailySummary {
   height: 6px;
   border-radius: 999px;
   background: var(--b3-theme-surface-lighter);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.focus-review-mini-calendar__dot--active {
+.focus-review-mini-calendar__dot--planned {
+  background: var(--b3-theme-surface-lighter);
+}
+
+.focus-review-mini-calendar__dot--focused {
   background: var(--b3-theme-primary);
+}
+
+.focus-review-mini-calendar__dot--hybrid {
+  background: var(--b3-theme-primary);
+  box-shadow: 0 0 0 1px var(--b3-theme-background), 0 0 0 2px var(--b3-theme-primary-light);
+  transform: scale(1.1);
 }
 </style>

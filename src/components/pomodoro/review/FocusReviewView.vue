@@ -9,7 +9,7 @@
       <div class="focus-review-view__selected-date">
         <div>
           <div class="focus-review-view__selected-date-title">{{ selectedDateLabel }}</div>
-          <div class="focus-review-view__selected-date-subtitle">{{ t('focusReview').todayList }}</div>
+          <div class="focus-review-view__selected-date-subtitle">{{ selectedDateSubtitle }}</div>
         </div>
       </div>
 
@@ -137,7 +137,7 @@
             </div>
             <div v-else class="focus-review-view__detail-panel-empty">
               <div class="focus-review-view__empty-title">{{ t('focusReview').detailEmptyTitle }}</div>
-              <div class="focus-review-view__empty-desc">{{ t('focusReview').detailEmptyDesc }}</div>
+              <div class="focus-review-view__empty-desc">{{ detailEmptyDesc }}</div>
             </div>
           </div>
           <FocusReviewRecordPane
@@ -145,14 +145,14 @@
             :item-content="selectedEntry.itemContent || selectedItem?.content"
             :title="t('pomodoroStats').focusRecords"
             :empty-title="t('pomodoroStats').noData"
-            :empty-desc="t('focusReview').detailEmptyDesc"
+            :empty-desc="detailEmptyDesc"
           />
         </div>
       </div>
 
       <div v-else class="focus-review-view__detail-empty" data-testid="focus-review-detail-empty">
         <div class="focus-review-view__empty-title">{{ t('focusReview').detailEmptyTitle }}</div>
-        <div class="focus-review-view__empty-desc">{{ t('focusReview').detailEmptyDesc }}</div>
+        <div class="focus-review-view__empty-desc">{{ detailEmptyDesc }}</div>
       </div>
     </section>
   </div>
@@ -183,6 +183,18 @@ const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, ''));
 const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, ''));
 const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
+const selectedDateSubtitle = computed(() => {
+  const today = dayjs().format('YYYY-MM-DD');
+  if (selectedDate.value === today) return t('focusReview').todayList;
+  if (selectedDate.value < today) return t('focusReview').historyList;
+  return t('focusReview').futureList;
+});
+const detailEmptyDesc = computed(() => {
+  const today = dayjs().format('YYYY-MM-DD');
+  if (selectedDate.value === today) return t('focusReview').detailEmptyDescToday;
+  if (selectedDate.value < today) return t('focusReview').detailEmptyDescHistory;
+  return t('focusReview').detailEmptyDescFuture;
+});
 const canAddFocusPlan = computed(() => selectedDate.value >= dayjs().format('YYYY-MM-DD'));
 const summaryVarianceDisplay = computed(() => {
   const delta = selectedSummary.value.actualMinutes - selectedSummary.value.estimatedMinutes;
