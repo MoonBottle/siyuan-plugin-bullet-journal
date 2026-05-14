@@ -69,4 +69,27 @@ describe('buildFocusPlanCandidateSections', () => {
 
     expect(sections).toEqual([]);
   });
+
+  it('选择未来日期时，过期事项只计算到今天之前，不把今天事项算作过期', () => {
+    const sections = buildFocusPlanCandidateSections({
+      items: [
+        createItem({ id: 'expired-1', date: '2026-05-13', content: '真正过期' }),
+        createItem({ id: 'today-1', date: '2026-05-14', content: '今天事项' }),
+        createItem({ id: 'future-1', date: '2026-05-15', content: '未来事项' }),
+      ],
+      selectedDate: '2026-05-15',
+      today: '2026-05-14',
+    });
+
+    expect(sections).toEqual([
+      expect.objectContaining({
+        key: 'expired',
+        items: [expect.objectContaining({ id: 'expired-1' })],
+      }),
+      expect.objectContaining({
+        key: 'selected-date',
+        items: [expect.objectContaining({ id: 'future-1' })],
+      }),
+    ]);
+  });
 });

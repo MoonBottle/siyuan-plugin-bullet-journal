@@ -9,20 +9,22 @@
         {{ section.key === 'expired' ? t('focusReview').expiredItems : selectedDateTitle }}
       </div>
 
-      <button
-        v-for="item in section.items"
-        :key="item.id"
-        class="focus-plan-item-picker__item"
-        type="button"
-        @click="emit('select', item)"
-      >
-        <div class="focus-plan-item-picker__item-title">{{ item.content }}</div>
-        <div class="focus-plan-item-picker__item-meta">
-          <span>{{ item.task?.name || item.project?.name || t('todo').detail }}</span>
-          <span>{{ item.date }}</span>
-          <span v-if="item.focusPlan">{{ t('focusPlan').estimatedShort }} {{ formatFocusPlanDisplay(item.focusPlan) }}</span>
-        </div>
-      </button>
+      <div class="focus-plan-item-picker__section-list">
+        <button
+          v-for="item in section.items"
+          :key="item.id"
+          class="focus-plan-item-picker__item"
+          type="button"
+          @click="emit('select', item)"
+        >
+          <div class="focus-plan-item-picker__item-title">{{ item.content }}</div>
+          <div class="focus-plan-item-picker__item-meta">
+            <span>{{ item.task?.name || item.project?.name || t('todo').detail }}</span>
+            <span>{{ item.date }}</span>
+            <span v-if="item.focusPlan">{{ t('focusPlan').estimatedShort }} {{ formatFocusPlanDisplay(item.focusPlan) }}</span>
+          </div>
+        </button>
+      </div>
     </div>
 
     <div v-if="sections.length === 0" class="focus-plan-item-picker__empty">
@@ -57,12 +59,21 @@ const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D
   flex-direction: column;
   gap: 16px;
   padding: 16px;
+  max-height: min(70vh, 720px);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .focus-plan-item-picker__section {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.focus-plan-item-picker__section-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
 }
 
 .focus-plan-item-picker__section-title {
@@ -93,6 +104,8 @@ const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D
 .focus-plan-item-picker__item-title {
   font-size: 14px;
   color: var(--b3-theme-on-background);
+  line-height: 1.5;
+  word-break: break-word;
 }
 
 .focus-plan-item-picker__item-meta {
@@ -109,5 +122,11 @@ const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D
   font-size: 13px;
   color: var(--b3-theme-on-surface);
   text-align: center;
+}
+
+@media (max-width: 720px) {
+  .focus-plan-item-picker__section-list {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

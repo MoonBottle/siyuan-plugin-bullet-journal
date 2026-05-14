@@ -1334,7 +1334,7 @@ export function showFocusPlanItemPickerDialog(input: {
   const dialog = new Dialog({
     title: t('focusPlan').settingTitle,
     content: '',
-    width: '420px',
+    width: '760px',
     destroyCallback: () => {
       app.unmount();
     },

@@ -24,7 +24,7 @@ export function buildFocusPlanCandidateSections(input: {
   );
 
   const expiredItems = validItems
-    .filter(item => item.date < selectedDate)
+    .filter(item => item.date < today)
     .sort(compareCandidateItems);
 
   const selectedDateItems = validItems
