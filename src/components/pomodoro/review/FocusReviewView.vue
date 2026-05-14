@@ -559,6 +559,10 @@ defineExpose({
   overflow: visible;
 }
 
+.focus-review-view__detail-panel-body--summary .focus-review-view__detail-card {
+  background: var(--b3-theme-background);
+}
+
 .focus-review-view__detail-panel--item :deep(.item-detail-cards) {
   gap: 10px;
 }
