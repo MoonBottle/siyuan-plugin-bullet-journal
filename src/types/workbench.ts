@@ -7,7 +7,8 @@ export type WorkbenchViewType =
   | 'project'
   | 'todo'
   | 'habit'
-  | 'pomodoroStats';
+  | 'pomodoroStats'
+  | 'focusReview';
 
 export interface WorkbenchEntry {
   id: string;

@@ -788,6 +788,31 @@
     "pomodoroCount": "番茄数",
     "durationMinutes": "分钟数"
   },
+  "focusReview": {
+    "title": "专注复盘",
+    "openReview": "查看专注复盘",
+    "all": "全部",
+    "plannedItems": "有预计事项",
+    "actualTotal": "实际总专注",
+    "varianceTotal": "总偏差",
+    "plannedTotal": "预计总专注",
+    "todayList": "今日事项",
+    "detailTitle": "复盘详情",
+    "emptyTitle": "今日暂无预计事项",
+    "emptyDesc": "为事项设置预计后，这里会显示今日的实际与偏差复盘。",
+    "detailEmptyTitle": "选择一个事项查看复盘",
+    "detailEmptyDesc": "左侧会列出今日带预计的事项，点击后查看实际、偏差和状态。",
+    "actualVsPlan": "实际 / 预计",
+    "variance": "偏差",
+    "openDetail": "打开事项详情",
+    "status": {
+      "matched": "匹配",
+      "overrun": "超支",
+      "underrun": "低于预计",
+      "in-progress": "进行中",
+      "not-started": "未开始"
+    }
+  },
   "mobile": {
     "pullToRefresh": "下拉刷新",
     "releaseToRefresh": "释放刷新",

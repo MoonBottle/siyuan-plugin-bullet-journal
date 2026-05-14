@@ -17,14 +17,24 @@
         <div class="stat-label">{{ t('pomodoroStats').totalFocusDuration }}</div>
         <div class="stat-value">{{ formatDuration(totalMinutes) }}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">{{ t('focusPlan').estimatedShort }}</div>
+      <button class="stat-card stat-card--action" data-testid="focus-review-entry-estimated" type="button" @click="openFocusReview">
+        <div class="stat-card__action">
+          <div class="stat-label">{{ t('focusPlan').estimatedShort }}</div>
+          <span class="stat-card__action-icon" :aria-label="t('focusReview').openReview">
+            <svg><use xlink:href="#iconRight"></use></svg>
+          </span>
+        </div>
         <div class="stat-value">{{ formatDuration(todayFocusPlanSummary.estimatedMinutes) }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">{{ t('focusPlan').variance }}</div>
+      </button>
+      <button class="stat-card stat-card--action" data-testid="focus-review-entry-variance" type="button" @click="openFocusReview">
+        <div class="stat-card__action">
+          <div class="stat-label">{{ t('focusPlan').variance }}</div>
+          <span class="stat-card__action-icon" :aria-label="t('focusReview').openReview">
+            <svg><use xlink:href="#iconRight"></use></svg>
+          </span>
+        </div>
         <div class="stat-value">{{ varianceDisplay }}</div>
-      </div>
+      </button>
     </div>
   </div>
 </template>
@@ -33,8 +43,11 @@
 import { computed } from 'vue';
 import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
+import { usePlugin } from '@/main';
+import { TAB_TYPES } from '@/constants';
 
 const projectStore = useProjectStore();
+const plugin = usePlugin() as any;
 
 const todayCount = computed(() => projectStore.getTodayPomodoros('').length);
 const todayMinutes = computed(() => projectStore.getTodayFocusMinutes(''));
@@ -47,6 +60,10 @@ const varianceDisplay = computed(() => {
   const prefix = delta > 0 ? '+' : delta < 0 ? '-' : '';
   return `${prefix}${formatDuration(absValue)}`;
 });
+
+function openFocusReview() {
+  plugin?.openCustomTab?.(TAB_TYPES.FOCUS_REVIEW);
+}
 
 /**
  * 格式化时长为可读字符串
@@ -86,6 +103,40 @@ function formatDuration(minutes: number): string {
   flex-direction: column;
   justify-content: center;
   border: 1px solid var(--b3-theme-surface-lighter);
+}
+
+.stat-card--action {
+  appearance: none;
+  width: 100%;
+  cursor: pointer;
+  border-color: var(--b3-theme-surface-lighter);
+
+  &:hover {
+    border-color: var(--b3-theme-primary);
+    background: var(--b3-theme-primary-lightest);
+  }
+}
+
+.stat-card__action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-card__action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--b3-theme-on-surface);
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 
 .stat-label {

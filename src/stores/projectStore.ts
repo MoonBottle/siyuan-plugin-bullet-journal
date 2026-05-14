@@ -17,7 +17,7 @@ import { calculateReminderTime } from '@/parser/reminderParser';
 import { getHPathByID } from '@/api';
 import type { TodoSortDirection, TodoSortRule } from '@/settings/types';
 import { defaultTodoSortRules } from '@/settings/types';
-import { buildDailyFocusPlanSummary } from '@/utils/focusPlanReview';
+import { buildDailyFocusPlanEntries, buildDailyFocusPlanSummary } from '@/utils/focusPlanReview';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -43,6 +43,32 @@ function normalizeReminderTime(item: Item): number | null {
     undefined,
     undefined,
     item.reminder,
+  );
+}
+
+function buildTodayFocusPlanEntries(
+  items: Item[] | undefined,
+  currentDate: string,
+  groupId: string,
+) {
+  const displayItems = computeDisplayItems(items, currentDate, groupId);
+  return buildDailyFocusPlanEntries(
+    displayItems
+      .filter(item => item.focusPlan)
+      .map(item => ({
+        itemId: item.id,
+        blockId: item.blockId ?? item.id,
+        date: item.date,
+        estimatedMinutes: item.focusPlan!.normalizedMinutes,
+        actualMinutes: (item.pomodoros ?? [])
+          .filter(record => record.date === currentDate)
+          .reduce((sum, record) => {
+            return sum + (record.actualDurationMinutes ?? record.durationMinutes);
+          }, 0),
+        itemStatus: item.status,
+        itemContent: item.content,
+      })),
+    currentDate,
   );
 }
 
@@ -735,24 +761,13 @@ export const useProjectStore = defineStore('project', {
       }, 0);
     },
 
+    getTodayFocusPlanEntries: (state) => (groupId: string = '') => {
+      return buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId);
+    },
+
     getTodayFocusPlanSummary: (state) => (groupId: string = '') => {
-      const displayItems = computeDisplayItems((state as any).items, state.currentDate, groupId);
       return buildDailyFocusPlanSummary(
-        displayItems
-          .filter(item => item.focusPlan)
-          .map(item => ({
-            itemId: item.id,
-            blockId: item.blockId ?? item.id,
-            date: item.date,
-            estimatedMinutes: item.focusPlan!.normalizedMinutes,
-            actualMinutes: (item.pomodoros ?? [])
-              .filter(record => record.date === state.currentDate)
-              .reduce((sum, record) => {
-                return sum + (record.actualDurationMinutes ?? record.durationMinutes);
-              }, 0),
-            itemStatus: item.status,
-            itemContent: item.content,
-          })),
+        buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId),
         state.currentDate,
       );
     },

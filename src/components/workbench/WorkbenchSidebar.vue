@@ -172,6 +172,17 @@
             <svg><use xlink:href="#iconClock"></use></svg>
           </span>
         </button>
+        <button
+          class="workbench-sidebar__create-option"
+          data-testid="workbench-create-focus-review-view"
+          type="button"
+          @click="handleCreateView('focusReview')"
+        >
+          <span v-if="!collapsed">{{ t('focusReview').title }}</span>
+          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
+            <svg><use xlink:href="#iconList"></use></svg>
+          </span>
+        </button>
       </div>
 
       <button

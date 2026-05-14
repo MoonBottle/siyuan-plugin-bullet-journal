@@ -18,6 +18,11 @@ export interface FocusPlanDailySummaryEntry {
   itemContent?: string;
 }
 
+export interface FocusPlanDailyReviewEntry extends FocusPlanDailySummaryEntry {
+  reviewStatus: FocusPlanReviewStatus;
+  deltaMinutes: number;
+}
+
 export interface FocusPlanDailySummary {
   date: string;
   estimatedMinutes: number;
@@ -48,6 +53,35 @@ export function buildFocusPlanReview(input: FocusPlanReviewInput) {
     : { status: 'underrun' as const, deltaMinutes };
 }
 
+export function buildDailyFocusPlanEntries(
+  entries: FocusPlanDailySummaryEntry[],
+  date: string,
+): FocusPlanDailyReviewEntry[] {
+  const reviews: FocusPlanDailyReviewEntry[] = [];
+  const seenKeys = new Set<string>();
+
+  for (const entry of entries) {
+    if (entry.date !== date) continue;
+    const key = entry.blockId ?? `item:${entry.itemId}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+
+    const review = buildFocusPlanReview({
+      itemStatus: entry.itemStatus,
+      estimatedMinutes: entry.estimatedMinutes,
+      actualMinutes: entry.actualMinutes,
+    });
+
+    reviews.push({
+      ...entry,
+      reviewStatus: review.status,
+      deltaMinutes: review.deltaMinutes,
+    });
+  }
+
+  return reviews;
+}
+
 export function buildDailyFocusPlanSummary(
   entries: FocusPlanDailySummaryEntry[],
   date: string,
@@ -63,28 +97,16 @@ export function buildDailyFocusPlanSummary(
     notStarted: 0,
     inProgress: 0,
   };
-  const seenKeys = new Set<string>();
-
-  for (const entry of entries) {
-    if (entry.date !== date) continue;
-    const key = entry.blockId ?? `item:${entry.itemId}`;
-    if (seenKeys.has(key)) continue;
-    seenKeys.add(key);
-
+  for (const entry of buildDailyFocusPlanEntries(entries, date)) {
     summary.estimatedMinutes += entry.estimatedMinutes;
     summary.actualMinutes += entry.actualMinutes;
     summary.total += 1;
 
-    const review = buildFocusPlanReview({
-      itemStatus: entry.itemStatus,
-      estimatedMinutes: entry.estimatedMinutes,
-      actualMinutes: entry.actualMinutes,
-    });
-    if (review.status === 'matched') summary.matched += 1;
-    if (review.status === 'overrun') summary.overrun += 1;
-    if (review.status === 'underrun') summary.underrun += 1;
-    if (review.status === 'not-started') summary.notStarted += 1;
-    if (review.status === 'in-progress') summary.inProgress += 1;
+    if (entry.reviewStatus === 'matched') summary.matched += 1;
+    if (entry.reviewStatus === 'overrun') summary.overrun += 1;
+    if (entry.reviewStatus === 'underrun') summary.underrun += 1;
+    if (entry.reviewStatus === 'not-started') summary.notStarted += 1;
+    if (entry.reviewStatus === 'in-progress') summary.inProgress += 1;
   }
 
   return summary;

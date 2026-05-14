@@ -12,6 +12,9 @@
     <div v-else-if="viewType === 'pomodoroStats'" class="workbench-view-host__surface" data-testid="workbench-view-pomodoro-stats">
       <PomodoroStatsTab :embedded="true" />
     </div>
+    <div v-else-if="viewType === 'focusReview'" class="workbench-view-host__surface" data-testid="workbench-view-focus-review">
+      <FocusReviewTab :embedded="true" />
+    </div>
     <div
       v-else
       class="workbench-view-host__placeholder"
@@ -28,6 +31,7 @@ import DesktopTodoDock from '@/tabs/DesktopTodoDock.vue';
 import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.vue';
 import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
 import QuadrantTab from '@/tabs/QuadrantTab.vue';
+import FocusReviewTab from '@/tabs/FocusReviewTab.vue';
 import { t } from '@/i18n';
 import type { WorkbenchEntry } from '@/types/workbench';
 
