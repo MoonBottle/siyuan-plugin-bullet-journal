@@ -772,6 +772,7 @@
     "calendarLegendFocused": "Focused Only",
     "calendarLegendHybrid": "Planned and Focused",
     "detailTitle": "Review Detail",
+    "overviewTitle": "Overview",
     "emptyTitle": "No focus plans yet",
     "emptyDesc": "After you set a focus plan for an overdue item or an item on the selected date, its review will appear here.",
     "emptyAction": "Set Focus Plan for an Item",

@@ -159,6 +159,7 @@ vi.mock('@/i18n', () => ({
         calendarLegendFocused: '仅有专注',
         calendarLegendHybrid: '预计并已专注',
         detailTitle: '复盘详情',
+        overviewTitle: '概览',
         emptyTitle: '还没有预计事项',
         emptyDesc: '为过期事项或当前日期事项设置预计后，这里会显示专注复盘。',
         emptyAction: '为事项设置预计',

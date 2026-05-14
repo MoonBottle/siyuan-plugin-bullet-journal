@@ -249,7 +249,7 @@ function emptySummary(): FocusPlanDailySummary {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   cursor: pointer;
 }
 
@@ -284,6 +284,7 @@ function emptySummary(): FocusPlanDailySummary {
   align-items: center;
   justify-content: center;
   height: 8px;
+  margin-top: 1px;
 }
 
 .focus-review-mini-calendar__dot {

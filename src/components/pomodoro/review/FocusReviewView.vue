@@ -118,22 +118,27 @@
           </div>
 
           <div class="focus-review-view__detail-lower">
-            <div class="focus-review-view__detail-grid">
-              <div class="focus-review-view__detail-card">
-                <div class="focus-review-view__detail-label">{{ t('focusPlan').estimatedShort }}</div>
-                <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.estimatedMinutes) }}</div>
-              </div>
-              <div class="focus-review-view__detail-card">
-                <div class="focus-review-view__detail-label">{{ t('focusReview').actualTotal }}</div>
-                <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.actualMinutes) }}</div>
-              </div>
-              <div class="focus-review-view__detail-card">
-                <div class="focus-review-view__detail-label">{{ t('focusReview').variance }}</div>
-                <div class="focus-review-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
-              </div>
-              <div class="focus-review-view__detail-card">
-                <div class="focus-review-view__detail-label">状态</div>
-                <div class="focus-review-view__detail-value">{{ getStatusLabel(selectedEntry.reviewStatus) }}</div>
+            <div class="focus-review-view__detail-panel">
+              <div class="focus-review-view__detail-panel-header">{{ t('focusReview').overviewTitle }}</div>
+              <div class="focus-review-view__detail-panel-body focus-review-view__detail-panel-body--summary">
+                <div class="focus-review-view__detail-grid">
+                  <div class="focus-review-view__detail-card">
+                    <div class="focus-review-view__detail-label">{{ t('focusPlan').estimatedShort }}</div>
+                    <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.estimatedMinutes) }}</div>
+                  </div>
+                  <div class="focus-review-view__detail-card">
+                    <div class="focus-review-view__detail-label">{{ t('focusReview').actualTotal }}</div>
+                    <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.actualMinutes) }}</div>
+                  </div>
+                  <div class="focus-review-view__detail-card">
+                    <div class="focus-review-view__detail-label">{{ t('focusReview').variance }}</div>
+                    <div class="focus-review-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
+                  </div>
+                  <div class="focus-review-view__detail-card">
+                    <div class="focus-review-view__detail-label">状态</div>
+                    <div class="focus-review-view__detail-value">{{ getStatusLabel(selectedEntry.reviewStatus) }}</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -548,6 +553,10 @@ defineExpose({
 
 .focus-review-view__detail-panel-body {
   overflow-y: auto;
+}
+
+.focus-review-view__detail-panel-body--summary {
+  overflow: visible;
 }
 
 .focus-review-view__detail-panel--item :deep(.item-detail-cards) {
