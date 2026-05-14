@@ -17,6 +17,7 @@ import { calculateReminderTime } from '@/parser/reminderParser';
 import { getHPathByID } from '@/api';
 import type { TodoSortDirection, TodoSortRule } from '@/settings/types';
 import { defaultTodoSortRules } from '@/settings/types';
+import { buildDailyFocusPlanSummary } from '@/utils/focusPlanReview';
 
 /** 从 state 计算显示项（多日期去重），避免 getter 间依赖 */
 function computeDisplayItems(
@@ -722,6 +723,36 @@ export const useProjectStore = defineStore('project', {
       return allPomodoros
         .filter((p: PomodoroRecord) => p.date === date)
         .reduce((sum: number, p: PomodoroRecord) => sum + (p.actualDurationMinutes ?? p.durationMinutes), 0);
+    },
+
+    getItemFocusPlanMinutes: () => (item: Item): number | undefined => {
+      return item.focusPlan?.normalizedMinutes;
+    },
+
+    getItemActualFocusMinutes: () => (item: Item): number => {
+      return (item.pomodoros ?? []).reduce((sum, record) => {
+        return sum + (record.actualDurationMinutes ?? record.durationMinutes);
+      }, 0);
+    },
+
+    getTodayFocusPlanSummary: (state) => (groupId: string = '') => {
+      const displayItems = computeDisplayItems((state as any).items, state.currentDate, groupId);
+      return buildDailyFocusPlanSummary(
+        displayItems
+          .filter(item => item.focusPlan)
+          .map(item => ({
+            itemId: item.id,
+            blockId: item.blockId ?? item.id,
+            date: item.date,
+            estimatedMinutes: item.focusPlan!.normalizedMinutes,
+            actualMinutes: (item.pomodoros ?? []).reduce((sum, record) => {
+              return sum + (record.actualDurationMinutes ?? record.durationMinutes);
+            }, 0),
+            itemStatus: item.status,
+            itemContent: item.content,
+          })),
+        state.currentDate,
+      );
     },
 
     // 从 projects 计算所有习惯

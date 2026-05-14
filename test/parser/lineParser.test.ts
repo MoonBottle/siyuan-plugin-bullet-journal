@@ -227,6 +227,20 @@ describe('parseItemLine 多日期解析', () => {
     const items = LineParser.parseItemLine('整理资料 #done', 1);
     expect(items).toHaveLength(0);
   });
+
+  it('事项行解析第一个预算标记为 focusPlan', () => {
+    const items = LineParser.parseItemLine('整理资料 @2026-05-14 ⏳1h10m 🍅x3', 1);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].focusPlan).toEqual(expect.objectContaining({
+      type: 'duration',
+      rawValue: 70,
+      normalizedMinutes: 70,
+      sourceText: '⏳1h10m',
+      ignoredSourceTexts: ['🍅x3'],
+    }));
+    expect(items[0].content).toBe('整理资料');
+  });
 });
 
 describe('parseBlockRefs 块引用解析', () => {

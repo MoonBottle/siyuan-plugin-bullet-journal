@@ -17,6 +17,14 @@
         <div class="stat-label">{{ t('pomodoroStats').totalFocusDuration }}</div>
         <div class="stat-value">{{ formatDuration(totalMinutes) }}</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">{{ t('focusPlan').estimatedShort }}</div>
+        <div class="stat-value">{{ formatDuration(todayFocusPlanSummary.estimatedMinutes) }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">{{ t('focusPlan').variance }}</div>
+        <div class="stat-value">{{ varianceDisplay }}</div>
+      </div>
     </div>
   </div>
 </template>
@@ -32,6 +40,13 @@ const todayCount = computed(() => projectStore.getTodayPomodoros('').length);
 const todayMinutes = computed(() => projectStore.getTodayFocusMinutes(''));
 const totalCount = computed(() => projectStore.getTotalPomodoros(''));
 const totalMinutes = computed(() => projectStore.getTotalFocusMinutes(''));
+const todayFocusPlanSummary = computed(() => projectStore.getTodayFocusPlanSummary(''));
+const varianceDisplay = computed(() => {
+  const delta = todayFocusPlanSummary.value.actualMinutes - todayFocusPlanSummary.value.estimatedMinutes;
+  const absValue = Math.abs(delta);
+  const prefix = delta > 0 ? '+' : delta < 0 ? '-' : '';
+  return `${prefix}${formatDuration(absValue)}`;
+});
 
 /**
  * 格式化时长为可读字符串

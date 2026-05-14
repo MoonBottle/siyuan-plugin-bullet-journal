@@ -456,7 +456,8 @@
         "todo": "Open Todo Dock",
         "setProjectDir": "Set as Project Directory",
         "markAsTask": "Mark as Task",
-        "viewDetail": "View Detail"
+        "viewDetail": "View Detail",
+        "setFocusPlan": "Set Focus Plan"
       },
       "emptyMessage": "No custom commands",
       "deleteButton": "Delete",
@@ -666,6 +667,7 @@
     "setAsProjectDir": "Set as Project Directory",
     "markAsTask": "Mark as Task",
     "viewDetail": "View Detail",
+    "setFocusPlan": "Set Focus Plan",
     "markSuccess": "Marked as today's item",
     "markTomorrowSuccess": "Marked as tomorrow's item",
     "markDateSuccess": "Date marked",
@@ -732,6 +734,17 @@
       "beforeEndHours": "{count} hours before end",
       "beforeEndDays": "{count} days before end"
     }
+  },
+  "focusPlan": {
+    "settingTitle": "Set Focus Plan",
+    "estimatedShort": "Planned",
+    "variance": "Variance",
+    "clear": "Clear Plan",
+    "preview": "Preview",
+    "pomodoroMode": "Pomodoros",
+    "durationMode": "Duration",
+    "pomodoroCount": "Pomodoro Count",
+    "durationMinutes": "Minutes"
   },
   "mobile": {
     "pullToRefresh": "Pull to refresh",

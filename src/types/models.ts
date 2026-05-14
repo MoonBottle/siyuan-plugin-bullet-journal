@@ -121,6 +121,16 @@ export type ItemStatus = 'pending' | 'completed' | 'abandoned';
 // 优先级类型
 export type PriorityLevel = 'high' | 'medium' | 'low';
 
+export type FocusPlanType = 'duration' | 'pomodoro';
+
+export interface FocusPlan {
+  type: FocusPlanType;
+  rawValue: number;
+  normalizedMinutes: number;
+  sourceText: string;
+  ignoredSourceTexts?: string[];
+}
+
 // 提醒配置
 export interface ReminderConfig {
   enabled: boolean;
@@ -270,6 +280,7 @@ export interface Item {
   /** 日期跨度结束日（同上，用于分组、过期与进行中判断） */
   dateRangeEnd?: string;
   pomodoros?: PomodoroRecord[]; // 事项级别番茄钟记录
+  focusPlan?: FocusPlan;        // 预计专注预算
   // 提醒和重复功能
   reminder?: ReminderConfig;     // 提醒配置
   repeatRule?: RepeatRule;       // 重复规则

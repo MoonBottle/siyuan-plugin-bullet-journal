@@ -17,6 +17,7 @@ import { parsePriorityFromLine, stripPriorityMarker } from './priorityParser';
 import { parseRepeatRule, parseEndCondition, hasRepeatRule, stripRecurringMarkers } from './recurringParser';
 import { parsePinnedFromLine, stripPinnedMarker } from './pinParser';
 import { parseTagsFromLine, stripTagsFromLine } from './tagParser';
+import { extractFocusPlanMarkers, stripFocusPlanMarkers } from './focusPlanParser';
 import { processLineText } from '@/utils/stringUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 
@@ -190,6 +191,7 @@ export class LineParser {
     const metadataLine = stripBlockRefsForMetadata(line);
     const pinned = parsePinnedFromLine(metadataLine);
     const tags = parseTagsFromLine(metadataLine);
+    const focusPlanResult = extractFocusPlanMarkers(metadataLine);
 
     // 解析重复规则（多日期与重复互斥时优先多日期）
     // 匹配多日期：
@@ -259,6 +261,9 @@ export class LineParser {
       // 移除重复和结束条件标记（🔁🔚🔢 等）
       // 注意：必须在移除补充平面字符之前执行，否则 🔁 会被单独移除，留下"每月"等文字
       cleanedContent = stripRecurringMarkers(cleanedContent);
+
+      // 移除预计专注标记
+      cleanedContent = stripFocusPlanMarkers(cleanedContent);
 
       // 移除斜杠命令
       cleanedContent = processLineText(cleanedContent, ALL_SLASH_COMMAND_FILTERS);
@@ -351,6 +356,7 @@ export class LineParser {
         dateRangeStart,
         dateRangeEnd,
         reminder,
+        focusPlan: focusPlanResult.active,
         repeatRule,
         endCondition,
         priority,

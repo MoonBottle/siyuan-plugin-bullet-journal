@@ -88,6 +88,11 @@ vi.mock('@/i18n', () => ({
         startFocusTitle: '开始专注',
       };
     }
+    if (key === 'focusPlan') {
+      return {
+        estimatedShort: '预计',
+      };
+    }
     return {};
   }),
 }));
@@ -268,6 +273,27 @@ describe('TodoSidebarList', () => {
 
     expect(mounted.container.querySelector('[data-testid="todo-loading-stub"]')).toBeNull();
     expect(mounted.container.textContent).toContain('处理优先级');
+
+    mounted.unmount();
+  });
+
+  it('事项存在 focusPlan 时显示预计时长标签', async () => {
+    const mounted = mountList({
+      items: [{
+        ...pendingItem,
+        focusPlan: {
+          type: 'duration',
+          rawValue: 70,
+          normalizedMinutes: 70,
+          sourceText: '⏳1h10m',
+        },
+      }],
+      hasAnyItemsRaw: true,
+    });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('预计 1h10m');
 
     mounted.unmount();
   });

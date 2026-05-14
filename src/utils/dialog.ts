@@ -5,7 +5,7 @@
 import type { Plugin } from 'siyuan';
 import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel, HabitFrequency } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel, HabitFrequency, FocusPlan } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
@@ -16,6 +16,7 @@ import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
+import FocusPlanDialog from '@/components/dialog/FocusPlanDialog.vue';
 import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue';
 import HabitRecordEditDialog from '@/components/dialog/HabitRecordEditDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
@@ -32,7 +33,7 @@ import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMar
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
-import { updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
+import { clearItemFocusPlan, updateItemWithFocusPlan, updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -1249,6 +1250,51 @@ export function showPrioritySettingDialog(
   // 自动聚焦到弹框内，使 ESC 键立即生效
   requestAnimationFrame(() => {
     const focusableEl = dialog.element.querySelector('button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
+}
+
+export function showFocusPlanDialog(item: Item): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(FocusPlanDialog, {
+    initialPlan: item.focusPlan,
+    onSave: async (plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined) => {
+      if (plan) {
+        await updateItemWithFocusPlan(item, plan);
+      } else {
+        await clearItemFocusPlan(item);
+      }
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('focusPlan').settingTitle,
+    content: '',
+    width: '340px',
+    destroyCallback: () => {
+      app.unmount();
+    },
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('[data-initial-focus], button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
     if (focusableEl) {
       focusableEl.focus();
     }

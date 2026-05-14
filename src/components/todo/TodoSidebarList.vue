@@ -77,6 +77,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -190,6 +191,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -303,6 +305,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -416,6 +419,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -536,6 +540,7 @@
                   </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
                   <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+                  <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
                   <div v-if="item.tags?.length" class="item-tag-list">
                     <button
                       v-for="tag in item.tags"
@@ -651,6 +656,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -714,6 +720,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -765,6 +772,7 @@ import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { toggleItemPinned } from '@/utils/itemSettingUtils';
+import { formatFocusPlanDisplay } from '@/utils/focusPlanReview';
 import type {
   TodoSidebarDragPayload,
   TodoSidebarHoverPayload,
@@ -776,6 +784,11 @@ const getPriorityEmoji = (item: Item): string => {
   if (item.priority === 'medium') return '🌱';
   if (item.priority === 'low') return '🍃';
   return '';
+};
+
+const getFocusPlanLabel = (item: Item): string => {
+  const display = formatFocusPlanDisplay(item.focusPlan);
+  return display ? `${t('focusPlan').estimatedShort || '预计'} ${display}` : '';
 };
 
 // 获取状态 emoji
@@ -1691,6 +1704,13 @@ const handleCreateExample = async () => {
   color: var(--b3-theme-on-background);
   word-break: break-all;
   line-height: 1.4;
+}
+
+.item-focus-plan {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface-light);
 }
 
 .item-tag-list {

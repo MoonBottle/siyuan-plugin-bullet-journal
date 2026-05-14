@@ -62,11 +62,36 @@ export interface PomodoroSettings {
 }
 
 // 自定义斜杠命令配置
+export type CustomSlashCommandAction =
+  | 'today'
+  | 'tomorrow'
+  | 'date'
+  | 'done'
+  | 'abandon'
+  | 'calendar'
+  | 'calendarDay'
+  | 'calendarWeek'
+  | 'calendarMonth'
+  | 'calendarList'
+  | 'gantt'
+  | 'focus'
+  | 'todo'
+  | 'setProjectDir'
+  | 'markAsTask'
+  | 'viewDetail'
+  | 'setFocusPlan'
+  | 'setReminder'
+  | 'setRecurring'
+  | 'createSkill'
+  | 'setPriority'
+  | 'createHabit'
+  | 'checkIn';
+
 export interface CustomSlashCommand {
   id: string;
   name: string;
   commands: string[];
-  action: 'today' | 'tomorrow' | 'date' | 'done' | 'abandon' | 'calendar' | 'calendarDay' | 'calendarWeek' | 'calendarMonth' | 'calendarList' | 'gantt' | 'focus' | 'todo' | 'setProjectDir' | 'markAsTask' | 'viewDetail' | 'setReminder' | 'setRecurring';
+  action: CustomSlashCommandAction;
 }
 
 // 设置数据结构

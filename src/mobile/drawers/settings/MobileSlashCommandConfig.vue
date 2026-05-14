@@ -117,6 +117,7 @@ const builtinCommands = computed(() => [
   { commands: SLASH_COMMAND_FILTERS.SET_PROJECT_DIR, description: t('slash').setAsProjectDir },
   { commands: SLASH_COMMAND_FILTERS.MARK_AS_TASK, description: t('slash').markAsTask },
   { commands: SLASH_COMMAND_FILTERS.VIEW_DETAIL, description: t('slash').viewDetail },
+  { commands: SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN, description: t('slash').setFocusPlan },
 ]);
 
 const actionOptions = computed(() => [
@@ -136,6 +137,7 @@ const actionOptions = computed(() => [
   { value: 'setProjectDir', label: t('settings').slashCommands.actions.setProjectDir },
   { value: 'markAsTask', label: t('settings').slashCommands.actions.markAsTask },
   { value: 'viewDetail', label: t('settings').slashCommands.actions.viewDetail },
+  { value: 'setFocusPlan', label: t('settings').slashCommands.actions.setFocusPlan },
 ]);
 
 function getActionLabel(action: string): string {

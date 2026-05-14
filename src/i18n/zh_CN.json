@@ -477,7 +477,8 @@
         "todo": "打开待办 Dock",
         "setProjectDir": "设置为项目目录",
         "markAsTask": "标记为任务",
-        "viewDetail": "查看详情"
+        "viewDetail": "查看详情",
+        "setFocusPlan": "设置预计"
       },
       "emptyMessage": "暂无自定义命令",
       "deleteButton": "删除",
@@ -689,6 +690,7 @@
     "setAsProjectDir": "设置为项目目录",
     "markAsTask": "标记为任务",
     "viewDetail": "查看详情",
+    "setFocusPlan": "设置预计",
     "markSuccess": "已标记为今日事项",
     "markTomorrowSuccess": "已标记为明日事项",
     "markDateSuccess": "已标记日期",
@@ -772,6 +774,17 @@
       "beforeEndHours": "结束前{count}小时",
       "beforeEndDays": "结束前{count}天"
     }
+  },
+  "focusPlan": {
+    "settingTitle": "设置预计",
+    "estimatedShort": "预计",
+    "variance": "偏差",
+    "clear": "清除预计",
+    "preview": "预览",
+    "pomodoroMode": "按番茄",
+    "durationMode": "按时长",
+    "pomodoroCount": "番茄数",
+    "durationMinutes": "分钟数"
   },
   "mobile": {
     "pullToRefresh": "下拉刷新",

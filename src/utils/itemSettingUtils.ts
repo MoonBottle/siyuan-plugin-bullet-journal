@@ -5,6 +5,7 @@
 
 import type {
   Item,
+  FocusPlan,
   ReminderConfig,
   RepeatRule,
   EndCondition,
@@ -26,6 +27,7 @@ import {
   stripRecurringMarkers
 } from '@/parser/recurringParser';
 import { generatePriorityMarker } from '@/parser/priorityParser';
+import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
 import { eventBus, Events } from '@/utils/eventBus';
 
 /**
@@ -88,7 +90,7 @@ async function updateBlockContent(blockId: string, content: string): Promise<voi
 }
 
 function emitItemSettingMutation(
-  kind: 'reminder' | 'recurring' | 'pin',
+  kind: 'reminder' | 'recurring' | 'pin' | 'focus-plan',
   blockId: string,
 ): void {
   eventBus.emit(Events.LOCAL_DATA_MUTATED, {
@@ -195,6 +197,39 @@ export async function toggleItemPinned(item: Item): Promise<void> {
 
   await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('pin', item.blockId);
+}
+
+export async function updateItemWithFocusPlan(
+  item: Item,
+  plan: Pick<FocusPlan, 'type' | 'rawValue'>,
+): Promise<void> {
+  if (!item.blockId) {
+    throw new Error('事项缺少 blockId，无法更新');
+  }
+
+  const currentContent = await fetchBlockContent(item.blockId);
+  let newContent = stripFocusPlanMarkers(currentContent);
+  const marker = formatFocusPlanMarker(plan);
+
+  if (marker) {
+    newContent = `${newContent} ${marker}`;
+  }
+
+  newContent = normalizeWhitespace(newContent);
+  await updateBlockContent(item.blockId, newContent);
+  emitItemSettingMutation('focus-plan', item.blockId);
+}
+
+export async function clearItemFocusPlan(item: Item): Promise<void> {
+  if (!item.blockId) {
+    throw new Error('事项缺少 blockId，无法更新');
+  }
+
+  const currentContent = await fetchBlockContent(item.blockId);
+  const newContent = normalizeWhitespace(stripFocusPlanMarkers(currentContent));
+
+  await updateBlockContent(item.blockId, newContent);
+  emitItemSettingMutation('focus-plan', item.blockId);
 }
 
 /**

@@ -119,6 +119,22 @@
                 <svg v-else><use xlink:href="#iconCopy"></use></svg>
               </span>
             </span>
+            <span v-if="focusPlanDisplay" class="meta-item">
+              <span
+                class="meta-icon"
+                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').estimatedShort || '预计')"
+                @mouseleave="hideIconTooltip"
+              >⏳</span>
+              <span class="meta-text">{{ focusPlanDisplay }}</span>
+            </span>
+            <span v-if="focusPlanReview" class="meta-item">
+              <span
+                class="meta-icon"
+                @mouseenter="(e) => showIconTooltip(e.currentTarget as HTMLElement, t('focusPlan').variance || '偏差')"
+                @mouseleave="hideIconTooltip"
+              >Δ</span>
+              <span class="meta-text">{{ focusDeltaDisplay }}</span>
+            </span>
 
           </div>
         </div>
@@ -191,6 +207,7 @@ import Card from '@/components/common/Card.vue';
 import { t } from '@/i18n';
 import { calculateDuration, formatTimeRange, formatDateLabel } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
+import { buildFocusPlanReview, formatFocusPlanDisplay } from '@/utils/focusPlanReview';
 import { formatReminderDisplay } from '@/utils/displayUtils';
 import { getNextOccurrenceDate, generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/recurringParser';
 import { calculateReminderTime } from '@/parser/reminderParser';
@@ -250,6 +267,22 @@ const itemLinks = computed(() => props.item.links || []);
 
 // 事项内容
 const itemContent = computed(() => props.item.content || '');
+const focusPlanDisplay = computed(() => formatFocusPlanDisplay(props.item.focusPlan));
+const actualFocusMinutes = computed(() => calculateTotalFocusMinutes(props.item.pomodoros || []));
+const focusPlanReview = computed(() => {
+  if (!props.item.focusPlan) return null;
+  return buildFocusPlanReview({
+    itemStatus: props.item.status,
+    estimatedMinutes: props.item.focusPlan.normalizedMinutes,
+    actualMinutes: actualFocusMinutes.value,
+  });
+});
+const focusDeltaDisplay = computed(() => {
+  if (!focusPlanReview.value) return '';
+  const absValue = Math.abs(focusPlanReview.value.deltaMinutes);
+  const prefix = focusPlanReview.value.deltaMinutes > 0 ? '+' : focusPlanReview.value.deltaMinutes < 0 ? '-' : '';
+  return `${prefix}${formatFocusDuration(absValue)}`;
+});
 
 // 时间显示 - 根据 showAllDates 决定展示单个日期还是所有日期
 const timeDisplay = computed(() => {

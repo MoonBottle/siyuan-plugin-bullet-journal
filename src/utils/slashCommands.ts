@@ -8,7 +8,7 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog } from '@/utils/dialog';
+import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
 import { insertBlock } from '@/api';
 import { usePlugin } from '@/main';
 import { updateBlockContent, updateBlockDateTime, updateBlockPriority, type BlockWriter } from '@/utils/fileUtils';
@@ -444,6 +444,15 @@ export function createSlashCommands(config: SlashCommandConfig) {
       callback: getActionHandler('viewDetail', config, SLASH_COMMAND_FILTERS.VIEW_DETAIL)
     },
     {
+      filter: SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setFocusPlan}</span>
+          <span class="b3-list-item__meta">🍅 ⏳</span>
+      </div>`,
+      id: 'bullet-journal-set-focus-plan',
+      callback: getActionHandler('setFocusPlan', config, SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN)
+    },
+    {
       filter: SLASH_COMMAND_FILTERS.SET_REMINDER,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').setReminder}</span>
@@ -791,6 +800,11 @@ export function getActionHandler(
         deleteSlashCommandContent(protyle, filter);
         viewDetail(nodeElement);
       };
+    case 'setFocusPlan':
+      return (protyle, nodeElement) => {
+        deleteSlashCommandContent(protyle, filter);
+        setFocusPlanForBlock(nodeElement);
+      };
     case 'setReminder':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
@@ -984,6 +998,7 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     setProjectDir: 'Project Dir',
     markAsTask: 'Task',
     viewDetail: 'Detail',
+    setFocusPlan: 'Focus Plan',
     setReminder: 'Reminder',
     setRecurring: 'Recurring',
     createSkill: 'AI Skill',
@@ -1537,6 +1552,22 @@ async function setReminderForBlock(nodeElement: HTMLElement) {
 
   // 打开提醒设置弹框
   showReminderSettingDialog(item);
+}
+
+async function setFocusPlanForBlock(nodeElement: HTMLElement) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  showFocusPlanDialog(item);
 }
 
 /**

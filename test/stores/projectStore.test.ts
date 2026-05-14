@@ -119,6 +119,46 @@ describe('projectStore 多日期事项', () => {
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('completed');
   });
+
+  it('getTodayFocusPlanSummary 对同一 blockId 只累计一次预计与实际', () => {
+    const store = useProjectStore();
+    const sharedPomodoros = [{ durationMinutes: 50, actualDurationMinutes: 50, date: '2026-05-13', id: 'p1', startTime: '09:00:00' }] as any;
+    const items = [
+      mkItem('2026-05-13', 'same-block', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        focusPlan: {
+          type: 'duration',
+          rawValue: 70,
+          normalizedMinutes: 70,
+          sourceText: '⏳1h10m',
+        },
+        pomodoros: sharedPomodoros,
+      }),
+      mkItem('2026-05-13', 'same-block', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        focusPlan: {
+          type: 'duration',
+          rawValue: 70,
+          normalizedMinutes: 70,
+          sourceText: '⏳1h10m',
+        },
+        pomodoros: sharedPomodoros,
+      }),
+    ];
+
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-05-13',
+    });
+
+    const summary = (store as any).getTodayFocusPlanSummary('');
+
+    expect(summary.estimatedMinutes).toBe(70);
+    expect(summary.actualMinutes).toBe(50);
+    expect(summary.total).toBe(1);
+  });
 });
 
 const mkPomodoro = (date: string, minutes: number, overrides?: Partial<PomodoroRecord>): PomodoroRecord =>

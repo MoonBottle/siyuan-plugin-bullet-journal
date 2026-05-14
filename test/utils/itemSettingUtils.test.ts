@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { toggleItemPinned, updateItemWithRecurring, updateItemWithReminder } from '@/utils/itemSettingUtils';
+import {
+  clearItemFocusPlan,
+  toggleItemPinned,
+  updateItemWithFocusPlan,
+  updateItemWithRecurring,
+  updateItemWithReminder,
+} from '@/utils/itemSettingUtils';
 import { eventBus, Events } from '@/utils/eventBus';
 import type { Item, ReminderConfig, RepeatRule } from '@/types/models';
 
@@ -93,6 +99,44 @@ describe('itemSettingUtils', () => {
     expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
       source: 'item-setting',
       kind: 'pin',
+      blockId: 'block-1',
+    });
+  });
+
+  it('保存预计时长时会替换旧预算并保留其他标记', async () => {
+    mockGetBlockByID.mockResolvedValueOnce({
+      markdown: '事项 @2026-05-14 🍅x2 🔥',
+    });
+
+    await updateItemWithFocusPlan(item, { type: 'duration', rawValue: 70 });
+
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '事项 @2026-05-14 🔥 ⏳1h10m',
+      'block-1',
+    );
+    expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
+      source: 'item-setting',
+      kind: 'focus-plan',
+      blockId: 'block-1',
+    });
+  });
+
+  it('清除预计时会移除所有预算标记', async () => {
+    mockGetBlockByID.mockResolvedValueOnce({
+      markdown: '事项 @2026-05-14 ⏳1h 🍅x3',
+    });
+
+    await clearItemFocusPlan(item);
+
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '事项 @2026-05-14',
+      'block-1',
+    );
+    expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
+      source: 'item-setting',
+      kind: 'focus-plan',
       blockId: 'block-1',
     });
   });
