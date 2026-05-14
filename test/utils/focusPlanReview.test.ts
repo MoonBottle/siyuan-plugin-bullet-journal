@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDailyFocusPlanSummary,
   buildFocusPlanReview,
+  formatFocusActualDisplay,
   formatFocusPlanDisplay,
+  formatFocusPlanProgress,
 } from '@/utils/focusPlanReview';
 
 describe('focusPlanReview', () => {
@@ -45,5 +47,26 @@ describe('focusPlanReview', () => {
       normalizedMinutes: 70,
       sourceText: '⏳1h10m',
     })).toBe('1h10m');
+  });
+
+  it('格式化实际累计时长展示', () => {
+    expect(formatFocusActualDisplay(50)).toBe('50m');
+    expect(formatFocusActualDisplay(70)).toBe('1h10m');
+  });
+
+  it('格式化专注中进度展示', () => {
+    expect(formatFocusPlanProgress({
+      type: 'duration',
+      rawValue: 70,
+      normalizedMinutes: 70,
+      sourceText: '⏳1h10m',
+    }, 60)).toBe('1h / 1h10m');
+
+    expect(formatFocusPlanProgress({
+      type: 'pomodoro',
+      rawValue: 3,
+      normalizedMinutes: 75,
+      sourceText: '🍅x3',
+    }, 10)).toBe('10m / 3 🍅');
   });
 });

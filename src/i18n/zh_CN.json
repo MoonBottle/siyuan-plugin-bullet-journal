@@ -778,6 +778,8 @@
   "focusPlan": {
     "settingTitle": "设置预计",
     "estimatedShort": "预计",
+    "currentPlan": "当前预计",
+    "actualShort": "累计",
     "variance": "偏差",
     "clear": "清除预计",
     "preview": "预览",

@@ -738,6 +738,8 @@
   "focusPlan": {
     "settingTitle": "Set Focus Plan",
     "estimatedShort": "Planned",
+    "currentPlan": "Current Plan",
+    "actualShort": "Actual",
     "variance": "Variance",
     "clear": "Clear Plan",
     "preview": "Preview",

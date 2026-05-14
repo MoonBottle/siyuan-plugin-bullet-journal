@@ -58,6 +58,16 @@
         <div v-if="selectedItem" class="selected-item-section">
           <SelectedItemCard :item="selectedItem" :show-header="true" />
         </div>
+        <div v-if="selectedFocusPlanDisplay" class="focus-plan-summary">
+          <div class="focus-plan-row">
+            <span class="focus-plan-label">{{ t('focusPlan').currentPlan }}</span>
+            <span class="focus-plan-value">{{ selectedFocusPlanDisplay }}</span>
+          </div>
+          <div v-if="selectedActualFocusDisplay" class="focus-plan-row">
+            <span class="focus-plan-label">{{ t('focusPlan').actualShort }}</span>
+            <span class="focus-plan-value">{{ selectedActualFocusDisplay }}</span>
+          </div>
+        </div>
 
         <div class="panel-title">{{ t('pomodoroDialog').timerMode }}</div>
         <div class="timer-mode-section">
@@ -131,6 +141,7 @@ import { DOCK_TYPES } from '@/constants';
 import { t } from '@/i18n';
 import SelectedItemCard from './SelectedItemCard.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
+import { formatFocusActualDisplay, formatFocusPlanDisplay } from '@/utils/focusPlanReview';
 
 const props = defineProps<{
   closeDialog: () => void;
@@ -165,6 +176,15 @@ const groupOptions = computed(() => {
 const preselectedItem = computed(() => {
   if (!props.preselectedBlockId || !projectStore) return null;
   return projectStore.getItemByBlockId(props.preselectedBlockId) || null;
+});
+const selectedFocusPlanDisplay = computed(() => formatFocusPlanDisplay(selectedItem.value?.focusPlan));
+const selectedActualFocusMinutes = computed(() => {
+  if (!selectedItem.value || !projectStore) return 0;
+  return projectStore.getItemActualFocusMinutes(selectedItem.value);
+});
+const selectedActualFocusDisplay = computed(() => {
+  if (selectedActualFocusMinutes.value <= 0) return '';
+  return formatFocusActualDisplay(selectedActualFocusMinutes.value);
 });
 
 // 计时模式：倒计时 / 正计时
@@ -551,6 +571,37 @@ watch(selectedGroup, () => {
 .selected-item-section {
   margin-bottom: 16px;
   width: 100%;
+}
+
+.focus-plan-summary {
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  background: var(--b3-theme-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.focus-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.focus-plan-label {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+}
+
+.focus-plan-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
 }
 
 .start-btn {
