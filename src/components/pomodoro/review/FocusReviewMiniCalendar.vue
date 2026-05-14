@@ -1,13 +1,30 @@
 <template>
   <div class="focus-review-mini-calendar">
     <div class="focus-review-mini-calendar__header">
-      <button class="focus-review-mini-calendar__nav block__icon" type="button" @click="prevMonth">‹</button>
+      <button
+        class="focus-review-mini-calendar__nav block__icon"
+        type="button"
+        @click="prevMonth"
+      >
+        ‹
+      </button>
       <span class="focus-review-mini-calendar__title">{{ title }}</span>
-      <button class="focus-review-mini-calendar__nav block__icon" type="button" @click="nextMonth">›</button>
+      <button
+        class="focus-review-mini-calendar__nav block__icon"
+        type="button"
+        @click="nextMonth"
+      >
+        ›
+      </button>
     </div>
 
     <div class="focus-review-mini-calendar__weekdays">
-      <span v-for="day in weekDayLabels" :key="day" class="focus-review-mini-calendar__weekday">{{ day }}</span>
+      <span
+        v-for="day in weekDayLabels"
+        :key="day"
+        class="focus-review-mini-calendar__weekday"
+        >{{ day }}</span
+      >
     </div>
 
     <div class="focus-review-mini-calendar__days">
@@ -18,27 +35,41 @@
         :class="{
           'focus-review-mini-calendar__cell--empty': !cell.date,
           'focus-review-mini-calendar__cell--today': cell.date === today,
-          'focus-review-mini-calendar__cell--selected': cell.date === modelValue,
+          'focus-review-mini-calendar__cell--selected':
+            cell.date === modelValue,
           'focus-review-mini-calendar__cell--planned': hasPlanned(cell.summary),
-          'focus-review-mini-calendar__cell--focused': cell.summary.actualMinutes > 0,
-          'focus-review-mini-calendar__cell--unplanned-focus': hasFocusedOnly(cell.summary),
+          'focus-review-mini-calendar__cell--focused':
+            cell.summary.actualMinutes > 0,
+          'focus-review-mini-calendar__cell--unplanned-focus': hasFocusedOnly(
+            cell.summary,
+          ),
         }"
-        :data-testid="cell.date ? `focus-review-calendar-cell-${cell.date}` : undefined"
+        :data-testid="
+          cell.date ? `focus-review-calendar-cell-${cell.date}` : undefined
+        "
         :disabled="!cell.date"
         type="button"
         :title="cell.date ? getCellMarkerLabel(cell.summary) : ''"
         @click="cell.date && emit('update:modelValue', cell.date)"
       >
         <template v-if="cell.date">
-          <span class="focus-review-mini-calendar__day-num">{{ cell.dayNum }}</span>
+          <span class="focus-review-mini-calendar__day-num">{{
+            cell.dayNum
+          }}</span>
           <span class="focus-review-mini-calendar__marker">
             <span
               v-if="hasMarker(cell.summary)"
               class="focus-review-mini-calendar__dot"
               :class="{
-                'focus-review-mini-calendar__dot--planned': hasPlannedOnly(cell.summary),
-                'focus-review-mini-calendar__dot--focused': hasFocusedOnly(cell.summary),
-                'focus-review-mini-calendar__dot--hybrid': hasPlannedAndFocused(cell.summary),
+                'focus-review-mini-calendar__dot--planned': hasPlannedOnly(
+                  cell.summary,
+                ),
+                'focus-review-mini-calendar__dot--focused': hasFocusedOnly(
+                  cell.summary,
+                ),
+                'focus-review-mini-calendar__dot--hybrid': hasPlannedAndFocused(
+                  cell.summary,
+                ),
               }"
             ></span>
           </span>
@@ -48,26 +79,32 @@
 
     <div class="focus-review-mini-calendar__legend">
       <span class="focus-review-mini-calendar__legend-item">
-        <span class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--planned"></span>
-        <span>{{ t('focusReview').calendarLegendPlanned }}</span>
+        <span
+          class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--planned"
+        ></span>
+        <span>{{ t("focusReview").calendarLegendPlanned }}</span>
       </span>
       <span class="focus-review-mini-calendar__legend-item">
-        <span class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--focused"></span>
-        <span>{{ t('focusReview').calendarLegendFocused }}</span>
+        <span
+          class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--focused"
+        ></span>
+        <span>{{ t("focusReview").calendarLegendFocused }}</span>
       </span>
       <span class="focus-review-mini-calendar__legend-item">
-        <span class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--hybrid"></span>
-        <span>{{ t('focusReview').calendarLegendHybrid }}</span>
+        <span
+          class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--hybrid"
+        ></span>
+        <span>{{ t("focusReview").calendarLegendHybrid }}</span>
       </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import dayjs from '@/utils/dayjs';
-import { t } from '@/i18n';
-import type { FocusPlanDailySummary } from '@/utils/focusPlanReview';
+import { computed, ref, watch } from "vue";
+import dayjs from "@/utils/dayjs";
+import { t } from "@/i18n";
+import type { FocusPlanDailySummary } from "@/utils/focusPlanReview";
 
 type CalendarCell = {
   date: string;
@@ -81,21 +118,26 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
+  "update:modelValue": [value: string];
 }>();
 
-const today = dayjs().format('YYYY-MM-DD');
+const today = dayjs().format("YYYY-MM-DD");
 const viewMonth = ref(props.modelValue.slice(0, 7));
 
-watch(() => props.modelValue, (value) => {
-  const nextMonth = value.slice(0, 7);
-  if (nextMonth !== viewMonth.value) {
-    viewMonth.value = nextMonth;
-  }
-});
+watch(
+  () => props.modelValue,
+  (value) => {
+    const nextMonth = value.slice(0, 7);
+    if (nextMonth !== viewMonth.value) {
+      viewMonth.value = nextMonth;
+    }
+  },
+);
 
-const weekDayLabels = computed(() => t('calendar').weekDays);
-const title = computed(() => dayjs(`${viewMonth.value}-01`).format('YYYY年M月'));
+const weekDayLabels = computed(() => t("calendar").weekDays);
+const title = computed(() =>
+  dayjs(`${viewMonth.value}-01`).format("YYYY年M月"),
+);
 
 const calendarCells = computed(() => {
   const firstDay = dayjs(`${viewMonth.value}-01`);
@@ -107,14 +149,14 @@ const calendarCells = computed(() => {
 
   for (let i = 0; i < offset; i += 1) {
     cells.push({
-      date: '',
+      date: "",
       dayNum: 0,
       summary: emptySummary(),
     });
   }
 
   for (let day = 1; day <= daysInMonth; day += 1) {
-    const date = `${viewMonth.value}-${String(day).padStart(2, '0')}`;
+    const date = `${viewMonth.value}-${String(day).padStart(2, "0")}`;
     cells.push({
       date,
       dayNum: day,
@@ -126,11 +168,15 @@ const calendarCells = computed(() => {
 });
 
 function prevMonth() {
-  viewMonth.value = dayjs(`${viewMonth.value}-01`).subtract(1, 'month').format('YYYY-MM');
+  viewMonth.value = dayjs(`${viewMonth.value}-01`)
+    .subtract(1, "month")
+    .format("YYYY-MM");
 }
 
 function nextMonth() {
-  viewMonth.value = dayjs(`${viewMonth.value}-01`).add(1, 'month').format('YYYY-MM');
+  viewMonth.value = dayjs(`${viewMonth.value}-01`)
+    .add(1, "month")
+    .format("YYYY-MM");
 }
 
 function hasPlanned(summary: FocusPlanDailySummary): boolean {
@@ -158,15 +204,16 @@ function hasMarker(summary: FocusPlanDailySummary): boolean {
 }
 
 function getCellMarkerLabel(summary: FocusPlanDailySummary): string {
-  if (hasPlannedAndFocused(summary)) return t('focusReview').calendarLegendHybrid;
-  if (hasFocusedOnly(summary)) return t('focusReview').calendarLegendFocused;
-  if (hasPlannedOnly(summary)) return t('focusReview').calendarLegendPlanned;
-  return '';
+  if (hasPlannedAndFocused(summary))
+    return t("focusReview").calendarLegendHybrid;
+  if (hasFocusedOnly(summary)) return t("focusReview").calendarLegendFocused;
+  if (hasPlannedOnly(summary)) return t("focusReview").calendarLegendPlanned;
+  return "";
 }
 
 function emptySummary(): FocusPlanDailySummary {
   return {
-    date: '',
+    date: "",
     total: 0,
     estimatedMinutes: 0,
     actualMinutes: 0,
@@ -266,11 +313,14 @@ function emptySummary(): FocusPlanDailySummary {
   border-color: var(--b3-theme-primary);
 }
 
-.focus-review-mini-calendar__cell--focused:not(.focus-review-mini-calendar__cell--selected) {
+.focus-review-mini-calendar__cell--focused:not(
+  .focus-review-mini-calendar__cell--selected
+) {
   background: var(--b3-theme-surface);
 }
 
-.focus-review-mini-calendar__cell--planned .focus-review-mini-calendar__day-num {
+.focus-review-mini-calendar__cell--planned
+  .focus-review-mini-calendar__day-num {
   font-weight: 600;
 }
 
@@ -284,7 +334,7 @@ function emptySummary(): FocusPlanDailySummary {
   align-items: center;
   justify-content: center;
   height: 8px;
-  margin-top: 1px;
+  margin-top: 5px;
 }
 
 .focus-review-mini-calendar__dot {
@@ -292,7 +342,10 @@ function emptySummary(): FocusPlanDailySummary {
   height: 6px;
   border-radius: 999px;
   background: var(--b3-theme-surface-lighter);
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .focus-review-mini-calendar__dot--planned {
@@ -305,7 +358,9 @@ function emptySummary(): FocusPlanDailySummary {
 
 .focus-review-mini-calendar__dot--hybrid {
   background: var(--b3-theme-primary);
-  box-shadow: 0 0 0 1px var(--b3-theme-background), 0 0 0 2px var(--b3-theme-primary-light);
+  box-shadow:
+    0 0 0 1px var(--b3-theme-background),
+    0 0 0 2px var(--b3-theme-primary-light);
   transform: scale(1.1);
 }
 
