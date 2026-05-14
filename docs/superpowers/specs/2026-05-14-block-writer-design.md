@@ -69,9 +69,10 @@ src/utils/blockWriter/
   index.ts             — 统一入口 writeBlock()
   types.ts             — BlockPatch、BlockWriteContext 等类型
   kramdownModifier.ts  — 核心纯函数 applyBlockPatch()
-  protyleTransport.ts  — Protyle 场景 transport
+  protyleTransport.ts  — Protyle 场景 transport（含光标保持）
   apiTransport.ts      — API-only 场景 transport
   ialPreserver.ts      — IAL 属性提取与恢复
+  cursorPreserver.ts   — Protyle 光标偏移量保存/恢复
 ```
 
 ## 4. 接口设计
@@ -163,31 +164,43 @@ export function applyBlockPatch(kramdown: string, blockId: string, patch: BlockP
   if (!targetBlock) throw new Error(`Block ${blockId} not found in kramdown`);
 
   const ial = extractIAL(targetBlock.raw);
-  const contentWithoutIAL = stripIAL(targetBlock.raw);
   const listPrefix = extractListPrefix(targetBlock.raw);
+  // 去掉 IAL 和列表前缀，得到纯内容体（保留 [ ]/[x] 标记）
+  const bodyContent = stripIALAndPrefix(targetBlock.raw, listPrefix);
 
   let newContent: string;
   switch (patch.type) {
     case 'addDate':
-      newContent = applyDatePatch(contentWithoutIAL, patch);
+      newContent = applyDatePatch(bodyContent, patch);
       break;
     case 'setStatus':
-      newContent = applyStatusPatch(contentWithoutIAL, patch);
+      newContent = applyStatusPatch(bodyContent, patch);
       break;
     case 'setPriority':
-      newContent = applyPriorityPatch(contentWithoutIAL, patch);
+      newContent = applyPriorityPatch(bodyContent, patch);
       break;
     case 'setContent':
-      newContent = applyContentPatch(contentWithoutIAL, patch);
+      newContent = applyContentPatch(bodyContent, patch);
       break;
     case 'removeSlashCommands':
-      newContent = applySlashCommandRemoval(contentWithoutIAL, patch);
+      newContent = applySlashCommandRemoval(bodyContent, patch);
       break;
   }
 
   const modifiedRaw = buildLineWithIAL(listPrefix, newContent, ial);
   return kramdown.replace(targetBlock.raw, modifiedRaw);
 }
+```
+
+**示例**：任务列表 `setStatus`
+
+```
+raw:              "- {: id=\"abc\"}[ ] 任务内容"
+ial:              "{: id=\"abc\"}"              (extractIAL)
+listPrefix:       "- "                          (extractListPrefix)
+bodyContent:      "[ ] 任务内容"                 (stripIALAndPrefix)
+                  → applyStatusPatch → "[x] 任务内容"
+modifiedRaw:      "- {: id=\"abc\"}[x] 任务内容" (buildLineWithIAL)
 ```
 
 ### 4.4 IAL Preserver
@@ -205,8 +218,11 @@ export function extractListPrefix(raw: string): string {
   return match ? match[1] : '';
 }
 
-export function stripIAL(raw: string): string {
-  return raw.replace(/\{:([^}]*)\}/g, '').trim();
+export function stripIALAndPrefix(raw: string, listPrefix: string): string {
+  return raw
+    .replace(/\{:([^}]*)\}/g, '')
+    .replace(listPrefix, '')
+    .trim();
 }
 
 export function buildLineWithIAL(listPrefix: string, content: string, ial: string): string {
@@ -215,18 +231,94 @@ export function buildLineWithIAL(listPrefix: string, content: string, ial: strin
 }
 ```
 
-## 5. 数据流
+### 4.5 斜杠命令移除改进
 
-### 5.1 Protyle Transport（0 次 HTTP）
+当前 `processLineText` 使用正则**全局替换**删除行内所有匹配模式（`/`、`/t`、`/to`...），会误删行内非命令的匹配文本。
+
+改进：改为**首个匹配**移除——找到行内第一个匹配的斜杠命令模式，只删除那一处。
+
+```typescript
+// kramdownModifier.ts
+export function applySlashCommandRemoval(bodyContent: string, patch: SlashCommandPatch): string {
+  const patterns = generateSlashPatterns(patch.filters);
+  const sortedPatterns = Array.from(patterns).sort((a, b) => b.length - a.length);
+
+  let result = bodyContent;
+  for (const pattern of sortedPatterns) {
+    const idx = result.indexOf(pattern);
+    if (idx !== -1) {
+      result = result.slice(0, idx) + result.slice(idx + pattern.length);
+      break;  // 只删第一个匹配
+    }
+  }
+
+  result = result.trimStart();
+  if (patch.suffix) {
+    result = `${result} ${patch.suffix}`.trim();
+  }
+  return result;
+}
+```
+
+对比思源原生做法（[hint/index.ts#L565-L763](file:///c:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L565-L763)）：`range.setStart(container, this.lastIndex)` → `range.deleteContents()` —— 基于分隔符位置精确界定删除范围。改进后虽仍是文本层面操作（非 DOM Range），但"只删首个匹配"消除了误删风险。
+
+#### 非事项行的处理
+
+当前 `getValidatedItemFromNode`（[slashCommands.ts#L638-L644](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/slashCommands.ts#L638-L644)）检测到非有效事项行时，仅调用 `deleteSlashCommandContent` 删除斜杠命令文本。新方案通过 patch 分离自然覆盖此场景：
 
 ```
+// 调用方决定用哪个 patch：
+if (item) {
+  writeBlock(ctx, { type: 'addDate', date, ... })   // 完整的事项修改
+} else {
+  writeBlock(ctx, { type: 'removeSlashCommands', filters })  // 只删前缀
+}
+```
+
+`removeSlashCommands` patch 不含任何 date/status/priority 字段，语义上就是纯文本删除操作。
+
+## 5. 数据流
+
+### 5.1 Protyle Transport（0 次 HTTP，含光标保持）
+
+```
+// 步骤 1：保存光标位置
+saveCursorOffset(protyle, nodeElement) → 光标在块文本内的字符偏移量
+
+// 步骤 2：Lute 往返
 nodeElement.outerHTML
   → protyle.lute.BlockDOM2StdMd()          // 纯本地计算
   → applyBlockPatch(kramdown, blockId, patch)
   → protyle.lute.Md2BlockDOM(newKramdown)  // 纯本地计算
-  → nodeElement.outerHTML = newHTML
-  → protyle.transaction(doOps, undoOps)
+
+// 步骤 3：替换 DOM + 提交事务
+nodeElement.outerHTML = newHTML
+protyle.transaction(doOps, undoOps)
+
+// 步骤 4：恢复光标位置
+restoreCursorOffset(nodeElement, savedOffset)
 ```
+
+#### 光标保存机制
+
+借鉴思源 `<wbr>` 标记思路（[selection.ts#L570-L625](file:///c:/dev/projects/open-source/siyuan/app/src/protyle/util/selection.ts#L570-L625)），在 Protyle Transport 中：
+
+```
+DOM 替换前：
+  saveCursorOffset(protyle, nodeElement)
+    → getSelection().getRangeAt(0)
+    → 遍历块内文本节点，累加字符数直到光标位置
+    → 返回 int（字符偏移量）
+
+DOM 替换后（outerHTML 已更新，原 DOM 节点已销毁）：
+  restoreCursorOffset(newNodeElement, savedOffset)
+    → 在新 DOM 中从头遍历文本节点，累加字符数
+    → 到达 savedOffset 位置时：range.setStart(textNode, localOffset)
+    → range.collapse(true)
+    → selection.removeAllRanges(); selection.addRange(range)
+```
+
+光标偏移量的计算基准是块内**可见文本**，与 `processLineText` 的文本操作对齐——删除斜杠命令后光标自然落在新文本的对应位置。
 
 ### 5.2 API Transport（1-2 次 HTTP）
 
