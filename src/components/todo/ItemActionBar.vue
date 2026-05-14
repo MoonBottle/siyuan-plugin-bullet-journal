@@ -182,7 +182,10 @@ function handleOpenCalendar() {
 .item-action-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px dashed var(--b3-border-color);
@@ -196,7 +199,8 @@ function handleOpenCalendar() {
   justify-content: center;
   color: var(--b3-theme-on-surface);
   cursor: pointer;
-  opacity: 0.72;
+  flex-shrink: 0;
+  opacity: 1;
   transition: opacity 0.2s, color 0.2s;
 
   svg {
