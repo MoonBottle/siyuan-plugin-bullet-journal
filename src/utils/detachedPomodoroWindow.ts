@@ -99,6 +99,7 @@ export function createDetachedPomodoroWindowHost(
       height: 84,
       frame: false,
       transparent: true,
+      backgroundColor: '#00000000',
       resizable: false,
       movable: true,
       minimizable: false,
@@ -246,7 +247,6 @@ function buildDetachedWindowHtml(): string {
         background: var(--b3-theme-surface, #f7f1e8);
         color: var(--b3-theme-on-surface, #6f6255);
         border: 1px solid var(--b3-border-color, rgba(129, 110, 91, 0.18));
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
         overflow: hidden;
         user-select: none;
         touch-action: none;
