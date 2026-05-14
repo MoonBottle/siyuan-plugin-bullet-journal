@@ -15,16 +15,8 @@
 
       <div class="focus-review-view__summary-grid">
         <div class="focus-review-view__summary-card">
-          <div class="focus-review-view__summary-label">{{ t('focusReview').plannedItems }}</div>
-          <div class="focus-review-view__summary-value">{{ selectedSummary.total }}</div>
-        </div>
-        <div class="focus-review-view__summary-card">
-          <div class="focus-review-view__summary-label">{{ t('focusReview').plannedTotal }}</div>
-          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.estimatedMinutes) }}</div>
-        </div>
-        <div class="focus-review-view__summary-card">
-          <div class="focus-review-view__summary-label">{{ t('focusReview').actualTotal }}</div>
-          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.actualMinutes) }}</div>
+          <div class="focus-review-view__summary-label">{{ t('focusReview').actualVsPlan }}</div>
+          <div class="focus-review-view__summary-value">{{ summaryActualVsPlanDisplay }}</div>
         </div>
         <div class="focus-review-view__summary-card">
           <div class="focus-review-view__summary-label">{{ t('focusReview').varianceTotal }}</div>
@@ -165,6 +157,9 @@ const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, ''));
 const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, ''));
 const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
+const summaryActualVsPlanDisplay = computed(() => {
+  return `${formatDuration(selectedSummary.value.actualMinutes)} / ${formatDuration(selectedSummary.value.estimatedMinutes)}`;
+});
 const summaryVarianceDisplay = computed(() => {
   const delta = selectedSummary.value.actualMinutes - selectedSummary.value.estimatedMinutes;
   return formatDelta(delta);
@@ -271,8 +266,8 @@ defineExpose({
 }
 
 .focus-review-view__sidebar {
-  width: 320px;
-  min-width: 280px;
+  width: 360px;
+  min-width: 340px;
   display: flex;
   flex-direction: column;
   padding: 16px;

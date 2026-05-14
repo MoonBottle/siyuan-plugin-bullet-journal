@@ -175,9 +175,9 @@ describe('FocusReviewView', () => {
   it('renders summary, list, and detail panes that switch with the calendar date', async () => {
     const mounted = await mountComponent();
 
-    expect(mounted.container.textContent).toContain('有预计事项');
+    expect(mounted.container.textContent).toContain('实际 / 预计');
     expect(mounted.container.textContent).toContain('整理日报');
-    expect(mounted.container.textContent).toContain('10m / 1h 10m');
+    expect(mounted.container.textContent).toContain('40m / 1h 35m');
     expect(mounted.container.textContent).toContain('事项详情');
     expect(mounted.container.textContent).toContain('专注记录');
     expect(mounted.container.querySelector('[data-testid="item-detail-content"]')?.textContent).toContain('整理日报');
