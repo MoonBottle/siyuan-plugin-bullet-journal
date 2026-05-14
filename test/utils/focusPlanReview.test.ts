@@ -19,6 +19,17 @@ describe('focusPlanReview', () => {
     expect(result.deltaMinutes).toBe(15);
   });
 
+  it('无预计但有实际专注时应归类为 unplanned', () => {
+    const result = buildFocusPlanReview({
+      itemStatus: 'completed',
+      estimatedMinutes: 0,
+      actualMinutes: 30,
+    });
+
+    expect(result.status).toBe('unplanned');
+    expect(result.deltaMinutes).toBe(30);
+  });
+
   it('统计今日摘要时不重复累计同一 blockId 的预计', () => {
     const summary = buildDailyFocusPlanSummary([
       { itemId: 'item-1', blockId: 'same', date: '2026-05-13', estimatedMinutes: 70, actualMinutes: 50, itemStatus: 'pending' },

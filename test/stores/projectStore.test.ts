@@ -188,6 +188,31 @@ describe('projectStore 多日期事项', () => {
     expect(summary.estimatedMinutes).toBe(145);
     expect(summary.actualMinutes).toBe(0);
   });
+
+  it('getFocusPlanEntriesByDate 会包含有专注记录但没有预计的事项', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-05-13', 'focused-without-plan', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        pomodoros: [
+          { durationMinutes: 20, actualDurationMinutes: 20, date: '2026-05-13', id: 'p-1', startTime: '10:00:00' },
+        ] as any,
+      }),
+    ];
+
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-05-14',
+    });
+
+    const entries = (store as any).getFocusPlanEntriesByDate('2026-05-13', '');
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].estimatedMinutes).toBe(0);
+    expect(entries[0].actualMinutes).toBe(20);
+    expect(entries[0].reviewStatus).toBe('unplanned');
+  });
 });
 
 const mkPomodoro = (date: string, minutes: number, overrides?: Partial<PomodoroRecord>): PomodoroRecord =>

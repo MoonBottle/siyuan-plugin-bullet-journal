@@ -62,12 +62,19 @@ function buildFocusPlanEntriesForDate(
   const displayItems = computeDisplayItems(items, date, groupId);
   return buildDailyFocusPlanEntries(
     displayItems
-      .filter(item => item.focusPlan)
+      .filter((item) => {
+        const actualMinutes = (item.pomodoros ?? [])
+          .filter(record => record.date === date)
+          .reduce((sum, record) => {
+            return sum + (record.actualDurationMinutes ?? record.durationMinutes);
+          }, 0);
+        return !!item.focusPlan || actualMinutes > 0;
+      })
       .map(item => ({
         itemId: item.id,
         blockId: item.blockId ?? item.id,
         date: item.date,
-        estimatedMinutes: item.focusPlan!.normalizedMinutes,
+        estimatedMinutes: item.focusPlan?.normalizedMinutes ?? 0,
         actualMinutes: (item.pomodoros ?? [])
           .filter(record => record.date === date)
           .reduce((sum, record) => {

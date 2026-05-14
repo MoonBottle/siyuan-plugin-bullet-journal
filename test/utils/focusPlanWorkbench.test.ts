@@ -57,4 +57,16 @@ describe('buildFocusPlanCandidateSections', () => {
 
     expect(sections[0].items.map(item => item.id)).toEqual(['c', 'b', 'a', 'd']);
   });
+
+  it('历史日期不提供新增预计候选', () => {
+    const sections = buildFocusPlanCandidateSections({
+      items: [
+        createItem({ id: 'selected-1', date: '2026-05-13', content: '历史事项' }),
+      ],
+      selectedDate: '2026-05-13',
+      today: '2026-05-14',
+    });
+
+    expect(sections).toEqual([]);
+  });
 });

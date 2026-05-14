@@ -31,7 +31,22 @@ const mockEntries = [
   },
 ];
 
+const historicalFocusedEntries = [
+  {
+    itemId: 'item-history-1',
+    blockId: 'block-history-1',
+    date: '2026-05-13',
+    estimatedMinutes: 0,
+    actualMinutes: 20,
+    itemStatus: 'completed',
+    itemContent: '历史专注记录',
+    reviewStatus: 'unplanned',
+    deltaMinutes: 20,
+  },
+];
+
 const entriesByDate: Record<string, typeof mockEntries> = {
+  '2026-05-13': historicalFocusedEntries,
   '2026-05-14': mockEntries,
   '2026-05-15': [
     {
@@ -59,6 +74,7 @@ const summaryByDate = (date: string) => {
     underrun: entries.filter(entry => entry.reviewStatus === 'underrun').length,
     notStarted: entries.filter(entry => entry.reviewStatus === 'not-started').length,
     inProgress: entries.filter(entry => entry.reviewStatus === 'in-progress').length,
+    unplanned: entries.filter(entry => entry.reviewStatus === 'unplanned').length,
   };
 };
 
@@ -69,6 +85,7 @@ const mockProjectStore = {
     { id: 'item-1', blockId: 'block-1', content: '整理日报', lineNumber: 1, docId: 'doc-1', date: '2026-05-14', status: 'pending', project: { name: '项目A' }, task: { name: '任务A' }, pomodoros: [{ id: 'p1', date: '2026-05-14', startTime: '08:25:00', endTime: '08:35:00', durationMinutes: 10, itemId: 'item-1', itemContent: '整理日报', blockId: 'abcdefghijklmnopqrstuv' }] },
     { id: 'item-2', blockId: 'block-2', content: '整理会议结论', lineNumber: 2, docId: 'doc-1', date: '2026-05-14', status: 'completed', pomodoros: [] },
     { id: 'item-3', blockId: 'block-3', content: '补材料', lineNumber: 3, docId: 'doc-2', date: '2026-05-15', status: 'pending', pomodoros: [] },
+    { id: 'item-history-1', blockId: 'block-history-1', content: '历史专注记录', lineNumber: 4, docId: 'doc-3', date: '2026-05-13', status: 'completed', pomodoros: [{ id: 'ph1', date: '2026-05-13', startTime: '09:00:00', endTime: '09:20:00', durationMinutes: 20, itemId: 'item-history-1', itemContent: '历史专注记录', blockId: 'block-history-1' }] },
   ],
   getItemByBlockId: vi.fn((blockId: string) => mockProjectStore.items.find(item => item.blockId === blockId)),
 };
@@ -151,6 +168,7 @@ vi.mock('@/i18n', () => ({
           underrun: '低于预计',
           'in-progress': '进行中',
           'not-started': '未开始',
+          unplanned: '未预计',
         },
       };
     }
@@ -243,6 +261,20 @@ describe('FocusReviewView', () => {
         selectedDate: '2026-05-16',
       }),
     );
+
+    mounted.unmount();
+  });
+
+  it('hides add-plan actions on historical dates and still shows unplanned focused entries', async () => {
+    const mounted = await mountComponent();
+
+    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-13"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('历史专注记录');
+    expect(mounted.container.textContent).toContain('未预计');
+    expect(mounted.container.querySelector('[data-testid="focus-review-add-plan"]')).toBeNull();
+    expect(mounted.container.querySelector('.focus-review-view__empty-action')).toBeNull();
 
     mounted.unmount();
   });

@@ -114,6 +114,7 @@ function nextMonth() {
 
 function emptySummary(): FocusPlanDailySummary {
   return {
+    date: '',
     total: 0,
     estimatedMinutes: 0,
     actualMinutes: 0,
@@ -122,6 +123,7 @@ function emptySummary(): FocusPlanDailySummary {
     underrun: 0,
     notStarted: 0,
     inProgress: 0,
+    unplanned: 0,
   };
 }
 </script>

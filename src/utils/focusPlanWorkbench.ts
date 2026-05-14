@@ -8,8 +8,13 @@ export interface FocusPlanCandidateSection {
 export function buildFocusPlanCandidateSections(input: {
   items: Item[];
   selectedDate: string;
+  today?: string;
 }): FocusPlanCandidateSection[] {
-  const { items, selectedDate } = input;
+  const { items, selectedDate, today = selectedDate } = input;
+
+  if (selectedDate < today) {
+    return [];
+  }
 
   const validItems = items.filter(item =>
     !!item.blockId

@@ -1313,6 +1313,7 @@ export function showFocusPlanItemPickerDialog(input: {
   const sections = buildFocusPlanCandidateSections({
     items: input.items,
     selectedDate: input.selectedDate,
+    today: dayjs().format('YYYY-MM-DD'),
   });
 
   const container = document.createElement('div');

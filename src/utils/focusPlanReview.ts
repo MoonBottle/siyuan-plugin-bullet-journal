@@ -1,6 +1,6 @@
 import type { FocusPlan, ItemStatus } from '@/types/models';
 
-export type FocusPlanReviewStatus = 'not-started' | 'in-progress' | 'matched' | 'overrun' | 'underrun';
+export type FocusPlanReviewStatus = 'not-started' | 'in-progress' | 'matched' | 'overrun' | 'underrun' | 'unplanned';
 
 export interface FocusPlanReviewInput {
   itemStatus: ItemStatus;
@@ -33,6 +33,7 @@ export interface FocusPlanDailySummary {
   underrun: number;
   notStarted: number;
   inProgress: number;
+  unplanned: number;
 }
 
 function formatCompactMinutes(minutes: number): string {
@@ -45,6 +46,9 @@ function formatCompactMinutes(minutes: number): string {
 
 export function buildFocusPlanReview(input: FocusPlanReviewInput) {
   const deltaMinutes = input.actualMinutes - input.estimatedMinutes;
+  if (input.estimatedMinutes <= 0 && input.actualMinutes > 0) {
+    return { status: 'unplanned' as const, deltaMinutes };
+  }
   if (input.actualMinutes === 0) return { status: 'not-started' as const, deltaMinutes };
   if (input.itemStatus !== 'completed') return { status: 'in-progress' as const, deltaMinutes };
   if (Math.abs(deltaMinutes) <= 25) return { status: 'matched' as const, deltaMinutes };
@@ -96,6 +100,7 @@ export function buildDailyFocusPlanSummary(
     underrun: 0,
     notStarted: 0,
     inProgress: 0,
+    unplanned: 0,
   };
   for (const entry of buildDailyFocusPlanEntries(entries, date)) {
     summary.estimatedMinutes += entry.estimatedMinutes;
@@ -107,6 +112,7 @@ export function buildDailyFocusPlanSummary(
     if (entry.reviewStatus === 'underrun') summary.underrun += 1;
     if (entry.reviewStatus === 'not-started') summary.notStarted += 1;
     if (entry.reviewStatus === 'in-progress') summary.inProgress += 1;
+    if (entry.reviewStatus === 'unplanned') summary.unplanned += 1;
   }
 
   return summary;

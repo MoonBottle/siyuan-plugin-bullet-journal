@@ -44,6 +44,7 @@
 
       <div class="focus-review-view__toolbar">
         <button
+          v-if="canAddFocusPlan"
           class="focus-review-view__toolbar-button"
           data-testid="focus-review-add-plan"
           type="button"
@@ -79,6 +80,7 @@
         <div class="focus-review-view__empty-title">{{ t('focusReview').emptyTitle }}</div>
         <div class="focus-review-view__empty-desc">{{ t('focusReview').emptyDesc }}</div>
         <button
+          v-if="canAddFocusPlan"
           class="focus-review-view__empty-action"
           type="button"
           @click="handleAddFocusPlan"
@@ -181,6 +183,7 @@ const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, ''));
 const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, ''));
 const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
+const canAddFocusPlan = computed(() => selectedDate.value >= dayjs().format('YYYY-MM-DD'));
 const summaryVarianceDisplay = computed(() => {
   const delta = selectedSummary.value.actualMinutes - selectedSummary.value.estimatedMinutes;
   return formatDelta(delta);
@@ -193,6 +196,7 @@ const statusFilters = computed(() => {
     { value: 'underrun' as const, label: getStatusLabel('underrun'), count: entries.filter(entry => entry.reviewStatus === 'underrun').length },
     { value: 'in-progress' as const, label: getStatusLabel('in-progress'), count: entries.filter(entry => entry.reviewStatus === 'in-progress').length },
     { value: 'not-started' as const, label: getStatusLabel('not-started'), count: entries.filter(entry => entry.reviewStatus === 'not-started').length },
+    { value: 'unplanned' as const, label: getStatusLabel('unplanned'), count: entries.filter(entry => entry.reviewStatus === 'unplanned').length },
     { value: 'matched' as const, label: getStatusLabel('matched'), count: entries.filter(entry => entry.reviewStatus === 'matched').length },
   ].filter(filter => filter.value === 'all' || filter.count > 0);
 });
@@ -243,6 +247,7 @@ function getSummaryByDate(date: string) {
 }
 
 function handleAddFocusPlan() {
+  if (!canAddFocusPlan.value) return;
   showFocusPlanItemPickerDialog({
     items: projectStore.items,
     selectedDate: selectedDate.value,

@@ -816,7 +816,8 @@
       "overrun": "超支",
       "underrun": "低于预计",
       "in-progress": "进行中",
-      "not-started": "未开始"
+      "not-started": "未开始",
+      "unplanned": "未预计"
     }
   },
   "mobile": {
