@@ -99,31 +99,7 @@
           </div>
         </div>
 
-        <div class="focus-review-view__detail-grid">
-          <div class="focus-review-view__detail-card">
-            <div class="focus-review-view__detail-label">{{ t('focusPlan').estimatedShort }}</div>
-            <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.estimatedMinutes) }}</div>
-          </div>
-          <div class="focus-review-view__detail-card">
-            <div class="focus-review-view__detail-label">{{ t('focusReview').actualTotal }}</div>
-            <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.actualMinutes) }}</div>
-          </div>
-          <div class="focus-review-view__detail-card">
-            <div class="focus-review-view__detail-label">{{ t('focusReview').variance }}</div>
-            <div class="focus-review-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
-          </div>
-          <div class="focus-review-view__detail-card">
-            <div class="focus-review-view__detail-label">{{ t('focusReview').status[selectedEntry.reviewStatus] }}</div>
-            <div class="focus-review-view__detail-value">{{ actualVsPlanDisplay }}</div>
-          </div>
-        </div>
-
-        <div class="focus-review-view__detail-block">
-          <div class="focus-review-view__detail-block-title">{{ t('focusReview').actualVsPlan }}</div>
-          <div class="focus-review-view__detail-line">{{ actualVsPlanDisplay }}</div>
-        </div>
-
-        <div class="focus-review-view__detail-panels">
+        <div class="focus-review-view__detail-layout">
           <div class="focus-review-view__detail-panel focus-review-view__detail-panel--item">
             <div class="focus-review-view__detail-panel-header">{{ t('todo').detail }}</div>
             <div v-if="selectedItem" class="focus-review-view__detail-panel-body">
@@ -140,13 +116,35 @@
               <div class="focus-review-view__empty-desc">{{ detailEmptyDesc }}</div>
             </div>
           </div>
-          <FocusReviewRecordPane
-            :records="selectedItem?.pomodoros ?? []"
-            :item-content="selectedEntry.itemContent || selectedItem?.content"
-            :title="t('pomodoroStats').focusRecords"
-            :empty-title="t('pomodoroStats').noData"
-            :empty-desc="detailEmptyDesc"
-          />
+
+          <div class="focus-review-view__detail-lower">
+            <div class="focus-review-view__detail-grid">
+              <div class="focus-review-view__detail-card">
+                <div class="focus-review-view__detail-label">{{ t('focusPlan').estimatedShort }}</div>
+                <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.estimatedMinutes) }}</div>
+              </div>
+              <div class="focus-review-view__detail-card">
+                <div class="focus-review-view__detail-label">{{ t('focusReview').actualTotal }}</div>
+                <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.actualMinutes) }}</div>
+              </div>
+              <div class="focus-review-view__detail-card">
+                <div class="focus-review-view__detail-label">{{ t('focusReview').variance }}</div>
+                <div class="focus-review-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
+              </div>
+              <div class="focus-review-view__detail-card">
+                <div class="focus-review-view__detail-label">{{ t('focusReview').status[selectedEntry.reviewStatus] }}</div>
+                <div class="focus-review-view__detail-value">{{ actualVsPlanDisplay }}</div>
+              </div>
+            </div>
+
+            <FocusReviewRecordPane
+              :records="selectedItem?.pomodoros ?? []"
+              :item-content="selectedEntry.itemContent || selectedItem?.content"
+              :title="t('pomodoroStats').focusRecords"
+              :empty-title="t('pomodoroStats').noData"
+              :empty-desc="detailEmptyDesc"
+            />
+          </div>
         </div>
       </div>
 
@@ -345,8 +343,7 @@ defineExpose({
 }
 
 .focus-review-view__summary-card,
-.focus-review-view__detail-card,
-.focus-review-view__detail-block {
+.focus-review-view__detail-card {
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 10px;
   background: var(--b3-theme-surface);
@@ -364,8 +361,7 @@ defineExpose({
 }
 
 .focus-review-view__summary-value,
-.focus-review-view__detail-value,
-.focus-review-view__detail-line {
+.focus-review-view__detail-value {
   margin-top: 6px;
   font-size: 22px;
   font-weight: 600;
@@ -499,24 +495,33 @@ defineExpose({
   min-height: 0;
 }
 
+.focus-review-view__detail-surface {
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-review-view__detail-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  margin-top: 20px;
+  flex: 1;
+}
+
+.focus-review-view__detail-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
 .focus-review-view__detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 20px;
-}
-
-.focus-review-view__detail-block {
-  margin-top: 16px;
-  padding: 16px;
-}
-
-.focus-review-view__detail-panels {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  min-height: 320px;
-  margin-top: 16px;
+  align-content: start;
 }
 
 .focus-review-view__detail-panel {
@@ -557,11 +562,6 @@ defineExpose({
   align-items: center;
   justify-content: center;
   text-align: center;
-}
-
-.focus-review-view__detail-block-title {
-  font-size: 13px;
-  color: var(--b3-theme-on-surface);
 }
 
 .focus-review-view__empty,
@@ -610,7 +610,7 @@ defineExpose({
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .focus-review-view__detail-panels {
+  .focus-review-view__detail-lower {
     grid-template-columns: 1fr;
   }
 }
