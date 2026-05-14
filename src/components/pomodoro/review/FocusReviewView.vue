@@ -266,8 +266,8 @@ defineExpose({
 }
 
 .focus-review-view__sidebar {
-  width: 360px;
-  min-width: 340px;
+  width: 400px;
+  min-width: 380px;
   display: flex;
   flex-direction: column;
   padding: 16px;
