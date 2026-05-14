@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { defaultSettings } from '@/settings';
 
 const {
   getSettings,
@@ -55,5 +56,10 @@ describe('settingsStore', () => {
     expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
       habitCheckInTimePrecision: 'minute',
     }));
+  });
+
+  it('defaults pomodoro floating display mode to inline', () => {
+    const settings = structuredClone(defaultSettings);
+    expect(settings.pomodoro?.floatingDisplayMode).toBe('inline');
   });
 });

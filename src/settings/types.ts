@@ -12,6 +12,7 @@ export type TodoSortField =
 
 export type TodoSortDirection = 'asc' | 'desc';
 export type HabitCheckInTimePrecision = 'day' | 'minute' | 'second';
+export type PomodoroFloatingDisplayMode = 'inline' | 'desktop' | 'both';
 
 export interface TodoSortRule {
   field: TodoSortField;
@@ -39,6 +40,7 @@ export interface PomodoroSettings {
   enableStatusBar?: boolean;
   enableStatusBarTimer?: boolean;
   enableFloatingButton?: boolean;
+  floatingDisplayMode?: PomodoroFloatingDisplayMode;
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
   autoCompleteOnItemDone?: boolean; // 事项完成时自动结束番茄钟，默认 true
@@ -127,6 +129,7 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   enableStatusBar: false,
   enableStatusBarTimer: false,
   enableFloatingButton: true,
+  floatingDisplayMode: 'inline',
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',
   autoCompleteOnItemDone: true,
