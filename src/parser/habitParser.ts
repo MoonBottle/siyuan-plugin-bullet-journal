@@ -22,6 +22,28 @@ function normalizeHabitText(value: string): string {
   return value.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
 }
 
+function parseEbbinghausIntervals(raw?: string): number[] | null {
+  if (!raw) {
+    return null;
+  }
+
+  const values = raw
+    .split(',')
+    .map(part => Number.parseInt(part.trim(), 10));
+
+  if (values.length === 0 || values.some(value => !Number.isInteger(value) || value <= 0)) {
+    return null;
+  }
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] <= values[i - 1]) {
+      return null;
+    }
+  }
+
+  return values;
+}
+
 /**
  * 判断是否为习惯行（包含 🎯 标记）
  */
@@ -35,6 +57,17 @@ export function isHabitLine(line: string): boolean {
  */
 export function parseHabitFrequency(freqStr: string): HabitFrequency | null {
   const str = normalizeHabitText(freqStr);
+
+  const ebbinghausMatch = str.match(/^(?:艾宾浩斯|ebbinghaus)(?:\[(.+)\])?$/i);
+  if (ebbinghausMatch) {
+    const intervals = parseEbbinghausIntervals(ebbinghausMatch[1]);
+    if (ebbinghausMatch[1] && !intervals) {
+      return null;
+    }
+    return intervals
+      ? { type: 'ebbinghaus', intervals }
+      : { type: 'ebbinghaus' };
+  }
 
   // 每天 / daily
   if (str === '每天' || str === 'daily') {
@@ -341,6 +374,11 @@ export function buildHabitDefinitionMarkdown(habit: Partial<Habit>): string {
  */
 function frequencyToMarkdown(freq: HabitFrequency): string {
   switch (freq.type) {
+    case 'ebbinghaus':
+      if (freq.intervals?.length) {
+        return `艾宾浩斯[${freq.intervals.join(',')}]`;
+      }
+      return '艾宾浩斯';
     case 'daily':
       return '每天';
     case 'every_n_days':

@@ -240,6 +240,10 @@ const frequencySummary = computed(() => {
     return days ? `${t('habit').freqWeekly}${days}` : t('habit').freqWeeklyDays;
   }
 
+  if (frequency.type === 'ebbinghaus') {
+    return t('habit').freqEbbinghaus || '艾宾浩斯';
+  }
+
   return t('habit').frequencyLabel;
 });
 
@@ -286,6 +290,26 @@ const scheduleHint = computed(() => {
   }
 
   if (!isReferenceToday.value) {
+    if (props.habit.frequency?.type === 'ebbinghaus') {
+      if (props.dayState.isCompleted) {
+        return t('habit').selectedDayCompleted;
+      }
+
+      if (props.dayState.isMissed) {
+        return t('habit').selectedDayMissed;
+      }
+
+      if (props.dayState.isOverdue) {
+        return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0));
+      }
+
+      if (props.dayState.isDue) {
+        return t('habit').selectedDayPending;
+      }
+
+      return t('habit').selectedDayNotNeeded;
+    }
+
     if (props.dayState.isCompleted) {
       return t('habit').selectedDayCompleted;
     }
@@ -302,6 +326,10 @@ const scheduleHint = computed(() => {
   }
 
   if (isReferenceToday.value) {
+    if (props.habit.frequency?.type === 'ebbinghaus' && props.dayState.isOverdue) {
+      return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0));
+    }
+
     if (isDueToday.value) {
       return t('habit').dueToday;
     }

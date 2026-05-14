@@ -147,10 +147,11 @@ export interface ReminderConfig {
 
 // 习惯频率规则
 export type HabitFrequency = {
-  type: 'daily' | 'every_n_days' | 'weekly' | 'n_per_week' | 'weekly_days';
+  type: 'daily' | 'every_n_days' | 'weekly' | 'n_per_week' | 'weekly_days' | 'ebbinghaus';
   interval?: number;             // 每 N 天的间隔（如 2 = 每2天）
   daysPerWeek?: number;          // 每周 N 天（如 3 = 每周3天）
   daysOfWeek?: number[];         // 每周指定周几（0=周日, 1=周一, ...）
+  intervals?: number[];          // 艾宾浩斯间隔模板（如 [1, 2, 4, 7, 15]）
 };
 
 export type HabitRecordStatus = 'completed' | 'missed';
@@ -197,6 +198,12 @@ export interface HabitDayState {
   hasRecord: boolean;
   isCompleted: boolean;
   isMissed?: boolean;
+  isDue?: boolean;
+  isOverdue?: boolean;
+  overdueDays?: number;
+  nextDueDate?: string;
+  currentStageIndex?: number;
+  currentIntervalDays?: number;
   currentValue?: number;
   targetValue?: number;
 }
@@ -210,6 +217,10 @@ export interface HabitPeriodState {
   remainingCount: number;
   isCompleted: boolean;
   eligibleToday: boolean;
+  nextDueDate?: string;
+  currentStageIndex?: number;
+  currentIntervalDays?: number;
+  overdueDays?: number;
 }
 
 // 习惯统计（纯计算，不持久化）

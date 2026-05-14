@@ -234,6 +234,54 @@ describe('HabitListItem', () => {
     mounted.unmount();
   });
 
+  it('renders ebbinghaus overdue hints', async () => {
+    vi.setSystemTime(new Date('2026-05-18T10:00:00+08:00'));
+
+    const habit: Habit = {
+      name: '英语单词',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-05-14',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-05-18',
+      hasRecord: false,
+      isCompleted: false,
+      isDue: true,
+      isOverdue: true,
+      overdueDays: 3,
+      nextDueDate: '2026-05-15',
+      currentStageIndex: 0,
+      currentIntervalDays: 1,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-05-18',
+      periodEnd: '2026-05-18',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+      nextDueDate: '2026-05-15',
+      currentStageIndex: 0,
+      currentIntervalDays: 1,
+      overdueDays: 3,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-05-18' });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('艾宾浩斯');
+    expect(mounted.container.textContent).toContain('已逾期 3 天');
+
+    mounted.unmount();
+  });
+
   it('clicking increment action emits increment only', async () => {
     const habit: Habit = {
       name: '喝水',

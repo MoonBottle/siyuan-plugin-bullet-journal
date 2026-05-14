@@ -46,6 +46,25 @@ describe('getHabitPeriod', () => {
     expect(period.periodStart).toBe('2026-04-07');
     expect(period.periodEnd).toBe('2026-04-08');
   });
+
+  it('ebbinghaus 首次完成后起始日仍视为已到期周期', () => {
+    const habit = mkHabit({
+      type: 'binary',
+      startDate: '2026-05-14',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [{
+        content: '英语单词',
+        date: '2026-05-14',
+        docId: 'doc-1',
+        blockId: 'record-1',
+        habitId: 'habit-1',
+      }],
+    });
+    const period = getHabitPeriod(habit, '2026-05-14');
+
+    expect(period.periodType).toBe('day');
+    expect(period.requiredCount).toBe(1);
+  });
 });
 
 describe('isDateEligibleForHabit', () => {
@@ -59,5 +78,24 @@ describe('isDateEligibleForHabit', () => {
     const habit = mkHabit({ frequency: { type: 'weekly_days', daysOfWeek: [1, 3, 5] } });
     expect(isDateEligibleForHabit(habit, '2026-04-08')).toBe(true);
     expect(isDateEligibleForHabit(habit, '2026-04-09')).toBe(false);
+  });
+
+  it('ebbinghaus 在起始日、到期日和逾期日具备资格', () => {
+    const habit = mkHabit({
+      type: 'binary',
+      startDate: '2026-05-14',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [{
+        content: '英语单词',
+        date: '2026-05-14',
+        docId: 'doc-1',
+        blockId: 'record-1',
+        habitId: 'habit-1',
+      }],
+    });
+
+    expect(isDateEligibleForHabit(habit, '2026-05-14')).toBe(true);
+    expect(isDateEligibleForHabit(habit, '2026-05-15')).toBe(true);
+    expect(isDateEligibleForHabit(habit, '2026-05-18')).toBe(true);
   });
 });

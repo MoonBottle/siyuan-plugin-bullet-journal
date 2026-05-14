@@ -2,7 +2,7 @@ import type { Habit, HabitStats } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { getHabitDayState, getHabitPeriodState, isHabitRecordCompleted } from './habitCompletion';
 import { getRecordsForDate } from './habitStatus';
-import { getHabitEndDate, getHabitPeriod, isDateEligibleForHabit, isHabitActiveOnDate } from './habitPeriod';
+import { getEbbinghausIntervals, getHabitEndDate, getHabitPeriod, isDateEligibleForHabit, isHabitActiveOnDate } from './habitPeriod';
 
 type CompletionWindow = {
   completedCount: number;
@@ -73,6 +73,10 @@ function getPeriodStatesUntil(habit: Habit, currentDate: string) {
 }
 
 function calculateStreaks(habit: Habit, currentDate: string) {
+  if (habit.frequency?.type === 'ebbinghaus') {
+    return { currentStreak: 0, longestStreak: 0 };
+  }
+
   const states = getPeriodStatesUntil(habit, currentDate);
   const completedStates = states.filter(state => state.isCompleted);
   if (completedStates.length === 0) {
@@ -125,7 +129,50 @@ function getCompletedCountInDateRange(habit: Habit, start: string, end: string):
   return getEligibleCompletedDates(habit, start, end).length;
 }
 
+function countEbbinghausWindowForRange(habit: Habit, start: string, end: string): CompletionWindow {
+  const completedDates = getCompletedRecordDates(habit).filter(date => date <= end);
+  const intervals = getEbbinghausIntervals(habit.frequency);
+  const completedCount = completedDates.filter(date => date >= start && date <= end).length;
+
+  let expectedCount = 0;
+  let completionIndex = 0;
+  let currentStageIndex = -1;
+  let nextDueDate = habit.startDate;
+
+  while (nextDueDate <= end) {
+    if (nextDueDate >= start) {
+      expectedCount++;
+    }
+
+    while (completionIndex < completedDates.length && completedDates[completionIndex] < nextDueDate) {
+      completionIndex++;
+    }
+
+    if (completionIndex >= completedDates.length) {
+      break;
+    }
+
+    const completionDate = completedDates[completionIndex];
+    if (completionDate > end) {
+      break;
+    }
+
+    currentStageIndex = Math.min(currentStageIndex + 1, intervals.length - 1);
+    nextDueDate = dayjs(completionDate).add(intervals[currentStageIndex], 'day').format('YYYY-MM-DD');
+    completionIndex++;
+  }
+
+  return {
+    completedCount: Math.min(completedCount, expectedCount),
+    expectedCount,
+  };
+}
+
 function countExpectedAndCompletedForRange(habit: Habit, start: string, end: string): CompletionWindow {
+  if (habit.frequency?.type === 'ebbinghaus') {
+    return countEbbinghausWindowForRange(habit, start, end);
+  }
+
   let cursor = dayjs(start);
   const endDate = dayjs(end);
   const visitedPeriods = new Set<string>();
