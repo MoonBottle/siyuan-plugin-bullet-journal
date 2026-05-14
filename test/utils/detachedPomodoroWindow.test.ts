@@ -57,6 +57,7 @@ describe('createDetachedPomodoroWindowHost', () => {
     const loadURL = vi.fn();
     const executeJavaScript = vi.fn();
     const lingeringClose = vi.fn();
+    const setPosition = vi.fn();
     const BrowserWindow = vi.fn(function BrowserWindowMock() {
       return {
         loadURL,
@@ -69,6 +70,7 @@ describe('createDetachedPomodoroWindowHost', () => {
         on: vi.fn(),
         once: vi.fn(),
         setAlwaysOnTop: vi.fn(),
+        setPosition,
         setVisibleOnAllWorkspaces: vi.fn(),
       };
     });
@@ -86,7 +88,14 @@ describe('createDetachedPomodoroWindowHost', () => {
 
     const host = createDetachedPomodoroWindowHost({
       frontEnd: 'desktop',
-      runtimeRequire: () => ({ BrowserWindow }),
+      runtimeRequire: () => ({
+        BrowserWindow,
+        screen: {
+          getPrimaryDisplay: () => ({
+            workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+          }),
+        },
+      }),
       createMarkup: () => '<div class="floating-tomato-shell"></div>',
       applyViewState,
       onAction: vi.fn(),
@@ -102,6 +111,7 @@ describe('createDetachedPomodoroWindowHost', () => {
     expect(executeJavaScript).toHaveBeenCalled();
     expect(applyViewState).toHaveBeenCalledTimes(2);
     expect(lingeringClose).toHaveBeenCalledTimes(1);
+    expect(setPosition).toHaveBeenCalledWith(1524, 972);
     expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('-webkit-app-region: drag')));
     expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('-webkit-app-region: no-drag')));
     expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('detached-floating-tomato'));

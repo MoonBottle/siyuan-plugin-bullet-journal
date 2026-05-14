@@ -12,6 +12,16 @@ export interface DetachedPomodoroWindowHost {
 
 interface RemoteLike {
   BrowserWindow: BrowserWindowConstructorLike;
+  screen?: {
+    getPrimaryDisplay?: () => {
+      workArea?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      };
+    };
+  };
 }
 
 interface BrowserWindowConstructorLike {
@@ -34,6 +44,7 @@ interface BrowserWindowLike {
   once?: (event: string, listener: (...args: any[]) => void) => void;
   setAlwaysOnTop?: (flag: boolean, level?: string) => void;
   getTitle?: () => string;
+  setPosition?: (x: number, y: number) => void;
   setVisibleOnAllWorkspaces?: (
     visible: boolean,
     options?: { visibleOnFullScreen?: boolean }
@@ -60,6 +71,10 @@ const UPDATE_FN = '__BULLET_JOURNAL_POMODORO_UPDATE__';
 const ACTION_CHANNEL = 'bullet-journal:detached-pomodoro-action';
 const DETACHED_HOST_CLASS = 'detached-floating-tomato';
 const DETACHED_WINDOW_TITLE = 'Bullet Journal Pomodoro Floating Window';
+const DETACHED_WINDOW_WIDTH = 372;
+const DETACHED_WINDOW_HEIGHT = 84;
+const DETACHED_WINDOW_MARGIN_RIGHT = 24;
+const DETACHED_WINDOW_MARGIN_BOTTOM = 24;
 
 export function detectDetachedPomodoroWindowSupport(
   input: DetachedPomodoroWindowSupportInput
@@ -104,8 +119,8 @@ export function createDetachedPomodoroWindowHost(
     closeLingeringDetachedPomodoroWindows(remote);
 
     detachedWindow = new remote.BrowserWindow({
-      width: 372,
-      height: 84,
+      width: DETACHED_WINDOW_WIDTH,
+      height: DETACHED_WINDOW_HEIGHT,
       title: DETACHED_WINDOW_TITLE,
       frame: false,
       transparent: true,
@@ -126,6 +141,7 @@ export function createDetachedPomodoroWindowHost(
       },
     });
 
+    positionDetachedWindow(detachedWindow, remote);
     detachedWindow.setAlwaysOnTop?.(true, 'screen-saver');
     detachedWindow.setVisibleOnAllWorkspaces?.(true, { visibleOnFullScreen: true });
     detachedWindow.webContents?.on?.('ipc-message', handleActionMessage);
@@ -238,6 +254,25 @@ function closeLingeringDetachedPomodoroWindows(remote: RemoteLike) {
 
     windowInstance.close?.();
   }
+}
+
+function positionDetachedWindow(
+  windowInstance: BrowserWindowLike,
+  remote: RemoteLike
+) {
+  const workArea = remote.screen?.getPrimaryDisplay?.()?.workArea;
+  if (!workArea) {
+    return;
+  }
+
+  const x =
+    workArea.x +
+    Math.max(0, workArea.width - DETACHED_WINDOW_WIDTH - DETACHED_WINDOW_MARGIN_RIGHT);
+  const y =
+    workArea.y +
+    Math.max(0, workArea.height - DETACHED_WINDOW_HEIGHT - DETACHED_WINDOW_MARGIN_BOTTOM);
+
+  windowInstance.setPosition?.(x, y);
 }
 
 function buildDetachedWindowHtml(): string {
