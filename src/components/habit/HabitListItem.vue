@@ -452,6 +452,11 @@ function handleMainClick() {
 
 function handleBinaryActionClick() {
   closeContextMenu();
+  if (props.dayState.isMissed) {
+    emit('reset-record', props.habit, referenceDate.value);
+    return;
+  }
+
   if (props.dayState.isCompleted) {
     return;
   }
@@ -461,6 +466,11 @@ function handleBinaryActionClick() {
 
 function handleCountActionClick() {
   closeContextMenu();
+  if (props.dayState.isMissed) {
+    emit('reset-record', props.habit, referenceDate.value);
+    return;
+  }
+
   if (props.dayState.isCompleted) {
     return;
   }

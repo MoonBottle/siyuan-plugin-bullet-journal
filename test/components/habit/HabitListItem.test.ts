@@ -435,6 +435,54 @@ describe('HabitListItem', () => {
     mounted.unmount();
   });
 
+  it('clicking a missed binary action emits reset-record only', async () => {
+    const habit: Habit = {
+      name: '晨间拉伸',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-12',
+      hasRecord: true,
+      isCompleted: false,
+      isMissed: true,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-12',
+      periodEnd: '2026-04-12',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+    const emits = {
+      checkIn: vi.fn(),
+      resetRecord: vi.fn(),
+      openDetail: vi.fn(),
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' }, emits);
+    await nextTick();
+
+    const target = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
+    expect(target).not.toBeNull();
+
+    target?.click();
+
+    expect(emits.resetRecord).toHaveBeenCalledTimes(1);
+    expect(emits.resetRecord).toHaveBeenCalledWith(habit, '2026-04-12');
+    expect(emits.checkIn).not.toHaveBeenCalled();
+    expect(emits.openDetail).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
   it('clicking increment action emits increment only', async () => {
     const habit: Habit = {
       name: '喝水',
