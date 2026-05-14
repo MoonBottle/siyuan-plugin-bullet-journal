@@ -112,6 +112,15 @@
                   </span>
                   <span
                     class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
                     :aria-label="t('todo').migrateToTomorrow"
                     @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
                     @mouseleave="handleActionTooltipLeave"
@@ -223,6 +232,15 @@
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
                   </span>
                   <span
                     class="block__icon"
@@ -340,6 +358,15 @@
                   </span>
                   <span
                     class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
                     :aria-label="t('todo').migrateToTomorrow"
                     @mouseenter="handleActionTooltipEnter($event, t('todo').migrateToTomorrow)"
                     @mouseleave="handleActionTooltipLeave"
@@ -451,6 +478,15 @@
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
                   </span>
                   <span
                     class="block__icon"
@@ -572,6 +608,15 @@
                         @click.stop="openPomodoroDialog(item)"
                       >
                         <svg><use xlink:href="#iconClock"></use></svg>
+                      </span>
+                      <span
+                        class="block__icon"
+                        :aria-label="getFocusPlanActionLabel(item)"
+                        @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                        @mouseleave="handleActionTooltipLeave"
+                        @click.stop="openFocusPlanDialog(item)"
+                      >
+                        <svg><use xlink:href="#iconAttr"></use></svg>
                       </span>
                       <span
                         class="block__icon"
@@ -758,7 +803,7 @@ import Card from '@/components/common/Card.vue';
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
+import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip, showFocusPlanDialog } from '@/utils/dialog';
 import { updateBlockPriority } from '@/utils/fileUtils';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
@@ -789,6 +834,12 @@ const getPriorityEmoji = (item: Item): string => {
 const getFocusPlanLabel = (item: Item): string => {
   const display = formatFocusPlanDisplay(item.focusPlan);
   return display ? `${t('focusPlan').estimatedShort || '预计'} ${display}` : '';
+};
+
+const getFocusPlanActionLabel = (item: Item): string => {
+  return item.focusPlan
+    ? (t('focusPlan').editAction || '修改预计')
+    : (t('focusPlan').setAction || '设置预计');
 };
 
 // 获取状态 emoji
@@ -1225,6 +1276,10 @@ const openCalendar = (item: Item) => {
   if (plugin && (plugin as any).openCustomTab) {
     (plugin as any).openCustomTab(TAB_TYPES.CALENDAR, { initialDate: item.date });
   }
+};
+
+const openFocusPlanDialog = (item: Item) => {
+  showFocusPlanDialog(item);
 };
 
 // 标记完成

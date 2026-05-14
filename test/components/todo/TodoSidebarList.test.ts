@@ -8,6 +8,7 @@ import type { Item } from '@/types/models';
 const mockToggleItemPinned = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 const mockUpdateBlockContent = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const mockUpdateBlockDateTime = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+const mockShowFocusPlanDialog = vi.hoisted(() => vi.fn());
 
 vi.mock('siyuan', async () => {
   return await import('../../__mocks__/siyuan');
@@ -91,6 +92,8 @@ vi.mock('@/i18n', () => ({
     if (key === 'focusPlan') {
       return {
         estimatedShort: '预计',
+        setAction: '设置预计',
+        editAction: '修改预计',
       };
     }
     return {};
@@ -146,6 +149,7 @@ vi.mock('@/utils/dialog', async (importOriginal) => {
     showItemDetailModal: vi.fn(),
     showDatePickerDialog: vi.fn(),
     createDialog: vi.fn(),
+    showFocusPlanDialog: mockShowFocusPlanDialog,
   };
 });
 
@@ -294,6 +298,28 @@ describe('TodoSidebarList', () => {
     await nextTick();
 
     expect(mounted.container.textContent).toContain('预计 1h10m');
+
+    mounted.unmount();
+  });
+
+  it('pending 事项操作栏显示设置预计，并可打开预计弹框', async () => {
+    const mounted = mountList({
+      items: [pendingItem],
+      hasAnyItemsRaw: true,
+    });
+
+    await nextTick();
+
+    const planButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find(node => node.getAttribute('aria-label') === '设置预计') as HTMLElement | undefined;
+
+    expect(planButton).toBeTruthy();
+
+    planButton?.click();
+
+    expect(mockShowFocusPlanDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'item-1' }),
+    );
 
     mounted.unmount();
   });
