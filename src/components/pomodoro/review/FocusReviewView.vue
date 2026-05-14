@@ -15,8 +15,12 @@
 
       <div class="focus-review-view__summary-grid">
         <div class="focus-review-view__summary-card">
-          <div class="focus-review-view__summary-label">{{ t('focusReview').actualVsPlan }}</div>
-          <div class="focus-review-view__summary-value">{{ summaryActualVsPlanDisplay }}</div>
+          <div class="focus-review-view__summary-label">{{ t('focusReview').plannedTotal }}</div>
+          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.estimatedMinutes) }}</div>
+        </div>
+        <div class="focus-review-view__summary-card">
+          <div class="focus-review-view__summary-label">{{ t('focusReview').actualTotal }}</div>
+          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.actualMinutes) }}</div>
         </div>
         <div class="focus-review-view__summary-card">
           <div class="focus-review-view__summary-label">{{ t('focusReview').varianceTotal }}</div>
@@ -109,6 +113,7 @@
                 :show-action-row="false"
                 :close-on-siyuan-link="false"
               />
+              <ItemActionBar :item="selectedItem" />
             </div>
             <div v-else class="focus-review-view__detail-panel-empty">
               <div class="focus-review-view__empty-title">{{ t('focusReview').detailEmptyTitle }}</div>
@@ -145,6 +150,7 @@ import dayjs from '@/utils/dayjs';
 import FocusReviewMiniCalendar from '@/components/pomodoro/review/FocusReviewMiniCalendar.vue';
 import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
+import ItemActionBar from '@/components/todo/ItemActionBar.vue';
 
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
@@ -157,9 +163,6 @@ const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, ''));
 const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, ''));
 const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
-const summaryActualVsPlanDisplay = computed(() => {
-  return `${formatDuration(selectedSummary.value.actualMinutes)} / ${formatDuration(selectedSummary.value.estimatedMinutes)}`;
-});
 const summaryVarianceDisplay = computed(() => {
   const delta = selectedSummary.value.actualMinutes - selectedSummary.value.estimatedMinutes;
   return formatDelta(delta);
@@ -294,7 +297,7 @@ defineExpose({
 
 .focus-review-view__summary-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 12px;
 }
@@ -325,6 +328,10 @@ defineExpose({
   font-size: 22px;
   font-weight: 600;
   color: var(--b3-theme-primary);
+}
+
+.focus-review-view__summary-value {
+  font-size: 18px;
 }
 
 .focus-review-view__filters {
@@ -530,6 +537,10 @@ defineExpose({
 
   .focus-review-view__sidebar {
     width: 100%;
+  }
+
+  .focus-review-view__summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .focus-review-view__detail-panels {

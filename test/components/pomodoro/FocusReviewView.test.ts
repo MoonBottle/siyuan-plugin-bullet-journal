@@ -108,6 +108,13 @@ vi.mock('@/components/dialog/ItemDetailContent.vue', () => ({
   },
 }));
 
+vi.mock('@/components/todo/ItemActionBar.vue', () => ({
+  default: {
+    props: ['item'],
+    template: '<div data-testid="item-action-bar">{{ item?.content }}</div>',
+  },
+}));
+
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'common') return { refresh: '刷新', dataRefreshed: '已刷新' };
@@ -175,12 +182,15 @@ describe('FocusReviewView', () => {
   it('renders summary, list, and detail panes that switch with the calendar date', async () => {
     const mounted = await mountComponent();
 
-    expect(mounted.container.textContent).toContain('实际 / 预计');
+    expect(mounted.container.textContent).toContain('预计总专注');
+    expect(mounted.container.textContent).toContain('实际总专注');
     expect(mounted.container.textContent).toContain('整理日报');
-    expect(mounted.container.textContent).toContain('40m / 1h 35m');
+    expect(mounted.container.textContent).toContain('1h 35m');
+    expect(mounted.container.textContent).toContain('40m');
     expect(mounted.container.textContent).toContain('事项详情');
     expect(mounted.container.textContent).toContain('专注记录');
     expect(mounted.container.querySelector('[data-testid="item-detail-content"]')?.textContent).toContain('整理日报');
+    expect(mounted.container.querySelector('[data-testid="item-action-bar"]')?.textContent).toContain('整理日报');
 
     (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
     await nextTick();
