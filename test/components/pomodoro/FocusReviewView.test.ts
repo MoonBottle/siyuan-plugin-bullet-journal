@@ -4,6 +4,7 @@ import { createApp, nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
+const mockShowFocusPlanItemPickerDialog = vi.fn();
 
 const mockEntries = [
   {
@@ -89,6 +90,7 @@ vi.mock('@/main', () => ({
 
 vi.mock('@/utils/dialog', () => ({
   showMessage: vi.fn(),
+  showFocusPlanItemPickerDialog: mockShowFocusPlanItemPickerDialog,
 }));
 
 vi.mock('@/utils/fileUtils', () => ({
@@ -124,16 +126,21 @@ vi.mock('@/i18n', () => ({
     if (key === 'pomodoroStats') return { focusRecords: '专注记录', noData: '暂无记录', today: '今天', formatMonthDay: 'M月D日' };
     if (key === 'focusReview') {
       return {
-        title: '专注复盘',
+        title: '专注工作台',
+        openReview: '打开专注工作台',
+        addPlan: '添加预计',
         all: '全部',
         plannedItems: '有预计事项',
         actualTotal: '实际总专注',
         varianceTotal: '总偏差',
         plannedTotal: '预计总专注',
         todayList: '今日事项',
+        expiredItems: '过期事项',
         detailTitle: '复盘详情',
-        emptyTitle: '暂无',
-        emptyDesc: '暂无',
+        emptyTitle: '还没有预计事项',
+        emptyDesc: '为过期事项或当前日期事项设置预计后，这里会显示专注复盘。',
+        emptyAction: '为事项设置预计',
+        pickerEmpty: '没有可设置预计的事项',
         detailEmptyTitle: '请选择',
         detailEmptyDesc: '请选择',
         actualVsPlan: '实际 / 预计',
@@ -198,6 +205,44 @@ describe('FocusReviewView', () => {
     expect(mounted.container.textContent).toContain('补材料');
     expect(mounted.container.textContent).toContain('0m / 25m');
     expect(mounted.container.textContent).toContain('暂无记录');
+
+    mounted.unmount();
+  });
+
+  it('shows add-focus-plan entry and opens candidate picker from the sidebar', async () => {
+    const mounted = await mountComponent();
+
+    expect(mounted.container.textContent).toContain('添加预计');
+
+    (mounted.container.querySelector('[data-testid="focus-review-add-plan"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mockShowFocusPlanItemPickerDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectedDate: '2026-05-14',
+      }),
+    );
+
+    mounted.unmount();
+  });
+
+  it('shows empty-state action and reuses the picker when the selected date has no planned items', async () => {
+    const mounted = await mountComponent();
+
+    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-16"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('还没有预计事项');
+    expect(mounted.container.textContent).toContain('为事项设置预计');
+
+    (mounted.container.querySelector('.focus-review-view__empty-action') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mockShowFocusPlanItemPickerDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectedDate: '2026-05-16',
+      }),
+    );
 
     mounted.unmount();
   });

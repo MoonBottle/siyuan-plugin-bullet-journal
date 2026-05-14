@@ -23,6 +23,17 @@
     </span>
 
     <span
+      v-if="canSetFocusPlan"
+      class="block__icon"
+      :aria-label="focusPlanLabel"
+      @mouseenter="handleTooltipEnter($event, focusPlanLabel)"
+      @mouseleave="handleTooltipLeave"
+      @click.stop="handleFocusPlan"
+    >
+      <svg><use xlink:href="#iconAttr"></use></svg>
+    </span>
+
+    <span
       v-if="canMigrate"
       class="block__icon"
       :aria-label="migrateLabel"
@@ -72,7 +83,7 @@ import { usePomodoroStore } from '@/stores';
 import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
-import { hideIconTooltip, showIconTooltip, showPomodoroTimerDialog } from '@/utils/dialog';
+import { hideIconTooltip, showFocusPlanDialog, showIconTooltip, showPomodoroTimerDialog } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import type { Item } from '@/types/models';
@@ -88,7 +99,13 @@ const isProcessing = ref(false);
 const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
 const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed');
 const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'abandoned');
+const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
 const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
+const focusPlanLabel = computed(() => {
+  return props.item?.focusPlan
+    ? t('focusPlan').editAction
+    : t('focusPlan').setAction;
+});
 const migrateLabel = computed(() => {
   if (!props.item) return '';
   return props.item.date < dayjs().format('YYYY-MM-DD')
@@ -133,6 +150,11 @@ async function handleAbandon() {
 function handleStartFocus() {
   if (!props.item?.blockId || isProcessing.value) return;
   showPomodoroTimerDialog(props.item.blockId);
+}
+
+function handleFocusPlan() {
+  if (!props.item || isProcessing.value) return;
+  showFocusPlanDialog(props.item);
 }
 
 async function handleMigrate() {

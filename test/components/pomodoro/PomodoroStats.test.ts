@@ -49,7 +49,7 @@ vi.mock('@/i18n', () => ({
     }
     if (key === 'focusReview') {
       return {
-        openReview: '查看专注复盘',
+        openReview: '打开专注工作台',
       };
     }
     return {};
@@ -80,6 +80,8 @@ describe('PomodoroStats', () => {
 
   it('clicking estimated or variance card opens focus review tab', async () => {
     const mounted = await mountComponent();
+
+    expect(mounted.container.querySelector('[aria-label="打开专注工作台"]')).toBeTruthy();
 
     (mounted.container.querySelector('[data-testid="focus-review-entry-estimated"]') as HTMLButtonElement).click();
     (mounted.container.querySelector('[data-testid="focus-review-entry-variance"]') as HTMLButtonElement).click();

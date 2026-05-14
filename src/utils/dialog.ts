@@ -17,6 +17,7 @@ import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
 import FocusPlanDialog from '@/components/dialog/FocusPlanDialog.vue';
+import FocusPlanItemPickerDialog from '@/components/dialog/FocusPlanItemPickerDialog.vue';
 import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue';
 import HabitRecordEditDialog from '@/components/dialog/HabitRecordEditDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
@@ -34,6 +35,7 @@ import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
 import { clearItemFocusPlan, updateItemWithFocusPlan, updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
+import { buildFocusPlanCandidateSections } from './focusPlanWorkbench';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -1299,6 +1301,48 @@ export function showFocusPlanDialog(item: Item): Dialog {
       focusableEl.focus();
     }
   });
+
+  return dialog;
+}
+
+export function showFocusPlanItemPickerDialog(input: {
+  items: Item[];
+  selectedDate: string;
+  onSelected?: (item: Item) => void;
+}): Dialog {
+  const sections = buildFocusPlanCandidateSections({
+    items: input.items,
+    selectedDate: input.selectedDate,
+  });
+
+  const container = document.createElement('div');
+
+  const app = createApp(FocusPlanItemPickerDialog, {
+    sections,
+    selectedDate: input.selectedDate,
+    onSelect: (item: Item) => {
+      dialog.destroy();
+      input.onSelected?.(item);
+      showFocusPlanDialog(item);
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('focusPlan').settingTitle,
+    content: '',
+    width: '420px',
+    destroyCallback: () => {
+      app.unmount();
+    },
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
 
   return dialog;
 }

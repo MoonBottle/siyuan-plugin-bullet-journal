@@ -42,6 +42,17 @@
         </button>
       </div>
 
+      <div class="focus-review-view__toolbar">
+        <button
+          class="focus-review-view__toolbar-button"
+          data-testid="focus-review-add-plan"
+          type="button"
+          @click="handleAddFocusPlan"
+        >
+          {{ t('focusReview').addPlan }}
+        </button>
+      </div>
+
       <div v-if="filteredEntries.length > 0" class="focus-review-view__list" data-testid="focus-review-list">
         <button
           v-for="entry in filteredEntries"
@@ -67,6 +78,13 @@
       <div v-else class="focus-review-view__empty" data-testid="focus-review-empty">
         <div class="focus-review-view__empty-title">{{ t('focusReview').emptyTitle }}</div>
         <div class="focus-review-view__empty-desc">{{ t('focusReview').emptyDesc }}</div>
+        <button
+          class="focus-review-view__empty-action"
+          type="button"
+          @click="handleAddFocusPlan"
+        >
+          {{ t('focusReview').emptyAction }}
+        </button>
       </div>
     </aside>
 
@@ -145,7 +163,7 @@ import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import type { FocusPlanDailyReviewEntry, FocusPlanReviewStatus } from '@/utils/focusPlanReview';
 import type { Item } from '@/types/models';
-import { showMessage } from '@/utils/dialog';
+import { showFocusPlanItemPickerDialog, showMessage } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
 import FocusReviewMiniCalendar from '@/components/pomodoro/review/FocusReviewMiniCalendar.vue';
 import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
@@ -222,6 +240,13 @@ function getStatusLabel(status: FocusPlanReviewStatus): string {
 
 function getSummaryByDate(date: string) {
   return projectStore.getFocusPlanSummaryByDate(date, '');
+}
+
+function handleAddFocusPlan() {
+  showFocusPlanItemPickerDialog({
+    items: projectStore.items,
+    selectedDate: selectedDate.value,
+  });
 }
 
 function formatDuration(minutes: number): string {
@@ -362,6 +387,21 @@ defineExpose({
 .focus-review-view__filter-count {
   font-size: 12px;
   opacity: 0.75;
+}
+
+.focus-review-view__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.focus-review-view__toolbar-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--b3-theme-primary);
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .focus-review-view__list {
@@ -528,6 +568,16 @@ defineExpose({
   max-width: 440px;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.focus-review-view__empty-action {
+  margin-top: 4px;
+  padding: 8px 14px;
+  border: 1px solid var(--b3-theme-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--b3-theme-primary);
+  cursor: pointer;
 }
 
 @media (max-width: 960px) {
