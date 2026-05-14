@@ -26,6 +26,7 @@
         :data-testid="cell.date ? `focus-review-calendar-cell-${cell.date}` : undefined"
         :disabled="!cell.date"
         type="button"
+        :title="cell.date ? getCellMarkerLabel(cell.summary) : ''"
         @click="cell.date && emit('update:modelValue', cell.date)"
       >
         <template v-if="cell.date">
@@ -43,6 +44,21 @@
           </span>
         </template>
       </button>
+    </div>
+
+    <div class="focus-review-mini-calendar__legend">
+      <span class="focus-review-mini-calendar__legend-item">
+        <span class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--planned"></span>
+        <span>{{ t('focusReview').calendarLegendPlanned }}</span>
+      </span>
+      <span class="focus-review-mini-calendar__legend-item">
+        <span class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--focused"></span>
+        <span>{{ t('focusReview').calendarLegendFocused }}</span>
+      </span>
+      <span class="focus-review-mini-calendar__legend-item">
+        <span class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--hybrid"></span>
+        <span>{{ t('focusReview').calendarLegendHybrid }}</span>
+      </span>
     </div>
   </div>
 </template>
@@ -139,6 +155,13 @@ function hasPlannedAndFocused(summary: FocusPlanDailySummary): boolean {
 
 function hasMarker(summary: FocusPlanDailySummary): boolean {
   return hasPlanned(summary) || hasFocused(summary);
+}
+
+function getCellMarkerLabel(summary: FocusPlanDailySummary): string {
+  if (hasPlannedAndFocused(summary)) return t('focusReview').calendarLegendHybrid;
+  if (hasFocusedOnly(summary)) return t('focusReview').calendarLegendFocused;
+  if (hasPlannedOnly(summary)) return t('focusReview').calendarLegendPlanned;
+  return '';
 }
 
 function emptySummary(): FocusPlanDailySummary {
@@ -283,5 +306,22 @@ function emptySummary(): FocusPlanDailySummary {
   background: var(--b3-theme-primary);
   box-shadow: 0 0 0 1px var(--b3-theme-background), 0 0 0 2px var(--b3-theme-primary-light);
   transform: scale(1.1);
+}
+
+.focus-review-mini-calendar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--b3-theme-surface-lighter);
+  font-size: 11px;
+  color: var(--b3-theme-on-surface);
+}
+
+.focus-review-mini-calendar__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 </style>

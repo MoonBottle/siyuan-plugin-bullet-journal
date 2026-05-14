@@ -55,20 +55,21 @@ const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D
 .focus-plan-item-picker {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 8px 0;
+  gap: 16px;
+  padding: 16px;
 }
 
 .focus-plan-item-picker__section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .focus-plan-item-picker__section-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
+  padding: 0 2px;
 }
 
 .focus-plan-item-picker__item {
@@ -76,7 +77,7 @@ const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 8px;
   background: var(--b3-theme-background);
@@ -99,11 +100,12 @@ const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D
   flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
+  line-height: 1.5;
   color: var(--b3-theme-on-surface);
 }
 
 .focus-plan-item-picker__empty {
-  padding: 12px 0 4px;
+  padding: 8px 0 0;
   font-size: 13px;
   color: var(--b3-theme-on-surface);
   text-align: center;

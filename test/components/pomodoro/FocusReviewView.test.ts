@@ -155,6 +155,9 @@ vi.mock('@/i18n', () => ({
         historyList: '历史事项',
         futureList: '计划事项',
         expiredItems: '过期事项',
+        calendarLegendPlanned: '仅有预计',
+        calendarLegendFocused: '仅有专注',
+        calendarLegendHybrid: '预计并已专注',
         detailTitle: '复盘详情',
         emptyTitle: '还没有预计事项',
         emptyDesc: '为过期事项或当前日期事项设置预计后，这里会显示专注复盘。',
@@ -218,6 +221,9 @@ describe('FocusReviewView', () => {
     expect(mounted.container.textContent).toContain('1h 35m');
     expect(mounted.container.textContent).toContain('40m');
     expect(mounted.container.textContent).toContain('今日事项');
+    expect(mounted.container.textContent).toContain('仅有预计');
+    expect(mounted.container.textContent).toContain('仅有专注');
+    expect(mounted.container.textContent).toContain('预计并已专注');
     expect(mounted.container.textContent).toContain('事项详情');
     expect(mounted.container.textContent).toContain('专注记录');
     expect(mounted.container.querySelector('[data-testid="item-detail-content"]')?.textContent).toContain('整理日报');

@@ -45,6 +45,13 @@ const summaryByDate: Record<string, any> = {
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'calendar') return { weekDays: ['一', '二', '三', '四', '五', '六', '日'] };
+    if (key === 'focusReview') {
+      return {
+        calendarLegendPlanned: '仅有预计',
+        calendarLegendFocused: '仅有专注',
+        calendarLegendHybrid: '预计并已专注',
+      };
+    }
     return {};
   }),
 }));
@@ -98,6 +105,12 @@ describe('FocusReviewMiniCalendar', () => {
     expect(plannedOnly.className).toContain('focus-review-mini-calendar__cell--planned');
     expect(plannedOnly.className).not.toContain('focus-review-mini-calendar__cell--focused');
     expect(plannedOnly.querySelector('.focus-review-mini-calendar__dot--planned')).toBeTruthy();
+    expect(focusedOnly.getAttribute('title')).toBe('仅有专注');
+    expect(hybrid.getAttribute('title')).toBe('预计并已专注');
+    expect(plannedOnly.getAttribute('title')).toBe('仅有预计');
+    expect(mounted.container.textContent).toContain('仅有预计');
+    expect(mounted.container.textContent).toContain('仅有专注');
+    expect(mounted.container.textContent).toContain('预计并已专注');
 
     mounted.unmount();
   });
