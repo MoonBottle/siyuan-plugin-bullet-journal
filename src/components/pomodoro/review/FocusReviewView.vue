@@ -81,15 +81,6 @@
             <div class="focus-review-view__detail-title">{{ selectedEntry.itemContent || selectedEntry.itemId }}</div>
             <div class="focus-review-view__detail-subtitle">{{ t('focusReview').detailTitle }}</div>
           </div>
-          <button
-            v-if="selectedItem"
-            class="focus-review-view__detail-action"
-            data-testid="focus-review-open-detail"
-            type="button"
-            @click="openSelectedItemDetail"
-          >
-            {{ t('focusReview').openDetail }}
-          </button>
         </div>
 
         <div class="focus-review-view__detail-grid">
@@ -115,6 +106,31 @@
           <div class="focus-review-view__detail-block-title">{{ t('focusReview').actualVsPlan }}</div>
           <div class="focus-review-view__detail-line">{{ actualVsPlanDisplay }}</div>
         </div>
+
+        <div class="focus-review-view__detail-panels">
+          <div class="focus-review-view__detail-panel focus-review-view__detail-panel--item">
+            <div class="focus-review-view__detail-panel-header">{{ t('todo').detail }}</div>
+            <div v-if="selectedItem" class="focus-review-view__detail-panel-body">
+              <ItemDetailContent
+                :item="selectedItem"
+                :show-all-dates="false"
+                :show-action-row="false"
+                :close-on-siyuan-link="false"
+              />
+            </div>
+            <div v-else class="focus-review-view__detail-panel-empty">
+              <div class="focus-review-view__empty-title">{{ t('focusReview').detailEmptyTitle }}</div>
+              <div class="focus-review-view__empty-desc">{{ t('focusReview').detailEmptyDesc }}</div>
+            </div>
+          </div>
+          <FocusReviewRecordPane
+            :records="selectedItem?.pomodoros ?? []"
+            :item-content="selectedEntry.itemContent || selectedItem?.content"
+            :title="t('pomodoroStats').focusRecords"
+            :empty-title="t('pomodoroStats').noData"
+            :empty-desc="t('focusReview').detailEmptyDesc"
+          />
+        </div>
       </div>
 
       <div v-else class="focus-review-view__detail-empty" data-testid="focus-review-detail-empty">
@@ -132,9 +148,11 @@ import { t } from '@/i18n';
 import { usePlugin } from '@/main';
 import type { FocusPlanDailyReviewEntry, FocusPlanReviewStatus } from '@/utils/focusPlanReview';
 import type { Item } from '@/types/models';
-import { showItemDetailModal, showMessage } from '@/utils/dialog';
+import { showMessage } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
 import FocusReviewMiniCalendar from '@/components/pomodoro/review/FocusReviewMiniCalendar.vue';
+import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
+import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
 
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
@@ -229,11 +247,6 @@ async function handleRefresh() {
   });
   settingsStore.loadFromPlugin();
   showMessage(t('common').dataRefreshed);
-}
-
-function openSelectedItemDetail() {
-  if (!selectedItem.value) return;
-  showItemDetailModal(selectedItem.value);
 }
 
 defineExpose({
@@ -439,18 +452,57 @@ defineExpose({
   padding: 16px;
 }
 
+.focus-review-view__detail-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-height: 320px;
+  margin-top: 16px;
+}
+
+.focus-review-view__detail-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 10px;
+  background: var(--b3-theme-surface);
+}
+
+.focus-review-view__detail-panel-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--b3-theme-surface-lighter);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+}
+
+.focus-review-view__detail-panel-body,
+.focus-review-view__detail-panel-empty {
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+}
+
+.focus-review-view__detail-panel-body {
+  overflow-y: auto;
+}
+
+.focus-review-view__detail-panel--item :deep(.item-detail-cards) {
+  gap: 10px;
+}
+
+.focus-review-view__detail-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
 .focus-review-view__detail-block-title {
   font-size: 13px;
   color: var(--b3-theme-on-surface);
-}
-
-.focus-review-view__detail-action {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--b3-theme-surface-lighter);
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-background);
-  cursor: pointer;
 }
 
 .focus-review-view__empty,
@@ -483,6 +535,10 @@ defineExpose({
 
   .focus-review-view__sidebar {
     width: 100%;
+  }
+
+  .focus-review-view__detail-panels {
+    grid-template-columns: 1fr;
   }
 }
 </style>

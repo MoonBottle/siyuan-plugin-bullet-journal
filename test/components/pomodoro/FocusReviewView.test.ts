@@ -3,7 +3,6 @@
 import { createApp, nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockShowItemDetailModal = vi.fn();
 const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
 
 const mockEntries = [
@@ -66,9 +65,9 @@ const mockProjectStore = {
   getFocusPlanEntriesByDate: vi.fn((date: string) => entriesByDate[date] ?? []),
   getFocusPlanSummaryByDate: vi.fn((date: string) => summaryByDate(date)),
   items: [
-    { id: 'item-1', blockId: 'block-1', content: '整理日报', lineNumber: 1, docId: 'doc-1', date: '2026-05-14', status: 'pending' },
-    { id: 'item-2', blockId: 'block-2', content: '整理会议结论', lineNumber: 2, docId: 'doc-1', date: '2026-05-14', status: 'completed' },
-    { id: 'item-3', blockId: 'block-3', content: '补材料', lineNumber: 3, docId: 'doc-2', date: '2026-05-15', status: 'pending' },
+    { id: 'item-1', blockId: 'block-1', content: '整理日报', lineNumber: 1, docId: 'doc-1', date: '2026-05-14', status: 'pending', project: { name: '项目A' }, task: { name: '任务A' }, pomodoros: [{ id: 'p1', date: '2026-05-14', startTime: '08:25:00', endTime: '08:35:00', durationMinutes: 10, itemId: 'item-1', itemContent: '整理日报', blockId: 'abcdefghijklmnopqrstuv' }] },
+    { id: 'item-2', blockId: 'block-2', content: '整理会议结论', lineNumber: 2, docId: 'doc-1', date: '2026-05-14', status: 'completed', pomodoros: [] },
+    { id: 'item-3', blockId: 'block-3', content: '补材料', lineNumber: 3, docId: 'doc-2', date: '2026-05-15', status: 'pending', pomodoros: [] },
   ],
   getItemByBlockId: vi.fn((blockId: string) => mockProjectStore.items.find(item => item.blockId === blockId)),
 };
@@ -89,15 +88,33 @@ vi.mock('@/main', () => ({
 }));
 
 vi.mock('@/utils/dialog', () => ({
-  showItemDetailModal: mockShowItemDetailModal,
   showMessage: vi.fn(),
+}));
+
+vi.mock('@/utils/fileUtils', () => ({
+  openDocumentAtLine: vi.fn(),
+}));
+
+vi.mock('@/components/todo/TodoTypedLinks.vue', () => ({
+  default: {
+    template: '<div data-testid="todo-typed-links"></div>',
+  },
+}));
+
+vi.mock('@/components/dialog/ItemDetailContent.vue', () => ({
+  default: {
+    props: ['item'],
+    template: '<div data-testid="item-detail-content">{{ item?.content }}</div>',
+  },
 }));
 
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'common') return { refresh: '刷新', dataRefreshed: '已刷新' };
     if (key === 'calendar') return { weekDays: ['一', '二', '三', '四', '五', '六', '日'] };
+    if (key === 'todo') return { detail: '事项详情', project: '项目', task: '任务', time: '时间', today: '今天', tomorrow: '明天' };
     if (key === 'focusPlan') return { estimatedShort: '预计' };
+    if (key === 'pomodoroStats') return { focusRecords: '专注记录', noData: '暂无记录', today: '今天', formatMonthDay: 'M月D日' };
     if (key === 'focusReview') {
       return {
         title: '专注复盘',
@@ -114,7 +131,6 @@ vi.mock('@/i18n', () => ({
         detailEmptyDesc: '请选择',
         actualVsPlan: '实际 / 预计',
         variance: '偏差',
-        openDetail: '打开事项详情',
         status: {
           matched: '匹配',
           overrun: '超支',
@@ -156,21 +172,22 @@ describe('FocusReviewView', () => {
     vi.useRealTimers();
   });
 
-  it('renders summary, list, switches date from mini calendar, and opens item detail', async () => {
+  it('renders summary, list, and detail panes that switch with the calendar date', async () => {
     const mounted = await mountComponent();
 
     expect(mounted.container.textContent).toContain('有预计事项');
     expect(mounted.container.textContent).toContain('整理日报');
     expect(mounted.container.textContent).toContain('10m / 1h 10m');
+    expect(mounted.container.textContent).toContain('事项详情');
+    expect(mounted.container.textContent).toContain('专注记录');
+    expect(mounted.container.querySelector('[data-testid="item-detail-content"]')?.textContent).toContain('整理日报');
 
     (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mounted.container.textContent).toContain('补材料');
     expect(mounted.container.textContent).toContain('0m / 25m');
-
-    (mounted.container.querySelector('[data-testid="focus-review-open-detail"]') as HTMLButtonElement).click();
-    expect(mockShowItemDetailModal).toHaveBeenCalledTimes(1);
+    expect(mounted.container.textContent).toContain('暂无记录');
 
     mounted.unmount();
   });
