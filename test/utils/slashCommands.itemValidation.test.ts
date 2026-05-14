@@ -1,0 +1,410 @@
+// @vitest-environment happy-dom
+
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { showMessage } from 'siyuan';
+
+const { createDialogMock, usePomodoroStoreMock } = vi.hoisted(() => ({
+  createDialogMock: vi.fn(() => {
+    const element = document.createElement('div');
+    element.innerHTML = '<div id="pomodoro-timer-dialog-mount"></div>';
+    return {
+      element,
+      destroy: vi.fn(),
+    };
+  }),
+  usePomodoroStoreMock: vi.fn(() => ({
+    isFocusing: false,
+    isBreakActive: false,
+  })),
+}));
+
+vi.mock('@/components/pomodoro/PomodoroTimerDialog.vue', () => ({
+  default: {
+    template: '<div data-testid="pomodoro-dialog-stub"></div>',
+  },
+}));
+
+vi.mock('@/utils/dialog', () => ({
+  showDatePickerDialog: vi.fn(),
+  showItemDetailModal: vi.fn(),
+  createDialog: createDialogMock,
+  showReminderSettingDialog: vi.fn(),
+  showRecurringSettingDialog: vi.fn(),
+  showPrioritySettingDialog: vi.fn(),
+  showHabitCreateDialog: vi.fn(),
+  showFocusPlanDialog: vi.fn(),
+}));
+
+vi.mock('@/api', () => ({
+  insertBlock: vi.fn(),
+  updateBlock: vi.fn(),
+  getHPathByID: vi.fn(),
+  getBlockByID: vi.fn(),
+  renameDocByID: vi.fn(),
+  getBlockKramdown: vi.fn(),
+}));
+
+vi.mock('@/stores', () => ({
+  usePomodoroStore: usePomodoroStoreMock,
+  useSettingsStore: vi.fn(() => ({})),
+  useProjectStore: vi.fn(() => ({ getHabits: vi.fn(() => []) })),
+}));
+
+vi.mock('@/main', () => ({
+  usePlugin: vi.fn(),
+}));
+
+vi.mock('@/utils/sharedPinia', () => ({
+  getSharedPinia: vi.fn(() => ({})),
+}));
+
+vi.mock('@/utils/fileUtils', () => ({
+  updateBlockContent: vi.fn(),
+  updateBlockDateTime: vi.fn(),
+  updateBlockPriority: vi.fn(),
+}));
+
+vi.mock('@/utils/slashCommandUtils', () => ({
+  generateSlashPatterns: vi.fn(),
+  processLineText: vi.fn((text: string, filters?: string[]) => {
+    let result = text;
+    for (const filter of filters ?? []) {
+      result = result.replace(filter, '');
+    }
+    return result.trim();
+  }),
+  formatDate: vi.fn(() => '2026-05-14'),
+  extractDatesFromBlock: vi.fn(),
+  findNearestDate: vi.fn(),
+  extractItemFromBlock: vi.fn(),
+}));
+
+vi.mock('@/parser/priorityParser', () => ({
+  parsePriorityFromLine: vi.fn(),
+}));
+
+vi.mock('@/utils/refreshRequests', () => ({
+  RefreshReasons: {
+    SLASH_COMMAND_HABIT_DATA: 'slash-command:habit-data',
+    SLASH_COMMAND_SET_PROJECT_DIR: 'slash-command:set-project-dir',
+  },
+  createFullRefreshRequest: vi.fn(),
+  submitRefreshRequest: vi.fn(),
+}));
+
+vi.mock('@/utils/protyleWriterDom', () => ({
+  findFirstProtyleVisibleTextNode: vi.fn(),
+  isProtyleBlockSafeForWriterFastPath: vi.fn(() => false),
+}));
+
+vi.mock('@/services/habitService', () => ({
+  checkIn: vi.fn(),
+  checkInCount: vi.fn(),
+}));
+
+import { updateBlockContent } from '@/utils/fileUtils';
+import { showPrioritySettingDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
+import { extractItemFromBlock } from '@/utils/slashCommandUtils';
+import { getActionHandler } from '@/utils/slashCommands';
+
+describe('item-only slash command validation', () => {
+  vi.useFakeTimers();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    usePomodoroStoreMock.mockReturnValue({
+      isFocusing: false,
+      isBreakActive: false,
+    });
+  });
+
+  it('/wc 在非事项块上不应更新内容，并提示错误', async () => {
+    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    const messageSpy = vi.mocked(showMessage);
+    const handler = getActionHandler('done', {} as any, ['/wc']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-non-item');
+    const textNode = document.createTextNode('普通文本 /wc');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(updateBlockContent)).not.toHaveBeenCalled();
+    expect(textNode.textContent).toBe('普通文本');
+    expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
+  it('/fq 在非事项块上不应修改内容，并提示错误', async () => {
+    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    const messageSpy = vi.mocked(showMessage);
+    const handler = getActionHandler('abandon', {} as any, ['/fq']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-non-item');
+    const textNode = document.createTextNode('普通文本 /fq');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(textNode.textContent).toBe('普通文本');
+    expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
+  it('/zz 在非事项块上不应打开番茄钟，也不应清理当前行', async () => {
+    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    const messageSpy = vi.mocked(showMessage);
+    const handler = getActionHandler('focus', { openPomodoroDock: vi.fn() } as any, ['/zz']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-non-item');
+    const textNode = document.createTextNode('普通文本 /zz');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+    vi.advanceTimersByTime(500);
+
+    expect(createDialogMock).not.toHaveBeenCalled();
+    expect(textNode.textContent).toBe('普通文本');
+    expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
+  it('/tx 在非事项块上不应打开提醒弹框', async () => {
+    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    const messageSpy = vi.mocked(showMessage);
+    const handler = getActionHandler('setReminder', {} as any, ['/tx']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-non-item');
+    const textNode = document.createTextNode('普通文本 /tx');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showReminderSettingDialog)).not.toHaveBeenCalled();
+    expect(textNode.textContent).toBe('普通文本');
+    expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
+  it('/cf 在非事项块上不应打开重复弹框', async () => {
+    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    const messageSpy = vi.mocked(showMessage);
+    const handler = getActionHandler('setRecurring', {} as any, ['/cf']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-non-item');
+    const textNode = document.createTextNode('普通文本 /cf');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showRecurringSettingDialog)).not.toHaveBeenCalled();
+    expect(textNode.textContent).toBe('普通文本');
+    expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
+  it('/yxj 在非事项块上不应打开优先级弹框', async () => {
+    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    const messageSpy = vi.mocked(showMessage);
+    const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-non-item');
+    const textNode = document.createTextNode('普通文本 /yxj');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showPrioritySettingDialog)).not.toHaveBeenCalled();
+    expect(textNode.textContent).toBe('普通文本');
+    expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
+  it('/wc 在事项块上沿用现有完成逻辑', async () => {
+    vi.mocked(extractItemFromBlock).mockResolvedValue({
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+    } as any);
+    const handler = getActionHandler('done', {} as any, ['/wc']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 @2026-05-14 /wc';
+
+    handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(updateBlockContent)).toHaveBeenCalledWith(
+      'block-item',
+      expect.any(String),
+      expect.any(Function),
+    );
+  });
+
+  it('/tx 在事项块上沿用现有提醒弹框逻辑', async () => {
+    const item = {
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'pending',
+    };
+    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    const handler = getActionHandler('setReminder', {} as any, ['/tx']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 @2026-05-14 /tx';
+
+    handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showReminderSettingDialog)).toHaveBeenCalledWith(expect.objectContaining(item));
+  });
+
+  it('/cf 在事项块上沿用现有重复弹框逻辑', async () => {
+    const item = {
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'pending',
+    };
+    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    const handler = getActionHandler('setRecurring', {} as any, ['/cf']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 @2026-05-14 /cf';
+
+    handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showRecurringSettingDialog)).toHaveBeenCalledWith(expect.objectContaining(item));
+  });
+
+  it('/yxj 在事项块上沿用现有优先级弹框逻辑', async () => {
+    const item = {
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'pending',
+    };
+    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 🔥 @2026-05-14 /yxj';
+
+    handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalled();
+  });
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});

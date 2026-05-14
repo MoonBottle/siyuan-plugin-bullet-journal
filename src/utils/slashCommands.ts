@@ -614,22 +614,37 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
  * 查看详情
  * 打开事项详情弹框
  */
-async function viewDetail(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
-  }
-
-  // 从块内容提取事项信息
-  const item = await extractItemFromBlock(blockId);
+async function viewDetail(nodeElement: HTMLElement, protyle?: any, filter?: string[]) {
+  const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
   if (!item) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
     return;
   }
 
   // 打开详情弹框 - 斜杠命令展示所有日期
   showItemDetailModal(item, { showAllDates: true });
+}
+
+async function getValidatedItemFromNode(
+  nodeElement: HTMLElement,
+  protyle?: any,
+  filter?: string[],
+): Promise<Item | null> {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return null;
+  }
+
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    if (protyle && filter?.length) {
+      deleteSlashCommandContent(protyle, filter);
+    }
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return null;
+  }
+
+  return item;
 }
 
 /**
@@ -702,39 +717,51 @@ export function getActionHandler(
       };
     case 'done':
       return (protyle, nodeElement) => {
-        const completedTag = getStatusTag('completed');
-        const blockContent = nodeElement.textContent || '';
-        // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
-        const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent);
-        if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
-          deleteSlashCommandContent(protyle, filter);
-          showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
-          return;
-        }
-        // 通过 updateBlockContent 处理：支持任务列表 [ ]→[x] 和普通标签两种格式
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
-        updateBlockContent(blockId!, completedTag, writer);
-        showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
+          if (!item) {
+            return;
+          }
+
+          const completedTag = getStatusTag('completed');
+          const blockContent = nodeElement.textContent || '';
+          // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
+          const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent);
+          if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
+            deleteSlashCommandContent(protyle, filter);
+            showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
+            return;
+          }
+
+          const writer = item.blockId ? createProtyleWriter(protyle, nodeElement, item.blockId) : undefined;
+          updateBlockContent(item.blockId!, completedTag, writer);
+          showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+        })();
       };
     case 'abandon':
       return (protyle, nodeElement) => {
-        const abandonedTag = getStatusTag('abandoned');
-        const blockContent = nodeElement.textContent || '';
-        // 检查是否已放弃
-        if (abandonedTag && blockContent.includes(abandonedTag)) {
-          deleteSlashCommandContent(protyle, filter);
-          showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
-          return;
-        }
-        // 同时删除斜杠命令并添加放弃标记（一次事务）
-        deleteSlashCommandContent(protyle, filter, undefined, (text) => {
-          if (!text.includes(abandonedTag)) {
-            return text.trimEnd() + ' ' + abandonedTag;
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
+          if (!item) {
+            return;
           }
-          return text;
-        });
-        showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
+
+          const abandonedTag = getStatusTag('abandoned');
+          const blockContent = nodeElement.textContent || '';
+          if (abandonedTag && blockContent.includes(abandonedTag)) {
+            deleteSlashCommandContent(protyle, filter);
+            showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
+            return;
+          }
+
+          deleteSlashCommandContent(protyle, filter, undefined, (text) => {
+            if (!text.includes(abandonedTag)) {
+              return text.trimEnd() + ' ' + abandonedTag;
+            }
+            return text;
+          });
+          showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
+        })();
       };
     case 'calendar':
       return (protyle, nodeElement) => {
@@ -768,10 +795,17 @@ export function getActionHandler(
       };
     case 'focus':
       return (protyle, nodeElement) => {
-        startFocusFromSlash(nodeElement, config.openPomodoroDock);
-        setTimeout(() => {
-          deleteSlashCommandContent(protyle, filter);
-        }, 300);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
+          if (!item) {
+            return;
+          }
+
+          startFocusFromSlash(nodeElement, config.openPomodoroDock, item);
+          setTimeout(() => {
+            deleteSlashCommandContent(protyle, filter);
+          }, 300);
+        })();
       };
     case 'todo':
       return (protyle) => {
@@ -798,22 +832,43 @@ export function getActionHandler(
     case 'viewDetail':
       return (protyle, nodeElement) => {
         deleteSlashCommandContent(protyle, filter);
-        viewDetail(nodeElement);
+        viewDetail(nodeElement, protyle, filter);
       };
     case 'setFocusPlan':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setFocusPlanForBlock(nodeElement);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
+          if (!item) {
+            return;
+          }
+
+          deleteSlashCommandContent(protyle, filter);
+          setFocusPlanForBlock(nodeElement, item);
+        })();
       };
     case 'setReminder':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setReminderForBlock(nodeElement);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
+          if (!item) {
+            return;
+          }
+
+          deleteSlashCommandContent(protyle, filter);
+          setReminderForBlock(nodeElement, item);
+        })();
       };
     case 'setRecurring':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setRecurringForBlock(nodeElement);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
+          if (!item) {
+            return;
+          }
+
+          deleteSlashCommandContent(protyle, filter);
+          setRecurringForBlock(nodeElement, item);
+        })();
       };
     case 'createSkill':
       return (protyle, nodeElement) => {
@@ -822,8 +877,15 @@ export function getActionHandler(
       };
     case 'setPriority':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setPriorityForBlock(nodeElement);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle, filter);
+          if (!item) {
+            return;
+          }
+
+          deleteSlashCommandContent(protyle, filter);
+          setPriorityForBlock(nodeElement, item);
+        })();
       };
     case 'createHabit':
       return (protyle, nodeElement) => {
@@ -1503,7 +1565,8 @@ function openPomodoroDialogWithItem(blockId: string, openPomodoroDock: () => voi
  */
 async function startFocusFromSlash(
   nodeElement: HTMLElement,
-  openPomodoroDock: () => void
+  openPomodoroDock: () => void,
+  item?: Item,
 ) {
   const pinia = getSharedPinia();
   if (!pinia) return;
@@ -1520,8 +1583,7 @@ async function startFocusFromSlash(
     return;
   }
 
-  // 从块内容提取事项信息
-  const preselectedItem = await extractItemFromBlock(blockId);
+  const preselectedItem = item || await extractItemFromBlock(blockId);
   if (!preselectedItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
@@ -1536,59 +1598,57 @@ async function startFocusFromSlash(
 /**
  * 为块设置提醒
  */
-async function setReminderForBlock(nodeElement: HTMLElement) {
+async function setReminderForBlock(nodeElement: HTMLElement, item?: Item) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
     return;
   }
 
-  // 从块内容提取事项信息
-  const item = await extractItemFromBlock(blockId);
-  if (!item) {
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
   }
 
   // 打开提醒设置弹框
-  showReminderSettingDialog(item);
+  showReminderSettingDialog(targetItem);
 }
 
-async function setFocusPlanForBlock(nodeElement: HTMLElement) {
+async function setFocusPlanForBlock(nodeElement: HTMLElement, item?: Item) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
     return;
   }
 
-  const item = await extractItemFromBlock(blockId);
-  if (!item) {
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
   }
 
-  showFocusPlanDialog(item);
+  showFocusPlanDialog(targetItem);
 }
 
 /**
  * 为块设置重复
  */
-async function setRecurringForBlock(nodeElement: HTMLElement) {
+async function setRecurringForBlock(nodeElement: HTMLElement, item?: Item) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
     return;
   }
 
-  // 从块内容提取事项信息
-  const item = await extractItemFromBlock(blockId);
-  if (!item) {
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
   }
 
   // 打开重复设置弹框
-  showRecurringSettingDialog(item);
+  showRecurringSettingDialog(targetItem);
 }
 
 /**
@@ -1692,15 +1752,20 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
 /**
  * 为块设置优先级
  */
-async function setPriorityForBlock(nodeElement: HTMLElement) {
+async function setPriorityForBlock(nodeElement: HTMLElement, item?: Item) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
     return;
   }
 
-  // 从块内容提取当前优先级
-  const blockContent = nodeElement.textContent || '';
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  const blockContent = nodeElement.textContent || targetItem.content || '';
   const currentPriority = parsePriorityFromLine(blockContent);
 
   showPrioritySettingDialog(currentPriority, async (priority) => {

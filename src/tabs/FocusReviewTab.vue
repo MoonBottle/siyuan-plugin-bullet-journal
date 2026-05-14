@@ -38,11 +38,13 @@ function handleRefresh() {
 
 <style lang="scss" scoped>
 .focus-review-tab {
-  padding: 16px 16px 50px;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 16px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .focus-review-tab--embedded {

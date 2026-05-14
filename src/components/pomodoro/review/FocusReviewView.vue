@@ -301,6 +301,7 @@ defineExpose({
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
   background: var(--b3-theme-background);
+  overflow: hidden;
 }
 
 .focus-review-view__sidebar {
@@ -413,6 +414,8 @@ defineExpose({
 }
 
 .focus-review-view__list {
+  flex: 1;
+  min-height: 0;
   margin-top: 16px;
   display: flex;
   flex-direction: column;
@@ -568,6 +571,12 @@ defineExpose({
   text-align: center;
   gap: 8px;
   color: var(--b3-theme-on-surface);
+}
+
+.focus-review-view__empty {
+  flex: 1;
+  min-height: 0;
+  margin-top: 16px;
 }
 
 .focus-review-view__empty-title {

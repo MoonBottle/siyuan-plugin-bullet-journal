@@ -1,5 +1,9 @@
 <template>
-  <div class="priority-setting-dialog">
+  <div
+    class="priority-setting-dialog"
+    tabindex="0"
+    @keydown="handleKeydown"
+  >
     <div class="priority-options">
       <button
         v-for="option in priorityOptions"
@@ -9,13 +13,6 @@
       >
         <span class="priority-emoji">{{ option.emoji }}</span>
         <span class="priority-label">{{ option.label }}</span>
-      </button>
-      <button
-        :class="['priority-option', { active: !selectedPriority }]"
-        @click="selectPriority(undefined)"
-      >
-        <span class="priority-emoji">⚪</span>
-        <span class="priority-label">{{ t('todo').priority.clear }}</span>
       </button>
     </div>
     <div class="dialog-actions">
@@ -50,10 +47,40 @@ const priorityOptions = [
   { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji, label: PRIORITY_CONFIG.high.label },
   { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji, label: PRIORITY_CONFIG.medium.label },
   { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji, label: PRIORITY_CONFIG.low.label },
+  { value: undefined, emoji: '⚪', label: t('todo').priority.clear },
 ];
 
 function selectPriority(priority: PriorityLevel | undefined) {
   selectedPriority.value = priority;
+}
+
+function getSelectedIndex(): number {
+  const index = priorityOptions.findIndex(option => option.value === selectedPriority.value);
+  return index >= 0 ? index : priorityOptions.length - 1;
+}
+
+function moveSelection(step: -1 | 1) {
+  const nextIndex = Math.max(0, Math.min(priorityOptions.length - 1, getSelectedIndex() + step));
+  selectedPriority.value = priorityOptions[nextIndex]?.value;
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    moveSelection(1);
+    return;
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    moveSelection(-1);
+    return;
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    confirm();
+  }
 }
 
 function confirm() {
