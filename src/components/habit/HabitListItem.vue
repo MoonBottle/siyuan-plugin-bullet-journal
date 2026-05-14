@@ -76,6 +76,7 @@
           v-if="habit.type === 'binary'"
           :class="['habit-action-btn', {
             'habit-action-btn--done': dayState.isCompleted,
+            'habit-action-btn--missed': dayState.isMissed,
             'habit-action-btn--binary': true,
             'b3-tooltips': true,
             'b3-tooltips__n': true,
@@ -94,6 +95,16 @@
               <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
             </svg>
           </span>
+          <svg
+            v-else-if="dayState.isMissed"
+            class="habit-action-btn__missed"
+            data-testid="habit-action-missed"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path d="M7 7 13 13" />
+            <path d="M13 7 7 13" />
+          </svg>
           <span
             v-else
             class="habit-action-btn__empty"
@@ -106,6 +117,7 @@
           v-else
           :class="['habit-action-btn', {
             'habit-action-btn--done': dayState.isCompleted,
+            'habit-action-btn--missed': dayState.isMissed,
             'habit-action-btn--count': true,
             'b3-tooltips': true,
             'b3-tooltips__n': true,
@@ -124,6 +136,16 @@
               <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
             </svg>
           </span>
+          <svg
+            v-else-if="dayState.isMissed"
+            class="habit-action-btn__missed"
+            data-testid="habit-action-missed"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path d="M7 7 13 13" />
+            <path d="M13 7 7 13" />
+          </svg>
           <svg
             v-else
             class="habit-action-btn__progress-ring"
@@ -144,11 +166,36 @@
         </button>
       </template>
     </div>
+
+    <div
+      v-if="contextMenu.visible"
+      class="habit-list-item__menu"
+      :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+    >
+      <button
+        v-if="contextMenu.action === 'mark-missed'"
+        class="habit-list-item__menu-item"
+        data-testid="habit-list-item-mark-missed-menu-item"
+        data-action="mark-missed"
+        @click="handleMenuAction"
+      >
+        未打卡
+      </button>
+      <button
+        v-else
+        class="habit-list-item__menu-item"
+        data-testid="habit-list-item-reset-menu-item"
+        data-action="reset-record"
+        @click="handleMenuAction"
+      >
+        重置
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { getHabitEndDate } from '@/domain/habit/habitPeriod';
 import { getNextEligibleHabitDate } from '@/domain/habit/habitStatus';
 import { t } from '@/i18n';
@@ -168,6 +215,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'check-in': [habit: Habit];
   'increment': [habit: Habit];
+  'mark-missed': [habit: Habit, date: string];
   'reset-record': [habit: Habit, date: string];
   'open-doc': [habit: Habit];
   'open-detail': [habit: Habit];
@@ -209,6 +257,13 @@ const progressPercent = computed(() => {
 });
 
 const actionProgress = computed(() => progressPercent.value / 100);
+
+const contextMenu = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  action: 'reset-record' as 'mark-missed' | 'reset-record',
+});
 
 const referenceDate = computed(() => props.currentDate || props.dayState.date);
 const actualToday = computed(() => dayjs().format('YYYY-MM-DD'));
@@ -391,10 +446,12 @@ const metaStatusMarker = computed(() => {
 });
 
 function handleMainClick() {
+  closeContextMenu();
   emit('open-detail', props.habit);
 }
 
 function handleBinaryActionClick() {
+  closeContextMenu();
   if (props.dayState.isCompleted) {
     return;
   }
@@ -403,6 +460,7 @@ function handleBinaryActionClick() {
 }
 
 function handleCountActionClick() {
+  closeContextMenu();
   if (props.dayState.isCompleted) {
     return;
   }
@@ -410,13 +468,46 @@ function handleCountActionClick() {
   emit('increment', props.habit);
 }
 
-function handleActionContextMenu() {
-  if (!props.dayState.isCompleted) {
+function handleActionContextMenu(event: MouseEvent) {
+  if (!props.periodState.eligibleToday) {
+    closeContextMenu();
+    return;
+  }
+
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    action: props.dayState.isCompleted || props.dayState.isMissed ? 'reset-record' : 'mark-missed',
+  };
+}
+
+function closeContextMenu() {
+  contextMenu.value.visible = false;
+}
+
+function handleMenuAction() {
+  const action = contextMenu.value.action;
+  closeContextMenu();
+  if (action === 'mark-missed') {
+    emit('mark-missed', props.habit, referenceDate.value);
     return;
   }
 
   emit('reset-record', props.habit, referenceDate.value);
 }
+
+function handleDocumentClick() {
+  closeContextMenu();
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick);
+});
 </script>
 
 <style scoped>
@@ -682,7 +773,8 @@ function handleActionContextMenu() {
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.habit-action-btn--done {
+.habit-action-btn--done,
+.habit-action-btn--missed {
   cursor: context-menu;
 }
 
@@ -710,6 +802,23 @@ function handleActionContextMenu() {
   box-shadow: 0 1px 2px var(--b3-theme-primary-lightest);
 }
 
+.habit-action-btn__missed {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--b3-theme-error-lightest);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.habit-action-btn__missed path {
+  stroke: var(--b3-theme-error);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
 .habit-action-btn__check svg {
   width: 13px;
   height: 13px;
@@ -735,5 +844,32 @@ function handleActionContextMenu() {
 .habit-action-btn__progress-value {
   stroke: var(--b3-theme-primary);
   stroke-linecap: round;
+}
+
+.habit-list-item__menu {
+  position: fixed;
+  z-index: 20;
+  min-width: 88px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  box-shadow: var(--b3-dialog-shadow);
+  padding: 4px;
+}
+
+.habit-list-item__menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.habit-list-item__menu-item:hover {
+  background: var(--b3-theme-surface-lighter);
 }
 </style>

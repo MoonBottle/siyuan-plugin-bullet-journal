@@ -26,6 +26,7 @@
           :readonly-actions="archivedList"
           @check-in="emit('check-in', $event)"
           @increment="emit('increment', $event)"
+          @mark-missed="handleMarkMissed"
           @reset-record="handleResetRecord"
           @open-doc="emit('open-doc', $event)"
           @open-detail="emit('select-habit', $event)"
@@ -80,8 +81,13 @@ const emit = defineEmits<{
   'open-doc': [habit: Habit];
   'check-in': [habit: Habit];
   'increment': [habit: Habit];
+  'mark-missed': [habit: Habit, date: string];
   'reset-record': [habit: Habit, date: string];
 }>();
+
+function handleMarkMissed(habit: Habit, date: string) {
+  emit('mark-missed', habit, date);
+}
 
 function handleResetRecord(habit: Habit, date: string) {
   emit('reset-record', habit, date);
