@@ -11,7 +11,7 @@ import type {
   EndCondition,
   PriorityLevel
 } from '@/types/models';
-import { getBlockByID, updateBlock } from '@/api';
+import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
 import {
   generateReminderMarker,
   stripReminderMarker
@@ -57,6 +57,39 @@ function normalizeWhitespace(content: string): string {
   return content.replace(/[ \t]+/g, ' ').trim();
 }
 
+function normalizeLineWhitespace(content: string): string {
+  return content.replace(/[ \t]+/g, ' ').trim();
+}
+
+function isItemContentLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
+    return false;
+  }
+  return (trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed);
+}
+
+function togglePinnedInBlockContent(currentContent: string): string {
+  const lines = currentContent.split('\n');
+  const itemLineIndex = lines.findIndex(isItemContentLine);
+  const shouldPin = !parsePinnedFromLine(currentContent);
+
+  if (itemLineIndex >= 0) {
+    const itemLine = lines[itemLineIndex] ?? '';
+    const trailingWhitespace = itemLine.match(/\s*$/)?.[0] ?? '';
+    const updatedLine = normalizeLineWhitespace(stripPinnedMarker(itemLine));
+    lines[itemLineIndex] = shouldPin
+      ? `${updatedLine} ${generatePinnedMarker()}${trailingWhitespace}`
+      : `${updatedLine}${trailingWhitespace}`;
+    return lines.join('\n');
+  }
+
+  const normalizedContent = normalizeWhitespace(stripPinnedMarker(currentContent));
+  return shouldPin
+    ? `${normalizedContent} ${generatePinnedMarker()}`
+    : normalizedContent;
+}
+
 /**
  * 获取块内容
  * @param blockId 块ID
@@ -72,6 +105,19 @@ async function fetchBlockContent(blockId: string): Promise<string> {
   } catch (error) {
     console.error(`获取块内容失败 (${blockId}):`, error);
     throw error;
+  }
+}
+
+async function fetchBlockKramdownContent(blockId: string): Promise<string> {
+  try {
+    const result = await getBlockKramdown(blockId);
+    if (result?.kramdown) {
+      return result.kramdown;
+    }
+    return await fetchBlockContent(blockId);
+  } catch (error) {
+    console.error(`获取块 kramdown 失败 (${blockId})，回退到块内容:`, error);
+    return await fetchBlockContent(blockId);
   }
 }
 
@@ -185,15 +231,8 @@ export async function toggleItemPinned(item: Item): Promise<void> {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  const currentContent = await fetchBlockContent(item.blockId);
-  const shouldPin = !parsePinnedFromLine(currentContent);
-  let newContent = stripPinnedMarker(currentContent);
-
-  if (shouldPin) {
-    newContent = `${newContent} ${generatePinnedMarker()}`;
-  }
-
-  newContent = normalizeWhitespace(newContent);
+  const currentContent = await fetchBlockKramdownContent(item.blockId);
+  const newContent = togglePinnedInBlockContent(currentContent);
 
   await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('pin', item.blockId);
