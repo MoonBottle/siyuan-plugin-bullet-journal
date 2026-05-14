@@ -76,6 +76,7 @@
         @update:selected-date="selectedDate = $event"
         @check-in="checkInHabit"
         @increment="incrementHabit"
+        @reset-record="resetHabitRecordForDate"
         @select-habit="selectHabit"
       />
     </aside>

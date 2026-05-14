@@ -80,10 +80,10 @@
             'b3-tooltips': true,
             'b3-tooltips__n': true,
           }]"
-          :disabled="dayState.isCompleted"
           data-testid="habit-list-item-check-in"
           :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').checkIn"
-          @click.stop="emit('check-in', habit)"
+          @contextmenu.stop.prevent="handleActionContextMenu"
+          @click.stop="handleBinaryActionClick"
         >
           <span
             v-if="dayState.isCompleted"
@@ -110,10 +110,10 @@
             'b3-tooltips': true,
             'b3-tooltips__n': true,
           }]"
-          :disabled="dayState.isCompleted"
           data-testid="habit-list-item-increment"
           :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').addOne"
-          @click.stop="emit('increment', habit)"
+          @contextmenu.stop.prevent="handleActionContextMenu"
+          @click.stop="handleCountActionClick"
         >
           <span
             v-if="dayState.isCompleted"
@@ -168,6 +168,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'check-in': [habit: Habit];
   'increment': [habit: Habit];
+  'reset-record': [habit: Habit, date: string];
   'open-doc': [habit: Habit];
   'open-detail': [habit: Habit];
 }>();
@@ -392,6 +393,30 @@ const metaStatusMarker = computed(() => {
 function handleMainClick() {
   emit('open-detail', props.habit);
 }
+
+function handleBinaryActionClick() {
+  if (props.dayState.isCompleted) {
+    return;
+  }
+
+  emit('check-in', props.habit);
+}
+
+function handleCountActionClick() {
+  if (props.dayState.isCompleted) {
+    return;
+  }
+
+  emit('increment', props.habit);
+}
+
+function handleActionContextMenu() {
+  if (!props.dayState.isCompleted) {
+    return;
+  }
+
+  emit('reset-record', props.habit, referenceDate.value);
+}
 </script>
 
 <style scoped>
@@ -409,8 +434,8 @@ function handleMainClick() {
 }
 
 .habit-list-item:hover {
-  border-color: rgba(128, 162, 255, 0.28);
-  box-shadow: 0 0 0 1px rgba(128, 162, 255, 0.08);
+  border-color: var(--b3-theme-primary-light);
+  box-shadow: 0 0 0 1px var(--b3-theme-primary-lightest);
 }
 
 .habit-list-item__main {
@@ -593,13 +618,13 @@ function handleMainClick() {
 
 .habit-list-item__meta--due .habit-list-item__meta-status {
   background: var(--b3-theme-primary-lightest);
-  border-color: rgba(128, 162, 255, 0.26);
+  border-color: var(--b3-theme-primary-light);
 }
 
 .habit-list-item__meta-status--completed {
   color: var(--b3-theme-primary);
   background: var(--b3-theme-primary-lightest);
-  border-color: rgba(128, 162, 255, 0.22);
+  border-color: var(--b3-theme-primary-light);
 }
 
 .habit-list-item__meta-status--not-needed {
@@ -632,8 +657,8 @@ function handleMainClick() {
 .habit-calendar-btn:hover {
   border-color: var(--b3-theme-primary);
   color: var(--b3-theme-primary);
-  background: rgba(128, 162, 255, 0.08);
-  box-shadow: 0 0 0 1px rgba(128, 162, 255, 0.12);
+  background: var(--b3-theme-primary-lightest);
+  box-shadow: 0 0 0 1px var(--b3-theme-primary-lightest);
 }
 
 .habit-calendar-btn svg {
@@ -657,12 +682,12 @@ function handleMainClick() {
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.habit-action-btn:hover:not(:disabled) {
-  transform: scale(1.04);
+.habit-action-btn--done {
+  cursor: context-menu;
 }
 
-.habit-action-btn:disabled {
-  cursor: default;
+.habit-action-btn:hover:not(:disabled) {
+  transform: scale(1.04);
 }
 
 .habit-action-btn__empty,
@@ -676,13 +701,13 @@ function handleMainClick() {
 }
 
 .habit-action-btn__empty {
-  background: #dedee3;
+  background: var(--b3-theme-surface-lighter);
 }
 
 .habit-action-btn__check {
-  background: #5b7cff;
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(91, 124, 255, 0.22);
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+  box-shadow: 0 1px 2px var(--b3-theme-primary-lightest);
 }
 
 .habit-action-btn__check svg {
@@ -704,11 +729,11 @@ function handleMainClick() {
 }
 
 .habit-action-btn__progress-track {
-  stroke: #dedee3;
+  stroke: var(--b3-theme-surface-lighter);
 }
 
 .habit-action-btn__progress-value {
-  stroke: #5b7cff;
+  stroke: var(--b3-theme-primary);
   stroke-linecap: round;
 }
 </style>

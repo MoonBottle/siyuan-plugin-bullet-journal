@@ -10,6 +10,7 @@ type EmitSpies = {
   openDetail?: ReturnType<typeof vi.fn>;
   checkIn?: ReturnType<typeof vi.fn>;
   increment?: ReturnType<typeof vi.fn>;
+  resetRecord?: ReturnType<typeof vi.fn>;
 };
 
 function mountComponent(props: Record<string, unknown>, emits: EmitSpies = {}) {
@@ -24,6 +25,7 @@ function mountComponent(props: Record<string, unknown>, emits: EmitSpies = {}) {
         onOpenDetail: emits.openDetail,
         onCheckIn: emits.checkIn,
         onIncrement: emits.increment,
+        onResetRecord: emits.resetRecord,
       });
     },
   });
@@ -278,6 +280,53 @@ describe('HabitListItem', () => {
 
     expect(mounted.container.textContent).toContain('艾宾浩斯');
     expect(mounted.container.textContent).toContain('已逾期 3 天');
+
+    mounted.unmount();
+  });
+
+  it('right-clicking a completed binary action emits reset-record only', async () => {
+    const habit: Habit = {
+      name: '晨间拉伸',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-12',
+      hasRecord: true,
+      isCompleted: true,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-12',
+      periodEnd: '2026-04-12',
+      requiredCount: 1,
+      completedCount: 1,
+      remainingCount: 0,
+      isCompleted: true,
+      eligibleToday: true,
+    };
+    const emits = {
+      checkIn: vi.fn(),
+      resetRecord: vi.fn(),
+      openDetail: vi.fn(),
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' }, emits);
+    await nextTick();
+
+    const target = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
+    expect(target).not.toBeNull();
+
+    target?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+
+    expect(emits.resetRecord).toHaveBeenCalledTimes(1);
+    expect(emits.resetRecord).toHaveBeenCalledWith(habit, '2026-04-12');
+    expect(emits.checkIn).not.toHaveBeenCalled();
+    expect(emits.openDetail).not.toHaveBeenCalled();
 
     mounted.unmount();
   });
