@@ -1,7 +1,10 @@
 <template>
   <div class="focus-review-record-pane">
     <div class="focus-review-record-pane__header">{{ title }}</div>
-    <div class="focus-review-record-pane__content">
+    <div
+      class="focus-review-record-pane__content"
+      :class="{ 'focus-review-record-pane__content--empty': recordsByDate.length === 0 }"
+    >
       <div v-if="recordsByDate.length === 0" class="focus-review-record-pane__empty">
         <div class="focus-review-record-pane__empty-title">{{ emptyTitle }}</div>
         <div class="focus-review-record-pane__empty-desc">{{ emptyDesc }}</div>
@@ -121,8 +124,14 @@ async function handleRecordClick(record: PomodoroRecord) {
   padding: 10px 0;
 }
 
+.focus-review-record-pane__content--empty {
+  overflow: hidden;
+  padding: 0;
+}
+
 .focus-review-record-pane__empty {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
