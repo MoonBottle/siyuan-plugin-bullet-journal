@@ -1,5 +1,5 @@
 <template>
-  <div class="focus-review-tab">
+  <div class="focus-review-tab" :class="{ 'focus-review-tab--embedded': embedded }">
     <div v-if="showHeader" class="focus-review-tab__header">
       <h2 class="focus-review-tab__title">{{ t('focusReview').title }}</h2>
       <span class="fn__flex-1 fn__space"></span>
@@ -43,6 +43,13 @@ function handleRefresh() {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+}
+
+.focus-review-tab--embedded {
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .focus-review-tab__header {
