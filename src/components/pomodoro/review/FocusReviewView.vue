@@ -1,32 +1,30 @@
 <template>
   <div class="focus-review-view" data-testid="focus-review-view">
     <aside class="focus-review-view__sidebar">
-      <div class="focus-review-view__sidebar-header">
-        <div class="focus-review-view__sidebar-title">{{ t('focusReview').todayList }}</div>
-        <span class="fn__flex-1 fn__space"></span>
-        <button
-          class="block__icon"
-          :aria-label="t('common').refresh"
-          data-testid="focus-review-refresh"
-          type="button"
-          @click="handleRefresh"
-        >
-          <svg><use xlink:href="#iconRefresh"></use></svg>
-        </button>
+      <FocusReviewMiniCalendar
+        v-model="selectedDate"
+        :get-summary-by-date="getSummaryByDate"
+      />
+
+      <div class="focus-review-view__selected-date">
+        <div>
+          <div class="focus-review-view__selected-date-title">{{ selectedDateLabel }}</div>
+          <div class="focus-review-view__selected-date-subtitle">{{ t('focusReview').todayList }}</div>
+        </div>
       </div>
 
       <div class="focus-review-view__summary-grid">
         <div class="focus-review-view__summary-card">
           <div class="focus-review-view__summary-label">{{ t('focusReview').plannedItems }}</div>
-          <div class="focus-review-view__summary-value">{{ todaySummary.total }}</div>
+          <div class="focus-review-view__summary-value">{{ selectedSummary.total }}</div>
         </div>
         <div class="focus-review-view__summary-card">
           <div class="focus-review-view__summary-label">{{ t('focusReview').plannedTotal }}</div>
-          <div class="focus-review-view__summary-value">{{ formatDuration(todaySummary.estimatedMinutes) }}</div>
+          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.estimatedMinutes) }}</div>
         </div>
         <div class="focus-review-view__summary-card">
           <div class="focus-review-view__summary-label">{{ t('focusReview').actualTotal }}</div>
-          <div class="focus-review-view__summary-value">{{ formatDuration(todaySummary.actualMinutes) }}</div>
+          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.actualMinutes) }}</div>
         </div>
         <div class="focus-review-view__summary-card">
           <div class="focus-review-view__summary-label">{{ t('focusReview').varianceTotal }}</div>
@@ -135,6 +133,8 @@ import { usePlugin } from '@/main';
 import type { FocusPlanDailyReviewEntry, FocusPlanReviewStatus } from '@/utils/focusPlanReview';
 import type { Item } from '@/types/models';
 import { showItemDetailModal, showMessage } from '@/utils/dialog';
+import dayjs from '@/utils/dayjs';
+import FocusReviewMiniCalendar from '@/components/pomodoro/review/FocusReviewMiniCalendar.vue';
 
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
@@ -142,15 +142,17 @@ const plugin = usePlugin() as any;
 
 const activeStatus = ref<'all' | FocusPlanReviewStatus>('all');
 const selectedEntryKey = ref<string>('');
+const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 
-const todayEntries = computed(() => projectStore.getTodayFocusPlanEntries(''));
-const todaySummary = computed(() => projectStore.getTodayFocusPlanSummary(''));
+const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, ''));
+const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, ''));
+const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
 const summaryVarianceDisplay = computed(() => {
-  const delta = todaySummary.value.actualMinutes - todaySummary.value.estimatedMinutes;
+  const delta = selectedSummary.value.actualMinutes - selectedSummary.value.estimatedMinutes;
   return formatDelta(delta);
 });
 const statusFilters = computed(() => {
-  const entries = todayEntries.value;
+  const entries = selectedEntries.value;
   return [
     { value: 'all' as const, label: t('focusReview').all, count: entries.length },
     { value: 'overrun' as const, label: getStatusLabel('overrun'), count: entries.filter(entry => entry.reviewStatus === 'overrun').length },
@@ -158,11 +160,11 @@ const statusFilters = computed(() => {
     { value: 'in-progress' as const, label: getStatusLabel('in-progress'), count: entries.filter(entry => entry.reviewStatus === 'in-progress').length },
     { value: 'not-started' as const, label: getStatusLabel('not-started'), count: entries.filter(entry => entry.reviewStatus === 'not-started').length },
     { value: 'matched' as const, label: getStatusLabel('matched'), count: entries.filter(entry => entry.reviewStatus === 'matched').length },
-  ];
+  ].filter(filter => filter.value === 'all' || filter.count > 0);
 });
 const filteredEntries = computed(() => {
-  if (activeStatus.value === 'all') return todayEntries.value;
-  return todayEntries.value.filter(entry => entry.reviewStatus === activeStatus.value);
+  if (activeStatus.value === 'all') return selectedEntries.value;
+  return selectedEntries.value.filter(entry => entry.reviewStatus === activeStatus.value);
 });
 const selectedEntry = computed(() => {
   return filteredEntries.value.find(entry => getEntryKey(entry) === selectedEntryKey.value)
@@ -202,6 +204,10 @@ function getStatusLabel(status: FocusPlanReviewStatus): string {
   return t('focusReview').status[status];
 }
 
+function getSummaryByDate(date: string) {
+  return projectStore.getFocusPlanSummaryByDate(date, '');
+}
+
 function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
@@ -229,6 +235,10 @@ function openSelectedItemDetail() {
   if (!selectedItem.value) return;
   showItemDetailModal(selectedItem.value);
 }
+
+defineExpose({
+  handleRefresh,
+});
 </script>
 
 <style lang="scss" scoped>
@@ -256,14 +266,12 @@ function openSelectedItemDetail() {
   box-sizing: border-box;
 }
 
-.focus-review-view__sidebar-header,
 .focus-review-view__detail-header {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.focus-review-view__sidebar-title,
 .focus-review-view__detail-title {
   font-size: 18px;
   font-weight: 600;
@@ -280,7 +288,7 @@ function openSelectedItemDetail() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .focus-review-view__summary-card,
@@ -347,6 +355,22 @@ function openSelectedItemDetail() {
   flex-direction: column;
   gap: 10px;
   overflow: auto;
+}
+
+.focus-review-view__selected-date {
+  margin-top: 12px;
+}
+
+.focus-review-view__selected-date-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+}
+
+.focus-review-view__selected-date-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
 }
 
 .focus-review-view__list-item {

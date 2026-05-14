@@ -2,13 +2,23 @@
   <div class="focus-review-tab">
     <div v-if="showHeader" class="focus-review-tab__header">
       <h2 class="focus-review-tab__title">{{ t('focusReview').title }}</h2>
+      <span class="fn__flex-1 fn__space"></span>
+      <button
+        class="block__icon"
+        :aria-label="t('common').refresh"
+        data-testid="focus-review-refresh"
+        type="button"
+        @click="handleRefresh"
+      >
+        <svg><use xlink:href="#iconRefresh"></use></svg>
+      </button>
     </div>
-    <FocusReviewView />
+    <FocusReviewView ref="focusReviewViewRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { t } from '@/i18n';
 import FocusReviewView from '@/components/pomodoro/review/FocusReviewView.vue';
 
@@ -19,6 +29,11 @@ const props = withDefaults(defineProps<{
 });
 
 const showHeader = computed(() => !props.embedded);
+const focusReviewViewRef = ref<InstanceType<typeof FocusReviewView> | null>(null);
+
+function handleRefresh() {
+  focusReviewViewRef.value?.handleRefresh?.();
+}
 </script>
 
 <style lang="scss" scoped>
@@ -34,6 +49,17 @@ const showHeader = computed(() => !props.embedded);
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.focus-review-tab__header .block__icon {
+  opacity: 1;
+  color: var(--b3-theme-on-background);
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
 }
 
 .focus-review-tab__title {

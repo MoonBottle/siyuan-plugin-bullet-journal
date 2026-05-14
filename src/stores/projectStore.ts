@@ -51,7 +51,15 @@ function buildTodayFocusPlanEntries(
   currentDate: string,
   groupId: string,
 ) {
-  const displayItems = computeDisplayItems(items, currentDate, groupId);
+  return buildFocusPlanEntriesForDate(items, currentDate, groupId);
+}
+
+function buildFocusPlanEntriesForDate(
+  items: Item[] | undefined,
+  date: string,
+  groupId: string,
+) {
+  const displayItems = computeDisplayItems(items, date, groupId);
   return buildDailyFocusPlanEntries(
     displayItems
       .filter(item => item.focusPlan)
@@ -61,14 +69,14 @@ function buildTodayFocusPlanEntries(
         date: item.date,
         estimatedMinutes: item.focusPlan!.normalizedMinutes,
         actualMinutes: (item.pomodoros ?? [])
-          .filter(record => record.date === currentDate)
+          .filter(record => record.date === date)
           .reduce((sum, record) => {
             return sum + (record.actualDurationMinutes ?? record.durationMinutes);
           }, 0),
         itemStatus: item.status,
         itemContent: item.content,
       })),
-    currentDate,
+    date,
   );
 }
 
@@ -765,10 +773,21 @@ export const useProjectStore = defineStore('project', {
       return buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId);
     },
 
+    getFocusPlanEntriesByDate: (state) => (date: string, groupId: string = '') => {
+      return buildFocusPlanEntriesForDate((state as any).items, date, groupId);
+    },
+
     getTodayFocusPlanSummary: (state) => (groupId: string = '') => {
       return buildDailyFocusPlanSummary(
         buildTodayFocusPlanEntries((state as any).items, state.currentDate, groupId),
         state.currentDate,
+      );
+    },
+
+    getFocusPlanSummaryByDate: (state) => (date: string, groupId: string = '') => {
+      return buildDailyFocusPlanSummary(
+        buildFocusPlanEntriesForDate((state as any).items, date, groupId),
+        date,
       );
     },
 

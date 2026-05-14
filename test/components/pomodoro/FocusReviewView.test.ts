@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { createApp, nextTick } from 'vue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockShowItemDetailModal = vi.fn();
 const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
@@ -31,21 +31,44 @@ const mockEntries = [
   },
 ];
 
+const entriesByDate: Record<string, typeof mockEntries> = {
+  '2026-05-14': mockEntries,
+  '2026-05-15': [
+    {
+      itemId: 'item-3',
+      blockId: 'block-3',
+      date: '2026-05-15',
+      estimatedMinutes: 25,
+      actualMinutes: 0,
+      itemStatus: 'pending',
+      itemContent: '补材料',
+      reviewStatus: 'not-started',
+      deltaMinutes: -25,
+    },
+  ],
+};
+
+const summaryByDate = (date: string) => {
+  const entries = entriesByDate[date] ?? [];
+  return {
+    total: entries.length,
+    estimatedMinutes: entries.reduce((sum, entry) => sum + entry.estimatedMinutes, 0),
+    actualMinutes: entries.reduce((sum, entry) => sum + entry.actualMinutes, 0),
+    matched: entries.filter(entry => entry.reviewStatus === 'matched').length,
+    overrun: entries.filter(entry => entry.reviewStatus === 'overrun').length,
+    underrun: entries.filter(entry => entry.reviewStatus === 'underrun').length,
+    notStarted: entries.filter(entry => entry.reviewStatus === 'not-started').length,
+    inProgress: entries.filter(entry => entry.reviewStatus === 'in-progress').length,
+  };
+};
+
 const mockProjectStore = {
-  getTodayFocusPlanEntries: vi.fn(() => mockEntries),
-  getTodayFocusPlanSummary: vi.fn(() => ({
-    total: 2,
-    estimatedMinutes: 95,
-    actualMinutes: 40,
-    matched: 1,
-    overrun: 0,
-    underrun: 0,
-    notStarted: 0,
-    inProgress: 1,
-  })),
+  getFocusPlanEntriesByDate: vi.fn((date: string) => entriesByDate[date] ?? []),
+  getFocusPlanSummaryByDate: vi.fn((date: string) => summaryByDate(date)),
   items: [
     { id: 'item-1', blockId: 'block-1', content: '整理日报', lineNumber: 1, docId: 'doc-1', date: '2026-05-14', status: 'pending' },
     { id: 'item-2', blockId: 'block-2', content: '整理会议结论', lineNumber: 2, docId: 'doc-1', date: '2026-05-14', status: 'completed' },
+    { id: 'item-3', blockId: 'block-3', content: '补材料', lineNumber: 3, docId: 'doc-2', date: '2026-05-15', status: 'pending' },
   ],
   getItemByBlockId: vi.fn((blockId: string) => mockProjectStore.items.find(item => item.blockId === blockId)),
 };
@@ -73,6 +96,7 @@ vi.mock('@/utils/dialog', () => ({
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'common') return { refresh: '刷新', dataRefreshed: '已刷新' };
+    if (key === 'calendar') return { weekDays: ['一', '二', '三', '四', '五', '六', '日'] };
     if (key === 'focusPlan') return { estimatedShort: '预计' };
     if (key === 'focusReview') {
       return {
@@ -124,14 +148,26 @@ async function mountComponent() {
 describe('FocusReviewView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-14T08:00:00Z'));
   });
 
-  it('renders summary, list, and opens item detail from the right pane', async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('renders summary, list, switches date from mini calendar, and opens item detail', async () => {
     const mounted = await mountComponent();
 
     expect(mounted.container.textContent).toContain('有预计事项');
     expect(mounted.container.textContent).toContain('整理日报');
     expect(mounted.container.textContent).toContain('10m / 1h 10m');
+
+    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('补材料');
+    expect(mounted.container.textContent).toContain('0m / 25m');
 
     (mounted.container.querySelector('[data-testid="focus-review-open-detail"]') as HTMLButtonElement).click();
     expect(mockShowItemDetailModal).toHaveBeenCalledTimes(1);
