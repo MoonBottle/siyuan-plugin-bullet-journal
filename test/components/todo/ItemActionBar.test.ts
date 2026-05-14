@@ -108,4 +108,21 @@ describe('ItemActionBar', () => {
 
     mounted.unmount();
   });
+
+  it('hides abandon action for completed items', async () => {
+    const mounted = await mountComponent({
+      id: 'item-2',
+      blockId: 'block-2',
+      content: '已完成事项',
+      date: '2026-05-14',
+      status: 'completed',
+    });
+
+    const buttons = [...mounted.container.querySelectorAll('.block__icon')];
+    const abandonButton = buttons.find(node => node.getAttribute('aria-label') === '放弃');
+
+    expect(abandonButton).toBeFalsy();
+
+    mounted.unmount();
+  });
 });

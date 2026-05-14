@@ -138,7 +138,7 @@ vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'common') return { refresh: '刷新', dataRefreshed: '已刷新' };
     if (key === 'calendar') return { weekDays: ['一', '二', '三', '四', '五', '六', '日'] };
-    if (key === 'todo') return { detail: '事项详情', project: '项目', task: '任务', time: '时间', today: '今天', tomorrow: '明天' };
+    if (key === 'todo') return { item: '事项详情', project: '项目', task: '任务', time: '时间', today: '今天', tomorrow: '明天' };
     if (key === 'focusPlan') return { estimatedShort: '预计' };
     if (key === 'pomodoroStats') return { focusRecords: '专注记录', noData: '暂无记录', today: '今天', formatMonthDay: 'M月D日' };
     if (key === 'focusReview') {

@@ -99,9 +99,9 @@
           </div>
         </div>
 
-        <div class="focus-review-view__detail-layout">
-          <div class="focus-review-view__detail-panel focus-review-view__detail-panel--item">
-            <div class="focus-review-view__detail-panel-header">{{ t('todo').detail }}</div>
+          <div class="focus-review-view__detail-layout">
+            <div class="focus-review-view__detail-panel focus-review-view__detail-panel--item">
+            <div class="focus-review-view__detail-panel-header">{{ t('todo').item }}</div>
             <div v-if="selectedItem" class="focus-review-view__detail-panel-body">
               <ItemDetailContent
                 :item="selectedItem"
@@ -132,7 +132,7 @@
                 <div class="focus-review-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
               </div>
               <div class="focus-review-view__detail-card">
-                <div class="focus-review-view__detail-label">{{ t('focusReview').status[selectedEntry.reviewStatus] }}</div>
+                <div class="focus-review-view__detail-label">状态</div>
                 <div class="focus-review-view__detail-value">{{ getStatusLabel(selectedEntry.reviewStatus) }}</div>
               </div>
             </div>

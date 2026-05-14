@@ -98,7 +98,7 @@ const isProcessing = ref(false);
 
 const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
 const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed');
-const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'abandoned');
+const canAbandon = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
 const canSetFocusPlan = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
 const canMigrate = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
 const focusPlanLabel = computed(() => {
