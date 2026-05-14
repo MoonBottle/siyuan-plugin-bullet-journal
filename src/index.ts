@@ -2463,6 +2463,15 @@ export default class TaskAssistantPlugin extends Plugin {
     const btn = document.createElement("div");
     btn.className = "floating-tomato-btn";
     btn.innerHTML = createFloatingPomodoroMarkup();
+    btn.querySelectorAll<HTMLElement>(".floating-tomato-action").forEach((el) => {
+      el.addEventListener("mouseenter", () => {
+        const text = el.dataset.tooltip;
+        if (text) {
+          showIconTooltip(el, text);
+        }
+      });
+      el.addEventListener("mouseleave", hideIconTooltip);
+    });
 
     btn.addEventListener("click", (e) => {
       if (btn.classList.contains("dragging")) return;

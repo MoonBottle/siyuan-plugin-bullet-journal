@@ -438,25 +438,75 @@ function buildDetachedWindowHtml(): string {
       .floating-tomato-btn.is-paused .floating-tomato-status {
         color: var(--b3-card-warning-color, #c68a3c);
       }
+      .sy-icon-tooltip {
+        position: fixed;
+        z-index: 2147483647;
+        max-width: min(300px, 90vw);
+        padding: 6px 10px;
+        background: var(--b3-tooltip-background, #2f2f2f);
+        color: var(--b3-tooltip-color, #fff);
+        font-size: 12px;
+        line-height: 1.4;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s, visibility 0.15s;
+      }
+      .sy-icon-tooltip.visible {
+        opacity: 1;
+        visibility: visible;
+      }
     </style>
   </head>
   <body>
     <div id="${ROOT_ID}"></div>
+    <div id="bullet-journal-detached-tooltip" class="sy-icon-tooltip"></div>
     <script>
       (() => {
         const root = document.getElementById('${ROOT_ID}');
+        const tooltip = document.getElementById('bullet-journal-detached-tooltip');
         let currentState = { phase: 'focus', isPaused: false };
+        let activeTooltipTrigger = null;
         const sendAction = (action) => {
           try {
             const electron = window.require?.('electron');
             electron?.ipcRenderer?.send?.('${ACTION_CHANNEL}', action);
           } catch {}
         };
+        const hideTooltip = () => {
+          activeTooltipTrigger = null;
+          tooltip?.classList.remove('visible');
+        };
+        const showTooltip = (el, text) => {
+          if (!tooltip || !text) return;
+          activeTooltipTrigger = el;
+          tooltip.textContent = text;
+          const rect = el.getBoundingClientRect();
+          const margin = 8;
+          tooltip.style.left = rect.left + rect.width / 2 + 'px';
+          tooltip.style.top = rect.top - 4 + 'px';
+          tooltip.style.transform = 'translate(-50%, -100%)';
+          tooltip.classList.add('visible');
+          requestAnimationFrame(() => {
+            if (activeTooltipTrigger !== el) return;
+            const tipRect = tooltip.getBoundingClientRect();
+            if (tipRect.right > window.innerWidth - margin) {
+              tooltip.style.left = window.innerWidth - tipRect.width / 2 - margin + 'px';
+            }
+            if (tipRect.left < margin) {
+              tooltip.style.left = tipRect.width / 2 + margin + 'px';
+            }
+          });
+        };
         window.${UPDATE_FN} = (payload) => {
           if (!root || !payload) return;
           currentState = payload.state || currentState;
           root.className = payload.className || '';
           root.innerHTML = payload.innerHTML || '';
+          hideTooltip();
         };
         document.addEventListener('click', (event) => {
           const actionEl = event.target instanceof Element
@@ -471,6 +521,24 @@ function buildDetachedWindowHtml(): string {
           if (action === 'complete') {
             sendAction('complete');
           }
+        });
+        document.addEventListener('mouseover', (event) => {
+          const actionEl = event.target instanceof Element
+            ? event.target.closest('[data-tooltip]')
+            : null;
+          if (!actionEl || !(actionEl instanceof HTMLElement)) return;
+          const text = actionEl.dataset.tooltip;
+          if (!text) return;
+          showTooltip(actionEl, text);
+        });
+        document.addEventListener('mouseout', (event) => {
+          const target = event.target instanceof Element
+            ? event.target.closest('[data-tooltip]')
+            : null;
+          if (!target) return;
+          const related = event.relatedTarget;
+          if (related instanceof Node && target.contains(related)) return;
+          hideTooltip();
         });
       })();
     </script>

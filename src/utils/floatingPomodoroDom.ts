@@ -135,6 +135,10 @@ function setActionButton(
   iconMarkup: string
 ): void {
   button.innerHTML = iconMarkup;
-  button.title = label;
   button.setAttribute('aria-label', label);
+  if (label) {
+    button.dataset.tooltip = label;
+  } else {
+    delete button.dataset.tooltip;
+  }
 }
