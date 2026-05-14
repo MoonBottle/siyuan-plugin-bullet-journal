@@ -386,7 +386,8 @@ watch(selectedGroup, () => {
     .duration-section,
     .action-section,
     .panel-title,
-    .timer-mode-section {
+    .timer-mode-section,
+    .focus-plan-summary {
       width: 100%;
       max-width: 280px;
     }
