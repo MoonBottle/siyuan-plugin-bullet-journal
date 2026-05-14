@@ -402,3 +402,62 @@ Protyle Transport 失败时（如 Lute 转换异常）自动降级到 API Transp
 2. **IAL 保持测试**：验证自定义属性不被丢失
 3. **集成测试**：通过 `npm run test` 确认现有测试套件不回归
 4. **手动验证**：每个 Phase 完成后在 SiYuan 中验证实际编辑效果
+
+---
+
+## 附录 A：参考的思源源码
+
+思源源码目录：`C:\dev\projects\open-source\siyuan`
+
+| 文件 | 行号 | 内容 | 参考目的 |
+|------|------|------|----------|
+| `app/src/protyle/wysiwyg/index.ts` | L3054-L3067 | task checkbox 点击处理 | 确认 `[ ]`/`[x]` 切换更新的是 `NodeListItem`（非 `NodeParagraph`），`actionId` = list item 的 `data-node-id` |
+| `app/src/protyle/hint/index.ts` | L1037-L1083 | `getKey()` 方法 | 理解斜杠命令分隔符识别逻辑：`lastIndex` 记录 `/` 在行内的字符偏移位置 |
+| `app/src/protyle/hint/index.ts` | L442-L894 | `fill()` 方法 | 理解斜杠命令文本的精确删除：`range.setStart(container, lastIndex)` → `range.deleteContents()` |
+| `app/src/protyle/util/selection.ts` | L570-L625 | `focusByWbr()` | 理解 `<wbr>` 标记方式的光标恢复机制，为本方案的光标保持提供思路 |
+| `app/src/protyle/util/selection.ts` | L642-L774 | `focusBlock()` | 理解块级光标定位的通用方法 |
+| `app/src/protyle/util/selection.ts` | L457-L537 | `focusByOffset()` | 理解基于字符偏移量的光标恢复方法 |
+| `app/src/protyle/wysiwyg/input.ts` | L288-L289 | `focusByWbr` + `hint.render` | 确认输入事件后的光标恢复和提示渲染流程 |
+| `kernel/api/block_op.go` | L786-L885 | `updateBlock` kernel 实现 | 确认 `NodeListItem` 特殊处理（L850-L857：剥离 list wrapper）、IAL id 保持（L859-L861） |
+| `kernel/model/blockial.go` | 全文件 | IAL 属性处理 | 理解块属性（`{: id="xxx" custom-xxx="yyy"}`）的解析与序列化 |
+
+## 附录 B：旧代码与新逻辑的对应关系
+
+### 旧代码位置
+
+| 函数 | 文件 | 行号 |
+|------|------|------|
+| `deleteSlashCommandContent` | `src/utils/slashCommands.ts` | L67-L214 |
+| `updateTransaction` | `src/utils/slashCommands.ts` | L223-L251 |
+| `createProtyleWriter` | `src/utils/slashCommands.ts` | L1290-L1426 |
+| `getValidatedItemFromNode` | `src/utils/slashCommands.ts` | L627-L648 |
+| `updateBlockDateTime` | `src/utils/fileUtils.ts` | L495-L1023 |
+| `updateBlockContent` | `src/utils/fileUtils.ts` | L1105-L1404 |
+| `updateBlockPriority` | `src/utils/fileUtils.ts` | L1413-L1593 |
+| `handleSingleLineUpdate` | `src/utils/fileUtils.ts` | L430-L493 |
+| `extractItemMarkers` | `src/utils/fileUtils.ts` | L184-L232 |
+| `isTaskListFormat` | `src/utils/fileUtils.ts` | L239-L241 |
+| `stripListAndBlockAttr` | `src/parser/core.ts` | L82-L114 |
+| `isTaskList` 检测 | `src/parser/core.ts` | L474-L489 |
+| `updateBlock` API | `src/api.ts` | L232-L244 |
+| `getBlockKramdown` API | `src/api.ts` | L268-L276 |
+| `getBlockByID` API | `src/api.ts` | L345-L349 |
+
+### 新旧映射
+
+| 旧代码 | 新代码 | 说明 |
+|--------|--------|------|
+| `deleteSlashCommandContent(slashCommands.ts:67-214)` | `writeBlock(ctx, { type:'removeSlashCommands', filters })` → `applySlashCommandRemoval` (首次匹配删除) | 删除斜杠命令文本，不再全局替换 |
+| `updateTransaction(slashCommands.ts:223-251)` | 内联到 `writeViaProtyle` (protyleTransport.ts) | 统一在 Transport 层处理 |
+| `createProtyleWriter(slashCommands.ts:1290-1426)` | **删除**，由 `writeViaProtyle` 统一处理 | 不再需要工厂函数和快/慢路径分支 |
+| `updateBlockDateTime(fileUtils.ts:495-1023)` | `writeBlock(ctx, { type:'addDate', date, ... })` → `applyDatePatch` | 去掉父块 kramdown 查询，简化日期添加逻辑 |
+| `updateBlockContent(fileUtils.ts:1105-1404)` | `writeBlock(ctx, { type:'setStatus', status })` → `applyStatusPatch` / `applyContentPatch` | 去掉父块检测，改为 Transport 层类型判断 |
+| `updateBlockPriority(fileUtils.ts:1413-1593)` | `writeBlock(ctx, { type:'setPriority', priority })` → `applyPriorityPatch` | 去掉父块检测 |
+| `handleSingleLineUpdate(fileUtils.ts:430-493)` | 内联到 `applyDatePatch` | 单行更新逻辑合并 |
+| `extractItemMarkers(fileUtils.ts:184-232)` | **保留复用**，被 `applyDatePatch` 调用 | 无变化 |
+| `isTaskListFormat(fileUtils.ts:239-241)` | **保留复用**，被 `applyStatusPatch` 调用 | 无变化 |
+| `stripListAndBlockAttr(core.ts:82-114)` | **保留复用**，被各 patch 函数调用 | 无变化 |
+| `isTaskList` 检测 (core.ts:474-489) | **保留**（解析器逻辑不在此次重构范围） | 无变化 |
+| `updateBlock(api.ts:232-244)` | **保留复用**，被 `apiTransport.ts` 调用 | 无变化 |
+| `getBlockKramdown(api.ts:268-276)` | **保留复用**，被 `apiTransport.ts` 调用 | 无变化 |
+| `getBlockByID(api.ts:345-349)` | **保留复用**，被 `detectTaskListParent` 调用 | 无变化 |
