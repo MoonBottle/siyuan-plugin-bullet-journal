@@ -104,7 +104,7 @@ export function createDetachedPomodoroWindowHost(
     closeLingeringDetachedPomodoroWindows(remote);
 
     detachedWindow = new remote.BrowserWindow({
-      width: 360,
+      width: 372,
       height: 84,
       title: DETACHED_WINDOW_TITLE,
       frame: false,
@@ -260,13 +260,14 @@ function buildDetachedWindowHtml(): string {
         justify-content: center;
         min-height: 100vh;
         box-sizing: border-box;
-        padding: 8px 10px;
+        padding: 6px;
         font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
       }
       #${ROOT_ID} {
-        display: inline-flex;
+        display: block;
       }
       .floating-tomato-btn {
+        display: block;
         width: 348px;
         min-height: 50px;
         border-radius: 999px;
@@ -278,10 +279,13 @@ function buildDetachedWindowHtml(): string {
         touch-action: none;
       }
       .floating-tomato-shell {
+        width: 100%;
         min-height: 50px;
       }
       .floating-tomato-main {
         display: grid;
+        width: 100%;
+        box-sizing: border-box;
         grid-template-columns: 18px minmax(0, 1fr) auto;
         align-items: center;
         gap: 8px;
