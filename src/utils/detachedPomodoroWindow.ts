@@ -11,7 +11,12 @@ export interface DetachedPomodoroWindowHost {
 }
 
 interface RemoteLike {
-  BrowserWindow: new (options: Record<string, unknown>) => BrowserWindowLike;
+  BrowserWindow: BrowserWindowConstructorLike;
+}
+
+interface BrowserWindowConstructorLike {
+  new (options: Record<string, unknown>): BrowserWindowLike;
+  getAllWindows?: () => BrowserWindowLike[];
 }
 
 interface BrowserWindowLike {
@@ -28,6 +33,7 @@ interface BrowserWindowLike {
   on?: (event: string, listener: (...args: any[]) => void) => void;
   once?: (event: string, listener: (...args: any[]) => void) => void;
   setAlwaysOnTop?: (flag: boolean, level?: string) => void;
+  getTitle?: () => string;
   setVisibleOnAllWorkspaces?: (
     visible: boolean,
     options?: { visibleOnFullScreen?: boolean }
@@ -53,6 +59,7 @@ const ROOT_ID = 'bullet-journal-detached-pomodoro-root';
 const UPDATE_FN = '__BULLET_JOURNAL_POMODORO_UPDATE__';
 const ACTION_CHANNEL = 'bullet-journal:detached-pomodoro-action';
 const DETACHED_HOST_CLASS = 'detached-floating-tomato';
+const DETACHED_WINDOW_TITLE = 'Bullet Journal Pomodoro Floating Window';
 
 export function detectDetachedPomodoroWindowSupport(
   input: DetachedPomodoroWindowSupportInput
@@ -94,9 +101,12 @@ export function createDetachedPomodoroWindowHost(
       return detachedWindow;
     }
 
+    closeLingeringDetachedPomodoroWindows(remote);
+
     detachedWindow = new remote.BrowserWindow({
       width: 360,
       height: 84,
+      title: DETACHED_WINDOW_TITLE,
       frame: false,
       transparent: true,
       backgroundColor: '#00000000',
@@ -212,6 +222,22 @@ function closeDetachedWindow(windowInstance: BrowserWindowLike | null) {
   }
 
   windowInstance.close?.();
+}
+
+function closeLingeringDetachedPomodoroWindows(remote: RemoteLike) {
+  const allWindows = remote.BrowserWindow.getAllWindows?.() ?? [];
+
+  for (const windowInstance of allWindows) {
+    if (windowInstance.isDestroyed?.()) {
+      continue;
+    }
+
+    if (windowInstance.getTitle?.() !== DETACHED_WINDOW_TITLE) {
+      continue;
+    }
+
+    windowInstance.close?.();
+  }
 }
 
 function buildDetachedWindowHtml(): string {

@@ -56,6 +56,7 @@ describe('createDetachedPomodoroWindowHost', () => {
   it('calls executeJavaScript when updating an existing detached window', () => {
     const loadURL = vi.fn();
     const executeJavaScript = vi.fn();
+    const lingeringClose = vi.fn();
     const BrowserWindow = vi.fn(function BrowserWindowMock() {
       return {
         loadURL,
@@ -71,6 +72,13 @@ describe('createDetachedPomodoroWindowHost', () => {
         setVisibleOnAllWorkspaces: vi.fn(),
       };
     });
+    BrowserWindow.getAllWindows = vi.fn(() => [
+      {
+        close: lingeringClose,
+        getTitle: vi.fn(() => 'Bullet Journal Pomodoro Floating Window'),
+        isDestroyed: vi.fn(() => false),
+      },
+    ]);
 
     const applyViewState = vi.fn((host: HTMLElement, state: FloatingPomodoroViewState) => {
       host.dataset.primary = state.primaryText;
@@ -93,6 +101,7 @@ describe('createDetachedPomodoroWindowHost', () => {
 
     expect(executeJavaScript).toHaveBeenCalled();
     expect(applyViewState).toHaveBeenCalledTimes(2);
+    expect(lingeringClose).toHaveBeenCalledTimes(1);
     expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('-webkit-app-region: drag')));
     expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('-webkit-app-region: no-drag')));
     expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('detached-floating-tomato'));
