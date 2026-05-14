@@ -339,14 +339,20 @@ function buildDetachedWindowHtml(): string {
       .floating-tomato-action {
         border: none;
         border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 10px;
-        font-weight: 500;
-        line-height: 1;
+        width: 24px;
+        height: 24px;
+        padding: 0;
         color: var(--b3-theme-on-background, #6f6255);
         background: var(--b3-theme-surface-lighter, rgba(129, 110, 91, 0.08));
         cursor: pointer;
-        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .floating-tomato-action svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
       }
       .floating-tomato-action[hidden] {
         display: none !important;

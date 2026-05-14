@@ -40,8 +40,10 @@ describe('applyFloatingPomodoroViewState', () => {
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.hidden).toBe(false);
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.hidden).toBe(false);
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.hidden).toBe(true);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.textContent).toBe('暂停');
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.textContent).toBe('结束专注');
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('aria-label')).toBe('暂停');
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.getAttribute('aria-label')).toBe('结束专注');
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause svg')).not.toBeNull();
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete svg')).not.toBeNull();
     expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(0.3)');
   });
 
@@ -67,7 +69,8 @@ describe('applyFloatingPomodoroViewState', () => {
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.hidden).toBe(true);
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--complete')?.hidden).toBe(true);
     expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.hidden).toBe(false);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.textContent).toBe('跳过休息');
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip')?.getAttribute('aria-label')).toBe('跳过休息');
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--skip svg')).not.toBeNull();
     expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(0.16)');
   });
 
@@ -118,7 +121,8 @@ describe('applyFloatingPomodoroViewState', () => {
 
     expect(host.classList.contains('is-break')).toBe(false);
     expect(host.classList.contains('is-paused')).toBe(true);
-    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.textContent).toBe('继续');
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause')?.getAttribute('aria-label')).toBe('继续');
+    expect(host.querySelector<HTMLButtonElement>('.floating-tomato-action--pause svg')).not.toBeNull();
     expect(host.querySelector<HTMLElement>('.floating-tomato-progress-fill')?.style.transform).toBe('scaleX(1)');
   });
 });
