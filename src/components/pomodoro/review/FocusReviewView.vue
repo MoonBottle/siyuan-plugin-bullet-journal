@@ -133,7 +133,7 @@
               </div>
               <div class="focus-review-view__detail-card">
                 <div class="focus-review-view__detail-label">{{ t('focusReview').status[selectedEntry.reviewStatus] }}</div>
-                <div class="focus-review-view__detail-value">{{ actualVsPlanDisplay }}</div>
+                <div class="focus-review-view__detail-value">{{ getStatusLabel(selectedEntry.reviewStatus) }}</div>
               </div>
             </div>
 
@@ -224,11 +224,6 @@ const selectedItem = computed<Item | null>(() => {
   return projectStore.items.find(item => item.id === selectedEntry.value!.itemId)
     ?? (selectedEntry.value.blockId ? projectStore.getItemByBlockId(selectedEntry.value.blockId) ?? null : null);
 });
-const actualVsPlanDisplay = computed(() => {
-  if (!selectedEntry.value) return '';
-  return `${formatDuration(selectedEntry.value.actualMinutes)} / ${formatDuration(selectedEntry.value.estimatedMinutes)}`;
-});
-
 watch(filteredEntries, (entries) => {
   if (entries.length === 0) {
     selectedEntryKey.value = '';
@@ -519,7 +514,7 @@ defineExpose({
 
 .focus-review-view__detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
   align-content: start;
 }
