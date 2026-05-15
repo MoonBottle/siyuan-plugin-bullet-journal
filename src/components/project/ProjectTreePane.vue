@@ -23,6 +23,7 @@
             :key="`selected-${tag}`"
             type="button"
             class="tag-chip tag-chip--selected"
+            @mousedown.prevent
             @click.stop="removeTag(tag)"
           >
             <span class="tag-chip__label">#{{ tag }}</span>
@@ -62,6 +63,7 @@
               'tag-option--highlighted': highlightedIndex === index,
             },
           ]"
+          @mousedown.prevent
           @click.stop="toggleTag(option.name)"
         >
           <span class="tag-option__label">#{{ option.name }}</span>
