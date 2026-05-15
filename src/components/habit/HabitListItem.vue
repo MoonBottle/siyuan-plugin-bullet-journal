@@ -816,7 +816,7 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--b3-theme-error-lightest);
+  background: color-mix(in srgb, var(--b3-theme-error) 14%, var(--b3-theme-background) 86%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
