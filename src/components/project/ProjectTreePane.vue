@@ -258,7 +258,7 @@ function handleTagKeydown(event: KeyboardEvent) {
 
 function handleDocumentPointerDown(event: PointerEvent) {
   if (!(event.target instanceof Node)) return;
-  if (tagFilterRowRef.value?.contains(target)) return;
+  if (tagFilterRowRef.value?.contains(event.target)) return;
   closeTagDropdown();
 }
 
