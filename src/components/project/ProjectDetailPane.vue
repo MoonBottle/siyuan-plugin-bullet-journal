@@ -93,8 +93,8 @@ async function openTaskDocument() {
 
 <style lang="scss" scoped>
 .project-detail-pane {
-  width: clamp(280px, 30vw, 420px);
-  min-width: 280px;
+  width: 100%;
+  min-width: 0;
   padding: 12px;
   overflow: hidden;
   background: var(--b3-theme-background);
