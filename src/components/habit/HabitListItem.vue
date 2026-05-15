@@ -744,8 +744,8 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 50%;
   background: transparent;
@@ -763,8 +763,8 @@ onUnmounted(() => {
 }
 
 .habit-calendar-btn svg {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   fill: currentColor;
 }
 
