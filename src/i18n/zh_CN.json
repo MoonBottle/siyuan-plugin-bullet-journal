@@ -140,7 +140,19 @@
       "card": "卡片视图"
     },
     "searchPlaceholder": "搜索项目...",
-    "path": "路径"
+    "treeSearchPlaceholder": "搜索任务或事项...",
+    "path": "路径",
+    "noProjectMatches": "没有匹配的项目",
+    "noTaskMatches": "没有匹配的任务或事项",
+    "selectProjectPrompt": "请选择项目",
+    "selectDetailPrompt": "选择任务或事项查看详情",
+    "taskDetail": "任务详情",
+    "itemProgress": "事项进度",
+    "pendingCount": "待办",
+    "completedCount": "已完成",
+    "abandonedCount": "已放弃",
+    "openDocument": "打开文档",
+    "linked": "有链接"
   },
   "todo": {
     "title": "待办事项",

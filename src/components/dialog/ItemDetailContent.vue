@@ -1,5 +1,5 @@
 <template>
-  <div class="item-detail-content">
+  <div class="item-detail-content" :class="{ 'item-detail-content--embedded': embedded }">
     <div class="item-detail-cards">
       <Card
         v-if="project"
@@ -205,10 +205,12 @@ const props = withDefaults(defineProps<{
   showAllDates?: boolean;
   showActionRow?: boolean;
   closeOnSiyuanLink?: boolean;
+  embedded?: boolean;
 }>(), {
   showAllDates: false,
   showActionRow: true,
   closeOnSiyuanLink: false,
+  embedded: false,
 });
 
 const emit = defineEmits<{
@@ -426,6 +428,12 @@ async function handleLinkClick(link: Link) {
 <style lang="scss" scoped>
 .item-detail-content {
   min-height: 0;
+}
+
+.item-detail-content--embedded {
+  .item-detail-cards {
+    gap: 10px;
+  }
 }
 
 .item-detail-cards {

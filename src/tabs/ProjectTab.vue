@@ -1,30 +1,13 @@
 <template>
   <div class="hk-work-tab project-tab">
     <div class="block__icons">
-    <SySelect
-      v-if="settingsStore.groups.length > 0"
-      v-model="selectedGroup"
-      :options="groupOptions"
-      :placeholder="t('settings').projectGroups.allGroups"
-    />
-    <div class="search-box">
-      <svg class="search-icon"><use xlink:href="#iconSearch"></use></svg>
-      <input
-        v-model="searchKeyword"
-        type="text"
-        :placeholder="t('project').searchPlaceholder"
-        class="search-input"
+      <SySelect
+        v-if="settingsStore.groups.length > 0"
+        v-model="selectedGroup"
+        :options="groupOptions"
+        :placeholder="t('settings').projectGroups.allGroups"
       />
-    </div>
-    <span class="fn__flex-1 fn__space"></span>
-      <span
-        class="block__icon b3-tooltips b3-tooltips__sw"
-        :aria-label="viewMode === 'table' ? t('project').viewModes.card : t('project').viewModes.table"
-        @click="viewMode = viewMode === 'table' ? 'card' : 'table'"
-      >
-        <svg v-if="viewMode === 'table'"><use xlink:href="#iconLayout"></use></svg>
-        <svg v-else><use xlink:href="#iconList"></use></svg>
-      </span>
+      <span class="fn__flex-1 fn__space"></span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
         :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
@@ -36,8 +19,6 @@
     <div class="tab-content">
       <ProjectView
         :projects="filteredProjects"
-        :view-mode="viewMode"
-        @project-click="handleProjectClick"
       />
     </div>
   </div>
@@ -47,7 +28,6 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
-import { openDocumentAtLine } from '@/utils/fileUtils';
 import { showMessage } from '@/utils/dialog';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
@@ -61,18 +41,9 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const selectedGroup = ref('');
-const viewMode = ref<'table' | 'card'>('table');
-const searchKeyword = ref('');
 
 const filteredProjects = computed(() => {
-  const projects = projectStore.getFilteredProjects(selectedGroup.value);
-  if (!searchKeyword.value.trim()) return projects;
-  const keyword = searchKeyword.value.toLowerCase();
-  return projects.filter(p => 
-    (p.name?.toLowerCase().includes(keyword)) ||
-    (p.description?.toLowerCase().includes(keyword)) ||
-    (p.path?.toLowerCase().includes(keyword))
-  );
+  return projectStore.getFilteredProjects(selectedGroup.value);
 });
 
 const groupOptions = computed(() => {
@@ -166,12 +137,6 @@ const handleRefresh = async () => {
     showMessage(t('common').dataRefreshed);
   }
 };
-
-const handleProjectClick = async (project: any) => {
-  if (project.id) {
-    await openDocumentAtLine(project.id);
-  }
-};
 </script>
 
 <style lang="scss" scoped>
@@ -194,40 +159,6 @@ const handleProjectClick = async (project: any) => {
     padding: 4px 24px 4px 8px;
   }
 
-  .search-box {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 200px;
-    height: 28px;
-    box-sizing: border-box;
-    padding: 0 10px;
-    background: var(--b3-theme-background);
-    border-radius: var(--b3-border-radius);
-    border: 1px solid var(--b3-border-color);
-    margin-left: 8px;
-
-    &:focus-within {
-      border-color: var(--b3-theme-primary);
-    }
-
-    .search-icon {
-      width: 14px;
-      height: 14px;
-      fill: var(--b3-theme-on-surface);
-      opacity: 0.5;
-      flex-shrink: 0;
-    }
-
-    .search-input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      font-size: 13px;
-      outline: none;
-      color: var(--b3-theme-on-background);
-    }
-  }
 }
 
 .tab-content {

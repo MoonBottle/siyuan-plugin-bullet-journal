@@ -11,130 +11,130 @@
       <p class="hint">{{ t('project').dirStructureHint }}</p>
     </div>
 
-    <div v-else-if="viewMode === 'table'" class="project-table-wrapper">
-      <table class="project-table">
-        <thead>
-          <tr>
-            <th class="col-title">{{ t('project').title }}</th>
-            <th class="col-path">{{ t('project').path }}</th>
-            <th class="col-task-count">{{ t('project').taskCount }}</th>
-            <th class="col-l1">L1</th>
-            <th class="col-l2">L2</th>
-            <th class="col-l3">L3</th>
-            <th class="col-items">{{ t('project').itemsLabel }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="project in projects"
-            :key="project.id"
-            class="project-table-row"
-            @click="handleClick(project)"
-          >
-            <td class="col-title project-name-cell">
-              <span class="project-name">{{ project.name }}</span>
-              <span v-if="project.description" class="project-desc-inline">{{ project.description }}</span>
-            </td>
-            <td class="col-path project-path-cell">{{ project.path }}</td>
-            <td class="col-task-count task-count-cell">{{ project.tasks.length }}</td>
-            <td class="col-l1">{{ getTaskCountByLevel(project, 'L1') }}</td>
-            <td class="col-l2">{{ getTaskCountByLevel(project, 'L2') }}</td>
-            <td class="col-l3">{{ getTaskCountByLevel(project, 'L3') }}</td>
-            <td class="col-items">{{ getItemCount(project) }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div v-else class="project-grid">
-      <div
-        v-for="project in projects"
-        :key="project.id"
-        class="project-card"
-        @click="handleClick(project)"
-      >
-        <div class="project-header">
-          <h3 class="project-name">{{ project.name }}</h3>
-          <span class="task-count">{{ project.tasks.length }} {{ t('project').tasksUnit }}</span>
-        </div>
-
-        <p v-if="project.description" class="project-desc">
-          {{ project.description }}
-        </p>
-
-        <div class="project-stats">
-          <div class="stat">
-            <span class="stat-value">{{ getTaskCountByLevel(project, 'L1') }}</span>
-            <span class="stat-label">L1</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{{ getTaskCountByLevel(project, 'L2') }}</span>
-            <span class="stat-label">L2</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{{ getTaskCountByLevel(project, 'L3') }}</span>
-            <span class="stat-label">L3</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{{ getItemCount(project) }}</span>
-            <span class="stat-label">{{ t('project').itemsLabel }}</span>
-          </div>
-        </div>
-
-        <div v-if="project.links && project.links.length > 0" class="project-links">
-          <a
-            v-for="link in project.links.slice(0, 2)"
-            :key="link.url"
-            :href="link.url"
-            target="_blank"
-            class="project-link"
-            @click.stop
-          >
-            {{ link.name }}
-          </a>
-          <span v-if="project.links.length > 2" class="more-links">
-            +{{ project.links.length - 2 }}
-          </span>
-        </div>
-      </div>
+    <div v-else class="project-workbench">
+      <ProjectListPane
+        v-model:search-query="projectSearchQuery"
+        :projects="filteredProjects"
+        :selected-project-id="selectedProjectId"
+        @select-project="selectProject"
+      />
+      <ProjectTreePane
+        v-model:search-query="treeSearchQuery"
+        :project="selectedProject"
+        :nodes="visibleTaskNodes"
+        :expanded-task-ids="effectiveExpandedTaskIds"
+        :matched-task-ids="filteredTaskTree.matchedTaskIds"
+        :matched-item-ids="filteredTaskTree.matchedItemIds"
+        :selected-task-id="selectedTaskId"
+        :selected-item-id="selectedItemId"
+        @toggle-task="toggleTask"
+        @select-task="selectTask"
+        @select-item="selectItem"
+      />
+      <ProjectDetailPane
+        :project="selectedProject"
+        :task="detailTask"
+        :item="selectedItem"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Project, Task } from '@/types/models';
+import { computed, ref, watch } from 'vue';
+import ProjectDetailPane from '@/components/project/ProjectDetailPane.vue';
+import ProjectListPane from '@/components/project/ProjectListPane.vue';
+import ProjectTreePane from '@/components/project/ProjectTreePane.vue';
 import { t } from '@/i18n';
+import { buildProjectTaskTree, filterProjectTaskTree } from '@/utils/projectTaskTree';
+import type { Item, Project, Task } from '@/types/models';
 
-interface Props {
+const props = defineProps<{
   projects: Project[];
-  viewMode?: 'table' | 'card';
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  viewMode: 'table',
-});
-const emit = defineEmits<{
-  (e: 'project-click', project: Project): void;
 }>();
 
-const handleClick = (project: Project) => {
-  emit('project-click', project);
-};
+const selectedProjectId = ref('');
+const selectedTaskId = ref('');
+const selectedItemId = ref('');
+const projectSearchQuery = ref('');
+const treeSearchQuery = ref('');
+const expandedTaskIds = ref<Set<string>>(new Set());
 
-const getTaskCountByLevel = (project: Project, level: string): number => {
-  return project.tasks.filter((t: Task) => t.level === level).length;
-};
+const filteredProjects = computed(() => {
+  const query = projectSearchQuery.value.trim().toLocaleLowerCase();
+  if (!query) return props.projects;
 
-const getItemCount = (project: Project): number => {
-  return project.tasks.reduce((sum: number, task: Task) => sum + task.items.length, 0);
-};
+  return props.projects.filter(project => [
+    project.name,
+    project.description,
+    project.path,
+  ].filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
+});
+
+const selectedProject = computed(() => filteredProjects.value.find(project => project.id === selectedProjectId.value) || null);
+const taskTree = computed(() => buildProjectTaskTree(selectedProject.value));
+const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value));
+const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes);
+const effectiveExpandedTaskIds = computed(() => {
+  if (!treeSearchQuery.value.trim()) return expandedTaskIds.value;
+  return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskIds]);
+});
+const selectedTask = computed(() => findTaskById(selectedProject.value, selectedTaskId.value));
+const selectedItem = computed(() => findItemById(selectedProject.value, selectedItemId.value));
+const detailTask = computed(() => selectedItem.value ? null : selectedTask.value);
+
+watch(filteredProjects, (projects) => {
+  if (projects.some(project => project.id === selectedProjectId.value)) return;
+  selectedProjectId.value = projects[0]?.id || '';
+}, { immediate: true });
+
+watch(selectedProject, (project, previousProject) => {
+  if (project?.id === previousProject?.id) return;
+  selectedTaskId.value = '';
+  selectedItemId.value = '';
+  treeSearchQuery.value = '';
+  expandedTaskIds.value = new Set(project?.tasks.map(task => task.id) ?? []);
+}, { immediate: true });
+
+function selectProject(projectId: string) {
+  selectedProjectId.value = projectId;
+}
+
+function toggleTask(taskId: string) {
+  const next = new Set(expandedTaskIds.value);
+  if (next.has(taskId)) next.delete(taskId);
+  else next.add(taskId);
+  expandedTaskIds.value = next;
+}
+
+function selectTask(taskId: string) {
+  selectedTaskId.value = taskId;
+  selectedItemId.value = '';
+}
+
+function selectItem(itemId: string) {
+  const item = findItemById(selectedProject.value, itemId);
+  selectedItemId.value = itemId;
+  selectedTaskId.value = item?.task?.id || '';
+}
+
+function findTaskById(project: Project | null, taskId: string): Task | null {
+  return project?.tasks.find(task => task.id === taskId) || null;
+}
+
+function findItemById(project: Project | null, itemId: string): Item | null {
+  for (const task of project?.tasks ?? []) {
+    const item = task.items.find(row => row.id === itemId);
+    if (item) return item;
+  }
+  return null;
+}
 </script>
 
 <style lang="scss" scoped>
 .project-view {
   height: 100%;
-  overflow: auto;
-  padding: 16px;
+  min-height: 0;
 }
 
 .empty-state {
@@ -154,238 +154,24 @@ const getItemCount = (project: Project): number => {
   }
 
   h3 {
-    margin: 0 0 8px 0;
+    margin: 0 0 8px;
     font-size: 18px;
     font-weight: 500;
   }
 
   .hint {
-    margin: 0 0 4px 0;
+    margin: 0 0 4px;
     font-size: 13px;
   }
-
-  code {
-    background: var(--b3-theme-surface);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
 }
 
-.project-grid {
+.project-workbench {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.project-table-wrapper {
-  display: block;
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
-.project-table {
-  table-layout: fixed;
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-
-  th, td {
-    padding: 10px 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--b3-border-color);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  th {
-    font-weight: 600;
-    color: var(--b3-theme-on-surface);
-    opacity: 0.7;
-    font-size: 12px;
-    background-color: var(--b3-theme-background);
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-
-  td {
-    color: var(--b3-theme-on-background);
-  }
-
-  .col-title {
-    width: 200px;
-  }
-
-  .col-path {
-    width: 300px;
-  }
-
-  .col-task-count {
-    width: 80px;
-    text-align: center;
-  }
-
-  .col-l1,
-  .col-l2,
-  .col-l3 {
-    width: 60px;
-    text-align: center;
-  }
-
-  .col-items {
-    width: 80px;
-    text-align: center;
-  }
-}
-
-.project-table-row {
-  cursor: pointer;
-  transition: background 0.15s;
-
-  &:hover {
-    background: var(--b3-theme-hover);
-  }
-}
-
-.project-name-cell {
-  max-width: 300px;
-}
-
-.project-name {
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-}
-
-.project-desc-inline {
-  display: block;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.7;
-  margin-top: 2px;
-  white-space: nowrap;
+  grid-template-columns: auto minmax(320px, 1fr) auto;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 280px;
+  background: var(--b3-theme-background);
 }
 
-.project-path-cell {
-  font-family: var(--b3-font-family-mono);
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.7;
-  max-width: 250px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.task-count-cell {
-  text-align: center;
-}
-
-.project-card {
-  background: var(--b3-theme-surface);
-  border: 1px solid var(--b3-border-color);
-  border-radius: var(--b3-border-radius);
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: var(--b3-theme-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-  }
-}
-
-.project-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-
-.project-name {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-  flex: 1;
-  word-break: break-all;
-}
-
-.task-count {
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.7;
-  white-space: nowrap;
-  margin-left: 8px;
-}
-
-.project-desc {
-  margin: 0 0 12px 0;
-  font-size: 13px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.8;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.project-stats {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-  padding: 8px 0;
-  border-top: 1px solid var(--b3-border-color);
-  border-bottom: 1px solid var(--b3-border-color);
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  .stat-value {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--b3-theme-on-background);
-  }
-
-  .stat-label {
-    font-size: 11px;
-    color: var(--b3-theme-on-surface);
-    opacity: 0.6;
-  }
-}
-
-.project-links {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.project-link {
-  font-size: 12px;
-  color: var(--b3-theme-primary);
-  text-decoration: none;
-  padding: 2px 8px;
-  background: var(--b3-theme-primary-lightest, rgba(var(--b3-theme-primary-rgb, 66, 133, 244), 0.1));
-  border-radius: 4px;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.more-links {
-  font-size: 11px;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.6;
-}
 </style>

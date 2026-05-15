@@ -1,0 +1,103 @@
+<template>
+  <aside class="project-list-pane">
+    <ProjectPaneSearchBox
+      :model-value="searchQuery"
+      :placeholder="t('project').searchPlaceholder"
+      :clear-label="t('common').clear || 'Clear'"
+      test-id="project-search-input"
+      @update:model-value="$emit('update:searchQuery', $event)"
+    />
+
+    <div v-if="projects.length === 0" class="project-list-pane__empty">
+      {{ t('project').noProjectMatches }}
+    </div>
+
+    <button
+      v-for="project in projects"
+      :key="project.id"
+      type="button"
+      :class="['project-list-row', { 'project-list-row--active': project.id === selectedProjectId }]"
+      @click="$emit('select-project', project.id)"
+    >
+      <span class="project-list-row__title">{{ project.name }}</span>
+      <span class="project-list-row__desc">{{ project.description || project.path }}</span>
+      <span class="project-list-row__meta">
+        {{ project.tasks.length }} {{ t('project').taskCount }} · {{ getProjectItemCount(project) }} {{ t('project').itemsLabel }}
+      </span>
+    </button>
+  </aside>
+</template>
+
+<script setup lang="ts">
+import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue';
+import { t } from '@/i18n';
+import { getProjectItemCount } from '@/utils/projectTaskTree';
+import type { Project } from '@/types/models';
+
+defineProps<{
+  projects: Project[];
+  selectedProjectId: string;
+  searchQuery: string;
+}>();
+
+defineEmits<{
+  (event: 'update:searchQuery', value: string): void;
+  (event: 'select-project', projectId: string): void;
+}>();
+</script>
+
+<style lang="scss" scoped>
+.project-list-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: clamp(220px, 24vw, 300px);
+  min-width: 220px;
+  padding: 12px;
+  background: var(--b3-theme-surface);
+  border-right: 1px solid var(--b3-border-color);
+  overflow: auto;
+}
+
+.project-list-pane__empty {
+  padding: 18px 8px;
+  color: var(--b3-theme-on-surface);
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.project-list-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: var(--b3-border-radius);
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &--active {
+    background: var(--b3-theme-background);
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.project-list-row__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.project-list-row__desc,
+.project-list-row__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--b3-theme-on-surface);
+  font-size: 12px;
+}
+</style>

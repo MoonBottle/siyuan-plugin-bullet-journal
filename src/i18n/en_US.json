@@ -140,7 +140,19 @@
       "card": "Card View"
     },
     "searchPlaceholder": "Search projects...",
-    "path": "Path"
+    "treeSearchPlaceholder": "Search tasks or items...",
+    "path": "Path",
+    "noProjectMatches": "No matching projects",
+    "noTaskMatches": "No matching tasks or items",
+    "selectProjectPrompt": "Select a project",
+    "selectDetailPrompt": "Select a task or item to view details",
+    "taskDetail": "Task Detail",
+    "itemProgress": "Item Progress",
+    "pendingCount": "Pending",
+    "completedCount": "Completed",
+    "abandonedCount": "Abandoned",
+    "openDocument": "Open Document",
+    "linked": "Has links"
   },
   "todo": {
     "title": "Todo",
