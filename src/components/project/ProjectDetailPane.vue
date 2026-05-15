@@ -39,14 +39,25 @@
     </div>
 
     <div v-else-if="item" class="project-detail-pane__item">
-      <ItemDetailContent
-        :item="item"
-        :show-all-dates="false"
-        :show-action-row="false"
-        :close-on-siyuan-link="false"
-        :embedded="true"
-      />
-      <ItemActionBar :item="item" />
+      <div class="project-detail-pane__item-main">
+        <ItemDetailContent
+          :item="item"
+          :show-all-dates="false"
+          :show-action-row="false"
+          :close-on-siyuan-link="false"
+          :embedded="true"
+        />
+        <ItemActionBar :item="item" />
+      </div>
+      <div class="project-detail-pane__focus-card">
+        <FocusReviewRecordPane
+          :records="item.pomodoros ?? []"
+          :item-content="item.content"
+          :title="t('pomodoroRecord').title"
+          :empty-title="t('pomodoroRecord').emptyGuideTitle"
+          :empty-desc="t('pomodoroRecord').emptyGuideDesc"
+        />
+      </div>
     </div>
   </aside>
 </template>
@@ -55,6 +66,7 @@
 import { computed } from 'vue';
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
 import ItemActionBar from '@/components/todo/ItemActionBar.vue';
+import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
 import { t } from '@/i18n';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { getTaskItemProgress } from '@/utils/projectTaskTree';
@@ -148,5 +160,22 @@ async function openTaskDocument() {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+  flex: 1;
+}
+
+.project-detail-pane__item-main {
+  flex-shrink: 0;
+}
+
+.project-detail-pane__focus-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 10px;
+  background: var(--b3-theme-surface);
+  overflow: hidden;
 }
 </style>
