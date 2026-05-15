@@ -1,16 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { saveFocusPlanWithOptionalDate } from '@/utils/focusPlanDialogSave';
+import { updateBlock } from '@/api';
 import { updateBlockDateTime } from '@/utils/fileUtils';
 import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 import type { Item } from '@/types/models';
 
 vi.mock('@/utils/fileUtils', () => ({
-  updateBlockDateTime: vi.fn(),
+  updateBlockDateTime: vi.fn(async (
+    _blockId: string,
+    newDate: string,
+    _newStartTime?: string,
+    _newEndTime?: string,
+    _allDay?: boolean,
+    _originalDate?: string,
+    _siblingItems?: unknown[],
+    _status?: string,
+    writer?: (content: string, targetBlockId: string) => Promise<boolean>,
+  ) => {
+    if (writer) {
+      return writer(`事项 📅2026-05-14, ${newDate}\n{: id="block-1" }`, 'block-1');
+    }
+    return true;
+  }),
 }));
 
 vi.mock('@/utils/itemSettingUtils', () => ({
   updateItemWithFocusPlan: vi.fn(),
   clearItemFocusPlan: vi.fn(),
+}));
+
+vi.mock('@/api', () => ({
+  updateBlock: vi.fn(),
 }));
 
 function createItem(partial: Partial<Item> = {}): Item {
@@ -31,12 +51,12 @@ const plan = { type: 'duration' as const, rawValue: 30 };
 describe('saveFocusPlanWithOptionalDate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(updateBlockDateTime).mockResolvedValue(true);
     vi.mocked(updateItemWithFocusPlan).mockResolvedValue(undefined);
     vi.mocked(clearItemFocusPlan).mockResolvedValue(undefined);
+    vi.mocked(updateBlock).mockResolvedValue(undefined);
   });
 
-  it('adds the ensured date before saving a focus plan when the item does not contain it', async () => {
+  it('writes one final block update with both ensured date and focus plan when the item does not contain the date', async () => {
     const item = createItem({ date: '2026-05-14' });
 
     const saved = await saveFocusPlanWithOptionalDate(item, plan, { ensureDate: '2026-05-15' });
@@ -51,11 +71,14 @@ describe('saveFocusPlanWithOptionalDate', () => {
       undefined,
       [item],
       'pending',
+      expect.any(Function),
     );
-    expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
-    expect(vi.mocked(updateBlockDateTime).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(updateItemWithFocusPlan).mock.invocationCallOrder[0],
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '事项 📅2026-05-14, 2026-05-15 ⏳30m\n{: id="block-1" }',
+      'block-1',
     );
+    expect(updateItemWithFocusPlan).not.toHaveBeenCalled();
   });
 
   it('does not add a date when the item already contains the ensured date', async () => {
@@ -68,16 +91,18 @@ describe('saveFocusPlanWithOptionalDate', () => {
 
     expect(saved).toBe(true);
     expect(updateBlockDateTime).not.toHaveBeenCalled();
+    expect(updateBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
   });
 
   it('does not save the focus plan when adding the ensured date fails', async () => {
-    vi.mocked(updateBlockDateTime).mockResolvedValue(false);
+    vi.mocked(updateBlockDateTime).mockResolvedValueOnce(false);
 
     const saved = await saveFocusPlanWithOptionalDate(createItem(), plan, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(false);
     expect(updateBlockDateTime).toHaveBeenCalled();
+    expect(updateBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).not.toHaveBeenCalled();
   });
 
@@ -88,6 +113,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
 
     expect(saved).toBe(true);
     expect(updateBlockDateTime).not.toHaveBeenCalled();
+    expect(updateBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
   });
 
@@ -98,6 +124,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
 
     expect(saved).toBe(true);
     expect(updateBlockDateTime).not.toHaveBeenCalled();
+    expect(updateBlock).not.toHaveBeenCalled();
     expect(clearItemFocusPlan).toHaveBeenCalledWith(item);
   });
 });
