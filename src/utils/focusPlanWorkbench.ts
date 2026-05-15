@@ -24,11 +24,11 @@ export function buildFocusPlanCandidateSections(input: {
   );
 
   const expiredItems = validItems
-    .filter(item => item.date < today)
+    .filter(item => item.date < today && !itemContainsDate(item, selectedDate))
     .sort(compareCandidateItems);
 
   const selectedDateItems = validItems
-    .filter(item => itemContainsDate(item, selectedDate))
+    .filter(item => item.date === selectedDate)
     .sort(compareCandidateItems);
 
   const otherOpenItems = validItems

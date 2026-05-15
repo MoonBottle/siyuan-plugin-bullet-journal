@@ -102,30 +102,44 @@ describe('buildFocusPlanCandidateSections', () => {
     ]);
   });
 
-  it('多日期事项已包含所选日期时不进入其他未完成事项', () => {
+  it('多日期事项只把所选日期 occurrence 放入所选日期分组', () => {
     const sections = buildFocusPlanCandidateSections({
       items: [
         createItem({
-          id: 'multi-1',
+          id: 'multi-14',
           date: '2026-05-14',
           content: '多日期事项',
-          siblingItems: [{ date: '2026-05-15' }],
+          siblingItems: [{ date: '2026-05-15' }, { date: '2026-05-17' }],
+        }),
+        createItem({
+          id: 'multi-15',
+          date: '2026-05-15',
+          content: '多日期事项',
+          siblingItems: [{ date: '2026-05-14' }, { date: '2026-05-17' }],
+        }),
+        createItem({
+          id: 'multi-17',
+          date: '2026-05-17',
+          content: '多日期事项',
+          siblingItems: [{ date: '2026-05-14' }, { date: '2026-05-15' }],
         }),
         createItem({ id: 'other-1', date: '2026-05-16', content: '其他日期' }),
       ],
-      selectedDate: '2026-05-15',
+      selectedDate: '2026-05-17',
       today: '2026-05-14',
     });
 
     expect(sections).toEqual([
       expect.objectContaining({
         key: 'selected-date',
-        items: [expect.objectContaining({ id: 'multi-1' })],
+        items: [expect.objectContaining({ id: 'multi-17' })],
       }),
       expect.objectContaining({
         key: 'other-open',
         items: [expect.objectContaining({ id: 'other-1' })],
       }),
     ]);
+    expect(sections.flatMap(section => section.items).map(item => item.id)).not.toContain('multi-14');
+    expect(sections.flatMap(section => section.items).map(item => item.id)).not.toContain('multi-15');
   });
 });
