@@ -944,7 +944,7 @@ describe('HabitListItem', () => {
 
     const button = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
     expect(button).not.toBeNull();
-    expect(button?.textContent?.trim()).toBe('');
+    expect(button?.textContent?.trim()).toBe('✓');
     expect(button?.querySelector('[data-testid="habit-action-check"]')).not.toBeNull();
 
     mounted.unmount();

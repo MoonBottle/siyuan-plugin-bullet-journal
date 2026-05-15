@@ -91,9 +91,7 @@
             class="habit-action-btn__check"
             data-testid="habit-action-check"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
-            </svg>
+            ✓
           </span>
           <svg
             v-else-if="dayState.isMissed"
@@ -132,9 +130,7 @@
             class="habit-action-btn__check"
             data-testid="habit-action-check"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
-            </svg>
+            ✓
           </span>
           <svg
             v-else-if="dayState.isMissed"
@@ -807,9 +803,10 @@ onUnmounted(() => {
 }
 
 .habit-action-btn__check {
-  background: var(--b3-theme-primary);
+  background: var(--b3-theme-primary-light);
   color: var(--b3-theme-on-primary);
-  box-shadow: 0 1px 2px var(--b3-theme-primary-lightest);
+  font-size: 14px;
+  line-height: 1;
 }
 
 .habit-action-btn__missed {
@@ -827,12 +824,6 @@ onUnmounted(() => {
   stroke: var(--b3-theme-error);
   stroke-width: 2;
   stroke-linecap: round;
-}
-
-.habit-action-btn__check svg {
-  width: 13px;
-  height: 13px;
-  fill: currentColor;
 }
 
 .habit-action-btn__progress-ring {
