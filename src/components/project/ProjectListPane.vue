@@ -1,30 +1,34 @@
 <template>
   <aside class="project-list-pane">
-    <ProjectPaneSearchBox
-      :model-value="searchQuery"
-      :placeholder="t('project').searchPlaceholder"
-      :clear-label="t('common').clear || 'Clear'"
-      test-id="project-search-input"
-      @update:model-value="$emit('update:searchQuery', $event)"
-    />
-
-    <div v-if="projects.length === 0" class="project-list-pane__empty">
-      {{ t('project').noProjectMatches }}
+    <div class="project-list-pane__search">
+      <ProjectPaneSearchBox
+        :model-value="searchQuery"
+        :placeholder="t('project').searchPlaceholder"
+        :clear-label="t('common').clear || 'Clear'"
+        test-id="project-search-input"
+        @update:model-value="$emit('update:searchQuery', $event)"
+      />
     </div>
 
-    <button
-      v-for="project in projects"
-      :key="project.id"
-      type="button"
-      :class="['project-list-row', { 'project-list-row--active': project.id === selectedProjectId }]"
-      @click="$emit('select-project', project.id)"
-    >
-      <span class="project-list-row__title">{{ project.name }}</span>
-      <span class="project-list-row__desc">{{ project.description || project.path }}</span>
-      <span class="project-list-row__meta">
-        {{ project.tasks.length }} {{ t('project').taskCount }} · {{ getProjectItemCount(project) }} {{ t('project').itemsLabel }}
-      </span>
-    </button>
+    <div class="project-list-pane__content">
+      <div v-if="projects.length === 0" class="project-list-pane__empty">
+        {{ t('project').noProjectMatches }}
+      </div>
+
+      <button
+        v-for="project in projects"
+        :key="project.id"
+        type="button"
+        :class="['project-list-row', { 'project-list-row--active': project.id === selectedProjectId }]"
+        @click="$emit('select-project', project.id)"
+      >
+        <span class="project-list-row__title">{{ project.name }}</span>
+        <span class="project-list-row__desc">{{ project.description || project.path }}</span>
+        <span class="project-list-row__meta">
+          {{ project.tasks.length }} {{ t('project').taskCount }} · {{ getProjectItemCount(project) }} {{ t('project').itemsLabel }}
+        </span>
+      </button>
+    </div>
   </aside>
 </template>
 
@@ -50,13 +54,26 @@ defineEmits<{
 .project-list-pane {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   width: clamp(220px, 24vw, 300px);
   min-width: 220px;
   padding: 12px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
+  overflow: hidden;
+}
+
+.project-list-pane__search {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.project-list-pane__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   overflow: auto;
 }
 
