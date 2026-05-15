@@ -183,6 +183,17 @@
             <svg><use xlink:href="#iconList"></use></svg>
           </span>
         </button>
+        <button
+          class="workbench-sidebar__create-option"
+          data-testid="workbench-create-project-view"
+          type="button"
+          @click="handleCreateView('project')"
+        >
+          <span v-if="!collapsed">{{ t('project').title }}</span>
+          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
+            <svg><use xlink:href="#iconFolder"></use></svg>
+          </span>
+        </button>
       </div>
 
       <button

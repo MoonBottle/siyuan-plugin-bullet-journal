@@ -15,6 +15,9 @@
     <div v-else-if="viewType === 'focusReview'" class="workbench-view-host__surface" data-testid="workbench-view-focus-review">
       <FocusReviewTab :embedded="true" />
     </div>
+    <div v-else-if="viewType === 'project'" class="workbench-view-host__surface" data-testid="workbench-view-project">
+      <ProjectTab :embedded="true" />
+    </div>
     <div
       v-else
       class="workbench-view-host__placeholder"
@@ -32,6 +35,7 @@ import WorkbenchHabitView from '@/components/workbench/view/WorkbenchHabitView.v
 import PomodoroStatsTab from '@/tabs/PomodoroStatsTab.vue';
 import QuadrantTab from '@/tabs/QuadrantTab.vue';
 import FocusReviewTab from '@/tabs/FocusReviewTab.vue';
+import ProjectTab from '@/tabs/ProjectTab.vue';
 import { t } from '@/i18n';
 import type { WorkbenchEntry } from '@/types/workbench';
 
