@@ -1,5 +1,5 @@
 <template>
-  <div class="hk-work-tab project-tab">
+  <div class="hk-work-tab project-tab" :class="{ 'project-tab--embedded': embedded }">
     <div class="block__icons">
       <SySelect
         v-if="settingsStore.groups.length > 0"
@@ -19,6 +19,7 @@
     <div class="tab-content">
       <ProjectView
         :projects="filteredProjects"
+        :embedded="embedded"
       />
     </div>
   </div>
@@ -35,6 +36,12 @@ import { buildViewDebugContext } from '@/utils/viewDebug';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import ProjectView from '@/components/project/ProjectView.vue';
 import { t } from '@/i18n';
+
+const props = withDefaults(defineProps<{
+  embedded?: boolean;
+}>(), {
+  embedded: false,
+});
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
@@ -145,6 +152,12 @@ const handleRefresh = async () => {
   width: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.project-tab--embedded {
+  .block__icons .sy-select {
+    margin-left: 0px;
+  }
 }
 
 .block__icons {

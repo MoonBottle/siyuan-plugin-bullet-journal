@@ -11,7 +11,7 @@
       <p class="hint">{{ t('project').dirStructureHint }}</p>
     </div>
 
-    <div v-else class="project-workbench">
+    <div v-else class="project-workbench" :class="{ 'project-workbench--embedded': embedded }">
       <ProjectListPane
         v-model:search-query="projectSearchQuery"
         :projects="filteredProjects"
@@ -51,6 +51,7 @@ import type { Item, Project, Task } from '@/types/models';
 
 const props = defineProps<{
   projects: Project[];
+  embedded?: boolean;
 }>();
 
 const selectedProjectId = ref('');
@@ -174,8 +175,12 @@ function findItemById(project: Project | null, itemId: string): Item | null {
   max-height: 100%;
   overflow: hidden;
   padding: 16px;
-  background: #fff;
+  background: var(--b3-theme-background);
   box-sizing: border-box;
+}
+
+.project-workbench--embedded {
+  padding: 8px;
 }
 
 </style>
