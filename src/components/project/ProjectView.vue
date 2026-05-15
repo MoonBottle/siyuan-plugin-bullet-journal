@@ -168,10 +168,12 @@ function findItemById(project: Project | null, itemId: string): Item | null {
 .project-workbench {
   display: grid;
   grid-template-columns: auto minmax(320px, 1fr) auto;
+  gap: 16px;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--b3-theme-background);
+  padding: 16px;
+  background: var(--b3-theme-surface);
 }
 
 </style>

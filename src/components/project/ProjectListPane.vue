@@ -54,8 +54,9 @@ defineEmits<{
   width: clamp(220px, 24vw, 300px);
   min-width: 220px;
   padding: 12px;
-  background: var(--b3-theme-surface);
-  border-right: 1px solid var(--b3-border-color);
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 12px;
   overflow: auto;
 }
 
@@ -73,17 +74,17 @@ defineEmits<{
   gap: 4px;
   width: 100%;
   padding: 10px;
-  border: 1px solid transparent;
-  border-radius: var(--b3-border-radius);
-  background: transparent;
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 10px;
+  background: var(--b3-theme-surface);
   color: var(--b3-theme-on-background);
   text-align: left;
   cursor: pointer;
 
   &:hover,
   &--active {
-    background: var(--b3-theme-background);
     border-color: var(--b3-theme-primary);
+    background: var(--b3-theme-primary-lightest);
   }
 }
 

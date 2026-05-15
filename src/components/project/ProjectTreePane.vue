@@ -68,6 +68,8 @@ defineEmits<{
   padding: 12px;
   overflow: auto;
   background: var(--b3-theme-background);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 12px;
 }
 
 .project-tree-pane__empty {

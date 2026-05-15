@@ -85,8 +85,9 @@ async function openTaskDocument() {
   min-width: 280px;
   padding: 12px;
   overflow: auto;
-  background: var(--b3-theme-surface);
-  border-left: 1px solid var(--b3-border-color);
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: 12px;
 }
 
 .project-detail-pane__empty {
@@ -127,10 +128,10 @@ async function openTaskDocument() {
   margin-top: 12px;
 
   div {
-    padding: 10px;
-    border: 1px solid var(--b3-border-color);
-    border-radius: var(--b3-border-radius);
-    background: var(--b3-theme-background);
+    padding: 12px;
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: 10px;
+    background: var(--b3-theme-surface);
   }
 
   strong,
