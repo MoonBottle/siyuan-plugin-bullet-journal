@@ -171,9 +171,11 @@ function findItemById(project: Project | null, itemId: string): Item | null {
   gap: 16px;
   height: 100%;
   min-height: 0;
+  max-height: 100%;
   overflow: hidden;
   padding: 16px;
   background: var(--b3-theme-surface);
+  box-sizing: border-box;
 }
 
 </style>

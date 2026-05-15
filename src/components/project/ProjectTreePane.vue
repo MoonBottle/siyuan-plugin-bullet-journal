@@ -73,6 +73,8 @@ defineEmits<{
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .project-tree-pane__search {

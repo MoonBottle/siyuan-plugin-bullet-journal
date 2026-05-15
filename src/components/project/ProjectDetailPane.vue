@@ -96,10 +96,14 @@ async function openTaskDocument() {
   width: clamp(280px, 30vw, 420px);
   min-width: 280px;
   padding: 12px;
-  overflow: auto;
+  overflow: hidden;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .project-detail-pane__empty {
