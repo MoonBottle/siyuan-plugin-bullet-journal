@@ -182,7 +182,6 @@ function toggleTag(tag: string) {
   emit('update:selectedTags', next);
   emit('update:tagQuery', '');
   highlightedIndex.value = -1;
-  closeTagDropdown();
 }
 
 function removeTag(tag: string) {
@@ -373,7 +372,6 @@ function handleSelectItem(itemId: string) {
   border-radius: var(--b3-border-radius);
   border: 1px solid var(--b3-border-color);
 
-  &:focus-within,
   &--open {
     border-color: var(--b3-theme-primary);
   }
