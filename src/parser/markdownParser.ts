@@ -9,6 +9,9 @@ import { sql, getDocKramdown } from '@/api';
 import { LineParser } from './lineParser';
 import { defaultPomodoroSettings } from '@/settings';
 
+const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]';
+const HPATH_DEBUG_PREFIX = '[Task Assistant][HPathDebug]';
+
 export class MarkdownParser {
   private directories: ProjectDirectory[];
   private scanMode: ScanMode;
@@ -97,6 +100,23 @@ export class MarkdownParser {
       `;
       const result = await sql(sqlQuery);
       console.log('[Task Assistant][Parser] 查询到的文档数量:', result.length);
+      const emptyHPathRows = result.filter((row: any) => !row.path);
+      console.log(`${HPATH_DEBUG_PREFIX} getAllDocs-summary:`, {
+        totalDocs: result.length,
+        emptyHPathCount: emptyHPathRows.length,
+        sampleDocs: result.slice(0, 10).map((row: any) => ({
+          id: row.id,
+          path: row.path,
+          notebookId: row.notebookId,
+        })),
+      });
+      if (emptyHPathRows.length > 0) {
+        console.warn(`${HPATH_DEBUG_PREFIX} getAllDocs-empty-hpath:`, emptyHPathRows.map((row: any) => ({
+          id: row.id,
+          path: row.path,
+          notebookId: row.notebookId,
+        })));
+      }
       return result.map((row: any) => ({
         id: row.id,
         path: row.path,
@@ -127,6 +147,27 @@ export class MarkdownParser {
 
       const result = await sql(sqlQuery);
       console.log('[Bullet Journal][Parser] 查询到的文档数量:', result.length);
+      const emptyHPathRows = result.filter((row: any) => !row.path);
+      console.log(`${HPATH_DEBUG_PREFIX} getProjectDocs-summary:`, {
+        directoryPath,
+        totalDocs: result.length,
+        emptyHPathCount: emptyHPathRows.length,
+        sampleDocs: result.slice(0, 10).map((row: any) => ({
+          id: row.id,
+          path: row.path,
+          notebookId: row.notebookId,
+        })),
+      });
+      if (emptyHPathRows.length > 0) {
+        console.warn(`${HPATH_DEBUG_PREFIX} getProjectDocs-empty-hpath:`, {
+          directoryPath,
+          docs: emptyHPathRows.map((row: any) => ({
+            id: row.id,
+            path: row.path,
+            notebookId: row.notebookId,
+          })),
+        });
+      }
       return result.map((row: any) => ({
         id: row.id,
         path: row.path,
@@ -147,11 +188,26 @@ export class MarkdownParser {
     groupId?: string,
     docPath?: string
   ): Promise<Project | null> {
+    console.log(`${PROJECT_NAME_DEBUG_PREFIX} parseProjectDocument-input:`, {
+      docId,
+      notebookId,
+      groupId,
+      docPath,
+    });
     const kramdown = await this.getKramdownContent(docId);
 
     if (!kramdown) return null;
 
-    return parseKramdown(kramdown, docId, groupId, docPath || notebookId);
+    const project = parseKramdown(kramdown, docId, groupId, docPath || notebookId);
+    console.log(`${PROJECT_NAME_DEBUG_PREFIX} parseProjectDocument-output:`, {
+      docId,
+      projectName: project?.name,
+      projectPath: project?.path,
+      groupId: project?.groupId,
+      tasksCount: project?.tasks.length,
+      habitsCount: project?.habits.length,
+    });
+    return project;
   }
 
   /**
@@ -171,6 +227,15 @@ export class MarkdownParser {
 
     // 2. 合并番茄钟属性
     await this.mergePomodoroAttrsForSingleProject(project, plugin);
+
+    console.log(`${PROJECT_NAME_DEBUG_PREFIX} parseAndProcessSingleDocument-output:`, {
+      docId,
+      projectName: project.name,
+      projectPath: project.path,
+      groupId: project.groupId,
+      tasksCount: project.tasks.length,
+      habitsCount: project.habits.length,
+    });
 
     return project;
   }

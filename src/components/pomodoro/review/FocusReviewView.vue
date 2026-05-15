@@ -28,7 +28,17 @@
         </div>
       </div>
 
-      <div class="focus-review-view__filters">
+      <div class="focus-review-view__group-filter">
+        <SySelect
+          :model-value="selectedGroup"
+          :options="groupOptions"
+          :placeholder="t('settings').projectGroups.allGroups"
+          class="focus-review-view__group-select"
+          @update:model-value="handleGroupChange"
+        />
+      </div>
+
+      <div v-if="statusFilters.length > 0" class="focus-review-view__filters">
         <button
           v-for="filter in statusFilters"
           :key="filter.value"
@@ -174,6 +184,7 @@ import FocusReviewMiniCalendar from '@/components/pomodoro/review/FocusReviewMin
 import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
 import ItemActionBar from '@/components/todo/ItemActionBar.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
@@ -181,10 +192,18 @@ const plugin = usePlugin() as any;
 
 const activeStatus = ref<'all' | FocusPlanReviewStatus>('all');
 const selectedEntryKey = ref<string>('');
+const selectedGroup = ref(resolveInitialGroup());
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'));
 
-const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, ''));
-const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, ''));
+const groupOptions = computed(() => {
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  settingsStore.groups.forEach(group => {
+    options.push({ value: group.id, label: group.name || t('settings').projectGroups.unnamed });
+  });
+  return options;
+});
+const selectedEntries = computed(() => projectStore.getFocusPlanEntriesByDate(selectedDate.value, selectedGroup.value));
+const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(selectedDate.value, selectedGroup.value));
 const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
 const selectedDateSubtitle = computed(() => {
   const today = dayjs().format('YYYY-MM-DD');
@@ -205,6 +224,7 @@ const summaryVarianceDisplay = computed(() => {
 });
 const statusFilters = computed(() => {
   const entries = selectedEntries.value;
+  if (entries.length === 0) return [];
   return [
     { value: 'all' as const, label: t('focusReview').all, count: entries.length },
     { value: 'overrun' as const, label: getStatusLabel('overrun'), count: entries.filter(entry => entry.reviewStatus === 'overrun').length },
@@ -236,12 +256,31 @@ watch(filteredEntries, (entries) => {
   }
 
   if (!entries.some(entry => getEntryKey(entry) === selectedEntryKey.value)) {
-    selectedEntryKey.value = getEntryKey(entries[0]);
+      selectedEntryKey.value = getEntryKey(entries[0]);
   }
+}, { immediate: true });
+watch(selectedGroup, (groupId) => {
+  settingsStore.focusReview.selectedGroup = groupId;
+  settingsStore.saveToPlugin();
+});
+watch(groupOptions, (options) => {
+  const hasSelectedGroup = options.some(option => option.value === selectedGroup.value);
+  if (hasSelectedGroup) return;
+  selectedGroup.value = resolveInitialGroup();
 }, { immediate: true });
 
 function getEntryKey(entry: FocusPlanDailyReviewEntry): string {
   return entry.blockId ?? entry.itemId;
+}
+
+function resolveInitialGroup() {
+  const preferredGroup = settingsStore.focusReview.selectedGroup || settingsStore.defaultGroup || '';
+  if (!preferredGroup) return '';
+  return settingsStore.groups.some(group => group.id === preferredGroup) ? preferredGroup : '';
+}
+
+function handleGroupChange(value: string) {
+  selectedGroup.value = value;
 }
 
 function selectEntry(entry: FocusPlanDailyReviewEntry) {
@@ -253,13 +292,15 @@ function getStatusLabel(status: FocusPlanReviewStatus): string {
 }
 
 function getSummaryByDate(date: string) {
-  return projectStore.getFocusPlanSummaryByDate(date, '');
+  return projectStore.getFocusPlanSummaryByDate(date, selectedGroup.value);
 }
 
 function handleAddFocusPlan() {
   if (!canAddFocusPlan.value) return;
   showFocusPlanItemPickerDialog({
-    items: projectStore.items,
+    items: !selectedGroup.value
+      ? projectStore.items
+      : projectStore.items.filter(item => item.project?.groupId === selectedGroup.value),
     selectedDate: selectedDate.value,
   });
 }
@@ -371,6 +412,14 @@ defineExpose({
 
 .focus-review-view__summary-value {
   font-size: 18px;
+}
+
+.focus-review-view__group-filter {
+  margin-top: 14px;
+}
+
+.focus-review-view__group-select {
+  width: 100%;
 }
 
 .focus-review-view__filters {

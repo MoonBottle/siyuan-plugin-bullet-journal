@@ -45,6 +45,48 @@ const historicalFocusedEntries = [
   },
 ];
 
+const entriesByDateAndGroup: Record<string, Record<string, any[]>> = {
+  '2026-05-13': {
+    all: historicalFocusedEntries,
+    'group-a': historicalFocusedEntries,
+    'group-b': [],
+  },
+  '2026-05-14': {
+    all: mockEntries,
+    'group-a': [mockEntries[0]],
+    'group-b': [mockEntries[1]],
+  },
+  '2026-05-15': {
+    all: [
+      {
+        itemId: 'item-3',
+        blockId: 'block-3',
+        date: '2026-05-15',
+        estimatedMinutes: 25,
+        actualMinutes: 0,
+        itemStatus: 'pending',
+        itemContent: '补材料',
+        reviewStatus: 'not-started',
+        deltaMinutes: -25,
+      },
+    ],
+    'group-a': [],
+    'group-b': [
+      {
+        itemId: 'item-3',
+        blockId: 'block-3',
+        date: '2026-05-15',
+        estimatedMinutes: 25,
+        actualMinutes: 0,
+        itemStatus: 'pending',
+        itemContent: '补材料',
+        reviewStatus: 'not-started',
+        deltaMinutes: -25,
+      },
+    ],
+  },
+};
+
 const entriesByDate: Record<string, typeof mockEntries> = {
   '2026-05-13': historicalFocusedEntries,
   '2026-05-14': mockEntries,
@@ -78,20 +120,44 @@ const summaryByDate = (date: string) => {
   };
 };
 
+const summaryByDateAndGroup = (date: string, groupId = '') => {
+  const entries = entriesByDateAndGroup[date]?.[groupId || 'all'] ?? [];
+  return {
+    total: entries.length,
+    estimatedMinutes: entries.reduce((sum, entry) => sum + entry.estimatedMinutes, 0),
+    actualMinutes: entries.reduce((sum, entry) => sum + entry.actualMinutes, 0),
+    matched: entries.filter(entry => entry.reviewStatus === 'matched').length,
+    overrun: entries.filter(entry => entry.reviewStatus === 'overrun').length,
+    underrun: entries.filter(entry => entry.reviewStatus === 'underrun').length,
+    notStarted: entries.filter(entry => entry.reviewStatus === 'not-started').length,
+    inProgress: entries.filter(entry => entry.reviewStatus === 'in-progress').length,
+    unplanned: entries.filter(entry => entry.reviewStatus === 'unplanned').length,
+  };
+};
+
 const mockProjectStore = {
-  getFocusPlanEntriesByDate: vi.fn((date: string) => entriesByDate[date] ?? []),
-  getFocusPlanSummaryByDate: vi.fn((date: string) => summaryByDate(date)),
+  getFocusPlanEntriesByDate: vi.fn((date: string, groupId = '') => entriesByDateAndGroup[date]?.[groupId || 'all'] ?? []),
+  getFocusPlanSummaryByDate: vi.fn((date: string, groupId = '') => summaryByDateAndGroup(date, groupId)),
   items: [
-    { id: 'item-1', blockId: 'block-1', content: '整理日报', lineNumber: 1, docId: 'doc-1', date: '2026-05-14', status: 'pending', project: { name: '项目A' }, task: { name: '任务A' }, pomodoros: [{ id: 'p1', date: '2026-05-14', startTime: '08:25:00', endTime: '08:35:00', durationMinutes: 10, itemId: 'item-1', itemContent: '整理日报', blockId: 'abcdefghijklmnopqrstuv' }] },
-    { id: 'item-2', blockId: 'block-2', content: '整理会议结论', lineNumber: 2, docId: 'doc-1', date: '2026-05-14', status: 'completed', pomodoros: [] },
-    { id: 'item-3', blockId: 'block-3', content: '补材料', lineNumber: 3, docId: 'doc-2', date: '2026-05-15', status: 'pending', pomodoros: [] },
-    { id: 'item-history-1', blockId: 'block-history-1', content: '历史专注记录', lineNumber: 4, docId: 'doc-3', date: '2026-05-13', status: 'completed', pomodoros: [{ id: 'ph1', date: '2026-05-13', startTime: '09:00:00', endTime: '09:20:00', durationMinutes: 20, itemId: 'item-history-1', itemContent: '历史专注记录', blockId: 'block-history-1' }] },
+    { id: 'item-1', blockId: 'block-1', content: '整理日报', lineNumber: 1, docId: 'doc-1', date: '2026-05-14', status: 'pending', project: { name: '项目A', groupId: 'group-a' }, task: { name: '任务A' }, pomodoros: [{ id: 'p1', date: '2026-05-14', startTime: '08:25:00', endTime: '08:35:00', durationMinutes: 10, itemId: 'item-1', itemContent: '整理日报', blockId: 'abcdefghijklmnopqrstuv' }] },
+    { id: 'item-2', blockId: 'block-2', content: '整理会议结论', lineNumber: 2, docId: 'doc-1', date: '2026-05-14', status: 'completed', project: { name: '项目B', groupId: 'group-b' }, pomodoros: [] },
+    { id: 'item-3', blockId: 'block-3', content: '补材料', lineNumber: 3, docId: 'doc-2', date: '2026-05-15', status: 'pending', project: { name: '项目B', groupId: 'group-b' }, pomodoros: [] },
+    { id: 'item-history-1', blockId: 'block-history-1', content: '历史专注记录', lineNumber: 4, docId: 'doc-3', date: '2026-05-13', status: 'completed', project: { name: '项目A', groupId: 'group-a' }, pomodoros: [{ id: 'ph1', date: '2026-05-13', startTime: '09:00:00', endTime: '09:20:00', durationMinutes: 20, itemId: 'item-history-1', itemContent: '历史专注记录', blockId: 'block-history-1' }] },
   ],
   getItemByBlockId: vi.fn((blockId: string) => mockProjectStore.items.find(item => item.blockId === blockId)),
 };
 
 const mockSettingsStore = {
   loadFromPlugin: vi.fn(),
+  saveToPlugin: vi.fn(),
+  groups: [
+    { id: 'group-a', name: '分组A' },
+    { id: 'group-b', name: '分组B' },
+  ],
+  defaultGroup: 'group-a',
+  focusReview: {
+    selectedGroup: '',
+  },
 };
 
 vi.mock('@/stores', () => ({
@@ -139,6 +205,7 @@ vi.mock('@/i18n', () => ({
     if (key === 'common') return { refresh: '刷新', dataRefreshed: '已刷新' };
     if (key === 'calendar') return { weekDays: ['一', '二', '三', '四', '五', '六', '日'] };
     if (key === 'todo') return { item: '事项详情', project: '项目', task: '任务', time: '时间', today: '今天', tomorrow: '明天' };
+    if (key === 'settings') return { projectGroups: { allGroups: '全部分组', unnamed: '未命名分组' } };
     if (key === 'focusPlan') return { estimatedShort: '预计' };
     if (key === 'pomodoroStats') return { focusRecords: '专注记录', noData: '暂无记录', today: '今天', formatMonthDay: 'M月D日' };
     if (key === 'focusReview') {
@@ -202,11 +269,21 @@ async function mountComponent() {
   };
 }
 
+async function selectSyOption(container: HTMLElement, selectSelector: string, optionText: string) {
+  (container.querySelector(`${selectSelector} .sy-select__trigger`) as HTMLButtonElement).click();
+  await nextTick();
+  const options = [...document.querySelectorAll('.sy-select__option')];
+  const option = options.find(node => node.textContent?.includes(optionText));
+  (option as HTMLElement).click();
+  await nextTick();
+}
+
 describe('FocusReviewView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-14T08:00:00Z'));
+    mockSettingsStore.focusReview.selectedGroup = '';
   });
 
   afterEach(() => {
@@ -215,12 +292,13 @@ describe('FocusReviewView', () => {
 
   it('renders summary, list, and detail panes that switch with the calendar date', async () => {
     const mounted = await mountComponent();
+    await selectSyOption(mounted.container, '.focus-review-view__group-select', '全部分组');
 
     expect(mounted.container.textContent).toContain('预计总专注');
     expect(mounted.container.textContent).toContain('实际总专注');
     expect(mounted.container.textContent).toContain('整理日报');
-    expect(mounted.container.textContent).toContain('1h 35m');
-    expect(mounted.container.textContent).toContain('40m');
+    expect(mounted.container.textContent).toContain('1h 10m');
+    expect(mounted.container.textContent).toContain('10m');
     expect(mounted.container.textContent).toContain('今日事项');
     expect(mounted.container.textContent).toContain('仅有预计');
     expect(mounted.container.textContent).toContain('仅有专注');
@@ -241,6 +319,26 @@ describe('FocusReviewView', () => {
     mounted.unmount();
   });
 
+  it('filters focus review data by selected group and persists the selection', async () => {
+    mockSettingsStore.focusReview.selectedGroup = 'group-b';
+    const mounted = await mountComponent();
+
+    expect(mounted.container.textContent).toContain('整理会议结论');
+    expect(mounted.container.textContent).not.toContain('整理日报');
+    expect(mounted.container.textContent).toContain('25m');
+    expect(mounted.container.textContent).toContain('30m');
+    expect(mockProjectStore.getFocusPlanEntriesByDate).toHaveBeenCalledWith('2026-05-14', 'group-b');
+
+    await selectSyOption(mounted.container, '.focus-review-view__group-select', '分组A');
+
+    expect(mounted.container.textContent).toContain('整理日报');
+    expect(mounted.container.textContent).not.toContain('整理会议结论');
+    expect(mockSettingsStore.focusReview.selectedGroup).toBe('group-a');
+    expect(mockSettingsStore.saveToPlugin).toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
   it('shows add-focus-plan entry and opens candidate picker from the sidebar', async () => {
     const mounted = await mountComponent();
 
@@ -251,6 +349,9 @@ describe('FocusReviewView', () => {
 
     expect(mockShowFocusPlanItemPickerDialog).toHaveBeenCalledWith(
       expect.objectContaining({
+        items: expect.arrayContaining([
+          expect.objectContaining({ id: 'item-1' }),
+        ]),
         selectedDate: '2026-05-14',
       }),
     );
@@ -309,6 +410,32 @@ describe('FocusReviewView', () => {
     expect(mounted.container.textContent).toContain('历史说明');
 
     mockProjectStore.items = originalItems;
+    mounted.unmount();
+  });
+
+  it('hides status filters when the selected group has no entries for the selected date', async () => {
+    const mounted = await mountComponent();
+    await selectSyOption(mounted.container, '.focus-review-view__group-select', '分组A');
+    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mounted.container.querySelector('.focus-review-view__filters')).toBeNull();
+    expect(mounted.container.textContent).toContain('还没有预计事项');
+    expect(mounted.container.textContent).not.toContain('全部0');
+
+    (mounted.container.querySelector('.focus-review-view__empty-action') as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(mockShowFocusPlanItemPickerDialog).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        items: expect.arrayContaining([
+          expect.objectContaining({ id: 'item-1' }),
+          expect.objectContaining({ id: 'item-history-1' }),
+        ]),
+        selectedDate: '2026-05-15',
+      }),
+    );
+
     mounted.unmount();
   });
 });

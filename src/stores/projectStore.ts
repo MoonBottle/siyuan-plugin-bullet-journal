@@ -293,6 +293,15 @@ import { writeMcpCache } from '@/mcp/mcpCacheWriter';
 
 let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null;
 const INITIAL_LOAD_PROJECT_BATCH_SIZE = 25;
+const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]';
+
+function logProjectNameDebug(
+  stage: string,
+  payload: Record<string, unknown>,
+) {
+  console.log(`${PROJECT_NAME_DEBUG_PREFIX} ${stage}:`, payload);
+}
+
 function debouncedWriteMcpCache(
   projects: Project[],
   items: Item[],
@@ -855,11 +864,30 @@ export const useProjectStore = defineStore('project', {
     },
 
     applyProjects(nextProjects: Project[]) {
+      logProjectNameDebug('store-applyProjects', {
+        count: nextProjects.length,
+        sampleProjects: nextProjects.slice(0, 5).map(project => ({
+          id: project.id,
+          name: project.name,
+          path: project.path,
+          groupId: project.groupId,
+        })),
+      });
       this.projects = nextProjects;
     },
 
     appendProjects(nextProjects: Project[]) {
       if (nextProjects.length === 0) return;
+      logProjectNameDebug('store-appendProjects', {
+        appendCount: nextProjects.length,
+        existingCount: this.projects.length,
+        sampleProjects: nextProjects.slice(0, 5).map(project => ({
+          id: project.id,
+          name: project.name,
+          path: project.path,
+          groupId: project.groupId,
+        })),
+      });
       this.projects = [...this.projects, ...nextProjects];
     },
 
@@ -882,6 +910,13 @@ export const useProjectStore = defineStore('project', {
         if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
           project.groupId = matchGroupId(project.path, enabledDirs);
         }
+        logProjectNameDebug('store-buildProjectsFromParser-callback', {
+          scanMode,
+          projectId: project.id,
+          projectName: project.name,
+          projectPath: project.path,
+          groupId: project.groupId,
+        });
         nextProjects.push(project);
       });
 
@@ -910,6 +945,14 @@ export const useProjectStore = defineStore('project', {
           if (scanMode === 'full' && enabledDirs.length > 0 && project.path) {
             project.groupId = matchGroupId(project.path, enabledDirs);
           }
+          logProjectNameDebug('store-loadProjects-parser-callback', {
+            scanMode,
+            projectId: project.id,
+            projectName: project.name,
+            projectPath: project.path,
+            groupId: project.groupId,
+            pendingCountBeforePush: pendingProjects.length,
+          });
           pendingProjects.push(project);
 
           if (pendingProjects.length >= INITIAL_LOAD_PROJECT_BATCH_SIZE) {
@@ -1071,6 +1114,12 @@ export const useProjectStore = defineStore('project', {
           const existingProject = this.projects.find(p => p.id === docId);
           const groupId = existingProject?.groupId;
           let path = existingProject?.path;
+          logProjectNameDebug('store-refreshDirtyDocs-existing-project', {
+            docId,
+            existingProjectName: existingProject?.name,
+            existingProjectPath: existingProject?.path,
+            existingGroupId: groupId,
+          });
           console.log('[Task Assistant] Directed refresh processing doc:', {
             docId,
             hasExistingProject: Boolean(existingProject),
@@ -1111,6 +1160,12 @@ export const useProjectStore = defineStore('project', {
           );
 
           if (project) {
+            logProjectNameDebug('store-refreshDirtyDocs-parsed-project', {
+              docId,
+              projectName: project.name,
+              projectPath: project.path,
+              projectGroupId: project.groupId,
+            });
             this.updateProjectsIncrementally([project]);
             console.log('[Task Assistant] Project refreshed:', {
               docId,
@@ -1148,9 +1203,25 @@ export const useProjectStore = defineStore('project', {
       for (const newProject of updatedProjects) {
         const index = this.projects.findIndex(p => p.id === newProject.id);
         if (index >= 0) {
+          const oldProject = this.projects[index];
+          logProjectNameDebug('store-updateProjectsIncrementally-replace', {
+            projectId: newProject.id,
+            oldName: oldProject?.name,
+            oldPath: oldProject?.path,
+            oldGroupId: oldProject?.groupId,
+            newName: newProject.name,
+            newPath: newProject.path,
+            newGroupId: newProject.groupId,
+          });
           // 替换现有项目 - Vue 会检测到该索引的变化
           this.projects[index] = newProject;
         } else {
+          logProjectNameDebug('store-updateProjectsIncrementally-insert', {
+            projectId: newProject.id,
+            newName: newProject.name,
+            newPath: newProject.path,
+            newGroupId: newProject.groupId,
+          });
           // 新增项目
           this.projects.push(newProject);
         }

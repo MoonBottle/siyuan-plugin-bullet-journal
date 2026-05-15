@@ -111,6 +111,9 @@ export interface SettingsData {
   showPomodoroBlocks?: boolean;     // 日历日视图是否显示番茄钟时间块，默认 true
   showPomodoroTotal?: boolean;      // 事项条是否显示专注总时长，默认 true
   todoDock: TodoDockSettings;
+  focusReview?: {
+    selectedGroup?: string;
+  };
   ai?: {
     providers: AIProviderConfig[];
     activeProviderId: string | null;
@@ -176,6 +179,9 @@ export const defaultSettings: SettingsData = {
     showLinks: false,
     showReminderAndRecurring: false,
     sortRules: [...defaultTodoSortRules],
+    selectedGroup: '',
+  },
+  focusReview: {
     selectedGroup: '',
   },
   ai: {

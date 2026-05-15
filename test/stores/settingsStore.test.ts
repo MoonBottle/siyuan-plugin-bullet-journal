@@ -58,6 +58,27 @@ describe('settingsStore', () => {
     }));
   });
 
+  it('loads and saves focusReview selectedGroup', () => {
+    getSettings.mockReturnValue({
+      focusReview: {
+        selectedGroup: 'group-a',
+      },
+    });
+
+    const store = useSettingsStore();
+    store.loadFromPlugin();
+    expect(store.focusReview.selectedGroup).toBe('group-a');
+
+    store.focusReview.selectedGroup = 'group-b';
+    store.saveToPlugin();
+
+    expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+      focusReview: {
+        selectedGroup: 'group-b',
+      },
+    }));
+  });
+
   it('defaults pomodoro floating display mode to inline', () => {
     const settings = structuredClone(defaultSettings);
     expect(settings.pomodoro?.floatingDisplayMode).toBe('inline');
