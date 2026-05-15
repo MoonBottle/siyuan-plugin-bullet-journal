@@ -487,10 +487,22 @@ function handleActionContextMenu(event: MouseEvent) {
     return;
   }
 
+  const menuWidth = 96;
+  const menuHeight = 40;
+  const viewportPadding = 8;
+  const x = Math.max(
+    viewportPadding,
+    Math.min(window.innerWidth - menuWidth - viewportPadding, event.clientX - menuWidth),
+  );
+  const y = Math.max(
+    viewportPadding,
+    Math.min(window.innerHeight - menuHeight - viewportPadding, event.clientY),
+  );
+
   contextMenu.value = {
     visible: true,
-    x: event.clientX,
-    y: event.clientY,
+    x,
+    y,
     action: props.dayState.isCompleted || props.dayState.isMissed || hasPartialProgress.value
       ? 'reset-record'
       : 'mark-missed',
