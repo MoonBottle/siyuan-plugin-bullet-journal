@@ -152,11 +152,8 @@ const handleRefresh = async () => {
     opacity: 1;
   }
 
-  select.b3-select {
-    width: auto !important;
-    min-width: 60px;
+  .sy-select {
     margin-left: 8px;
-    padding: 4px 24px 4px 8px;
   }
 
 }
