@@ -34,8 +34,9 @@ import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMar
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
-import { clearItemFocusPlan, updateItemWithFocusPlan, updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
+import { updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
 import { buildFocusPlanCandidateSections } from './focusPlanWorkbench';
+import { saveFocusPlanWithOptionalDate } from './focusPlanDialogSave';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -1260,17 +1261,14 @@ export function showPrioritySettingDialog(
   return dialog;
 }
 
-export function showFocusPlanDialog(item: Item): Dialog {
+export function showFocusPlanDialog(item: Item, options?: { ensureDate?: string }): Dialog {
   const container = document.createElement('div');
 
   const app = createApp(FocusPlanDialog, {
     initialPlan: item.focusPlan,
     onSave: async (plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined) => {
-      if (plan) {
-        await updateItemWithFocusPlan(item, plan);
-      } else {
-        await clearItemFocusPlan(item);
-      }
+      const saved = await saveFocusPlanWithOptionalDate(item, plan, options);
+      if (!saved) return;
       dialog.destroy();
     },
     onCancel: () => {
@@ -1324,7 +1322,7 @@ export function showFocusPlanItemPickerDialog(input: {
     onSelect: (item: Item) => {
       dialog.destroy();
       input.onSelected?.(item);
-      showFocusPlanDialog(item);
+      showFocusPlanDialog(item, { ensureDate: input.selectedDate });
     },
   });
 

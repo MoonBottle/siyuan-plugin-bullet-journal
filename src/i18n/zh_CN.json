@@ -808,6 +808,7 @@
     "historyList": "历史事项",
     "futureList": "计划事项",
     "expiredItems": "过期事项",
+    "otherOpenItems": "其他未完成事项",
     "calendarLegendPlanned": "仅有预计",
     "calendarLegendFocused": "仅有专注",
     "calendarLegendHybrid": "预计并已专注",

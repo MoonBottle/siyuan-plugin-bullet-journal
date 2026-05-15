@@ -12,6 +12,7 @@ function createItem(partial: Partial<Item>): Item {
     startDateTime: partial.startDateTime,
     endDateTime: partial.endDateTime,
     focusPlan: partial.focusPlan,
+    siblingItems: partial.siblingItems,
     lineNumber: partial.lineNumber || 1,
     docId: partial.docId || 'doc-1',
     pomodoros: partial.pomodoros || [],
@@ -19,7 +20,7 @@ function createItem(partial: Partial<Item>): Item {
 }
 
 describe('buildFocusPlanCandidateSections', () => {
-  it('只返回过期事项和所选日期事项，并过滤完成、放弃、无 blockId 事项', () => {
+  it('返回过期、所选日期和其他未完成事项，并过滤完成、放弃、无 blockId 事项', () => {
     const sections = buildFocusPlanCandidateSections({
       items: [
         createItem({ id: 'expired-1', date: '2026-05-13', content: '过期 A' }),
@@ -40,6 +41,10 @@ describe('buildFocusPlanCandidateSections', () => {
       expect.objectContaining({
         key: 'selected-date',
         items: [expect.objectContaining({ id: 'selected-1' })],
+      }),
+      expect.objectContaining({
+        key: 'other-open',
+        items: [expect.objectContaining({ id: 'other-1' })],
       }),
     ]);
   });
@@ -89,6 +94,37 @@ describe('buildFocusPlanCandidateSections', () => {
       expect.objectContaining({
         key: 'selected-date',
         items: [expect.objectContaining({ id: 'future-1' })],
+      }),
+      expect.objectContaining({
+        key: 'other-open',
+        items: [expect.objectContaining({ id: 'today-1' })],
+      }),
+    ]);
+  });
+
+  it('多日期事项已包含所选日期时不进入其他未完成事项', () => {
+    const sections = buildFocusPlanCandidateSections({
+      items: [
+        createItem({
+          id: 'multi-1',
+          date: '2026-05-14',
+          content: '多日期事项',
+          siblingItems: [{ date: '2026-05-15' }],
+        }),
+        createItem({ id: 'other-1', date: '2026-05-16', content: '其他日期' }),
+      ],
+      selectedDate: '2026-05-15',
+      today: '2026-05-14',
+    });
+
+    expect(sections).toEqual([
+      expect.objectContaining({
+        key: 'selected-date',
+        items: [expect.objectContaining({ id: 'multi-1' })],
+      }),
+      expect.objectContaining({
+        key: 'other-open',
+        items: [expect.objectContaining({ id: 'other-1' })],
       }),
     ]);
   });

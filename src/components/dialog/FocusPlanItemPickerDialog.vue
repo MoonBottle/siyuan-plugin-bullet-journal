@@ -6,7 +6,7 @@
       class="focus-plan-item-picker__section"
     >
       <div class="focus-plan-item-picker__section-title">
-        {{ section.key === 'expired' ? t('focusReview').expiredItems : selectedDateTitle }}
+        {{ getSectionTitle(section.key) }}
       </div>
 
       <div class="focus-plan-item-picker__section-list">
@@ -51,6 +51,12 @@ const emit = defineEmits<{
 }>();
 
 const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D日事项'));
+
+function getSectionTitle(key: FocusPlanCandidateSection['key']) {
+  if (key === 'expired') return t('focusReview').expiredItems;
+  if (key === 'other-open') return t('focusReview').otherOpenItems;
+  return selectedDateTitle.value;
+}
 </script>
 
 <style scoped lang="scss">

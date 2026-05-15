@@ -1,7 +1,7 @@
 import type { Item } from '@/types/models';
 
 export interface FocusPlanCandidateSection {
-  key: 'expired' | 'selected-date';
+  key: 'expired' | 'selected-date' | 'other-open';
   items: Item[];
 }
 
@@ -28,13 +28,23 @@ export function buildFocusPlanCandidateSections(input: {
     .sort(compareCandidateItems);
 
   const selectedDateItems = validItems
-    .filter(item => item.date === selectedDate)
+    .filter(item => itemContainsDate(item, selectedDate))
+    .sort(compareCandidateItems);
+
+  const otherOpenItems = validItems
+    .filter(item => item.date >= today && !itemContainsDate(item, selectedDate))
     .sort(compareCandidateItems);
 
   return [
     expiredItems.length ? { key: 'expired', items: expiredItems } : null,
     selectedDateItems.length ? { key: 'selected-date', items: selectedDateItems } : null,
+    otherOpenItems.length ? { key: 'other-open', items: otherOpenItems } : null,
   ].filter(Boolean) as FocusPlanCandidateSection[];
+}
+
+function itemContainsDate(item: Item, date: string): boolean {
+  if (item.date === date) return true;
+  return (item.siblingItems ?? []).some(sibling => sibling.date === date);
 }
 
 function compareCandidateItems(a: Item, b: Item): number {

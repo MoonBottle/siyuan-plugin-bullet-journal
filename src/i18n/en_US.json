@@ -768,6 +768,7 @@
     "historyList": "Past Items",
     "futureList": "Planned Items",
     "expiredItems": "Overdue Items",
+    "otherOpenItems": "Other Open Items",
     "calendarLegendPlanned": "Planned Only",
     "calendarLegendFocused": "Focused Only",
     "calendarLegendHybrid": "Planned and Focused",
