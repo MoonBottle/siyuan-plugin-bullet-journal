@@ -27,9 +27,14 @@
         :matched-item-ids="filteredTaskTree.matchedItemIds"
         :selected-task-id="selectedTaskId"
         :selected-item-id="selectedItemId"
+        :tag-query="treeTagQuery"
+        :selected-tags="treeSelectedTags"
+        :tag-options="projectTagOptions"
         @toggle-task="toggleTask"
         @select-task="selectTask"
         @select-item="selectItem"
+        @update:tag-query="treeTagQuery = $event"
+        @update:selected-tags="treeSelectedTags = $event"
       />
       <ProjectDetailPane
         :project="selectedProject"
@@ -59,6 +64,8 @@ const selectedTaskId = ref('');
 const selectedItemId = ref('');
 const projectSearchQuery = ref('');
 const treeSearchQuery = ref('');
+const treeTagQuery = ref('');
+const treeSelectedTags = ref<string[]>([]);
 const expandedTaskIds = ref<Set<string>>(new Set());
 
 const filteredProjects = computed(() => {
@@ -74,11 +81,29 @@ const filteredProjects = computed(() => {
 
 const selectedProject = computed(() => filteredProjects.value.find(project => project.id === selectedProjectId.value) || null);
 const taskTree = computed(() => buildProjectTaskTree(selectedProject.value));
-const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value));
+const filteredTaskTree = computed(() => filterProjectTaskTree(taskTree.value, treeSearchQuery.value, treeSelectedTags.value));
 const visibleTaskNodes = computed(() => filteredTaskTree.value.nodes);
 const effectiveExpandedTaskIds = computed(() => {
-  if (!treeSearchQuery.value.trim()) return expandedTaskIds.value;
+  if (!treeSearchQuery.value.trim() && treeSelectedTags.value.length === 0) return expandedTaskIds.value;
   return new Set([...expandedTaskIds.value, ...filteredTaskTree.value.autoExpandedTaskIds]);
+});
+
+type TagOption = { name: string; count: number };
+const projectTagOptions = computed<TagOption[]>(() => {
+  const tagCounts = new Map<string, number>();
+  for (const task of selectedProject.value?.tasks ?? []) {
+    for (const item of task.items ?? []) {
+      if (!item.tags) continue;
+      for (const tag of item.tags) {
+        const normalized = tag.trim();
+        if (!normalized) continue;
+        tagCounts.set(normalized, (tagCounts.get(normalized) ?? 0) + 1);
+      }
+    }
+  }
+  return Array.from(tagCounts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 });
 const selectedTask = computed(() => findTaskById(selectedProject.value, selectedTaskId.value));
 const selectedItem = computed(() => findItemById(selectedProject.value, selectedItemId.value));
@@ -94,6 +119,8 @@ watch(selectedProject, (project, previousProject) => {
   selectedTaskId.value = '';
   selectedItemId.value = '';
   treeSearchQuery.value = '';
+  treeTagQuery.value = '';
+  treeSelectedTags.value = [];
   expandedTaskIds.value = new Set(project?.tasks.map(task => task.id) ?? []);
 }, { immediate: true });
 

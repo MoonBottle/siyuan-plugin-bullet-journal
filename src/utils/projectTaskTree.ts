@@ -73,13 +73,19 @@ export function buildProjectTaskTree(project: Project | null | undefined): Proje
   return roots;
 }
 
-export function filterProjectTaskTree(nodes: ProjectTaskTreeNode[], query: string): ProjectTaskTreeFilterResult {
+export function filterProjectTaskTree(
+  nodes: ProjectTaskTreeNode[],
+  query: string,
+  selectedTags?: string[],
+): ProjectTaskTreeFilterResult {
   const normalizedQuery = normalizeSearchText(query);
+  const normalizedTags = normalizeSelectedTags(selectedTags);
+  const hasTagFilter = normalizedTags.size > 0;
   const matchedTaskIds = new Set<string>();
   const matchedItemIds = new Set<string>();
   const autoExpandedTaskIds = new Set<string>();
 
-  if (!normalizedQuery) {
+  if (!normalizedQuery && !hasTagFilter) {
     return {
       nodes,
       matchedTaskIds,
@@ -89,7 +95,7 @@ export function filterProjectTaskTree(nodes: ProjectTaskTreeNode[], query: strin
   }
 
   const filteredNodes = nodes
-    .map(node => filterNode(node, normalizedQuery, matchedTaskIds, matchedItemIds, autoExpandedTaskIds))
+    .map(node => filterNode(node, normalizedQuery, normalizedTags, hasTagFilter, matchedTaskIds, matchedItemIds, autoExpandedTaskIds))
     .filter(Boolean) as ProjectTaskTreeNode[];
 
   return {
@@ -120,11 +126,13 @@ export function getProjectItemCount(project: Project): number {
 function filterNode(
   node: ProjectTaskTreeNode,
   query: string,
+  normalizedTags: Set<string>,
+  hasTagFilter: boolean,
   matchedTaskIds: Set<string>,
   matchedItemIds: Set<string>,
   autoExpandedTaskIds: Set<string>,
 ): ProjectTaskTreeNode | null {
-  const taskMatches = normalizeSearchText([
+  const taskMatches = !query || normalizeSearchText([
     node.task.name,
     node.task.level,
     node.task.date,
@@ -133,12 +141,15 @@ function filterNode(
     ...(node.task.links ?? []).map(link => link.name),
   ].filter(Boolean).join(' ')).includes(query);
 
-  const matchedItems = node.items.filter(item => itemMatchesQuery(item, query));
+  const matchedItems = node.items.filter(item =>
+    (!query || itemMatchesQuery(item, query))
+    && (!hasTagFilter || itemMatchesTags(item, normalizedTags)),
+  );
   const children = node.children
-    .map(child => filterNode(child, query, matchedTaskIds, matchedItemIds, autoExpandedTaskIds))
+    .map(child => filterNode(child, query, normalizedTags, hasTagFilter, matchedTaskIds, matchedItemIds, autoExpandedTaskIds))
     .filter(Boolean) as ProjectTaskTreeNode[];
 
-  if (taskMatches) {
+  if (taskMatches && !hasTagFilter) {
     matchedTaskIds.add(node.task.id);
     collectTaskIds(node, autoExpandedTaskIds);
     return cloneNode(node);
@@ -184,4 +195,14 @@ function itemMatchesQuery(item: Item, query: string): boolean {
 
 function normalizeSearchText(value: string): string {
   return value.trim().toLocaleLowerCase();
+}
+
+function normalizeSelectedTags(tags?: string[]): Set<string> {
+  if (!tags || tags.length === 0) return new Set();
+  return new Set(tags.map(t => t.trim().toLocaleLowerCase()).filter(Boolean));
+}
+
+function itemMatchesTags(item: Item, normalizedTags: Set<string>): boolean {
+  if (!item.tags || item.tags.length === 0) return false;
+  return item.tags.some(tag => normalizedTags.has(tag.trim().toLocaleLowerCase()));
 }
