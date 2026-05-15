@@ -253,6 +253,13 @@ const progressPercent = computed(() => {
 });
 
 const actionProgress = computed(() => progressPercent.value / 100);
+const hasPartialProgress = computed(() => {
+  if (props.habit.type !== 'count') {
+    return false;
+  }
+
+  return !props.dayState.isCompleted && !props.dayState.isMissed && (props.dayState.currentValue ?? 0) > 0;
+});
 
 const contextMenu = ref({
   visible: false,
@@ -484,7 +491,9 @@ function handleActionContextMenu(event: MouseEvent) {
     visible: true,
     x: event.clientX,
     y: event.clientY,
-    action: props.dayState.isCompleted || props.dayState.isMissed ? 'reset-record' : 'mark-missed',
+    action: props.dayState.isCompleted || props.dayState.isMissed || hasPartialProgress.value
+      ? 'reset-record'
+      : 'mark-missed',
   };
 }
 
