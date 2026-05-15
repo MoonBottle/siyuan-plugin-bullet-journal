@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
 import {
   createDetachedPomodoroWindowHost,
@@ -41,6 +41,10 @@ describe('detectDetachedPomodoroWindowSupport', () => {
 });
 
 describe('createDetachedPomodoroWindowHost', () => {
+  beforeEach(() => {
+    document.documentElement.removeAttribute('style');
+  });
+
   it('falls back to unavailable host when support detection fails', () => {
     const host = createDetachedPomodoroWindowHost({
       frontEnd: 'desktop-window',
@@ -54,6 +58,9 @@ describe('createDetachedPomodoroWindowHost', () => {
   });
 
   it('calls executeJavaScript when updating an existing detached window', () => {
+    document.documentElement.style.setProperty('--b3-theme-surface', '#ffffff');
+    document.documentElement.style.setProperty('--b3-theme-primary', '#3578e5');
+
     const loadURL = vi.fn();
     const executeJavaScript = vi.fn();
     const lingeringClose = vi.fn();
@@ -114,7 +121,10 @@ describe('createDetachedPomodoroWindowHost', () => {
     expect(setPosition).toHaveBeenCalledWith(1524, 972);
     expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('-webkit-app-region: drag')));
     expect(loadURL).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('-webkit-app-region: no-drag')));
+    expect(loadURL).not.toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('#f7f1e8')));
     expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('detached-floating-tomato'));
+    expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('--b3-theme-surface'));
+    expect(executeJavaScript).toHaveBeenCalledWith(expect.stringContaining('--b3-theme-primary'));
   });
 
   it('closes the window on destroy', () => {

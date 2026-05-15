@@ -75,6 +75,7 @@ const DETACHED_WINDOW_WIDTH = 372;
 const DETACHED_WINDOW_HEIGHT = 84;
 const DETACHED_WINDOW_MARGIN_RIGHT = 24;
 const DETACHED_WINDOW_MARGIN_BOTTOM = 24;
+const THEME_VARIABLE_PREFIX = '--b3-';
 
 export function detectDetachedPomodoroWindowSupport(
   input: DetachedPomodoroWindowSupportInput
@@ -169,6 +170,7 @@ export function createDetachedPomodoroWindowHost(
     return {
       className: host.className,
       innerHTML: host.innerHTML,
+      themeStyleText: collectSiyuanThemeStyleText(),
       state: {
         phase: state.phase,
         isPaused: state.isPaused,
@@ -275,6 +277,34 @@ function positionDetachedWindow(
   windowInstance.setPosition?.(x, y);
 }
 
+function collectSiyuanThemeStyleText(): string {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return '';
+  }
+
+  const computedStyle = window.getComputedStyle?.(document.documentElement);
+  if (!computedStyle) {
+    return '';
+  }
+
+  const declarations: string[] = [];
+  for (let index = 0; index < computedStyle.length; index += 1) {
+    const propertyName = computedStyle.item(index);
+    if (!propertyName.startsWith(THEME_VARIABLE_PREFIX)) {
+      continue;
+    }
+
+    const propertyValue = computedStyle.getPropertyValue(propertyName).trim();
+    if (!propertyValue) {
+      continue;
+    }
+
+    declarations.push(`${propertyName}: ${propertyValue};`);
+  }
+
+  return declarations.join(' ');
+}
+
 function buildDetachedWindowHtml(): string {
   return `<!doctype html>
 <html>
@@ -296,7 +326,7 @@ function buildDetachedWindowHtml(): string {
         min-height: 100vh;
         box-sizing: border-box;
         padding: 6px;
-        font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-family: var(--b3-font-family, "Inter", "PingFang SC", "Microsoft YaHei", sans-serif);
       }
       #${ROOT_ID} {
         display: block;
@@ -306,9 +336,9 @@ function buildDetachedWindowHtml(): string {
         width: 348px;
         min-height: 50px;
         border-radius: 999px;
-        background: var(--b3-theme-surface, #f7f1e8);
-        color: var(--b3-theme-on-surface, #6f6255);
-        border: 1px solid var(--b3-border-color, rgba(129, 110, 91, 0.18));
+        background: var(--b3-theme-surface);
+        color: var(--b3-theme-on-surface);
+        border: 1px solid var(--b3-border-color);
         overflow: hidden;
         user-select: none;
         touch-action: none;
@@ -334,7 +364,7 @@ function buildDetachedWindowHtml(): string {
         justify-content: center;
         width: 18px;
         height: 18px;
-        color: var(--b3-theme-primary, #d67a4d);
+        color: var(--b3-theme-primary);
         flex: 0 0 auto;
       }
       .floating-tomato-icon svg {
@@ -366,7 +396,7 @@ function buildDetachedWindowHtml(): string {
       }
       .floating-tomato-status {
         display: block;
-        color: var(--b3-theme-primary, #d67a4d);
+        color: var(--b3-theme-primary);
         font-size: 11px;
         font-weight: 700;
         white-space: nowrap;
@@ -375,7 +405,7 @@ function buildDetachedWindowHtml(): string {
         display: none;
         font-size: 12px;
         font-weight: 500;
-        color: var(--b3-theme-on-surface, #6f6255);
+        color: var(--b3-theme-on-surface);
         line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
@@ -387,7 +417,7 @@ function buildDetachedWindowHtml(): string {
       .floating-tomato-secondary {
         display: block;
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light, #9a8d81);
+        color: var(--b3-theme-on-surface-light);
         line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
@@ -407,8 +437,8 @@ function buildDetachedWindowHtml(): string {
         width: 24px;
         height: 24px;
         padding: 0;
-        color: var(--b3-theme-on-background, #6f6255);
-        background: var(--b3-theme-surface-lighter, rgba(129, 110, 91, 0.08));
+        color: var(--b3-theme-on-background);
+        background: var(--b3-theme-surface-lighter);
         cursor: pointer;
         display: inline-flex;
         align-items: center;
@@ -423,8 +453,12 @@ function buildDetachedWindowHtml(): string {
         display: none !important;
       }
       .floating-tomato-action--complete {
-        color: var(--b3-theme-primary, #d67a4d);
-        background: rgba(214, 122, 77, 0.12);
+        color: var(--b3-theme-primary);
+        background: color-mix(
+          in srgb,
+          var(--b3-theme-primary) 12%,
+          var(--b3-theme-surface) 88%
+        );
       }
       .floating-tomato-progress,
       .floating-tomato-progress-fill {
@@ -432,11 +466,11 @@ function buildDetachedWindowHtml(): string {
       }
       .floating-tomato-btn.is-break .floating-tomato-icon,
       .floating-tomato-btn.is-break .floating-tomato-status {
-        color: var(--b3-card-success-color, #4d8b63);
+        color: var(--b3-card-success-color);
       }
       .floating-tomato-btn.is-paused .floating-tomato-icon,
       .floating-tomato-btn.is-paused .floating-tomato-status {
-        color: var(--b3-card-warning-color, #c68a3c);
+        color: var(--b3-card-warning-color);
       }
       .sy-icon-tooltip {
         position: fixed;
@@ -503,6 +537,7 @@ function buildDetachedWindowHtml(): string {
         };
         window.${UPDATE_FN} = (payload) => {
           if (!root || !payload) return;
+          document.documentElement.style.cssText = payload.themeStyleText || '';
           currentState = payload.state || currentState;
           root.className = payload.className || '';
           root.innerHTML = payload.innerHTML || '';
@@ -549,6 +584,7 @@ function buildDetachedWindowHtml(): string {
 interface RenderedPayload {
   className: string;
   innerHTML: string;
+  themeStyleText: string;
   state: {
     phase: FloatingPomodoroViewState['phase'];
     isPaused: boolean;
