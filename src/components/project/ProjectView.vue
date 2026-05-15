@@ -174,7 +174,7 @@ function findItemById(project: Project | null, itemId: string): Item | null {
   max-height: 100%;
   overflow: hidden;
   padding: 16px;
-  background: var(--b3-theme-surface);
+  background: #fff;
   box-sizing: border-box;
 }
 
