@@ -146,6 +146,14 @@
           </span>
         </div>
 
+        <div v-if="itemTags.length" class="item-tags-row">
+          <span
+            v-for="tag in itemTags"
+            :key="tag"
+            class="item-tag-chip"
+          >#{{ tag }}</span>
+        </div>
+
         <div v-if="showActionRow && (((!isCompletedOrAbandoned) || hasReminder || hasRecurring))" class="item-actions-row">
           <TodoItemActionButtons
             :has-reminder="hasReminder"
@@ -236,6 +244,7 @@ const task = computed<Task | null>(() => props.item.task || null);
 const taskLinks = computed(() => task.value?.links || []);
 const itemLinks = computed(() => props.item.links || []);
 const itemContent = computed(() => props.item.content || '');
+const itemTags = computed(() => (props.item.tags ?? []).filter(Boolean));
 const focusPlanDisplay = computed(() => formatFocusPlanDisplay(props.item.focusPlan));
 const actualFocusMinutes = computed(() => calculateTotalFocusMinutes(props.item.pomodoros || []));
 const focusPlanReview = computed(() => {
@@ -563,6 +572,25 @@ async function handleLinkClick(link: Link) {
   gap: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--b3-border-color);
+}
+
+.item-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.item-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--b3-theme-primary-lightest);
+  color: var(--b3-theme-primary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 .item-actions-row {
