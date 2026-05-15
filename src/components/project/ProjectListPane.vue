@@ -54,7 +54,6 @@ defineEmits<{
 .project-list-pane {
   display: flex;
   flex-direction: column;
-  width: 100%;
   min-width: 0;
   padding: 12px;
   background: var(--b3-theme-background);

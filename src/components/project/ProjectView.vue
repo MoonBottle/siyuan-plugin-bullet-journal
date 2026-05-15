@@ -167,7 +167,7 @@ function findItemById(project: Project | null, itemId: string): Item | null {
 
 .project-workbench {
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(200px, 1fr) minmax(200px, 280px);
+  grid-template-columns: minmax(180px, 220px) minmax(240px, 1fr) minmax(220px, 280px);
   gap: 16px;
   height: 100%;
   min-height: 0;
