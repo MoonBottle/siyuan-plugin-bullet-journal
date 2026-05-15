@@ -176,9 +176,5 @@ async function openTaskDocument() {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--b3-theme-surface-lighter);
-  border-radius: 10px;
-  background: var(--b3-theme-surface);
-  overflow: hidden;
 }
 </style>
