@@ -1,147 +1,147 @@
-# Project View Three-Pane Workbench Design
+# 项目视图三栏工作台设计
 
-## Context
+## 背景
 
-The current desktop Project tab uses `ProjectTab.vue` plus `ProjectView.vue` to show projects as a table or card grid. Clicking a project opens the SiYuan document directly. This is useful for overview scanning, but it does not support staying inside the plugin to inspect a project's task hierarchy and item details.
+当前桌面端项目页由 `ProjectTab.vue` 和 `ProjectView.vue` 组成，以表格或卡片方式展示项目。点击项目会直接打开思源文档。这个模式适合快速浏览项目列表，但不方便在插件内部连续查看项目的任务层级和事项详情。
 
-The new Project tab should become a three-pane project workbench:
+新的项目页应改为三栏项目工作台：
 
-- Left pane: project selection.
-- Middle pane: task and item tree for the selected project.
-- Right pane: selected task or item details.
+- 左栏：项目选择。
+- 中栏：当前项目的任务和事项树。
+- 右栏：当前选中的任务或事项详情。
 
-The design should reuse established interaction patterns from Gantt and the focus workbench. Item detail rendering should reuse the existing dialog detail content and action bar rather than duplicating item metadata and operations.
+设计应复用甘特图和专注工作台里已经验证过的交互模式。事项详情应复用现有详情内容和操作条，避免重复实现事项元信息和操作逻辑。
 
-## Goals
+## 目标
 
-- Replace the current Project tab's table/card-first experience with a default three-pane workbench.
-- Make `L1`, `L2`, and `L3` task hierarchy visible in the middle tree.
-- Show all tasks for the selected project, with task nodes expanded by default.
-- Show task items under their owning task nodes as leaf rows.
-- Reuse `ItemDetailContent.vue` for embedded item detail content.
-- Reuse `ItemActionBar.vue` for common item operations.
-- Keep project-level behavior simple: selecting a project populates the tree and clears the right detail pane.
+- 用默认三栏工作台替换当前项目页的表格/卡片主体验。
+- 在中栏清晰体现 `L1`、`L2`、`L3` 任务层级。
+- 选中项目后展示该项目下所有任务，任务节点默认展开。
+- 在所属任务节点下显示该任务的事项，事项作为叶子行。
+- 复用 `ItemDetailContent.vue` 作为右栏事项详情主体。
+- 复用 `ItemActionBar.vue` 作为右栏事项常用操作条。
+- 保持项目层交互简单：选择项目只刷新中栏，并清空右栏任务/事项选择。
 
-## Non-Goals
+## 非目标
 
-- Do not build a new project dashboard in the right pane.
-- Do not embed `ItemDetailDialog.vue` directly into the right pane; it is a dialog shell with footer and close semantics.
-- Do not replace Gantt, Todo, Calendar, or focus workbench item operations.
-- Do not add drag-and-drop task reordering or document editing in this design.
-- Do not change the parser or task data model unless implementation discovers a display-only helper is insufficient.
+- 不在右栏做新的项目仪表盘。
+- 不直接把 `ItemDetailDialog.vue` 嵌入右栏；它是弹窗外壳，包含 footer 和关闭语义。
+- 不替换甘特图、待办、日历或专注工作台已有事项操作。
+- 不增加拖拽排序任务或直接编辑文档内容。
+- 除非实现时发现纯展示 helper 不够用，否则不改 parser 或任务数据模型。
 
-## User Experience
+## 用户体验
 
-### Top Bar
+### 顶部工具栏
 
-`ProjectTab.vue` keeps the existing group selector, search input, and refresh button. The table/card view toggle is removed because the Project tab becomes the three-pane view by default.
+`ProjectTab.vue` 保留现有分组选择、搜索输入框和刷新按钮。移除表格/卡片视图切换，因为项目页默认就是三栏工作台。
 
-Search filters the left project list by project name, description, and path. Group filtering remains unchanged.
+搜索仍按项目名称、描述和路径过滤左侧项目列表。分组过滤逻辑保持不变。
 
-### Left Pane: Projects
+### 左栏：项目列表
 
-The left pane lists filtered projects. Each project row shows:
+左栏展示过滤后的项目列表。每个项目行显示：
 
-- Project name.
-- Path or description as secondary text.
-- Task count and item count.
-- Active selection state.
+- 项目名称。
+- 路径或描述摘要。
+- 任务数和事项数。
+- 当前选中状态。
 
-When the project list first loads, the first visible project is selected automatically. Selecting a different project updates the middle tree and clears selected task/item state, so the right pane returns to its empty selection state.
+项目列表首次加载时，默认选中第一个可见项目。切换项目后，中栏切换到新项目的任务树，右栏清空为“选择任务或事项”的空状态。
 
-If there are no projects, the existing project empty-state guidance is shown in the workbench area.
+如果没有项目，工作台区域显示现有的项目空状态引导。
 
-### Middle Pane: Task And Item Tree
+### 中栏：任务和事项树
 
-The middle pane displays the selected project's tasks and items as a hierarchy.
+中栏以层级树展示当前项目的任务和事项。
 
-Task hierarchy rules:
+任务层级规则：
 
-- `L1` tasks are first-level task nodes.
-- `L2` tasks are nested under the nearest preceding `L1` task.
-- `L3` tasks are nested under the nearest preceding `L2` task.
-- If an `L3` task has no preceding `L2` but has a preceding `L1`, it is nested under that `L1`.
-- If a task has no valid preceding parent, it is shown as a top-level task node while preserving its level badge.
+- `L1` 任务是一级任务节点。
+- `L2` 任务挂在最近的前序 `L1` 任务下面。
+- `L3` 任务挂在最近的前序 `L2` 任务下面。
+- 如果 `L3` 前面没有可用的 `L2`，但有前序 `L1`，则挂在最近的 `L1` 下面。
+- 如果任务找不到有效父级，则作为顶层任务节点展示，同时保留自身层级徽标。
 
-Each task node shows:
+每个任务节点显示：
 
-- Expand/collapse affordance.
-- Task name.
-- `L1` / `L2` / `L3` badge.
-- Item completion summary.
-- Optional link indicator when links exist.
+- 展开/折叠入口。
+- 任务名称。
+- `L1` / `L2` / `L3` 徽标。
+- 事项完成进度摘要。
+- 有链接时显示链接提示。
 
-Each task node is expanded by default. The user can collapse individual task nodes. Items belonging directly to a task are displayed immediately under that task, followed by nested child tasks. This ordering keeps each task's own actionable items close to its title while preserving the `L1` / `L2` / `L3` hierarchy.
+任务节点默认展开，用户可以单独折叠每个任务。属于某个任务的事项应立即显示在该任务下面，然后再显示该任务的子任务。这样可以让任务自己的可执行事项靠近任务标题，同时保留 `L1` / `L2` / `L3` 层级。
 
-Each item row shows:
+每个事项行显示：
 
-- Status indicator.
-- Item content.
-- Date/time summary.
-- Optional priority marker.
-- Optional focus-plan and actual-focus summary when available.
+- 状态指示。
+- 事项内容。
+- 日期/时间摘要。
+- 优先级标记。
+- 有预计专注或实际专注时显示对应摘要。
 
-Clicking a task selects that task and shows task detail in the right pane. Clicking an item selects that item and shows item detail in the right pane. The selected row is visually highlighted.
+点击任务后，右栏显示任务详情。点击事项后，右栏显示事项详情。当前选中行需要有明确高亮。
 
-### Right Pane: Details
+### 右栏：详情
 
-The right pane has three states.
+右栏有三种状态。
 
-Empty state:
+空状态：
 
-- Shows a concise prompt to select a task or item.
-- Does not show project analytics or project dashboard cards.
+- 简短提示用户选择任务或事项。
+- 不显示项目统计卡片或项目仪表盘。
 
-Task detail:
+任务详情：
 
-- Lightweight read-only detail.
-- Shows project name, task name, task level, links, item counts, completed count, pending count, abandoned count, and an open-document action.
-- Does not expose full edit controls.
+- 轻量只读详情。
+- 显示项目名、任务名、任务层级、链接、事项总数、已完成数、待办数、废弃数，以及打开文档入口。
+- 不提供完整编辑控件。
 
-Item detail:
+事项详情：
 
-- Uses `ItemDetailContent.vue` as the main content.
-- Uses `ItemActionBar.vue` as the common action row.
-- Should visually follow the focus workbench's item detail card pattern: project card, task card, item card, metadata, links, then actions.
-- Should support open document, complete, abandon, migrate date, focus plan, calendar, and start focus through the existing action bar behavior.
+- 使用 `ItemDetailContent.vue` 作为主要内容。
+- 使用 `ItemActionBar.vue` 作为常用操作条。
+- 视觉结构参考专注工作台里的事项详情卡片：项目卡、任务卡、事项卡、元信息、链接和操作区。
+- 通过现有操作条支持打开文档、完成、废弃、迁移日期、设置专注计划、打开日历、开始专注等操作。
 
-If `ItemDetailContent.vue` needs embedded layout adaptation, add a small prop such as `embedded` or apply a parent class with scoped deep styles. The behavior should stay shared with existing dialog usage.
+如果 `ItemDetailContent.vue` 需要适配嵌入式右栏布局，可以增加一个小 prop，例如 `embedded`，或通过父级 class 配合 scoped deep 样式处理。行为应继续与现有弹窗详情保持共享。
 
-## Component Structure
+## 组件结构
 
-Preferred structure:
+推荐结构：
 
 - `ProjectTab.vue`
-  - Owns group filtering, project search, refresh, and settings refresh behavior.
-  - Passes filtered projects to the project workbench.
+  - 负责分组过滤、项目搜索、刷新和设置刷新行为。
+  - 将过滤后的项目传给项目工作台。
 - `ProjectView.vue`
-  - Becomes the three-pane layout container.
-  - Owns selected project, selected task, selected item, expanded task IDs, and derived tree state.
+  - 改为三栏布局容器。
+  - 维护当前项目、当前任务、当前事项、展开任务 ID、派生树结构。
 - `ProjectListPane.vue`
-  - Renders the left project list.
+  - 渲染左侧项目列表。
 - `ProjectTreePane.vue`
-  - Renders the middle task/item tree.
+  - 渲染中间任务/事项树。
 - `ProjectDetailPane.vue`
-  - Renders empty state, task detail, or item detail.
+  - 渲染空状态、任务详情或事项详情。
 
-This split is preferred because the old `ProjectView.vue` table/card implementation is already doing presentation work, and the new design has three distinct responsibilities. If implementation shows the files remain very small, the panes can initially live in `ProjectView.vue`, but separate pane components are the target design.
+推荐拆分组件，因为新的三栏视图有三个清晰职责，继续把所有表现逻辑塞在旧 `ProjectView.vue` 中会让文件变重。如果实现时发现代码量很小，可以先放在 `ProjectView.vue` 内，但目标设计仍是拆成独立 pane 组件。
 
-## Data Flow
+## 数据流
 
-Input data remains `Project[]` from `projectStore.getFilteredProjects(groupId)`.
+输入数据保持为 `projectStore.getFilteredProjects(groupId)` 返回的 `Project[]`。
 
-Derived state in `ProjectView.vue`:
+`ProjectView.vue` 内部维护派生状态：
 
-- `selectedProjectId`.
-- `selectedTaskId`.
-- `selectedItemId`.
-- `expandedTaskIds`.
-- `selectedProject`.
-- `taskTree`.
-- `selectedTask`.
-- `selectedItem`.
+- `selectedProjectId`
+- `selectedTaskId`
+- `selectedItemId`
+- `expandedTaskIds`
+- `selectedProject`
+- `taskTree`
+- `selectedTask`
+- `selectedItem`
 
-Task tree construction is display-only and should not mutate `project.tasks`. A helper can build tree nodes:
+任务树构建只用于展示，不应修改 `project.tasks`。可以增加 helper 构建树节点：
 
 ```ts
 interface ProjectTaskTreeNode {
@@ -153,20 +153,20 @@ interface ProjectTaskTreeNode {
 }
 ```
 
-Items should keep their existing runtime references to `project` and `task` when present, because `ItemDetailContent.vue` and `ItemActionBar.vue` depend on the normal item shape used elsewhere.
+事项应继续保留已有运行时引用，例如 `project` 和 `task`。`ItemDetailContent.vue` 和 `ItemActionBar.vue` 依赖其他视图中已经使用的标准事项形态。
 
-## Edge Cases
+## 边界情况
 
-- No projects: show existing empty-state guidance.
-- Selected project disappears after filtering or refresh: select the first visible project and clear detail selection.
-- Selected task/item disappears after refresh: clear detail selection.
-- Project has no tasks: middle pane shows a project-specific empty tree state.
-- Task has no items: task still appears, with a zero-item summary.
-- Invalid task hierarchy: preserve display and mark the task visually through indentation/badge rather than hiding it.
+- 没有项目：显示现有项目空状态引导。
+- 过滤或刷新后当前项目消失：选中第一个可见项目，并清空右栏选择。
+- 刷新后当前任务或事项消失：清空右栏选择。
+- 项目没有任务：中栏显示该项目下暂无任务的空状态。
+- 任务没有事项：任务仍展示，并显示零事项摘要。
+- 任务层级异常：保留展示，不隐藏任务；通过缩进和层级徽标表达它的当前位置。
 
-## Styling
+## 样式
 
-The layout should use SiYuan theme variables:
+布局应使用思源主题变量：
 
 - `var(--b3-theme-background)`
 - `var(--b3-theme-surface)`
@@ -175,30 +175,30 @@ The layout should use SiYuan theme variables:
 - `var(--b3-theme-on-surface)`
 - `var(--b3-theme-primary)`
 
-Pane widths should be stable:
+三栏宽度需要稳定：
 
-- Left pane: fixed or clamped project list width.
-- Middle pane: flexible tree area.
-- Right pane: fixed or clamped detail width.
+- 左栏：固定或 clamp 后的项目列表宽度。
+- 中栏：可伸缩的任务树区域。
+- 右栏：固定或 clamp 后的详情宽度。
 
-The middle tree must make hierarchy visually obvious with indentation, connector lines or nested spacing, and level badges. It should avoid oversized cards because this is a dense project workbench.
+中栏必须通过缩进、连接线或嵌套间距、层级徽标清晰表达层级关系。项目工作台偏信息密集，不应使用过大的卡片式布局。
 
-## Testing
+## 测试
 
-Add focused component tests for the desktop project view:
+为桌面项目视图增加聚焦组件测试：
 
-- Renders the three-pane layout when projects exist.
-- Selects the first project by default.
-- Shows the selected project's task tree.
-- Builds `L1` / `L2` / `L3` hierarchy according to preceding task levels.
-- Expands task nodes by default.
-- Shows a task detail pane when a task is clicked.
-- Shows embedded item detail and `ItemActionBar` when an item is clicked.
-- Clears detail selection when switching projects.
-- Handles no projects and project-without-tasks states.
+- 有项目时渲染三栏布局。
+- 默认选中第一个项目。
+- 展示当前项目的任务树。
+- 按前序任务层级构建 `L1` / `L2` / `L3` 层级。
+- 任务节点默认展开。
+- 点击任务后显示任务详情。
+- 点击事项后显示嵌入式 `ItemDetailContent` 和 `ItemActionBar`。
+- 切换项目后清空右栏选择。
+- 覆盖无项目、项目无任务状态。
 
-Run the targeted Vitest file after implementation. Run broader tests if shared components such as `ItemDetailContent.vue` or `ItemActionBar.vue` are changed.
+实现后运行对应 Vitest 文件。如果修改了 `ItemDetailContent.vue` 或 `ItemActionBar.vue` 等共享组件，再运行更广的相关测试。
 
-## Implementation Notes
+## 实现说明
 
-This document is a design spec only. The next step is to create an implementation plan before editing production code.
+本文档只定义设计规格。下一步应先编写实现计划，再进入生产代码修改。
