@@ -182,6 +182,7 @@ function toggleTag(tag: string) {
   emit('update:selectedTags', next);
   emit('update:tagQuery', '');
   highlightedIndex.value = -1;
+  closeTagDropdown();
 }
 
 function removeTag(tag: string) {
@@ -368,9 +369,9 @@ function handleSelectItem(itemId: string) {
   min-height: 32px;
   box-sizing: border-box;
   padding: 4px 8px;
-  background: var(--b3-theme-surface);
-  border-radius: 6px;
-  border: 1px solid var(--b3-theme-surface-lighter);
+  background: var(--b3-theme-background);
+  border-radius: var(--b3-border-radius);
+  border: 1px solid var(--b3-border-color);
 
   &:focus-within,
   &--open {
