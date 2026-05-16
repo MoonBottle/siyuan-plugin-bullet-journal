@@ -236,6 +236,10 @@ export class LineParser {
     // 提取内容（在规范化 line 上移除所有日期时间表达式、状态标签和任务列表标记）
     // 使用规范化 line 以确保 fullMatch 能正确匹配（中文逗号已转为英文逗号）
     let content = normalizedLineForDates;
+
+    // 移除行首 Markdown 标题标记（# ... ######）
+    content = content.replace(/^#{1,6}\s+/, '');
+
     for (const expr of dateTimeExpressions) {
       // 直接移除 fullMatch（使用字符串替换，避免正则特殊字符问题）
       content = content.split(expr.fullMatch).join('');
