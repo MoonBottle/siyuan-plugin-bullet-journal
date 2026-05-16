@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/api', () => ({
-  getBlockKramdown: vi.fn().mockResolvedValue('- [ ] 任务\n{: id="abc"}'),
+  getBlockByID: vi.fn().mockResolvedValue({ id: 'abc', type: 'NodeParagraph' }),
+  getBlockKramdown: vi.fn().mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' }),
   updateBlock: vi.fn().mockResolvedValue([]),
 }));
 

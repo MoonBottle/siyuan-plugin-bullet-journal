@@ -21,7 +21,8 @@ import type { CalendarEvent } from '@/types/models';
 import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { computeTooltipPosition } from '@/utils/tooltipPosition';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
-import { updateBlockContent, updateBlockDateTime, openDocumentAtLine, updateBlockPriority } from '@/utils/fileUtils';
+import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import { showPrioritySettingDialog } from '@/utils/dialog';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
@@ -350,7 +351,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       },
       onSetPriority: (priority: PriorityLevel | undefined) => {
         if (!item.blockId) return;
-        updateBlockPriority(item.blockId, priority);
+        writeBlock({ blockId: item.blockId }, { type: 'setPriority', priority });
       }
     },
     { showCalendarMenu: false, isFocusing: pomodoroStore.isFocusing }

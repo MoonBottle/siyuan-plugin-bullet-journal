@@ -356,7 +356,8 @@ import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/r
 import { useSettingsStore } from '@/stores';
 import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue';
 import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue';
-import { updateBlockDateTime, updateBlockPriority, updateBlockContent } from '@/utils/fileUtils';
+import { updateBlockDateTime, updateBlockContent } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
 import MobileConfirmDrawer from '../confirm/MobileConfirmDrawer.vue';
 import { TimeSettingDrawer } from '@/mobile/components/time-picker';
@@ -810,7 +811,10 @@ const onPriorityChange = async (newPriority: PriorityLevel | undefined) => {
   
   try {
     // Use updateBlockPriority to properly update the priority
-    const success = await updateBlockPriority(props.item.blockId, newPriority);
+    const success = await writeBlock(
+      { blockId: props.item.blockId },
+      { type: 'setPriority', priority: newPriority },
+    );
     
     if (success) {
       emit('refresh');

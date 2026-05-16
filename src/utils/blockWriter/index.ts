@@ -1,5 +1,6 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
 import { writeViaApi } from './apiTransport';
+import { writeViaProtyle } from './protyleTransport';
 
 export type {
   BatchBlockPatch,
@@ -16,9 +17,7 @@ export type {
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   if (context.protyle && context.nodeElement) {
-    const { writeViaProtyle } = await import('./protyleTransport');
-    const ok = await writeViaProtyle(context, patches);
-    if (ok) return true;
+    await writeViaProtyle(context, patches);
   }
   return writeViaApi(context.blockId, patches);
 }

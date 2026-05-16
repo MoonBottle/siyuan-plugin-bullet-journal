@@ -3,95 +3,48 @@ import { describe, expect, it } from 'vitest';
 import { writeViaProtyle } from '@/utils/blockWriter/protyleTransport';
 
 describe('protyleTransport', () => {
-  function createMockProtyle() {
+  function createDiv() {
     const div = document.createElement('div');
     div.setAttribute('data-node-id', 'block-123');
     div.textContent = '任务 /bwtest 测试内容';
-
-    const range = document.createRange();
-    const textNode = div.firstChild!;
-    range.setStart(textNode, 6);
-    range.collapse(true);
-
-    const doOps: any[] = [];
-    const undoOps: any[] = [];
-
-    return {
-      protyle: {
-        transaction: (d: any[], u: any[]) => {
-          doOps.push(...d);
-          undoOps.push(...u);
-        },
-        lute: {
-          SpinBlockDOM(html: string) {
-            return html.replace(
-              '<div',
-              '<div data-type="NodeParagraph"',
-            );
-          },
-        },
-        wysiwyg: {
-          element: document.createElement('div'),
-        },
-      },
-      div,
-      range,
-      doOps,
-      undoOps,
-    };
+    return div;
   }
 
-  it('removes slash command text from DOM and commits transaction', async () => {
-    const { protyle, div, range, doOps, undoOps } = createMockProtyle();
+  function createSlashRange(div: HTMLDivElement) {
+    const range = document.createRange();
+    const textNode = div.firstChild!;
+    range.setStart(textNode, 3);
+    range.setEnd(textNode, 3);
+    return range;
+  }
+
+  it('removes slash command text from DOM', async () => {
+    const div = createDiv();
+    const range = createSlashRange(div);
     const context = {
       blockId: 'block-123',
-      protyle,
+      protyle: {} as any,
       nodeElement: div,
       slashRange: range,
       slashStartOffset: 3,
     };
 
-    const oldHTML = div.outerHTML;
     const result = await writeViaProtyle(context, {
       type: 'removeSlashCommands',
       filters: ['bwtest'],
-      suffix: '#bw-protyle',
+      suffix: '',
     });
 
     expect(result).toBe(true);
-    expect(doOps.length).toBe(1);
-    expect(undoOps.length).toBe(1);
-    expect(doOps[0].id).toBe('block-123');
-    expect(doOps[0].action).toBe('update');
+    expect(div.textContent).not.toContain('/bwtest');
     expect(div.textContent).toContain('测试内容');
-    expect(div.textContent).not.toContain('/bwtest');
   });
 
-  it('appends suffix after slash removal', async () => {
-    const { protyle, div, range } = createMockProtyle();
+  it('returns false for non-slash non-status patches', async () => {
+    const div = createDiv();
     const context = {
       blockId: 'block-123',
-      protyle,
-      nodeElement: div,
-      slashRange: range,
-      slashStartOffset: 3,
-    };
-
-    await writeViaProtyle(context, {
-      type: 'removeSlashCommands',
-      filters: ['bwtest'],
-      suffix: '#done',
-    });
-
-    expect(div.textContent).toContain('#done');
-    expect(div.textContent).not.toContain('/bwtest');
-  });
-
-  it('returns false for non-slash patches', async () => {
-    const { protyle, div } = createMockProtyle();
-    const context = {
-      blockId: 'block-123',
-      protyle,
+      protyle: {} as any,
       nodeElement: div,
     };
 
@@ -103,6 +56,49 @@ describe('protyleTransport', () => {
     expect(result).toBe(false);
   });
 
+  it('toggles task checkbox DOM for setStatus', async () => {
+    const li = document.createElement('div');
+    li.classList.add('li');
+    li.setAttribute('data-type', 'NodeListItem');
+    li.setAttribute('data-subtype', 't');
+    li.setAttribute('data-node-id', 'task-1');
+
+    const taskAction = document.createElement('span');
+    taskAction.classList.add('protyle-action--task');
+    const svg = document.createElement('svg');
+    const useEl = document.createElement('use');
+    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconUncheck');
+    svg.appendChild(useEl);
+    taskAction.appendChild(svg);
+    li.appendChild(taskAction);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('p');
+    contentDiv.setAttribute('data-node-id', 'child-1');
+    contentDiv.textContent = '任务内容';
+    li.appendChild(contentDiv);
+
+    document.body.appendChild(li);
+
+    const context = {
+      blockId: 'child-1',
+      protyle: {} as any,
+      nodeElement: contentDiv,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setStatus',
+      status: 'completed',
+    });
+
+    expect(result).toBe(true);
+    expect(li.classList.contains('protyle-task--done')).toBe(true);
+    expect(li.getAttribute('data-task')).toBe('X');
+    expect(useEl.getAttributeNS('http://www.w3.org/1999/xlink', 'href')).toBe('#iconCheck');
+
+    document.body.removeChild(li);
+  });
+
   it('returns false without protyle', async () => {
     const result = await writeViaProtyle(
       { blockId: 'block-123' },
@@ -110,5 +106,84 @@ describe('protyleTransport', () => {
     );
 
     expect(result).toBe(false);
+  });
+
+  it('reverts task checkbox for pending status', async () => {
+    const li = document.createElement('div');
+    li.classList.add('li', 'protyle-task--done');
+    li.setAttribute('data-type', 'NodeListItem');
+    li.setAttribute('data-subtype', 't');
+    li.setAttribute('data-task', 'X');
+
+    const taskAction = document.createElement('span');
+    taskAction.classList.add('protyle-action--task');
+    const svg = document.createElement('svg');
+    const useEl = document.createElement('use');
+    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconCheck');
+    svg.appendChild(useEl);
+    taskAction.appendChild(svg);
+    li.appendChild(taskAction);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('p');
+    contentDiv.setAttribute('data-node-id', 'child-1');
+    li.appendChild(contentDiv);
+
+    document.body.appendChild(li);
+
+    const context = {
+      blockId: 'child-1',
+      protyle: {} as any,
+      nodeElement: contentDiv,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setStatus',
+      status: 'pending',
+    });
+
+    expect(result).toBe(true);
+    expect(li.classList.contains('protyle-task--done')).toBe(false);
+    expect(li.getAttribute('data-task')).toBe(' ');
+
+    document.body.removeChild(li);
+  });
+
+  it('restores cursor position after slash deletion', async () => {
+    const div = createDiv();
+    div.setAttribute('contenteditable', 'true');
+    document.body.appendChild(div);
+
+    const textNode = div.firstChild!;
+    const range = document.createRange();
+    range.setStart(textNode, 10);
+    range.collapse(true);
+
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const context = {
+      blockId: 'block-123',
+      protyle: {} as any,
+      nodeElement: div,
+      slashRange: range,
+      slashStartOffset: 3,
+    };
+
+    await writeViaProtyle(context, {
+      type: 'removeSlashCommands',
+      filters: ['bwtest'],
+      suffix: '',
+    });
+
+    const newSelection = window.getSelection()!;
+    expect(newSelection.rangeCount).toBeGreaterThan(0);
+    const newRange = newSelection.getRangeAt(0);
+    expect(newRange.collapsed).toBe(true);
+    expect(newRange.startContainer).toBe(textNode);
+    expect(newRange.startOffset).toBeLessThanOrEqual((textNode.textContent ?? '').length);
+
+    document.body.removeChild(div);
   });
 });

@@ -38,7 +38,18 @@ export function getActiveSlashRange(): ActiveSlashRange | null {
   };
 }
 
-export function deleteSlashRangeText(range: Range, slashStartOffset: number): void {
+export function deleteSlashRangeText(range: Range, filter: string, slashStartOffset: number): void {
+  const text = range.startContainer.textContent ?? '';
+  const actualSlashIdx = text.lastIndexOf('/');
+  if (actualSlashIdx === -1 || actualSlashIdx !== slashStartOffset) {
+    const offset = text.lastIndexOf(`/${filter}`);
+    if (offset === -1) return;
+    range.setStart(range.startContainer, offset);
+    range.setEnd(range.startContainer, offset + filter.length + 1);
+    range.deleteContents();
+    return;
+  }
   range.setStart(range.startContainer, slashStartOffset);
+  range.setEnd(range.startContainer, slashStartOffset + filter.length + 1);
   range.deleteContents();
 }

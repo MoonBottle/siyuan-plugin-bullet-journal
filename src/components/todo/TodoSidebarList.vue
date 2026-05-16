@@ -804,7 +804,7 @@ import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip, showFocusPlanDialog } from '@/utils/dialog';
-import { updateBlockPriority } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import { usePlugin } from '@/main';
@@ -1494,7 +1494,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       onShowCalendar: () => openCalendar(item),
       onSetPriority: (priority: PriorityLevel | undefined) => {
         if (!item.blockId) return;
-        updateBlockPriority(item.blockId, priority).then(success => {
+        writeBlock({ blockId: item.blockId }, { type: 'setPriority', priority }).then(success => {
           if (success) {
             item.priority = priority;
           }

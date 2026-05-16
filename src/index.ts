@@ -107,11 +107,7 @@ import {
   initializeChinaWorkdayCalendar,
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService";
-
-if (import.meta.env.DEV) {
-  var DEV_writeBlock: typeof import('@/utils/blockWriter').writeBlock | undefined;
-  var DEV_getBlockIdFromRange: typeof import('@/utils/itemBlockUtils').getBlockIdFromRange | undefined;
-}
+import { writeBlock } from '@/utils/blockWriter';
 import { CleanupManager } from "@/utils/cleanupManager";
 import { isForwardProxyAvailable } from "@/services/clawBotForwardProxy";
 import {
@@ -1721,41 +1717,31 @@ export default class TaskAssistantPlugin extends Plugin {
           ],
         });
 
-        if (import.meta.env.DEV) {
-          menu.addItem({
-            icon: "iconTools",
-            label: "BlockWriter API Test",
-            click: async () => {
-              if (!DEV_writeBlock) {
-                const mod = await import('@/utils/blockWriter');
-                DEV_writeBlock = mod.writeBlock;
-              }
-              if (!DEV_getBlockIdFromRange) {
-                const mod = await import('@/utils/itemBlockUtils');
-                DEV_getBlockIdFromRange = mod.getBlockIdFromRange;
-              }
-              const selection = window.getSelection();
-              if (!selection || selection.rangeCount === 0) {
-                showMessage('BlockWriter: no selection', 2000, 'error');
-                return;
-              }
-              const blockId = DEV_getBlockIdFromRange(selection.getRangeAt(0));
-              if (!blockId) {
-                showMessage('BlockWriter: no block found at selection', 2000, 'error');
-                return;
-              }
-              const success = await DEV_writeBlock(
-                { blockId },
-                { type: 'setPriority', priority: 'high' },
-              );
-              showMessage(
-                success ? 'BlockWriter API test success' : 'BlockWriter API test failed',
-                2000,
-                success ? 'info' : 'error',
-              );
-            },
-          });
-        }
+        menu.addItem({
+          icon: "iconTools",
+          label: "BlockWriter API Test",
+          click: async () => {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) {
+              showMessage('BlockWriter: no selection', 2000, 'error');
+              return;
+            }
+            const blockId = getBlockIdFromRange(selection.getRangeAt(0));
+            if (!blockId) {
+              showMessage('BlockWriter: no block found at selection', 2000, 'error');
+              return;
+            }
+            const success = await writeBlock(
+              { blockId },
+              { type: 'setPriority', priority: 'high' },
+            );
+            showMessage(
+              success ? 'BlockWriter API test success' : 'BlockWriter API test failed',
+              2000,
+              success ? 'info' : 'error',
+            );
+          },
+        });
 
         menu.open(resolveMenuPosition(event));
       },

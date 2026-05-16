@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/api', () => ({
-  getBlockKramdown: vi.fn().mockResolvedValue('- [ ] 任务\n{: id="abc"}'),
+  getBlockByID: vi.fn().mockResolvedValue({ id: 'abc', type: 'NodeParagraph' }),
+  getBlockKramdown: vi.fn().mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' }),
   updateBlock: vi.fn().mockResolvedValue([]),
 }));
 
-import { getBlockKramdown, updateBlock } from '@/api';
+import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
 import { writeViaApi } from '@/utils/blockWriter/apiTransport';
 
 describe('apiTransport', () => {
   it('writes setStatus via API', async () => {
-    vi.mocked(getBlockKramdown).mockResolvedValue('- [ ] 任务\n{: id="abc"}');
+    vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' } as any);
     vi.mocked(updateBlock).mockResolvedValue([]);
 
     const result = await writeViaApi('block123', { type: 'setStatus', status: 'completed' });
@@ -24,7 +25,7 @@ describe('apiTransport', () => {
   });
 
   it('writes setPriority via API', async () => {
-    vi.mocked(getBlockKramdown).mockResolvedValue('任务\n{: id="abc"}');
+    vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '任务\n{: id="abc"}' } as any);
     vi.mocked(updateBlock).mockResolvedValue([]);
 
     const result = await writeViaApi('block123', { type: 'setPriority', priority: 'high' });
@@ -38,7 +39,7 @@ describe('apiTransport', () => {
   });
 
   it('handles API failure gracefully', async () => {
-    vi.mocked(getBlockKramdown).mockResolvedValue('- [ ] 任务\n{: id="abc"}');
+    vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' } as any);
     vi.mocked(updateBlock).mockRejectedValue(new Error('API error'));
 
     const result = await writeViaApi('block123', { type: 'setStatus', status: 'completed' });
@@ -47,7 +48,7 @@ describe('apiTransport', () => {
   });
 
   it('writes batch patches via API', async () => {
-    vi.mocked(getBlockKramdown).mockResolvedValue('任务 /p=高的内容\n{: id="abc"}');
+    vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '任务 /p=高的内容\n{: id="abc"}' } as any);
     vi.mocked(updateBlock).mockResolvedValue([]);
 
     const result = await writeViaApi('block123', [
