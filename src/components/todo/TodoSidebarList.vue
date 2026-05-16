@@ -802,7 +802,7 @@ import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import Card from '@/components/common/Card.vue';
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
-import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils';
 import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip, showFocusPlanDialog } from '@/utils/dialog';
 import { writeBlock } from '@/utils/blockWriter';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
@@ -961,9 +961,25 @@ const toggleCollapseAll = () => {
 
 defineExpose({ collapseAll, expandAll, toggleCollapseAll, allCollapsed });
 
-// 根据状态获取标签（使用 i18n）
-const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  return t('statusTag')[status] || '';
+const buildDatePatch = (item: Item, targetDate: string) => {
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime,
+    }] : []),
+  ];
+
+  return {
+    type: 'addDate' as const,
+    date: targetDate,
+    startTime: item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+    endTime: item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+    allDay: !item.startDateTime,
+    originalDate: item.date,
+    siblingItems: completeSiblingItems,
+  };
 };
 
 // 获取今天的日期字符串（基于 store 的 currentDate）
@@ -1289,9 +1305,7 @@ const handleDone = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    // 标记事项完成
-    const tag = getStatusTag('completed');
-    await updateBlockContent(item.blockId, tag);
+    await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'completed' });
 
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
     // 避免重复调用 createNextOccurrence
@@ -1310,30 +1324,8 @@ const handleMigrate = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    // 计算明天的日期
     const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
-
-    // 构建完整的 siblingItems（包含当前日期）
-    const completeSiblingItems = [
-      ...(item.siblingItems || []),
-      ...(item.date ? [{
-        date: item.date,
-        startDateTime: item.startDateTime,
-        endDateTime: item.endDateTime
-      }] : [])
-    ];
-
-    // 使用 updateBlockDateTime 更新日期，保留原时间
-    const success = await updateBlockDateTime(
-      item.blockId,
-      tomorrowStr,
-      item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-      item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-      !item.startDateTime,
-      item.date,
-      completeSiblingItems,
-      item.status
-    );
+    await writeBlock({ blockId: item.blockId }, buildDatePatch(item, tomorrowStr));
 
     // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
@@ -1349,27 +1341,7 @@ const handleMigrateToday = async (item: Item) => {
   isProcessing.value = true;
   try {
     const todayStr = dayjs().format('YYYY-MM-DD');
-
-    // 构建完整的 siblingItems（包含当前日期）
-    const completeSiblingItems = [
-      ...(item.siblingItems || []),
-      ...(item.date ? [{
-        date: item.date,
-        startDateTime: item.startDateTime,
-        endDateTime: item.endDateTime
-      }] : [])
-    ];
-
-    const success = await updateBlockDateTime(
-      item.blockId,
-      todayStr,
-      item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-      item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-      !item.startDateTime,
-      item.date,
-      completeSiblingItems,
-      item.status
-    );
+    await writeBlock({ blockId: item.blockId }, buildDatePatch(item, todayStr));
 
     // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
@@ -1382,30 +1354,11 @@ const handleMigrateCustom = (item: Item) => {
   if (!item.blockId) return;
   if (isProcessing.value) return; // 防止重复点击
 
-  // 构建完整的 siblingItems（包含当前日期）
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime
-    }] : [])
-  ];
-
   showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
     if (isProcessing.value) return; // 防止在回调中重复点击
     isProcessing.value = true;
     try {
-      const success = await updateBlockDateTime(
-        item.blockId,
-        newDate,
-        item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-        item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-        !item.startDateTime,
-        item.date,
-        completeSiblingItems,
-        item.status
-      );
+      await writeBlock({ blockId: item.blockId }, buildDatePatch(item, newDate));
 
       // 操作成功，等待 ws-main 事件触发定向刷新
     } finally {
@@ -1421,8 +1374,7 @@ const handleAbandon = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    const tag = getStatusTag('abandoned');
-    const success = await updateBlockContent(item.blockId, tag);
+    await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'abandoned' });
     // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
     isProcessing.value = false;

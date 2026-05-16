@@ -4,6 +4,7 @@ import { createApp, nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockShowFocusPlanDialog = vi.fn();
+const mockWriteBlock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 
 vi.mock('@/stores', () => ({
   usePomodoroStore: () => ({
@@ -12,6 +13,7 @@ vi.mock('@/stores', () => ({
 }));
 
 vi.mock('@/main', () => ({
+  useApp: () => ({}),
   usePlugin: () => ({
     openCustomTab: vi.fn(),
   }),
@@ -55,8 +57,10 @@ vi.mock('@/utils/dialog', () => ({
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
-  updateBlockContent: vi.fn(),
-  updateBlockDateTime: vi.fn(),
+}));
+
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: mockWriteBlock,
 }));
 
 async function mountComponent(item: any) {
@@ -122,6 +126,70 @@ describe('ItemActionBar', () => {
     const abandonButton = buttons.find(node => node.getAttribute('aria-label') === '放弃');
 
     expect(abandonButton).toBeFalsy();
+
+    mounted.unmount();
+  });
+
+  it('uses BlockWriter setStatus when clicking complete', async () => {
+    const mounted = await mountComponent({
+      id: 'item-3',
+      blockId: 'block-3',
+      content: '待完成事项',
+      date: '2026-05-14',
+      status: 'pending',
+    });
+
+    const completeButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find(node => node.getAttribute('aria-label') === '完成') as HTMLElement | undefined;
+
+    completeButton?.click();
+    await nextTick();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-3' },
+      { type: 'setStatus', status: 'completed' },
+    );
+
+    mounted.unmount();
+  });
+
+  it('uses BlockWriter addDate when migrating an overdue item', async () => {
+    const mounted = await mountComponent({
+      id: 'item-4',
+      blockId: 'block-4',
+      content: '过期事项',
+      date: '2026-05-13',
+      startDateTime: '2026-05-13 09:00',
+      endDateTime: '2026-05-13 10:30',
+      status: 'pending',
+      siblingItems: [{ date: '2026-05-20' }],
+    });
+
+    const migrateButton = [...mounted.container.querySelectorAll('.block__icon')]
+      .find(node => node.getAttribute('aria-label') === '迁移到今天') as HTMLElement | undefined;
+
+    migrateButton?.click();
+    await nextTick();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-4' },
+      {
+        type: 'addDate',
+        date: '2026-05-14',
+        startTime: '09:00',
+        endTime: '10:30',
+        allDay: false,
+        originalDate: '2026-05-13',
+        siblingItems: [
+          { date: '2026-05-20' },
+          {
+            date: '2026-05-13',
+            startDateTime: '2026-05-13 09:00',
+            endDateTime: '2026-05-13 10:30',
+          },
+        ],
+      },
+    );
 
     mounted.unmount();
   });

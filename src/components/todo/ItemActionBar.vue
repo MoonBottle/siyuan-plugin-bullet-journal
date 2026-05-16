@@ -86,7 +86,8 @@ import { t } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 import { hideIconTooltip, showFocusPlanDialog, showIconTooltip, showPomodoroTimerDialog } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
-import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import type { Item } from '@/types/models';
@@ -134,8 +135,25 @@ const migrateLabel = computed(() => {
     : t('todo').migrateToTomorrow;
 });
 
-function getStatusTag(status: 'completed' | 'abandoned'): string {
-  return t('statusTag')[status] || '';
+function buildDatePatch(item: Item, targetDate: string) {
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime,
+    }] : []),
+  ];
+
+  return {
+    type: 'addDate' as const,
+    date: targetDate,
+    startTime: item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+    endTime: item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+    allDay: !item.startDateTime,
+    originalDate: item.date,
+    siblingItems: completeSiblingItems,
+  };
 }
 
 function handleTooltipEnter(event: MouseEvent, text: string) {
@@ -152,7 +170,7 @@ async function handleComplete() {
   if (!props.item?.blockId || isProcessing.value) return;
   isProcessing.value = true;
   try {
-    await updateBlockContent(props.item.blockId, getStatusTag('completed'));
+    await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'completed' });
   } finally {
     isProcessing.value = false;
   }
@@ -162,7 +180,7 @@ async function handleAbandon() {
   if (!props.item?.blockId || isProcessing.value) return;
   isProcessing.value = true;
   try {
-    await updateBlockContent(props.item.blockId, getStatusTag('abandoned'));
+    await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'abandoned' });
   } finally {
     isProcessing.value = false;
   }
@@ -185,24 +203,7 @@ async function handleMigrate() {
     const targetDate = props.item.date < dayjs().format('YYYY-MM-DD')
       ? dayjs().format('YYYY-MM-DD')
       : dayjs().add(1, 'day').format('YYYY-MM-DD');
-    const completeSiblingItems = [
-      ...(props.item.siblingItems || []),
-      ...(props.item.date ? [{
-        date: props.item.date,
-        startDateTime: props.item.startDateTime,
-        endDateTime: props.item.endDateTime,
-      }] : []),
-    ];
-    await updateBlockDateTime(
-      props.item.blockId,
-      targetDate,
-      props.item.startDateTime ? props.item.startDateTime.split(' ')[1] : undefined,
-      props.item.endDateTime ? props.item.endDateTime.split(' ')[1] : undefined,
-      !props.item.startDateTime,
-      props.item.date,
-      completeSiblingItems,
-      props.item.status,
-    );
+    await writeBlock({ blockId: props.item.blockId }, buildDatePatch(props.item, targetDate));
   } finally {
     isProcessing.value = false;
   }

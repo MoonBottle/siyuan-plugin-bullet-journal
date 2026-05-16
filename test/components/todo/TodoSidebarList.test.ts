@@ -6,8 +6,7 @@ import TodoSidebarList from '@/components/todo/TodoSidebarList.vue';
 import type { Item } from '@/types/models';
 
 const mockToggleItemPinned = vi.hoisted(() => vi.fn(() => Promise.resolve()));
-const mockUpdateBlockContent = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
-const mockUpdateBlockDateTime = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+const mockWriteBlock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 const mockShowFocusPlanDialog = vi.hoisted(() => vi.fn());
 
 vi.mock('siyuan', async () => {
@@ -136,9 +135,10 @@ vi.mock('@/utils/dateRangeUtils', () => ({
 
 vi.mock('@/utils/fileUtils', () => ({
   openDocumentAtLine: vi.fn(),
-  updateBlockContent: mockUpdateBlockContent,
-  updateBlockDateTime: mockUpdateBlockDateTime,
-  updateBlockPriority: vi.fn(),
+}));
+
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: mockWriteBlock,
 }));
 
 vi.mock('@/utils/dialog', async (importOriginal) => {
@@ -242,10 +242,8 @@ afterEach(() => {
   mockProjectStore.hideCompleted = false;
   mockProjectStore.hideAbandoned = false;
   mockToggleItemPinned.mockClear();
-  mockUpdateBlockContent.mockReset();
-  mockUpdateBlockContent.mockResolvedValue(true);
-  mockUpdateBlockDateTime.mockReset();
-  mockUpdateBlockDateTime.mockResolvedValue(true);
+  mockWriteBlock.mockReset();
+  mockWriteBlock.mockResolvedValue(true);
 });
 
 describe('TodoSidebarList', () => {
@@ -415,7 +413,7 @@ describe('TodoSidebarList', () => {
     const { SY_ICON_TOOLTIP_ID } = await import('@/utils/dialog');
     const mounted = mountReactiveList([pendingItem]);
 
-    mockUpdateBlockContent.mockImplementationOnce(async () => {
+    mockWriteBlock.mockImplementationOnce(async () => {
       mounted.items.value = [];
       return true;
     });
@@ -439,6 +437,70 @@ describe('TodoSidebarList', () => {
 
     expect(mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="完成"]')).toBeNull();
     expect(tooltip?.classList.contains('visible')).toBe(false);
+
+    mounted.unmount();
+  });
+
+  it('uses BlockWriter setStatus when completing an item from the list', async () => {
+    const mounted = mountList({
+      items: [pendingItem],
+      hasAnyItemsRaw: true,
+    });
+
+    await nextTick();
+
+    const completeAction = mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="完成"]') as HTMLSpanElement | null;
+    expect(completeAction).not.toBeNull();
+
+    completeAction?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      { type: 'setStatus', status: 'completed' },
+    );
+
+    mounted.unmount();
+  });
+
+  it('uses BlockWriter addDate when migrating today item to tomorrow', async () => {
+    const mounted = mountList({
+      items: [{
+        ...pendingItem,
+        startDateTime: '2026-05-01 14:00',
+        endDateTime: '2026-05-01 15:30',
+        siblingItems: [{ date: '2026-05-03' }],
+      }],
+      hasAnyItemsRaw: true,
+    });
+
+    await nextTick();
+
+    const migrateAction = mounted.container.querySelector('.item-actions-hover .block__icon[aria-label="迁移到明天"]') as HTMLSpanElement | null;
+    expect(migrateAction).not.toBeNull();
+
+    migrateAction?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      {
+        type: 'addDate',
+        date: '2026-05-02',
+        startTime: '14:00',
+        endTime: '15:30',
+        allDay: false,
+        originalDate: '2026-05-01',
+        siblingItems: [
+          { date: '2026-05-03' },
+          {
+            date: '2026-05-01',
+            startDateTime: '2026-05-01 14:00',
+            endDateTime: '2026-05-01 15:30',
+          },
+        ],
+      },
+    );
 
     mounted.unmount();
   });
