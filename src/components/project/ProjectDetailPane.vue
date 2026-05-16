@@ -30,9 +30,10 @@
       </div>
       <button
         v-if="task.docId"
+        ref="docBtnRef"
         type="button"
         class="b3-button b3-button--outline"
-        @click="openTaskDocument"
+        @click="openDocPreview(task.docId, task.blockId)"
       >
         {{ t('project').openDocument }}
       </button>
@@ -63,12 +64,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useApp, usePlugin } from '@/main';
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
 import ItemActionBar from '@/components/todo/ItemActionBar.vue';
 import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { t } from '@/i18n';
-import { openDocumentAtLine } from '@/utils/fileUtils';
 import { getTaskItemProgress } from '@/utils/projectTaskTree';
 import type { Item, Project, Task } from '@/types/models';
 
@@ -78,6 +81,9 @@ const props = defineProps<{
   item: Item | null;
 }>();
 
+const app = useApp();
+const plugin = usePlugin() as any;
+
 const progress = computed(() => props.task ? getTaskItemProgress(props.task) : {
   total: 0,
   completed: 0,
@@ -85,10 +91,60 @@ const progress = computed(() => props.task ? getTaskItemProgress(props.task) : {
   abandoned: 0,
 });
 
-async function openTaskDocument() {
-  if (!props.task?.docId) return;
-  await openDocumentAtLine(props.task.docId, props.task.lineNumber, props.task.blockId);
+const docBtnRef = ref<HTMLButtonElement | null>(null);
+
+const preview = useBlockFocusPreview({
+  showDelayMs: 0,
+  hideDelayMs: 300,
+  popoverLeaveGraceMs: 220,
+});
+const nativePreview = createNativeBlockPreviewController();
+
+function openDocPreview(docId: string, blockId?: string) {
+  if (!docBtnRef.value || !docId) return;
+
+  preview.showNow({
+    blockId: docId,
+    itemId: blockId || docId,
+    anchorEl: docBtnRef.value,
+  });
 }
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!preview.isOpen.value) return;
+  if (nativePreview.containsTarget(event.target)) return;
+  preview.forceClose();
+}
+
+watch(
+  () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
+  ([isOpen, blockId, anchorEl]) => {
+    if (!isOpen || !blockId || !anchorEl || !app) {
+      nativePreview.close();
+      return;
+    }
+
+    nativePreview.open({
+      app,
+      plugin,
+      blockId,
+      anchorEl,
+      onHoverChange: preview.markPopoverHovered,
+      onPanelDestroyed: () => {},
+    });
+  },
+  { flush: 'post' },
+);
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  nativePreview.close();
+  preview.dispose();
+});
 </script>
 
 <style lang="scss" scoped>
