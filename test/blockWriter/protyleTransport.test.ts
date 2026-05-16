@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { writeViaProtyle } from '@/utils/blockWriter/protyleTransport';
 
 describe('protyleTransport', () => {
@@ -13,8 +13,8 @@ describe('protyleTransport', () => {
   function createSlashRange(div: HTMLDivElement) {
     const range = document.createRange();
     const textNode = div.firstChild!;
-    range.setStart(textNode, 3);
-    range.setEnd(textNode, 3);
+    range.setStart(textNode, 10);
+    range.setEnd(textNode, 10);
     return range;
   }
 
@@ -23,7 +23,12 @@ describe('protyleTransport', () => {
     const range = createSlashRange(div);
     const context = {
       blockId: 'block-123',
-      protyle: {} as any,
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
       nodeElement: div,
       slashRange: range,
       slashStartOffset: 3,
@@ -36,8 +41,11 @@ describe('protyleTransport', () => {
     });
 
     expect(result).toBe(true);
+    expect(context.protyle.lute.SpinBlockDOM).toHaveBeenCalledOnce();
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
     expect(div.textContent).not.toContain('/bwtest');
     expect(div.textContent).toContain('测试内容');
+    expect(div.getAttribute('updated')).toMatch(/^\d{14}$/);
   });
 
   it('returns false for non-slash non-status patches', async () => {
@@ -82,7 +90,12 @@ describe('protyleTransport', () => {
 
     const context = {
       blockId: 'child-1',
-      protyle: {} as any,
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
       nodeElement: contentDiv,
     };
 
@@ -95,6 +108,9 @@ describe('protyleTransport', () => {
     expect(li.classList.contains('protyle-task--done')).toBe(true);
     expect(li.getAttribute('data-task')).toBe('X');
     expect(useEl.getAttributeNS('http://www.w3.org/1999/xlink', 'href')).toBe('#iconCheck');
+    expect(context.protyle.lute.SpinBlockDOM).toHaveBeenCalledOnce();
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(context.protyle.transaction.mock.calls[0][0][0].id).toBe('task-1');
 
     document.body.removeChild(li);
   });
@@ -113,6 +129,7 @@ describe('protyleTransport', () => {
     li.classList.add('li', 'protyle-task--done');
     li.setAttribute('data-type', 'NodeListItem');
     li.setAttribute('data-subtype', 't');
+    li.setAttribute('data-node-id', 'task-1');
     li.setAttribute('data-task', 'X');
 
     const taskAction = document.createElement('span');
@@ -133,7 +150,12 @@ describe('protyleTransport', () => {
 
     const context = {
       blockId: 'child-1',
-      protyle: {} as any,
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
       nodeElement: contentDiv,
     };
 
@@ -165,7 +187,12 @@ describe('protyleTransport', () => {
 
     const context = {
       blockId: 'block-123',
-      protyle: {} as any,
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
       nodeElement: div,
       slashRange: range,
       slashStartOffset: 3,

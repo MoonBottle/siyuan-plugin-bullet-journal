@@ -17,7 +17,8 @@ export type {
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   if (context.protyle && context.nodeElement) {
-    await writeViaProtyle(context, patches);
+    const ok = await writeViaProtyle(context, patches);
+    if (ok) return true;
   }
   return writeViaApi(context.blockId, patches);
 }

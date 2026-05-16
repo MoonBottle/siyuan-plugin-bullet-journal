@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+// @vitest-environment happy-dom
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/api', () => ({
   getBlockByID: vi.fn().mockResolvedValue({ id: 'abc', type: 'NodeParagraph' }),
@@ -10,6 +11,10 @@ import { updateBlock } from '@/api';
 import { writeBlock } from '@/utils/blockWriter';
 
 describe('writeBlock', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('writes single patch via API', async () => {
     const result = await writeBlock(
       { blockId: 'block123' },
@@ -37,5 +42,37 @@ describe('writeBlock', () => {
     const call = vi.mocked(updateBlock).mock.calls.at(-1)!;
     expect(call[1]).toContain('🔥');
     expect(call[1]).toContain('#已完成');
+  });
+
+  it('does not fall back to API after a successful Protyle write', async () => {
+    const div = document.createElement('div');
+    div.setAttribute('data-node-id', 'block123');
+    div.textContent = '任务 /done';
+
+    const range = document.createRange();
+    range.setStart(div.firstChild!, div.textContent.length);
+    range.collapse(true);
+
+    const protyle = {
+      lute: {
+        SpinBlockDOM: vi.fn((html: string) => html),
+      },
+      transaction: vi.fn(),
+    };
+
+    const result = await writeBlock(
+      {
+        blockId: 'block123',
+        protyle,
+        nodeElement: div,
+        slashRange: range,
+        slashStartOffset: 3,
+      },
+      { type: 'removeSlashCommands', filters: ['done'], suffix: '#done' },
+    );
+
+    expect(result).toBe(true);
+    expect(protyle.transaction).toHaveBeenCalledOnce();
+    expect(updateBlock).not.toHaveBeenCalled();
   });
 });

@@ -885,7 +885,19 @@ export function getActionHandler(
             return;
           }
 
-          await writeBlock({ blockId: item.blockId, nodeElement, protyle }, [{ type: 'removeSlashCommands', filters: filter }]);
+          const slash = getActiveSlashRange();
+          if (slash) {
+            await writeBlock(
+              {
+                blockId: slash.blockId,
+                nodeElement: slash.blockElement,
+                protyle,
+                slashRange: slash.range,
+                slashStartOffset: slash.slashStartOffset,
+              },
+              [{ type: 'removeSlashCommands', filters: filter }],
+            );
+          }
           setPriorityForBlock(nodeElement, item);
         })();
       };

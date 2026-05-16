@@ -12,21 +12,17 @@ export function getActiveSlashRange(): ActiveSlashRange | null {
   const range = selection.getRangeAt(0);
   const startNode = range.startContainer;
 
-  let blockElement: HTMLElement | null = null;
-  if (startNode.nodeType === Node.TEXT_NODE) {
-    blockElement = startNode.parentElement?.closest('[data-node-id]') as HTMLElement | null;
-  } else {
-    blockElement = (startNode as Element).closest('[data-node-id]') as HTMLElement | null;
-  }
+  if (startNode.nodeType !== Node.TEXT_NODE) return null;
+
+  const blockElement = startNode.parentElement?.closest('[data-node-id]') as HTMLElement | null;
 
   if (!blockElement) return null;
 
   const blockId = blockElement.getAttribute('data-node-id');
   if (!blockId) return null;
 
-  const textContent = range.startContainer.textContent ?? '';
-  const fullText = blockElement.textContent ?? '';
-  const slashIdx = fullText.lastIndexOf('/');
+  const textContent = startNode.textContent ?? '';
+  const slashIdx = textContent.lastIndexOf('/', range.startOffset);
 
   if (slashIdx === -1) return null;
 
@@ -39,17 +35,16 @@ export function getActiveSlashRange(): ActiveSlashRange | null {
 }
 
 export function deleteSlashRangeText(range: Range, filter: string, slashStartOffset: number): void {
-  const text = range.startContainer.textContent ?? '';
-  const actualSlashIdx = text.lastIndexOf('/');
-  if (actualSlashIdx === -1 || actualSlashIdx !== slashStartOffset) {
-    const offset = text.lastIndexOf(`/${filter}`);
-    if (offset === -1) return;
-    range.setStart(range.startContainer, offset);
-    range.setEnd(range.startContainer, offset + filter.length + 1);
-    range.deleteContents();
-    return;
+  void filter;
+  if (range.startContainer.nodeType !== Node.TEXT_NODE) {
+    throw new Error('Slash range must start in a text node');
   }
+  if (slashStartOffset < 0 || slashStartOffset > range.startOffset) {
+    throw new Error(`Invalid slashStartOffset ${slashStartOffset}`);
+  }
+  const text = range.startContainer.textContent ?? '';
+  if (text[slashStartOffset] !== '/') return;
+
   range.setStart(range.startContainer, slashStartOffset);
-  range.setEnd(range.startContainer, slashStartOffset + filter.length + 1);
   range.deleteContents();
 }
