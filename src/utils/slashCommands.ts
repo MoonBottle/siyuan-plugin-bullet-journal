@@ -11,7 +11,6 @@ import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
 import { insertBlock } from '@/api';
 import { usePlugin } from '@/main';
-import { updateBlockContent } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
   processLineText,
@@ -1128,8 +1127,7 @@ async function markAsDone(nodeElement: HTMLElement) {
   }
 
   // 标记事项完成
-  const tag = getStatusTag('completed');
-  const success = await updateBlockContent(blockId, tag);
+  const success = await writeBlock({ blockId }, { type: 'setStatus', status: 'completed' });
 
   if (success) {
     showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
@@ -1158,8 +1156,7 @@ async function markAsAbandoned(nodeElement: HTMLElement) {
     return;
   }
 
-  const tag = getStatusTag('abandoned');
-  const success = await updateBlockContent(blockId, tag);
+  const success = await writeBlock({ blockId }, { type: 'setStatus', status: 'abandoned' });
 
   if (success) {
     showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');

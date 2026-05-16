@@ -5,6 +5,8 @@
 import type { ToolCall } from '@/types/ai';
 import type { Item, ItemStatus, Project, ProjectDirectory, ProjectGroup } from '@/types/models';
 import dayjs from '@/utils/dayjs';
+import { writeBlock } from '@/utils/blockWriter';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
 import {
   aggregatePomodorosFromProjects,
   filterPomodoros,
@@ -17,7 +19,6 @@ import {
 import type { ToolName } from './aiTools';
 import { SkillService } from './skillService';
 import * as siyuanAPI from '@/api';
-import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
 import { useSettingsStore } from '@/stores/settingsStore';
 import {
   RefreshReasons,
@@ -237,23 +238,12 @@ async function executeUpdateItemStatus(
   const targetStatus = args.status as ItemStatus;
 
   try {
-    if (targetStatus === 'pending') {
-      // 恢复待办：读取块 kramdown，清除状态标记
-      const kramdownResult = await siyuanAPI.getBlockKramdown(item.blockId);
-      if (!kramdownResult?.kramdown) {
-        return { success: false, message: '无法读取事项内容' };
-      }
-      let content = kramdownResult.kramdown
-        .replace(/#已完成|#已放弃|#done|#abandoned|[✅❌]/g, '');
-      content = content.replace(/\[[xX]\]/g, '[ ]');
-      await siyuanAPI.updateBlock('markdown', content.trim(), item.blockId);
-    } else {
-      // 完成/放弃：使用 fileUtils 的 updateBlockContent 添加状态标记
-      const suffix = targetStatus === 'completed' ? '#已完成' : '#已放弃';
-      const success = await updateBlockContent(item.blockId, suffix);
-      if (!success) {
-        return { success: false, message: `更新事项"${item.content}"状态失败` };
-      }
+    const success = await writeBlock(
+      { blockId: item.blockId },
+      { type: 'setStatus', status: targetStatus },
+    );
+    if (!success) {
+      return { success: false, message: `更新事项"${item.content}"状态失败` };
     }
 
     const statusText = targetStatus === 'completed'
@@ -380,7 +370,6 @@ async function executeUpdateItem(
     const hasDateTimeChange = args.date !== undefined || args.startTime !== undefined || args.endTime !== undefined;
     const hasContentChange = args.content !== undefined;
 
-    // 如果只修改了日期/时间（没有内容变更），使用 updateBlockDateTime
     if (hasDateTimeChange) {
       const newDate = args.date || item.date;
       const newStartTime = args.startTime !== undefined
@@ -390,60 +379,27 @@ async function executeUpdateItem(
         ? (args.endTime === '' ? undefined : args.endTime)
         : item.endDateTime?.split(' ')[1];
 
-      const success = await updateBlockDateTime(
-        item.blockId,
-        newDate,
-        newStartTime,
-        newEndTime,
-        false,
-        item.date,
-        item.siblingItems,
-        item.status as ItemStatus
+      const success = await writeBlock(
+        { blockId: item.blockId },
+        buildDatePatchFromItem(item, newDate, {
+          includeCurrentItemInSiblings: true,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          allDay: !(newStartTime || newEndTime),
+        }),
       );
       if (!success) {
         return { success: false, message: `更新事项"${item.content}"日期时间失败` };
       }
     }
 
-    // 如果修改了内容，读取 kramdown 替换内容
     if (hasContentChange && args.content) {
-      const kramdownResult = await siyuanAPI.getBlockKramdown(item.blockId);
-      if (!kramdownResult?.kramdown) {
-        return { success: false, message: '无法读取事项内容' };
-      }
-      const lines = kramdownResult.kramdown.split('\n');
-
-      // 找到事项行
-      let itemLineIndex = -1;
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line.startsWith('{:')) continue;
-        if (line.startsWith('🍅')) continue;
-        if ((line.includes('@') || line.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(line)) {
-          itemLineIndex = i;
-          break;
-        }
-      }
-
-      if (itemLineIndex >= 0) {
-        const itemLine = lines[itemLineIndex];
-        // 替换内容：保留日期时间标记和状态标签，只替换文本内容
-        // 提取日期时间部分
-        const dateTimeMatch = itemLine.match(
-          /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?(?:\s*[,，]\s*\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?)*/g
-        );
-        const dateTimePart = dateTimeMatch ? dateTimeMatch[0] : '';
-        const statusPart = itemLine.match(/#已完成|#已放弃|#done|#abandoned|[✅❌]/)?.[0] || '';
-        const taskListMatch = itemLine.match(/^(\s*-\s*\[\s*[xX]?\s*\]\s*)/);
-        const prefix = taskListMatch ? taskListMatch[1] : '';
-
-        lines[itemLineIndex] = `${prefix}${args.content} ${dateTimePart} ${statusPart}`.trim();
-        await siyuanAPI.updateBlock('markdown', lines.join('\n'), item.blockId);
-      } else {
-        // 没找到事项行，直接替换整个内容
-        let content = kramdownResult.kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
-        content = `${args.content} 📅${item.date}`;
-        await siyuanAPI.updateBlock('markdown', content, item.blockId);
+      const success = await writeBlock(
+        { blockId: item.blockId },
+        { type: 'setContent', newItemContent: args.content },
+      );
+      if (!success) {
+        return { success: false, message: `更新事项"${item.content}"内容失败` };
       }
     }
 

@@ -26,7 +26,7 @@ import {
 import { usePlugin } from '@/main';
 import dayjs from '@/utils/dayjs';
 import { extractDatesFromBlock } from '@/utils/slashCommandUtils';
-import { updateBlockDateTime } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import { defaultPomodoroSettings } from '@/settings';
 import { t } from '@/i18n';
 import { mobileNotificationScheduler } from '@/services/mobileNotificationScheduler';
@@ -625,15 +625,14 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const hasDate = existingDates.some(item => item.date === pomodoroDate);
 
         if (!hasDate) {
-          await updateBlockDateTime(
-            pending.blockId,
-            pomodoroDate,
-            undefined, // newStartTime
-            undefined, // newEndTime
-            true,      // allDay
-            undefined, // originalDate - undefined 表示添加新日期
-            existingDates.length > 0 ? existingDates : undefined,
-            undefined  // status
+          await writeBlock(
+            { blockId: pending.blockId },
+            {
+              type: 'addDate',
+              date: pomodoroDate,
+              allDay: true,
+              siblingItems: existingDates.length > 0 ? existingDates : undefined,
+            },
           );
         }
 

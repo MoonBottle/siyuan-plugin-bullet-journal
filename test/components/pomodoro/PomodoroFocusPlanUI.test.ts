@@ -67,6 +67,7 @@ vi.mock('@/main', () => ({
       },
     }),
     openCustomTab: vi.fn(),
+    requestDataRefresh: vi.fn(() => Promise.resolve()),
   })),
 }));
 
@@ -192,8 +193,13 @@ vi.mock('@/components/icons/PlayIcon.vue', () => ({ default: { template: '<i></i
 vi.mock('@/components/icons/StopIcon.vue', () => ({ default: { template: '<i></i>' } }));
 
 vi.mock('@/utils/fileUtils', () => ({
-  updateBlockContent: vi.fn(() => Promise.resolve(true)),
   openDocumentAtLine: vi.fn(() => Promise.resolve(true)),
+}));
+
+const mockWriteBlock = vi.fn(() => Promise.resolve(true));
+
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: mockWriteBlock,
 }));
 
 vi.mock('@/utils/dialog', () => ({
@@ -318,6 +324,64 @@ describe('Pomodoro focus plan UI', () => {
     expect(mounted.container.textContent).toContain('当前预计');
     expect(mounted.container.textContent).toContain('1h10m');
     expect(mounted.container.textContent).toContain('累计 1h / 1h10m');
+
+    mounted.unmount();
+  });
+
+  it('PomodoroActiveTimer 的完成按钮走 writeBlock', async () => {
+    const item: Item = {
+      id: 'item-1',
+      content: '整理日报',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      blockId: 'block-1',
+      status: 'pending',
+    };
+    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item);
+    mountMode = 'active';
+
+    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue');
+    const mounted = mountComponent(PomodoroActiveTimer, {});
+
+    await nextTick();
+
+    mounted.container.querySelector('[aria-label="完成"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      { type: 'setStatus', status: 'completed' },
+    );
+
+    mounted.unmount();
+  });
+
+  it('PomodoroActiveTimer 的放弃按钮走 writeBlock', async () => {
+    const item: Item = {
+      id: 'item-1',
+      content: '整理日报',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      blockId: 'block-1',
+      status: 'pending',
+    };
+    activeTimerProjectStore.getItemByBlockId.mockReturnValue(item);
+    mountMode = 'active';
+
+    const { default: PomodoroActiveTimer } = await import('@/components/pomodoro/PomodoroActiveTimer.vue');
+    const mounted = mountComponent(PomodoroActiveTimer, {});
+
+    await nextTick();
+
+    mounted.container.querySelector('[aria-label="放弃"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      { type: 'setStatus', status: 'abandoned' },
+    );
 
     mounted.unmount();
   });

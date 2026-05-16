@@ -203,7 +203,8 @@ import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import Card from '@/components/common/Card.vue';
-import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import { showConfirmDialog, showItemDetailModal } from '@/utils/dialog';
 import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
 import { t } from '@/i18n';
@@ -362,11 +363,6 @@ const openItemDocument = async () => {
   }
 };
 
-// 获取状态标签
-const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  return t('statusTag')[status] || '';
-};
-
 // 标记完成
 const handleDone = async () => {
   if (!currentItem.value?.blockId) return;
@@ -374,9 +370,10 @@ const handleDone = async () => {
 
   isProcessing.value = true;
   try {
-    // 标记事项完成
-    const tag = getStatusTag('completed');
-    const success = await updateBlockContent(currentItem.value.blockId, tag);
+    const success = await writeBlock(
+      { blockId: currentItem.value.blockId },
+      { type: 'setStatus', status: 'completed' },
+    );
 
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
 
@@ -398,8 +395,10 @@ const handleAbandon = async () => {
 
   isProcessing.value = true;
   try {
-    const tag = getStatusTag('abandoned');
-    const success = await updateBlockContent(currentItem.value.blockId, tag);
+    const success = await writeBlock(
+      { blockId: currentItem.value.blockId },
+      { type: 'setStatus', status: 'abandoned' },
+    );
     if (success && plugin) {
       await plugin.requestDataRefresh?.({
         type: 'full',
