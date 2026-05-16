@@ -1548,6 +1548,13 @@ export default class TaskAssistantPlugin extends Plugin {
             },
           });
           menu.addItem({
+            icon: "iconList",
+            label: t("focusReview").title,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.FOCUS_REVIEW);
+            },
+          });
+          menu.addItem({
             icon: "iconLayout",
             label: t("quadrant").title,
             click: () => {
