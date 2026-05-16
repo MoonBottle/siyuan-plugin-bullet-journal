@@ -15,6 +15,8 @@ export type {
   StatusPatch,
 } from './types';
 
+export { createProtyleMarkdownWriter } from './markdownWriter';
+
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   const patchArray = Array.isArray(patches) ? patches : [patches];
   const requiresProtyle = patchArray.some((patch) => patch.type === 'removeSlashCommand');

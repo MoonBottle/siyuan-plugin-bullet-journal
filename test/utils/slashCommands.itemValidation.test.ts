@@ -66,6 +66,7 @@ vi.mock('@/utils/fileUtils', () => ({
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: vi.fn().mockResolvedValue(true),
+  createProtyleMarkdownWriter: vi.fn(),
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({

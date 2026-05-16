@@ -3,9 +3,11 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { showMessage } from 'siyuan';
 
-const { mockEventBusEmit, mockEventBusOn } = vi.hoisted(() => ({
+const { mockEventBusEmit, mockEventBusOn, createProtyleMarkdownWriterMock, createdMarkdownWriterMock } = vi.hoisted(() => ({
   mockEventBusEmit: vi.fn(),
   mockEventBusOn: vi.fn(),
+  createdMarkdownWriterMock: vi.fn().mockResolvedValue(true),
+  createProtyleMarkdownWriterMock: vi.fn(),
 }));
 
 vi.mock('@/utils/dialog', () => ({
@@ -49,6 +51,11 @@ vi.mock('@/utils/fileUtils', () => ({
   updateBlockContent: vi.fn(),
   updateBlockDateTime: vi.fn(),
   updateBlockPriority: vi.fn(),
+}));
+
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: vi.fn().mockResolvedValue(true),
+  createProtyleMarkdownWriter: createProtyleMarkdownWriterMock,
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({
@@ -96,6 +103,7 @@ import { useProjectStore, useSettingsStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
 import { eventBus, Events } from '@/utils/eventBus';
 import { updateBlockDateTime } from '@/utils/fileUtils';
+import { createProtyleMarkdownWriter } from '@/utils/blockWriter';
 
 const projectStoreMock = {
   getHabits: vi.fn(() => []),
@@ -107,6 +115,7 @@ describe('habit slash commands', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    createProtyleMarkdownWriterMock.mockReturnValue(createdMarkdownWriterMock);
     vi.mocked(processLineText).mockImplementation((text: string) => text);
     vi.mocked(useProjectStore).mockReturnValue(projectStoreMock as any);
     vi.mocked(useSettingsStore).mockReturnValue({
@@ -286,7 +295,13 @@ describe('habit slash commands', () => {
     await Promise.resolve();
     await Promise.resolve();
 
+    expect(vi.mocked(createProtyleMarkdownWriter)).toHaveBeenCalledWith({
+      blockId: 'block-today',
+      nodeElement: node,
+      protyle,
+    });
     expect(updateBlockDateTime).toHaveBeenCalled();
+    expect(vi.mocked(updateBlockDateTime).mock.calls[0]?.[8]).toBe(createdMarkdownWriterMock);
     expect(textNode.textContent).toBe('测试独立事项 📅2026-04-29');
     expect(protyle.transaction).not.toHaveBeenCalled();
   });

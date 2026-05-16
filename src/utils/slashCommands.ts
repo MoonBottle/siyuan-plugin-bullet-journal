@@ -27,18 +27,16 @@ import type { Habit, Item, ProjectDirectory, PriorityLevel } from '@/types/model
 import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID, getBlockByID, getBlockKramdown, renameDocByID, updateBlock } from '@/api';
-import { writeBlock } from '@/utils/blockWriter';
+import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
+import { createProtyleMarkdownWriter, writeBlock } from '@/utils/blockWriter';
 import {
   RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
 } from '@/utils/refreshRequests';
-import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 import { checkIn, checkInCount } from '@/services/habitService';
 import type { CheckInRecord } from '@/types/models';
 import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
-import { parseKramdownBlocks } from '@/parser/core';
 
 /**
  * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
@@ -681,7 +679,7 @@ export function getActionHandler(
           textPreview: (nodeElement.textContent || '').slice(0, 200),
         });
         const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
+        const writer = blockId ? createProtyleMarkdownWriter({ blockId, nodeElement, protyle }) : undefined;
         markAsTodayItem(protyle, nodeElement, filter, writer);
       };
     case 'tomorrow':
@@ -697,7 +695,7 @@ export function getActionHandler(
           textPreview: (nodeElement.textContent || '').slice(0, 120),
         });
         const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
+        const writer = blockId ? createProtyleMarkdownWriter({ blockId, nodeElement, protyle }) : undefined;
         markAsTomorrowItem(protyle, nodeElement, filter, writer);
       };
     case 'date':
@@ -713,7 +711,7 @@ export function getActionHandler(
           textPreview: (nodeElement.textContent || '').slice(0, 120),
         });
         const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
+        const writer = blockId ? createProtyleMarkdownWriter({ blockId, nodeElement, protyle }) : undefined;
         markAsDateItem(protyle, nodeElement, filter, writer);
       };
     case 'done':
@@ -1276,19 +1274,6 @@ function getStatusTag(status: 'completed' | 'abandoned'): string {
 }
 
 /**
- * 格式化 updated 属性值
- */
-function formatUpdatedAttr(date: Date): string {
-  const y = date.getFullYear();
-  const mo = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  const h = String(date.getHours()).padStart(2, '0');
-  const mi = String(date.getMinutes()).padStart(2, '0');
-  const s = String(date.getSeconds()).padStart(2, '0');
-  return `${y}${mo}${d}${h}${mi}${s}`;
-}
-
-/**
  * 等待 protyle 事务队列清空
  */
 async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
@@ -1298,132 +1283,6 @@ async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
     await new Promise(r => setTimeout(r, 100));
   }
   await new Promise(r => setTimeout(r, 200));
-}
-
-/**
- * 创建 protyle writer 工厂函数
- * 将 updateBlock API 调用替换为 DOM 更新 + protyle.transaction()
- * 利用思源事务队列的防抖合并机制，自动替换 protyle 的旧 doOperations
- */
-function createProtyleWriter(
-  protyle: any,
-  nodeElement: HTMLElement,
-  currentBlockId: string,
-): BlockWriter {
-  const oldHTML = nodeElement.outerHTML;
-  console.log('[SlashCommand] createProtyleWriter created', { currentBlockId, oldHTML: oldHTML.substring(0, 200) });
-
-  return async (content: string, targetBlockId: string): Promise<boolean> => {
-    try {
-      console.log(`[SlashCommand] Writer called`, { content, targetBlockId, currentBlockId });
-      console.log('[JTDBG][protyleWriter] called', {
-        currentBlockId,
-        targetBlockId,
-        content,
-      });
-
-      // 去掉块属性行 {: id="..." }，再判断是否单行
-      const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
-
-      const isSameBlock = targetBlockId === currentBlockId;
-      const isSingleLine = !textContent.includes('\n');
-
-      const canRenderInline = isSameBlock && isSingleLine;
-      console.log(`[SlashCommand] Writer decision params`, { isSameBlock, isSingleLine, textContent, canRenderInline });
-      console.log('[JTDBG][protyleWriter] decision', {
-        currentBlockId,
-        targetBlockId,
-        isSameBlock,
-        isSingleLine,
-        canRenderInline,
-        textContent,
-      });
-
-      if (canRenderInline && renderMarkdownIntoBlockEditable(protyle, nodeElement, textContent)) {
-
-        nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()));
-
-        const newHTML = nodeElement.outerHTML;
-        if (newHTML !== oldHTML) {
-          console.log('[JTDBG][protyleWriter] fastPathTransaction', {
-            currentBlockId,
-            targetBlockId,
-            oldHTML,
-            newHTML,
-          });
-          protyle.transaction(
-            [{ id: targetBlockId, data: newHTML, action: 'update' }],
-            [{ id: targetBlockId, data: oldHTML, action: 'update' }],
-          );
-        }
-        else {
-          console.log('[JTDBG][protyleWriter] fastPathSkippedBecauseHtmlUnchanged', {
-            currentBlockId,
-            targetBlockId,
-            textContent,
-          });
-        }
-        return true;
-      }
-
-      // Complex case: wait for queue to flush, then API
-      console.log('[JTDBG][protyleWriter] complexPathApi', {
-        currentBlockId,
-        targetBlockId,
-        content,
-      });
-      await waitForProtyleTransactionsFlush();
-      const updateResult = await updateBlock('markdown', content, targetBlockId);
-      console.log('[JTDBG][protyleWriter] complexPathApiResult', {
-        currentBlockId,
-        targetBlockId,
-        updateResult,
-      });
-      const targetKramdownResult = await getBlockKramdown(targetBlockId);
-      console.log('[JTDBG][protyleWriter] complexPathReadbackTarget', {
-        currentBlockId,
-        targetBlockId,
-        hasKramdown: !!targetKramdownResult?.kramdown,
-        kramdownPreview: targetKramdownResult?.kramdown?.slice(0, 500),
-      });
-      if (targetKramdownResult?.kramdown) {
-        const targetBlocks = parseKramdownBlocks(targetKramdownResult.kramdown);
-        const currentParsedBlock = targetBlocks.find(block => block.blockId === currentBlockId);
-        console.log('[JTDBG][protyleWriter] complexPathReadbackTargetAnalysis', {
-          currentBlockId,
-          targetBlockId,
-          targetContainsExpectedRange: targetKramdownResult.kramdown.includes('📅2026-05-09~05-10'),
-          targetContainsOriginalDateOnly: targetKramdownResult.kramdown.includes('📅2026-05-09 🔁每天'),
-          parsedBlockCount: targetBlocks.length,
-          currentParsedBlockContent: currentParsedBlock?.content,
-          currentParsedBlockRaw: currentParsedBlock?.raw,
-        });
-      }
-      const currentBlockResult = await getBlockByID(currentBlockId);
-      console.log('[JTDBG][protyleWriter] complexPathReadbackCurrentBlock', {
-        currentBlockId,
-        targetBlockId,
-        currentBlockContent: currentBlockResult?.content,
-        currentBlockMarkdown: currentBlockResult?.markdown,
-      });
-      return true;
-    }
-    catch (error) {
-      console.error('[Task Assistant] ProtyleWriter error:', error);
-      console.log('[JTDBG][protyleWriter] errorFallbackApi', {
-        currentBlockId,
-        targetBlockId,
-        error,
-      });
-      const updateResult = await updateBlock('markdown', content, targetBlockId);
-      console.log('[JTDBG][protyleWriter] errorFallbackApiResult', {
-        currentBlockId,
-        targetBlockId,
-        updateResult,
-      });
-      return true;
-    }
-  };
 }
 
 /**
