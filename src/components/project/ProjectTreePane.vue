@@ -391,7 +391,7 @@ function handleSelectItem(itemId: string) {
     min-width: 60px;
     border: none;
     background: transparent;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.5;
     outline: none;
     color: var(--b3-theme-on-background);
