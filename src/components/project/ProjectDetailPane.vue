@@ -31,7 +31,7 @@
       <button
         v-if="task.docId"
         type="button"
-        class="project-detail-pane__open-doc"
+        class="b3-button b3-button--outline"
         @click="openTaskDocument"
       >
         {{ t('project').openDocument }}
@@ -155,8 +155,8 @@ async function openTaskDocument() {
   }
 }
 
-.project-detail-pane__open-doc {
-  margin-top: 12px;
+.project-detail-pane__task .b3-button {
+  margin-top: 16px;
 }
 
 .project-detail-pane__item {
