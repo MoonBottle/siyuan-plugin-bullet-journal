@@ -706,6 +706,10 @@ export function getActionHandler(
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
         });
+        const blockId = nodeElement.getAttribute('data-node-id');
+        if (blockId) {
+          void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+        }
         markAsDateItem(protyle, nodeElement, filter);
       };
     case 'done':

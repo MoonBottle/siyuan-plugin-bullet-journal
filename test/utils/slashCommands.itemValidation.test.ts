@@ -111,8 +111,8 @@ vi.mock('@/services/habitService', () => ({
 
 import { updateBlockContent } from '@/utils/fileUtils';
 import { writeBlock } from '@/utils/blockWriter';
-import { showPrioritySettingDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
-import { extractItemFromBlock } from '@/utils/slashCommandUtils';
+import { showDatePickerDialog, showPrioritySettingDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
+import { extractDatesFromBlock, extractItemFromBlock } from '@/utils/slashCommandUtils';
 import { getActionHandler } from '@/utils/slashCommands';
 
 describe('item-only slash command validation', () => {
@@ -416,6 +416,32 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalled();
+  });
+
+  it('/rq 打开日期弹框前应先通过 BlockWriter 删除 slash 命令', async () => {
+    vi.mocked(extractDatesFromBlock).mockResolvedValue([]);
+    const handler = getActionHandler('date', {} as any, ['/rq']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 @2026-05-14 /rq';
+    const protyle = {
+      transaction: vi.fn(),
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
+    expect(vi.mocked(showDatePickerDialog)).toHaveBeenCalled();
+    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(showDatePickerDialog).mock.invocationCallOrder[0],
+    );
   });
 
   it('/fq 在未标记已放弃时通过 BlockWriter 先删 slash 再写入 abandoned 状态', async () => {
