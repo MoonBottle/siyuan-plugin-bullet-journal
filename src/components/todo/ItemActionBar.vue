@@ -209,24 +209,26 @@ async function handleMigrate() {
 }
 
 function handleOpenDocClick() {
-  if (!props.item?.docId || isProcessing.value) return;
+  if (!props.item?.blockId || isProcessing.value) return;
 
   emit('open-doc', props.item.docId, props.item.blockId);
 
   if (props.openDocMode === 'preview') {
-    openDocPreview(props.item.docId, props.item.blockId);
+    openBlockPreview(props.item.blockId);
     return;
   }
 
-  openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId);
+  if (props.item.docId) {
+    openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId);
+  }
 }
 
-function openDocPreview(docId: string, blockId?: string) {
-  if (!docIconRef.value || !docId) return;
+function openBlockPreview(blockId: string) {
+  if (!docIconRef.value || !blockId) return;
 
   preview.showNow({
-    blockId: docId,
-    itemId: blockId || docId,
+    blockId,
+    itemId: blockId,
     anchorEl: docIconRef.value,
   });
 }
