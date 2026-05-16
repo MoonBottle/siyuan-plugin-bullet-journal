@@ -657,10 +657,8 @@ export function getActionHandler(
             return;
           }
 
+          void removeSlashCommandViaWriter(protyle, nodeElement);
           startFocusFromSlash(nodeElement, config.openPomodoroDock, item);
-          setTimeout(() => {
-            void removeSlashCommandViaWriter(protyle, nodeElement);
-          }, 300);
         })();
       };
     case 'todo':
