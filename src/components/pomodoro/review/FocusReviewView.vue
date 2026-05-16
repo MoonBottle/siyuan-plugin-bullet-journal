@@ -119,7 +119,7 @@
                 :show-action-row="false"
                 :close-on-siyuan-link="false"
               />
-              <ItemActionBar :item="selectedItem" />
+              <ItemActionBar :item="selectedItem" open-doc-mode="preview" />
             </div>
             <div v-else class="focus-review-view__detail-panel-empty">
               <div class="focus-review-view__empty-title">{{ t('focusReview').detailEmptyTitle }}</div>
