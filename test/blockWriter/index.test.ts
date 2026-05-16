@@ -7,7 +7,16 @@ vi.mock('@/api', () => ({
   updateBlock: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock('@/utils/fileUtils', async () => {
+  const actual = await vi.importActual<typeof import('@/utils/fileUtils')>('@/utils/fileUtils');
+  return {
+    ...actual,
+    updateBlockDateTime: vi.fn(),
+  };
+});
+
 import { updateBlock } from '@/api';
+import { updateBlockDateTime } from '@/utils/fileUtils';
 import { writeBlock } from '@/utils/blockWriter';
 
 describe('writeBlock', () => {
@@ -43,6 +52,43 @@ describe('writeBlock', () => {
     expect(call[1]).toContain('🔥');
     expect(call[1]).not.toContain('#已完成');
     expect(call[1]).not.toContain('✅');
+  });
+
+  it('delegates addDate patches to updateBlockDateTime with an internal writer', async () => {
+    vi.mocked(updateBlockDateTime).mockResolvedValue(true);
+    const nodeElement = document.createElement('div');
+    nodeElement.setAttribute('data-node-id', 'block123');
+    const protyle = {
+      transaction: vi.fn(),
+    };
+
+    const result = await writeBlock(
+      {
+        blockId: 'block123',
+        protyle,
+        nodeElement,
+      },
+      {
+        type: 'addDate',
+        date: '2026-05-16',
+        allDay: true,
+        siblingItems: [{ date: '2026-05-15' }],
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlockDateTime).toHaveBeenCalledWith(
+      'block123',
+      '2026-05-16',
+      undefined,
+      undefined,
+      true,
+      undefined,
+      [{ date: '2026-05-15' }],
+      undefined,
+      expect.any(Function),
+      'second',
+    );
   });
 
   it('does not fall back to API after a successful Protyle write', async () => {

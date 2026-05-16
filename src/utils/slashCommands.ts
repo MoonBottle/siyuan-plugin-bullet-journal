@@ -11,7 +11,7 @@ import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
 import { insertBlock } from '@/api';
 import { usePlugin } from '@/main';
-import { updateBlockContent, updateBlockDateTime, type BlockWriter } from '@/utils/fileUtils';
+import { updateBlockContent } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
   processLineText,
@@ -28,7 +28,7 @@ import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
-import { createProtyleMarkdownWriter, writeBlock } from '@/utils/blockWriter';
+import { writeBlock, type DatePatch } from '@/utils/blockWriter';
 import {
   RefreshReasons,
   createFullRefreshRequest,
@@ -678,9 +678,7 @@ export function getActionHandler(
           outerHTML: nodeElement.outerHTML.slice(0, 500),
           textPreview: (nodeElement.textContent || '').slice(0, 200),
         });
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleMarkdownWriter({ blockId, nodeElement, protyle }) : undefined;
-        markAsTodayItem(protyle, nodeElement, filter, writer);
+        markAsTodayItem(protyle, nodeElement, filter);
       };
     case 'tomorrow':
       return (protyle, nodeElement) => {
@@ -694,9 +692,7 @@ export function getActionHandler(
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
         });
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleMarkdownWriter({ blockId, nodeElement, protyle }) : undefined;
-        markAsTomorrowItem(protyle, nodeElement, filter, writer);
+        markAsTomorrowItem(protyle, nodeElement, filter);
       };
     case 'date':
       return (protyle, nodeElement) => {
@@ -710,9 +706,7 @@ export function getActionHandler(
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
         });
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleMarkdownWriter({ blockId, nodeElement, protyle }) : undefined;
-        markAsDateItem(protyle, nodeElement, filter, writer);
+        markAsDateItem(protyle, nodeElement, filter);
       };
     case 'done':
       return (protyle, nodeElement) => {
@@ -1085,6 +1079,21 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
   return labels[action] || action;
 }
 
+async function writeDatePatchForSlashCommand(
+  protyle: any,
+  nodeElement: HTMLElement,
+  patch: Omit<DatePatch, 'type'>,
+): Promise<boolean> {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    return false;
+  }
+  return writeBlock(
+    { blockId, nodeElement, protyle },
+    { type: 'addDate', ...patch },
+  );
+}
+
 /**
  * 标记为今日事项
  * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
@@ -1094,7 +1103,6 @@ async function markAsTodayItem(
   protyle: any,
   nodeElement: HTMLElement,
   filter: string[] = SLASH_COMMAND_FILTERS.TODAY,
-  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   console.log('[SlashCommand] markAsTodayItem called', { blockId });
@@ -1125,34 +1133,27 @@ async function markAsTodayItem(
     return;
   }
 
-  console.log('[SlashCommand] markAsTodayItem: calling updateBlockDateTime', {
+  console.log('[SlashCommand] markAsTodayItem: calling writeBlock addDate', {
     blockId,
     today,
     existingItemsCount: existingItems.length,
-    hasWriter: !!writer
+    hasProtyle: !!protyle,
   });
-  console.log('[JTDBG][slash.today] call updateBlockDateTime', {
+  console.log('[JTDBG][slash.today] call writeBlock.addDate', {
     blockId,
     today,
     existingItems,
-    hasWriter: !!writer,
+    hasProtyle: !!protyle,
   });
 
-  // 使用 updateBlockDateTime 添加今日日期
-  const success = await updateBlockDateTime(
-    blockId,
-    today,
-    undefined, // newStartTime
-    undefined, // newEndTime
-    true,      // allDay
-    undefined, // originalDate - undefined 表示添加新日期
-    existingItems.length > 0 ? existingItems : undefined,
-    undefined, // status
-    writer
-  );
+  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
+    date: today,
+    allDay: true,
+    siblingItems: existingItems.length > 0 ? existingItems : undefined,
+  });
 
-  console.log('[SlashCommand] markAsTodayItem: updateBlockDateTime result', success);
-  console.log('[JTDBG][slash.today] updateBlockDateTime result', {
+  console.log('[SlashCommand] markAsTodayItem: writeBlock addDate result', success);
+  console.log('[JTDBG][slash.today] writeBlock.addDate result', {
     blockId,
     success,
   });
@@ -1174,7 +1175,6 @@ async function markAsTomorrowItem(
   protyle: any,
   nodeElement: HTMLElement,
   filter: string[] = SLASH_COMMAND_FILTERS.TOMORROW,
-  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
@@ -1192,18 +1192,11 @@ async function markAsTomorrowItem(
     return;
   }
 
-  // 使用 updateBlockDateTime 添加明天日期
-  const success = await updateBlockDateTime(
-    blockId,
-    tomorrow,
-    undefined, // newStartTime
-    undefined, // newEndTime
-    true,      // allDay
-    undefined, // originalDate - undefined 表示添加新日期
-    existingItems.length > 0 ? existingItems : undefined,
-    undefined, // status
-    writer
-  );
+  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
+    date: tomorrow,
+    allDay: true,
+    siblingItems: existingItems.length > 0 ? existingItems : undefined,
+  });
 
   if (success) {
     deleteSlashCommandContent(protyle, filter, undefined, undefined, false);
@@ -1222,7 +1215,6 @@ async function markAsDateItem(
   protyle: any,
   nodeElement: HTMLElement,
   filter: string[] = SLASH_COMMAND_FILTERS.DATE,
-  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
@@ -1243,18 +1235,11 @@ async function markAsDateItem(
         return;
       }
 
-      // 使用 updateBlockDateTime 添加日期
-      const success = await updateBlockDateTime(
-        blockId,
-        selectedDate,
-        undefined, // newStartTime
-        undefined, // newEndTime
-        true,      // allDay
-        undefined, // originalDate - undefined 表示添加新日期
-        existingItems.length > 0 ? existingItems : undefined,
-        undefined, // status
-        writer
-      );
+      const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
+        date: selectedDate,
+        allDay: true,
+        siblingItems: existingItems.length > 0 ? existingItems : undefined,
+      });
 
       if (success) {
         deleteSlashCommandContent(protyle, filter, undefined, undefined, false);

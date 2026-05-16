@@ -3,11 +3,9 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { showMessage } from 'siyuan';
 
-const { mockEventBusEmit, mockEventBusOn, createProtyleMarkdownWriterMock, createdMarkdownWriterMock } = vi.hoisted(() => ({
+const { mockEventBusEmit, mockEventBusOn } = vi.hoisted(() => ({
   mockEventBusEmit: vi.fn(),
   mockEventBusOn: vi.fn(),
-  createdMarkdownWriterMock: vi.fn().mockResolvedValue(true),
-  createProtyleMarkdownWriterMock: vi.fn(),
 }));
 
 vi.mock('@/utils/dialog', () => ({
@@ -49,13 +47,11 @@ vi.mock('@/utils/sharedPinia', () => ({
 
 vi.mock('@/utils/fileUtils', () => ({
   updateBlockContent: vi.fn(),
-  updateBlockDateTime: vi.fn(),
   updateBlockPriority: vi.fn(),
 }));
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: vi.fn().mockResolvedValue(true),
-  createProtyleMarkdownWriter: createProtyleMarkdownWriterMock,
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({
@@ -102,8 +98,7 @@ import { processLineText, extractDatesFromBlock } from '@/utils/slashCommandUtil
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
 import { eventBus, Events } from '@/utils/eventBus';
-import { updateBlockDateTime } from '@/utils/fileUtils';
-import { createProtyleMarkdownWriter } from '@/utils/blockWriter';
+import { writeBlock } from '@/utils/blockWriter';
 
 const projectStoreMock = {
   getHabits: vi.fn(() => []),
@@ -115,7 +110,6 @@ describe('habit slash commands', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    createProtyleMarkdownWriterMock.mockReturnValue(createdMarkdownWriterMock);
     vi.mocked(processLineText).mockImplementation((text: string) => text);
     vi.mocked(useProjectStore).mockReturnValue(projectStoreMock as any);
     vi.mocked(useSettingsStore).mockReturnValue({
@@ -267,7 +261,6 @@ describe('habit slash commands', () => {
 
   it('/jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([{ date: '2026-04-29' }] as any);
-    vi.mocked(updateBlockDateTime).mockResolvedValue(true as any);
     vi.mocked(processLineText).mockImplementation((text: string) => text.replace('/jt', '').trimEnd());
 
     const handler = getActionHandler('today', {} as any, ['/jt']);
@@ -295,14 +288,16 @@ describe('habit slash commands', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(createProtyleMarkdownWriter)).toHaveBeenCalledWith({
+    expect(writeBlock).toHaveBeenCalledWith({
       blockId: 'block-today',
       nodeElement: node,
       protyle,
+    }, {
+      type: 'addDate',
+      date: '2026-04-30',
+      allDay: true,
+      siblingItems: [{ date: '2026-04-29' }],
     });
-    expect(updateBlockDateTime).toHaveBeenCalled();
-    expect(vi.mocked(updateBlockDateTime).mock.calls[0]?.[8]).toBe(createdMarkdownWriterMock);
-    expect(textNode.textContent).toBe('测试独立事项 📅2026-04-29');
     expect(protyle.transaction).not.toHaveBeenCalled();
   });
 

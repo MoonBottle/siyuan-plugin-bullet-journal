@@ -1,12 +1,6 @@
-import type { ItemStatus, PriorityLevel, TimePrecision } from '@/types/models';
+import type { ItemDateTimeInfo as ModelItemDateTimeInfo, ItemStatus, PriorityLevel, TimePrecision } from '@/types/models';
 
-export interface ItemDateTimeInfo {
-  date: string;
-  allDay: boolean;
-  startTime?: string;
-  endTime?: string;
-  timePrecision: TimePrecision;
-}
+export type { ItemDateTimeInfo } from '@/types/models';
 
 export interface BlockWriteContext {
   blockId: string;
@@ -24,7 +18,7 @@ export type DatePatch = {
   endTime?: string;
   allDay?: boolean;
   timePrecision?: TimePrecision;
-  siblingItems?: ItemDateTimeInfo[];
+  siblingItems?: ModelItemDateTimeInfo[];
 };
 
 export type StatusPatch = {
