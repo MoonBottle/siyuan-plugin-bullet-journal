@@ -23,49 +23,68 @@ Task Assistant 当前有三类写入路径混用：
 
 ### 2.1 任务列表状态更新目标是 `NodeListItem`
 
-思源 checkbox 点击逻辑位于 `app/src/protyle/wysiwyg/index.ts`。当点击任务列表 checkbox 时，源码更新的是 `actionElement.parentElement`，即任务列表项 DOM，并以 `actionId` 提交事务：
+思源 checkbox 点击逻辑位于 [`app/src/protyle/wysiwyg/index.ts`](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/wysiwyg/index.ts#L3009-L3067)。当点击任务列表 checkbox 时，源码更新的是 `actionElement.parentElement`，即任务列表项 DOM (`<li>`)，并以 `actionId` 提交事务：
 
 ```ts
-actionElement.parentElement.setAttribute("data-task", "X");
-updateTransaction(protyle, actionId, actionElement.parentElement.outerHTML, html);
+// L3054: actionElement.classList.contains("protyle-action--task")
+// L3056: const html = actionElement.parentElement.outerHTML  (旧值快照)
+// L3060/L3064: actionElement.parentElement.setAttribute("data-task", " "/"X")
+// L3066: actionElement.parentElement.setAttribute("updated", ...)
+// L3067: updateTransaction(protyle, actionId, actionElement.parentElement.outerHTML, html)
 ```
+
+关键发现：
+- `data-task` 取值：`" "` (空格) = `[ ]` 未完成，`"X"` = `[x]` 已完成
+- CSS 类 `protyle-task--done` 同步切换（L3057-L3064）
+- `actionId` 来自 L3020: `actionElement.parentElement.getAttribute("data-node-id")` — 即 `<li>` 的块 ID
 
 因此 `setStatus` 在任务列表场景必须写 `NodeListItem`，不能只写其内部 paragraph。
 
 ### 2.2 `updateBlock(markdown)` 对 `NodeListItem` 有特殊处理
 
-思源 kernel 的 `kernel/api/block_op.go:updateBlock` 在目标块是 `NodeListItem` 且 markdown 解析结果是 `NodeList` 时，会剥离 list wrapper：
+思源 kernel 的 [`kernel/api/block_op.go`](file:///C:/dev/projects/open-source/siyuan/kernel/api/block_op.go#L786-L885) `updateBlock` 函数（L786-L885），在目标块是 `NodeListItem` 且 markdown 解析结果是 `NodeList` 时，会剥离 list wrapper（L850-L856）：
 
 ```go
+// L850-L856: 解决 GitHub issue #4658
 if "NodeListItem" == block.Type && ast.NodeList == tree.Root.FirstChild.Type {
-    tree.Root.AppendChild(tree.Root.FirstChild.FirstChild)
-    tree.Root.FirstChild.Unlink()
+    tree.Root.AppendChild(tree.Root.FirstChild.FirstChild) // 列表项提到 Root 下
+    tree.Root.FirstChild.Unlink()                          // 删除 NodeList 容器
     if nil != tree.Root.FirstChild && ast.NodeKramdownBlockIAL == tree.Root.FirstChild.Type {
-        tree.Root.FirstChild.Unlink()
+        tree.Root.FirstChild.Unlink()                      // 删除残留列表 IAL
     }
 }
+// L859-L864: 只强制保留目标块 id，其他自定义 IAL 属性由 markdown 中携带
 tree.Root.FirstChild.SetIALAttr("id", id)
 ```
 
 结论：
 
-- API Transport 可以更新 `NodeListItem`，但传入 markdown 的形态必须测试覆盖。
-- kernel 只强制保留目标块 `id`，其他自定义 IAL 属性必须由插件保留在 markdown 中。
+- API Transport 可以更新 `NodeListItem`，但 kernel 剥离 list wrapper 的逻辑意味着传入 markdown **不应**包含 `<ul>/<ol>` 容器层。
+- kernel 只强制保留目标块 `id`（L859-L864），其他自定义 IAL 属性（`custom-reminder` 等）**必须由插件保留在传入的 markdown 中**。
 
 ### 2.3 `getBlockKramdown` 输出包含目标节点与其 IAL
 
-思源 `kernel/model/block.go:getBlockKramdown0` 会先调用 `addBlockIALNodes`，然后把目标节点和其后的 IAL 节点挂到临时 root 导出：
+思源 [`kernel/model/block.go`](file:///C:/dev/projects/open-source/siyuan/kernel/model/block.go#L1039-L1055) `getBlockKramdown0`（L1039-L1055）会先调用 `addBlockIALNodes`（位于 [`kernel/model/template.go`](file:///C:/dev/projects/open-source/siyuan/kernel/model/template.go#L501-L533)，L501-L533），然后把目标节点和其后的 IAL 节点挂到临时 root 导出：
 
 ```go
-root.AppendChild(node.Next) // IAL
-root.PrependChild(node)
-ret = treenode.ExportNodeStdMd(root, luteEngine)
+// L1039-L1055: getBlockKramdown0
+addBlockIALNodes(tree, false)                          // → template.go L501-L533
+node := treenode.GetNodeInTree(tree, id)
+root := &ast.Node{Type: ast.NodeDocument}
+root.AppendChild(node.Next) // IAL node (sibling, inserted by addBlockIALNodes)
+root.PrependChild(node)     // target node
+ret = treenode.ExportNodeStdMd(root, luteEngine)       // → node.go L155-L162
 ```
+
+`addBlockIALNodes` 的内部逻辑（template.go L501-L533）：
+1. AST Walk 遍历所有块节点
+2. 对有 `KramdownIAL` 的节点，通过 `InsertAfter()` 在其后插入 `NodeKramdownBlockIAL` sibling
+3. IAL tokens 由 `parse.IAL2Tokens(block.KramdownIAL)` 序列化，格式为 `{: key1="val1" key2="val2"}`
 
 结论：
 
-- 设计不能假设 IAL 总是行内 `- {: id="..."}[ ] 内容`。
-- Modifier 必须支持并优先测试真实形态：内容行 + trailing IAL 行，例如：
+- 设计不能假设 IAL 总是行内 `- {: id="..."}[ ] 内容`。`getBlockKramdown` 的真实输出是：**内容行 + trailing IAL 行**。
+- Modifier 必须支持并优先测试真实形态：
 
 ```markdown
 - [ ] 任务内容 📅2026-05-14
@@ -74,30 +93,61 @@ ret = treenode.ExportNodeStdMd(root, luteEngine)
 
 ### 2.4 Protyle DOM 写入应优先沿用 `SpinBlockDOM`
 
-思源前端在大量现有块 DOM 修改后提交事务的路径中使用 `protyle.lute.SpinBlockDOM(nodeElement.outerHTML)` 规范化 DOM，再调用 `updateTransaction`。例如 `app/src/protyle/hint/index.ts` 处理图片 slash 输入时，会替换 DOM、重新查询新节点、用 `<wbr>` 恢复光标。
+思源前端在大量现有块 DOM 修改后提交事务的路径中使用 `protyle.lute.SpinBlockDOM(nodeElement.outerHTML)` 规范化 DOM，再调用 `updateTransaction`。在 [`app/src/protyle/hint/index.ts`](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts) 中至少 7 处调用 `SpinBlockDOM`：
+
+| 行号 | 场景 |
+|------|------|
+| [L115](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L115) | emoji 面板点击插入 |
+| [L636](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L636) | 冒号触发 emoji |
+| [L776](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L776) | 图片 `![]()` slash 输入 |
+| [L807](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L807) | 空段落转表格等 |
+| [L820](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L820) | 通用文本/`<div>` 插入 |
 
 结论：
 
-- Protyle Transport 不应默认做 `BlockDOM2StdMd -> Md2BlockDOM` 往返；该路径可能重排 DOM、IAL、内联结构。
+- Protyle Transport 不应默认做 `BlockDOM2StdMd → Md2BlockDOM` 往返；该路径可能重排 DOM、IAL、内联结构。
 - Protyle 快路径应做 DOM/text 最小修改，然后 `SpinBlockDOM` 规范化并提交事务。
 - kramdown Modifier 是 API Transport 的核心，不是所有 Protyle 写入的唯一实现。
 
 ### 2.5 斜杠命令删除应保留 Range/offset 语义
 
-思源 slash hint 的删除基于 `lastIndex` 和当前 `Range`：
+思源 slash hint 的删除基于 `getKey()` 计算的 `lastIndex` 和当前 `Range`：
 
-```ts
-range.setStart(range.startContainer, this.lastIndex);
-range.deleteContents();
-```
+- [`getKey()`](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L1037-L1083)（L1037-L1083）：遍历所有扩展键（`/`, `#`, `:`, `((`），对每个键调用 `currentLineValue.lastIndexOf(item.key)`，取 `lastIndex` 最大值作为匹配位置（L1042-L1055）。
+- [`fill()`](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L442-L895) 中 Range 精确删除（L565-L568）：
+  ```ts
+  range.setStart(range.startContainer, this.lastIndex);
+  range.deleteContents();
+  ```
+  `lastIndex` 将 Range 起点回退到 `/` 字符位置，从而精确选中 `/keyword` 整体进行删除。斜杠分支从 L649 开始，内部至少 9 处调用 `range.deleteContents()`。
 
 结论：
 
-- `removeSlashCommands` 不能只靠“删除首个匹配字符串”作为 Protyle 场景主路径。
+- `removeSlashCommands` 不能只靠「删除首个匹配字符串」作为 Protyle 场景主路径。
 - Protyle 场景应传入或计算 slash 起始 offset，执行 Range 精确删除。
 - API-only 或无 Range 场景才允许使用文本 fallback。
 
-## 3. 设计目标
+### 2.6 Protyle 写入后光标恢复：`<wbr>` 与 `focusByOffset` 双机制
+
+思源在块 DOM 修改后恢复光标位置有两种机制：
+
+**保存阶段** — [`setInsertWbrHTML()`](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/util/selection.ts#L539-L568)（L539-L568）：
+1. 非表格块：克隆节点 → `getSelectionOffset` 计算偏移 → `focusByOffset` 定位克隆中的光标 → 插入 `<wbr>` 元素 → 存入 `protyle.wysiwyg.lastHTMLs[id]`
+2. 表格块：对 `<TH>`/`<TD>` 单元格做同样处理
+
+**恢复阶段** — [`focusByWbr()`](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/util/selection.ts#L570-L625)（L570-L625）：
+1. 在渲染后的 element 中查找所有 `<wbr>`，保留第一个，删除其余
+2. 根据 `<wbr>` 的兄弟节点（文本/元素/img）选择合适的光标位置
+3. 折叠 Range → 移除 `<wbr>` → `focusByRange()` 激活光标
+
+**文本偏移恢复** — [`focusByOffset()`](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/util/selection.ts#L457-L537)（L457-L537）：
+通过 TreeWalker 遍历所有文本节点和 `<br>` 元素，按偏移量定位 startContainer/endContainer，直接操作 Range。适用于不需要 `<wbr>` 标记的简单场景。
+
+结论：
+
+- BlockWriter Protyle Transport 写入后应保存光标偏移量（写入前通过 TreeWalker 计算），写入后通过 `focusByOffset` 恢复。
+- 如果写入涉及 DOM 重建（如替换 HTML），应使用 `<wbr>` 标记机制（克隆节点 → 插入 `<wbr>` → 写入后 `focusByWbr` 恢复）。
+- 光标恢复失败时降级到行首不算错误。
 
 1. 提供统一的写入入口 `writeBlock(context, patches)`，接受单个或批量 `BlockPatch`，逐步替代分散写入逻辑。
 2. 抽出共享目标解析器，统一处理段落、任务列表项、多行事项、番茄钟附属行和 trailing IAL。
@@ -316,6 +366,8 @@ function applyBlockPatches(parts: KramdownBlockParts, patches: BlockPatch[]): st
    - `SpinBlockDOM(listItem.outerHTML)`；
    - 重新查询新 list item；
    - `protyle.transaction(doOps, undoOps)`。
+   
+   > **审查发现**：思源原生 checkbox 点击（wysiwyg/index.ts L3054-L3067）**不调用** `SpinBlockDOM`，直接以 `outerHTML` 提交 `updateTransaction`。但 BlockWriter 的 `setStatus` 可能伴随其他文本修改（如追加状态标签），因此仍建议经过 `SpinBlockDOM` 规范化以确保 DOM 一致性。
 2. `removeSlashCommands`：
    - 使用 Range 删除当前 slash；
    - 追加 suffix 或执行必要文本 transform；
@@ -509,12 +561,78 @@ await writeBlock(context, [
 | 一次性迁移范围过大 | 每阶段只迁移一个入口，旧函数保留到调用方清零 |
 | dev-only 验证入口误进入生产 | 所有注册都用 `import.meta.env.DEV` 包裹，并在构建产物中检查无 `bwtest` 文本 |
 
-## 16. 参考源码
+## 16. 源码引用附录
 
-| 文件 | 参考点 |
-|------|--------|
-| `siyuan/app/src/protyle/wysiwyg/index.ts` | checkbox 点击更新 `NodeListItem` 并提交 transaction |
-| `siyuan/kernel/api/block_op.go` | `updateBlock` markdown 转 BlockDOM、`NodeListItem` 特殊处理、仅强制目标 `id` |
-| `siyuan/kernel/model/block.go` | `getBlockKramdown0` 导出目标节点和 IAL |
-| `siyuan/app/src/protyle/hint/index.ts` | slash hint Range 删除、`SpinBlockDOM`、DOM 替换后重新查询节点 |
-| `siyuan/app/src/protyle/util/selection.ts` | `focusByOffset`、`focusByWbr` 的光标恢复语义 |
+### 16.1 思源源码
+
+| 文件 | 行号 | 关键内容 | 关联设计点 |
+|------|------|----------|-----------|
+| `app/src/protyle/wysiwyg/index.ts` | [L3009](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/wysiwyg/index.ts#L3009) | `hasClosestByClassName(event.target, "protyle-action")` — actionElement 获取入口 | §2.1, §8.1 |
+| 同上 | [L3019-L3020](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/wysiwyg/index.ts#L3019-L3020) | `li` 分支 + `actionId` 获取（`data-node-id`） | §2.1 |
+| 同上 | [L3054-L3067](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/wysiwyg/index.ts#L3054-L3067) | checkbox 状态切换：`data-task` `" "/"X"` + `protyle-task--done` CSS 类 + `updateTransaction` | §2.1, §10.1 |
+| `kernel/api/block_op.go` | [L786-L885](file:///C:/dev/projects/open-source/siyuan/kernel/api/block_op.go#L786-L885) | `updateBlock()` 完整实现 | §2.2, §11 |
+| 同上 | [L827-L848](file:///C:/dev/projects/open-source/siyuan/kernel/api/block_op.go#L827-L848) | `NodeDocument` 分支：全量替换文档子节点 | §2.2 |
+| 同上 | [L850-L856](file:///C:/dev/projects/open-source/siyuan/kernel/api/block_op.go#L850-L856) | `NodeListItem` list wrapper 剥离（GitHub #4658） | §2.2 |
+| 同上 | [L859-L864](file:///C:/dev/projects/open-source/siyuan/kernel/api/block_op.go#L859-L864) | IAL `id` 强制保留 + 空树 fallback 段落 | §2.2 |
+| `kernel/model/block.go` | [L1039-L1055](file:///C:/dev/projects/open-source/siyuan/kernel/model/block.go#L1039-L1055) | `getBlockKramdown0` — 目标节点 + IAL sibling → 临时 root → `ExportNodeStdMd` | §2.3, §9.1 |
+| `kernel/model/template.go` | [L501-L533](file:///C:/dev/projects/open-source/siyuan/kernel/model/template.go#L501-L533) | `addBlockIALNodes` — `InsertAfter(NodeKramdownBlockIAL)` | §2.3 |
+| `kernel/treenode/node.go` | [L155-L162](file:///C:/dev/projects/open-source/siyuan/kernel/treenode/node.go#L155-L162) | `ExportNodeStdMd` — Lute `ProtyleExportMdNodeSync` | §2.3 |
+| `app/src/protyle/hint/index.ts` | [L1037-L1083](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L1037-L1083) | `getKey()` — `lastIndex` 计算（`lastIndexOf` + `BLOCK_HINT_KEYS` 特殊处理） | §2.5, §7 |
+| 同上 | [L442-L895](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L442-L895) | `fill()` — 斜杠 hint 选择回调 | §2.5 |
+| 同上 | [L565-L568](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L565-L568) | Range 精确删除：`range.setStart(..., this.lastIndex)` + `deleteContents()` | §2.5, §10.1 |
+| 同上 | [L649](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L649) | 斜杠分支入口 `splitChar === "/"` | §2.5 |
+| 同上 | [L115](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L115), [L636](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L636), [L776](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L776), [L807](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L807), [L820](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/hint/index.ts#L820) | `SpinBlockDOM` 调用点（共 5 处核心引用） | §2.4, §10.1 |
+| `app/src/protyle/util/selection.ts` | [L457-L537](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/util/selection.ts#L457-L537) | `focusByOffset` — TreeWalker 文本偏移光标恢复 | §2.6, §10.3 |
+| 同上 | [L539-L568](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/util/selection.ts#L539-L568) | `setInsertWbrHTML` — 克隆节点 + `<wbr>` 插入保存光标 | §2.6 |
+| 同上 | [L570-L625](file:///C:/dev/projects/open-source/siyuan/app/src/protyle/util/selection.ts#L570-L625) | `focusByWbr` — `<wbr>` 光标恢复 | §2.6, §10.3 |
+
+### 16.2 项目源码
+
+| 文件 | 行号 | 关键内容 | 关联设计点 |
+|------|------|----------|-----------|
+| `src/utils/slashCommands.ts` | [L67-L214](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/slashCommands.ts#L67-L214) | `deleteSlashCommandContent` — 全局文本替换删除 slash（待替换） | §1, §2.5 |
+| 同上 | [L223-L251](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/slashCommands.ts#L223-L251) | `updateTransaction` — Protyle 事务提交封装 | §1, §2.1 |
+| 同上 | [L298-L532](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/slashCommands.ts#L298-L532) | `createSlashCommands` — `builtinCommands` 数组（注册新斜杠命令的位置） | §13.1 |
+| 同上 | [L627-L648](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/slashCommands.ts#L627-L648) | `getValidatedItemFromNode` — 从 DOM 节点提取并校验 Item | §8 |
+| 同上 | [L1290-L1426](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/slashCommands.ts#L1290-L1426) | `createProtyleWriter` — ProtyleWriter 工厂（快/慢路径）（待替换） | §1 |
+| `src/utils/fileUtils.ts` | [L184-L232](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/fileUtils.ts#L184-L232) | `extractItemMarkers` — 提取优先级/日期/提醒/重复 markers（待抽出） | §1, §6 |
+| 同上 | [L239-L241](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/fileUtils.ts#L239-L241) | `isTaskListFormat` — 任务列表格式检测 `[ ]`/`[x]` | §9.2 |
+| 同上 | [L430-L493](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/fileUtils.ts#L430-L493) | `handleSingleLineUpdate` — 单行日期替换辅助（待替换） | §1, §9.3 |
+| 同上 | [L495-L1023](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/fileUtils.ts#L495-L1023) | `updateBlockDateTime` — 日期更新（529 行，待替换） | §1, §9.3 |
+| 同上 | [L1105-L1404](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/fileUtils.ts#L1105-L1404) | `updateBlockContent` — 内容/标签更新（300 行，待替换） | §1 |
+| 同上 | [L1413-L1593](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/utils/fileUtils.ts#L1413-L1593) | `updateBlockPriority` — 优先级更新（181 行，待替换） | §1, §9.4, §12 |
+| `src/api.ts` | [L232-L244](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/api.ts#L232-L244) | `updateBlock` — 通用块更新 API 封装 | §11 |
+| 同上 | [L268-L276](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/api.ts#L268-L276) | `getBlockKramdown` — 获取块 kramdown | §2.3, §11 |
+| 同上 | [L345-L349](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/api.ts#L345-L349) | `getBlockByID` — SQL 查询块信息 | §8.2 |
+| `src/parser/core.ts` | [L91-L123](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/parser/core.ts#L91-L123) | `stripListAndBlockAttr` — 剥离列表前缀 + 行内块属性 | §9.2 |
+| 同上 | [L237-L249](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/parser/core.ts#L237-L249) | `taskListMatch` — 任务列表正则匹配 + `listItemBlockIdStack` 嵌套处理 | §8.2 |
+| 同上 | [L498-L512](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/parser/core.ts#L498-L512) | `isTaskList` 局部变量 — 写入 `item.isTaskList` 和 `item.listItemBlockId` | §8 |
+| `src/index.ts` | [L314-L316](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/index.ts#L314-L316) | `onload()` 中 `registerTopBar()` 调用位置 | §13.2 |
+| 同上 | [L350](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/index.ts#L350) | `onload()` 中 `registerSlashCommands()` 初次注册 | §13.1 |
+| 同上 | [L1517-L1721](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/index.ts#L1517-L1721) | `registerTopBar()` — 顶栏菜单构建 | §13.2 |
+| 同上 | [L3314-L3337](file:///c:/dev/projects/open-source/siyuan-plugin-bullet-journal/src/index.ts#L3314-L3337) | `registerSlashCommands()` — 调用 `createSlashCommands(config)` | §13.1 |
+
+### 16.3 关键源码与设计模块的对应关系
+
+| Spec 模块 | 依赖的思源源码 | 依赖的项目源码 |
+|-----------|-------------|--------------|
+| `protyleTransport.ts` (setStatus) | `wysiwyg/index.ts` L3054-L3067, `selection.ts` L457-L625 | `slashCommands.ts` L223-L251 (`updateTransaction`) |
+| `protyleTransport.ts` (slash) | `hint/index.ts` L565-L568, L1037-L1083 | `slashCommands.ts` L67-L214 (`deleteSlashCommandContent`) |
+| `apiTransport.ts` | `block_op.go` L850-L864, `block.go` L1039-L1055 | `api.ts` L232-L244, L268-L276 |
+| `kramdownBlocks.ts` | `block.go` L1039-L1055, `template.go` L501-L533 | — |
+| `kramdownModifier.ts` | — | `fileUtils.ts` L184-L232, L239-L241 |
+| `blockTargetResolver.ts` | — | `api.ts` L345-L349, `parser/core.ts` L91-L123, L237-L249 |
+| `slashRange.ts` | `hint/index.ts` L442-L895 | `slashCommands.ts` L67-L214 |
+| `itemLineMarkers.ts` | — | `fileUtils.ts` L184-L232 |
+
+### 16.4 旧写入函数与 BlockWriter 替换对应关系
+
+| 旧函数 | 位置 | 行数 | 替换为 BlockWriter |
+|--------|------|------|-------------------|
+| `deleteSlashCommandContent` | `slashCommands.ts` L67-L214 | 148 行 | `writeBlock(ctx, { type: 'removeSlashCommands' })` |
+| `createProtyleWriter` (快/慢路径) | `slashCommands.ts` L1290-L1426 | 137 行 | `writeBlock(ctx, patch)` — Protyle Transport |
+| `updateBlockDateTime` | `fileUtils.ts` L495-L1023 | 529 行 | `writeBlock(ctx, { type: 'addDate' })` |
+| `updateBlockContent` | `fileUtils.ts` L1105-L1404 | 300 行 | `writeBlock(ctx, { type: 'setContent' })` |
+| `updateBlockPriority` | `fileUtils.ts` L1413-L1593 | 181 行 | `writeBlock(ctx, { type: 'setPriority' })` |
+| `handleSingleLineUpdate` (辅助) | `fileUtils.ts` L430-L493 | 64 行 | 合并入 `kramdownModifier.addDate` |
+| `extractItemMarkers` (辅助) | `fileUtils.ts` L184-L232 | 49 行 | 抽出到 `itemLineMarkers.ts` |
