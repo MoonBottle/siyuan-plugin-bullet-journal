@@ -29,11 +29,11 @@
         </div>
       </div>
       <button
-        v-if="task.docId"
+        v-if="task.blockId"
         ref="docBtnRef"
         type="button"
         class="b3-button b3-button--outline"
-        @click="openDocPreview(task.docId, task.blockId)"
+        @click="openDocPreview(task.blockId)"
       >
         {{ t('project').openDocument }}
       </button>
@@ -100,12 +100,12 @@ const preview = useBlockFocusPreview({
 });
 const nativePreview = createNativeBlockPreviewController();
 
-function openDocPreview(docId: string, blockId?: string) {
-  if (!docBtnRef.value || !docId) return;
+function openDocPreview(blockId: string) {
+  if (!docBtnRef.value || !blockId) return;
 
   preview.showNow({
-    blockId: docId,
-    itemId: blockId || docId,
+    blockId,
+    itemId: blockId,
     anchorEl: docBtnRef.value,
   });
 }
