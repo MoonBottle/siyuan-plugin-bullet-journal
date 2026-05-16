@@ -820,14 +820,18 @@ export function getActionHandler(
       };
     case 'markAsTask':
       return (protyle, nodeElement) => {
+        const blockId = nodeElement.getAttribute('data-node-id');
+        if (!blockId) {
+          return;
+        }
         const taskTag = t('taskTag');
         const blockContent = nodeElement.textContent || '';
         if (blockContent.includes(taskTag)) {
-          deleteSlashCommandContent(protyle, filter);
+          void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
           showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
           return;
         }
-        deleteSlashCommandContent(protyle, filter, taskTag);
+        void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand', suffix: taskTag });
         showMessage(t('slash').markTaskSuccess, 2000, 'info');
       };
     case 'viewDetail':

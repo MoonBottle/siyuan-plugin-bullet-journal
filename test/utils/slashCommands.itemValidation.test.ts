@@ -64,6 +64,10 @@ vi.mock('@/utils/fileUtils', () => ({
   updateBlockPriority: vi.fn(),
 }));
 
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock('@/utils/slashCommandUtils', () => ({
   generateSlashPatterns: vi.fn(),
   processLineText: vi.fn((text: string, filters?: string[]) => {
@@ -103,6 +107,7 @@ vi.mock('@/services/habitService', () => ({
 }));
 
 import { updateBlockContent } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import { showPrioritySettingDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
 import { extractItemFromBlock } from '@/utils/slashCommandUtils';
 import { getActionHandler } from '@/utils/slashCommands';
@@ -402,6 +407,38 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalled();
+  });
+
+  it('/rw 在未标记任务时通过 BlockWriter 删除 slash 并追加任务标记', async () => {
+    const handler = getActionHandler('markAsTask', {} as any, ['/rw']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-task');
+    node.textContent = '整理资料 /rw';
+    const protyle = { transaction: vi.fn() };
+
+    handler(protyle as any, node);
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-task', nodeElement: node, protyle },
+      { type: 'removeSlashCommand', suffix: '📋' },
+    );
+    expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已标记为任务', 2000, 'info');
+  });
+
+  it('/rw 在已标记任务时通过 BlockWriter 仅删除 slash 命令', async () => {
+    const handler = getActionHandler('markAsTask', {} as any, ['/rw']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-task');
+    node.textContent = '整理资料 📋 /rw';
+    const protyle = { transaction: vi.fn() };
+
+    handler(protyle as any, node);
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-task', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
+    expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已经标记为任务', 2000, 'info');
   });
 });
 
