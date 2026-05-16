@@ -9,6 +9,7 @@ const {
   mockRefresh,
   mockShowMessage,
   mockBuildTodoDateRange,
+  mockWriteBlock,
 } = vi.hoisted(() => ({
   mockLoadFromPlugin: vi.fn(),
   mockRefresh: vi.fn(async () => {}),
@@ -17,6 +18,7 @@ const {
     start: '2026-05-01',
     end: '2026-05-01',
   })),
+  mockWriteBlock: vi.fn(async () => true),
 }));
 
 vi.mock('@/mobile/components/todo/MobileFilterBar.vue', () => ({
@@ -37,11 +39,22 @@ vi.mock('@/mobile/components/todo/MobileTodoList.vue', () => ({
         default: null,
       },
     },
-    setup(props) {
-      return () => h('div', {
-        'data-testid': 'todo-list',
-        'data-date-range': props.dateRange ? JSON.stringify(props.dateRange) : '',
-      }, 'list');
+    emits: ['item-complete'],
+    setup(props, { emit }) {
+      return () => h('div', [
+        h('div', {
+          'data-testid': 'todo-list',
+          'data-date-range': props.dateRange ? JSON.stringify(props.dateRange) : '',
+        }, 'list'),
+        h('button', {
+          'data-testid': 'todo-list-complete',
+          onClick: () => emit('item-complete', {
+            blockId: 'panel-item',
+            date: '2026-05-01',
+            status: 'pending',
+          }),
+        }, 'complete'),
+      ]);
     },
   }),
 }));
@@ -192,8 +205,8 @@ vi.mock('@/utils/dialog', () => ({
   showPomodoroTimerDialog: vi.fn(),
 }));
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockContent: vi.fn(async () => true),
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: mockWriteBlock,
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -321,6 +334,22 @@ describe('MobileTodoPanel', () => {
     expect(mockBuildTodoDateRange).toHaveBeenCalled();
     expect(mounted.container.querySelector('[data-testid="todo-list"]')?.getAttribute('data-date-range')).toContain('2026-05-01');
     expect(mockShowMessage).not.toHaveBeenCalledWith('Filters applied');
+
+    mounted.unmount();
+  });
+
+  it('uses BlockWriter for quick complete from the list', async () => {
+    const mounted = mountPanel();
+    await nextTick();
+
+    (mounted.container.querySelector('[data-testid="todo-list-complete"]') as HTMLButtonElement | null)?.click();
+    await nextTick();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'panel-item' },
+      { type: 'setStatus', status: 'completed' },
+    );
+    expect(mockShowMessage).toHaveBeenCalledWith('Complete');
 
     mounted.unmount();
   });

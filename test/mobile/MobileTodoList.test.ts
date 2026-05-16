@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, nextTick } from 'vue';
 import MobileTodoList from '@/mobile/components/todo/MobileTodoList.vue';
 
@@ -18,6 +18,34 @@ const pendingItem = {
   project: { name: '测试项目' },
 };
 
+const expiredItem = {
+  ...pendingItem,
+  id: 'item-expired',
+  blockId: 'block-expired',
+  date: '2026-04-30',
+  startDateTime: '2026-04-30 09:00',
+  endDateTime: '2026-04-30 10:30',
+  siblingItems: [{ date: '2026-05-03' }],
+};
+
+const {
+  mockWriteBlock,
+  mockShowMessage,
+  mockProjectStore,
+} = vi.hoisted(() => ({
+  mockWriteBlock: vi.fn(async () => true),
+  mockShowMessage: vi.fn(),
+  mockProjectStore: {
+    loading: false,
+    hideCompleted: false,
+    hideAbandoned: false,
+    getDisplayItems: vi.fn(() => []),
+    getFilteredAndSortedItems: vi.fn(() => []),
+    getFilteredCompletedItems: vi.fn(() => []),
+    getFilteredAbandonedItems: vi.fn(() => []),
+  },
+}));
+
 vi.mock('@/components/SiyuanTheme/SyLoading.vue', () => ({
   default: {
     name: 'SyLoadingStub',
@@ -26,15 +54,7 @@ vi.mock('@/components/SiyuanTheme/SyLoading.vue', () => ({
 }));
 
 vi.mock('@/stores', () => ({
-  useProjectStore: () => ({
-    loading: false,
-    hideCompleted: false,
-    hideAbandoned: false,
-    getDisplayItems: vi.fn(() => [pendingItem]),
-    getFilteredAndSortedItems: vi.fn(() => [pendingItem]),
-    getFilteredCompletedItems: vi.fn(() => []),
-    getFilteredAbandonedItems: vi.fn(() => []),
-  }),
+  useProjectStore: () => mockProjectStore,
 }));
 
 vi.mock('@/i18n', () => ({
@@ -79,12 +99,12 @@ vi.mock('@/utils/exampleDocUtils', () => ({
   createExampleDocument: vi.fn(),
 }));
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockDateTime: vi.fn(),
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: mockWriteBlock,
 }));
 
 vi.mock('@/utils/dialog', () => ({
-  showMessage: vi.fn(),
+  showMessage: mockShowMessage,
 }));
 
 function mountList() {
@@ -108,9 +128,22 @@ function mountList() {
   };
 }
 
+beforeEach(() => {
+  mockProjectStore.getDisplayItems.mockReturnValue([pendingItem]);
+  mockProjectStore.getFilteredAndSortedItems.mockReturnValue([pendingItem]);
+  mockProjectStore.getFilteredCompletedItems.mockReturnValue([]);
+  mockProjectStore.getFilteredAbandonedItems.mockReturnValue([]);
+  mockWriteBlock.mockResolvedValue(true);
+});
+
 afterEach(() => {
   document.body.innerHTML = '';
   vi.clearAllMocks();
+  mockProjectStore.getDisplayItems.mockReturnValue([pendingItem]);
+  mockProjectStore.getFilteredAndSortedItems.mockReturnValue([pendingItem]);
+  mockProjectStore.getFilteredCompletedItems.mockReturnValue([]);
+  mockProjectStore.getFilteredAbandonedItems.mockReturnValue([]);
+  mockWriteBlock.mockResolvedValue(true);
 });
 
 describe('MobileTodoList', () => {
@@ -150,6 +183,41 @@ describe('MobileTodoList', () => {
 
     expect(listRoot?.classList.contains('b3-dialog')).toBe(true);
     expect(listRoot?.classList.contains('mobile-todo-list--gesture-guard')).toBe(true);
+
+    mounted.unmount();
+  });
+
+  it('uses BlockWriter addDate when postponing expired items', async () => {
+    mockProjectStore.getDisplayItems.mockReturnValue([expiredItem]);
+    mockProjectStore.getFilteredAndSortedItems.mockReturnValue([expiredItem]);
+
+    const mounted = mountList();
+    await nextTick();
+
+    (mounted.container.querySelector('.action-link') as HTMLButtonElement | null)?.click();
+    await Promise.resolve();
+
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-expired' },
+      {
+        type: 'addDate',
+        date: '2026-05-02',
+        startTime: '09:00',
+        endTime: '10:30',
+        allDay: false,
+        originalDate: '2026-04-30',
+        siblingItems: [
+          { date: '2026-05-03' },
+          {
+            date: '2026-04-30',
+            startDateTime: '2026-04-30 09:00',
+            endDateTime: '2026-04-30 10:30',
+            timePrecision: undefined,
+          },
+        ],
+        timePrecision: undefined,
+      },
+    );
 
     mounted.unmount();
   });
