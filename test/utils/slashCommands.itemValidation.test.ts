@@ -155,7 +155,10 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(updateBlockContent)).not.toHaveBeenCalled();
-    expect(textNode.textContent).toBe('普通文本');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-non-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
@@ -187,11 +190,14 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(textNode.textContent).toBe('普通文本');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-non-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
-  it('/zz 在非事项块上不应打开番茄钟，也不应清理当前行', async () => {
+  it('/zz 在非事项块上不应打开番茄钟，但仍应通过 BlockWriter 清理 slash 命令', async () => {
     vi.mocked(extractItemFromBlock).mockResolvedValue(null);
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('focus', { openPomodoroDock: vi.fn() } as any, ['/zz']);
@@ -221,7 +227,10 @@ describe('item-only slash command validation', () => {
     vi.advanceTimersByTime(500);
 
     expect(createDialogMock).not.toHaveBeenCalled();
-    expect(textNode.textContent).toBe('普通文本');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-non-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
@@ -254,7 +263,10 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(showReminderSettingDialog)).not.toHaveBeenCalled();
-    expect(textNode.textContent).toBe('普通文本');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-non-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
@@ -287,7 +299,10 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(showRecurringSettingDialog)).not.toHaveBeenCalled();
-    expect(textNode.textContent).toBe('普通文本');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-non-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
@@ -320,7 +335,10 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(showPrioritySettingDialog)).not.toHaveBeenCalled();
-    expect(textNode.textContent).toBe('普通文本');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-non-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
@@ -367,11 +385,19 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.textContent = '整理资料 @2026-05-14 /tx';
 
-    handler({} as any, node);
+    const protyle = {};
+    handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(vi.mocked(showReminderSettingDialog)).toHaveBeenCalledWith(expect.objectContaining(item));
+    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(showReminderSettingDialog).mock.invocationCallOrder[0],
+    );
   });
 
   it('/cf 在事项块上沿用现有重复弹框逻辑', async () => {
@@ -389,11 +415,19 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.textContent = '整理资料 @2026-05-14 /cf';
 
-    handler({} as any, node);
+    const protyle = {};
+    handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(vi.mocked(showRecurringSettingDialog)).toHaveBeenCalledWith(expect.objectContaining(item));
+    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(showRecurringSettingDialog).mock.invocationCallOrder[0],
+    );
   });
 
   it('/yxj 在事项块上沿用现有优先级弹框逻辑', async () => {
@@ -441,6 +475,30 @@ describe('item-only slash command validation', () => {
     expect(vi.mocked(showDatePickerDialog)).toHaveBeenCalled();
     expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(showDatePickerDialog).mock.invocationCallOrder[0],
+    );
+  });
+
+  it('/db 打开待办面板前应先通过 BlockWriter 删除 slash 命令', async () => {
+    const openTodoDock = vi.fn();
+    const handler = getActionHandler('todo', { openTodoDock } as any, ['/db']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 /db';
+    const protyle = {
+      transaction: vi.fn(),
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+    };
+
+    handler(protyle as any, node);
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
+    expect(openTodoDock).toHaveBeenCalled();
+    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
+      openTodoDock.mock.invocationCallOrder[0],
     );
   });
 

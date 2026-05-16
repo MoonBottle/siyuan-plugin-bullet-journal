@@ -164,6 +164,13 @@ describe('habit slash commands', () => {
 
     handler(protyle as any, node);
 
+    expect(writeBlock).toHaveBeenCalledWith({
+      blockId: 'block-zwsp',
+      nodeElement: node,
+      protyle,
+    }, {
+      type: 'removeSlashCommand',
+    });
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
       name: '喝水',
       target: 8,

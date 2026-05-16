@@ -42,6 +42,10 @@ vi.mock('@/utils/fileUtils', () => ({
   updateBlockPriority: vi.fn(),
 }));
 
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock('@/utils/slashCommandUtils', () => ({
   generateSlashPatterns: vi.fn(),
   processLineText: vi.fn((text: string, filters?: string[]) => {
@@ -83,6 +87,7 @@ vi.mock('@/services/habitService', () => ({
 }));
 
 import { createSlashCommands, getActionHandler } from '@/utils/slashCommands';
+import { writeBlock } from '@/utils/blockWriter';
 import { SLASH_COMMAND_FILTERS } from '@/constants';
 import { showFocusPlanDialog } from '@/utils/dialog';
 import { extractItemFromBlock } from '@/utils/slashCommandUtils';
@@ -127,15 +132,23 @@ describe('focus plan slash commands', () => {
     node.setAttribute('data-node-id', 'block-1');
     node.textContent = '整理资料 @2026-05-14 /focusplan';
 
-    handler({} as any, node);
+    const protyle = {};
+    handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
     expect(extractItemFromBlock).toHaveBeenCalledWith('block-1');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-1', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(showFocusPlanDialog).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-1',
       content: '整理资料',
     }));
+    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(showFocusPlanDialog).mock.invocationCallOrder[0],
+    );
   });
 
   it('当前块不是事项时不应打开预计编辑器，并提示错误', async () => {
@@ -175,7 +188,10 @@ describe('focus plan slash commands', () => {
     await Promise.resolve();
 
     expect(showFocusPlanDialog).not.toHaveBeenCalled();
-    expect(textNode.textContent).toBe('普通文本');
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-non-item', nodeElement: node, protyle },
+      { type: 'removeSlashCommand' },
+    );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 });
