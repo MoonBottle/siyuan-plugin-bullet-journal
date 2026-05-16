@@ -155,6 +155,7 @@ describe('executeTool', () => {
         startTime: '10:00:00',
         endTime: '11:30:00',
         allDay: false,
+        status: 'pending',
         timePrecision: 'second',
         siblingItems: [
           {

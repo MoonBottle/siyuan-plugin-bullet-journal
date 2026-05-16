@@ -19,6 +19,7 @@ export type DatePatch = {
   allDay?: boolean;
   timePrecision?: TimePrecision;
   siblingItems?: ModelItemDateTimeInfo[];
+  status?: ItemStatus;
 };
 
 export type StatusPatch = {

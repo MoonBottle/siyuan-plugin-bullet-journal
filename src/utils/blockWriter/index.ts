@@ -1,7 +1,7 @@
-import { updateBlockDateTime } from '@/utils/fileUtils';
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
 import { writeViaApi } from './apiTransport';
 import { createProtyleMarkdownWriter } from './markdownWriter';
+import { writeDatePatch } from './datePatchWriter';
 import { writeViaProtyle } from './protyleTransport';
 
 export type {
@@ -27,21 +27,7 @@ export async function writeBlock(context: BlockWriteContext, patches: BlockPatch
   const requiresProtyle = patchArray.some((patch) => patch.type === 'removeSlashCommand');
 
   if (addDatePatch) {
-    const writer = context.protyle && context.nodeElement
-      ? createProtyleMarkdownWriter(context)
-      : undefined;
-    return updateBlockDateTime(
-      context.blockId,
-      addDatePatch.date,
-      addDatePatch.startTime,
-      addDatePatch.endTime,
-      addDatePatch.allDay ?? false,
-      addDatePatch.originalDate,
-      addDatePatch.siblingItems,
-      undefined,
-      writer,
-      addDatePatch.timePrecision ?? 'second',
-    );
+    return writeDatePatch(context, addDatePatch);
   }
 
   if (context.protyle && context.nodeElement) {

@@ -1,4 +1,4 @@
-import type { ItemDateTimeInfo, TimePrecision } from '@/types/models';
+import type { ItemDateTimeInfo, ItemStatus, TimePrecision } from '@/types/models';
 import type { DatePatch } from './types';
 
 export interface ItemDatePatchSource {
@@ -6,6 +6,7 @@ export interface ItemDatePatchSource {
   startDateTime?: string | null;
   endDateTime?: string | null;
   siblingItems?: ItemDateTimeInfo[];
+  status?: ItemStatus;
   timePrecision?: TimePrecision;
 }
 
@@ -60,6 +61,7 @@ export function buildDatePatchFromItem(
     allDay: options.allDay ?? (!startTime && !endTime),
     originalDate: options.originalDate ?? item.date,
     siblingItems,
+    status: item.status,
     timePrecision,
   };
 }

@@ -7,16 +7,7 @@ vi.mock('@/api', () => ({
   updateBlock: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock('@/utils/fileUtils', async () => {
-  const actual = await vi.importActual<typeof import('@/utils/fileUtils')>('@/utils/fileUtils');
-  return {
-    ...actual,
-    updateBlockDateTime: vi.fn(),
-  };
-});
-
 import { updateBlock } from '@/api';
-import { updateBlockDateTime } from '@/utils/fileUtils';
 import { writeBlock } from '@/utils/blockWriter';
 
 describe('writeBlock', () => {
@@ -54,20 +45,9 @@ describe('writeBlock', () => {
     expect(call[1]).not.toContain('✅');
   });
 
-  it('delegates addDate patches to updateBlockDateTime with an internal writer', async () => {
-    vi.mocked(updateBlockDateTime).mockResolvedValue(true);
-    const nodeElement = document.createElement('div');
-    nodeElement.setAttribute('data-node-id', 'block123');
-    const protyle = {
-      transaction: vi.fn(),
-    };
-
+  it('writes addDate patches through blockWriter', async () => {
     const result = await writeBlock(
-      {
-        blockId: 'block123',
-        protyle,
-        nodeElement,
-      },
+      { blockId: 'block123' },
       {
         type: 'addDate',
         date: '2026-05-16',
@@ -77,17 +57,36 @@ describe('writeBlock', () => {
     );
 
     expect(result).toBe(true);
-    expect(updateBlockDateTime).toHaveBeenCalledWith(
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '[ ] 任务 📅2026-05-15~05-16\n{: id="abc"}',
       'block123',
-      '2026-05-16',
-      undefined,
-      undefined,
-      true,
-      undefined,
-      [{ date: '2026-05-15' }],
-      undefined,
-      expect.any(Function),
-      'second',
+    );
+  });
+
+  it('preserves completed task-list status when addDate patch omits status', async () => {
+    vi.mocked(updateBlock).mockClear();
+    const { getBlockKramdown } = await import('@/api');
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '[x] 已完成任务 📅2026-05-15\n{: id="abc"}',
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'addDate',
+        date: '2026-05-16',
+        originalDate: '2026-05-15',
+        allDay: true,
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '[x] 已完成任务 📅2026-05-16\n{: id="abc"}',
+      'block123',
     );
   });
 
