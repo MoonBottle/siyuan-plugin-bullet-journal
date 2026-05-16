@@ -1,6 +1,6 @@
 import type { FocusPlan, Item } from '@/types/models';
 import { updateBlock } from '@/api';
-import { updateBlockDateTime } from '@/utils/fileUtils';
+import { writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
 import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
 
@@ -31,21 +31,21 @@ export async function saveFocusPlanWithOptionalDate(
   }
 
   if (options?.ensureDate && !itemHasDate(item, options.ensureDate)) {
-    let finalContent = '';
-    let finalBlockId = item.blockId ?? '';
-    const updated = await updateBlockDateTime(
+    const updated = await writeDatePatchWithWriter(
       item.blockId ?? '',
-      options.ensureDate,
-      undefined,
-      undefined,
-      true,
-      undefined,
-      [item, ...(item.siblingItems ?? [])],
-      item.status,
+      {
+        type: 'addDate',
+        date: options.ensureDate,
+        allDay: true,
+        siblingItems: [item, ...(item.siblingItems ?? [])],
+        status: item.status,
+      },
       async (content, targetBlockId) => {
-        finalContent = appendFocusPlanMarker(content, plan);
-        finalBlockId = targetBlockId;
-        return true;
+        return Array.isArray(await updateBlock(
+          'markdown',
+          appendFocusPlanMarker(content, plan),
+          targetBlockId,
+        ));
       },
     );
     if (!updated) {
@@ -55,7 +55,6 @@ export async function saveFocusPlanWithOptionalDate(
       });
       return false;
     }
-    await updateBlock('markdown', finalContent, finalBlockId);
     return true;
   }
 

@@ -1,24 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { saveFocusPlanWithOptionalDate } from '@/utils/focusPlanDialogSave';
 import { updateBlock } from '@/api';
-import { updateBlockDateTime } from '@/utils/fileUtils';
+import { writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
 import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 import type { Item } from '@/types/models';
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockDateTime: vi.fn(async (
+vi.mock('@/utils/blockWriter/datePatchWriter', () => ({
+  writeDatePatchWithWriter: vi.fn(async (
     _blockId: string,
-    newDate: string,
-    _newStartTime?: string,
-    _newEndTime?: string,
-    _allDay?: boolean,
-    _originalDate?: string,
-    _siblingItems?: unknown[],
-    _status?: string,
+    patch: { date: string },
     writer?: (content: string, targetBlockId: string) => Promise<boolean>,
   ) => {
     if (writer) {
-      return writer(`事项 📅2026-05-14, ${newDate}\n{: id="block-1" }`, 'block-1');
+      return writer(`事项 📅2026-05-14, ${patch.date}\n{: id="block-1" }`, 'block-1');
     }
     return true;
   }),
@@ -53,7 +47,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
     vi.clearAllMocks();
     vi.mocked(updateItemWithFocusPlan).mockResolvedValue(undefined);
     vi.mocked(clearItemFocusPlan).mockResolvedValue(undefined);
-    vi.mocked(updateBlock).mockResolvedValue(undefined);
+    vi.mocked(updateBlock).mockResolvedValue([]);
   });
 
   it('writes one final block update with both ensured date and focus plan when the item does not contain the date', async () => {
@@ -62,15 +56,15 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, plan, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(true);
-    expect(updateBlockDateTime).toHaveBeenCalledWith(
+    expect(writeDatePatchWithWriter).toHaveBeenCalledWith(
       'block-1',
-      '2026-05-15',
-      undefined,
-      undefined,
-      true,
-      undefined,
-      [item],
-      'pending',
+      {
+        type: 'addDate',
+        date: '2026-05-15',
+        allDay: true,
+        siblingItems: [item],
+        status: 'pending',
+      },
       expect.any(Function),
     );
     expect(updateBlock).toHaveBeenCalledWith(
@@ -90,18 +84,18 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, plan, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(true);
-    expect(updateBlockDateTime).not.toHaveBeenCalled();
+    expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
     expect(updateBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
   });
 
   it('does not save the focus plan when adding the ensured date fails', async () => {
-    vi.mocked(updateBlockDateTime).mockResolvedValueOnce(false);
+    vi.mocked(writeDatePatchWithWriter).mockResolvedValueOnce(false);
 
     const saved = await saveFocusPlanWithOptionalDate(createItem(), plan, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(false);
-    expect(updateBlockDateTime).toHaveBeenCalled();
+    expect(writeDatePatchWithWriter).toHaveBeenCalled();
     expect(updateBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).not.toHaveBeenCalled();
   });
@@ -112,7 +106,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, plan);
 
     expect(saved).toBe(true);
-    expect(updateBlockDateTime).not.toHaveBeenCalled();
+    expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
     expect(updateBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
   });
@@ -123,7 +117,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, undefined, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(true);
-    expect(updateBlockDateTime).not.toHaveBeenCalled();
+    expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
     expect(updateBlock).not.toHaveBeenCalled();
     expect(clearItemFocusPlan).toHaveBeenCalledWith(item);
   });
