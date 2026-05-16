@@ -31,7 +31,7 @@ describe('slashRange', () => {
     range.setStart(textNode, 'keep /bwtest then /bwtest'.length);
     range.collapse(true);
 
-    deleteSlashRangeText(range, 'bwtest', 'keep /bwtest then '.length);
+    deleteSlashRangeText(range, 'keep /bwtest then '.length);
 
     expect(textNode.textContent).toBe('keep /bwtest then ');
   });

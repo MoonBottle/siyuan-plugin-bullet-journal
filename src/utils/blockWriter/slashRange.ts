@@ -34,8 +34,7 @@ export function getActiveSlashRange(): ActiveSlashRange | null {
   };
 }
 
-export function deleteSlashRangeText(range: Range, filter: string, slashStartOffset: number): void {
-  void filter;
+export function deleteSlashRangeText(range: Range, slashStartOffset: number): void {
   if (range.startContainer.nodeType !== Node.TEXT_NODE) {
     throw new Error('Slash range must start in a text node');
   }

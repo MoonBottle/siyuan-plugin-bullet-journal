@@ -895,7 +895,7 @@ export function getActionHandler(
                 slashRange: slash.range,
                 slashStartOffset: slash.slashStartOffset,
               },
-              [{ type: 'removeSlashCommands', filters: filter }],
+              [{ type: 'removeSlashCommand' }],
             );
           }
           setPriorityForBlock(nodeElement, item);

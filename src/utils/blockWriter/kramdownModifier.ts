@@ -46,21 +46,6 @@ function applyPriority(line: string, priority: string | undefined): string {
   return `${clean} ${marker}`;
 }
 
-function applySlash(line: string, filters: string[], suffix: string): string {
-  for (const filter of filters) {
-    const idx = line.indexOf(`/${filter}`);
-    if (idx === -1) continue;
-    const endIdx = idx + filter.length + 1;
-    const before = line.slice(0, idx);
-    const after = line.slice(endIdx);
-    const result = (before + (suffix ? ` ${suffix} ` : ' ') + after)
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-    return result;
-  }
-  return line;
-}
-
 function applyDate(line: string, patch: DatePatch): string {
   let result = line;
   if (patch.originalDate) {
@@ -135,9 +120,8 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
     return replaceContentLines(parts, contentLines);
   }
 
-  if (patch.type === 'removeSlashCommands') {
-    contentLines[index] = applySlash(line, patch.filters, patch.suffix ?? '');
-    return replaceContentLines(parts, contentLines);
+  if (patch.type === 'removeSlashCommand') {
+    throw new Error('removeSlashCommand requires an active Protyle Range');
   }
 
   if (patch.type === 'addDate') {

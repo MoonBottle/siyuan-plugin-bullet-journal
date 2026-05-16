@@ -35,8 +35,7 @@ describe('protyleTransport', () => {
     };
 
     const result = await writeViaProtyle(context, {
-      type: 'removeSlashCommands',
-      filters: ['bwtest'],
+      type: 'removeSlashCommand',
       suffix: '',
     });
 
@@ -118,7 +117,7 @@ describe('protyleTransport', () => {
   it('returns false without protyle', async () => {
     const result = await writeViaProtyle(
       { blockId: 'block-123' },
-      { type: 'removeSlashCommands', filters: ['bwtest'], suffix: '' },
+      { type: 'removeSlashCommand', suffix: '' },
     );
 
     expect(result).toBe(false);
@@ -199,8 +198,7 @@ describe('protyleTransport', () => {
     };
 
     await writeViaProtyle(context, {
-      type: 'removeSlashCommands',
-      filters: ['bwtest'],
+      type: 'removeSlashCommand',
       suffix: '',
     });
 

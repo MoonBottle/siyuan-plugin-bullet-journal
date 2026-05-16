@@ -53,22 +53,10 @@ describe('kramdownModifier', () => {
     });
   });
 
-  describe('removeSlashCommands', () => {
-    it('removes first matching slash command', () => {
-      expect(applyBlockPatch(parts('任务 /p=高的内容\n{: id="abc"}'), { type: 'removeSlashCommands', filters: ['p=高'], suffix: '' })).toBe(
-        '任务 的内容\n{: id="abc"}',
-      );
-    });
-
-    it('appends suffix after removal', () => {
-      expect(
-        applyBlockPatch(parts('任务 /done\n{: id="abc"}'), { type: 'removeSlashCommands', filters: ['done'], suffix: '#done' }),
-      ).toBe('任务 #done\n{: id="abc"}');
-    });
-
-    it('removes with trailing whitespace', () => {
-      expect(applyBlockPatch(parts('任务 /p=高 的内容\n{: id="abc"}'), { type: 'removeSlashCommands', filters: ['p=高'], suffix: '' })).toBe(
-        '任务 的内容\n{: id="abc"}',
+  describe('removeSlashCommand', () => {
+    it('requires an active Protyle Range', () => {
+      expect(() => applyBlockPatch(parts('任务 /done\n{: id="abc"}'), { type: 'removeSlashCommand', suffix: '#done' })).toThrow(
+        'removeSlashCommand requires an active Protyle Range',
       );
     });
   });
@@ -146,16 +134,6 @@ describe('kramdownModifier', () => {
       expect(result).toContain('{: id="abc"}');
     });
 
-    it('applies removeSlashCommands + setPriority', () => {
-      const result = applyBlockPatches(parts('任务 /p=高的内容\n{: id="abc"}'), [
-        { type: 'removeSlashCommands', filters: ['p=高'], suffix: '' },
-        { type: 'setPriority', priority: 'high' },
-      ]);
-      expect(result).toContain('🔥');
-      expect(result).not.toContain('/p=高');
-      expect(result).toContain('{: id="abc"}');
-    });
-
     it('preserves IAL through batch', () => {
       const result = applyBlockPatches(parts('任务\n{: id="abc" custom-x="1"}'), [
         { type: 'setPriority', priority: 'high' },
@@ -176,16 +154,5 @@ describe('kramdownModifier', () => {
       expect(result).toContain('{: id="abc"}');
     });
 
-    it('applies removeSlashCommands + addDate + setPriority', () => {
-      const result = applyBlockPatches(parts('任务 /done\n{: id="abc"}'), [
-        { type: 'removeSlashCommands', filters: ['done'], suffix: '' },
-        { type: 'addDate', date: '2026-05-16' },
-        { type: 'setPriority', priority: 'high' },
-      ]);
-      expect(result).toContain('🔥');
-      expect(result).toContain('📅2026-05-16');
-      expect(result).not.toContain('/done');
-      expect(result).toContain('{: id="abc"}');
-    });
   });
 });

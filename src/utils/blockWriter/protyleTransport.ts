@@ -125,14 +125,12 @@ function handleRemoveSlashViaDOM(
   blockId: string,
   slashRange: Range,
   slashStartOffset: number,
-  patch: Extract<BlockPatch, { type: 'removeSlashCommands' }>,
+  patch: Extract<BlockPatch, { type: 'removeSlashCommand' }>,
 ): boolean {
   if (!canCommit(protyle)) return false;
 
   const oldHTML = nodeElement.outerHTML;
-  for (const filter of patch.filters) {
-    deleteSlashRangeText(slashRange, filter, slashStartOffset);
-  }
+  deleteSlashRangeText(slashRange, slashStartOffset);
 
   if (patch.suffix) {
     slashRange.insertNode(document.createTextNode(` ${patch.suffix}`));
@@ -154,7 +152,7 @@ export async function writeViaProtyle(context: BlockWriteContext, patches: Block
   let handled = false;
 
   for (const patch of patchList) {
-    if (patch.type === 'removeSlashCommands' && slashRange && slashStartOffset !== undefined) {
+    if (patch.type === 'removeSlashCommand' && slashRange && slashStartOffset !== undefined) {
       if (handleRemoveSlashViaDOM(protyle, nodeElement, blockId, slashRange, slashStartOffset, patch)) {
         handled = true;
       }

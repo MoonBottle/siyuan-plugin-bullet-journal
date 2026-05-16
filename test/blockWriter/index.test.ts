@@ -68,7 +68,7 @@ describe('writeBlock', () => {
         slashRange: range,
         slashStartOffset: 3,
       },
-      { type: 'removeSlashCommands', filters: ['done'], suffix: '#done' },
+      { type: 'removeSlashCommand', suffix: '#done' },
     );
 
     expect(result).toBe(true);

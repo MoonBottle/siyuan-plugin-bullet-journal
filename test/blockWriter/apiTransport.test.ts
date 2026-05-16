@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/api', () => ({
   getBlockByID: vi.fn().mockResolvedValue({ id: 'abc', type: 'NodeParagraph' }),
@@ -10,6 +10,10 @@ import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
 import { writeViaApi } from '@/utils/blockWriter/apiTransport';
 
 describe('apiTransport', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('writes setStatus via API', async () => {
     vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' } as any);
     vi.mocked(updateBlock).mockResolvedValue([]);
@@ -47,20 +51,13 @@ describe('apiTransport', () => {
     expect(result).toBe(false);
   });
 
-  it('writes batch patches via API', async () => {
+  it('returns false for slash command removal without a Protyle range', async () => {
     vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '任务 /p=高的内容\n{: id="abc"}' } as any);
     vi.mocked(updateBlock).mockResolvedValue([]);
 
-    const result = await writeViaApi('block123', [
-      { type: 'removeSlashCommands', filters: ['p=高'], suffix: '' },
-      { type: 'setPriority', priority: 'high' },
-    ]);
+    const result = await writeViaApi('block123', { type: 'removeSlashCommand' });
 
-    expect(result).toBe(true);
-    const call = vi.mocked(updateBlock).mock.calls.at(-1)!;
-    expect(call[0]).toBe('markdown');
-    expect(call[1]).toContain('🔥');
-    expect(call[1]).not.toContain('/p=高');
-    expect(call[1]).toContain('{: id="abc"}');
+    expect(result).toBe(false);
+    expect(updateBlock).not.toHaveBeenCalled();
   });
 });

@@ -44,8 +44,7 @@ export type ContentPatch = {
 };
 
 export type SlashCommandPatch = {
-  type: 'removeSlashCommands';
-  filters: string[];
+  type: 'removeSlashCommand';
   suffix?: string;
 };
 
