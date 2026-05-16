@@ -13,19 +13,10 @@
 ## Scope Rules
 
 1. 本计划第一轮不替换任何现有业务写入逻辑。
-2. `/bwtest` 和 `BlockWriter API Test` 只在 `import.meta.env.DEV` 下注册。
 3. Protyle 路径不默认走 `BlockDOM2StdMd -> Md2BlockDOM`，只做最小 DOM/Range 修改、`SpinBlockDOM`、transaction。
 4. API 路径基于真实 `getBlockKramdown` 形态：内容行 + trailing IAL 行。
 5. dev-only 验证通过后，后续迁移任务再逐个替换真实入口。
 6. **Phase 1 不包含**：Protyle `setStatus` DOM 路径（`data-task` 修改）、光标恢复（`focusByOffset`/`<wbr>`）、多日期合并（`addDate`）。这些在 Phase 2-3 以独立 Task 追加。
-
-## Coverage Decision
-
-一个测试斜杠命令 + 一个顶栏按钮足够做第一轮 smoke test，但不够做最终验收：
-
-- `/bwtest` 覆盖 Protyle Transport、Range/offset 删除、`SpinBlockDOM`、transaction、undo/redo。
-- 顶栏按钮覆盖 API Transport、`getBlockKramdown`、`updateBlock`、trailing IAL 保留。
-- 仍需后续专项验证：任务列表 `NodeListItem` 状态切换、多日期合并、番茄钟附属行、自定义提醒/重复属性。
 
 ## File Structure
 
@@ -40,7 +31,6 @@
 | `src/utils/blockWriter/slashRange.ts` | Range/offset 删除 |
 | `src/utils/blockWriter/protyleTransport.ts` | Protyle 写入与失败返回 |
 | `src/utils/blockWriter/index.ts` | `writeBlock()` |
-| `src/utils/slashCommands.ts` | dev-only `/bwtest` |
 | `src/index.ts` | dev-only 顶栏按钮 |
 | `test/blockWriter/*.test.ts` | 单元测试 |
 

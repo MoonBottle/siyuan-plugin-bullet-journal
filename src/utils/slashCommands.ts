@@ -885,7 +885,7 @@ export function getActionHandler(
             return;
           }
 
-          deleteSlashCommandContent(protyle, filter);
+          await writeBlock({ blockId: item.blockId, nodeElement, protyle }, [{ type: 'removeSlashCommands', filters: filter }]);
           setPriorityForBlock(nodeElement, item);
         })();
       };
