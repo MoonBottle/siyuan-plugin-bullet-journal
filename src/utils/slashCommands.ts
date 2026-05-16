@@ -517,6 +517,85 @@ export function createSlashCommands(config: SlashCommandConfig) {
     }
   ];
 
+  if (import.meta.env.DEV) {
+    builtinCommands.push({
+      filter: ['bwtest'],
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">BlockWriter Test</span>
+          <span class="b3-list-item__meta">slash remove test</span>
+      </div>`,
+      id: 'bullet-journal-block-writer-test',
+      callback: (protyle: any) => {
+        void (async () => {
+          const { getActiveSlashRange } = await import('@/utils/blockWriter/slashRange');
+          const slash = getActiveSlashRange();
+          if (!slash) {
+            showMessage('BlockWriter test: no active slash range', 2000, 'error');
+            return;
+          }
+
+          const { writeBlock } = await import('@/utils/blockWriter');
+          const success = await writeBlock(
+            {
+              blockId: slash.blockId,
+              protyle,
+              nodeElement: slash.blockElement,
+              slashRange: slash.range,
+              slashStartOffset: slash.slashStartOffset,
+            },
+            { type: 'removeSlashCommands', filters: ['bwtest'], suffix: '#bw-protyle' },
+          );
+
+          showMessage(
+            success ? 'BlockWriter test success' : 'BlockWriter test failed',
+            2000,
+            success ? 'info' : 'error',
+          );
+        })();
+      },
+    });
+
+    builtinCommands.push({
+      filter: ['bwtest2'],
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">BlockWriter Batch Test</span>
+          <span class="b3-list-item__meta">remove + priority</span>
+      </div>`,
+      id: 'bullet-journal-block-writer-batch-test',
+      callback: (protyle: any) => {
+        void (async () => {
+          const { getActiveSlashRange } = await import('@/utils/blockWriter/slashRange');
+          const slash = getActiveSlashRange();
+          if (!slash) {
+            showMessage('BlockWriter batch test: no active slash range', 2000, 'error');
+            return;
+          }
+
+          const { writeBlock } = await import('@/utils/blockWriter');
+          const success = await writeBlock(
+            {
+              blockId: slash.blockId,
+              protyle,
+              nodeElement: slash.blockElement,
+              slashRange: slash.range,
+              slashStartOffset: slash.slashStartOffset,
+            },
+            [
+              { type: 'removeSlashCommands', filters: ['bwtest2'], suffix: '#done' },
+              { type: 'setPriority', priority: 'high' },
+            ],
+          );
+
+          showMessage(
+            success ? 'BlockWriter batch test success' : 'BlockWriter batch test failed',
+            2000,
+            success ? 'info' : 'error',
+          );
+        })();
+      },
+    });
+  }
+
   // 创建自定义命令
   const customCommands = createCustomSlashCommands(config.customSlashCommands || [], config);
 
