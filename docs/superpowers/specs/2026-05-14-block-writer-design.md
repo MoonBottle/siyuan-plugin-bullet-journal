@@ -333,6 +333,8 @@ API 写入流程：
 
 在 `npm run dev` / `import.meta.env.DEV` 下额外注册两个验证入口。它们只用于人工验证 BlockWriter，不进入生产构建，不替换现有功能。
 
+实现约束：验证入口只能新增注册项，不允许改动现有斜杠命令、现有顶栏菜单、`fileUtils.ts` 旧写入函数或任何真实业务调用方。人工验证通过前，旧写入链路保持当前行为。
+
 ### 13.1 测试斜杠命令：`/bwtest`
 
 位置：`src/utils/slashCommands.ts` 的 `createSlashCommands()`。
