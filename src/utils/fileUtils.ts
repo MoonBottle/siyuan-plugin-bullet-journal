@@ -755,12 +755,18 @@ export async function updateBlockDateTime(
     // 检查是否有番茄钟行（以 🍅 开头）
     const hasTomatoClock = lines.some(line => line.trim().startsWith('🍅'));
 
-    // 使用父块时需保留完整格式（含块属性行），走多行逻辑；否则无番茄钟时用单行逻辑
-    const useMultiLineForStructure = targetBlockId !== blockId && lines.length > 1;
+    // 直接块中只要存在多条实际内容行，也必须保留结构，避免把日期拼到最后一行。
+    const contentLineCount = lines.filter((line) => {
+      const trimmed = line.trim();
+      return trimmed !== '' && !trimmed.startsWith('{:');
+    }).length;
+    // 使用父块时需保留完整格式（含块属性行）；普通多行文本同样要走多行逻辑。
+    const useMultiLineForStructure = (targetBlockId !== blockId && lines.length > 1) || contentLineCount > 1;
     console.log('[fileUtils.updateBlockDateTime] structure decision', {
       targetBlockId,
       originalBlockId: blockId,
       lineCount: lines.length,
+      contentLineCount,
       hasTomatoClock,
       useMultiLineForStructure,
       lines: lines.map((line, index) => ({ index, line })),
@@ -769,6 +775,7 @@ export async function updateBlockDateTime(
       blockId,
       targetBlockId,
       lineCount: lines.length,
+      contentLineCount,
       hasTomatoClock,
       useMultiLineForStructure,
       lines,
@@ -777,6 +784,7 @@ export async function updateBlockDateTime(
       blockId,
       targetBlockId,
       lineCount: lines.length,
+      contentLineCount,
       hasTomatoClock,
       useMultiLineForStructure,
       lines,

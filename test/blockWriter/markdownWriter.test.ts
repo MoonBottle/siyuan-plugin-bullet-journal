@@ -30,6 +30,7 @@ describe('createProtyleMarkdownWriter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
+    vi.unstubAllGlobals();
   });
 
   it('uses the protyle fast path for same-block single-line markdown', async () => {
@@ -62,11 +63,44 @@ describe('createProtyleMarkdownWriter', () => {
     expect(updateBlock).not.toHaveBeenCalled();
   });
 
-  it('falls back to API markdown writes for complex updates', async () => {
+  it('falls back to API dom writes for complex updates when Lute is available', async () => {
     const block = createBlock();
     const protyle = {
       transaction: vi.fn(),
     };
+    vi.stubGlobal('window', {
+      ...window,
+      Lute: {
+        New: vi.fn(() => ({
+          Md2BlockDOM: vi.fn((markdown: string) => `<div data-type="NodeParagraph">${markdown}</div>`),
+          SetHTMLTag2TextMark: vi.fn(),
+          SetTextMark: vi.fn(),
+          SetProtyleWYSIWYG: vi.fn(),
+          SetBlockRef: vi.fn(),
+          SetFileAnnotationRef: vi.fn(),
+          SetKramdownIAL: vi.fn(),
+          SetTag: vi.fn(),
+          SetSuperBlock: vi.fn(),
+          SetImgPathAllowSpace: vi.fn(),
+          SetGitConflict: vi.fn(),
+          SetMark: vi.fn(),
+          SetSup: vi.fn(),
+          SetSub: vi.fn(),
+          SetInlineMathAllowDigitAfterOpenMarker: vi.fn(),
+          SetFootnotes: vi.fn(),
+          SetToC: vi.fn(),
+          SetIndentCodeBlock: vi.fn(),
+          SetParagraphBeginningSpace: vi.fn(),
+          SetAutoSpace: vi.fn(),
+          SetHeadingID: vi.fn(),
+          SetSetext: vi.fn(),
+          SetYamlFrontMatter: vi.fn(),
+          SetLinkRef: vi.fn(),
+          SetCodeSyntaxHighlight: vi.fn(),
+          SetSanitize: vi.fn(),
+        })),
+      },
+    });
 
     const writer = createProtyleMarkdownWriter({
       blockId: 'block-1',
@@ -79,6 +113,10 @@ describe('createProtyleMarkdownWriter', () => {
 
     expect(ok).toBe(true);
     expect(protyle.transaction).not.toHaveBeenCalled();
-    expect(updateBlock).toHaveBeenCalledWith('markdown', content, 'parent-1');
+    expect(updateBlock).toHaveBeenCalledWith(
+      'dom',
+      `<div data-type="NodeParagraph">${content}</div>`,
+      'parent-1',
+    );
   });
 });

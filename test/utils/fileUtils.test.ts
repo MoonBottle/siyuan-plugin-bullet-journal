@@ -685,6 +685,32 @@ describe('updateBlockDateTime', () => {
     );
   });
 
+  it('普通多行事项追加日期时应更新首行而不是最后一行', async () => {
+    mockGetBlockKramdown.mockResolvedValue({
+      kramdown: `测试事项 #测试#
+测试换行
+{: id="block-1" updated="20260516224254"}`
+    });
+    mockUpdateBlock.mockResolvedValue(undefined);
+
+    const result = await updateBlockDateTime(
+      'block-1',
+      '2026-05-16',
+      undefined,
+      undefined,
+      true,
+    );
+
+    expect(result).toBe(true);
+    expect(mockUpdateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `测试事项 #测试# 📅2026-05-16
+测试换行
+{: id="block-1" updated="20260516224254"}`,
+      'block-1'
+    );
+  });
+
   it('内容子块：从父块解析 kramdown，拖动日期不应添加 ✅ 标签', async () => {
     mockGetBlockByID.mockResolvedValue({ parent_id: 'parent-block-1' });
     mockGetBlockKramdown.mockImplementation((id: string) => {

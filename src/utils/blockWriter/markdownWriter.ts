@@ -1,5 +1,6 @@
 import { updateBlock } from '@/api';
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
+import { markdownToBlockDOM } from './domSerializer';
 import type { BlockWriteContext } from './types';
 
 function formatUpdatedAttr(date = new Date()): string {
@@ -52,11 +53,13 @@ export function createProtyleMarkdownWriter(
       }
 
       await waitForProtyleTransactionsFlush();
-      await updateBlock('markdown', content, targetBlockId);
+      const blockDOM = markdownToBlockDOM(content);
+      await updateBlock(blockDOM ? 'dom' : 'markdown', blockDOM ?? content, targetBlockId);
       return true;
     }
     catch {
-      await updateBlock('markdown', content, targetBlockId);
+      const blockDOM = markdownToBlockDOM(content);
+      await updateBlock(blockDOM ? 'dom' : 'markdown', blockDOM ?? content, targetBlockId);
       return true;
     }
   };
