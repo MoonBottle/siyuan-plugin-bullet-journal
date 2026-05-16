@@ -21,6 +21,12 @@ describe('protyleTransport', () => {
   it('removes slash command text from DOM', async () => {
     const div = createDiv();
     const range = createSlashRange(div);
+    document.body.appendChild(div);
+
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
     const context = {
       blockId: 'block-123',
       protyle: {
@@ -30,8 +36,6 @@ describe('protyleTransport', () => {
         transaction: vi.fn(),
       } as any,
       nodeElement: div,
-      slashRange: range,
-      slashStartOffset: 3,
     };
 
     const result = await writeViaProtyle(context, {
@@ -45,6 +49,8 @@ describe('protyleTransport', () => {
     expect(div.textContent).not.toContain('/bwtest');
     expect(div.textContent).toContain('测试内容');
     expect(div.getAttribute('updated')).toMatch(/^\d{14}$/);
+
+    document.body.removeChild(div);
   });
 
   it('returns false for non-slash non-status patches', async () => {
@@ -193,8 +199,6 @@ describe('protyleTransport', () => {
         transaction: vi.fn(),
       } as any,
       nodeElement: div,
-      slashRange: range,
-      slashStartOffset: 3,
     };
 
     await writeViaProtyle(context, {
@@ -210,5 +214,43 @@ describe('protyleTransport', () => {
     expect(newRange.startOffset).toBeLessThanOrEqual((textNode.textContent ?? '').length);
 
     document.body.removeChild(div);
+  });
+
+  it('does not remove slash text from a different active block', async () => {
+    const targetDiv = createDiv();
+    document.body.appendChild(targetDiv);
+
+    const activeDiv = document.createElement('div');
+    activeDiv.setAttribute('data-node-id', 'other-block');
+    activeDiv.textContent = '其他 /done';
+    document.body.appendChild(activeDiv);
+
+    const range = document.createRange();
+    range.setStart(activeDiv.firstChild!, activeDiv.textContent.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const result = await writeViaProtyle(
+      {
+        blockId: 'block-123',
+        protyle: {
+          lute: {
+            SpinBlockDOM: vi.fn((html: string) => html),
+          },
+          transaction: vi.fn(),
+        } as any,
+        nodeElement: targetDiv,
+      },
+      { type: 'removeSlashCommand' },
+    );
+
+    expect(result).toBe(false);
+    expect(targetDiv.textContent).toContain('/bwtest');
+    expect(activeDiv.textContent).toContain('/done');
+
+    document.body.removeChild(targetDiv);
+    document.body.removeChild(activeDiv);
   });
 });

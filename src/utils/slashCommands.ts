@@ -28,7 +28,6 @@ import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, getBlockKramdown, renameDocByID, updateBlock } from '@/api';
-import { getActiveSlashRange } from '@/utils/blockWriter/slashRange';
 import { writeBlock } from '@/utils/blockWriter';
 import {
   RefreshReasons,
@@ -885,19 +884,7 @@ export function getActionHandler(
             return;
           }
 
-          const slash = getActiveSlashRange();
-          if (slash) {
-            await writeBlock(
-              {
-                blockId: slash.blockId,
-                nodeElement: slash.blockElement,
-                protyle,
-                slashRange: slash.range,
-                slashStartOffset: slash.slashStartOffset,
-              },
-              [{ type: 'removeSlashCommand' }],
-            );
-          }
+          void writeBlock({ blockId: item.blockId, nodeElement, protyle }, [{ type: 'removeSlashCommand' }]);
           setPriorityForBlock(nodeElement, item);
         })();
       };

@@ -1,5 +1,5 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, StatusPatch } from './types';
-import { deleteSlashRangeText } from './slashRange';
+import { deleteSlashRangeText, getActiveSlashRange } from './slashRange';
 
 interface CursorState {
   node: Node;
@@ -141,8 +141,45 @@ function handleRemoveSlashViaDOM(
   return commitProtyleUpdate(protyle, blockId, nodeElement, oldHTML);
 }
 
+function resolveSlashContext(context: BlockWriteContext): {
+  blockId: string;
+  nodeElement: HTMLElement;
+  slashRange: Range;
+  slashStartOffset: number;
+} | null {
+  const { blockId, nodeElement, slashRange, slashStartOffset } = context;
+  if (!nodeElement) return null;
+
+  if (slashRange && slashStartOffset !== undefined) {
+    return {
+      blockId,
+      nodeElement,
+      slashRange,
+      slashStartOffset,
+    };
+  }
+
+  const activeSlash = getActiveSlashRange();
+  if (!activeSlash) return null;
+
+  if (
+    activeSlash.blockId !== blockId
+    && activeSlash.blockElement !== nodeElement
+    && !nodeElement.contains(activeSlash.range.startContainer)
+  ) {
+    return null;
+  }
+
+  return {
+    blockId: activeSlash.blockId,
+    nodeElement: activeSlash.blockElement,
+    slashRange: activeSlash.range,
+    slashStartOffset: activeSlash.slashStartOffset,
+  };
+}
+
 export async function writeViaProtyle(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const { blockId, protyle, nodeElement, slashRange, slashStartOffset } = context;
+  const { protyle, nodeElement } = context;
   if (!protyle || !nodeElement) return false;
 
   const patchList: BlockPatch[] = Array.isArray(patches) ? patches : [patches];
@@ -152,8 +189,16 @@ export async function writeViaProtyle(context: BlockWriteContext, patches: Block
   let handled = false;
 
   for (const patch of patchList) {
-    if (patch.type === 'removeSlashCommand' && slashRange && slashStartOffset !== undefined) {
-      if (handleRemoveSlashViaDOM(protyle, nodeElement, blockId, slashRange, slashStartOffset, patch)) {
+    if (patch.type === 'removeSlashCommand') {
+      const slashContext = resolveSlashContext(context);
+      if (slashContext && handleRemoveSlashViaDOM(
+        protyle,
+        slashContext.nodeElement,
+        slashContext.blockId,
+        slashContext.slashRange,
+        slashContext.slashStartOffset,
+        patch,
+      )) {
         handled = true;
       }
     } else if (patch.type === 'setStatus') {

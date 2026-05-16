@@ -6,6 +6,9 @@ import { applyBlockPatch, applyBlockPatches } from './kramdownModifier';
 export async function writeViaApi(blockId: string, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   try {
     const patchArray = Array.isArray(patches) ? patches : [patches];
+    if (patchArray.some((patch) => patch.type === 'removeSlashCommand')) {
+      return false;
+    }
     const firstPatch = patchArray[0];
     const target = await resolveApiBlockTarget(blockId, firstPatch);
     const markdown = patchArray.length === 1

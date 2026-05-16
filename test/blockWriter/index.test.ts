@@ -49,9 +49,14 @@ describe('writeBlock', () => {
     div.setAttribute('data-node-id', 'block123');
     div.textContent = '任务 /done';
 
+    document.body.appendChild(div);
+
     const range = document.createRange();
     range.setStart(div.firstChild!, div.textContent.length);
     range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
 
     const protyle = {
       lute: {
@@ -65,8 +70,6 @@ describe('writeBlock', () => {
         blockId: 'block123',
         protyle,
         nodeElement: div,
-        slashRange: range,
-        slashStartOffset: 3,
       },
       { type: 'removeSlashCommand', suffix: '#done' },
     );
@@ -74,5 +77,7 @@ describe('writeBlock', () => {
     expect(result).toBe(true);
     expect(protyle.transaction).toHaveBeenCalledOnce();
     expect(updateBlock).not.toHaveBeenCalled();
+
+    document.body.removeChild(div);
   });
 });
