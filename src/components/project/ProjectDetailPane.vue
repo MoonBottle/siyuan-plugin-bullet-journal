@@ -48,7 +48,7 @@
           :close-on-siyuan-link="false"
           :embedded="true"
         />
-        <ItemActionBar :item="item" />
+        <ItemActionBar :item="item" open-doc-mode="preview" />
       </div>
       <div class="project-detail-pane__focus-card">
         <FocusReviewRecordPane

@@ -56,11 +56,12 @@
     </span>
 
     <span
+      ref="docIconRef"
       class="block__icon"
       :aria-label="t('todo').openDoc"
       @mouseenter="handleTooltipEnter($event, t('todo').openDoc)"
       @mouseleave="handleTooltipLeave"
-      @click.stop="handleOpenDoc"
+      @click.stop="handleOpenDocClick"
     >
       <svg><use xlink:href="#iconFile"></use></svg>
     </span>
@@ -78,23 +79,43 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useApp, usePlugin } from '@/main';
 import { usePomodoroStore } from '@/stores';
 import { t } from '@/i18n';
-import { usePlugin } from '@/main';
 import { TAB_TYPES } from '@/constants';
 import { hideIconTooltip, showFocusPlanDialog, showIconTooltip, showPomodoroTimerDialog } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
 import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import type { Item } from '@/types/models';
 
-const props = defineProps<{
+type OpenDocMode = 'navigate' | 'preview';
+
+const props = withDefaults(defineProps<{
   item: Item | null;
+  openDocMode?: OpenDocMode;
+}>(), {
+  openDocMode: 'navigate',
+});
+
+const emit = defineEmits<{
+  (event: 'open-doc', docId: string, blockId: string): void;
 }>();
 
-const pomodoroStore = usePomodoroStore();
+const app = useApp();
 const plugin = usePlugin() as any;
+const pomodoroStore = usePomodoroStore();
 const isProcessing = ref(false);
+const docIconRef = ref<HTMLElement | null>(null);
+
+const preview = useBlockFocusPreview({
+  showDelayMs: 0,
+  hideDelayMs: 300,
+  popoverLeaveGraceMs: 220,
+});
+const nativePreview = createNativeBlockPreviewController();
 
 const canStartFocus = computed(() => !!props.item?.blockId && props.item.status !== 'completed' && props.item.status !== 'abandoned');
 const canComplete = computed(() => !!props.item?.blockId && props.item.status !== 'completed');
@@ -187,10 +208,66 @@ async function handleMigrate() {
   }
 }
 
-async function handleOpenDoc() {
+function handleOpenDocClick() {
   if (!props.item?.docId || isProcessing.value) return;
-  await openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId);
+
+  emit('open-doc', props.item.docId, props.item.blockId);
+
+  if (props.openDocMode === 'preview') {
+    openDocPreview(props.item.docId, props.item.blockId);
+    return;
+  }
+
+  openDocumentAtLine(props.item.docId, props.item.lineNumber, props.item.blockId);
 }
+
+function openDocPreview(docId: string, blockId?: string) {
+  if (!docIconRef.value || !docId) return;
+
+  preview.showNow({
+    blockId: docId,
+    itemId: blockId || docId,
+    anchorEl: docIconRef.value,
+  });
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (props.openDocMode !== 'preview') return;
+  if (!preview.isOpen.value) return;
+  if (nativePreview.containsTarget(event.target)) return;
+  preview.forceClose();
+}
+
+watch(
+  () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
+  ([isOpen, blockId, anchorEl]) => {
+    if (props.openDocMode !== 'preview') return;
+    if (!isOpen || !blockId || !anchorEl || !app) {
+      nativePreview.close();
+      return;
+    }
+
+    nativePreview.open({
+      app,
+      plugin,
+      blockId,
+      anchorEl,
+      onHoverChange: preview.markPopoverHovered,
+      onPanelDestroyed: () => {},
+    });
+  },
+  { flush: 'post' },
+);
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  nativePreview.close();
+  preview.dispose();
+});
 
 function handleOpenCalendar() {
   if (!props.item || isProcessing.value) return;

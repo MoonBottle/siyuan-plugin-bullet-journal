@@ -114,6 +114,7 @@ range.deleteContents();
 2. 不把所有 Protyle 写入强制改为 markdown 往返。
 3. 不重写 parser 主流程。
 4. 不在第一阶段支持所有复杂块类型；复杂块不满足安全条件时降级到现有 API 路径。
+5. 在验证阶段不替换任何现有业务写入入口；只新增 dev-only 测试入口。
 
 ## 5. 架构
 
@@ -322,15 +323,84 @@ API 写入流程：
 |-------|------|------|
 | 1 | 抽出 marker 工具、kramdown block 拆分/重建、纯 modifier | 单元测试 |
 | 2 | 实现 API Target Resolver 和 API Transport | mocked API 单元测试 |
-| 3 | 迁移一个 API-only 低风险入口：优先级更新 | Vitest + 手动验证 |
-| 4 | 实现 Protyle status/list item DOM 路径 | 手动验证 checkbox 与 transaction |
-| 5 | 实现 slash Range 删除，替换 `deleteSlashCommandContent` 的一个命令 | 手动验证 slash 命令 |
+| 3 | 新增 npm dev 专用验证入口，不替换现有逻辑 | 手动验证 |
+| 4 | 验证通过后，迁移一个 API-only 低风险入口：优先级更新 | Vitest + 手动验证 |
+| 5 | 实现 Protyle status/list item DOM 路径 | 手动验证 checkbox 与 transaction |
 | 6 | 逐步迁移日期、内容、剩余优先级入口 | 每个入口独立测试和提交 |
 | 7 | 删除旧函数 | 确认无调用后删除 |
 
-## 13. 测试策略
+## 13. Dev-only 验证入口
 
-### 13.1 单元测试
+在 `npm run dev` / `import.meta.env.DEV` 下额外注册两个验证入口。它们只用于人工验证 BlockWriter，不进入生产构建，不替换现有功能。
+
+### 13.1 测试斜杠命令：`/bwtest`
+
+位置：`src/utils/slashCommands.ts` 的 `createSlashCommands()`。
+
+注册条件：`import.meta.env.DEV`。
+
+行为：
+
+1. 使用当前 Range 定位本次触发的 `/bwtest` 起始 offset。
+2. 调 `writeBlock({ protyle, nodeElement, blockId, slashRange, slashStartOffset }, { type: 'removeSlashCommands', filters: ['bwtest'], suffix: '#bw-protyle' })`。
+3. 不调用旧 `deleteSlashCommandContent`，除非新逻辑返回 false 后 fallback。
+
+覆盖：
+
+- Protyle Transport；
+- Range/offset 精确删除；
+- `SpinBlockDOM` + transaction；
+- 当前行中存在较早 `/bwtest` 文本时，不误删较早文本；
+- undo/redo。
+
+不足：
+
+- 不覆盖 API Transport；
+- 不覆盖任务列表 `NodeListItem` 状态切换；
+- 不覆盖日期合并。
+
+### 13.2 测试顶栏按钮：BlockWriter API Test
+
+位置：`src/index.ts` 的 `registerTopBar()`。
+
+注册条件：`import.meta.env.DEV`。
+
+行为：
+
+1. 增加一个 dev-only 顶栏按钮或主菜单项，标题为 `BlockWriter API Test`。
+2. 点击时从当前选区读取 blockId，优先使用已有 `getBlockIdFromRange(range)`。
+3. 调 `writeBlock({ blockId }, { type: 'setPriority', priority: 'high' })`。
+4. 成功后提示 `BlockWriter API test success`，失败后提示 `BlockWriter API test failed`。
+
+覆盖：
+
+- API Transport；
+- `getBlockByID` / `getBlockKramdown` / `updateBlock` 链路；
+- trailing IAL 保留；
+- 普通段落和任务列表项的 kramdown 修改。
+
+不足：
+
+- 如果当前选区不在任务列表内部，不能覆盖 paragraph inside list item 的 parent resolver；
+- 不覆盖 Protyle Range 删除；
+- 不覆盖日期合并。
+
+### 13.3 两个入口是否足够
+
+一个测试斜杠命令 + 一个顶栏按钮足够作为第一轮人工 smoke test，因为它们分别覆盖两条最关键 transport：
+
+- `/bwtest` 覆盖 Protyle 编辑器内写入、slash Range 删除和 transaction；
+- 顶栏按钮覆盖 API-only 写入和 kramdown/IAL 保留。
+
+但它们不够作为最终迁移验收。进入真实替换前还必须补充至少三组专项验证：
+
+1. 任务列表 `[ ]/[x]` 状态切换，确认目标是 `NodeListItem`。
+2. `addDate` 多日期合并与 `originalDate` 替换。
+3. 含 `🍅` 附属行、自定义 IAL、重复/提醒 marker 的事项更新。
+
+## 14. 测试策略
+
+### 14.1 单元测试
 
 - `kramdownBlocks.test.ts`
   - content + trailing IAL；
@@ -349,7 +419,7 @@ API 写入流程：
   - parent kramdown raw replacement；
   - 无 parent fallback。
 
-### 13.2 集成/手动测试
+### 14.2 集成/手动测试
 
 在 SiYuan 中验证：
 
@@ -359,7 +429,7 @@ API 写入流程：
 4. 含 `🍅` 附属行的事项更新后番茄钟记录不丢。
 5. slash 命令只删除当前触发片段，不删除行内其他相同文本。
 
-## 14. 风险与缓解
+## 15. 风险与缓解
 
 | 风险 | 缓解 |
 |------|------|
@@ -368,8 +438,9 @@ API 写入流程：
 | 任务列表 API 更新破坏 list wrapper | 单独覆盖 `NodeListItem` updateBlock 往返 |
 | slash 删除删错片段 | Protyle 保留 Range/offset 语义，文本匹配只做 fallback |
 | 一次性迁移范围过大 | 每阶段只迁移一个入口，旧函数保留到调用方清零 |
+| dev-only 验证入口误进入生产 | 所有注册都用 `import.meta.env.DEV` 包裹，并在构建产物中检查无 `bwtest` 文本 |
 
-## 15. 参考源码
+## 16. 参考源码
 
 | 文件 | 参考点 |
 |------|--------|
