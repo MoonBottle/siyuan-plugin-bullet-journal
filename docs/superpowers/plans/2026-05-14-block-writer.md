@@ -17,6 +17,7 @@
 3. Protyle 路径不默认走 `BlockDOM2StdMd -> Md2BlockDOM`，只做最小 DOM/Range 修改、`SpinBlockDOM`、transaction。
 4. API 路径基于真实 `getBlockKramdown` 形态：内容行 + trailing IAL 行。
 5. dev-only 验证通过后，后续迁移任务再逐个替换真实入口。
+6. **Phase 1 不包含**：Protyle `setStatus` DOM 路径（`data-task` 修改）、光标恢复（`focusByOffset`/`<wbr>`）、多日期合并（`addDate`）。这些在 Phase 2-3 以独立 Task 追加。
 
 ## Coverage Decision
 
@@ -596,10 +597,11 @@ git commit -m "feat(blockWriter): add API write transport"
 **Files:**
 - Modify: `src/index.ts`
 
-- [ ] **Step 1: Add import**
+- [ ] **Step 1: Add imports**
 
 ```ts
 import { writeBlock } from '@/utils/blockWriter';
+import { getBlockIdFromRange } from '@/utils/itemBlockUtils';
 ```
 
 - [ ] **Step 2: Add selected block helper**
@@ -643,52 +645,6 @@ if (import.meta.env.DEV) {
     },
   });
 }
-
-- [ ] **Step 3b: Register dev-only `/bwtest2` batch command**
-
-In `createSlashCommands()`, after the `/bwtest` command:
-
-```ts
-if (import.meta.env.DEV) {
-  builtinCommands.push({
-    filter: ['bwtest2'],
-    html: `<div class="b3-list-item__first">
-        <span class="b3-list-item__text">BlockWriter Batch Test</span>
-        <span class="b3-list-item__meta">remove + priority</span>
-    </div>`,
-    id: 'bullet-journal-block-writer-batch-test',
-    callback: (protyle: any) => {
-      void (async () => {
-        const slash = getActiveSlashRange();
-        if (!slash) {
-          showMessage('BlockWriter batch test: no active slash range', 2000, 'error');
-          return;
-        }
-
-        const success = await writeBlock(
-          {
-            blockId: slash.blockId,
-            protyle,
-            nodeElement: slash.blockElement,
-            slashRange: slash.range,
-            slashStartOffset: slash.slashStartOffset,
-          },
-          [
-            { type: 'removeSlashCommands', filters: ['bwtest2'], suffix: '#done' },
-            { type: 'setPriority', priority: 'high' },
-          ],
-        );
-
-        showMessage(
-          success ? 'BlockWriter batch test success' : 'BlockWriter batch test failed',
-          2000,
-          success ? 'info' : 'error',
-        );
-      })();
-    },
-  });
-}
-```
 
 - [ ] **Step 4: Verify**
 
@@ -957,6 +913,51 @@ if (import.meta.env.DEV) {
     },
   });
 }
+
+- [ ] **Step 3b: Register dev-only `/bwtest2` batch command**
+
+In `createSlashCommands()`, after the `/bwtest` command **(merge into the same `if (import.meta.env.DEV)` block as `/bwtest`)**:
+
+```ts
+if (import.meta.env.DEV) {
+  builtinCommands.push({
+    filter: ['bwtest2'],
+    html: `<div class="b3-list-item__first">
+        <span class="b3-list-item__text">BlockWriter Batch Test</span>
+        <span class="b3-list-item__meta">remove + priority</span>
+    </div>`,
+    id: 'bullet-journal-block-writer-batch-test',
+    callback: (protyle: any) => {
+      void (async () => {
+        const slash = getActiveSlashRange();
+        if (!slash) {
+          showMessage('BlockWriter batch test: no active slash range', 2000, 'error');
+          return;
+        }
+
+        const success = await writeBlock(
+          {
+            blockId: slash.blockId,
+            protyle,
+            nodeElement: slash.blockElement,
+            slashRange: slash.range,
+            slashStartOffset: slash.slashStartOffset,
+          },
+          [
+            { type: 'removeSlashCommands', filters: ['bwtest2'], suffix: '#done' },
+            { type: 'setPriority', priority: 'high' },
+          ],
+        );
+
+        showMessage(
+          success ? 'BlockWriter batch test success' : 'BlockWriter batch test failed',
+          2000,
+          success ? 'info' : 'error',
+        );
+      })();
+    },
+  });
+}
 ```
 
 - [ ] **Step 4: Verify**
@@ -1140,6 +1141,8 @@ Expected: all pass.
 
 ## Self-Review
 
-- Spec coverage: includes思源源码约束、dev-only验证入口、两条 transport、人工验证矩阵、后续真实迁移 gate、**BatchBlockPatch 批量写入**。
+- Spec coverage: includes 思源源码约束（精确行号已补全）、dev-only 验证入口（`/bwtest`/`/bwtest2`/顶栏按钮）、两条 transport、人工验证矩阵、后续真实迁移 gate、**BatchBlockPatch 批量写入**、光标恢复（Phase 2）。
+- Phase 1 scope: 仅实现 `removeSlashCommands` (Protyle) + `setStatus`/`setPriority` (API)。`setStatus` Protyle DOM 路径、`addDate`、光标恢复属于后续 Phase。
 - Placeholder scan: no unresolved placeholder text.
 - Type consistency: `BlockPatch`、`BlockWriteContext`、`ResolvedBlockTarget`、`BatchBlockPatch` are used consistently across resolver, transport, and entry.
+- Task structure: Task 5 (`index.ts` topbar) 和 Task 7 (`slashCommands.ts` 斜杠命令) 职责分离正确，`/bwtest2` 批处理命令归属 Task 7。
