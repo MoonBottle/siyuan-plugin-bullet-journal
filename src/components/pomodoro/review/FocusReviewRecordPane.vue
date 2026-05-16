@@ -18,7 +18,7 @@
               :key="record.id"
               class="focus-review-record-pane__item"
               type="button"
-              @click="handleRecordClick(record)"
+              @click="handleRecordClick(record, $event)"
             >
               <div class="focus-review-record-pane__icon">
                 <TomatoIcon :width="16" :height="16" />
@@ -38,12 +38,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
+import { useApp, usePlugin } from '@/main';
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 import TomatoIcon from '@/components/icons/TomatoIcon.vue';
-import { openDocumentAtLine } from '@/utils/fileUtils';
-import { usePlugin } from '@/main';
+import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
+import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import type { PomodoroRecord } from '@/types/models';
 
 const props = defineProps<{
@@ -54,7 +55,15 @@ const props = defineProps<{
   emptyDesc: string;
 }>();
 
+const app = useApp();
 const plugin = usePlugin() as any;
+
+const preview = useBlockFocusPreview({
+  showDelayMs: 0,
+  hideDelayMs: 300,
+  popoverLeaveGraceMs: 220,
+});
+const nativePreview = createNativeBlockPreviewController();
 
 const recordsByDate = computed(() => {
   const byDate = new Map<string, PomodoroRecord[]>();
@@ -92,11 +101,53 @@ function getMinutes(record: PomodoroRecord) {
   return record.actualDurationMinutes ?? record.durationMinutes;
 }
 
-async function handleRecordClick(record: PomodoroRecord) {
-  if (!record.blockId || !plugin) return;
-  const docId = record.blockId.substring(0, 22);
-  await openDocumentAtLine(docId, undefined, record.blockId);
+function handleRecordClick(record: PomodoroRecord, event: MouseEvent) {
+  if (!record.blockId) return;
+  const el = event.currentTarget as HTMLElement | null;
+  if (!el) return;
+
+  preview.showNow({
+    blockId: record.blockId,
+    itemId: record.blockId,
+    anchorEl: el,
+  });
 }
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!preview.isOpen.value) return;
+  if (nativePreview.containsTarget(event.target)) return;
+  preview.forceClose();
+}
+
+watch(
+  () => [preview.isOpen.value, preview.activeBlockId.value, preview.anchorEl.value] as const,
+  ([isOpen, blockId, anchorEl]) => {
+    if (!isOpen || !blockId || !anchorEl || !app) {
+      nativePreview.close();
+      return;
+    }
+
+    nativePreview.open({
+      app,
+      plugin,
+      blockId,
+      anchorEl,
+      onHoverChange: preview.markPopoverHovered,
+      onPanelDestroyed: () => {},
+    });
+  },
+  { flush: 'post' },
+);
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true);
+  nativePreview.close();
+  preview.dispose();
+});
 </script>
 
 <style scoped>
@@ -104,9 +155,6 @@ async function handleRecordClick(record: PomodoroRecord) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--b3-theme-surface-lighter);
-  border-radius: 10px;
-  background: var(--b3-theme-surface);
 }
 
 .focus-review-record-pane__header {
