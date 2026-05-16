@@ -85,6 +85,8 @@ vi.mock('@/utils/refreshRequests', () => ({
 vi.mock('@/utils/protyleWriterDom', () => ({
   findFirstProtyleVisibleTextNode: vi.fn(),
   isProtyleBlockSafeForWriterFastPath: vi.fn(() => false),
+  renderMarkdownIntoBlockEditable: vi.fn(() => false),
+  blockElementToMarkdownContent: vi.fn(() => null),
 }));
 
 import { showHabitCreateDialog } from '@/utils/dialog';

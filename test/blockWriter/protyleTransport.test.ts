@@ -169,6 +169,50 @@ describe('protyleTransport', () => {
     document.body.removeChild(li);
   });
 
+  it('renders completed status through Protyle DOM for paragraphs with inline tag spans', async () => {
+    const block = document.createElement('div');
+    block.classList.add('p');
+    block.setAttribute('data-node-id', 'block-123');
+    block.setAttribute('data-type', 'NodeParagraph');
+    block.innerHTML = `
+      <div contenteditable="true" spellcheck="false">测试事项 📅2026-05-16 <span data-type="tag">\u200b测试</span>\u200b</div>
+      <div class="protyle-attr" contenteditable="false">\u200b</div>
+    `;
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'block-123',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+          BlockDOM2Content: vi.fn(() => '测试事项 📅2026-05-16 #测试#'),
+          Md2BlockDOM: vi.fn(() => `
+            <div data-type="NodeParagraph" class="p">
+              <div contenteditable="true" spellcheck="false">测试事项 📅2026-05-16 <span data-type="tag">\u200b测试</span>\u200b ✅</div>
+              <div class="protyle-attr" contenteditable="false">\u200b</div>
+            </div>
+          `),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setStatus',
+      status: 'completed',
+    });
+
+    expect(result).toBe(true);
+    expect(context.protyle.lute.BlockDOM2Content).toHaveBeenCalledOnce();
+    expect(context.protyle.lute.Md2BlockDOM).toHaveBeenCalledWith('测试事项 📅2026-05-16 #测试# ✅');
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.querySelector('[data-type="tag"]')).not.toBeNull();
+    expect(block.textContent).toContain('✅');
+
+    document.body.removeChild(block);
+  });
+
   it('returns false without protyle', async () => {
     const result = await writeViaProtyle(
       { blockId: 'block-123' },

@@ -40,3 +40,38 @@ export function findFirstProtyleVisibleTextNode(element: HTMLElement): Text | nu
   });
   return walker.nextNode() as Text | null;
 }
+
+function findEditableElement(element: HTMLElement): HTMLElement | null {
+  if (element.getAttribute('contenteditable') === 'true') {
+    return element;
+  }
+  return element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+}
+
+export function blockElementToMarkdownContent(protyle: any, element: HTMLElement): string | null {
+  const converter = protyle?.lute?.BlockDOM2Content;
+  if (typeof converter !== 'function') {
+    return null;
+  }
+  const content = converter(element.outerHTML);
+  return typeof content === 'string' ? content.trim() : null;
+}
+
+export function renderMarkdownIntoBlockEditable(protyle: any, element: HTMLElement, markdown: string): boolean {
+  const editable = findEditableElement(element);
+  const md2BlockDOM = protyle?.lute?.Md2BlockDOM;
+  if (!editable || typeof md2BlockDOM !== 'function') {
+    return false;
+  }
+
+  const template = document.createElement('template');
+  template.innerHTML = md2BlockDOM(markdown);
+  const renderedBlock = template.content.firstElementChild as HTMLElement | null;
+  const renderedEditable = renderedBlock ? findEditableElement(renderedBlock) : null;
+  if (!renderedEditable) {
+    return false;
+  }
+
+  editable.innerHTML = renderedEditable.innerHTML;
+  return true;
+}

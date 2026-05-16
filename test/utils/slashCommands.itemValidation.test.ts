@@ -99,6 +99,8 @@ vi.mock('@/utils/refreshRequests', () => ({
 vi.mock('@/utils/protyleWriterDom', () => ({
   findFirstProtyleVisibleTextNode: vi.fn(),
   isProtyleBlockSafeForWriterFastPath: vi.fn(() => false),
+  renderMarkdownIntoBlockEditable: vi.fn(() => false),
+  blockElementToMarkdownContent: vi.fn(() => null),
 }));
 
 vi.mock('@/services/habitService', () => ({
@@ -321,7 +323,7 @@ describe('item-only slash command validation', () => {
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
-  it('/wc 在事项块上沿用现有完成逻辑', async () => {
+  it('/wc 在事项块上通过 BlockWriter 先删 slash 再写入 completed 状态', async () => {
     vi.mocked(extractItemFromBlock).mockResolvedValue({
       blockId: 'block-item',
       content: '整理资料',
@@ -332,14 +334,20 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.textContent = '整理资料 @2026-05-14 /wc';
 
-    handler({} as any, node);
+    handler({ transaction: vi.fn() } as any, node);
     await Promise.resolve();
     await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(250);
 
-    expect(vi.mocked(updateBlockContent)).toHaveBeenCalledWith(
-      'block-item',
-      expect.any(String),
-      expect.any(Function),
+    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
+      1,
+      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
+      { type: 'removeSlashCommand' },
+    );
+    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
+      2,
+      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
+      { type: 'setStatus', status: 'completed' },
     );
   });
 

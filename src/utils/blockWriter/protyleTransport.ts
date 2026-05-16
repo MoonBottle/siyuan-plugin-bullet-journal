@@ -1,5 +1,7 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, StatusPatch } from './types';
 import { deleteSlashRangeText, getActiveSlashRange } from './slashRange';
+import { applyBlockPatch } from './kramdownModifier';
+import { blockElementToMarkdownContent, renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 
 interface CursorState {
   node: Node;
@@ -93,7 +95,26 @@ function handleSetStatusViaDOM(protyle: any, nodeElement: HTMLElement, patch: St
   if (!canCommit(protyle)) return false;
 
   const li = nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement;
-  if (!li) return false;
+  if (!li) {
+    const blockId = nodeElement.getAttribute('data-node-id');
+    if (!blockId) return false;
+
+    const currentMarkdown = blockElementToMarkdownContent(protyle, nodeElement);
+    if (!currentMarkdown) return false;
+
+    const nextMarkdown = applyBlockPatch({
+      contentLines: [currentMarkdown],
+      ialLines: [],
+      raw: currentMarkdown,
+    }, patch);
+    const oldHTML = nodeElement.outerHTML;
+    if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, nextMarkdown)) {
+      return false;
+    }
+
+    nodeElement.setAttribute('updated', formatUpdatedAttr());
+    return commitProtyleUpdate(protyle, blockId, nodeElement, oldHTML);
+  }
 
   const taskAction = li.querySelector('.protyle-action--task') as HTMLElement;
   if (!taskAction) return false;

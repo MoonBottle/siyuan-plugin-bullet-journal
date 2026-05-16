@@ -34,7 +34,7 @@ import {
   createFullRefreshRequest,
   submitRefreshRequest,
 } from '@/utils/refreshRequests';
-import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
+import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 import { checkIn, checkInCount } from '@/services/habitService';
 import type { CheckInRecord } from '@/types/models';
 import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
@@ -728,14 +728,22 @@ export function getActionHandler(
           const blockContent = nodeElement.textContent || '';
           // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
           const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent);
+          const blockId = item.blockId || nodeElement.getAttribute('data-node-id');
+          if (!blockId) {
+            return;
+          }
           if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
-            deleteSlashCommandContent(protyle, filter);
+            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
             return;
           }
 
-          const writer = item.blockId ? createProtyleWriter(protyle, nodeElement, item.blockId) : undefined;
-          updateBlockContent(item.blockId!, completedTag, writer);
+          await writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+          const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
+          if (!isTaskListBlock) {
+            await waitForProtyleTransactionsFlush();
+          }
+          void writeBlock({ blockId, nodeElement, protyle }, { type: 'setStatus', status: 'completed' });
           showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
         })();
       };
@@ -1320,35 +1328,18 @@ function createProtyleWriter(
       const isSameBlock = targetBlockId === currentBlockId;
       const isSingleLine = !textContent.includes('\n');
 
-      const safeForFastPath = isProtyleBlockSafeForWriterFastPath(nodeElement);
-      console.log(`[SlashCommand] Writer decision params`, { isSameBlock, isSingleLine, textContent, safeForFastPath });
+      const canRenderInline = isSameBlock && isSingleLine;
+      console.log(`[SlashCommand] Writer decision params`, { isSameBlock, isSingleLine, textContent, canRenderInline });
       console.log('[JTDBG][protyleWriter] decision', {
         currentBlockId,
         targetBlockId,
         isSameBlock,
         isSingleLine,
-        safeForFastPath,
+        canRenderInline,
         textContent,
       });
 
-      if (isSameBlock && isSingleLine && safeForFastPath) {
-        const textNode = findFirstProtyleVisibleTextNode(nodeElement);
-        if (!textNode) {
-          console.log('[JTDBG][protyleWriter] fastPathNoTextNodeFallbackApi', {
-            currentBlockId,
-            targetBlockId,
-          });
-          await waitForProtyleTransactionsFlush();
-          const updateResult = await updateBlock('markdown', content, targetBlockId);
-          console.log('[JTDBG][protyleWriter] fastPathNoTextNodeFallbackApiResult', {
-            currentBlockId,
-            targetBlockId,
-            updateResult,
-          });
-          return true;
-        }
-
-        textNode.textContent = textContent;
+      if (canRenderInline && renderMarkdownIntoBlockEditable(protyle, nodeElement, textContent)) {
 
         nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()));
 
