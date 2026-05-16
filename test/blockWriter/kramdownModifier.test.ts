@@ -131,6 +131,38 @@ describe('kramdownModifier', () => {
     });
   });
 
+  describe('setFocusPlan', () => {
+    it('replaces existing focus plan markers and preserves other markers', () => {
+      expect(applyBlockPatch(parts('事项 @2026-05-14 🍅x2 🔥\n{: id="abc"}'), {
+        type: 'setFocusPlan',
+        plan: { type: 'duration', rawValue: 70 },
+      })).toBe(
+        '事项 @2026-05-14 🔥 ⏳1h10m\n{: id="abc"}',
+      );
+    });
+
+    it('clears focus plan markers', () => {
+      expect(applyBlockPatch(parts('事项 @2026-05-14 ⏳1h 🍅x3\n{: id="abc"}'), {
+        type: 'setFocusPlan',
+      })).toBe(
+        '事项 @2026-05-14\n{: id="abc"}',
+      );
+    });
+
+    it('preserves extra lines and IAL', () => {
+      expect(applyBlockPatch(parts(`事项 @2026-05-14
+🍅2026-05-14 09:00:00~09:25:00 第一轮
+{: id="abc" custom-x="1"}`), {
+        type: 'setFocusPlan',
+        plan: { type: 'duration', rawValue: 30 },
+      })).toBe(
+        `事项 @2026-05-14 ⏳30m
+🍅2026-05-14 09:00:00~09:25:00 第一轮
+{: id="abc" custom-x="1"}`,
+      );
+    });
+  });
+
   describe('batch patches', () => {
     it('applies priority then date', () => {
       const result = applyBlockPatches(parts('任务\n{: id="abc"}'), [

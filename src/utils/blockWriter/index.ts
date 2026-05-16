@@ -10,6 +10,7 @@ export type {
   BlockWriteContext,
   ContentPatch,
   DatePatch,
+  FocusPlanPatch,
   ItemDateTimeInfo,
   PriorityPatch,
   ResolvedBlockTarget,

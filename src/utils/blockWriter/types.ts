@@ -1,4 +1,4 @@
-import type { ItemDateTimeInfo as ModelItemDateTimeInfo, ItemStatus, PriorityLevel, TimePrecision } from '@/types/models';
+import type { FocusPlan, ItemDateTimeInfo as ModelItemDateTimeInfo, ItemStatus, PriorityLevel, TimePrecision } from '@/types/models';
 
 export type { ItemDateTimeInfo } from '@/types/models';
 
@@ -38,6 +38,11 @@ export type ContentPatch = {
   newItemContent?: string;
 };
 
+export type FocusPlanPatch = {
+  type: 'setFocusPlan';
+  plan?: Pick<FocusPlan, 'type' | 'rawValue'>;
+};
+
 export type SlashCommandPatch = {
   type: 'removeSlashCommand';
   suffix?: string;
@@ -48,6 +53,7 @@ export type BlockPatch =
   | StatusPatch
   | PriorityPatch
   | ContentPatch
+  | FocusPlanPatch
   | SlashCommandPatch;
 
 export type BatchBlockPatch = BlockPatch[];

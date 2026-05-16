@@ -1,6 +1,7 @@
 import type { BlockPatch, DatePatch, KramdownBlockParts } from './types';
 import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
 import { generatePriorityMarker, isTaskListFormat, statusToLabel, stripPriorityMarker } from './itemLineMarkers';
+import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
 
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 
@@ -91,6 +92,10 @@ function findFirstMarker(line: string): number {
   const candidates: number[] = [];
   const dateIdx = line.search(DATE_MARKER_RE);
   if (dateIdx >= 0) candidates.push(dateIdx);
+  const durationIdx = line.indexOf('⏳');
+  if (durationIdx >= 0) candidates.push(durationIdx);
+  const pomodoroIdx = line.search(/🍅x\d+/);
+  if (pomodoroIdx >= 0) candidates.push(pomodoroIdx);
   for (const tag of ['#已完成', '#已放弃', '#done', '#abandoned', '✅', '❌']) {
     const idx = line.indexOf(tag);
     if (idx >= 0) candidates.push(idx);
@@ -100,6 +105,14 @@ function findFirstMarker(line: string): number {
     if (idx >= 0) candidates.push(idx);
   }
   return candidates.length > 0 ? Math.min(...candidates) : -1;
+}
+
+function applyFocusPlan(line: string, patch: Extract<BlockPatch, { type: 'setFocusPlan' }>): string {
+  const clean = stripFocusPlanMarkers(line)
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  const marker = patch.plan ? formatFocusPlanMarker(patch.plan) : '';
+  return marker ? `${clean} ${marker}`.trim() : clean;
 }
 
 export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): string {
@@ -129,6 +142,11 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
 
   if (patch.type === 'setContent') {
     contentLines[index] = applyContent(line, patch.suffix, patch.newItemContent);
+    return replaceContentLines(parts, contentLines);
+  }
+
+  if (patch.type === 'setFocusPlan') {
+    contentLines[index] = applyFocusPlan(line, patch);
     return replaceContentLines(parts, contentLines);
   }
 

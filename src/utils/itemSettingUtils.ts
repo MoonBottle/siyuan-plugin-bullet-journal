@@ -27,7 +27,7 @@ import {
   stripRecurringMarkers
 } from '@/parser/recurringParser';
 import { generatePriorityMarker } from '@/parser/priorityParser';
-import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
+import { writeBlock } from '@/utils/blockWriter';
 import { eventBus, Events } from '@/utils/eventBus';
 
 /**
@@ -246,16 +246,13 @@ export async function updateItemWithFocusPlan(
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  const currentContent = await fetchBlockContent(item.blockId);
-  let newContent = stripFocusPlanMarkers(currentContent);
-  const marker = formatFocusPlanMarker(plan);
-
-  if (marker) {
-    newContent = `${newContent} ${marker}`;
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setFocusPlan', plan },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
   }
-
-  newContent = normalizeWhitespace(newContent);
-  await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('focus-plan', item.blockId);
 }
 
@@ -264,10 +261,13 @@ export async function clearItemFocusPlan(item: Item): Promise<void> {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  const currentContent = await fetchBlockContent(item.blockId);
-  const newContent = normalizeWhitespace(stripFocusPlanMarkers(currentContent));
-
-  await updateBlockContent(item.blockId, newContent);
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setFocusPlan' },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
+  }
   emitItemSettingMutation('focus-plan', item.blockId);
 }
 
