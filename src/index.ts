@@ -1717,32 +1717,6 @@ export default class TaskAssistantPlugin extends Plugin {
           ],
         });
 
-        menu.addItem({
-          icon: "iconTools",
-          label: "BlockWriter API Test",
-          click: async () => {
-            const selection = window.getSelection();
-            if (!selection || selection.rangeCount === 0) {
-              showMessage('BlockWriter: no selection', 2000, 'error');
-              return;
-            }
-            const blockId = getBlockIdFromRange(selection.getRangeAt(0));
-            if (!blockId) {
-              showMessage('BlockWriter: no block found at selection', 2000, 'error');
-              return;
-            }
-            const success = await writeBlock(
-              { blockId },
-              { type: 'setPriority', priority: 'high' },
-            );
-            showMessage(
-              success ? 'BlockWriter API test success' : 'BlockWriter API test failed',
-              2000,
-              success ? 'info' : 'error',
-            );
-          },
-        });
-
         menu.open(resolveMenuPosition(event));
       },
     });
