@@ -99,7 +99,7 @@ range.deleteContents();
 
 ## 3. 设计目标
 
-1. 提供统一的写入入口 `writeBlock(context, patch)`，逐步替代分散写入逻辑。
+1. 提供统一的写入入口 `writeBlock(context, patches)`，接受单个或批量 `BlockPatch`，逐步替代分散写入逻辑。
 2. 抽出共享目标解析器，统一处理段落、任务列表项、多行事项、番茄钟附属行和 trailing IAL。
 3. 保留思源原生写入语义：
    - 任务列表状态写 `NodeListItem`；
@@ -119,9 +119,9 @@ range.deleteContents();
 ## 5. 架构
 
 ```
-writeBlock(context, patch)
+writeBlock(context, patches)        ← patches: BlockPatch | BatchBlockPatch (BlockPatch[])
   |
-  +-- resolveBlockTarget(context, patch)
+  +-- resolveBlockTarget(context, firstPatch)
   |     - 判断目标是当前 block、父 NodeListItem、还是父块中的事项 raw
   |     - 返回 fullKramdown、targetRaw、contentLines、ialLines、replaceMode
   |
@@ -129,11 +129,12 @@ writeBlock(context, patch)
   |     - setStatus(task list): 修改 list item DOM data-task/class
   |     - removeSlashCommands: Range/offset 精确删除
   |     - safe single-line patches: 文本节点最小修改 + SpinBlockDOM + transaction
+  |     - multi-patch: 按序依次做 DOM 修改后统一 SpinBlockDOM + transaction
   |     - unsafe: 降级 API Transport
   |
   +-- API Transport
         - getBlockKramdown(targetBlockId)
-        - applyBlockPatch(resolvedTarget, patch)
+        - applyBlockPatches(resolvedTarget, patches)   ← 批量按序应用
         - updateBlock('markdown', newMarkdown, targetBlockId)
 ```
 
@@ -194,6 +195,8 @@ export type BlockPatch =
   | { type: 'setContent'; suffix?: string; newItemContent?: string }
   | { type: 'removeSlashCommands'; filters: string[]; suffix?: string };
 
+export type BatchBlockPatch = BlockPatch[];
+
 export interface KramdownBlockParts {
   contentLines: string[];
   ialLines: string[];
@@ -214,7 +217,9 @@ export interface ResolvedBlockTarget {
 
 ## 8. Target Resolver
 
-`resolveBlockTarget(context, patch)` 是本设计的关键模块。它不能只服务 `setStatus`，而要服务所有会修改事项行的 patch。
+`resolveBlockTarget(context, firstPatch)` 是本设计的关键模块。它不能只服务 `setStatus`，而要服务所有会修改事项行的 patch。
+
+**多 patch 场景**：当 `writeBlock` 收到 `BatchBlockPatch` 时，只用第一个 patch 做目标解析，所有 patch 共用同一份 `ResolvedBlockTarget`。典型场景如 `[{ type: 'setPriority', priority: 'high' }, { type: 'addDate', date: '2026-05-16' }]` — 两个 patch 都在同一个事项行上操作。
 
 ### 8.1 Protyle 场景
 
@@ -271,6 +276,37 @@ splitKramdownBlock(raw) => {
 - Protyle 场景：使用 `slashRange` 或 `slashStartOffset` 删除当前触发的 slash 片段。
 - API fallback：可使用最长优先的文本匹配，但只作为降级路径，并应记录 warning。
 
+### 9.6 批量修改（BatchBlockPatch）
+
+当 `writeBlock` 收到 `BlockPatch[]` 时，按顺序依次应用每个 patch 到同一份 content lines 上：
+
+```ts
+function applyBlockPatches(parts: KramdownBlockParts, patches: BlockPatch[]): string {
+  let currentParts = parts;
+  for (const patch of patches) {
+    const result = applyBlockPatch(currentParts, patch);
+    // 将上次输出作为下次输入 → 重新拆分为 KramdownBlockParts
+    currentParts = splitKramdownBlock(result);
+  }
+  return rebuildKramdownBlock(currentParts);
+}
+```
+
+**顺序约定**（避免 patch 间互相覆盖）：
+
+1. `removeSlashCommands` — 必须先执行，清理 slash 片段
+2. `setStatus` — 状态变更（可能带 `#已完成`/`#已放弃` 标签）
+3. `setPriority` — 优先级 marker（`🔥/🌱/🍃`）
+4. `addDate` — 日期 marker（`📅2026-05-16`）
+5. `setContent` — 内容替换（可能覆盖前几项，建议最后）
+
+调用方负责按正确顺序传入 patches。Modifier 不负责排序，只负责按序应用。
+
+**约束**：
+- 同一个 block 的同一次 `writeBlock` 调用中，`removeSlashCommands` 最多出现一次。
+- `setStatus` 和 `setContent` 同时出现时，`setContent` 在后，覆盖状态变更。
+- Protyle Transport 不支持 `BatchBlockPatch`（可逐个 patch 在 DOM 上执行，见 §10.4）；复杂批量写入降级 API Transport。
+
 ## 10. Protyle Transport
 
 ### 10.1 支持路径
@@ -301,12 +337,25 @@ splitKramdownBlock(raw) => {
 - Lute/DOM 规范化异常；
 - Protyle transaction 不可用。
 
+### 10.3 光标恢复
+
+Protyle 写入后应恢复光标位置。使用 `TreeWalker` 保存写入前光标相对于文本内容的偏移量，写入后通过 `focusByOffset` 或 SiYuan 原生 `<wbr>` 机制恢复。光标恢复失败时降级到行首不算错误。
+
+### 10.4 BatchBlockPatch 处理
+
+Protyle Transport 对 `BatchBlockPatch` 的策略：
+
+1. 如果只有一个 patch 且是 `removeSlashCommands`：走 §10.1 的 Range 删除路径。
+2. 如果有 `removeSlashCommands` + 其他 patch：**先**走 Range 删除 slash，再依次做 DOM 修改，最后统一 `SpinBlockDOM` + transaction。
+3. 如果是纯 API-only patch 组合（如 `setPriority` + `addDate`，无 `removeSlashCommands`）：**直接降级 API Transport**，因为 Protyle DOM 层面修改优先级 marker 和日期 marker 的复杂度高于一次 API kramdown 往返。
+4. 如果 patch 数量 > 2 或含 `setContent`：**降级 API Transport**。
+
 ## 11. API Transport
 
 API 写入流程：
 
-1. `resolveBlockTarget(context, patch)`。
-2. `applyBlockPatch(resolvedTarget, patch)`。
+1. `resolveBlockTarget(context, firstPatch)`。
+2. `applyBlockPatches(resolvedTarget.parts, patches)` — 批量按序应用所有 patch。
 3. 如果 `replaceMode === 'raw-within-parent'`，在 `fullKramdown` 中替换 `targetRaw`。
 4. `updateBlock('markdown', newMarkdown, targetBlockId)`。
 
@@ -400,6 +449,22 @@ API 写入流程：
 2. `addDate` 多日期合并与 `originalDate` 替换。
 3. 含 `🍅` 附属行、自定义 IAL、重复/提醒 marker 的事项更新。
 
+### 13.4 Dev-only 批量写入验证（Phase 2）
+
+在 `/bwtest` 通过后，新增 `/bwtest2` 斜杠命令测试 `BatchBlockPatch`：
+
+```ts
+await writeBlock(context, [
+  { type: 'removeSlashCommands', filters: ['bwtest2'], suffix: '#done' },
+  { type: 'setPriority', priority: 'high' },
+]);
+```
+
+覆盖：
+- `removeSlashCommands` + `setPriority` 在 Protyle 中按序执行；
+- `SpinBlockDOM` + transaction 包含两次 DOM 修改的结果；
+- undo 一次撤销全部变更。
+
 ## 14. 测试策略
 
 ### 14.1 单元测试
@@ -414,7 +479,9 @@ API 写入流程：
   - `setStatus` 任务列表；
   - `addDate` 替换/追加/合并日期；
   - `setPriority` 插入到日期前；
-  - 保留自定义 IAL。
+  - 保留自定义 IAL；
+  - **批量 patch**：`setPriority` + `addDate` 同一事项行，验证两个 marker 都在且 IAL 不丢；
+  - **批量 patch 顺序**：`removeSlashCommands` + `setStatus` + `setPriority`，验证最终 kramdown 正确。
 - `blockTargetResolver.test.ts`
   - paragraph；
   - paragraph inside task list item；

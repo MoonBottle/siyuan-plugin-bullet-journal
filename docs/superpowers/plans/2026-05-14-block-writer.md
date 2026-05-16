@@ -117,6 +117,8 @@ export type BlockPatch =
   | ContentPatch
   | SlashCommandPatch;
 
+export type BatchBlockPatch = BlockPatch[];
+
 export interface KramdownBlockParts {
   contentLines: string[];
   ialLines: string[];
@@ -258,7 +260,7 @@ git commit -m "feat(blockWriter): preserve trailing IAL in kramdown blocks"
 ```ts
 import { describe, expect, it } from 'vitest';
 import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
-import { applyBlockPatch } from '@/utils/blockWriter/kramdownModifier';
+import { applyBlockPatch, applyBlockPatches } from '@/utils/blockWriter/kramdownModifier';
 
 describe('kramdownModifier', () => {
   it('sets status and preserves IAL', () => {
@@ -277,6 +279,28 @@ describe('kramdownModifier', () => {
     const parts = splitKramdownBlock('任务 📅2026-05-14\n{: id="abc"}');
     expect(applyBlockPatch(parts, { type: 'setPriority', priority: 'high' }))
       .toBe('任务 🔥 📅2026-05-14\n{: id="abc"}');
+  });
+
+  it('applies batch patches with priority then date', () => {
+    const parts = splitKramdownBlock('- [ ] 任务\n{: id="abc"}');
+    const result = applyBlockPatches(parts, [
+      { type: 'setPriority', priority: 'high' },
+      { type: 'addDate', date: '2026-05-16' },
+    ]);
+    expect(result).toContain('🔥');
+    expect(result).toContain('📅2026-05-16');
+    expect(result).toContain('{: id="abc"}');
+  });
+
+  it('applies batch patches with removeSlashCommands + setPriority', () => {
+    const parts = splitKramdownBlock('任务 /p=高的内容\n{: id="abc"}');
+    const result = applyBlockPatches(parts, [
+      { type: 'removeSlashCommands', filters: ['p=高'], suffix: '' },
+      { type: 'setPriority', priority: 'high' },
+    ]);
+    expect(result).toContain('🔥');
+    expect(result).not.toContain('/p=高');
+    expect(result).toContain('{: id="abc"}');
   });
 });
 ```
@@ -315,7 +339,7 @@ export function generatePriorityMarker(priority: PriorityLevel): string {
 
 ```ts
 import type { BlockPatch, KramdownBlockParts } from './types';
-import { replaceContentLines } from './kramdownBlocks';
+import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
 import { generatePriorityMarker, isTaskListFormat, stripPriorityMarker } from './itemLineMarkers';
 
 const STATUS_TAGS = ['#已完成', '#已放弃', '#done', '#abandoned', '✅', '❌'];
@@ -377,6 +401,15 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
   }
 
   throw new Error(`Patch ${patch.type} is not implemented yet`);
+}
+
+export function applyBlockPatches(parts: KramdownBlockParts, patches: BlockPatch[]): string {
+  let currentParts = parts;
+  for (const patch of patches) {
+    const result = applyBlockPatch(currentParts, patch);
+    currentParts = splitKramdownBlock(result);
+  }
+  return rebuildKramdownBlock(currentParts);
 }
 ```
 
@@ -496,14 +529,18 @@ export async function resolveApiBlockTarget(blockId: string, patch: BlockPatch):
 
 ```ts
 import { updateBlock } from '@/api';
-import type { BlockPatch } from './types';
+import type { BatchBlockPatch, BlockPatch } from './types';
 import { resolveApiBlockTarget } from './blockTargetResolver';
-import { applyBlockPatch } from './kramdownModifier';
+import { applyBlockPatch, applyBlockPatches } from './kramdownModifier';
 
-export async function writeViaApi(blockId: string, patch: BlockPatch): Promise<boolean> {
+export async function writeViaApi(blockId: string, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   try {
-    const target = await resolveApiBlockTarget(blockId, patch);
-    const markdown = applyBlockPatch(target.parts, patch);
+    const patchArray = Array.isArray(patches) ? patches : [patches];
+    const firstPatch = patchArray[0];
+    const target = await resolveApiBlockTarget(blockId, firstPatch);
+    const markdown = patchArray.length === 1
+      ? applyBlockPatch(target.parts, firstPatch)
+      : applyBlockPatches(target.parts, patchArray);
     const result = await updateBlock('markdown', markdown, target.targetBlockId);
     return Array.isArray(result);
   } catch (error) {
@@ -516,10 +553,11 @@ export async function writeViaApi(blockId: string, patch: BlockPatch): Promise<b
 `src/utils/blockWriter/index.ts`:
 
 ```ts
-import type { BlockPatch, BlockWriteContext } from './types';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
 import { writeViaApi } from './apiTransport';
 
 export type {
+  BatchBlockPatch,
   BlockPatch,
   BlockWriteContext,
   ContentPatch,
@@ -531,8 +569,8 @@ export type {
   StatusPatch,
 } from './types';
 
-export async function writeBlock(context: BlockWriteContext, patch: BlockPatch): Promise<boolean> {
-  return writeViaApi(context.blockId, patch);
+export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
+  return writeViaApi(context.blockId, patches);
 }
 ```
 
@@ -602,6 +640,51 @@ if (import.meta.env.DEV) {
         2000,
         success ? 'info' : 'error',
       );
+    },
+  });
+}
+
+- [ ] **Step 3b: Register dev-only `/bwtest2` batch command**
+
+In `createSlashCommands()`, after the `/bwtest` command:
+
+```ts
+if (import.meta.env.DEV) {
+  builtinCommands.push({
+    filter: ['bwtest2'],
+    html: `<div class="b3-list-item__first">
+        <span class="b3-list-item__text">BlockWriter Batch Test</span>
+        <span class="b3-list-item__meta">remove + priority</span>
+    </div>`,
+    id: 'bullet-journal-block-writer-batch-test',
+    callback: (protyle: any) => {
+      void (async () => {
+        const slash = getActiveSlashRange();
+        if (!slash) {
+          showMessage('BlockWriter batch test: no active slash range', 2000, 'error');
+          return;
+        }
+
+        const success = await writeBlock(
+          {
+            blockId: slash.blockId,
+            protyle,
+            nodeElement: slash.blockElement,
+            slashRange: slash.range,
+            slashStartOffset: slash.slashStartOffset,
+          },
+          [
+            { type: 'removeSlashCommands', filters: ['bwtest2'], suffix: '#done' },
+            { type: 'setPriority', priority: 'high' },
+          ],
+        );
+
+        showMessage(
+          success ? 'BlockWriter batch test success' : 'BlockWriter batch test failed',
+          2000,
+          success ? 'info' : 'error',
+        );
+      })();
     },
   });
 }
@@ -683,8 +766,9 @@ export function deleteSlashRangeText(range: Range, slashStartOffset: number): vo
 - [ ] **Step 3: Implement conservative Protyle transport**
 
 ```ts
-import type { BlockPatch, BlockWriteContext } from './types';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
 import { deleteSlashRangeText } from './slashRange';
+import { writeViaApi } from './apiTransport';
 
 function formatUpdatedAttr(date: Date): string {
   return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
@@ -700,15 +784,29 @@ function commitProtyleUpdate(protyle: any, id: string, newHTML: string, oldHTML:
   return true;
 }
 
-export async function writeViaProtyle(context: BlockWriteContext, patch: BlockPatch): Promise<boolean> {
+export async function writeViaProtyle(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   const { protyle, nodeElement } = context;
   if (!protyle || !nodeElement) return false;
 
-  if (patch.type === 'removeSlashCommands' && context.slashRange && context.slashStartOffset !== undefined) {
+  const patchArray = Array.isArray(patches) ? patches : [patches];
+
+  // 不含 removeSlashCommands 的纯 API patch 组合 → 降级 API Transport
+  if (!patchArray.some(p => p.type === 'removeSlashCommands')) {
+    return writeViaApi(context.blockId, patches);
+  }
+
+  // 最多支持 2 个 patch，且必须含 removeSlashCommands
+  if (patchArray.length > 2 || patchArray.some(p => p.type === 'setContent')) {
+    return writeViaApi(context.blockId, patches);
+  }
+
+  // 处理 removeSlashCommands
+  const slashPatch = patchArray.find(p => p.type === 'removeSlashCommands');
+  if (slashPatch && context.slashRange && context.slashStartOffset !== undefined) {
     const oldHTML = nodeElement.outerHTML;
     deleteSlashRangeText(context.slashRange, context.slashStartOffset);
-    if (patch.suffix) {
-      context.slashRange.insertNode(document.createTextNode(` ${patch.suffix}`));
+    if (slashPatch.suffix) {
+      context.slashRange.insertNode(document.createTextNode(` ${slashPatch.suffix}`));
       context.slashRange.collapse(false);
     }
     nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()));
@@ -725,11 +823,12 @@ export async function writeViaProtyle(context: BlockWriteContext, patch: BlockPa
 - [ ] **Step 4: Wire fallback in `index.ts`**
 
 ```ts
-import type { BlockPatch, BlockWriteContext } from './types';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
 import { writeViaApi } from './apiTransport';
 import { writeViaProtyle } from './protyleTransport';
 
 export type {
+  BatchBlockPatch,
   BlockPatch,
   BlockWriteContext,
   ContentPatch,
@@ -741,12 +840,12 @@ export type {
   StatusPatch,
 } from './types';
 
-export async function writeBlock(context: BlockWriteContext, patch: BlockPatch): Promise<boolean> {
+export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   if (context.protyle && context.nodeElement) {
-    const ok = await writeViaProtyle(context, patch);
+    const ok = await writeViaProtyle(context, patches);
     if (ok) return true;
   }
-  return writeViaApi(context.blockId, patch);
+  return writeViaApi(context.blockId, patches);
 }
 ```
 
@@ -813,7 +912,7 @@ function getActiveSlashRange(): { range: Range; slashStartOffset: number; blockE
 }
 ```
 
-- [ ] **Step 3: Register dev-only command**
+- [ ] **Step 3: Register dev-only `/bwtest` command**
 
 In `createSlashCommands()`, after `builtinCommands` is initialized and before it is returned:
 
@@ -887,6 +986,25 @@ Expected:
 - undo/redo works;
 - existing slash commands are unchanged.
 
+**Batch test (`/bwtest2`):**
+
+Type:
+
+```text
+keep /bwtest2 then trigger /bwtest2
+```
+
+Select `BlockWriter Batch Test`.
+
+Expected:
+
+- only the second `/bwtest2` is removed;
+- the first `/bwtest2` remains;
+- `#done` is appended AND `🔥` is added;
+- IAL preserved if applicable;
+- undo once reverts both changes;
+- existing slash commands are unchanged.
+
 - [ ] **Step 6: Commit**
 
 ```powershell
@@ -929,6 +1047,23 @@ Expected:
 - [ ] **Step 4: Decide whether two entry points are enough**
 
 If all smoke tests pass, they are enough to start one real low-risk migration. They are not enough to remove old functions.
+
+- [ ] **Step 5: Verify batch API write with dev button**
+
+Use the existing dev topbar button but manually call `writeBlock` with array in console:
+
+```ts
+const { writeBlock } = await import('/plugins/siyuan-plugin-bullet-journal/utils/blockWriter/index.js');
+await writeBlock({ blockId: 'YOUR_BLOCK_ID' }, [
+  { type: 'setPriority', priority: 'high' },
+  { type: 'setStatus', status: 'completed' },
+]);
+```
+
+Expected:
+- `🔥` and `#已完成` both appear;
+- custom IAL retained;
+- single `updateBlock` call made (verify via network tab).
 
 ---
 
@@ -1005,6 +1140,6 @@ Expected: all pass.
 
 ## Self-Review
 
-- Spec coverage: includes思源源码约束、dev-only验证入口、两条 transport、人工验证矩阵、后续真实迁移 gate。
+- Spec coverage: includes思源源码约束、dev-only验证入口、两条 transport、人工验证矩阵、后续真实迁移 gate、**BatchBlockPatch 批量写入**。
 - Placeholder scan: no unresolved placeholder text.
-- Type consistency: `BlockPatch`、`BlockWriteContext`、`ResolvedBlockTarget` are used consistently across resolver, transport, and entry.
+- Type consistency: `BlockPatch`、`BlockWriteContext`、`ResolvedBlockTarget`、`BatchBlockPatch` are used consistently across resolver, transport, and entry.
