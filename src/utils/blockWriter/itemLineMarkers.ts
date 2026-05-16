@@ -7,8 +7,8 @@ const PRIORITY_EMOJI: Record<PriorityLevel, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  completed: '#已完成',
-  abandoned: '#已放弃',
+  completed: '✅',
+  abandoned: '❌',
 };
 
 const PRIORITY_REGEX = /[🔥🌱🍃]/gu;

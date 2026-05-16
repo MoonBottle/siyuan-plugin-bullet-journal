@@ -10,25 +10,31 @@ describe('kramdownModifier', () => {
   describe('setStatus', () => {
     it('completes task list', () => {
       expect(applyBlockPatch(parts('- [ ] 任务\n{: id="abc"}'), { type: 'setStatus', status: 'completed' })).toBe(
-        '- [x] 任务 #已完成\n{: id="abc"}',
+        '- [x] 任务\n{: id="abc"}',
       );
     });
 
     it('abandons task list', () => {
       expect(applyBlockPatch(parts('- [x] 任务\n{: id="abc"}'), { type: 'setStatus', status: 'abandoned' })).toBe(
-        '- [ ] 任务 #已放弃\n{: id="abc"}',
+        '- [ ] 任务 ❌\n{: id="abc"}',
       );
     });
 
     it('completes pending non-task-list', () => {
       expect(applyBlockPatch(parts('任务\n{: id="abc"}'), { type: 'setStatus', status: 'completed' })).toBe(
-        '任务 #已完成\n{: id="abc"}',
+        '任务 ✅\n{: id="abc"}',
       );
     });
 
     it('reverts completed to pending', () => {
       expect(applyBlockPatch(parts('- [x] 任务 #已完成\n{: id="abc"}'), { type: 'setStatus', status: 'pending' })).toBe(
         '- [ ] 任务\n{: id="abc"}',
+      );
+    });
+
+    it('preserves business tags and appends emoji status', () => {
+      expect(applyBlockPatch(parts('测试事项 📅2026-05-16 #测试#\n{: id="abc"}'), { type: 'setStatus', status: 'abandoned' })).toBe(
+        '测试事项 📅2026-05-16 #测试# ❌\n{: id="abc"}',
       );
     });
   });
@@ -140,7 +146,7 @@ describe('kramdownModifier', () => {
         { type: 'setStatus', status: 'completed' },
       ]);
       expect(result).toContain('🔥');
-      expect(result).toContain('#已完成');
+      expect(result).toContain('✅');
       expect(result).toContain('{: id="abc" custom-x="1"}');
     });
 

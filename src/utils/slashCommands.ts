@@ -747,20 +747,25 @@ export function getActionHandler(
             return;
           }
 
+          const blockId = item.blockId || nodeElement.getAttribute('data-node-id');
+          if (!blockId) {
+            return;
+          }
+
           const abandonedTag = getStatusTag('abandoned');
           const blockContent = nodeElement.textContent || '';
           if (abandonedTag && blockContent.includes(abandonedTag)) {
-            deleteSlashCommandContent(protyle, filter);
+            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
             return;
           }
 
-          deleteSlashCommandContent(protyle, filter, undefined, (text) => {
-            if (!text.includes(abandonedTag)) {
-              return text.trimEnd() + ' ' + abandonedTag;
-            }
-            return text;
-          });
+          await writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+          const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
+          if (!isTaskListBlock) {
+            await waitForProtyleTransactionsFlush();
+          }
+          void writeBlock({ blockId, nodeElement, protyle }, { type: 'setStatus', status: 'abandoned' });
           showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
         })();
       };

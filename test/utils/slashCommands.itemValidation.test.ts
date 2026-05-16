@@ -409,6 +409,66 @@ describe('item-only slash command validation', () => {
     expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalled();
   });
 
+  it('/fq 在未标记已放弃时通过 BlockWriter 先删 slash 再写入 abandoned 状态', async () => {
+    const item = {
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'pending',
+    };
+    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    const handler = getActionHandler('abandon', {} as any, ['/fq']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 /fq';
+
+    handler({ transaction: vi.fn() } as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
+      1,
+      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
+      { type: 'removeSlashCommand' },
+    );
+    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
+      2,
+      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
+      { type: 'setStatus', status: 'abandoned' },
+    );
+    expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已标记为已放弃', 2000, 'info');
+  });
+
+  it('/fq 在已标记已放弃时通过 BlockWriter 仅删除 slash 命令', async () => {
+    const item = {
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'abandoned',
+    };
+    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    const handler = getActionHandler('abandon', {} as any, ['/fq']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.textContent = '整理资料 ❌ /fq';
+
+    handler({ transaction: vi.fn() } as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
+      { type: 'removeSlashCommand' },
+    );
+    expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已经标记为已放弃', 2000, 'info');
+  });
+
   it('/rw 在未标记任务时通过 BlockWriter 删除 slash 并追加任务标记', async () => {
     const handler = getActionHandler('markAsTask', {} as any, ['/rw']);
     const node = document.createElement('div');

@@ -2,8 +2,7 @@ import type { BlockPatch, DatePatch, KramdownBlockParts } from './types';
 import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
 import { generatePriorityMarker, isTaskListFormat, statusToLabel, stripPriorityMarker } from './itemLineMarkers';
 
-const STATUS_LABEL_DONE = '#已完成';
-const STATUS_LABEL_ABANDONED = '#已放弃';
+const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 
 const DATE_MARKER_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/g;
 
@@ -13,15 +12,14 @@ function primaryLineIndex(contentLines: string[]): number {
 
 function applyStatus(line: string, isTaskList: boolean, status: string): string {
   const clean = line
-    .replace(STATUS_LABEL_DONE, '')
-    .replace(STATUS_LABEL_ABANDONED, '')
+    .replace(STATUS_MARKERS_RE, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 
   if (isTaskList) {
     const checked = status === 'completed' ? '[x]' : '[ ]';
     const toggled = clean.replace(/\[\s*[xX]?\s*\]/, checked);
-    if (status === 'pending') {
+    if (status === 'pending' || status === 'completed') {
       return toggled;
     }
     return `${toggled} ${statusToLabel(status)}`;

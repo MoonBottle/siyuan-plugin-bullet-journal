@@ -23,7 +23,7 @@ describe('apiTransport', () => {
     expect(result).toBe(true);
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
-      '- [x] 任务 #已完成\n{: id="abc"}',
+      '- [x] 任务\n{: id="abc"}',
       'block123',
     );
   });
@@ -38,6 +38,20 @@ describe('apiTransport', () => {
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       '任务 🔥\n{: id="abc"}',
+      'block123',
+    );
+  });
+
+  it('writes abandoned emoji via API for non-task items', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '测试事项 📅2026-05-16 #测试#\n{: id="abc"}' } as any);
+    vi.mocked(updateBlock).mockResolvedValue([]);
+
+    const result = await writeViaApi('block123', { type: 'setStatus', status: 'abandoned' });
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '测试事项 📅2026-05-16 #测试# ❌\n{: id="abc"}',
       'block123',
     );
   });

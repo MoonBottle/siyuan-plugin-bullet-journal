@@ -6,6 +6,8 @@ interface CursorState {
   offset: number;
 }
 
+const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/u;
+
 function saveCursor(): CursorState | null {
   try {
     const sel = window.getSelection();
@@ -98,6 +100,11 @@ function handleSetStatusViaDOM(protyle: any, nodeElement: HTMLElement, patch: St
 
   const listItemId = li.getAttribute('data-node-id');
   if (!listItemId) return false;
+
+  const contentText = nodeElement.textContent ?? '';
+  if (patch.status === 'abandoned' || STATUS_MARKERS_RE.test(contentText)) {
+    return false;
+  }
 
   const oldHTML = li.outerHTML;
   const isDone = patch.status === 'completed';

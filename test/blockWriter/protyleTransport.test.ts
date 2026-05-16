@@ -120,6 +120,55 @@ describe('protyleTransport', () => {
     document.body.removeChild(li);
   });
 
+  it('returns false for abandoned task list status so caller can fall back to API', async () => {
+    const li = document.createElement('div');
+    li.classList.add('li', 'protyle-task--done');
+    li.setAttribute('data-type', 'NodeListItem');
+    li.setAttribute('data-subtype', 't');
+    li.setAttribute('data-node-id', 'task-1');
+    li.setAttribute('data-task', 'X');
+
+    const taskAction = document.createElement('span');
+    taskAction.classList.add('protyle-action--task');
+    const svg = document.createElement('svg');
+    const useEl = document.createElement('use');
+    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconCheck');
+    svg.appendChild(useEl);
+    taskAction.appendChild(svg);
+    li.appendChild(taskAction);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('p');
+    contentDiv.setAttribute('data-node-id', 'child-1');
+    contentDiv.textContent = '任务内容';
+    li.appendChild(contentDiv);
+
+    document.body.appendChild(li);
+
+    const context = {
+      blockId: 'child-1',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: contentDiv,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setStatus',
+      status: 'abandoned',
+    });
+
+    expect(result).toBe(false);
+    expect(li.classList.contains('protyle-task--done')).toBe(true);
+    expect(li.getAttribute('data-task')).toBe('X');
+    expect(contentDiv.textContent).not.toContain('❌');
+
+    document.body.removeChild(li);
+  });
+
   it('returns false without protyle', async () => {
     const result = await writeViaProtyle(
       { blockId: 'block-123' },
