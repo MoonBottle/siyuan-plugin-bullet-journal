@@ -945,12 +945,12 @@ watch(searchQuery, () => {
 .workbench-create-popup {
   z-index: 999;
   min-width: 220px;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   border: 1px solid var(--b3-border-color);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--b3-theme-surface);
   box-shadow: var(--b3-dialog-shadow);
 }
@@ -960,13 +960,14 @@ watch(searchQuery, () => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--b3-theme-on-background);
   text-align: left;
   cursor: pointer;
+  font-size: 14px;
 }
 
 .workbench-create-popup__option:hover {
