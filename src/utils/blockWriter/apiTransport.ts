@@ -28,16 +28,23 @@ export async function writeViaApi(blockId: string, patches: BlockPatch | BatchBl
 }
 
 export async function insertViaApi(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
+  const result = await insertViaApiWithResult(previousBlockId, patch);
+  return Array.isArray(result);
+}
+
+export async function insertViaApiWithResult(
+  previousBlockId: string,
+  patch: InsertableBlockPatch,
+): Promise<IResdoOperations[] | null> {
   try {
     const markdown = renderInsertableBlockPatch(patch);
     const blockDOM = markdownToBlockDOM(markdown);
-    const result = blockDOM
+    return blockDOM
       ? await insertBlock('dom', blockDOM, undefined, previousBlockId, undefined)
       : await insertBlock('markdown', markdown, undefined, previousBlockId, undefined);
-    return Array.isArray(result);
   }
   catch (error) {
     console.error('[BlockWriter] insertViaApi failed:', error);
-    return false;
+    return null;
   }
 }

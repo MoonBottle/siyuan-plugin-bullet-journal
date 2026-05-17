@@ -1,5 +1,5 @@
 import type { FocusPlan, Item } from '@/types/models';
-import { updateBlock } from '@/api';
+import { writeBlock } from '@/utils/blockWriter';
 import { writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
 import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
@@ -41,11 +41,13 @@ export async function saveFocusPlanWithOptionalDate(
         status: item.status,
       },
       async (content, targetBlockId) => {
-        return Array.isArray(await updateBlock(
-          'markdown',
-          appendFocusPlanMarker(content, plan),
-          targetBlockId,
-        ));
+        return writeBlock(
+          { blockId: targetBlockId },
+          {
+            type: 'replaceMarkdown',
+            markdown: appendFocusPlanMarker(content, plan),
+          },
+        );
       },
     );
     if (!updated) {

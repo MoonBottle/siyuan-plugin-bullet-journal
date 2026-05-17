@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { saveFocusPlanWithOptionalDate } from '@/utils/focusPlanDialogSave';
-import { updateBlock } from '@/api';
+import { writeBlock } from '@/utils/blockWriter';
 import { writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
 import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 import type { Item } from '@/types/models';
@@ -23,8 +23,8 @@ vi.mock('@/utils/itemSettingUtils', () => ({
   clearItemFocusPlan: vi.fn(),
 }));
 
-vi.mock('@/api', () => ({
-  updateBlock: vi.fn(),
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: vi.fn(),
 }));
 
 function createItem(partial: Partial<Item> = {}): Item {
@@ -47,7 +47,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
     vi.clearAllMocks();
     vi.mocked(updateItemWithFocusPlan).mockResolvedValue(undefined);
     vi.mocked(clearItemFocusPlan).mockResolvedValue(undefined);
-    vi.mocked(updateBlock).mockResolvedValue([]);
+    vi.mocked(writeBlock).mockResolvedValue(true);
   });
 
   it('writes one final block update with both ensured date and focus plan when the item does not contain the date', async () => {
@@ -67,10 +67,12 @@ describe('saveFocusPlanWithOptionalDate', () => {
       },
       expect.any(Function),
     );
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '事项 📅2026-05-14, 2026-05-15 ⏳30m\n{: id="block-1" }',
-      'block-1',
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      {
+        type: 'replaceMarkdown',
+        markdown: '事项 📅2026-05-14, 2026-05-15 ⏳30m\n{: id="block-1" }',
+      },
     );
     expect(updateItemWithFocusPlan).not.toHaveBeenCalled();
   });
@@ -85,7 +87,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
 
     expect(saved).toBe(true);
     expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(writeBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
   });
 
@@ -96,7 +98,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
 
     expect(saved).toBe(false);
     expect(writeDatePatchWithWriter).toHaveBeenCalled();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(writeBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).not.toHaveBeenCalled();
   });
 
@@ -107,7 +109,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
 
     expect(saved).toBe(true);
     expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(writeBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
   });
 
@@ -118,7 +120,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
 
     expect(saved).toBe(true);
     expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(writeBlock).not.toHaveBeenCalled();
     expect(clearItemFocusPlan).toHaveBeenCalledWith(item);
   });
 });

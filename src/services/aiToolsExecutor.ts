@@ -5,7 +5,7 @@
 import type { ToolCall } from '@/types/ai';
 import type { Item, ItemStatus, Project, ProjectDirectory, ProjectGroup } from '@/types/models';
 import dayjs from '@/utils/dayjs';
-import { writeBlock } from '@/utils/blockWriter';
+import { insertBlockAfterWithResult, writeBlock } from '@/utils/blockWriter';
 import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
 import {
   aggregatePomodorosFromProjects,
@@ -318,13 +318,10 @@ async function executeCreateItem(
 
   try {
     // 在任务块后追加事项（previousID = lastTask.blockId 表示在其后插入）
-    const result = await siyuanAPI.insertBlock(
-      'markdown',
-      itemContent,
-      undefined,
-      lastTask.blockId,
-      undefined
-    );
+    const result = await insertBlockAfterWithResult(lastTask.blockId, {
+      type: 'replaceMarkdown',
+      markdown: itemContent,
+    });
 
     if (result && result[0]) {
       const newBlockId = (result[0] as any).doOperations?.[0]?.id;

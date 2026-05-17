@@ -1,5 +1,5 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from './types';
-import { insertViaApi, writeViaApi } from './apiTransport';
+import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTransport';
 import { createProtyleMarkdownWriter } from './markdownWriter';
 import { writeDatePatch } from './datePatchWriter';
 import { writeViaProtyle } from './protyleTransport';
@@ -30,6 +30,13 @@ export { createProtyleMarkdownWriter } from './markdownWriter';
 
 export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
   return insertViaApi(previousBlockId, patch);
+}
+
+export async function insertBlockAfterWithResult(
+  previousBlockId: string,
+  patch: InsertableBlockPatch,
+): Promise<IResdoOperations[] | null> {
+  return insertViaApiWithResult(previousBlockId, patch);
 }
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
