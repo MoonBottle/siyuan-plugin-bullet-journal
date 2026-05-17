@@ -18,6 +18,7 @@ export interface WorkbenchEntry {
   order: number;
   viewType?: WorkbenchViewType;
   dashboardId?: string;
+  config?: Record<string, unknown>;
 }
 
 export type WorkbenchWidgetType =
@@ -57,6 +58,14 @@ export interface WorkbenchHabitWeekWidgetConfig {
 
 export interface WorkbenchPomodoroStatsWidgetConfig {
   section?: WorkbenchPomodoroStatsSectionKey;
+}
+
+export interface WorkbenchFocusReviewViewConfig {
+  groupId?: string;
+}
+
+export interface WorkbenchProjectViewConfig {
+  groupId?: string;
 }
 
 export interface WorkbenchWidgetInstance {
