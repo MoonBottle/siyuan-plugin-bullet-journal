@@ -100,7 +100,10 @@ function applyContent(line: string, suffix?: string, newItemContent?: string): s
   if (newItemContent !== undefined && newItemContent !== null) {
     const listPrefixMatch = line.match(/^(\s*-(?:\s*\{:[^}]*\}\s*)?)/);
     const listPrefix = listPrefixMatch ? listPrefixMatch[1] : '';
-    let rest = listPrefix ? line.slice(listPrefix.length).trimStart() : line;
+    const headingPrefixMatch = !listPrefix ? line.match(/^(\s{0,3}#{1,6})(?=\s|$)/) : null;
+    const headingPrefix = headingPrefixMatch ? headingPrefixMatch[1] : '';
+    const structuralPrefix = listPrefix || headingPrefix;
+    let rest = structuralPrefix ? line.slice(structuralPrefix.length).trimStart() : line;
 
     const taskCheckboxRe = /^(\[\s*[xX]?\s*\])/;
     const taskMatch = rest.match(taskCheckboxRe);
@@ -110,7 +113,7 @@ function applyContent(line: string, suffix?: string, newItemContent?: string): s
     const markerIdx = findFirstMarker(rest);
     const markers = markerIdx >= 0 ? rest.slice(markerIdx).trim() : '';
 
-    return [listPrefix, taskMarker, newItemContent, markers]
+    return [structuralPrefix, taskMarker, newItemContent, markers]
       .filter(s => s.length > 0)
       .join(' ')
       .replace(/\s{2,}/g, ' ')

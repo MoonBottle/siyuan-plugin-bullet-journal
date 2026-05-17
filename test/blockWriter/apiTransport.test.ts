@@ -85,6 +85,22 @@ describe('apiTransport', () => {
     );
   });
 
+  it('writes setContent on headings via API and preserves heading level', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '### 旧标题 🍃 📅2026-05-17 #测试#\n{: id="abc"}' } as any);
+    vi.mocked(updateBlock).mockResolvedValue([]);
+    const md2BlockDOM = stubLute((markdown) => `<div data-type="NodeHeading">${markdown}</div>`);
+
+    const result = await writeViaApi('block123', { type: 'setContent', newItemContent: '测试标题事项356' });
+
+    expect(result).toBe(true);
+    expect(md2BlockDOM).toHaveBeenCalledWith('### 测试标题事项356 🍃 📅2026-05-17 #测试#\n{: id="abc"}');
+    expect(updateBlock).toHaveBeenCalledWith(
+      'dom',
+      '<div data-type="NodeHeading">### 测试标题事项356 🍃 📅2026-05-17 #测试#\n{: id="abc"}</div>',
+      'block123',
+    );
+  });
+
   it('writes abandoned emoji via API as dom and preserves tag spans', async () => {
     vi.mocked(getBlockKramdown).mockResolvedValue({ id: 'abc', kramdown: '测试事项 📅2026-05-16 #测试#\n{: id="abc"}' } as any);
     vi.mocked(updateBlock).mockResolvedValue([]);

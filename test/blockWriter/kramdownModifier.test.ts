@@ -118,6 +118,12 @@ describe('kramdownModifier', () => {
       );
     });
 
+    it('preserves heading prefix when replacing content', () => {
+      expect(applyBlockPatch(parts('### 旧标题 🍃 📅2026-05-17 #测试#\n{: id="abc"}'), { type: 'setContent', newItemContent: '新标题事项356' })).toBe(
+        '### 新标题事项356 🍃 📅2026-05-17 #测试#\n{: id="abc"}',
+      );
+    });
+
     it('replaces content preserving markers', () => {
       expect(applyBlockPatch(parts('- [x] 旧内容 📅2026-05-14\n{: id="abc"}'), { type: 'setContent', newItemContent: '新内容' })).toBe(
         '- [x] 新内容 📅2026-05-14\n{: id="abc"}',
