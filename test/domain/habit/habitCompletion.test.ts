@@ -72,6 +72,32 @@ describe('getHabitDayState', () => {
     expect(state.isCompleted).toBe(false);
     expect(state.currentValue).toBeUndefined();
   });
+
+  it('ebbinghaus 在下一次到期日前标记为无需打卡', () => {
+    const state = getHabitDayState(mkHabit({
+      name: '英语单词',
+      type: 'binary',
+      startDate: '2026-05-14',
+      target: undefined,
+      unit: undefined,
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [
+        {
+          content: '英语单词',
+          date: '2026-05-14',
+          docId: 'doc-1',
+          blockId: 'record-2026-05-14',
+          habitId: 'habit-1',
+        },
+      ],
+    }), '2026-05-14');
+
+    expect(state.isDue).toBe(false);
+    expect(state.isOverdue).toBe(false);
+    expect(state.nextDueDate).toBe('2026-05-15');
+    expect(state.currentStageIndex).toBe(0);
+    expect(state.currentIntervalDays).toBe(1);
+  });
 });
 
 describe('getHabitPeriodState', () => {
@@ -104,5 +130,65 @@ describe('getHabitPeriodState', () => {
     expect(state.completedCount).toBe(0);
     expect(state.remainingCount).toBe(3);
     expect(state.eligibleToday).toBe(false);
+  });
+
+  it('ebbinghaus 逾期时应暴露下一次打卡日期与逾期天数', () => {
+    const state = getHabitPeriodState(mkHabit({
+      name: '英语单词',
+      type: 'binary',
+      startDate: '2026-05-14',
+      target: undefined,
+      unit: undefined,
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [
+        {
+          content: '英语单词',
+          date: '2026-05-14',
+          docId: 'doc-1',
+          blockId: 'record-2026-05-14',
+          habitId: 'habit-1',
+        },
+      ],
+    }), '2026-05-18');
+
+    expect(state.eligibleToday).toBe(true);
+    expect(state.requiredCount).toBe(1);
+    expect(state.nextDueDate).toBe('2026-05-15');
+    expect(state.currentStageIndex).toBe(0);
+    expect(state.currentIntervalDays).toBe(1);
+    expect(state.overdueDays).toBe(3);
+  });
+
+  it('ebbinghaus 到期当天完成后当前周期仍应视为已完成', () => {
+    const state = getHabitPeriodState(mkHabit({
+      name: '英语单词',
+      type: 'binary',
+      startDate: '2026-05-14',
+      target: undefined,
+      unit: undefined,
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [
+        {
+          content: '英语单词',
+          date: '2026-05-14',
+          docId: 'doc-1',
+          blockId: 'record-2026-05-14',
+          habitId: 'habit-1',
+        },
+        {
+          content: '英语单词',
+          date: '2026-05-15',
+          docId: 'doc-1',
+          blockId: 'record-2026-05-15',
+          habitId: 'habit-1',
+        },
+      ],
+    }), '2026-05-15');
+
+    expect(state.requiredCount).toBe(1);
+    expect(state.completedCount).toBe(1);
+    expect(state.remainingCount).toBe(0);
+    expect(state.isCompleted).toBe(true);
+    expect(state.eligibleToday).toBe(true);
   });
 });

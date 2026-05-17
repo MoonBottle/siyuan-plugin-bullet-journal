@@ -119,6 +119,100 @@ describe('projectStore 多日期事项', () => {
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('completed');
   });
+
+  it('getTodayFocusPlanSummary 对同一 blockId 只累计一次预计与实际', () => {
+    const store = useProjectStore();
+    const sharedPomodoros = [{ durationMinutes: 50, actualDurationMinutes: 50, date: '2026-05-13', id: 'p1', startTime: '09:00:00' }] as any;
+    const items = [
+      mkItem('2026-05-13', 'same-block', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        focusPlan: {
+          type: 'duration',
+          rawValue: 70,
+          normalizedMinutes: 70,
+          sourceText: '⏳1h10m',
+        },
+        pomodoros: sharedPomodoros,
+      }),
+      mkItem('2026-05-13', 'same-block', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        focusPlan: {
+          type: 'duration',
+          rawValue: 70,
+          normalizedMinutes: 70,
+          sourceText: '⏳1h10m',
+        },
+        pomodoros: sharedPomodoros,
+      }),
+    ];
+
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-05-13',
+    });
+
+    const summary = (store as any).getTodayFocusPlanSummary('');
+
+    expect(summary.estimatedMinutes).toBe(70);
+    expect(summary.actualMinutes).toBe(50);
+    expect(summary.total).toBe(1);
+  });
+
+  it('getTodayFocusPlanSummary 只统计当天的番茄记录，不混入历史记录', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-05-14', 'today-block', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        focusPlan: {
+          type: 'duration',
+          rawValue: 145,
+          normalizedMinutes: 145,
+          sourceText: '⏳2h25m',
+        },
+        pomodoros: [
+          { durationMinutes: 10, actualDurationMinutes: 10, date: '2026-05-13', id: 'p-old', startTime: '23:22:00' },
+        ] as any,
+      }),
+    ];
+
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-05-14',
+    });
+
+    const summary = (store as any).getTodayFocusPlanSummary('');
+
+    expect(summary.estimatedMinutes).toBe(145);
+    expect(summary.actualMinutes).toBe(0);
+  });
+
+  it('getFocusPlanEntriesByDate 会包含有专注记录但没有预计的事项', () => {
+    const store = useProjectStore();
+    const items = [
+      mkItem('2026-05-13', 'focused-without-plan', {
+        dateRangeStart: undefined,
+        dateRangeEnd: undefined,
+        pomodoros: [
+          { durationMinutes: 20, actualDurationMinutes: 20, date: '2026-05-13', id: 'p-1', startTime: '10:00:00' },
+        ] as any,
+      }),
+    ];
+
+    store.$patch({
+      projects: [createMockProject(items)],
+      currentDate: '2026-05-14',
+    });
+
+    const entries = (store as any).getFocusPlanEntriesByDate('2026-05-13', '');
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].estimatedMinutes).toBe(0);
+    expect(entries[0].actualMinutes).toBe(20);
+    expect(entries[0].reviewStatus).toBe('unplanned');
+  });
 });
 
 const mkPomodoro = (date: string, minutes: number, overrides?: Partial<PomodoroRecord>): PomodoroRecord =>

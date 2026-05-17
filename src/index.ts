@@ -53,6 +53,7 @@ import AiChatDock from "@/tabs/AiChatDock.vue";
 import PomodoroDock from "@/tabs/PomodoroDock.vue";
 import HabitDock from "@/tabs/HabitDock.vue";
 import PomodoroStatsTab from "@/tabs/PomodoroStatsTab.vue";
+import FocusReviewTab from "@/tabs/FocusReviewTab.vue";
 import { TAB_TYPES, DOCK_TYPES } from "@/constants";
 import type { ProjectDirectory } from "@/types/models";
 import { t } from "@/i18n";
@@ -106,6 +107,7 @@ import {
   initializeChinaWorkdayCalendar,
   refreshChinaWorkdayCalendar,
 } from "@/services/chinaWorkdayService";
+import { writeBlock } from '@/utils/blockWriter';
 import { CleanupManager } from "@/utils/cleanupManager";
 import { isForwardProxyAvailable } from "@/services/clawBotForwardProxy";
 import {
@@ -117,6 +119,11 @@ import {
   applyFloatingPomodoroViewState,
   createFloatingPomodoroMarkup,
 } from "@/utils/floatingPomodoroDom";
+import {
+  createDetachedPomodoroWindowHost,
+  type DetachedPomodoroAction,
+  type DetachedPomodoroWindowHost,
+} from "@/utils/detachedPomodoroWindow";
 import { createRefreshCoordinator } from "@/services/refreshCoordinator";
 
 let PluginInfo = {
@@ -184,6 +191,8 @@ export default class TaskAssistantPlugin extends Plugin {
 
   /** 悬浮番茄按钮元素 */
   private floatingTomatoEl: HTMLElement | null = null;
+  /** 独立桌面悬浮番茄窗口 */
+  private detachedPomodoroWindowHost: DetachedPomodoroWindowHost | null = null;
   /** 底栏进度条元素 */
   private statusBarEl: HTMLElement | null = null;
   /** 底栏倒计时元素 */
@@ -566,6 +575,8 @@ export default class TaskAssistantPlugin extends Plugin {
     destroy();
     // 清理悬浮番茄按钮
     this.hideFloatingTomatoButton();
+    this.detachedPomodoroWindowHost?.destroy();
+    this.detachedPomodoroWindowHost = null;
     mobileNotificationScheduler.detachRuntime();
     // 停止提醒服务
     reminderService.stop();
@@ -1341,6 +1352,28 @@ export default class TaskAssistantPlugin extends Plugin {
         },
       });
     }
+
+    if (!this.isMobile) {
+      this.addTab({
+        type: TAB_TYPES.FOCUS_REVIEW,
+        init() {
+          try {
+            const pinia = getSharedPinia() ?? createPinia();
+            const app = createApp(FocusReviewTab);
+            app.use(pinia);
+            mountVueAppInHost(this.element, app);
+          } catch (error) {
+            console.error(
+              "[Task Assistant] Failed to mount FocusReviewTab:",
+              error,
+            );
+          }
+        },
+        destroy() {
+          unmountVueAppFromHost(this.element);
+        },
+      });
+    }
   }
 
   /**
@@ -1516,6 +1549,13 @@ export default class TaskAssistantPlugin extends Plugin {
             },
           });
           menu.addItem({
+            icon: "iconList",
+            label: t("focusReview").title,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.FOCUS_REVIEW);
+            },
+          });
+          menu.addItem({
             icon: "iconLayout",
             label: t("quadrant").title,
             click: () => {
@@ -1676,6 +1716,7 @@ export default class TaskAssistantPlugin extends Plugin {
             },
           ],
         });
+
         menu.open(resolveMenuPosition(event));
       },
     });
@@ -1764,6 +1805,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconFolder",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",
+      [TAB_TYPES.FOCUS_REVIEW]: "iconList",
     };
     return icons[type] || "iconFile";
   }
@@ -1779,6 +1821,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.QUADRANT]: t("quadrant").title,
       [TAB_TYPES.PROJECT]: t("project").title,
       [TAB_TYPES.POMODORO_STATS]: t("pomodoroStats").statsTitle,
+      [TAB_TYPES.FOCUS_REVIEW]: t("focusReview").title,
     };
     return titles[type] || t("title");
   }
@@ -2429,6 +2472,15 @@ export default class TaskAssistantPlugin extends Plugin {
     const btn = document.createElement("div");
     btn.className = "floating-tomato-btn";
     btn.innerHTML = createFloatingPomodoroMarkup();
+    btn.querySelectorAll<HTMLElement>(".floating-tomato-action").forEach((el) => {
+      el.addEventListener("mouseenter", () => {
+        const text = el.dataset.tooltip;
+        if (text) {
+          showIconTooltip(el, text);
+        }
+      });
+      el.addEventListener("mouseleave", hideIconTooltip);
+    });
 
     btn.addEventListener("click", (e) => {
       if (btn.classList.contains("dragging")) return;
@@ -2593,10 +2645,13 @@ export default class TaskAssistantPlugin extends Plugin {
     const pomodoro = this.getSettings().pomodoro ?? defaultPomodoroSettings;
     if (pomodoro.enableFloatingButton === false) return;
 
-    if (this.floatingTomatoEl) return;
-
-    this.floatingTomatoEl = this.createFloatingTomatoButton();
-    document.body.appendChild(this.floatingTomatoEl);
+    if (this.shouldUseInlineFloating() && !this.floatingTomatoEl) {
+      this.floatingTomatoEl = this.createFloatingTomatoButton();
+      document.body.appendChild(this.floatingTomatoEl);
+    } else if (!this.shouldUseInlineFloating() && this.floatingTomatoEl) {
+      this.floatingTomatoEl.remove();
+      this.floatingTomatoEl = null;
+    }
 
     // 立即从 store 读取并更新，确保恢复后 0 秒内显示正确（后续由 TICK 驱动）
     this.updateTimerDisplaysFromStore();
@@ -2642,6 +2697,8 @@ export default class TaskAssistantPlugin extends Plugin {
       this.floatingTomatoEl.remove();
       this.floatingTomatoEl = null;
     }
+
+    this.ensureDetachedPomodoroWindowHost().hide();
 
     this.hideStatusBar();
     // 不隐藏底栏倒计时，只更新为无倒计时状态
@@ -2877,12 +2934,107 @@ export default class TaskAssistantPlugin extends Plugin {
     return useProjectStore(pinia).getItemByBlockId(blockId)?.content || fallback;
   }
 
-  private updateFloatingTomatoView(source: FloatingPomodoroSourceState) {
-    if (!this.floatingTomatoEl) return;
-    applyFloatingPomodoroViewState(
-      this.floatingTomatoEl,
-      buildFloatingPomodoroViewState(source),
+  private getFloatingDisplayMode(): "inline" | "desktop" | "both" {
+    return this.getSettings().pomodoro?.floatingDisplayMode ?? "inline";
+  }
+
+  private ensureDetachedPomodoroWindowHost(): DetachedPomodoroWindowHost {
+    if (this.detachedPomodoroWindowHost) {
+      return this.detachedPomodoroWindowHost;
+    }
+
+    const runtimeWindow = window as typeof window & {
+      require?: (id: string) => any;
+    };
+
+    this.detachedPomodoroWindowHost = createDetachedPomodoroWindowHost({
+      frontEnd: this.platform,
+      runtimeRequire: runtimeWindow.require,
+      createMarkup: createFloatingPomodoroMarkup,
+      applyViewState: applyFloatingPomodoroViewState,
+      onAction: (action) => {
+        void this.handleDetachedPomodoroAction(action);
+      },
+    });
+
+    return this.detachedPomodoroWindowHost;
+  }
+
+  private canUseDetachedFloating(): boolean {
+    return this.ensureDetachedPomodoroWindowHost().isAvailable();
+  }
+
+  private shouldUseInlineFloating(): boolean {
+    const mode = this.getFloatingDisplayMode();
+    if (mode === "inline" || mode === "both") {
+      return true;
+    }
+
+    if (!this.canUseDetachedFloating()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private shouldUseDetachedFloating(
+    phase: FloatingPomodoroSourceState["phase"] = "focus",
+  ): boolean {
+    if (phase !== "focus") {
+      return false;
+    }
+
+    const mode = this.getFloatingDisplayMode();
+    return (
+      (mode === "desktop" || mode === "both") &&
+      this.canUseDetachedFloating()
     );
+  }
+
+  private async handleDetachedPomodoroAction(
+    action: DetachedPomodoroAction,
+  ) {
+    const pinia = getSharedPinia();
+    if (!pinia) return;
+
+    const pomodoroStore = usePomodoroStore(pinia);
+    if (!pomodoroStore.activePomodoro) {
+      return;
+    }
+
+    if (action === "pause") {
+      await pomodoroStore.pausePomodoro(this);
+      return;
+    }
+
+    if (action === "resume") {
+      await pomodoroStore.resumePomodoro(this);
+      return;
+    }
+
+    await pomodoroStore.completePomodoro(this);
+  }
+
+  private updateFloatingTomatoView(source: FloatingPomodoroSourceState) {
+    const viewState = buildFloatingPomodoroViewState(source);
+
+    if (this.shouldUseInlineFloating()) {
+      if (!this.floatingTomatoEl) {
+        this.floatingTomatoEl = this.createFloatingTomatoButton();
+        document.body.appendChild(this.floatingTomatoEl);
+      }
+      applyFloatingPomodoroViewState(this.floatingTomatoEl, viewState);
+    } else if (this.floatingTomatoEl) {
+      this.floatingTomatoEl.remove();
+      this.floatingTomatoEl = null;
+    }
+
+    const detachedHost = this.ensureDetachedPomodoroWindowHost();
+    if (this.shouldUseDetachedFloating(source.phase)) {
+      detachedHost.show(viewState);
+    } else {
+      detachedHost.hide();
+    }
   }
 
   /**

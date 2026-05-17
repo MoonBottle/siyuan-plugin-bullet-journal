@@ -76,24 +76,33 @@
           v-if="habit.type === 'binary'"
           :class="['habit-action-btn', {
             'habit-action-btn--done': dayState.isCompleted,
+            'habit-action-btn--missed': dayState.isMissed,
             'habit-action-btn--binary': true,
             'b3-tooltips': true,
             'b3-tooltips__n': true,
           }]"
-          :disabled="dayState.isCompleted"
           data-testid="habit-list-item-check-in"
           :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').checkIn"
-          @click.stop="emit('check-in', habit)"
+          @contextmenu.stop.prevent="handleActionContextMenu"
+          @click.stop="handleBinaryActionClick"
         >
           <span
             v-if="dayState.isCompleted"
             class="habit-action-btn__check"
             data-testid="habit-action-check"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
-            </svg>
+            ✓
           </span>
+          <svg
+            v-else-if="dayState.isMissed"
+            class="habit-action-btn__missed"
+            data-testid="habit-action-missed"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path d="M7 7 13 13" />
+            <path d="M13 7 7 13" />
+          </svg>
           <span
             v-else
             class="habit-action-btn__empty"
@@ -106,24 +115,33 @@
           v-else
           :class="['habit-action-btn', {
             'habit-action-btn--done': dayState.isCompleted,
+            'habit-action-btn--missed': dayState.isMissed,
             'habit-action-btn--count': true,
             'b3-tooltips': true,
             'b3-tooltips__n': true,
           }]"
-          :disabled="dayState.isCompleted"
           data-testid="habit-list-item-increment"
           :aria-label="dayState.isCompleted ? t('habit').completed : t('habit').addOne"
-          @click.stop="emit('increment', habit)"
+          @contextmenu.stop.prevent="handleActionContextMenu"
+          @click.stop="handleCountActionClick"
         >
           <span
             v-if="dayState.isCompleted"
             class="habit-action-btn__check"
             data-testid="habit-action-check"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M8.4 13.6 5.6 10.8l-1.2 1.2 4 4 7.2-7.2-1.2-1.2z" />
-            </svg>
+            ✓
           </span>
+          <svg
+            v-else-if="dayState.isMissed"
+            class="habit-action-btn__missed"
+            data-testid="habit-action-missed"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path d="M7 7 13 13" />
+            <path d="M13 7 7 13" />
+          </svg>
           <svg
             v-else
             class="habit-action-btn__progress-ring"
@@ -144,11 +162,36 @@
         </button>
       </template>
     </div>
+
+    <div
+      v-if="contextMenu.visible"
+      class="habit-list-item__menu"
+      :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+    >
+      <button
+        v-if="contextMenu.action === 'mark-missed'"
+        class="habit-list-item__menu-item"
+        data-testid="habit-list-item-mark-missed-menu-item"
+        data-action="mark-missed"
+        @click="handleMenuAction"
+      >
+        未打卡
+      </button>
+      <button
+        v-else
+        class="habit-list-item__menu-item"
+        data-testid="habit-list-item-reset-menu-item"
+        data-action="reset-record"
+        @click="handleMenuAction"
+      >
+        重置
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { getHabitEndDate } from '@/domain/habit/habitPeriod';
 import { getNextEligibleHabitDate } from '@/domain/habit/habitStatus';
 import { t } from '@/i18n';
@@ -168,6 +211,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'check-in': [habit: Habit];
   'increment': [habit: Habit];
+  'mark-missed': [habit: Habit, date: string];
+  'reset-record': [habit: Habit, date: string];
   'open-doc': [habit: Habit];
   'open-detail': [habit: Habit];
 }>();
@@ -208,6 +253,20 @@ const progressPercent = computed(() => {
 });
 
 const actionProgress = computed(() => progressPercent.value / 100);
+const hasPartialProgress = computed(() => {
+  if (props.habit.type !== 'count') {
+    return false;
+  }
+
+  return !props.dayState.isCompleted && !props.dayState.isMissed && (props.dayState.currentValue ?? 0) > 0;
+});
+
+const contextMenu = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  action: 'reset-record' as 'mark-missed' | 'reset-record',
+});
 
 const referenceDate = computed(() => props.currentDate || props.dayState.date);
 const actualToday = computed(() => dayjs().format('YYYY-MM-DD'));
@@ -238,6 +297,10 @@ const frequencySummary = computed(() => {
       .filter(Boolean)
       .join('、');
     return days ? `${t('habit').freqWeekly}${days}` : t('habit').freqWeeklyDays;
+  }
+
+  if (frequency.type === 'ebbinghaus') {
+    return t('habit').freqEbbinghaus || '艾宾浩斯';
   }
 
   return t('habit').frequencyLabel;
@@ -286,6 +349,26 @@ const scheduleHint = computed(() => {
   }
 
   if (!isReferenceToday.value) {
+    if (props.habit.frequency?.type === 'ebbinghaus') {
+      if (props.dayState.isCompleted) {
+        return t('habit').selectedDayCompleted;
+      }
+
+      if (props.dayState.isMissed) {
+        return t('habit').selectedDayMissed;
+      }
+
+      if (props.dayState.isOverdue) {
+        return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0));
+      }
+
+      if (props.dayState.isDue) {
+        return t('habit').selectedDayPending;
+      }
+
+      return t('habit').selectedDayNotNeeded;
+    }
+
     if (props.dayState.isCompleted) {
       return t('habit').selectedDayCompleted;
     }
@@ -302,6 +385,10 @@ const scheduleHint = computed(() => {
   }
 
   if (isReferenceToday.value) {
+    if (props.habit.frequency?.type === 'ebbinghaus' && props.dayState.isOverdue) {
+      return t('habit').overdueDays.replace('{n}', String(props.dayState.overdueDays || 0));
+    }
+
     if (isDueToday.value) {
       return t('habit').dueToday;
     }
@@ -362,8 +449,92 @@ const metaStatusMarker = computed(() => {
 });
 
 function handleMainClick() {
+  closeContextMenu();
   emit('open-detail', props.habit);
 }
+
+function handleBinaryActionClick() {
+  closeContextMenu();
+  if (props.dayState.isMissed) {
+    emit('reset-record', props.habit, referenceDate.value);
+    return;
+  }
+
+  if (props.dayState.isCompleted) {
+    return;
+  }
+
+  emit('check-in', props.habit);
+}
+
+function handleCountActionClick() {
+  closeContextMenu();
+  if (props.dayState.isMissed) {
+    emit('reset-record', props.habit, referenceDate.value);
+    return;
+  }
+
+  if (props.dayState.isCompleted) {
+    return;
+  }
+
+  emit('increment', props.habit);
+}
+
+function handleActionContextMenu(event: MouseEvent) {
+  if (!props.periodState.eligibleToday) {
+    closeContextMenu();
+    return;
+  }
+
+  const menuWidth = 96;
+  const menuHeight = 40;
+  const viewportPadding = 8;
+  const x = Math.max(
+    viewportPadding,
+    Math.min(window.innerWidth - menuWidth - viewportPadding, event.clientX - menuWidth),
+  );
+  const y = Math.max(
+    viewportPadding,
+    Math.min(window.innerHeight - menuHeight - viewportPadding, event.clientY),
+  );
+
+  contextMenu.value = {
+    visible: true,
+    x,
+    y,
+    action: props.dayState.isCompleted || props.dayState.isMissed || hasPartialProgress.value
+      ? 'reset-record'
+      : 'mark-missed',
+  };
+}
+
+function closeContextMenu() {
+  contextMenu.value.visible = false;
+}
+
+function handleMenuAction() {
+  const action = contextMenu.value.action;
+  closeContextMenu();
+  if (action === 'mark-missed') {
+    emit('mark-missed', props.habit, referenceDate.value);
+    return;
+  }
+
+  emit('reset-record', props.habit, referenceDate.value);
+}
+
+function handleDocumentClick() {
+  closeContextMenu();
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick);
+});
 </script>
 
 <style scoped>
@@ -381,8 +552,8 @@ function handleMainClick() {
 }
 
 .habit-list-item:hover {
-  border-color: rgba(128, 162, 255, 0.28);
-  box-shadow: 0 0 0 1px rgba(128, 162, 255, 0.08);
+  border-color: var(--b3-theme-primary-light);
+  box-shadow: 0 0 0 1px var(--b3-theme-primary-lightest);
 }
 
 .habit-list-item__main {
@@ -565,13 +736,13 @@ function handleMainClick() {
 
 .habit-list-item__meta--due .habit-list-item__meta-status {
   background: var(--b3-theme-primary-lightest);
-  border-color: rgba(128, 162, 255, 0.26);
+  border-color: var(--b3-theme-primary-light);
 }
 
 .habit-list-item__meta-status--completed {
   color: var(--b3-theme-primary);
   background: var(--b3-theme-primary-lightest);
-  border-color: rgba(128, 162, 255, 0.22);
+  border-color: var(--b3-theme-primary-light);
 }
 
 .habit-list-item__meta-status--not-needed {
@@ -590,8 +761,8 @@ function handleMainClick() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 50%;
   background: transparent;
@@ -604,13 +775,13 @@ function handleMainClick() {
 .habit-calendar-btn:hover {
   border-color: var(--b3-theme-primary);
   color: var(--b3-theme-primary);
-  background: rgba(128, 162, 255, 0.08);
-  box-shadow: 0 0 0 1px rgba(128, 162, 255, 0.12);
+  background: var(--b3-theme-primary-lightest);
+  box-shadow: 0 0 0 1px var(--b3-theme-primary-lightest);
 }
 
 .habit-calendar-btn svg {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   fill: currentColor;
 }
 
@@ -629,12 +800,13 @@ function handleMainClick() {
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.habit-action-btn:hover:not(:disabled) {
-  transform: scale(1.04);
+.habit-action-btn--done,
+.habit-action-btn--missed {
+  cursor: context-menu;
 }
 
-.habit-action-btn:disabled {
-  cursor: default;
+.habit-action-btn:hover:not(:disabled) {
+  transform: scale(1.04);
 }
 
 .habit-action-btn__empty,
@@ -648,19 +820,31 @@ function handleMainClick() {
 }
 
 .habit-action-btn__empty {
-  background: #dedee3;
+  background: var(--b3-theme-surface-lighter);
 }
 
 .habit-action-btn__check {
-  background: #5b7cff;
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(91, 124, 255, 0.22);
+  background: var(--b3-theme-primary-light);
+  color: var(--b3-theme-on-primary);
+  font-size: 14px;
+  line-height: 1;
 }
 
-.habit-action-btn__check svg {
-  width: 13px;
-  height: 13px;
-  fill: currentColor;
+.habit-action-btn__missed {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--b3-theme-error) 14%, var(--b3-theme-background) 86%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.habit-action-btn__missed path {
+  stroke: var(--b3-theme-error);
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 .habit-action-btn__progress-ring {
@@ -676,11 +860,38 @@ function handleMainClick() {
 }
 
 .habit-action-btn__progress-track {
-  stroke: #dedee3;
+  stroke: var(--b3-theme-surface-lighter);
 }
 
 .habit-action-btn__progress-value {
-  stroke: #5b7cff;
+  stroke: var(--b3-theme-primary);
   stroke-linecap: round;
+}
+
+.habit-list-item__menu {
+  position: fixed;
+  z-index: 20;
+  min-width: 88px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  box-shadow: var(--b3-dialog-shadow);
+  padding: 4px;
+}
+
+.habit-list-item__menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.habit-list-item__menu-item:hover {
+  background: var(--b3-theme-surface-lighter);
 }
 </style>

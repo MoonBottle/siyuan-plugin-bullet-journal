@@ -32,6 +32,9 @@ export const useSettingsStore = defineStore('settings', {
       sortRules: [...defaultTodoSortRules],
       selectedGroup: '',
     },
+    focusReview: {
+      selectedGroup: '',
+    },
     loaded: false
   }),
 
@@ -99,6 +102,9 @@ export const useSettingsStore = defineStore('settings', {
             : [...defaultTodoSortRules],
           selectedGroup: settings.todoDock?.selectedGroup ?? '',
         };
+        this.focusReview = {
+          selectedGroup: settings.focusReview?.selectedGroup ?? '',
+        };
         this.loaded = true;
         console.log('[Bullet Journal] loadFromPlugin completed, this.directories:', this.directories);
       }
@@ -123,7 +129,8 @@ export const useSettingsStore = defineStore('settings', {
           habitCheckInTimePrecision: this.habitCheckInTimePrecision,
           showPomodoroBlocks: this.showPomodoroBlocks,
           showPomodoroTotal: this.showPomodoroTotal,
-          todoDock: this.todoDock
+          todoDock: this.todoDock,
+          focusReview: this.focusReview
         });
       }
     }

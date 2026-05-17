@@ -12,6 +12,8 @@
       @update:selected-date="selectedDate = $event"
       @check-in="checkInHabit"
       @increment="incrementHabit"
+      @mark-missed="markHabitMissedForDate"
+      @reset-record="resetHabitRecordForDate"
       @select-habit="handleOpenDetail"
     />
   </div>
@@ -43,6 +45,8 @@ const {
   habitPeriodStateMap,
   checkInHabit,
   incrementHabit,
+  markHabitMissedForDate,
+  resetHabitRecordForDate,
 } = useHabitWorkspace({
   groupId: () => habitConfig.value.groupId,
   defaultListMode: () => habitConfig.value.habitScope ?? 'active',

@@ -227,6 +227,20 @@ describe('parseItemLine 多日期解析', () => {
     const items = LineParser.parseItemLine('整理资料 #done', 1);
     expect(items).toHaveLength(0);
   });
+
+  it('事项行解析第一个预算标记为 focusPlan', () => {
+    const items = LineParser.parseItemLine('整理资料 @2026-05-14 ⏳1h10m 🍅x3', 1);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].focusPlan).toEqual(expect.objectContaining({
+      type: 'duration',
+      rawValue: 70,
+      normalizedMinutes: 70,
+      sourceText: '⏳1h10m',
+      ignoredSourceTexts: ['🍅x3'],
+    }));
+    expect(items[0].content).toBe('整理资料');
+  });
 });
 
 describe('parseBlockRefs 块引用解析', () => {
@@ -1203,5 +1217,38 @@ describe('parseItemLine - 重复规则解析', () => {
     expect(items[0].reminder?.time).toBe('07:50');
     expect(items[0].repeatRule).toEqual({ type: 'daily' });
     expect(items[0].endCondition).toEqual({ type: 'count', maxCount: 5 });
+  });
+});
+
+describe('parseItemLine - 标题格式事项', () => {
+  it.each([
+    ['# 标题事项 @2026-05-17', '标题事项'],
+    ['## 二级标题 @2026-05-17', '二级标题'],
+    ['### 三级标题 @2026-05-17', '三级标题'],
+    ['#### 四级标题 @2026-05-17', '四级标题'],
+    ['##### 五级标题 @2026-05-17', '五级标题'],
+    ['###### 六级标题 @2026-05-17', '六级标题'],
+  ])('标题格式事项：%s 应剥离前缀', (line, expectedContent) => {
+    const items = LineParser.parseItemLine(line, 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe(expectedContent);
+    expect(items[0].date).toBe('2026-05-17');
+  });
+
+  it('标题格式事项带时间和状态标签', () => {
+    const items = LineParser.parseItemLine('#### 测试标题事项 @2026-05-17 10:00:00~11:00:00 #done', 1);
+    expect(items).toHaveLength(1);
+    expect(items[0].content).toBe('测试标题事项');
+    expect(items[0].date).toBe('2026-05-17');
+    expect(items[0].startDateTime).toBe('2026-05-17 10:00:00');
+    expect(items[0].endDateTime).toBe('2026-05-17 11:00:00');
+    expect(items[0].status).toBe('completed');
+  });
+
+  it('标题格式事项多日期', () => {
+    const items = LineParser.parseItemLine('### 多日期标题 @2026-05-17, 2026-05-18', 1);
+    expect(items).toHaveLength(2);
+    expect(items[0].content).toBe('多日期标题');
+    expect(items[1].content).toBe('多日期标题');
   });
 });

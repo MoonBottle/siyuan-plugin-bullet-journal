@@ -10,6 +10,16 @@
           <SySwitch v-model="pomodoro.enableFloatingButton" />
         </SySettingItem>
         <SySettingItem
+          :label="t('settings').pomodoro.floatingDisplayMode"
+          :description="t('settings').pomodoro.floatingDisplayModeDesc"
+        >
+          <SySelect
+            :model-value="pomodoro.floatingDisplayMode || 'inline'"
+            :options="floatingDisplayModeOptions"
+            @update:model-value="updateFloatingDisplayMode($event as PomodoroFloatingDisplayMode)"
+          />
+        </SySettingItem>
+        <SySettingItem
           :label="t('settings').pomodoro.enableStatusBarTimer"
           :description="t('settings').pomodoro.enableStatusBarTimerDesc"
         >
@@ -182,6 +192,23 @@
             <div class="ios-switch" :class="{ on: pomodoro.enableFloatingButton }" @click.stop>
               <div class="switch-thumb"></div>
             </div>
+          </div>
+        </div>
+        <div class="ios-cell ios-cell-select">
+          <div class="cell-content">
+            <div class="cell-title">{{ t('settings').pomodoro.floatingDisplayMode }}</div>
+            <div class="cell-subtitle">{{ t('settings').pomodoro.floatingDisplayModeDesc }}</div>
+          </div>
+          <div class="cell-accessory">
+            <select
+              :value="pomodoro.floatingDisplayMode || 'inline'"
+              class="ios-select"
+              @change="updateFloatingDisplayMode(($event.target as HTMLSelectElement).value as PomodoroFloatingDisplayMode)"
+            >
+              <option v-for="opt in floatingDisplayModeOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
           </div>
         </div>
         <div class="ios-cell" @click="pomodoro.enableStatusBarTimer = !pomodoro.enableStatusBarTimer">
@@ -406,7 +433,7 @@
 </template>
 
 <script setup lang="ts">
-import type { PomodoroSettings } from '@/settings/types';
+import type { PomodoroFloatingDisplayMode, PomodoroSettings } from '@/settings/types';
 import { t } from '@/i18n';
 import SySettingsSection from './SySettingsSection.vue';
 import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue';
@@ -427,6 +454,12 @@ const emit = defineEmits<{
 const recordModeOptions = [
   { value: 'block', label: t('settings').pomodoro.recordModeBlock },
   { value: 'attr', label: t('settings').pomodoro.recordModeAttr }
+];
+
+const floatingDisplayModeOptions = [
+  { value: 'inline', label: t('settings').pomodoro.floatingDisplayModeInline },
+  { value: 'desktop', label: t('settings').pomodoro.floatingDisplayModeDesktop },
+  { value: 'both', label: t('settings').pomodoro.floatingDisplayModeBoth },
 ];
 
 // 专注时长预设本地状态（4个）
@@ -516,6 +549,13 @@ const breakDurationOptions = computed(() => {
     label: `${minutes} ${t('common').minutes}`
   }));
 });
+
+const updateFloatingDisplayMode = (mode: PomodoroFloatingDisplayMode) => {
+  emit('update:pomodoro', {
+    ...props.pomodoro,
+    floatingDisplayMode: mode,
+  });
+};
 </script>
 
 <style lang="scss" scoped>

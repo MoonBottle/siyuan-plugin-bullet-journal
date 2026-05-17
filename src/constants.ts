@@ -9,7 +9,8 @@ export const TAB_TYPES = {
   WORKBENCH: 'bullet-journal-workbench',
   QUADRANT: 'bullet-journal-quadrant',
   PROJECT: 'bullet-journal-project',
-  POMODORO_STATS: 'bullet-journal-pomodoro-stats'
+  POMODORO_STATS: 'bullet-journal-pomodoro-stats',
+  FOCUS_REVIEW: 'bullet-journal-focus-review'
 };
 
 // Dock 类型常量
@@ -39,6 +40,7 @@ export const SLASH_COMMAND_FILTERS = {
   SET_PROJECT_DIR: ['/ml', '/projectdir'],
   MARK_AS_TASK: ['/rw', '/task'],
   VIEW_DETAIL: ['/xq', '/detail'],
+  SET_FOCUS_PLAN: ['/yj', '/focusplan'],
   SET_REMINDER: ['/tx', '/reminder'],
   SET_RECURRING: ['/cf', '/recurring'],
   CREATE_SKILL: ['/cjskill', '/create-skill', '/skill'],
@@ -66,6 +68,7 @@ export const ALL_SLASH_COMMAND_FILTERS = [
   ...SLASH_COMMAND_FILTERS.SET_PROJECT_DIR,
   ...SLASH_COMMAND_FILTERS.MARK_AS_TASK,
   ...SLASH_COMMAND_FILTERS.VIEW_DETAIL,
+  ...SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN,
   ...SLASH_COMMAND_FILTERS.SET_REMINDER,
   ...SLASH_COMMAND_FILTERS.SET_RECURRING,
   ...SLASH_COMMAND_FILTERS.CREATE_SKILL,

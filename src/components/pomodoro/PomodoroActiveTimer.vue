@@ -59,6 +59,16 @@
       </div>
     </div>
 
+    <div v-if="focusPlanDisplay" class="focus-plan-progress">
+      <div class="focus-plan-progress-header">
+        <span class="focus-plan-progress-label">{{ t('focusPlan').currentPlan }}</span>
+        <span class="focus-plan-progress-value">{{ focusPlanDisplay }}</span>
+      </div>
+      <div v-if="focusPlanProgressDisplay" class="focus-plan-progress-body">
+        {{ t('focusPlan').actualShort }} {{ focusPlanProgressDisplay }}
+      </div>
+    </div>
+
     <!-- 事项信息卡片 - 使用 Card 组件 -->
     <div class="item-info-section">
       <!-- 项目卡片 -->
@@ -193,13 +203,15 @@ import TomatoIcon from '@/components/icons/TomatoIcon.vue';
 import PlayIcon from '@/components/icons/PlayIcon.vue';
 import StopIcon from '@/components/icons/StopIcon.vue';
 import Card from '@/components/common/Card.vue';
-import { updateBlockContent, openDocumentAtLine } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import { showConfirmDialog, showItemDetailModal } from '@/utils/dialog';
 import { resolveAttachmentTargetBlockId } from '@/utils/linkNavigation';
 import { t } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 import { getProgressDirection } from '@/utils/progressDirection';
 import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
+import { formatFocusPlanDisplay, formatFocusPlanProgress } from '@/utils/focusPlanReview';
 
 const plugin = usePlugin() as any;
 const pomodoroStore = usePomodoroStore();
@@ -223,6 +235,18 @@ const currentItem = computed<Item | undefined>(() => {
 // 当前专注的事项内容（优先使用 store 中的，但用 currentItem 作为后备）
 const itemContent = computed(() => {
   return currentItem.value?.content || pomodoroStore.activePomodoro?.itemContent || '未知事项';
+});
+const focusPlanDisplay = computed(() => formatFocusPlanDisplay(currentItem.value?.focusPlan));
+const currentItemHistoricalFocusMinutes = computed(() => {
+  return (currentItem.value?.pomodoros ?? []).reduce((sum, record) => {
+    return sum + (record.actualDurationMinutes ?? record.durationMinutes);
+  }, 0);
+});
+const currentItemTotalFocusMinutes = computed(() => {
+  return currentItemHistoricalFocusMinutes.value + accumulatedMinutes.value;
+});
+const focusPlanProgressDisplay = computed(() => {
+  return formatFocusPlanProgress(currentItem.value?.focusPlan, currentItemTotalFocusMinutes.value);
 });
 
 // 是否处于暂停状态
@@ -339,11 +363,6 @@ const openItemDocument = async () => {
   }
 };
 
-// 获取状态标签
-const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  return t('statusTag')[status] || '';
-};
-
 // 标记完成
 const handleDone = async () => {
   if (!currentItem.value?.blockId) return;
@@ -351,9 +370,10 @@ const handleDone = async () => {
 
   isProcessing.value = true;
   try {
-    // 标记事项完成
-    const tag = getStatusTag('completed');
-    const success = await updateBlockContent(currentItem.value.blockId, tag);
+    const success = await writeBlock(
+      { blockId: currentItem.value.blockId, listItemBlockId: currentItem.value.listItemBlockId },
+      { type: 'setStatus', status: 'completed' },
+    );
 
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
 
@@ -375,8 +395,10 @@ const handleAbandon = async () => {
 
   isProcessing.value = true;
   try {
-    const tag = getStatusTag('abandoned');
-    const success = await updateBlockContent(currentItem.value.blockId, tag);
+    const success = await writeBlock(
+      { blockId: currentItem.value.blockId, listItemBlockId: currentItem.value.listItemBlockId },
+      { type: 'setStatus', status: 'abandoned' },
+    );
     if (success && plugin) {
       await plugin.requestDataRefresh?.({
         type: 'full',
@@ -534,6 +556,41 @@ const handleLinkClick = async (link: Link) => {
   background: var(--b3-theme-surface);
   border-radius: var(--b3-border-radius);
   box-sizing: border-box;
+}
+
+.focus-plan-progress {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px 16px;
+  background: var(--b3-theme-surface);
+  border: 1px solid var(--b3-theme-surface-lighter);
+  border-radius: var(--b3-border-radius);
+  box-sizing: border-box;
+}
+
+.focus-plan-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.focus-plan-progress-label {
+  font-size: 12px;
+  color: var(--b3-theme-on-surface);
+}
+
+.focus-plan-progress-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--b3-theme-on-background);
+}
+
+.focus-plan-progress-body {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--b3-theme-primary);
 }
 
 .timeline-header {

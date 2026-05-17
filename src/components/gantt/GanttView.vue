@@ -22,7 +22,9 @@ import { getCurrentLocale, t } from '@/i18n';
 import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { computeTooltipPosition } from '@/utils/tooltipPosition';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
-import { updateBlockContent, updateBlockDateTime, openDocumentAtLine } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import type { Item } from '@/types/models';
@@ -151,10 +153,6 @@ const handleGanttTooltipMouseOut = (e: MouseEvent) => {
   hideGanttEventTooltip();
 };
 
-const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  return t('statusTag')[status] || '';
-};
-
 const openPomodoroDialog = (item: Item) => {
   const dialog = createDialog({
     title: t('pomodoro').startFocusTitle,
@@ -232,25 +230,16 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
     task: props.task ? { name: props.task } : undefined,
     startDateTime: props.originalStartDateTime,
     endDateTime: props.originalEndDateTime,
-    siblingItems: props.siblingItems
+    siblingItems: props.siblingItems,
+    timePrecision: props.timePrecision,
   };
-
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime
-    }] : [])
-  ];
 
   const menuOptions = createItemMenu(
     item,
     {
       onComplete: async () => {
         if (!item.blockId) return;
-        const tag = getStatusTag('completed');
-        const success = await updateBlockContent(item.blockId, tag);
+        const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
         // 注意：重复事项的自动创建由 WebSocket 处理器处理
         if (success && plugin) {
           await plugin.requestDataRefresh?.({
@@ -263,15 +252,9 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
       onMigrateToday: async () => {
         if (!item.blockId) return;
         const todayStr = dayjs().format('YYYY-MM-DD');
-        await updateBlockDateTime(
-          item.blockId,
-          todayStr,
-          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-          !item.startDateTime,
-          item.date,
-          completeSiblingItems,
-          item.status
+        await writeBlock(
+          { blockId: item.blockId },
+          buildDatePatchFromItem(item, todayStr, { includeCurrentItemInSiblings: true }),
         );
         if (plugin) {
           await plugin.requestDataRefresh?.({
@@ -283,15 +266,9 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
       onMigrateTomorrow: async () => {
         if (!item.blockId) return;
         const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
-        await updateBlockDateTime(
-          item.blockId,
-          tomorrowStr,
-          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-          !item.startDateTime,
-          item.date,
-          completeSiblingItems,
-          item.status
+        await writeBlock(
+          { blockId: item.blockId },
+          buildDatePatchFromItem(item, tomorrowStr, { includeCurrentItemInSiblings: true }),
         );
         if (plugin) {
           await plugin.requestDataRefresh?.({
@@ -303,15 +280,9 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
       onMigrateCustom: async () => {
         if (!item.blockId) return;
         showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-          await updateBlockDateTime(
-            item.blockId,
-            newDate,
-            item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-            item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-            !item.startDateTime,
-            item.date,
-            completeSiblingItems,
-            item.status
+          await writeBlock(
+            { blockId: item.blockId },
+            buildDatePatchFromItem(item, newDate, { includeCurrentItemInSiblings: true }),
           );
           if (plugin) {
             await plugin.requestDataRefresh?.({
@@ -323,8 +294,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
       },
       onAbandon: async () => {
         if (!item.blockId) return;
-        const tag = getStatusTag('abandoned');
-        const success = await updateBlockContent(item.blockId, tag);
+        const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
         if (success && plugin) {
           await plugin.requestDataRefresh?.({
             type: 'full',

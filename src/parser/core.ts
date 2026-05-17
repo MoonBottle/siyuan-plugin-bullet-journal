@@ -9,6 +9,15 @@ import { processLineText } from '@/utils/stringUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 import { t } from '@/i18n';
 
+const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]';
+
+function logProjectNameDebug(
+  stage: string,
+  payload: Record<string, unknown>,
+) {
+  console.log(`${PROJECT_NAME_DEBUG_PREFIX} ${stage}:`, payload);
+}
+
 function createSyntheticDefaultTask(lineNumber: number, docId: string): Task {
   return {
     id: `task-synthetic-${docId}`,
@@ -273,6 +282,13 @@ export function parseKramdown(
         const rawName = content.substring(2).trim();
         const { stripped, links } = parseBlockRefs(rawName);
         project.name = stripped;
+        logProjectNameDebug('parser-heading-h1', {
+          docId,
+          blockId: block.blockId,
+          rawName,
+          parsedName: stripped,
+          docPath,
+        });
         if (links.length > 0) project.links!.push(...links);
         continue;
       }
@@ -280,6 +296,13 @@ export function parseKramdown(
         const rawName = content.substring(3).trim();
         const { stripped, links } = parseBlockRefs(rawName);
         project.name = stripped;
+        logProjectNameDebug('parser-heading-h2', {
+          docId,
+          blockId: block.blockId,
+          rawName,
+          parsedName: stripped,
+          docPath,
+        });
         if (links.length > 0) project.links!.push(...links);
         continue;
       }
@@ -507,10 +530,21 @@ export function parseKramdown(
   if (!project.name) {
     if (docPath) {
       const pathParts = docPath.split('/');
-      project.name = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || docPath;
+      const fallbackName = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2] || docPath;
+      project.name = fallbackName;
+      logProjectNameDebug('parser-fallback-doc-path', {
+        docId,
+        docPath,
+        fallbackName,
+      });
     }
     if (!project.name) {
       project.name = `项目 ${docId.substring(0, 6)}`;
+      logProjectNameDebug('parser-fallback-generated', {
+        docId,
+        generatedName: project.name,
+        docPath,
+      });
     }
   }
 
@@ -520,8 +554,24 @@ export function parseKramdown(
   );
 
   if (!hasTaskContent && project.pomodoros!.length === 0 && project.habits.length === 0) {
+    logProjectNameDebug('parser-return-null', {
+      docId,
+      projectName: project.name,
+      docPath,
+      tasksCount: project.tasks.length,
+      habitsCount: project.habits.length,
+      pomodorosCount: project.pomodoros?.length ?? 0,
+    });
     return null;
   }
 
+  logProjectNameDebug('parser-final-project', {
+    docId,
+    projectName: project.name,
+    projectPath: project.path,
+    groupId: project.groupId,
+    tasksCount: project.tasks.length,
+    habitsCount: project.habits.length,
+  });
   return project;
 }

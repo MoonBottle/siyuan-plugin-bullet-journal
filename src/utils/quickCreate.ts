@@ -8,6 +8,7 @@ import type { Item, Task, Project, ItemStatus, ReminderConfig, RepeatRule, EndCo
 import * as siyuanAPI from '@/api';
 import dayjs from '@/utils/dayjs';
 import { buildItemContent } from './itemSettingUtils';
+import { insertBlockAfterWithResult } from '@/utils/blockWriter';
 
 /**
  * 快速创建选项
@@ -262,13 +263,10 @@ export async function createItem(
 
   try {
     // 在任务块后插入事项
-    const result = await siyuanAPI.insertBlock(
-      'markdown',
-      itemContent,
-      undefined,
-      taskBlockId,
-      undefined
-    );
+    const result = await insertBlockAfterWithResult(taskBlockId, {
+      type: 'replaceMarkdown',
+      markdown: itemContent,
+    });
 
     if (result && result[0]) {
       const newBlockId = (result[0] as any).doOperations?.[0]?.id;

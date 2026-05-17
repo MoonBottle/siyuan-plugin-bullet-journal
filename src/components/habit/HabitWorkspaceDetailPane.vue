@@ -58,6 +58,27 @@
           class="habit-workspace-detail-pane__section habit-workspace-detail-pane__section--calendar"
           data-testid="habit-detail-calendar-section"
         >
+          <div
+            v-if="selectedHabit.frequency?.type === 'ebbinghaus' && ebbinghausDayState"
+            class="habit-workspace-detail-pane__ebbinghaus"
+            data-testid="habit-detail-ebbinghaus"
+          >
+            <div class="habit-workspace-detail-pane__ebbinghaus-item">
+              {{ t('habit').ebbinghausStage.replace('{n}', String(Math.max((ebbinghausDayState.currentStageIndex ?? -1) + 1, 0))) }}
+            </div>
+            <div class="habit-workspace-detail-pane__ebbinghaus-item">
+              {{ t('habit').ebbinghausInterval.replace('{n}', String(ebbinghausDayState.currentIntervalDays ?? 0)) }}
+            </div>
+            <div class="habit-workspace-detail-pane__ebbinghaus-item">
+              {{ t('habit').nextDueDate.replace('{date}', ebbinghausDayState.nextDueDate || '-') }}
+            </div>
+            <div
+              v-if="ebbinghausDayState.isOverdue"
+              class="habit-workspace-detail-pane__ebbinghaus-item habit-workspace-detail-pane__ebbinghaus-item--overdue"
+            >
+              {{ t('habit').overdueDays.replace('{n}', String(ebbinghausDayState.overdueDays || 0)) }}
+            </div>
+          </div>
           <HabitMonthCalendar
             :habit="selectedHabit"
             :stats="stats"
@@ -107,6 +128,7 @@ import { computed } from 'vue';
 import HabitMonthCalendar from '@/components/habit/HabitMonthCalendar.vue';
 import HabitRecordLog from '@/components/habit/HabitRecordLog.vue';
 import HabitStatsCards from '@/components/habit/HabitStatsCards.vue';
+import { getHabitDayState } from '@/domain/habit/habitCompletion';
 import { t } from '@/i18n';
 import type { Habit, HabitStats } from '@/types/models';
 import type { HabitRecordLogPreviewPayload } from '@/components/habit/HabitRecordLog.vue';
@@ -161,6 +183,13 @@ const emit = defineEmits<{
 }>();
 
 const headerTitle = computed(() => props.title || props.selectedHabit?.name || '');
+const ebbinghausDayState = computed(() => {
+  if (!props.selectedHabit || props.selectedHabit.frequency?.type !== 'ebbinghaus') {
+    return null;
+  }
+
+  return getHabitDayState(props.selectedHabit, props.currentDate);
+});
 </script>
 
 <style scoped>
@@ -215,6 +244,25 @@ const headerTitle = computed(() => props.title || props.selectedHabit?.name || '
 .habit-workspace-detail-pane__section--calendar,
 .habit-workspace-detail-pane__section--stats {
   flex: 0 0 auto;
+}
+
+.habit-workspace-detail-pane__ebbinghaus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.habit-workspace-detail-pane__ebbinghaus-item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--b3-theme-surface);
+  color: var(--b3-theme-on-surface);
+  font-size: 12px;
+}
+
+.habit-workspace-detail-pane__ebbinghaus-item--overdue {
+  color: var(--b3-card-warning-color);
 }
 
 .habit-workspace-detail-pane__section--log {

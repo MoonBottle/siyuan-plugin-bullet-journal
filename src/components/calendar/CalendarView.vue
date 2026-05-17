@@ -21,7 +21,9 @@ import type { CalendarEvent } from '@/types/models';
 import { showEventDetailModal, buildEventDetailContent, showDatePickerDialog, createDialog } from '@/utils/dialog';
 import { computeTooltipPosition } from '@/utils/tooltipPosition';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
-import { updateBlockContent, updateBlockDateTime, openDocumentAtLine, updateBlockPriority } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
 import { showPrioritySettingDialog } from '@/utils/dialog';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
@@ -180,11 +182,6 @@ const projectStore = useProjectStore();
 const pomodoroStore = usePomodoroStore();
 const plugin = usePlugin();
 
-// 根据状态获取标签（使用 i18n）
-const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  return t('statusTag')[status] || '';
-};
-
 // 悬浮预览：显示
 const showEventTooltip = (info: any) => {
   if (eventTooltipTimer) {
@@ -263,75 +260,46 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     task: props.task ? { name: props.task } : undefined,
     startDateTime: props.originalStartDateTime,
     endDateTime: props.originalEndDateTime,
-    siblingItems: props.siblingItems
+    siblingItems: props.siblingItems,
+    timePrecision: props.timePrecision,
   };
-
-  // 构建完整的 siblingItems（包含当前日期）
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime
-    }] : [])
-  ];
 
   const menuOptions = createItemMenu(
     item,
     {
       onComplete: async () => {
         if (!item.blockId) return;
-        const tag = getStatusTag('completed');
-        await updateBlockContent(item.blockId, tag);
+        await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),
       onMigrateToday: async () => {
         if (!item.blockId) return;
         const todayStr = dayjs().format('YYYY-MM-DD');
-        await updateBlockDateTime(
-          item.blockId,
-          todayStr,
-          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-          !item.startDateTime,
-          item.date,
-          completeSiblingItems,
-          item.status
+        await writeBlock(
+          { blockId: item.blockId },
+          buildDatePatchFromItem(item, todayStr, { includeCurrentItemInSiblings: true }),
         );
       },
       onMigrateTomorrow: async () => {
         if (!item.blockId) return;
         const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
-        await updateBlockDateTime(
-          item.blockId,
-          tomorrowStr,
-          item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-          item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-          !item.startDateTime,
-          item.date,
-          completeSiblingItems,
-          item.status
+        await writeBlock(
+          { blockId: item.blockId },
+          buildDatePatchFromItem(item, tomorrowStr, { includeCurrentItemInSiblings: true }),
         );
       },
       onMigrateCustom: async () => {
         if (!item.blockId) return;
         showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
-          await updateBlockDateTime(
-            item.blockId,
-            newDate,
-            item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-            item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-            !item.startDateTime,
-            item.date,
-            completeSiblingItems,
-            item.status
+          await writeBlock(
+            { blockId: item.blockId },
+            buildDatePatchFromItem(item, newDate, { includeCurrentItemInSiblings: true }),
           );
         });
       },
       onAbandon: async () => {
         if (!item.blockId) return;
-        const tag = getStatusTag('abandoned');
-        await updateBlockContent(item.blockId, tag);
+        await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
       },
       onOpenDoc: () => {
         if (plugin && item.docId && item.lineNumber) {
@@ -350,7 +318,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       },
       onSetPriority: (priority: PriorityLevel | undefined) => {
         if (!item.blockId) return;
-        updateBlockPriority(item.blockId, priority);
+        writeBlock({ blockId: item.blockId }, { type: 'setPriority', priority });
       }
     },
     { showCalendarMenu: false, isFocusing: pomodoroStore.isFocusing }

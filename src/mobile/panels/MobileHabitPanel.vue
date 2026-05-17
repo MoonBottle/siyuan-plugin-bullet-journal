@@ -26,6 +26,8 @@
         :is-mobile="true"
         @check-in="handleCheckIn"
         @increment="handleIncrement"
+        @mark-missed="handleMarkMissed"
+        @reset-record="handleResetRecord"
         @open-detail="openHabitDetail"
       />
     </div>
@@ -83,6 +85,9 @@ import {
   archiveHabit,
   checkIn,
   checkInCount,
+  getRecordForDate,
+  markHabitMissed,
+  resetHabitRecord,
   unarchiveHabit,
 } from '@/services/habitService';
 import { useProjectStore, useSettingsStore } from '@/stores';
@@ -216,6 +221,23 @@ async function handleCheckIn(habit: Habit) {
 
 async function handleIncrement(habit: Habit) {
   const success = await checkInCount(habit, state.selectedDate, 1, undefined, habitCheckInTimePrecision.value);
+  if (success)
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
+}
+
+async function handleMarkMissed(habit: Habit, date: string) {
+  const success = await markHabitMissed(habit, date, undefined, habitCheckInTimePrecision.value);
+  if (success)
+    state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
+}
+
+async function handleResetRecord(habit: Habit, date: string) {
+  const record = getRecordForDate(habit, date);
+  if (!record) {
+    return;
+  }
+
+  const success = await resetHabitRecord(record);
   if (success)
     state.selectedStatsCache = calculateHabitStats(habit, currentDate.value, state.selectedViewMonth);
 }

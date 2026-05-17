@@ -5,7 +5,7 @@ import type {
   HabitPeriodState,
 } from '@/types/models';
 import { getHabitRecordStatus, getRecordsForDate, hasMissedRecord } from './habitStatus';
-import { getHabitPeriod, isDateEligibleForHabit } from './habitPeriod';
+import { getEbbinghausScheduleState, getHabitPeriod, isDateEligibleForHabit, isEbbinghausDueOnDate } from './habitPeriod';
 
 export function isHabitRecordCompleted(record: CheckInRecord, habit: Habit): boolean {
   if (getHabitRecordStatus(record) === 'missed')
@@ -35,12 +35,21 @@ function getBestRecordForDate(habit: Habit, date: string): CheckInRecord | null 
 
 export function getHabitDayState(habit: Habit, date: string): HabitDayState {
   const records = getRecordsForDate(habit, date);
+  const ebbinghausState = habit.frequency?.type === 'ebbinghaus'
+    ? getEbbinghausScheduleState(habit, date)
+    : null;
   if (records.length === 0) {
     return {
       date,
       hasRecord: false,
       isCompleted: false,
       isMissed: false,
+      isDue: ebbinghausState?.isDue ?? false,
+      isOverdue: ebbinghausState?.isOverdue ?? false,
+      overdueDays: ebbinghausState?.overdueDays,
+      nextDueDate: ebbinghausState?.nextDueDate,
+      currentStageIndex: ebbinghausState?.currentStageIndex,
+      currentIntervalDays: ebbinghausState?.currentIntervalDays,
     };
   }
 
@@ -50,6 +59,12 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
       hasRecord: true,
       isCompleted: false,
       isMissed: true,
+      isDue: ebbinghausState?.isDue ?? false,
+      isOverdue: ebbinghausState?.isOverdue ?? false,
+      overdueDays: ebbinghausState?.overdueDays,
+      nextDueDate: ebbinghausState?.nextDueDate,
+      currentStageIndex: ebbinghausState?.currentStageIndex,
+      currentIntervalDays: ebbinghausState?.currentIntervalDays,
     };
   }
 
@@ -69,6 +84,12 @@ export function getHabitDayState(habit: Habit, date: string): HabitDayState {
     hasRecord: true,
     isCompleted: isHabitRecordCompleted(bestRecord, habit),
     isMissed: false,
+    isDue: ebbinghausState?.isDue ?? false,
+    isOverdue: ebbinghausState?.isOverdue ?? false,
+    overdueDays: ebbinghausState?.overdueDays,
+    nextDueDate: ebbinghausState?.nextDueDate,
+    currentStageIndex: ebbinghausState?.currentStageIndex,
+    currentIntervalDays: ebbinghausState?.currentIntervalDays,
     currentValue: bestRecord.currentValue,
     targetValue: habit.target ?? bestRecord.targetValue,
   };
@@ -99,12 +120,22 @@ export function getHabitPeriodState(habit: Habit, date: string): HabitPeriodStat
   const completedCount = getCompletedCountInRange(habit, period.periodStart, period.periodEnd);
   const requiredCount = period.requiredCount;
   const normalizedCompletedCount = Math.min(completedCount, requiredCount);
+  const ebbinghausState = habit.frequency?.type === 'ebbinghaus'
+    ? getEbbinghausScheduleState(habit, date)
+    : null;
+  const isCompleted = requiredCount > 0 && normalizedCompletedCount >= requiredCount;
 
   return {
     ...period,
     completedCount: normalizedCompletedCount,
     remainingCount: Math.max(requiredCount - normalizedCompletedCount, 0),
-    isCompleted: normalizedCompletedCount >= requiredCount,
-    eligibleToday: isDateEligibleForHabit(habit, date),
+    isCompleted,
+    eligibleToday: habit.frequency?.type === 'ebbinghaus'
+      ? isEbbinghausDueOnDate(habit, date)
+      : isDateEligibleForHabit(habit, date),
+    nextDueDate: ebbinghausState?.nextDueDate ?? period.nextDueDate,
+    currentStageIndex: ebbinghausState?.currentStageIndex ?? period.currentStageIndex,
+    currentIntervalDays: ebbinghausState?.currentIntervalDays ?? period.currentIntervalDays,
+    overdueDays: ebbinghausState?.overdueDays ?? period.overdueDays,
   };
 }

@@ -5,7 +5,7 @@
 import type { Plugin } from 'siyuan';
 import { Dialog, getFrontend } from 'siyuan';
 import { createApp } from 'vue';
-import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel, HabitFrequency } from '@/types/models';
+import type { Item, CalendarEvent, PomodoroRecord, PendingPomodoroCompletion, ReminderConfig, RepeatRule, EndCondition, PriorityLevel, HabitFrequency, FocusPlan } from '@/types/models';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import MobilePomodoroTimerDrawer from '@/mobile/drawers/pomodoro/MobilePomodoroTimerDrawer.vue';
@@ -16,6 +16,8 @@ import EventDetailTooltip from '@/components/dialog/EventDetailTooltip.vue';
 import ReminderSettingDialog from '@/components/dialog/ReminderSettingDialog.vue';
 import RecurringSettingDialog from '@/components/dialog/RecurringSettingDialog.vue';
 import PrioritySettingDialog from '@/components/dialog/PrioritySettingDialog.vue';
+import FocusPlanDialog from '@/components/dialog/FocusPlanDialog.vue';
+import FocusPlanItemPickerDialog from '@/components/dialog/FocusPlanItemPickerDialog.vue';
 import HabitCreateDialog from '@/components/dialog/HabitCreateDialog.vue';
 import HabitRecordEditDialog from '@/components/dialog/HabitRecordEditDialog.vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
@@ -33,6 +35,8 @@ import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
 import { updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
+import { buildFocusPlanCandidateSections } from './focusPlanWorkbench';
+import { saveFocusPlanWithOptionalDate } from './focusPlanDialogSave';
 
 // 复制图标 SVG (使用 fill 而不是 stroke)
 const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`;
@@ -1253,6 +1257,91 @@ export function showPrioritySettingDialog(
       focusableEl.focus();
     }
   });
+
+  return dialog;
+}
+
+export function showFocusPlanDialog(item: Item, options?: { ensureDate?: string }): Dialog {
+  const container = document.createElement('div');
+
+  const app = createApp(FocusPlanDialog, {
+    initialPlan: item.focusPlan,
+    onSave: async (plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined) => {
+      const saved = await saveFocusPlanWithOptionalDate(item, plan, options);
+      if (!saved) return;
+      dialog.destroy();
+    },
+    onCancel: () => {
+      dialog.destroy();
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('focusPlan').settingTitle,
+    content: '',
+    width: '340px',
+    destroyCallback: () => {
+      app.unmount();
+    },
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
+
+  requestAnimationFrame(() => {
+    const focusableEl = dialog.element.querySelector('[data-initial-focus], button, input, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+    if (focusableEl) {
+      focusableEl.focus();
+    }
+  });
+
+  return dialog;
+}
+
+export function showFocusPlanItemPickerDialog(input: {
+  items: Item[];
+  selectedDate: string;
+  onSelected?: (item: Item) => void;
+}): Dialog {
+  const sections = buildFocusPlanCandidateSections({
+    items: input.items,
+    selectedDate: input.selectedDate,
+    today: dayjs().format('YYYY-MM-DD'),
+  });
+
+  const container = document.createElement('div');
+
+  const app = createApp(FocusPlanItemPickerDialog, {
+    sections,
+    selectedDate: input.selectedDate,
+    onSelect: (item: Item) => {
+      dialog.destroy();
+      input.onSelected?.(item);
+      showFocusPlanDialog(item, { ensureDate: input.selectedDate });
+    },
+  });
+
+  app.use(getSharedPinia());
+  app.mount(container);
+
+  const dialog = new Dialog({
+    title: t('focusPlan').settingTitle,
+    content: '',
+    width: '760px',
+    destroyCallback: () => {
+      app.unmount();
+    },
+  });
+
+  const bodyEl = dialog.element.querySelector('.b3-dialog__body');
+  if (bodyEl) {
+    bodyEl.appendChild(container);
+  }
 
   return dialog;
 }

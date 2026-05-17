@@ -118,10 +118,10 @@ import { t } from '@/i18n';
 import { getCurrentPlugin, usePlugin } from '@/main';
 import { useProjectStore, useSettingsStore } from '@/stores';
 import type { Item, ItemStatus, PriorityLevel, Project, Task } from '@/types/models';
+import { writeBlock } from '@/utils/blockWriter';
 import { showMessage } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
 import { DATA_REFRESH_CHANNEL, eventBus, Events } from '@/utils/eventBus';
-import { updateBlockContent } from '@/utils/fileUtils';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { buildCompletedTodoDateRange, buildTodoDateRange, type TodoDateFilterType } from '@/utils/todoDateFilter';
 import { buildViewDebugContext } from '@/utils/viewDebug';
@@ -236,8 +236,7 @@ const openQuickCreate = () => {
 const handleQuickComplete = async (item: Item) => {
   if (!item.blockId)
     return;
-  const tag = t('statusTag').completed || '✅';
-  await updateBlockContent(item.blockId, tag);
+  await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
   showMessage(t('todo').complete);
 };
 

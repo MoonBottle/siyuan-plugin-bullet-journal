@@ -134,6 +134,44 @@ describe('HabitCreateDialog', () => {
     mounted.unmount();
   });
 
+  it('保存时应生成默认艾宾浩斯 markdown', async () => {
+    const mounted = mountDialog();
+
+    await setInputValue(getByTestId(mounted.container, 'habit-name-input'), '英语单词');
+    await setInputValue(getByTestId(mounted.container, 'habit-start-date-input'), '2026-05-14');
+
+    mounted.container.querySelector('[data-testid="habit-frequency-ebbinghaus-button"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.getSavedMarkdown()).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯');
+
+    mounted.unmount();
+  });
+
+  it('保存时应生成带自定义间隔的艾宾浩斯 markdown', async () => {
+    const mounted = mountDialog();
+
+    await setInputValue(getByTestId(mounted.container, 'habit-name-input'), '英语单词');
+    await setInputValue(getByTestId(mounted.container, 'habit-start-date-input'), '2026-05-14');
+
+    mounted.container.querySelector('[data-testid="habit-frequency-ebbinghaus-button"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    await setInputValue(getByTestId(mounted.container, 'habit-ebbinghaus-intervals-input'), '1,2,4,7,15');
+
+    mounted.container.querySelector('.btn-save')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(mounted.getSavedMarkdown()).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]');
+
+    mounted.unmount();
+  });
+
   it('showHabitCreateDialog 打开后应把焦点交给首个可交互元素', async () => {
     const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {
       callback(0);

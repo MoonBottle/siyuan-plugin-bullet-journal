@@ -139,6 +139,15 @@
           {{ label }}
         </button>
       </div>
+      <div v-if="form.frequencyType === 'ebbinghaus'" class="freq-detail">
+        <input
+          v-model="form.ebbinghausIntervals"
+          type="text"
+          class="form-input"
+          data-testid="habit-ebbinghaus-intervals-input"
+          :placeholder="t('habit').freqEbbinghausPlaceholder || '1,2,4,7,15'"
+        />
+      </div>
     </div>
 
     <!-- 操作按钮 -->
@@ -175,6 +184,30 @@ const emit = defineEmits<{
 
 const initialEnterGuardUntil = Date.now() + 300;
 
+function parseEbbinghausIntervals(raw: string): number[] | null {
+  const normalized = raw
+    .split(',')
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  if (normalized.length === 0) {
+    return [];
+  }
+
+  const values = normalized.map(part => Number.parseInt(part, 10));
+  if (values.some(value => !Number.isInteger(value) || value <= 0)) {
+    return null;
+  }
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] <= values[i - 1]) {
+      return null;
+    }
+  }
+
+  return values;
+}
+
 const form = reactive({
   name: props.initialData?.name || '',
   startDate: props.initialData?.startDate || dayjs().format('YYYY-MM-DD'),
@@ -187,6 +220,9 @@ const form = reactive({
   interval: props.initialData?.frequency?.interval ?? 2,
   daysPerWeek: props.initialData?.frequency?.daysPerWeek ?? 3,
   daysOfWeek: (props.initialData?.frequency?.daysOfWeek || []) as number[],
+  ebbinghausIntervals: props.initialData?.frequency?.type === 'ebbinghaus'
+    ? (props.initialData.frequency.intervals?.join(',') ?? '')
+    : '',
 });
 
 const weekDayLabels = computed(() => t('calendar').weekDays);
@@ -197,6 +233,7 @@ const frequencyOptions = computed(() => [
   { value: 'weekly', label: t('habit').freqWeekly || '每周' },
   { value: 'n_per_week', label: t('habit').freqNPerWeek || '每周N天' },
   { value: 'weekly_days', label: t('habit').freqWeeklyDays || '指定周几' },
+  { value: 'ebbinghaus', label: t('habit').freqEbbinghaus || '艾宾浩斯' },
 ]);
 
 function selectFrequency(type: HabitFrequency['type']) {
@@ -251,6 +288,13 @@ function buildMarkdown(): string {
       line += ` 🔄每周${dayNames}`;
       break;
     }
+    case 'ebbinghaus': {
+      const intervals = parseEbbinghausIntervals(form.ebbinghausIntervals);
+      line += intervals && intervals.length > 0
+        ? ` 🔄艾宾浩斯[${intervals.join(',')}]`
+        : ' 🔄艾宾浩斯';
+      break;
+    }
   }
 
   return line;
@@ -262,6 +306,8 @@ function handleSave() {
   if (form.type === 'count' && (!Number.isFinite(form.target) || form.target <= 0))
     return;
   if (form.frequencyType === 'weekly_days' && form.daysOfWeek.length === 0)
+    return;
+  if (form.frequencyType === 'ebbinghaus' && parseEbbinghausIntervals(form.ebbinghausIntervals) === null)
     return;
 
   const markdown = buildMarkdown();

@@ -26,11 +26,11 @@ vi.mock('@/components/habit/HabitRecordLog.vue', () => ({
   }),
 }));
 
-function mountPane() {
+function mountPane(selectedHabit?: Habit | null) {
   const container = document.createElement('div');
   document.body.appendChild(container);
 
-  const selectedHabit: Habit = {
+  const habit: Habit | null = selectedHabit ?? {
     name: '早起',
     docId: 'doc-1',
     blockId: 'habit-1',
@@ -41,17 +41,20 @@ function mountPane() {
   };
 
   const stats: HabitStats = {
+    habitId: habit?.blockId || 'habit-1',
     totalCheckins: 3,
+    monthlyCheckins: 2,
     currentStreak: 1,
-    bestStreak: 2,
-    thisMonthCheckins: 2,
-    completionRate: 50,
+    longestStreak: 2,
+    completionRate: 0.5,
+    monthlyCompletionRate: 0.5,
+    weeklyCompletionRate: 0.5,
   };
 
   const app = createApp(HabitWorkspaceDetailPane, {
-    selectedHabit,
-    stats,
-    currentDate: '2026-05-12',
+    selectedHabit: habit,
+    stats: habit ? stats : null,
+    currentDate: '2026-05-18',
     viewMonth: '2026-05',
     emptyTitle: 'empty',
     emptyDesc: 'empty desc',
@@ -87,6 +90,31 @@ describe('HabitWorkspaceDetailPane', () => {
     expect(calendarSection?.classList.contains('habit-workspace-detail-pane__section--calendar')).toBe(true);
     expect(statsSection?.classList.contains('habit-workspace-detail-pane__section--stats')).toBe(true);
     expect(logSection?.classList.contains('habit-workspace-detail-pane__section--log')).toBe(true);
+
+    mounted.unmount();
+  });
+
+  it('shows stage and next due date for ebbinghaus habits', async () => {
+    const mounted = mountPane({
+      name: '英语单词',
+      docId: 'doc-1',
+      blockId: 'habit-1',
+      type: 'binary',
+      startDate: '2026-05-14',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [{
+        content: '英语单词',
+        date: '2026-05-14',
+        docId: 'doc-1',
+        blockId: 'record-1',
+        habitId: 'habit-1',
+      }],
+    });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('第 1 阶段');
+    expect(mounted.container.textContent).toContain('下次打卡 2026-05-15');
 
     mounted.unmount();
   });
