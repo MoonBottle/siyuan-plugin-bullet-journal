@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { showMessage } from '@/utils/dialog';
@@ -88,16 +88,20 @@ let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
+watch(() => props.viewConfig, (config) => {
+  const groupId = (config as WorkbenchProjectViewConfig | undefined)?.groupId;
+  if (groupId) {
+    selectedGroup.value = groupId;
+  }
+}, { immediate: true });
+
 // 初始化数据
 onMounted(async () => {
   console.log('[Task Assistant][ViewLifecycle] onMounted:', buildViewDebugContext('ProjectTab', plugin));
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
-  const viewConfigGroupId = (props.viewConfig as WorkbenchProjectViewConfig | undefined)?.groupId;
-  if (viewConfigGroupId) {
-    selectedGroup.value = viewConfigGroupId;
-  } else if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup;
   }
 

@@ -102,6 +102,7 @@ import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings'
 import dayjs from '@/utils/dayjs';
 import { useApp } from '@/main';
 import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
+import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 
 const props = withDefaults(defineProps<{
@@ -131,6 +132,13 @@ watch(selectedGroup, (val) => {
   settingsStore.todoDock.selectedGroup = val;
   settingsStore.saveToPlugin();
 });
+
+watch(() => props.viewConfig, (config) => {
+  const preset = (config as WorkbenchTodoListWidgetConfig | undefined)?.preset;
+  if (preset?.groupId) {
+    selectedGroup.value = preset.groupId;
+  }
+}, { immediate: true });
 
 const searchQuery = ref('');
 const tagQuery = ref('');

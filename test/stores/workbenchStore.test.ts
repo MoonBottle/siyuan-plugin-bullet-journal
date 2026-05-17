@@ -177,7 +177,7 @@ describe('workbenchStore', () => {
     ['pomodoroStats', 'Focus Statistics', 'iconClock'],
     ['calendar', 'Calendar', 'iconCalendar'],
     ['gantt', 'Gantt Chart', 'iconGraph'],
-    ['project', 'Projects', 'iconFolder'],
+    ['project', 'Project Workbench', 'iconFolder'],
   ] satisfies Array<[WorkbenchViewType, string, string]>)(
     'createViewEntry creates %s view metadata and activates it',
     async (viewType, title, icon) => {
