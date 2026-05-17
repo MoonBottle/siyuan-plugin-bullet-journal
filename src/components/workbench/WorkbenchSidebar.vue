@@ -346,7 +346,11 @@ onBeforeUnmount(() => {
 function toggleCreateMenu() {
   isCreateMenuOpen.value = !isCreateMenuOpen.value;
   if (isCreateMenuOpen.value) {
-    nextTick(() => updateCreateMenuPosition());
+    nextTick(() => {
+      updateCreateMenuPosition();
+      // 确保 DOM 完全渲染后再次更新位置
+      nextTick(() => updateCreateMenuPosition());
+    });
   }
 }
 
