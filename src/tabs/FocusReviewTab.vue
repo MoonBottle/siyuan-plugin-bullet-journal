@@ -13,7 +13,10 @@
         <svg><use xlink:href="#iconRefresh"></use></svg>
       </button>
     </div>
-    <FocusReviewView ref="focusReviewViewRef" />
+    <FocusReviewView
+      ref="focusReviewViewRef"
+      :initial-group-id="initialGroupId"
+    />
   </div>
 </template>
 
@@ -21,6 +24,7 @@
 import { computed, ref } from 'vue';
 import { t } from '@/i18n';
 import FocusReviewView from '@/components/pomodoro/review/FocusReviewView.vue';
+import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
@@ -30,6 +34,7 @@ const props = withDefaults(defineProps<{
 });
 
 const showHeader = computed(() => !props.embedded);
+const initialGroupId = computed(() => (props.viewConfig as WorkbenchFocusReviewViewConfig | undefined)?.groupId);
 const focusReviewViewRef = ref<InstanceType<typeof FocusReviewView> | null>(null);
 
 function handleRefresh() {

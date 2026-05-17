@@ -190,6 +190,10 @@ const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 const plugin = usePlugin() as any;
 
+const props = defineProps<{
+  initialGroupId?: string;
+}>();
+
 const activeStatus = ref<'all' | FocusPlanReviewStatus>('all');
 const selectedEntryKey = ref<string>('');
 const selectedGroup = ref(resolveInitialGroup());
@@ -274,6 +278,7 @@ function getEntryKey(entry: FocusPlanDailyReviewEntry): string {
 }
 
 function resolveInitialGroup() {
+  if (props.initialGroupId) return props.initialGroupId;
   const preferredGroup = settingsStore.focusReview.selectedGroup || settingsStore.defaultGroup || '';
   if (!preferredGroup) return '';
   return settingsStore.groups.some(group => group.id === preferredGroup) ? preferredGroup : '';
