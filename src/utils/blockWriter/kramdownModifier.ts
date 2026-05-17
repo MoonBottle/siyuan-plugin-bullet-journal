@@ -2,6 +2,12 @@ import type { BlockPatch, DatePatch, KramdownBlockParts } from './types';
 import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
 import { generatePriorityMarker, isTaskListFormat, statusToLabel, stripPriorityMarker } from './itemLineMarkers';
 import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
+import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
+import {
+  generateEndConditionMarker,
+  generateRepeatRuleMarker,
+  stripRecurringMarkers,
+} from '@/parser/recurringParser';
 
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 
@@ -115,6 +121,25 @@ function applyFocusPlan(line: string, patch: Extract<BlockPatch, { type: 'setFoc
   return marker ? `${clean} ${marker}`.trim() : clean;
 }
 
+function applyReminder(line: string, patch: Extract<BlockPatch, { type: 'setReminder' }>): string {
+  const clean = stripReminderMarker(line)
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  const marker = patch.reminder?.enabled ? generateReminderMarker(patch.reminder) : '';
+  return marker ? `${clean} ${marker}`.trim() : clean;
+}
+
+function applyRecurring(line: string, patch: Extract<BlockPatch, { type: 'setRecurring' }>): string {
+  const clean = stripRecurringMarkers(line)
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  const markers = [
+    patch.repeatRule ? generateRepeatRuleMarker(patch.repeatRule) : '',
+    patch.endCondition ? generateEndConditionMarker(patch.endCondition) : '',
+  ].filter(Boolean);
+  return markers.length > 0 ? `${clean} ${markers.join(' ')}`.trim() : clean;
+}
+
 export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): string {
   const contentLines = [...parts.contentLines];
   const index = primaryLineIndex(contentLines);
@@ -147,6 +172,16 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
 
   if (patch.type === 'setFocusPlan') {
     contentLines[index] = applyFocusPlan(line, patch);
+    return replaceContentLines(parts, contentLines);
+  }
+
+  if (patch.type === 'setReminder') {
+    contentLines[index] = applyReminder(line, patch);
+    return replaceContentLines(parts, contentLines);
+  }
+
+  if (patch.type === 'setRecurring') {
+    contentLines[index] = applyRecurring(line, patch);
     return replaceContentLines(parts, contentLines);
   }
 

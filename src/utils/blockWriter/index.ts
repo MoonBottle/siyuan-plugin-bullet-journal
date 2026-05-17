@@ -13,6 +13,8 @@ export type {
   FocusPlanPatch,
   ItemDateTimeInfo,
   PriorityPatch,
+  RecurringPatch,
+  ReminderPatch,
   ResolvedBlockTarget,
   SlashCommandPatch,
   StatusPatch,

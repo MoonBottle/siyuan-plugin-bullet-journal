@@ -57,13 +57,17 @@ describe('itemSettingUtils', () => {
   it('emits LOCAL_DATA_MUTATED after reminder update succeeds', async () => {
     const config = {
       enabled: true,
-      type: 'at-time',
+      type: 'absolute',
       time: '21:52',
     } as ReminderConfig;
 
     await updateItemWithReminder(item, config);
 
-    expect(mockUpdateBlock).toHaveBeenCalledTimes(1);
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      { type: 'setReminder', reminder: config },
+    );
+    expect(mockUpdateBlock).not.toHaveBeenCalled();
     expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
       source: 'item-setting',
       kind: 'reminder',
@@ -79,7 +83,11 @@ describe('itemSettingUtils', () => {
 
     await updateItemWithRecurring(item, repeatRule);
 
-    expect(mockUpdateBlock).toHaveBeenCalledTimes(1);
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      { type: 'setRecurring', repeatRule, endCondition: undefined },
+    );
+    expect(mockUpdateBlock).not.toHaveBeenCalled();
     expect(mockEventBusEmit).toHaveBeenCalledWith(Events.LOCAL_DATA_MUTATED, {
       source: 'item-setting',
       kind: 'recurring',
@@ -212,6 +220,34 @@ describe('itemSettingUtils', () => {
       kind: 'focus-plan',
       blockId: 'block-1',
     });
+  });
+
+  it('保存提醒失败时会抛错且不发送事件', async () => {
+    mockWriteBlock.mockResolvedValueOnce(false);
+    const config = {
+      enabled: true,
+      type: 'relative',
+      relativeTo: 'start',
+      offsetMinutes: 10,
+    } as ReminderConfig;
+
+    await expect(updateItemWithReminder(item, config)).rejects.toThrow(
+      '更新块内容失败 (block-1)',
+    );
+    expect(mockEventBusEmit).not.toHaveBeenCalled();
+  });
+
+  it('保存重复规则失败时会抛错且不发送事件', async () => {
+    mockWriteBlock.mockResolvedValueOnce(false);
+    const repeatRule = {
+      type: 'weekly',
+      daysOfWeek: [1, 3, 5],
+    } as RepeatRule;
+
+    await expect(updateItemWithRecurring(item, repeatRule)).rejects.toThrow(
+      '更新块内容失败 (block-1)',
+    );
+    expect(mockEventBusEmit).not.toHaveBeenCalled();
   });
 
   it('保存预计时失败时会抛错且不发送事件', async () => {

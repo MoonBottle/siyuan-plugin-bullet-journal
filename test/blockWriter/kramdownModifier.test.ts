@@ -163,6 +163,60 @@ describe('kramdownModifier', () => {
     });
   });
 
+  describe('setReminder', () => {
+    it('replaces existing reminder markers and preserves other markers', () => {
+      expect(applyBlockPatch(parts('事项 @2026-05-14 🔁每天 ⏰09:00\n{: id="abc"}'), {
+        type: 'setReminder',
+        reminder: { enabled: true, type: 'relative', relativeTo: 'start', offsetMinutes: 10 },
+      })).toBe(
+        '事项 @2026-05-14 🔁每天 ⏰提前10分钟\n{: id="abc"}',
+      );
+    });
+
+    it('clears reminder markers', () => {
+      expect(applyBlockPatch(parts('事项 @2026-05-14 ⏰结束前30分钟\n{: id="abc"}'), {
+        type: 'setReminder',
+        reminder: { enabled: false, type: 'absolute', time: '09:00' },
+      })).toBe(
+        '事项 @2026-05-14\n{: id="abc"}',
+      );
+    });
+  });
+
+  describe('setRecurring', () => {
+    it('replaces recurring markers and preserves other markers', () => {
+      expect(applyBlockPatch(parts('事项 @2026-05-14 ⏰09:00 🔁每天 截止到2026-06-01\n{: id="abc"}'), {
+        type: 'setRecurring',
+        repeatRule: { type: 'weekly', daysOfWeek: [1, 3, 5] },
+        endCondition: { type: 'count', maxCount: 8 },
+      })).toBe(
+        '事项 @2026-05-14 ⏰09:00 🔁每周一三五 剩余8次\n{: id="abc"}',
+      );
+    });
+
+    it('clears recurring markers', () => {
+      expect(applyBlockPatch(parts('事项 @2026-05-14 🔁每月15日 剩余10次\n{: id="abc"}'), {
+        type: 'setRecurring',
+      })).toBe(
+        '事项 @2026-05-14\n{: id="abc"}',
+      );
+    });
+
+    it('preserves extra lines and IAL', () => {
+      expect(applyBlockPatch(parts(`事项 @2026-05-14
+🍅2026-05-14 09:00:00~09:25:00 第一轮
+{: id="abc" custom-x="1"}`), {
+        type: 'setRecurring',
+        repeatRule: { type: 'daily' },
+        endCondition: { type: 'date', endDate: '2026-06-01' },
+      })).toBe(
+        `事项 @2026-05-14 🔁每天 截止到2026-06-01
+🍅2026-05-14 09:00:00~09:25:00 第一轮
+{: id="abc" custom-x="1"}`,
+      );
+    });
+  });
+
   describe('batch patches', () => {
     it('applies priority then date', () => {
       const result = applyBlockPatches(parts('任务\n{: id="abc"}'), [

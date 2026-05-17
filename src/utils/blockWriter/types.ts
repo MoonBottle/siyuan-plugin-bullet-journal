@@ -1,4 +1,13 @@
-import type { FocusPlan, ItemDateTimeInfo as ModelItemDateTimeInfo, ItemStatus, PriorityLevel, TimePrecision } from '@/types/models';
+import type {
+  EndCondition,
+  FocusPlan,
+  ItemDateTimeInfo as ModelItemDateTimeInfo,
+  ItemStatus,
+  PriorityLevel,
+  ReminderConfig,
+  RepeatRule,
+  TimePrecision,
+} from '@/types/models';
 
 export type { ItemDateTimeInfo } from '@/types/models';
 
@@ -43,6 +52,17 @@ export type FocusPlanPatch = {
   plan?: Pick<FocusPlan, 'type' | 'rawValue'>;
 };
 
+export type ReminderPatch = {
+  type: 'setReminder';
+  reminder?: ReminderConfig;
+};
+
+export type RecurringPatch = {
+  type: 'setRecurring';
+  repeatRule?: RepeatRule;
+  endCondition?: EndCondition;
+};
+
 export type SlashCommandPatch = {
   type: 'removeSlashCommand';
   suffix?: string;
@@ -54,6 +74,8 @@ export type BlockPatch =
   | PriorityPatch
   | ContentPatch
   | FocusPlanPatch
+  | ReminderPatch
+  | RecurringPatch
   | SlashCommandPatch;
 
 export type BatchBlockPatch = BlockPatch[];

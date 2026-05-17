@@ -14,7 +14,6 @@ import type {
 import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
 import {
   generateReminderMarker,
-  stripReminderMarker
 } from '@/parser/reminderParser';
 import {
   generatePinnedMarker,
@@ -24,7 +23,6 @@ import {
 import {
   generateRepeatRuleMarker,
   generateEndConditionMarker,
-  stripRecurringMarkers
 } from '@/parser/recurringParser';
 import { generatePriorityMarker } from '@/parser/priorityParser';
 import { writeBlock } from '@/utils/blockWriter';
@@ -159,25 +157,13 @@ export async function updateItemWithReminder(
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  // 获取块内容
-  const currentContent = await fetchBlockContent(item.blockId);
-
-  // 移除旧的提醒标记
-  let newContent = stripReminderMarker(currentContent);
-
-  // 如果启用了提醒，添加新标记
-  if (config.enabled) {
-    const reminderMarker = generateReminderMarker(config);
-    if (reminderMarker) {
-      newContent = `${newContent} ${reminderMarker}`;
-    }
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setReminder', reminder: config },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
   }
-
-  // 清理多余空格（保留换行）
-  newContent = normalizeWhitespace(newContent);
-
-  // 更新块
-  await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('reminder', item.blockId);
 }
 
@@ -196,33 +182,13 @@ export async function updateItemWithRecurring(
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  // 获取块内容
-  const currentContent = await fetchBlockContent(item.blockId);
-
-  // 移除旧的重复和结束条件标记
-  let newContent = stripRecurringMarkers(currentContent);
-
-  // 添加新的重复规则标记
-  if (repeatRule) {
-    const repeatMarker = generateRepeatRuleMarker(repeatRule);
-    if (repeatMarker) {
-      newContent = `${newContent} ${repeatMarker}`;
-    }
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setRecurring', repeatRule, endCondition },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
   }
-
-  // 添加新的结束条件标记
-  if (endCondition && endCondition.type !== 'never') {
-    const endMarker = generateEndConditionMarker(endCondition);
-    if (endMarker) {
-      newContent = `${newContent} ${endMarker}`;
-    }
-  }
-
-  // 清理多余空格（保留换行）
-  newContent = normalizeWhitespace(newContent);
-
-  // 更新块
-  await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('recurring', item.blockId);
 }
 
