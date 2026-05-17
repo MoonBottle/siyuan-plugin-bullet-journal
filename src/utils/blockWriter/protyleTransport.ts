@@ -9,6 +9,10 @@ interface CursorState {
 }
 
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/u;
+const PROTYLE_WRITER_LOG_PREFIX = '[BJ-ProtyleWriter]';
+type RenderedMarkdownPatch = Extract<BlockPatch, {
+  type: 'setStatus' | 'setHabitRecord' | 'setHabitDefinition' | 'setHabitArchive';
+}>;
 
 function saveCursor(): CursorState | null {
   try {
@@ -91,30 +95,67 @@ function commitProtyleUpdate(protyle: any, id: string, targetElement: HTMLElemen
   return false;
 }
 
-function handleSetStatusViaDOM(protyle: any, nodeElement: HTMLElement, patch: StatusPatch): boolean {
+function handleRenderedMarkdownPatchViaDOM(
+  protyle: any,
+  nodeElement: HTMLElement,
+  blockId: string,
+  patch: RenderedMarkdownPatch,
+): boolean {
+  if (!canCommit(protyle)) return false;
+
+  const currentBlockId = nodeElement.getAttribute('data-node-id');
+  if (!currentBlockId || currentBlockId !== blockId) {
+    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} current block mismatch`, {
+      patchType: patch.type,
+      contextBlockId: blockId,
+      currentBlockId,
+    });
+    return false;
+  }
+
+  const currentMarkdown = blockElementToMarkdownContent(protyle, nodeElement);
+  if (!currentMarkdown) {
+    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} current markdown unavailable`, {
+      patchType: patch.type,
+      blockId,
+    });
+    return false;
+  }
+
+  const nextMarkdown = applyBlockPatch({
+    contentLines: [currentMarkdown],
+    ialLines: [],
+    raw: currentMarkdown,
+  }, patch);
+  const oldHTML = nodeElement.outerHTML;
+  if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, nextMarkdown)) {
+    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} render markdown into editable failed`, {
+      patchType: patch.type,
+      blockId,
+      nextMarkdown,
+    });
+    return false;
+  }
+
+  nodeElement.setAttribute('updated', formatUpdatedAttr());
+  return commitProtyleUpdate(protyle, blockId, nodeElement, oldHTML);
+}
+
+function handleSetStatusViaDOM(
+  protyle: any,
+  nodeElement: HTMLElement,
+  blockId: string,
+  patch: StatusPatch,
+): boolean {
   if (!canCommit(protyle)) return false;
 
   const li = nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement;
   if (!li) {
-    const blockId = nodeElement.getAttribute('data-node-id');
-    if (!blockId) return false;
-
-    const currentMarkdown = blockElementToMarkdownContent(protyle, nodeElement);
-    if (!currentMarkdown) return false;
-
-    const nextMarkdown = applyBlockPatch({
-      contentLines: [currentMarkdown],
-      ialLines: [],
-      raw: currentMarkdown,
-    }, patch);
-    const oldHTML = nodeElement.outerHTML;
-    if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, nextMarkdown)) {
-      return false;
-    }
-
-    nodeElement.setAttribute('updated', formatUpdatedAttr());
-    return commitProtyleUpdate(protyle, blockId, nodeElement, oldHTML);
+    return handleRenderedMarkdownPatchViaDOM(protyle, nodeElement, blockId, patch);
   }
+
+  const currentBlockId = nodeElement.getAttribute('data-node-id');
+  if (!currentBlockId || currentBlockId !== blockId) return false;
 
   const taskAction = li.querySelector('.protyle-action--task') as HTMLElement;
   if (!taskAction) return false;
@@ -230,7 +271,15 @@ export async function writeViaProtyle(context: BlockWriteContext, patches: Block
         handled = true;
       }
     } else if (patch.type === 'setStatus') {
-      if (handleSetStatusViaDOM(protyle, nodeElement, patch)) {
+      if (handleSetStatusViaDOM(protyle, nodeElement, context.blockId, patch)) {
+        handled = true;
+      }
+    } else if (
+      patch.type === 'setHabitRecord'
+      || patch.type === 'setHabitDefinition'
+      || patch.type === 'setHabitArchive'
+    ) {
+      if (handleRenderedMarkdownPatchViaDOM(protyle, nodeElement, context.blockId, patch)) {
         handled = true;
       }
     }

@@ -395,7 +395,7 @@ describe('habit slash commands', () => {
     expect(checkInSpy).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-precision',
       type: 'binary',
-    }), '2026-04-30', undefined, 'minute');
+    }), '2026-04-30', expect.any(Object), 'minute');
   });
 
   it('/dk 在计数型习惯定义行上应走 checkInCount(1)', async () => {
@@ -421,7 +421,7 @@ describe('habit slash commands', () => {
     expect(checkInCountSpy).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-2',
       type: 'count',
-    }), '2026-04-30', 1, undefined, 'day');
+    }), '2026-04-30', 1, expect.any(Object), 'day');
   });
 
   it('/dk 成功打卡后应立即触发数据刷新，避免定义行连续打卡产生重复 record', async () => {
@@ -484,7 +484,72 @@ describe('habit slash commands', () => {
         blockId: 'record-today-3',
         currentValue: 1,
       })],
-    }), '2026-04-30', 1, undefined, 'day');
+    }), '2026-04-30', 1, expect.any(Object), 'day');
+  });
+
+  it('/dk 在定义行命中今日 count record 时，writer.update 应回退到 API 写目标 record 块', async () => {
+    const checkInCountSpy = vi.mocked(checkInCount);
+    checkInCountSpy.mockImplementation(async (_habit, _date, _incrementBy, writer) => {
+      await writer?.update('record-today-3', {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 2,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      });
+      return true;
+    });
+
+    const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-3');
+    node.textContent = '喝水 🎯2026-04-01 8杯 🔄每天';
+    const protyle = { transaction: vi.fn() };
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '喝水',
+      docId: 'doc-1',
+      blockId: 'block-3',
+      type: 'count',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '喝水',
+        date: '2026-04-30',
+        docId: 'doc-1',
+        blockId: 'record-today-3',
+        habitId: 'block-3',
+        currentValue: 1,
+        targetValue: 8,
+        unit: '杯',
+      }],
+    }]);
+
+    await handler(protyle as any, node);
+
+    expect(writeBlock).toHaveBeenLastCalledWith(
+      { blockId: 'record-today-3' },
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 2,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
+    );
   });
 
   it('/dk 在定义行未命中 store 中的 habit 时不应直接写 record', async () => {
@@ -560,12 +625,29 @@ describe('habit slash commands', () => {
 
   it('/dk 在今天的计数打卡记录上应走 checkInCount(1)', async () => {
     const checkInCountSpy = vi.mocked(checkInCount);
+    checkInCountSpy.mockImplementation(async (_habit, _date, _incrementBy, writer) => {
+      await writer?.update('record-4', {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 4,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      });
+      return true;
+    });
     const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'record-4');
     node.textContent = '喝水 3/8杯 📅2026-04-30';
+    const protyle = { transaction: vi.fn() };
 
-    await handler({} as any, node);
+    await handler(protyle as any, node);
 
     expect(checkInCountSpy).toHaveBeenCalledWith(expect.objectContaining({
       type: 'count',
@@ -573,7 +655,27 @@ describe('habit slash commands', () => {
         currentValue: 3,
         targetValue: 8,
       })],
-    }), '2026-04-30', 1, undefined, 'day');
+    }), '2026-04-30', 1, expect.any(Object), 'day');
+    expect(writeBlock).toHaveBeenLastCalledWith(
+      {
+        blockId: 'record-4',
+        nodeElement: node,
+        protyle,
+      },
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 4,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
+    );
   });
 
   it('/dk 在已打卡的习惯定义行上应提示已打卡而不是重复创建 record', async () => {

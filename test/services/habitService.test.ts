@@ -249,6 +249,41 @@ describe('checkInCount', () => {
     );
   });
 
+  it('传入 writer 时，已有记录更新应优先使用 writer.update', async () => {
+    const habit = mkHabit({
+      name: '喝水',
+      type: 'count',
+      target: 8,
+      unit: '杯',
+      records: [mkRecord('2026-04-07', { currentValue: 3, targetValue: 8, unit: '杯' })]
+    });
+    const writer = {
+      insertAfter: vi.fn().mockResolvedValue(true),
+      update: vi.fn().mockResolvedValue(true),
+    };
+
+    const result = await checkInCount(habit, '2026-04-07', 1, writer);
+
+    expect(result).toBe(true);
+    expect(writer.update).toHaveBeenCalledWith(
+      'record-2026-04-07',
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-07',
+          value: 4,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
+    );
+    expect(writeBlock).not.toHaveBeenCalled();
+  });
+
   it('#23: 计数型达标 — 更新值但不追加 ✅', async () => {
     const habit = mkHabit({
       name: '喝水',

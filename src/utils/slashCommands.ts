@@ -26,14 +26,20 @@ import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
-import { insertBlockAfter, writeBlock, type DatePatch } from '@/utils/blockWriter';
+import {
+  insertBlockAfter,
+  writeBlock,
+  type BlockPatch,
+  type DatePatch,
+  type InsertableBlockPatch,
+} from '@/utils/blockWriter';
 import { findSlashCommandStartOffset } from '@/utils/blockWriter/slashRange';
 import {
   RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
 } from '@/utils/refreshRequests';
-import { checkIn, checkInCount } from '@/services/habitService';
+import { checkIn, checkInCount, type HabitBlockWriter } from '@/services/habitService';
 import type { CheckInRecord } from '@/types/models';
 import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
 
@@ -55,6 +61,28 @@ function removeSlashCommandViaWriter(
       ? { type: 'removeSlashCommand', suffix: options.suffix }
       : { type: 'removeSlashCommand' },
   );
+}
+
+function createCurrentBlockHabitWriter(
+  protyle: any,
+  nodeElement: HTMLElement | null | undefined,
+): HabitBlockWriter | undefined {
+  const currentBlockId = nodeElement?.getAttribute('data-node-id');
+  if (!currentBlockId) {
+    return undefined;
+  }
+
+  return {
+    insertAfter: (previousBlockId: string, patch: InsertableBlockPatch) => {
+      return insertBlockAfter(previousBlockId, patch);
+    },
+    update: (blockId: string, patch: BlockPatch) => {
+      if (blockId === currentBlockId) {
+        return writeBlock({ blockId, nodeElement, protyle }, patch);
+      }
+      return writeBlock({ blockId }, patch);
+    },
+  };
 }
 
 function cleanupActiveSlashCommandLocally(nodeElement?: HTMLElement | null): void {
@@ -797,7 +825,7 @@ export function getActionHandler(
           }
 
           void (parsedHabit
-            ? writeBlock({ blockId }, { type: 'setHabitDefinition', habit: nextHabit })
+            ? writeBlock({ blockId, nodeElement, protyle }, { type: 'setHabitDefinition', habit: nextHabit })
             : insertBlockAfter(blockId, { type: 'setHabitDefinition', habit: nextHabit }));
         }, parsedHabit || undefined);
       };
@@ -813,6 +841,7 @@ export function getActionHandler(
         const sharedPinia = getSharedPinia();
         const settingsStore = sharedPinia ? useSettingsStore(sharedPinia) : useSettingsStore();
         const habitCheckInTimePrecision = settingsStore.habitCheckInTimePrecision || 'day';
+        const habitWriter = createCurrentBlockHabitWriter(protyle, nodeElement);
         const matchedHabit = parsedHabit ? findHabitByDefinitionBlockId(blockId) : null;
         const activeRecordMatch = matchedRecord ?? (parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null);
         const isRecordContext = Boolean(activeRecordMatch || parsedRecord);
@@ -839,7 +868,7 @@ export function getActionHandler(
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -867,7 +896,7 @@ export function getActionHandler(
                 unit: parsedRecord.unit,
               }],
             };
-            const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -898,7 +927,7 @@ export function getActionHandler(
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -909,12 +938,12 @@ export function getActionHandler(
         }
 
         if (habit.type === 'count') {
-          const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+          const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
           if (success) {
             notifyHabitDataRefresh();
           }
         } else {
-          const success = await checkIn(habit, currentDate, undefined, habitCheckInTimePrecision);
+          const success = await checkIn(habit, currentDate, habitWriter, habitCheckInTimePrecision);
           if (success) {
             notifyHabitDataRefresh();
           }

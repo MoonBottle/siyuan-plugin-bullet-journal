@@ -10,6 +10,18 @@ describe('protyleTransport', () => {
     return div;
   }
 
+  function createParagraphBlock(blockId: string, text: string) {
+    const block = document.createElement('div');
+    block.classList.add('p');
+    block.setAttribute('data-node-id', blockId);
+    block.setAttribute('data-type', 'NodeParagraph');
+    block.innerHTML = `
+      <div contenteditable="true" spellcheck="false">${text}</div>
+      <div class="protyle-attr" contenteditable="false">\u200b</div>
+    `;
+    return block;
+  }
+
   function createSlashRange(div: HTMLDivElement) {
     const range = document.createRange();
     const textNode = div.firstChild!;
@@ -252,6 +264,251 @@ describe('protyleTransport', () => {
     document.body.removeChild(block);
   });
 
+  it('updates habit records through Protyle DOM on the current block', async () => {
+    const block = createParagraphBlock('record-1', '喝水 3/8杯 📅2026-05-17');
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'record-1',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+          BlockDOM2Content: vi.fn(() => '喝水 3/8杯 📅2026-05-17'),
+          Md2BlockDOM: vi.fn(() => `
+            <div data-type="NodeParagraph" class="p">
+              <div contenteditable="true" spellcheck="false">喝水 4/8杯 📅2026-05-17</div>
+              <div class="protyle-attr" contenteditable="false">\u200b</div>
+            </div>
+          `),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setHabitRecord',
+      record: {
+        content: '喝水',
+        habitType: 'count',
+        date: '2026-05-17',
+        value: 4,
+        target: 8,
+        unit: '杯',
+        precision: 'day',
+        recordStatus: 'completed',
+      },
+    });
+
+    expect(result).toBe(true);
+    expect(context.protyle.lute.BlockDOM2Content).toHaveBeenCalledOnce();
+    expect(context.protyle.lute.Md2BlockDOM).toHaveBeenCalledWith('喝水 4/8杯 📅2026-05-17');
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.textContent).toContain('4/8杯');
+
+    document.body.removeChild(block);
+  });
+
+  it('falls back to window.Lute.BlockDOM2Content when protyle lute lacks the converter', async () => {
+    const originalLute = (window as any).Lute;
+    (window as any).Lute = {
+      BlockDOM2Content: vi.fn(() => '喝水 3/8杯 📅2026-05-17'),
+    };
+
+    const block = createParagraphBlock('record-fallback-1', '喝水 3/8杯 📅2026-05-17');
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'record-fallback-1',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+          Md2BlockDOM: vi.fn(() => `
+            <div data-type="NodeParagraph" class="p">
+              <div contenteditable="true" spellcheck="false">喝水 4/8杯 📅2026-05-17</div>
+              <div class="protyle-attr" contenteditable="false">\u200b</div>
+            </div>
+          `),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setHabitRecord',
+      record: {
+        content: '喝水',
+        habitType: 'count',
+        date: '2026-05-17',
+        value: 4,
+        target: 8,
+        unit: '杯',
+        precision: 'day',
+        recordStatus: 'completed',
+      },
+    });
+
+    expect(result).toBe(true);
+    expect((window as any).Lute.BlockDOM2Content).toHaveBeenCalledOnce();
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.textContent).toContain('4/8杯');
+
+    document.body.removeChild(block);
+    (window as any).Lute = originalLute;
+  });
+
+  it('falls back to createApiLute Md2BlockDOM when protyle lute lacks the renderer', async () => {
+    const originalLute = (window as any).Lute;
+    (window as any).Lute = {
+      BlockDOM2Content: vi.fn(() => '喝水 3/8杯 📅2026-05-17'),
+      New: vi.fn(() => ({
+        Md2BlockDOM: vi.fn(() => `
+          <div data-type="NodeParagraph" class="p">
+            <div contenteditable="true" spellcheck="false">喝水 4/8杯 📅2026-05-17</div>
+            <div class="protyle-attr" contenteditable="false">\u200b</div>
+          </div>
+        `),
+        SetHTMLTag2TextMark: vi.fn(),
+        SetTextMark: vi.fn(),
+        SetProtyleWYSIWYG: vi.fn(),
+        SetBlockRef: vi.fn(),
+        SetFileAnnotationRef: vi.fn(),
+        SetKramdownIAL: vi.fn(),
+        SetTag: vi.fn(),
+        SetSuperBlock: vi.fn(),
+        SetImgPathAllowSpace: vi.fn(),
+        SetGitConflict: vi.fn(),
+        SetMark: vi.fn(),
+        SetSup: vi.fn(),
+        SetSub: vi.fn(),
+        SetInlineMathAllowDigitAfterOpenMarker: vi.fn(),
+        SetFootnotes: vi.fn(),
+        SetToC: vi.fn(),
+        SetIndentCodeBlock: vi.fn(),
+        SetParagraphBeginningSpace: vi.fn(),
+        SetAutoSpace: vi.fn(),
+        SetHeadingID: vi.fn(),
+        SetSetext: vi.fn(),
+        SetYamlFrontMatter: vi.fn(),
+        SetLinkRef: vi.fn(),
+        SetCodeSyntaxHighlight: vi.fn(),
+        SetSanitize: vi.fn(),
+      })),
+    };
+
+    const block = createParagraphBlock('record-fallback-2', '喝水 3/8杯 📅2026-05-17');
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'record-fallback-2',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setHabitRecord',
+      record: {
+        content: '喝水',
+        habitType: 'count',
+        date: '2026-05-17',
+        value: 4,
+        target: 8,
+        unit: '杯',
+        precision: 'day',
+        recordStatus: 'completed',
+      },
+    });
+
+    expect(result).toBe(true);
+    expect((window as any).Lute.New).toHaveBeenCalled();
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.textContent).toContain('4/8杯');
+
+    document.body.removeChild(block);
+    (window as any).Lute = originalLute;
+  });
+
+  it('updates habit definitions through Protyle DOM on the current block', async () => {
+    const block = createParagraphBlock('habit-1', '喝水 🎯2026-04-01 8杯 🔄每天');
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'habit-1',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+          BlockDOM2Content: vi.fn(() => '喝水 🎯2026-04-01 8杯 🔄每天'),
+          Md2BlockDOM: vi.fn(() => `
+            <div data-type="NodeParagraph" class="p">
+              <div contenteditable="true" spellcheck="false">喝水 🎯2026-04-01 10杯 🔄每天</div>
+              <div class="protyle-attr" contenteditable="false">\u200b</div>
+            </div>
+          `),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setHabitDefinition',
+      habit: {
+        name: '喝水',
+        startDate: '2026-04-01',
+        type: 'count',
+        target: 10,
+        unit: '杯',
+        frequency: { type: 'daily' },
+      },
+    });
+
+    expect(result).toBe(true);
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.textContent).toContain('10杯');
+
+    document.body.removeChild(block);
+  });
+
+  it('updates habit archive markers through Protyle DOM on the current block', async () => {
+    const block = createParagraphBlock('habit-archive', '喝水 🎯2026-04-01 8杯 🔄每天');
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'habit-archive',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+          BlockDOM2Content: vi.fn(() => '喝水 🎯2026-04-01 8杯 🔄每天'),
+          Md2BlockDOM: vi.fn(() => `
+            <div data-type="NodeParagraph" class="p">
+              <div contenteditable="true" spellcheck="false">喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04</div>
+              <div class="protyle-attr" contenteditable="false">\u200b</div>
+            </div>
+          `),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setHabitArchive',
+      archivedAt: '2026-05-04',
+    });
+
+    expect(result).toBe(true);
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.textContent).toContain('📦2026-05-04');
+
+    document.body.removeChild(block);
+  });
+
   it('returns false without protyle', async () => {
     const result = await writeViaProtyle(
       { blockId: 'block-123' },
@@ -384,5 +641,76 @@ describe('protyleTransport', () => {
 
     document.body.removeChild(targetDiv);
     document.body.removeChild(activeDiv);
+  });
+
+  it('returns false for habit record updates when target block does not match the current DOM block', async () => {
+    const block = createParagraphBlock('record-1', '喝水 3/8杯 📅2026-05-17');
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'record-2',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+          BlockDOM2Content: vi.fn(() => '喝水 3/8杯 📅2026-05-17'),
+          Md2BlockDOM: vi.fn(),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setHabitRecord',
+      record: {
+        content: '喝水',
+        habitType: 'count',
+        date: '2026-05-17',
+        value: 4,
+        target: 8,
+        unit: '杯',
+        precision: 'day',
+        recordStatus: 'completed',
+      },
+    });
+
+    expect(result).toBe(false);
+    expect(context.protyle.lute.BlockDOM2Content).not.toHaveBeenCalled();
+    expect(context.protyle.transaction).not.toHaveBeenCalled();
+
+    document.body.removeChild(block);
+  });
+
+  it('returns false for habit definition updates when Protyle markdown conversion is unavailable', async () => {
+    const block = createParagraphBlock('habit-1', '喝水 🎯2026-04-01 8杯 🔄每天');
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'habit-1',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setHabitDefinition',
+      habit: {
+        name: '喝水',
+        startDate: '2026-04-01',
+        type: 'count',
+        target: 10,
+        unit: '杯',
+        frequency: { type: 'daily' },
+      },
+    });
+
+    expect(result).toBe(false);
+    expect(context.protyle.transaction).not.toHaveBeenCalled();
+
+    document.body.removeChild(block);
   });
 });

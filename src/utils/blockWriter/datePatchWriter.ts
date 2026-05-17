@@ -4,6 +4,7 @@ import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
 import { isStandaloneBlockRefLine } from '@/parser/lineParser';
 import type { ItemDateTimeInfo, ItemStatus, TimePrecision } from '@/types/models';
 import { processLineText } from '@/utils/slashCommandUtils';
+import { markdownToBlockDOM } from './domSerializer';
 import { createProtyleMarkdownWriter } from './markdownWriter';
 import { isTaskListFormat, statusToLabel } from './itemLineMarkers';
 import type { BlockWriteContext, DatePatch } from './types';
@@ -303,7 +304,8 @@ async function persistDateContent(
   if (writer) {
     return await writer(content, targetBlockId);
   }
-  await updateBlock('markdown', content, targetBlockId);
+  const blockDOM = markdownToBlockDOM(content);
+  await updateBlock(blockDOM ? 'dom' : 'markdown', blockDOM ?? content, targetBlockId);
   return true;
 }
 

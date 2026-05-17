@@ -27,7 +27,7 @@ type ApiLute = LuteInstance & {
   SetSanitize?: (enable: boolean) => void;
 };
 
-function createApiLute(): ApiLute | null {
+export function createApiLute(): ApiLute | null {
   if (typeof window === 'undefined' || !window.Lute?.New) {
     return null;
   }

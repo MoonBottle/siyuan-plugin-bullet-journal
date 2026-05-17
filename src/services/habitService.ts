@@ -15,7 +15,7 @@ import {
 
 export { buildCheckInMarkdown, buildMissedCheckInMarkdown } from '@/utils/habitMarkdown';
 
-type HabitBlockWriter = {
+export type HabitBlockWriter = {
   insertAfter: (previousBlockId: string, patch: InsertableBlockPatch) => Promise<boolean>;
   update: (blockId: string, patch: BlockPatch) => Promise<boolean>;
 };
