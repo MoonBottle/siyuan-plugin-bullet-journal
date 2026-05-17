@@ -33,6 +33,7 @@ const mockCreateViewEntry = vi.fn(() => Promise.resolve({
   icon: 'iconList',
   order: 2,
   viewType: 'todo',
+  config: { preset: {} },
 }));
 const mockSetActiveEntry = vi.fn(() => Promise.resolve());
 const mockAddWidget = vi.fn(() => Promise.resolve());
@@ -54,6 +55,7 @@ const mockEntries = ref([
     icon: 'iconList',
     order: 1,
     viewType: 'todo',
+    config: { preset: {} },
   },
 ]);
 const mockActiveEntryId = ref<string | null>('entry-dashboard');
@@ -153,6 +155,30 @@ vi.mock('@/stores', async () => {
   };
 });
 
+const mockViewConfigDialog = vi.fn();
+
+vi.mock('@/workbench/viewRegistry', () => ({
+  getViewDefinition: (viewType: string) => {
+    const defaults: Record<string, () => Record<string, unknown>> = {
+      todo: () => ({ preset: {} }),
+      habit: () => ({ habitScope: 'active' }),
+      quadrant: () => ({ quadrant: 'q1' }),
+      pomodoroStats: () => ({ section: 'overview' }),
+      focusReview: () => ({}),
+      project: () => ({}),
+      calendar: () => ({}),
+      gantt: () => ({}),
+    };
+    return {
+      type: viewType,
+      createDefaultConfig: defaults[viewType] ?? (() => ({})),
+      openConfigDialog: viewType === 'calendar' || viewType === 'gantt'
+        ? undefined
+        : mockViewConfigDialog,
+    };
+  },
+}));
+
 describe('Workbench tab constants', () => {
   it('exposes workbench tab type', () => {
     expect(TAB_TYPES.WORKBENCH).toBe('bullet-journal-workbench');
@@ -185,6 +211,7 @@ describe('WorkbenchTab shell', () => {
         icon: 'iconList',
         order: 1,
         viewType: 'todo',
+        config: { preset: {} },
       },
     ];
     mockActiveEntryId.value = 'entry-dashboard';
@@ -203,6 +230,7 @@ describe('WorkbenchTab shell', () => {
       icon: 'iconList',
       order: 2,
       viewType: 'todo',
+      config: { preset: {} },
     });
     (globalThis as any).BroadcastChannel = vi.fn(function () {
       return {
@@ -372,6 +400,43 @@ describe('WorkbenchTab shell', () => {
     expect(mounted.container.querySelector('[data-testid="workbench-add-widget-habitWeek"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="workbench-add-widget-miniCalendar"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="workbench-add-widget-pomodoroStats"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('creates view entries with default config per view type', async () => {
+    const { getViewDefinition } = await import('@/workbench/viewRegistry');
+
+    expect(getViewDefinition('todo').createDefaultConfig()).toEqual({ preset: {} });
+    expect(getViewDefinition('habit').createDefaultConfig()).toEqual({ habitScope: 'active' });
+    expect(getViewDefinition('quadrant').createDefaultConfig()).toEqual({ quadrant: 'q1' });
+    expect(getViewDefinition('pomodoroStats').createDefaultConfig()).toEqual({ section: 'overview' });
+    expect(getViewDefinition('focusReview').createDefaultConfig()).toEqual({});
+    expect(getViewDefinition('project').createDefaultConfig()).toEqual({});
+  });
+
+  it('shows configure button for view entries', async () => {
+    mockActiveEntryId.value = 'entry-todo';
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    expect(document.querySelector('[data-testid="workbench-view-config-trigger"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('opens view config dialog when configure button is clicked', async () => {
+    mockActiveEntryId.value = 'entry-todo';
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    const configBtn = document.querySelector('[data-testid="workbench-view-config-trigger"]') as HTMLButtonElement;
+    expect(configBtn).not.toBeNull();
+
+    configBtn.click();
+    await nextTick();
+
+    expect(mockViewConfigDialog).toHaveBeenCalled();
 
     mounted.unmount();
   });
