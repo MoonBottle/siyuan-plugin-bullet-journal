@@ -39,6 +39,7 @@ import { t } from '@/i18n';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
+  viewConfig?: Record<string, unknown>;
 }>(), {
   embedded: false,
 });

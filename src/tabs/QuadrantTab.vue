@@ -115,6 +115,7 @@ import type { TodoSidebarDragPayload } from '@/components/todo/todoSidebarTypes'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
+  viewConfig?: Record<string, unknown>;
 }>(), {
   embedded: false,
 });

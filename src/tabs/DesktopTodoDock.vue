@@ -106,6 +106,7 @@ import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 
 const props = withDefaults(defineProps<{
   enableWorkbenchPreview?: boolean;
+  viewConfig?: Record<string, unknown>;
 }>(), {
   enableWorkbenchPreview: false,
 });

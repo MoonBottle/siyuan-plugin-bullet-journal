@@ -24,6 +24,7 @@ import FocusReviewView from '@/components/pomodoro/review/FocusReviewView.vue';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
+  viewConfig?: Record<string, unknown>;
 }>(), {
   embedded: false,
 });

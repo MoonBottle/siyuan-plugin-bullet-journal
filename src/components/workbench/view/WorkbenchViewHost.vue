@@ -1,22 +1,22 @@
 <template>
   <div class="workbench-view-host" data-testid="workbench-view-host">
     <div v-if="viewType === 'todo'" class="workbench-view-host__surface" data-testid="workbench-view-todo">
-      <DesktopTodoDock :enable-workbench-preview="true" />
+      <DesktopTodoDock :enable-workbench-preview="true" :view-config="entry.config" />
     </div>
     <div v-else-if="viewType === 'habit'" class="workbench-view-host__surface" data-testid="workbench-view-habit">
-      <WorkbenchHabitView />
+      <WorkbenchHabitView :view-config="entry.config" />
     </div>
     <div v-else-if="viewType === 'quadrant'" class="workbench-view-host__surface" data-testid="workbench-view-quadrant">
-      <QuadrantTab :embedded="true" />
+      <QuadrantTab :embedded="true" :view-config="entry.config" />
     </div>
     <div v-else-if="viewType === 'pomodoroStats'" class="workbench-view-host__surface" data-testid="workbench-view-pomodoro-stats">
-      <PomodoroStatsTab :embedded="true" />
+      <PomodoroStatsTab :embedded="true" :view-config="entry.config" />
     </div>
     <div v-else-if="viewType === 'focusReview'" class="workbench-view-host__surface" data-testid="workbench-view-focus-review">
-      <FocusReviewTab :embedded="true" />
+      <FocusReviewTab :embedded="true" :view-config="entry.config" />
     </div>
     <div v-else-if="viewType === 'project'" class="workbench-view-host__surface" data-testid="workbench-view-project">
-      <ProjectTab :embedded="true" />
+      <ProjectTab :embedded="true" :view-config="entry.config" />
     </div>
     <div
       v-else
