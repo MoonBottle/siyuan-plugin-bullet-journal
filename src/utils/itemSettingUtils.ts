@@ -11,15 +11,9 @@ import type {
   EndCondition,
   PriorityLevel
 } from '@/types/models';
-import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
 import {
   generateReminderMarker,
 } from '@/parser/reminderParser';
-import {
-  generatePinnedMarker,
-  parsePinnedFromLine,
-  stripPinnedMarker,
-} from '@/parser/pinParser';
 import {
   generateRepeatRuleMarker,
   generateEndConditionMarker,
@@ -44,93 +38,6 @@ export interface BuildItemContentOptions {
   repeatRule?: RepeatRule;
   /** 结束条件 */
   endCondition?: EndCondition;
-}
-
-/**
- * 清理内容中的多余空格和制表符（保留换行）
- * @param content 原始内容
- * @returns 清理后的内容
- */
-function normalizeWhitespace(content: string): string {
-  return content.replace(/[ \t]+/g, ' ').trim();
-}
-
-function normalizeLineWhitespace(content: string): string {
-  return content.replace(/[ \t]+/g, ' ').trim();
-}
-
-function isItemContentLine(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
-    return false;
-  }
-  return (trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed);
-}
-
-function togglePinnedInBlockContent(currentContent: string): string {
-  const lines = currentContent.split('\n');
-  const itemLineIndex = lines.findIndex(isItemContentLine);
-  const shouldPin = !parsePinnedFromLine(currentContent);
-
-  if (itemLineIndex >= 0) {
-    const itemLine = lines[itemLineIndex] ?? '';
-    const trailingWhitespace = itemLine.match(/\s*$/)?.[0] ?? '';
-    const updatedLine = normalizeLineWhitespace(stripPinnedMarker(itemLine));
-    lines[itemLineIndex] = shouldPin
-      ? `${updatedLine} ${generatePinnedMarker()}${trailingWhitespace}`
-      : `${updatedLine}${trailingWhitespace}`;
-    return lines.join('\n');
-  }
-
-  const normalizedContent = normalizeWhitespace(stripPinnedMarker(currentContent));
-  return shouldPin
-    ? `${normalizedContent} ${generatePinnedMarker()}`
-    : normalizedContent;
-}
-
-/**
- * 获取块内容
- * @param blockId 块ID
- * @returns 块内容
- */
-async function fetchBlockContent(blockId: string): Promise<string> {
-  try {
-    const block = await getBlockByID(blockId);
-    if (!block) {
-      throw new Error(`未找到块: ${blockId}`);
-    }
-    return block.markdown || block.content || '';
-  } catch (error) {
-    console.error(`获取块内容失败 (${blockId}):`, error);
-    throw error;
-  }
-}
-
-async function fetchBlockKramdownContent(blockId: string): Promise<string> {
-  try {
-    const result = await getBlockKramdown(blockId);
-    if (result?.kramdown) {
-      return result.kramdown;
-    }
-    return await fetchBlockContent(blockId);
-  } catch (error) {
-    console.error(`获取块 kramdown 失败 (${blockId})，回退到块内容:`, error);
-    return await fetchBlockContent(blockId);
-  }
-}
-
-/**
- * 更新块内容
- * @param blockId 块ID
- * @param content 新内容
- */
-async function updateBlockContent(blockId: string, content: string): Promise<void> {
-  try {
-    await updateBlock('markdown', content, blockId);
-  } catch (error) {
-    console.error(`更新块内容失败 (${blockId}):`, error);
-    throw error;
-  }
 }
 
 function emitItemSettingMutation(
@@ -197,10 +104,13 @@ export async function toggleItemPinned(item: Item): Promise<void> {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  const currentContent = await fetchBlockKramdownContent(item.blockId);
-  const newContent = togglePinnedInBlockContent(currentContent);
-
-  await updateBlockContent(item.blockId, newContent);
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'togglePinned' },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
+  }
   emitItemSettingMutation('pin', item.blockId);
 }
 

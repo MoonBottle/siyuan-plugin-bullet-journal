@@ -12,6 +12,7 @@ export type {
   DatePatch,
   FocusPlanPatch,
   ItemDateTimeInfo,
+  PinnedPatch,
   PriorityPatch,
   RecurringPatch,
   ReminderPatch,

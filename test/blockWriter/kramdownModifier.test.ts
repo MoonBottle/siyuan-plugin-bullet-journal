@@ -217,6 +217,48 @@ describe('kramdownModifier', () => {
     });
   });
 
+  describe('togglePinned', () => {
+    it('adds a pinned marker to the item line', () => {
+      expect(applyBlockPatch(parts('写日报 @2026-05-08\n{: id="abc"}'), {
+        type: 'togglePinned',
+      })).toBe(
+        '写日报 @2026-05-08 📌\n{: id="abc"}',
+      );
+    });
+
+    it('removes pinned markers from the item line', () => {
+      expect(applyBlockPatch(parts('写日报 📌 @2026-05-08\n{: id="abc"}'), {
+        type: 'togglePinned',
+      })).toBe(
+        '写日报 @2026-05-08\n{: id="abc"}',
+      );
+    });
+
+    it('preserves extra lines and IAL while pinning', () => {
+      expect(applyBlockPatch(parts(`写日报 @2026-05-08
+🍅2026-05-08 09:00:00~09:25:00 第一轮
+{: id="abc" custom-x="1"}`), {
+        type: 'togglePinned',
+      })).toBe(
+        `写日报 @2026-05-08 📌
+🍅2026-05-08 09:00:00~09:25:00 第一轮
+{: id="abc" custom-x="1"}`,
+      );
+    });
+
+    it('toggles against the item line instead of descendant lines', () => {
+      expect(applyBlockPatch(parts(`写日报 @2026-05-08
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="abc"}`), {
+        type: 'togglePinned',
+      })).toBe(
+        `写日报 @2026-05-08 📌
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="abc"}`,
+      );
+    });
+  });
+
   describe('batch patches', () => {
     it('applies priority then date', () => {
       const result = applyBlockPatches(parts('任务\n{: id="abc"}'), [

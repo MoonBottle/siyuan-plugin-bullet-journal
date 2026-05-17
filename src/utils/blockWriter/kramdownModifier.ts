@@ -2,6 +2,7 @@ import type { BlockPatch, DatePatch, KramdownBlockParts } from './types';
 import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
 import { generatePriorityMarker, isTaskListFormat, statusToLabel, stripPriorityMarker } from './itemLineMarkers';
 import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
+import { generatePinnedMarker, parsePinnedFromLine, stripPinnedMarker } from '@/parser/pinParser';
 import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
 import {
   generateEndConditionMarker,
@@ -15,6 +16,23 @@ const DATE_MARKER_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-
 
 function primaryLineIndex(contentLines: string[]): number {
   return 0;
+}
+
+function isItemContentLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
+    return false;
+  }
+  return (trimmed.includes('@') || trimmed.includes('📅')) && /\d{4}-\d{2}-\d{2}/.test(trimmed);
+}
+
+function pinnedTargetLineIndex(contentLines: string[]): number {
+  const itemLineIndex = contentLines.findIndex(isItemContentLine);
+  if (itemLineIndex >= 0) {
+    return itemLineIndex;
+  }
+  const firstContentLine = contentLines.findIndex(line => line.trim().length > 0 && !line.trim().startsWith('🍅'));
+  return firstContentLine >= 0 ? firstContentLine : 0;
 }
 
 function applyStatus(line: string, isTaskList: boolean, status: string): string {
@@ -140,6 +158,23 @@ function applyRecurring(line: string, patch: Extract<BlockPatch, { type: 'setRec
   return markers.length > 0 ? `${clean} ${markers.join(' ')}`.trim() : clean;
 }
 
+function applyPinned(
+  contentLines: string[],
+  patch: Extract<BlockPatch, { type: 'togglePinned' }>,
+): string[] {
+  const nextLines = [...contentLines];
+  const index = pinnedTargetLineIndex(nextLines);
+  const line = nextLines[index] ?? '';
+  const shouldPin = patch.pinned ?? !parsePinnedFromLine(line);
+  const clean = stripPinnedMarker(line)
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  nextLines[index] = shouldPin
+    ? `${clean} ${generatePinnedMarker()}`.trim()
+    : clean;
+  return nextLines;
+}
+
 export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): string {
   const contentLines = [...parts.contentLines];
   const index = primaryLineIndex(contentLines);
@@ -183,6 +218,10 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
   if (patch.type === 'setRecurring') {
     contentLines[index] = applyRecurring(line, patch);
     return replaceContentLines(parts, contentLines);
+  }
+
+  if (patch.type === 'togglePinned') {
+    return replaceContentLines(parts, applyPinned(contentLines, patch));
   }
 
   throw new Error(`Patch type '${(patch as any).type}' is not implemented yet`);

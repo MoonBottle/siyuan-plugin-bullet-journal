@@ -63,6 +63,11 @@ export type RecurringPatch = {
   endCondition?: EndCondition;
 };
 
+export type PinnedPatch = {
+  type: 'togglePinned';
+  pinned?: boolean;
+};
+
 export type SlashCommandPatch = {
   type: 'removeSlashCommand';
   suffix?: string;
@@ -76,6 +81,7 @@ export type BlockPatch =
   | FocusPlanPatch
   | ReminderPatch
   | RecurringPatch
+  | PinnedPatch
   | SlashCommandPatch;
 
 export type BatchBlockPatch = BlockPatch[];
