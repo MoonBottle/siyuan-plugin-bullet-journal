@@ -133,10 +133,10 @@ describe('WorkbenchSidebar', () => {
     (mounted.container.querySelector('[data-testid="workbench-entry-entry-todo"]') as HTMLButtonElement).click();
     (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement).click();
     await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement).click();
+    (document.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement).click();
     (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement).click();
     await nextTick();
-    (mounted.container.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement).click();
+    (document.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mounted.onSelect).toHaveBeenCalledWith('entry-todo');
@@ -152,13 +152,13 @@ describe('WorkbenchSidebar', () => {
     (mounted.container.querySelector('[data-testid="workbench-create-trigger"]') as HTMLButtonElement).click();
     await nextTick();
 
-    expect(mounted.container.querySelector('[data-testid="workbench-create-menu"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="workbench-create-menu"]')).not.toBeNull();
 
-    (mounted.container.querySelector('[data-testid="workbench-create-quadrant-view"]') as HTMLButtonElement).click();
+    (document.querySelector('[data-testid="workbench-create-quadrant-view"]') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mounted.onCreateView).toHaveBeenCalledWith('quadrant');
-    expect(mounted.container.querySelector('[data-testid="workbench-create-menu"]')).toBeNull();
+    expect(document.querySelector('[data-testid="workbench-create-menu"]')).toBeNull();
 
     mounted.unmount();
   });
