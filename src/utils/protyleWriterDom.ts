@@ -51,22 +51,50 @@ function findEditableElement(element: HTMLElement): HTMLElement | null {
   return element.querySelector('[contenteditable="true"]') as HTMLElement | null;
 }
 
-function resolveBlockDOM2Content(
+function normalizeBlockMarkdown(markdown: string): string {
+  return markdown
+    .replace(/\u200b/g, '')
+    .trimEnd();
+}
+
+function resolveBlockDOMToMarkdown(
   protyle: any,
   blockId: string | null,
 ): ((html: string) => string) | null {
+  if (typeof protyle?.lute?.BlockDOM2StdMd === 'function') {
+    return (html: string) => protyle.lute.BlockDOM2StdMd(html);
+  }
+
+  if (typeof protyle?.lute?.BlockDOM2Md === 'function') {
+    return (html: string) => protyle.lute.BlockDOM2Md(html);
+  }
+
+  const lute = createApiLute();
+  if (lute && typeof lute.BlockDOM2StdMd === 'function') {
+    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} using createApiLute BlockDOM2StdMd fallback`, {
+      blockId,
+    });
+    return (html: string) => lute.BlockDOM2StdMd(html);
+  }
+
+  if (lute && typeof lute.BlockDOM2Md === 'function') {
+    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} using createApiLute BlockDOM2Md fallback`, {
+      blockId,
+    });
+    return (html: string) => lute.BlockDOM2Md(html);
+  }
+
   if (typeof protyle?.lute?.BlockDOM2Content === 'function') {
     return (html: string) => protyle.lute.BlockDOM2Content(html);
   }
 
   if (typeof window !== 'undefined' && typeof window.Lute?.BlockDOM2Content === 'function') {
-    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} using window.Lute.BlockDOM2Content fallback`, {
+    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} using lossy window.Lute.BlockDOM2Content fallback`, {
       blockId,
     });
     return (html: string) => window.Lute.BlockDOM2Content(html);
   }
 
-  const lute = createApiLute();
   if (lute && typeof lute.BlockDOM2Content === 'function') {
     console.debug(`${PROTYLE_WRITER_LOG_PREFIX} using createApiLute BlockDOM2Content fallback`, {
       blockId,
@@ -98,7 +126,7 @@ function resolveMd2BlockDOM(
 
 export function blockElementToMarkdownContent(protyle: any, element: HTMLElement): string | null {
   const blockId = element.getAttribute('data-node-id');
-  const converter = resolveBlockDOM2Content(protyle, blockId);
+  const converter = resolveBlockDOMToMarkdown(protyle, blockId);
   if (!converter) {
     console.debug(`${PROTYLE_WRITER_LOG_PREFIX} BlockDOM2Content unavailable`, {
       blockId,
@@ -108,7 +136,7 @@ export function blockElementToMarkdownContent(protyle: any, element: HTMLElement
 
   try {
     const content = converter(element.outerHTML);
-    return typeof content === 'string' ? content.trim() : null;
+    return typeof content === 'string' ? normalizeBlockMarkdown(content) : null;
   } catch (error) {
     console.debug(`${PROTYLE_WRITER_LOG_PREFIX} BlockDOM2Content failed`, {
       blockId,

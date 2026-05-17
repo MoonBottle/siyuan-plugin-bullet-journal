@@ -1,5 +1,8 @@
 type ApiLute = LuteInstance & {
   Md2BlockDOM?: (markdown: string) => string;
+  BlockDOM2StdMd?: (html: string) => string;
+  BlockDOM2Md?: (html: string) => string;
+  BlockDOM2Content?: (html: string) => string;
   SetHTMLTag2TextMark?: (enable: boolean) => void;
   SetTextMark?: (enable: boolean) => void;
   SetProtyleWYSIWYG?: (enable: boolean) => void;

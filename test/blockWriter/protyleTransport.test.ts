@@ -480,6 +480,83 @@ describe('protyleTransport', () => {
     (window as any).Lute = originalLute;
   });
 
+  it('preserves tag markers via createApiLute BlockDOM2StdMd fallback for status patches', async () => {
+    const originalLute = (window as any).Lute;
+    (window as any).Lute = {
+      New: vi.fn(() => ({
+        BlockDOM2StdMd: vi.fn(() => '测试事项 #测试# 📅2026-05-17\n测试换行'),
+        Md2BlockDOM: vi.fn(() => `
+          <div data-type="NodeParagraph" class="p">
+            <div contenteditable="true" spellcheck="false">测试事项 <span data-type="tag">\u200b测试</span>\u200b 📅2026-05-17 ✅
+测试换行</div>
+            <div class="protyle-attr" contenteditable="false">\u200b</div>
+          </div>
+        `),
+        SetHTMLTag2TextMark: vi.fn(),
+        SetTextMark: vi.fn(),
+        SetProtyleWYSIWYG: vi.fn(),
+        SetBlockRef: vi.fn(),
+        SetFileAnnotationRef: vi.fn(),
+        SetKramdownIAL: vi.fn(),
+        SetTag: vi.fn(),
+        SetSuperBlock: vi.fn(),
+        SetImgPathAllowSpace: vi.fn(),
+        SetGitConflict: vi.fn(),
+        SetMark: vi.fn(),
+        SetSup: vi.fn(),
+        SetSub: vi.fn(),
+        SetInlineMathAllowDigitAfterOpenMarker: vi.fn(),
+        SetFootnotes: vi.fn(),
+        SetToC: vi.fn(),
+        SetIndentCodeBlock: vi.fn(),
+        SetParagraphBeginningSpace: vi.fn(),
+        SetAutoSpace: vi.fn(),
+        SetHeadingID: vi.fn(),
+        SetSetext: vi.fn(),
+        SetYamlFrontMatter: vi.fn(),
+        SetLinkRef: vi.fn(),
+        SetCodeSyntaxHighlight: vi.fn(),
+        SetSanitize: vi.fn(),
+      })),
+    };
+
+    const block = document.createElement('div');
+    block.classList.add('p');
+    block.setAttribute('data-node-id', 'record-fallback-tag');
+    block.setAttribute('data-type', 'NodeParagraph');
+    block.innerHTML = `
+      <div contenteditable="true" spellcheck="false">测试事项 <span data-type="tag">\u200b测试</span>\u200b 📅2026-05-17
+测试换行</div>
+      <div class="protyle-attr" contenteditable="false">\u200b</div>
+    `;
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'record-fallback-tag',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setStatus',
+      status: 'completed',
+    });
+
+    expect(result).toBe(true);
+    expect((window as any).Lute.New).toHaveBeenCalled();
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.querySelector('[data-type="tag"]')).not.toBeNull();
+    expect(block.textContent).toContain('✅');
+
+    document.body.removeChild(block);
+    (window as any).Lute = originalLute;
+  });
+
   it('updates habit definitions through Protyle DOM on the current block', async () => {
     const block = createParagraphBlock('habit-1', '喝水 🎯2026-04-01 8杯 🔄每天');
     document.body.appendChild(block);
