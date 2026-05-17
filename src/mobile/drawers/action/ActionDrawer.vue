@@ -98,7 +98,7 @@ const emit = defineEmits<{
 
 const handleComplete = async () => {
   if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'completed' });
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
   close();
 };
 
@@ -121,7 +121,7 @@ const handleMigrate = async () => {
 
 const handleAbandon = async () => {
   if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'abandoned' });
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
   close();
 };
 

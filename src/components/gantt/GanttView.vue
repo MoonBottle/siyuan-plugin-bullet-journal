@@ -239,7 +239,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
     {
       onComplete: async () => {
         if (!item.blockId) return;
-        const success = await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'completed' });
+        const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
         // 注意：重复事项的自动创建由 WebSocket 处理器处理
         if (success && plugin) {
           await plugin.requestDataRefresh?.({
@@ -294,7 +294,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
       },
       onAbandon: async () => {
         if (!item.blockId) return;
-        const success = await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'abandoned' });
+        const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
         if (success && plugin) {
           await plugin.requestDataRefresh?.({
             type: 'full',

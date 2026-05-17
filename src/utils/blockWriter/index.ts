@@ -44,6 +44,7 @@ export async function writeBlock(context: BlockWriteContext, patches: BlockPatch
   const addDatePatch = patchArray.length === 1 && patchArray[0]?.type === 'addDate'
     ? patchArray[0]
     : undefined;
+  const hasStatusPatch = patchArray.some((patch) => patch.type === 'setStatus');
   const requiresProtyle = patchArray.some((patch) => patch.type === 'removeSlashCommand');
 
   if (addDatePatch) {
@@ -55,5 +56,5 @@ export async function writeBlock(context: BlockWriteContext, patches: BlockPatch
     if (ok) return true;
   }
   if (requiresProtyle) return false;
-  return writeViaApi(context.blockId, patches);
+  return writeViaApi(hasStatusPatch ? (context.listItemBlockId || context.blockId) : context.blockId, patches);
 }

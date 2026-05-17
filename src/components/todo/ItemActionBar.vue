@@ -170,7 +170,7 @@ async function handleComplete() {
   if (!props.item?.blockId || isProcessing.value) return;
   isProcessing.value = true;
   try {
-    await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'completed' });
+    await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
   } finally {
     isProcessing.value = false;
   }
@@ -180,7 +180,7 @@ async function handleAbandon() {
   if (!props.item?.blockId || isProcessing.value) return;
   isProcessing.value = true;
   try {
-    await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'abandoned' });
+    await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
   } finally {
     isProcessing.value = false;
   }

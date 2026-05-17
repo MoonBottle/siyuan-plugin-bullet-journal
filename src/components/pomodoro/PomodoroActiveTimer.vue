@@ -371,7 +371,7 @@ const handleDone = async () => {
   isProcessing.value = true;
   try {
     const success = await writeBlock(
-      { blockId: currentItem.value.blockId },
+      { blockId: currentItem.value.blockId, listItemBlockId: currentItem.value.listItemBlockId },
       { type: 'setStatus', status: 'completed' },
     );
 
@@ -396,7 +396,7 @@ const handleAbandon = async () => {
   isProcessing.value = true;
   try {
     const success = await writeBlock(
-      { blockId: currentItem.value.blockId },
+      { blockId: currentItem.value.blockId, listItemBlockId: currentItem.value.listItemBlockId },
       { type: 'setStatus', status: 'abandoned' },
     );
     if (success && plugin) {

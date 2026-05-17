@@ -106,4 +106,29 @@ describe('resolveApiBlockTarget', () => {
 
     expect(target.targetBlockId).toBe('child-1');
   });
+
+  it('resolves to nearest task-list ancestor when direct parent is not a task list item', async () => {
+    mockGetBlockByID.mockResolvedValueOnce({
+      id: 'child-1',
+      type: 'NodeParagraph',
+      parent_id: 'quote-1',
+    } as any);
+    mockGetBlockByID.mockResolvedValueOnce({
+      id: 'quote-1',
+      type: 'NodeBlockquote',
+      parent_id: 'task-1',
+    } as any);
+    mockGetBlockByID.mockResolvedValueOnce({
+      id: 'task-1',
+      type: 'NodeListItem',
+      subtype: 't',
+    } as any);
+    mockGetBlockKramdown.mockResolvedValue({ id: 'task-1', kramdown: '- [ ] 任务 📅2026-05-14\n{: id="task-1"}' } as any);
+
+    const target = await resolveApiBlockTarget('child-1', { type: 'setStatus', status: 'completed' });
+
+    expect(target.targetBlockId).toBe('task-1');
+    expect(target.targetType).toBe('NodeListItem');
+    expect(target.targetSubType).toBe('t');
+  });
 });

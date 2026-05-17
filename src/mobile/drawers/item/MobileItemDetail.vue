@@ -623,7 +623,7 @@ const handleLinkClick = (url: string) => {
 
 const handleComplete = async () => {
   if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'completed' });
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
   close();
 };
 
@@ -634,7 +634,7 @@ const handleAbandon = () => {
 
 const handleConfirmAbandon = async () => {
   if (!props.item?.blockId) return;
-  await writeBlock({ blockId: props.item.blockId }, { type: 'setStatus', status: 'abandoned' });
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
   close();
 };
 

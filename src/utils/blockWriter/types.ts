@@ -16,6 +16,7 @@ export type { ItemDateTimeInfo } from '@/types/models';
 
 export interface BlockWriteContext {
   blockId: string;
+  listItemBlockId?: string;
   protyle?: any;
   nodeElement?: HTMLElement;
   slashRange?: Range;

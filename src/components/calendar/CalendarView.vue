@@ -269,7 +269,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
     {
       onComplete: async () => {
         if (!item.blockId) return;
-        await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'completed' });
+        await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
       },
       onStartPomodoro: () => openPomodoroDialog(item as Item),
       onMigrateToday: async () => {
@@ -299,7 +299,7 @@ const handleCalendarEventContextMenu = (info: any, mouseEvent?: MouseEvent) => {
       },
       onAbandon: async () => {
         if (!item.blockId) return;
-        await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'abandoned' });
+        await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
       },
       onOpenDoc: () => {
         if (plugin && item.docId && item.lineNumber) {

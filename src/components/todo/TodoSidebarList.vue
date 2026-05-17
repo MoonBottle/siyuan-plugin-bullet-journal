@@ -1305,7 +1305,7 @@ const handleDone = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'completed' });
+    await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
 
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
     // 避免重复调用 createNextOccurrence
@@ -1374,7 +1374,7 @@ const handleAbandon = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'abandoned' });
+    await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
     // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
     isProcessing.value = false;

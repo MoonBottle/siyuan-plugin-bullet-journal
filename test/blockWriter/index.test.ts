@@ -30,6 +30,20 @@ describe('writeBlock', () => {
     );
   });
 
+  it('prefers listItemBlockId for status patches when provided', async () => {
+    const result = await writeBlock(
+      { blockId: 'paragraph-1', listItemBlockId: 'task-1' },
+      { type: 'setStatus', status: 'completed' },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '- [x] 任务\n{: id="abc"}',
+      'task-1',
+    );
+  });
+
   it('writes batch patches via API', async () => {
     const result = await writeBlock(
       { blockId: 'block123' },

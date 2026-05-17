@@ -236,7 +236,7 @@ const openQuickCreate = () => {
 const handleQuickComplete = async (item: Item) => {
   if (!item.blockId)
     return;
-  await writeBlock({ blockId: item.blockId }, { type: 'setStatus', status: 'completed' });
+  await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
   showMessage(t('todo').complete);
 };
 

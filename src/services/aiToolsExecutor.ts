@@ -239,7 +239,7 @@ async function executeUpdateItemStatus(
 
   try {
     const success = await writeBlock(
-      { blockId: item.blockId },
+      { blockId: item.blockId, listItemBlockId: item.listItemBlockId },
       { type: 'setStatus', status: targetStatus },
     );
     if (!success) {
