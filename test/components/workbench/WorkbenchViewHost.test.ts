@@ -68,6 +68,13 @@ vi.mock('@/tabs/FocusReviewTab.vue', () => ({
   },
 }));
 
+vi.mock('@/tabs/ProjectTab.vue', () => ({
+  default: {
+    props: ['embedded'],
+    template: '<div data-testid="project-tab-mock">Project</div>',
+  },
+}));
+
 function createViewEntry(viewType: WorkbenchEntry['viewType']): WorkbenchEntry {
   return {
     id: `entry-${viewType}`,
@@ -173,7 +180,7 @@ describe('WorkbenchViewHost', () => {
     }));
 
     mounted.unmount();
-  });
+  }, 10000);
 
   it('unsupported view entry renders unsupported placeholder', async () => {
     const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');

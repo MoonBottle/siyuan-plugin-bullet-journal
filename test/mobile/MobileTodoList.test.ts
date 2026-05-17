@@ -202,6 +202,7 @@ describe('MobileTodoList', () => {
       {
         type: 'addDate',
         date: '2026-05-02',
+        status: 'pending',
         startTime: '09:00',
         endTime: '10:30',
         allDay: false,

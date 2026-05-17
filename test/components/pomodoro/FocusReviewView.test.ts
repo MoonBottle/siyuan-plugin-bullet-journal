@@ -169,6 +169,9 @@ vi.mock('@/main', () => ({
   usePlugin: () => ({
     requestDataRefresh: mockRequestDataRefresh,
   }),
+  useApp: () => ({
+    name: 'app',
+  }),
 }));
 
 vi.mock('@/utils/dialog', () => ({

@@ -182,6 +182,7 @@ describe('MobileItemDetail actions', () => {
       {
         type: 'addDate',
         date: '2026-05-05',
+        status: 'pending',
         startTime: '14:00',
         endTime: '15:00',
         allDay: false,
