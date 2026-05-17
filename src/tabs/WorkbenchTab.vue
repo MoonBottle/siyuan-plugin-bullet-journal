@@ -52,6 +52,17 @@
             </div>
           </div>
         </div>
+
+        <div v-if="isViewActive" class="workbench-tab__toolbar-actions">
+          <button
+            class="workbench-tab__toolbar-button"
+            data-testid="workbench-view-config-trigger"
+            type="button"
+            @click="openViewConfigDialog"
+          >
+            {{ t('workbench').configure }}
+          </button>
+        </div>
       </div>
       <WorkbenchContentHost
         :active-entry="currentActiveEntry"
@@ -72,6 +83,7 @@ import type { WorkbenchViewType, WorkbenchWidgetType } from '@/types/workbench';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { getWidgetRegistry } from '@/workbench/widgetRegistry';
+import { getViewDefinition } from '@/workbench/viewRegistry';
 
 const plugin = usePlugin();
 const projectStore = useProjectStore();
@@ -80,6 +92,7 @@ const settingsStore = useSettingsStore();
 const currentActiveEntryId = computed(() => workbenchStore.activeEntryId);
 const currentActiveEntry = computed(() => workbenchStore.activeEntry);
 const isDashboardActive = computed(() => currentActiveEntry.value?.type === 'dashboard');
+const isViewActive = computed(() => currentActiveEntry.value?.type === 'view');
 const isWidgetMenuOpen = ref(false);
 const widgetDefinitions = computed(() => Object.values(getWidgetRegistry()));
 let unsubscribeRefresh: (() => void) | null = null;
@@ -129,6 +142,21 @@ async function handleAddWidget(type: WorkbenchWidgetType) {
 
   await workbenchStore.addWidget(currentActiveEntry.value.dashboardId, type);
   isWidgetMenuOpen.value = false;
+}
+
+async function openViewConfigDialog() {
+  const entry = currentActiveEntry.value;
+  if (!entry || entry.type !== 'view' || !entry.viewType) {
+    return;
+  }
+
+  const viewDef = getViewDefinition(entry.viewType);
+  viewDef.openConfigDialog?.({
+    entry,
+    onUpdateConfig: async (config) => {
+      await workbenchStore.updateViewConfig(entry.id, config);
+    },
+  });
 }
 
 async function handleDataRefresh(payload?: Record<string, unknown>) {

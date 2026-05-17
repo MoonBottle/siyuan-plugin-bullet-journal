@@ -36,6 +36,8 @@ const mockCreateViewEntry = vi.fn(() => Promise.resolve({
 }));
 const mockSetActiveEntry = vi.fn(() => Promise.resolve());
 const mockAddWidget = vi.fn(() => Promise.resolve());
+const mockSidebarCollapsed = ref(false);
+const mockToggleSidebar = vi.fn(() => Promise.resolve());
 const mockEntries = ref([
   {
     id: 'entry-dashboard',
@@ -141,6 +143,10 @@ vi.mock('@/stores', async () => {
           mockActiveEntryId.value = id;
         },
         addWidget: mockAddWidget,
+        get sidebarCollapsed() {
+          return mockSidebarCollapsed.value;
+        },
+        toggleSidebar: mockToggleSidebar,
       };
       return store;
     },
@@ -303,7 +309,7 @@ describe('WorkbenchTab shell', () => {
       .click();
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement)
+    (document.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement)
       .click();
     await nextTick();
 
@@ -311,7 +317,7 @@ describe('WorkbenchTab shell', () => {
       .click();
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement)
+    (document.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement)
       .click();
     await nextTick();
 
