@@ -116,91 +116,12 @@
     </div>
 
     <div class="workbench-sidebar__footer">
-      <div v-if="isCreateMenuOpen" class="workbench-sidebar__create-menu" data-testid="workbench-create-menu">
-        <button
-          class="workbench-sidebar__create-option"
-          data-testid="workbench-create-dashboard"
-          type="button"
-          @click="handleCreateDashboard"
-        >
-          <span v-if="!collapsed">{{ t('workbench').newDashboard }}</span>
-          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
-            <svg><use xlink:href="#iconBoard"></use></svg>
-          </span>
-        </button>
-        <button
-          class="workbench-sidebar__create-option"
-          data-testid="workbench-create-todo-view"
-          type="button"
-          @click="handleCreateView('todo')"
-        >
-          <span v-if="!collapsed">{{ t('todo').title }}</span>
-          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
-            <svg><use xlink:href="#iconList"></use></svg>
-          </span>
-        </button>
-        <button
-          class="workbench-sidebar__create-option"
-          data-testid="workbench-create-habit-view"
-          type="button"
-          @click="handleCreateView('habit')"
-        >
-          <span v-if="!collapsed">{{ t('habit').title }}</span>
-          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
-            <svg><use xlink:href="#iconCheck"></use></svg>
-          </span>
-        </button>
-        <button
-          class="workbench-sidebar__create-option"
-          data-testid="workbench-create-quadrant-view"
-          type="button"
-          @click="handleCreateView('quadrant')"
-        >
-          <span v-if="!collapsed">{{ t('quadrant').title }}</span>
-          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
-            <svg><use xlink:href="#iconLayout"></use></svg>
-          </span>
-        </button>
-        <button
-          class="workbench-sidebar__create-option"
-          data-testid="workbench-create-pomodoro-stats-view"
-          type="button"
-          @click="handleCreateView('pomodoroStats')"
-        >
-          <span v-if="!collapsed">{{ t('pomodoroStats').statsTitle }}</span>
-          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
-            <svg><use xlink:href="#iconClock"></use></svg>
-          </span>
-        </button>
-        <button
-          class="workbench-sidebar__create-option"
-          data-testid="workbench-create-focus-review-view"
-          type="button"
-          @click="handleCreateView('focusReview')"
-        >
-          <span v-if="!collapsed">{{ t('focusReview').title }}</span>
-          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
-            <svg><use xlink:href="#iconList"></use></svg>
-          </span>
-        </button>
-        <button
-          class="workbench-sidebar__create-option"
-          data-testid="workbench-create-project-view"
-          type="button"
-          @click="handleCreateView('project')"
-        >
-          <span v-if="!collapsed">{{ t('project').title }}</span>
-          <span v-else class="workbench-sidebar__create-option-icon" aria-hidden="true">
-            <svg><use xlink:href="#iconFolder"></use></svg>
-          </span>
-        </button>
-      </div>
-
       <button
+        ref="createTriggerRef"
         class="workbench-sidebar__create-trigger"
         data-testid="workbench-create-trigger"
         type="button"
-        @click="toggleCreateMenu"
+        @click="handleCreateTriggerClick"
       >
         <span class="workbench-sidebar__create-trigger-icon" aria-hidden="true">+</span>
         <span v-if="!collapsed">{{ t('workbench').newView }}</span>
@@ -208,6 +129,92 @@
     </div>
 
   </aside>
+  <Teleport to="body">
+    <div
+      v-if="isCreateMenuOpen"
+      class="workbench-create-popup"
+      :style="createMenuStyle"
+      data-testid="workbench-create-menu"
+    >
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-dashboard"
+        type="button"
+        @click="handleCreateDashboard"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconBoard"></use></svg>
+        </span>
+        <span>{{ t('workbench').newDashboard }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-todo-view"
+        type="button"
+        @click="handleCreateView('todo')"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconList"></use></svg>
+        </span>
+        <span>{{ t('todo').title }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-habit-view"
+        type="button"
+        @click="handleCreateView('habit')"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconCheck"></use></svg>
+        </span>
+        <span>{{ t('habit').title }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-quadrant-view"
+        type="button"
+        @click="handleCreateView('quadrant')"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconLayout"></use></svg>
+        </span>
+        <span>{{ t('quadrant').title }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-pomodoro-stats-view"
+        type="button"
+        @click="handleCreateView('pomodoroStats')"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconClock"></use></svg>
+        </span>
+        <span>{{ t('pomodoroStats').statsTitle }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-focus-review-view"
+        type="button"
+        @click="handleCreateView('focusReview')"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconList"></use></svg>
+        </span>
+        <span>{{ t('focusReview').title }}</span>
+      </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-project-view"
+        type="button"
+        @click="handleCreateView('project')"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconFolder"></use></svg>
+        </span>
+        <span>{{ t('project').title }}</span>
+      </button>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -237,12 +244,37 @@ const emit = defineEmits<{
 const entriesContainerRef = ref<HTMLElement | null>(null);
 const searchContainerRef = ref<HTMLElement | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
+const createTriggerRef = ref<HTMLElement | null>(null);
 const isCreateMenuOpen = ref(false);
+const lastClickEvent = ref<MouseEvent | null>(null);
 const isSearchOpen = ref(false);
 const searchQuery = ref('');
 const highlightedSearchIndex = ref(0);
 let sortableInstance: Sortable | null = null;
 
+const createMenuStyle = ref<Record<string, string>>({});
+
+function updateCreateMenuPosition() {
+  const trigger = createTriggerRef.value;
+  if (!trigger) return;
+  const gap = 8;
+  if (props.collapsed) {
+    const evt = lastClickEvent.value;
+    if (!evt) return;
+    createMenuStyle.value = {
+      position: 'fixed',
+      left: `${evt.clientX}px`,
+      bottom: `${window.innerHeight - evt.clientY}px`,
+    };
+  } else {
+    const rect = trigger.getBoundingClientRect();
+    createMenuStyle.value = {
+      position: 'fixed',
+      left: `${rect.left}px`,
+      bottom: `${window.innerHeight - rect.top + gap}px`,
+    };
+  }
+ }
 const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase());
 const filteredEntries = computed(() => {
   const query = normalizedSearchQuery.value;
@@ -303,15 +335,31 @@ onUnmounted(() => {
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown);
+  document.addEventListener('keydown', handleDocumentKeydown);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('keydown', handleDocumentKeydown);
 });
 
 function toggleCreateMenu() {
   isCreateMenuOpen.value = !isCreateMenuOpen.value;
+  if (isCreateMenuOpen.value) {
+    nextTick(() => updateCreateMenuPosition());
+  }
 }
+
+function handleCreateTriggerClick(event: MouseEvent) {
+  lastClickEvent.value = event;
+  toggleCreateMenu();
+ }
+
+function handleDocumentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && isCreateMenuOpen.value) {
+    isCreateMenuOpen.value = false;
+  }
+ }
 
 function openSearch() {
   if (props.collapsed || !normalizedSearchQuery.value) {
@@ -378,6 +426,17 @@ function handleDocumentPointerDown(event: PointerEvent) {
   const target = event.target;
   if (!(target instanceof Node)) {
     return;
+  }
+
+  if (isCreateMenuOpen.value) {
+    if (createTriggerRef.value?.contains(target)) {
+      return;
+    }
+    const popup = document.querySelector('.workbench-create-popup');
+    if (popup?.contains(target)) {
+      return;
+    }
+    isCreateMenuOpen.value = false;
   }
 
   if (searchContainerRef.value?.contains(target)) {
@@ -710,17 +769,7 @@ watch(searchQuery, () => {
   padding-top: 8px;
 }
 
-.workbench-sidebar__create-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 8px;
-  background: var(--b3-theme-background);
-}
 
-.workbench-sidebar__create-option,
 .workbench-sidebar__create-trigger {
   display: flex;
   align-items: center;
@@ -736,7 +785,6 @@ watch(searchQuery, () => {
   cursor: pointer;
 }
 
-.workbench-sidebar--collapsed .workbench-sidebar__create-option,
 .workbench-sidebar--collapsed .workbench-sidebar__create-trigger {
   padding: 10px;
 }
@@ -789,18 +837,7 @@ watch(searchQuery, () => {
   line-height: 1;
 }
 
-.workbench-sidebar__create-option-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-}
 
-.workbench-sidebar__create-option-icon svg {
-  width: 16px;
-  height: 16px;
-}
 
 .workbench-sidebar__entry {
   display: flex;
@@ -897,5 +934,53 @@ watch(searchQuery, () => {
 
 .sortable-chosen {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+</style>
+
+<style lang="scss">
+.workbench-create-popup {
+  z-index: 999;
+  min-width: 220px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 12px;
+  background: var(--b3-theme-surface);
+  box-shadow: var(--b3-dialog-shadow);
+}
+
+.workbench-create-popup__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  text-align: left;
+  cursor: pointer;
+}
+
+.workbench-create-popup__option:hover {
+  border-color: var(--b3-border-color);
+  background: var(--b3-theme-background);
+}
+
+.workbench-create-popup__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.workbench-create-popup__icon svg {
+  width: 16px;
+  height: 16px;
 }
 </style>

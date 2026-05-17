@@ -126,7 +126,7 @@
     }
   },
   "project": {
-    "title": "项目工作台",
+    "title": "项目列表",
     "taskCount": "任务数",
     "tasksUnit": "个任务",
     "itemsLabel": "事项",
