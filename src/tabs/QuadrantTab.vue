@@ -128,14 +128,15 @@ const projectStore = useProjectStore();
 const quadrantConfigStore = useQuadrantConfigStore();
 
 const selectedGroup = ref('');
+const isSelectedGroupDefaultDriven = ref(true);
 
 watch(() => props.viewConfig, (config) => {
   const groupId = (config as WorkbenchQuadrantWidgetConfig | undefined)?.groupId;
   if (groupId) {
     selectedGroup.value = groupId;
+    isSelectedGroupDefaultDriven.value = false;
   }
 }, { immediate: true });
-const isSelectedGroupDefaultDriven = ref(true);
 const searchQuery = ref('');
 const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebarList> | null>>([]);
 const preview = useBlockFocusPreview({
