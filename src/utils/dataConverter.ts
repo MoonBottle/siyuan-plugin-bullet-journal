@@ -4,8 +4,31 @@
  */
 import type { Project, Task, Item, CalendarEvent, GanttTask, PomodoroRecord } from '@/types/models';
 import { t } from '@/i18n';
+import dayjs from '@/utils/dayjs';
 
 export class DataConverter {
+  private static isDateOnly(value: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  }
+
+  private static parseGanttDate(
+    value: string,
+    boundary: 'start' | 'end'
+  ): Date {
+    const parsed = dayjs(value);
+    if (!this.isDateOnly(value)) {
+      return parsed.toDate();
+    }
+
+    return boundary === 'start'
+      ? parsed.startOf('day').toDate()
+      : parsed.endOf('day').toDate();
+  }
+
+  private static getGanttEndDate(value: string): Date {
+    return dayjs(value).endOf('day').toDate();
+  }
+
   /**
    * 将项目列表转换为日历事件
    */
@@ -218,12 +241,13 @@ export class DataConverter {
             const itemEnd = item.endDateTime || item.startDateTime || item.date;
 
             if (itemStart) {
-              let startDate = new Date(itemStart);
-              let endDate = itemEnd ? new Date(itemEnd) : new Date(itemStart);
+              const startDate = this.parseGanttDate(itemStart, 'start');
+              let endDate = itemEnd
+                ? this.parseGanttDate(itemEnd, 'end')
+                : this.parseGanttDate(itemStart, 'end');
 
               if (startDate.getTime() === endDate.getTime()) {
-                endDate = new Date(startDate);
-                endDate.setHours(23, 59, 59, 999);
+                endDate = this.getGanttEndDate(itemStart);
               }
 
               ganttTasks.push({
@@ -277,12 +301,13 @@ export class DataConverter {
       const endStr = task.endDateTime || task.startDateTime || task.date;
 
       if (startStr) {
-        const start = new Date(startStr);
-        let end = endStr ? new Date(endStr) : new Date(startStr);
+        const start = this.parseGanttDate(startStr, 'start');
+        let end = endStr
+          ? this.parseGanttDate(endStr, 'end')
+          : this.parseGanttDate(startStr, 'end');
 
         if (start.getTime() === end.getTime()) {
-          end = new Date(start);
-          end.setHours(23, 59, 59, 999);
+          end = this.getGanttEndDate(startStr);
         }
 
         return { start, end };
@@ -298,12 +323,12 @@ export class DataConverter {
         const itemEnd = item.endDateTime || item.startDateTime || item.date;
 
         if (itemStart) {
-          const d = new Date(itemStart);
+          const d = this.parseGanttDate(itemStart, 'start');
           if (!minDate || d < minDate) minDate = d;
           if (!maxDate || d > maxDate) maxDate = d;
         }
         if (itemEnd) {
-          const d = new Date(itemEnd);
+          const d = this.parseGanttDate(itemEnd, 'end');
           if (!maxDate || d > maxDate) maxDate = d;
           if (!minDate || d < minDate) minDate = d;
         }
@@ -311,8 +336,7 @@ export class DataConverter {
 
       if (minDate && maxDate) {
         if (minDate.getTime() === maxDate.getTime()) {
-          const adjustedMax = new Date(maxDate);
-          adjustedMax.setHours(23, 59, 59, 999);
+          const adjustedMax = dayjs(maxDate).endOf('day').toDate();
           return { start: minDate, end: adjustedMax };
         }
         return { start: minDate, end: maxDate };
@@ -335,12 +359,8 @@ export class DataConverter {
     const { start, end } = this.calculateTaskDates(task);
     if (!start || !end) return true;
 
-    const filterStart = startDate ? new Date(startDate) : null;
-    const filterEnd = endDate ? new Date(endDate) : null;
-
-    if (filterEnd) {
-      filterEnd.setHours(23, 59, 59, 999);
-    }
+    const filterStart = startDate ? this.parseGanttDate(startDate, 'start') : null;
+    const filterEnd = endDate ? this.parseGanttDate(endDate, 'end') : null;
 
     const taskStartInRange = !filterEnd || start <= filterEnd;
     const taskEndInRange = !filterStart || end >= filterStart;

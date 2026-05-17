@@ -5,27 +5,21 @@
 
 import type {
   Item,
+  FocusPlan,
   ReminderConfig,
   RepeatRule,
   EndCondition,
   PriorityLevel
 } from '@/types/models';
-import { getBlockByID, updateBlock } from '@/api';
 import {
   generateReminderMarker,
-  stripReminderMarker
 } from '@/parser/reminderParser';
-import {
-  generatePinnedMarker,
-  parsePinnedFromLine,
-  stripPinnedMarker,
-} from '@/parser/pinParser';
 import {
   generateRepeatRuleMarker,
   generateEndConditionMarker,
-  stripRecurringMarkers
 } from '@/parser/recurringParser';
 import { generatePriorityMarker } from '@/parser/priorityParser';
+import { writeBlock } from '@/utils/blockWriter';
 import { eventBus, Events } from '@/utils/eventBus';
 
 /**
@@ -46,49 +40,8 @@ export interface BuildItemContentOptions {
   endCondition?: EndCondition;
 }
 
-/**
- * 清理内容中的多余空格和制表符（保留换行）
- * @param content 原始内容
- * @returns 清理后的内容
- */
-function normalizeWhitespace(content: string): string {
-  return content.replace(/[ \t]+/g, ' ').trim();
-}
-
-/**
- * 获取块内容
- * @param blockId 块ID
- * @returns 块内容
- */
-async function fetchBlockContent(blockId: string): Promise<string> {
-  try {
-    const block = await getBlockByID(blockId);
-    if (!block) {
-      throw new Error(`未找到块: ${blockId}`);
-    }
-    return block.markdown || block.content || '';
-  } catch (error) {
-    console.error(`获取块内容失败 (${blockId}):`, error);
-    throw error;
-  }
-}
-
-/**
- * 更新块内容
- * @param blockId 块ID
- * @param content 新内容
- */
-async function updateBlockContent(blockId: string, content: string): Promise<void> {
-  try {
-    await updateBlock('markdown', content, blockId);
-  } catch (error) {
-    console.error(`更新块内容失败 (${blockId}):`, error);
-    throw error;
-  }
-}
-
 function emitItemSettingMutation(
-  kind: 'reminder' | 'recurring' | 'pin',
+  kind: 'reminder' | 'recurring' | 'pin' | 'focus-plan',
   blockId: string,
 ): void {
   eventBus.emit(Events.LOCAL_DATA_MUTATED, {
@@ -111,25 +64,13 @@ export async function updateItemWithReminder(
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  // 获取块内容
-  const currentContent = await fetchBlockContent(item.blockId);
-
-  // 移除旧的提醒标记
-  let newContent = stripReminderMarker(currentContent);
-
-  // 如果启用了提醒，添加新标记
-  if (config.enabled) {
-    const reminderMarker = generateReminderMarker(config);
-    if (reminderMarker) {
-      newContent = `${newContent} ${reminderMarker}`;
-    }
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setReminder', reminder: config },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
   }
-
-  // 清理多余空格（保留换行）
-  newContent = normalizeWhitespace(newContent);
-
-  // 更新块
-  await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('reminder', item.blockId);
 }
 
@@ -148,33 +89,13 @@ export async function updateItemWithRecurring(
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  // 获取块内容
-  const currentContent = await fetchBlockContent(item.blockId);
-
-  // 移除旧的重复和结束条件标记
-  let newContent = stripRecurringMarkers(currentContent);
-
-  // 添加新的重复规则标记
-  if (repeatRule) {
-    const repeatMarker = generateRepeatRuleMarker(repeatRule);
-    if (repeatMarker) {
-      newContent = `${newContent} ${repeatMarker}`;
-    }
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setRecurring', repeatRule, endCondition },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
   }
-
-  // 添加新的结束条件标记
-  if (endCondition && endCondition.type !== 'never') {
-    const endMarker = generateEndConditionMarker(endCondition);
-    if (endMarker) {
-      newContent = `${newContent} ${endMarker}`;
-    }
-  }
-
-  // 清理多余空格（保留换行）
-  newContent = normalizeWhitespace(newContent);
-
-  // 更新块
-  await updateBlockContent(item.blockId, newContent);
   emitItemSettingMutation('recurring', item.blockId);
 }
 
@@ -183,18 +104,47 @@ export async function toggleItemPinned(item: Item): Promise<void> {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
-  const currentContent = await fetchBlockContent(item.blockId);
-  const shouldPin = !parsePinnedFromLine(currentContent);
-  let newContent = stripPinnedMarker(currentContent);
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'togglePinned' },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
+  }
+  emitItemSettingMutation('pin', item.blockId);
+}
 
-  if (shouldPin) {
-    newContent = `${newContent} ${generatePinnedMarker()}`;
+export async function updateItemWithFocusPlan(
+  item: Item,
+  plan: Pick<FocusPlan, 'type' | 'rawValue'>,
+): Promise<void> {
+  if (!item.blockId) {
+    throw new Error('事项缺少 blockId，无法更新');
   }
 
-  newContent = normalizeWhitespace(newContent);
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setFocusPlan', plan },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
+  }
+  emitItemSettingMutation('focus-plan', item.blockId);
+}
 
-  await updateBlockContent(item.blockId, newContent);
-  emitItemSettingMutation('pin', item.blockId);
+export async function clearItemFocusPlan(item: Item): Promise<void> {
+  if (!item.blockId) {
+    throw new Error('事项缺少 blockId，无法更新');
+  }
+
+  const updated = await writeBlock(
+    { blockId: item.blockId },
+    { type: 'setFocusPlan' },
+  );
+  if (!updated) {
+    throw new Error(`更新块内容失败 (${item.blockId})`);
+  }
+  emitItemSettingMutation('focus-plan', item.blockId);
 }
 
 /**

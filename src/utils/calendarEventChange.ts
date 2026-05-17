@@ -1,7 +1,7 @@
 import { t } from '@/i18n';
 import type { ItemStatus, TimePrecision } from '@/types/models';
+import { writeBlock } from '@/utils/blockWriter';
 import { showMessage } from '@/utils/dialog';
-import { updateBlockDateTime } from '@/utils/fileUtils';
 
 export interface CalendarEventChangePayload {
   blockId?: string;
@@ -41,8 +41,6 @@ export async function persistCalendarEventChange(
   const originalStartDateTime = eventInfo.originalStartDateTime;
   const originalEndDateTime = eventInfo.originalEndDateTime;
   const siblingItems = eventInfo.siblingItems;
-  const status = eventInfo.status;
-
   let newDate = '';
   let newStartTime = '';
   let newEndTime = '';
@@ -80,17 +78,18 @@ export async function persistCalendarEventChange(
       : []),
   ];
 
-  const success = await updateBlockDateTime(
-    blockId,
-    newDate,
-    newStartTime,
-    newEndTime,
-    allDay,
-    originalDate,
-    completeSiblingItems,
-    status,
-    undefined,
-    timePrecision,
+  const success = await writeBlock(
+    { blockId },
+    {
+      type: 'addDate',
+      date: newDate,
+      startTime: newStartTime || undefined,
+      endTime: newEndTime || undefined,
+      allDay,
+      originalDate,
+      siblingItems: completeSiblingItems,
+      timePrecision,
+    },
   );
 
   if (success) {

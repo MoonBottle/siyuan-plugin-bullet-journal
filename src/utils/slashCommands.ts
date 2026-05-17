@@ -8,10 +8,8 @@ import { createApp } from 'vue';
 import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
-import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog } from '@/utils/dialog';
-import { insertBlock } from '@/api';
+import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
-import { updateBlockContent, updateBlockDateTime, updateBlockPriority, type BlockWriter } from '@/utils/fileUtils';
 import {
   generateSlashPatterns,
   processLineText,
@@ -27,227 +25,131 @@ import type { Habit, Item, ProjectDirectory, PriorityLevel } from '@/types/model
 import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID, getBlockByID, getBlockKramdown, renameDocByID, updateBlock } from '@/api';
+import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
+import {
+  insertBlockAfter,
+  writeBlock,
+  type BlockPatch,
+  type DatePatch,
+  type InsertableBlockPatch,
+} from '@/utils/blockWriter';
+import { findSlashCommandStartOffset } from '@/utils/blockWriter/slashRange';
 import {
   RefreshReasons,
   createFullRefreshRequest,
   submitRefreshRequest,
 } from '@/utils/refreshRequests';
-import { findFirstProtyleVisibleTextNode, isProtyleBlockSafeForWriterFastPath } from '@/utils/protyleWriterDom';
-import { checkIn, checkInCount } from '@/services/habitService';
+import { checkIn, checkInCount, type HabitBlockWriter } from '@/services/habitService';
 import type { CheckInRecord } from '@/types/models';
 import type { HabitDockNavigationTarget } from '@/utils/habitDockNavigation';
-import { parseKramdownBlocks } from '@/parser/core';
 
-/**
- * 获取编辑器 range，参考思源官方实现 selection.ts#getEditorRange
- * @param element 编辑器元素
- */
-function getEditorRange(element: Element): Range | null {
-  const selection = window.getSelection();
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    if (element === range.startContainer || element.contains(range.startContainer)) {
-      return range;
-    }
+function removeSlashCommandViaWriter(
+  protyle: any,
+  nodeElement: HTMLElement | null | undefined,
+  options?: {
+    blockId?: string;
+    suffix?: string;
+  },
+): Promise<boolean> {
+  const blockId = options?.blockId || nodeElement?.getAttribute('data-node-id');
+  if (!nodeElement || !blockId) {
+    return Promise.resolve(false);
   }
-  return null;
+  return writeBlock(
+    { blockId, nodeElement, protyle },
+    options?.suffix
+      ? { type: 'removeSlashCommand', suffix: options.suffix }
+      : { type: 'removeSlashCommand' },
+  );
 }
 
-
-
-/**
- * 删除斜杠命令触发的内容
- * 简化逻辑：删除整行中所有出现的斜杠命令（包括子集），保留其他内容
- * @param protyle Protyle 编辑器实例
- * @param filters 可能的斜杠命令前缀数组
- * @param suffix 可选的要追加的标记（如 '#任务'），在删除斜杠命令后追加
- * @param additionalTransform 可选的额外文本转换函数，用于同时处理其他修改（如添加状态标记）
- */
-export function deleteSlashCommandContent(
+function createCurrentBlockHabitWriter(
   protyle: any,
-  filters: string[],
-  suffix?: string,
-  additionalTransform?: (text: string) => string,
-  persist: boolean = true,
-): void {
-  console.log('[SlashCommand] deleteSlashCommandContent called', { filters, suffix, persist });
-  console.log('[JTDBG][deleteSlashCommandContent] called', {
-    filters,
-    suffix,
-    persist,
-  });
-
-  // 获取编辑器元素
-  const wysiwygElement = protyle.wysiwyg?.element || protyle.protyle?.wysiwyg?.element;
-  if (!wysiwygElement) {
-    console.log('[SlashCommand] wysiwygElement not found');
-    return;
+  nodeElement: HTMLElement | null | undefined,
+): HabitBlockWriter | undefined {
+  const currentBlockId = nodeElement?.getAttribute('data-node-id');
+  if (!currentBlockId) {
+    return undefined;
   }
 
-  // 获取选中的 range 来确定当前位置
+  return {
+    insertAfter: (previousBlockId: string, patch: InsertableBlockPatch) => {
+      return insertBlockAfter(previousBlockId, patch);
+    },
+    update: (blockId: string, patch: BlockPatch) => {
+      if (blockId === currentBlockId) {
+        return writeBlock({ blockId, nodeElement, protyle }, patch);
+      }
+      return writeBlock({ blockId }, patch);
+    },
+  };
+}
+
+function cleanupActiveSlashCommandLocally(nodeElement?: HTMLElement | null): void {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
-    console.log('[SlashCommand] no selection');
+  const showText = typeof NodeFilter === 'undefined' ? 4 : NodeFilter.SHOW_TEXT;
+  const filterAccept = typeof NodeFilter === 'undefined' ? 1 : NodeFilter.FILTER_ACCEPT;
+  const filterSkip = typeof NodeFilter === 'undefined' ? 3 : NodeFilter.FILTER_SKIP;
+
+  let textNode: Text | null = null;
+  let currentOffset = 0;
+
+  if (selection && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+      textNode = range.startContainer as Text;
+      currentOffset = range.startOffset;
+    }
+  }
+
+  if (!textNode && nodeElement) {
+    const walker = document.createTreeWalker(nodeElement, showText, {
+      acceptNode(node) {
+        return (node.textContent ?? '').trim().length > 0
+          ? filterAccept
+          : filterSkip;
+      },
+    });
+
+    while (walker.nextNode()) {
+      textNode = walker.currentNode as Text;
+    }
+
+    if (textNode) {
+      currentOffset = textNode.textContent?.length ?? 0;
+    }
+  }
+
+  if (!textNode) {
     return;
   }
 
-  const range = selection.getRangeAt(0);
-  const startContainer = range.startContainer;
-  if (startContainer.nodeType !== Node.TEXT_NODE) {
-    console.log('[SlashCommand] startContainer is not text node', { nodeType: startContainer.nodeType });
-    return;
-  }
-
-  const textNode = startContainer as Text;
   const textContent = textNode.textContent || '';
-  const currentOffset = range.startOffset;
-
-  console.log('[SlashCommand] Current text node:', {
-    textContent,
-    currentOffset,
-    parentElement: textNode.parentElement?.tagName,
-    parentClass: textNode.parentElement?.className
-  });
-
-  // 找到包含当前文本节点的块元素
-  let blockElement = textNode.parentElement;
-  while (blockElement && !blockElement.getAttribute('data-node-id')) {
-    blockElement = blockElement.parentElement;
+  const slashIndex = findSlashCommandStartOffset(textContent, currentOffset);
+  if (slashIndex === -1) {
+    return;
   }
 
+  let deleteStart = slashIndex;
+  if (deleteStart > 0 && /\s/.test(textContent[deleteStart - 1])) {
+    deleteStart -= 1;
+  }
+
+  const newText = textContent.slice(0, deleteStart) + textContent.slice(currentOffset);
+  textNode.textContent = newText;
+
+  const blockElement = textNode.parentElement?.closest('[data-node-id]') as HTMLElement | null;
   if (blockElement) {
-    console.log('[SlashCommand] Block element found:', {
-      blockId: blockElement.getAttribute('data-node-id'),
-      blockTextContent: blockElement.textContent,
-      blockHTML: blockElement.outerHTML.substring(0, 500)
-    });
-  }
-
-  // 找到当前行的起始和结束位置
-  let lineStart = currentOffset;
-  while (lineStart > 0 && textContent[lineStart - 1] !== '\n' && textContent[lineStart - 1] !== '\r') {
-    lineStart--;
-  }
-
-  let lineEnd = currentOffset;
-  while (lineEnd < textContent.length && textContent[lineEnd] !== '\n' && textContent[lineEnd] !== '\r') {
-    lineEnd++;
-  }
-
-  // 提取当前行
-  const lineText = textContent.substring(lineStart, lineEnd);
-  console.log('[SlashCommand] Line text extracted:', { lineStart, lineEnd, lineText });
-
-  // 处理行文本
-  let newLineText = processLineText(lineText, filters);
-  console.log('[SlashCommand] Processed line text:', { newLineText });
-  console.log('[JTDBG][deleteSlashCommandContent] processed', {
-    lineText,
-    newLineText,
-    persist,
-  });
-
-  // 如果有 suffix，处理标记追加
-  if (suffix) {
-    // 如果是任务标记，先移除所有可能的任务标记（支持语言切换场景）
-    if (suffix === '#任务' || suffix === '#task') {
-      newLineText = newLineText.replace(/#任务#?/g, '').replace(/#task#?/gi, '');
-    }
-    // 追加新标记（如果不存在）
-    if (!newLineText.includes(suffix)) {
-      newLineText = newLineText.trimEnd() + ' ' + suffix;
-    }
-  }
-
-  // 应用额外的文本转换
-  if (additionalTransform) {
-    newLineText = additionalTransform(newLineText);
-  }
-
-  // 如果有修改，更新文本并提交事务
-  if (newLineText !== lineText) {
-    // 找到包含当前文本节点的块元素
-    let blockElement = startContainer.parentElement;
-    while (blockElement && !blockElement.getAttribute('data-node-id')) {
-      blockElement = blockElement.parentElement;
-    }
-
-    if (!blockElement) return;
-
-    const blockId = blockElement.getAttribute('data-node-id');
-    const oldHTML = blockElement.outerHTML;
-
-    // 更新文本
-    const newText = textContent.substring(0, lineStart) + newLineText + textContent.substring(lineEnd);
-    textNode.textContent = newText;
-    console.log('[JTDBG][deleteSlashCommandContent] appliedText', {
-      oldText: textContent,
-      newText,
-      persist,
-    });
-
-    // 更新块的 updated 属性
     const now = new Date();
     const updated = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
     blockElement.setAttribute('updated', updated);
-
-    // 提交事务以持久化修改
-    const newHTML = blockElement.outerHTML;
-    if (persist && newHTML !== oldHTML) {
-      protyle.toolbar?.setInlineMark?.(protyle, '', 'clear', {});
-      updateTransaction(protyle, blockId, newHTML, oldHTML);
-      console.log('[JTDBG][deleteSlashCommandContent] persisted', {
-        blockId,
-        oldHTML,
-        newHTML,
-      });
-    } else {
-      console.log('[JTDBG][deleteSlashCommandContent] skippedPersist', {
-        blockId,
-        persist,
-        htmlChanged: newHTML !== oldHTML,
-        newHTML,
-      });
-    }
-  }
-}
-
-/**
- * 更新事务 - 参考思源官方实现
- * @param protyle Protyle 编辑器实例
- * @param id 块 ID
- * @param newHTML 新 HTML
- * @param html 旧 HTML
- */
-function updateTransaction(protyle: any, id: string, newHTML: string, html: string): void {
-  if (newHTML === html) {
-    return;
   }
 
-  const doOperations = [{
-    id,
-    data: newHTML,
-    action: 'update'
-  }];
-
-  const undoOperations = [{
-    id,
-    data: html,
-    action: 'update'
-  }];
-
-  // 调用思源的 transaction 方法
-  if (protyle.transaction) {
-    protyle.transaction(doOperations, undoOperations);
-  } else if (window.siyuan?.transactions) {
-    // 备用方案：直接添加到 transactions 队列
-    window.siyuan.transactions.push({
-      protyle,
-      doOperations,
-      undoOperations
-    });
-  }
+  const nextRange = document.createRange();
+  nextRange.setStart(textNode, Math.min(deleteStart, newText.length));
+  nextRange.collapse(true);
+  selection?.removeAllRanges();
+  selection?.addRange(nextRange);
 }
 
 /**
@@ -444,6 +346,15 @@ export function createSlashCommands(config: SlashCommandConfig) {
       callback: getActionHandler('viewDetail', config, SLASH_COMMAND_FILTERS.VIEW_DETAIL)
     },
     {
+      filter: SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN,
+      html: `<div class="b3-list-item__first">
+          <span class="b3-list-item__text">${t('slash').setFocusPlan}</span>
+          <span class="b3-list-item__meta">🍅 ⏳</span>
+      </div>`,
+      id: 'bullet-journal-set-focus-plan',
+      callback: getActionHandler('setFocusPlan', config, SLASH_COMMAND_FILTERS.SET_FOCUS_PLAN)
+    },
+    {
       filter: SLASH_COMMAND_FILTERS.SET_REMINDER,
       html: `<div class="b3-list-item__first">
           <span class="b3-list-item__text">${t('slash').setReminder}</span>
@@ -605,22 +516,36 @@ async function setAsProjectDir(nodeElement: HTMLElement) {
  * 查看详情
  * 打开事项详情弹框
  */
-async function viewDetail(nodeElement: HTMLElement) {
-  const blockId = nodeElement.getAttribute('data-node-id');
-  if (!blockId) {
-    showMessage('无法获取块ID', 2000, 'error');
-    return;
-  }
-
-  // 从块内容提取事项信息
-  const item = await extractItemFromBlock(blockId);
+async function viewDetail(nodeElement: HTMLElement, protyle?: any) {
+  const item = await getValidatedItemFromNode(nodeElement, protyle);
   if (!item) {
-    showMessage('当前块不是有效的事项', 2000, 'error');
     return;
   }
 
   // 打开详情弹框 - 斜杠命令展示所有日期
   showItemDetailModal(item, { showAllDates: true });
+}
+
+async function getValidatedItemFromNode(
+  nodeElement: HTMLElement,
+  protyle?: any,
+): Promise<Item | null> {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return null;
+  }
+
+  const item = await extractItemFromBlock(blockId);
+  if (!item) {
+    if (protyle) {
+      void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+    }
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return null;
+  }
+
+  return item;
 }
 
 /**
@@ -655,9 +580,7 @@ export function getActionHandler(
           outerHTML: nodeElement.outerHTML.slice(0, 500),
           textPreview: (nodeElement.textContent || '').slice(0, 200),
         });
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
-        markAsTodayItem(protyle, nodeElement, filter, writer);
+        markAsTodayItem(protyle, nodeElement);
       };
     case 'tomorrow':
       return (protyle, nodeElement) => {
@@ -671,9 +594,7 @@ export function getActionHandler(
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
         });
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
-        markAsTomorrowItem(protyle, nodeElement, filter, writer);
+        markAsTomorrowItem(protyle, nodeElement);
       };
     case 'date':
       return (protyle, nodeElement) => {
@@ -687,129 +608,195 @@ export function getActionHandler(
           innerParagraphType: innerParagraph?.getAttribute('data-type'),
           textPreview: (nodeElement.textContent || '').slice(0, 120),
         });
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
-        markAsDateItem(protyle, nodeElement, filter, writer);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
+        markAsDateItem(protyle, nodeElement);
       };
     case 'done':
       return (protyle, nodeElement) => {
-        const completedTag = getStatusTag('completed');
-        const blockContent = nodeElement.textContent || '';
-        // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
-        const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent);
-        if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
-          deleteSlashCommandContent(protyle, filter);
-          showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
-          return;
-        }
-        // 通过 updateBlockContent 处理：支持任务列表 [ ]→[x] 和普通标签两种格式
-        const blockId = nodeElement.getAttribute('data-node-id');
-        const writer = blockId ? createProtyleWriter(protyle, nodeElement, blockId) : undefined;
-        updateBlockContent(blockId!, completedTag, writer);
-        showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          if (!item) {
+            return;
+          }
+
+          const completedTag = getStatusTag('completed');
+          const blockContent = nodeElement.textContent || '';
+          // 检查是否已完成（任务列表格式检查 [x]，标签格式检查 tag）
+          const isTaskListDone = /\[\s*x\s*\]/i.test(blockContent);
+          const blockId = item.blockId || nodeElement.getAttribute('data-node-id');
+          if (!blockId) {
+            return;
+          }
+          if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
+            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+            showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
+            return;
+          }
+
+          await writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+          const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
+          if (!isTaskListBlock) {
+            await waitForProtyleTransactionsFlush();
+          }
+          void writeBlock({ blockId, nodeElement, protyle }, { type: 'setStatus', status: 'completed' });
+          showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
+        })();
       };
     case 'abandon':
       return (protyle, nodeElement) => {
-        const abandonedTag = getStatusTag('abandoned');
-        const blockContent = nodeElement.textContent || '';
-        // 检查是否已放弃
-        if (abandonedTag && blockContent.includes(abandonedTag)) {
-          deleteSlashCommandContent(protyle, filter);
-          showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
-          return;
-        }
-        // 同时删除斜杠命令并添加放弃标记（一次事务）
-        deleteSlashCommandContent(protyle, filter, undefined, (text) => {
-          if (!text.includes(abandonedTag)) {
-            return text.trimEnd() + ' ' + abandonedTag;
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          if (!item) {
+            return;
           }
-          return text;
-        });
-        showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
+
+          const blockId = item.blockId || nodeElement.getAttribute('data-node-id');
+          if (!blockId) {
+            return;
+          }
+
+          const abandonedTag = getStatusTag('abandoned');
+          const blockContent = nodeElement.textContent || '';
+          if (abandonedTag && blockContent.includes(abandonedTag)) {
+            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+            showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
+            return;
+          }
+
+          await writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+          const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
+          if (!isTaskListBlock) {
+            await waitForProtyleTransactionsFlush();
+          }
+          void writeBlock({ blockId, nodeElement, protyle }, { type: 'setStatus', status: 'abandoned' });
+          showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
+        })();
       };
     case 'calendar':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         openCalendarForBlock(nodeElement, config.openCustomTab);
       };
     case 'calendarDay':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'day');
       };
     case 'calendarWeek':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'week');
       };
     case 'calendarMonth':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'month');
       };
     case 'calendarList':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         openCalendarForBlock(nodeElement, config.openCustomTab, 'list');
       };
     case 'gantt':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         openGanttForBlock(nodeElement, config.openCustomTab);
       };
     case 'focus':
       return (protyle, nodeElement) => {
-        startFocusFromSlash(nodeElement, config.openPomodoroDock);
-        setTimeout(() => {
-          deleteSlashCommandContent(protyle, filter);
-        }, 300);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          if (!item) {
+            return;
+          }
+
+          void removeSlashCommandViaWriter(protyle, nodeElement);
+          startFocusFromSlash(nodeElement, config.openPomodoroDock, item);
+        })();
       };
     case 'todo':
-      return (protyle) => {
-        deleteSlashCommandContent(protyle, filter);
+      return (protyle, nodeElement) => {
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         config.openTodoDock();
       };
     case 'setProjectDir':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         setAsProjectDir(nodeElement);
       };
     case 'markAsTask':
       return (protyle, nodeElement) => {
+        const blockId = nodeElement.getAttribute('data-node-id');
+        if (!blockId) {
+          return;
+        }
         const taskTag = t('taskTag');
         const blockContent = nodeElement.textContent || '';
         if (blockContent.includes(taskTag)) {
-          deleteSlashCommandContent(protyle, filter);
+          void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
           showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
           return;
         }
-        deleteSlashCommandContent(protyle, filter, taskTag);
+        void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand', suffix: taskTag });
         showMessage(t('slash').markTaskSuccess, 2000, 'info');
       };
     case 'viewDetail':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        viewDetail(nodeElement);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
+        viewDetail(nodeElement, protyle);
+      };
+    case 'setFocusPlan':
+      return (protyle, nodeElement) => {
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          if (!item) {
+            return;
+          }
+
+          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
+          setFocusPlanForBlock(nodeElement, item);
+        })();
       };
     case 'setReminder':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setReminderForBlock(nodeElement);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          if (!item) {
+            return;
+          }
+
+          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
+          setReminderForBlock(nodeElement, item);
+        })();
       };
     case 'setRecurring':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setRecurringForBlock(nodeElement);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          if (!item) {
+            return;
+          }
+
+          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
+          setRecurringForBlock(nodeElement, item);
+        })();
       };
     case 'createSkill':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         createSkillFromSlash(nodeElement);
       };
     case 'setPriority':
       return (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
-        setPriorityForBlock(nodeElement);
+        void (async () => {
+          const item = await getValidatedItemFromNode(nodeElement, protyle);
+          if (!item) {
+            return;
+          }
+
+          void removeSlashCommandViaWriter(protyle, nodeElement, { blockId: item.blockId });
+          setPriorityForBlock(nodeElement, item);
+        })();
       };
     case 'createHabit':
       return (protyle, nodeElement) => {
@@ -820,7 +807,7 @@ export function getActionHandler(
         const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
         const parsedRecord = parseHabitRecordLine(text, blockId);
 
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
 
         if (matchedRecord || parsedRecord) {
           showMessage(t('slash').checkIn || '打卡', 2000, 'info');
@@ -832,16 +819,19 @@ export function getActionHandler(
             return;
           }
 
-          if (parsedHabit) {
-            updateBlock('markdown', markdown, blockId);
-          } else {
-            insertBlock('markdown', markdown, undefined, blockId);
+          const nextHabit = parseHabitLine(markdown);
+          if (!nextHabit) {
+            return;
           }
+
+          void (parsedHabit
+            ? writeBlock({ blockId, nodeElement, protyle }, { type: 'setHabitDefinition', habit: nextHabit })
+            : insertBlockAfter(blockId, { type: 'setHabitDefinition', habit: nextHabit }));
         }, parsedHabit || undefined);
       };
     case 'checkIn':
       return async (protyle, nodeElement) => {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement);
         const text = nodeElement?.textContent?.trim() || '';
         const blockId = nodeElement?.getAttribute?.('data-node-id');
         const parsedHabit = parseHabitLine(text);
@@ -851,6 +841,7 @@ export function getActionHandler(
         const sharedPinia = getSharedPinia();
         const settingsStore = sharedPinia ? useSettingsStore(sharedPinia) : useSettingsStore();
         const habitCheckInTimePrecision = settingsStore.habitCheckInTimePrecision || 'day';
+        const habitWriter = createCurrentBlockHabitWriter(protyle, nodeElement);
         const matchedHabit = parsedHabit ? findHabitByDefinitionBlockId(blockId) : null;
         const activeRecordMatch = matchedRecord ?? (parsedRecord ? findHabitAndRecordByRecordBlockId(blockId) : null);
         const isRecordContext = Boolean(activeRecordMatch || parsedRecord);
@@ -877,7 +868,7 @@ export function getActionHandler(
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+            const success = await checkInCount(activeRecordMatch.habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -905,7 +896,7 @@ export function getActionHandler(
                 unit: parsedRecord.unit,
               }],
             };
-            const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -936,7 +927,7 @@ export function getActionHandler(
               showMessage(t('habit').targetReached || '已达标', 2000, 'info');
               return;
             }
-            const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+            const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
             if (success) {
               notifyHabitDataRefresh();
             }
@@ -947,12 +938,12 @@ export function getActionHandler(
         }
 
         if (habit.type === 'count') {
-          const success = await checkInCount(habit, currentDate, 1, undefined, habitCheckInTimePrecision);
+          const success = await checkInCount(habit, currentDate, 1, habitWriter, habitCheckInTimePrecision);
           if (success) {
             notifyHabitDataRefresh();
           }
         } else {
-          const success = await checkIn(habit, currentDate, undefined, habitCheckInTimePrecision);
+          const success = await checkIn(habit, currentDate, habitWriter, habitCheckInTimePrecision);
           if (success) {
             notifyHabitDataRefresh();
           }
@@ -984,6 +975,7 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
     setProjectDir: 'Project Dir',
     markAsTask: 'Task',
     viewDetail: 'Detail',
+    setFocusPlan: 'Focus Plan',
     setReminder: 'Reminder',
     setRecurring: 'Recurring',
     createSkill: 'AI Skill',
@@ -992,16 +984,28 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
   return labels[action] || action;
 }
 
+async function writeDatePatchForSlashCommand(
+  protyle: any,
+  nodeElement: HTMLElement,
+  patch: Omit<DatePatch, 'type'>,
+): Promise<boolean> {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    return false;
+  }
+  return writeBlock(
+    { blockId, nodeElement, protyle },
+    { type: 'addDate', ...patch },
+  );
+}
+
 /**
  * 标记为今日事项
  * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
- * @param filter 斜杠命令过滤器，自定义命令时传入
  */
 async function markAsTodayItem(
   protyle: any,
   nodeElement: HTMLElement,
-  filter: string[] = SLASH_COMMAND_FILTERS.TODAY,
-  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   console.log('[SlashCommand] markAsTodayItem called', { blockId });
@@ -1027,45 +1031,38 @@ async function markAsTodayItem(
   if (todayItem) {
     console.log('[SlashCommand] markAsTodayItem: today already exists');
     // 日期已存在，删除斜杠命令并提示
-    deleteSlashCommandContent(protyle, filter);
+    void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
     showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
     return;
   }
 
-  console.log('[SlashCommand] markAsTodayItem: calling updateBlockDateTime', {
+  console.log('[SlashCommand] markAsTodayItem: calling writeBlock addDate', {
     blockId,
     today,
     existingItemsCount: existingItems.length,
-    hasWriter: !!writer
+    hasProtyle: !!protyle,
   });
-  console.log('[JTDBG][slash.today] call updateBlockDateTime', {
+  console.log('[JTDBG][slash.today] call writeBlock.addDate', {
     blockId,
     today,
     existingItems,
-    hasWriter: !!writer,
+    hasProtyle: !!protyle,
   });
 
-  // 使用 updateBlockDateTime 添加今日日期
-  const success = await updateBlockDateTime(
-    blockId,
-    today,
-    undefined, // newStartTime
-    undefined, // newEndTime
-    true,      // allDay
-    undefined, // originalDate - undefined 表示添加新日期
-    existingItems.length > 0 ? existingItems : undefined,
-    undefined, // status
-    writer
-  );
+  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
+    date: today,
+    allDay: true,
+    siblingItems: existingItems.length > 0 ? existingItems : undefined,
+  });
 
-  console.log('[SlashCommand] markAsTodayItem: updateBlockDateTime result', success);
-  console.log('[JTDBG][slash.today] updateBlockDateTime result', {
+  console.log('[SlashCommand] markAsTodayItem: writeBlock addDate result', success);
+  console.log('[JTDBG][slash.today] writeBlock.addDate result', {
     blockId,
     success,
   });
 
   if (success) {
-    deleteSlashCommandContent(protyle, filter, undefined, undefined, false);
+    cleanupActiveSlashCommandLocally(nodeElement);
     showMessage(t('slash').markSuccess, 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1075,13 +1072,10 @@ async function markAsTodayItem(
 /**
  * 标记为明天事项
  * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
- * @param filter 斜杠命令过滤器，自定义命令时传入
  */
 async function markAsTomorrowItem(
   protyle: any,
   nodeElement: HTMLElement,
-  filter: string[] = SLASH_COMMAND_FILTERS.TOMORROW,
-  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
@@ -1094,26 +1088,19 @@ async function markAsTomorrowItem(
   // 检查明天是否已存在
   const tomorrowItem = existingItems.find(item => item.date === tomorrow);
   if (tomorrowItem) {
-    deleteSlashCommandContent(protyle, filter);
+    void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
     showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
     return;
   }
 
-  // 使用 updateBlockDateTime 添加明天日期
-  const success = await updateBlockDateTime(
-    blockId,
-    tomorrow,
-    undefined, // newStartTime
-    undefined, // newEndTime
-    true,      // allDay
-    undefined, // originalDate - undefined 表示添加新日期
-    existingItems.length > 0 ? existingItems : undefined,
-    undefined, // status
-    writer
-  );
+  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
+    date: tomorrow,
+    allDay: true,
+    siblingItems: existingItems.length > 0 ? existingItems : undefined,
+  });
 
   if (success) {
-    deleteSlashCommandContent(protyle, filter, undefined, undefined, false);
+    cleanupActiveSlashCommandLocally(nodeElement);
     showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1123,13 +1110,10 @@ async function markAsTomorrowItem(
 /**
  * 标记为指定日期事项
  * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
- * @param filter 斜杠命令过滤器，自定义命令时传入
  */
 async function markAsDateItem(
   protyle: any,
   nodeElement: HTMLElement,
-  filter: string[] = SLASH_COMMAND_FILTERS.DATE,
-  writer?: BlockWriter
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
@@ -1145,26 +1129,19 @@ async function markAsDateItem(
       // 检查日期是否已存在
       const existingItem = existingItems.find(item => item.date === selectedDate);
       if (existingItem) {
-        deleteSlashCommandContent(protyle, filter);
+        void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
         showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
         return;
       }
 
-      // 使用 updateBlockDateTime 添加日期
-      const success = await updateBlockDateTime(
-        blockId,
-        selectedDate,
-        undefined, // newStartTime
-        undefined, // newEndTime
-        true,      // allDay
-        undefined, // originalDate - undefined 表示添加新日期
-        existingItems.length > 0 ? existingItems : undefined,
-        undefined, // status
-        writer
-      );
+      const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
+        date: selectedDate,
+        allDay: true,
+        siblingItems: existingItems.length > 0 ? existingItems : undefined,
+      });
 
       if (success) {
-        deleteSlashCommandContent(protyle, filter, undefined, undefined, false);
+        cleanupActiveSlashCommandLocally(nodeElement);
         showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
       } else {
         showMessage(t('slash').markFailed, 2000, 'error');
@@ -1181,19 +1158,6 @@ function getStatusTag(status: 'completed' | 'abandoned'): string {
 }
 
 /**
- * 格式化 updated 属性值
- */
-function formatUpdatedAttr(date: Date): string {
-  const y = date.getFullYear();
-  const mo = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  const h = String(date.getHours()).padStart(2, '0');
-  const mi = String(date.getMinutes()).padStart(2, '0');
-  const s = String(date.getSeconds()).padStart(2, '0');
-  return `${y}${mo}${d}${h}${mi}${s}`;
-}
-
-/**
  * 等待 protyle 事务队列清空
  */
 async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
@@ -1203,149 +1167,6 @@ async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
     await new Promise(r => setTimeout(r, 100));
   }
   await new Promise(r => setTimeout(r, 200));
-}
-
-/**
- * 创建 protyle writer 工厂函数
- * 将 updateBlock API 调用替换为 DOM 更新 + protyle.transaction()
- * 利用思源事务队列的防抖合并机制，自动替换 protyle 的旧 doOperations
- */
-function createProtyleWriter(
-  protyle: any,
-  nodeElement: HTMLElement,
-  currentBlockId: string,
-): BlockWriter {
-  const oldHTML = nodeElement.outerHTML;
-  console.log('[SlashCommand] createProtyleWriter created', { currentBlockId, oldHTML: oldHTML.substring(0, 200) });
-
-  return async (content: string, targetBlockId: string): Promise<boolean> => {
-    try {
-      console.log(`[SlashCommand] Writer called`, { content, targetBlockId, currentBlockId });
-      console.log('[JTDBG][protyleWriter] called', {
-        currentBlockId,
-        targetBlockId,
-        content,
-      });
-
-      // 去掉块属性行 {: id="..." }，再判断是否单行
-      const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
-
-      const isSameBlock = targetBlockId === currentBlockId;
-      const isSingleLine = !textContent.includes('\n');
-
-      const safeForFastPath = isProtyleBlockSafeForWriterFastPath(nodeElement);
-      console.log(`[SlashCommand] Writer decision params`, { isSameBlock, isSingleLine, textContent, safeForFastPath });
-      console.log('[JTDBG][protyleWriter] decision', {
-        currentBlockId,
-        targetBlockId,
-        isSameBlock,
-        isSingleLine,
-        safeForFastPath,
-        textContent,
-      });
-
-      if (isSameBlock && isSingleLine && safeForFastPath) {
-        const textNode = findFirstProtyleVisibleTextNode(nodeElement);
-        if (!textNode) {
-          console.log('[JTDBG][protyleWriter] fastPathNoTextNodeFallbackApi', {
-            currentBlockId,
-            targetBlockId,
-          });
-          await waitForProtyleTransactionsFlush();
-          const updateResult = await updateBlock('markdown', content, targetBlockId);
-          console.log('[JTDBG][protyleWriter] fastPathNoTextNodeFallbackApiResult', {
-            currentBlockId,
-            targetBlockId,
-            updateResult,
-          });
-          return true;
-        }
-
-        textNode.textContent = textContent;
-
-        nodeElement.setAttribute('updated', formatUpdatedAttr(new Date()));
-
-        const newHTML = nodeElement.outerHTML;
-        if (newHTML !== oldHTML) {
-          console.log('[JTDBG][protyleWriter] fastPathTransaction', {
-            currentBlockId,
-            targetBlockId,
-            oldHTML,
-            newHTML,
-          });
-          protyle.transaction(
-            [{ id: targetBlockId, data: newHTML, action: 'update' }],
-            [{ id: targetBlockId, data: oldHTML, action: 'update' }],
-          );
-        }
-        else {
-          console.log('[JTDBG][protyleWriter] fastPathSkippedBecauseHtmlUnchanged', {
-            currentBlockId,
-            targetBlockId,
-            textContent,
-          });
-        }
-        return true;
-      }
-
-      // Complex case: wait for queue to flush, then API
-      console.log('[JTDBG][protyleWriter] complexPathApi', {
-        currentBlockId,
-        targetBlockId,
-        content,
-      });
-      await waitForProtyleTransactionsFlush();
-      const updateResult = await updateBlock('markdown', content, targetBlockId);
-      console.log('[JTDBG][protyleWriter] complexPathApiResult', {
-        currentBlockId,
-        targetBlockId,
-        updateResult,
-      });
-      const targetKramdownResult = await getBlockKramdown(targetBlockId);
-      console.log('[JTDBG][protyleWriter] complexPathReadbackTarget', {
-        currentBlockId,
-        targetBlockId,
-        hasKramdown: !!targetKramdownResult?.kramdown,
-        kramdownPreview: targetKramdownResult?.kramdown?.slice(0, 500),
-      });
-      if (targetKramdownResult?.kramdown) {
-        const targetBlocks = parseKramdownBlocks(targetKramdownResult.kramdown);
-        const currentParsedBlock = targetBlocks.find(block => block.blockId === currentBlockId);
-        console.log('[JTDBG][protyleWriter] complexPathReadbackTargetAnalysis', {
-          currentBlockId,
-          targetBlockId,
-          targetContainsExpectedRange: targetKramdownResult.kramdown.includes('📅2026-05-09~05-10'),
-          targetContainsOriginalDateOnly: targetKramdownResult.kramdown.includes('📅2026-05-09 🔁每天'),
-          parsedBlockCount: targetBlocks.length,
-          currentParsedBlockContent: currentParsedBlock?.content,
-          currentParsedBlockRaw: currentParsedBlock?.raw,
-        });
-      }
-      const currentBlockResult = await getBlockByID(currentBlockId);
-      console.log('[JTDBG][protyleWriter] complexPathReadbackCurrentBlock', {
-        currentBlockId,
-        targetBlockId,
-        currentBlockContent: currentBlockResult?.content,
-        currentBlockMarkdown: currentBlockResult?.markdown,
-      });
-      return true;
-    }
-    catch (error) {
-      console.error('[Task Assistant] ProtyleWriter error:', error);
-      console.log('[JTDBG][protyleWriter] errorFallbackApi', {
-        currentBlockId,
-        targetBlockId,
-        error,
-      });
-      const updateResult = await updateBlock('markdown', content, targetBlockId);
-      console.log('[JTDBG][protyleWriter] errorFallbackApiResult', {
-        currentBlockId,
-        targetBlockId,
-        updateResult,
-      });
-      return true;
-    }
-  };
 }
 
 /**
@@ -1364,8 +1185,7 @@ async function markAsDone(nodeElement: HTMLElement) {
   }
 
   // 标记事项完成
-  const tag = getStatusTag('completed');
-  const success = await updateBlockContent(blockId, tag);
+  const success = await writeBlock({ blockId }, { type: 'setStatus', status: 'completed' });
 
   if (success) {
     showMessage(t('slash').markDoneSuccess || '已标记为已完成', 2000, 'info');
@@ -1394,8 +1214,7 @@ async function markAsAbandoned(nodeElement: HTMLElement) {
     return;
   }
 
-  const tag = getStatusTag('abandoned');
-  const success = await updateBlockContent(blockId, tag);
+  const success = await writeBlock({ blockId }, { type: 'setStatus', status: 'abandoned' });
 
   if (success) {
     showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
@@ -1488,7 +1307,8 @@ function openPomodoroDialogWithItem(blockId: string, openPomodoroDock: () => voi
  */
 async function startFocusFromSlash(
   nodeElement: HTMLElement,
-  openPomodoroDock: () => void
+  openPomodoroDock: () => void,
+  item?: Item,
 ) {
   const pinia = getSharedPinia();
   if (!pinia) return;
@@ -1505,8 +1325,7 @@ async function startFocusFromSlash(
     return;
   }
 
-  // 从块内容提取事项信息
-  const preselectedItem = await extractItemFromBlock(blockId);
+  const preselectedItem = item || await extractItemFromBlock(blockId);
   if (!preselectedItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
@@ -1521,43 +1340,57 @@ async function startFocusFromSlash(
 /**
  * 为块设置提醒
  */
-async function setReminderForBlock(nodeElement: HTMLElement) {
+async function setReminderForBlock(nodeElement: HTMLElement, item?: Item) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
     return;
   }
 
-  // 从块内容提取事项信息
-  const item = await extractItemFromBlock(blockId);
-  if (!item) {
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
   }
 
   // 打开提醒设置弹框
-  showReminderSettingDialog(item);
+  showReminderSettingDialog(targetItem);
 }
 
-/**
- * 为块设置重复
- */
-async function setRecurringForBlock(nodeElement: HTMLElement) {
+async function setFocusPlanForBlock(nodeElement: HTMLElement, item?: Item) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
     return;
   }
 
-  // 从块内容提取事项信息
-  const item = await extractItemFromBlock(blockId);
-  if (!item) {
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  showFocusPlanDialog(targetItem);
+}
+
+/**
+ * 为块设置重复
+ */
+async function setRecurringForBlock(nodeElement: HTMLElement, item?: Item) {
+  const blockId = nodeElement.getAttribute('data-node-id');
+  if (!blockId) {
+    showMessage('无法获取块ID', 2000, 'error');
+    return;
+  }
+
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
   }
 
   // 打开重复设置弹框
-  showRecurringSettingDialog(item);
+  showRecurringSettingDialog(targetItem);
 }
 
 /**
@@ -1661,19 +1494,27 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
 /**
  * 为块设置优先级
  */
-async function setPriorityForBlock(nodeElement: HTMLElement) {
+async function setPriorityForBlock(nodeElement: HTMLElement, item?: Item) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
     return;
   }
 
-  // 从块内容提取当前优先级
-  const blockContent = nodeElement.textContent || '';
+  const targetItem = item || await extractItemFromBlock(blockId);
+  if (!targetItem) {
+    showMessage('当前块不是有效的事项', 2000, 'error');
+    return;
+  }
+
+  const blockContent = nodeElement.textContent || targetItem.content || '';
   const currentPriority = parsePriorityFromLine(blockContent);
 
   showPrioritySettingDialog(currentPriority, async (priority) => {
-    const success = await updateBlockPriority(blockId, priority);
+    const success = await writeBlock(
+      { blockId },
+      { type: 'setPriority', priority },
+    );
     if (success) {
       showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info');
     } else {

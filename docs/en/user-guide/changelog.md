@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.13.7] - 2026-05-17
+
+### Features
+
+- **Focus Workbench**: Brand new focus workbench tab, focus plan budgeting (pomodoro count/duration), item picker, variance overview statistics
+- **Project Workbench**: Refactored to a three-pane layout (project list + task tree + detail pane), with search, tag filtering, and keyboard navigation
+- **Workbench Enhancement**: Added Focus Workbench and Project Workbench options to the sidebar creation menu
+- **Desktop Floating Pomodoro**: New detached desktop floating window mode, supporting inline/desktop/both display modes
+- **Habit Check-in Enhancement**: Added Ebbinghaus review frequency type
+
+### Refactors
+
+- **Gantt Date Parsing**: Refactored date parsing logic with dayjs, optimized boundary date handling
+- **Block Writer Module**: New unified block write system based on blockId, supporting both API and Protyle dual-channel writes, covering date, status, slash command, pinning and other operations
+- **Unified Write Migration**: Migrated slash commands, calendar/gantt events, mobile operations, AI tools, etc. to blockWriter; deprecated legacy fileUtils
+
+### CI / Dev
+
+- **Check Scripts**: Added check scripts for deprecated fileUtils imports and direct updateBlock imports, integrated into the build pipeline
+
 ## [0.13.6] - 2026-05-13
 
 ### Features

@@ -80,7 +80,9 @@
 
 <script setup lang="ts">
 import { t } from '@/i18n';
-import { updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
+import dayjs from '@/utils/dayjs';
+import { writeBlock } from '@/utils/blockWriter';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
 import type { Item } from '@/types/models';
 
 const props = defineProps<{
@@ -96,8 +98,7 @@ const emit = defineEmits<{
 
 const handleComplete = async () => {
   if (!props.item?.blockId) return;
-  const tag = t('statusTag').completed || '✅';
-  await updateBlockContent(props.item.blockId, tag);
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
   close();
 };
 
@@ -109,23 +110,18 @@ const handlePomodoro = () => {
 
 const handleMigrate = async () => {
   if (!props.item?.blockId) return;
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const dateStr = tomorrow.toISOString().split('T')[0];
-  
-  await updateBlockDateTime(
-    props.item.blockId,
-    dateStr,
-    props.item.startDateTime?.split(' ')[1],
-    props.item.endDateTime?.split(' ')[1]
+  const dateStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
+
+  await writeBlock(
+    { blockId: props.item.blockId },
+    buildDatePatchFromItem(props.item, dateStr, { includeCurrentItemInSiblings: true }),
   );
   close();
 };
 
 const handleAbandon = async () => {
   if (!props.item?.blockId) return;
-  const tag = t('statusTag').abandoned || '❌';
-  await updateBlockContent(props.item.blockId, tag);
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
   close();
 };
 

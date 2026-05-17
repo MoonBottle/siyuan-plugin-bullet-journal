@@ -77,6 +77,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -108,6 +109,15 @@
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
                   </span>
                   <span
                     class="block__icon"
@@ -190,6 +200,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -221,6 +232,15 @@
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
                   </span>
                   <span
                     class="block__icon"
@@ -303,6 +323,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -334,6 +355,15 @@
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
                   </span>
                   <span
                     class="block__icon"
@@ -416,6 +446,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -447,6 +478,15 @@
                     @click.stop="openPomodoroDialog(item)"
                   >
                     <svg><use xlink:href="#iconClock"></use></svg>
+                  </span>
+                  <span
+                    class="block__icon"
+                    :aria-label="getFocusPlanActionLabel(item)"
+                    @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                    @mouseleave="handleActionTooltipLeave"
+                    @click.stop="openFocusPlanDialog(item)"
+                  >
+                    <svg><use xlink:href="#iconAttr"></use></svg>
                   </span>
                   <span
                     class="block__icon"
@@ -536,6 +576,7 @@
                   </template>
                   <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
                   <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+                  <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
                   <div v-if="item.tags?.length" class="item-tag-list">
                     <button
                       v-for="tag in item.tags"
@@ -567,6 +608,15 @@
                         @click.stop="openPomodoroDialog(item)"
                       >
                         <svg><use xlink:href="#iconClock"></use></svg>
+                      </span>
+                      <span
+                        class="block__icon"
+                        :aria-label="getFocusPlanActionLabel(item)"
+                        @mouseenter="handleActionTooltipEnter($event, getFocusPlanActionLabel(item))"
+                        @mouseleave="handleActionTooltipLeave"
+                        @click.stop="openFocusPlanDialog(item)"
+                      >
+                        <svg><use xlink:href="#iconAttr"></use></svg>
                       </span>
                       <span
                         class="block__icon"
@@ -651,6 +701,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -714,6 +765,7 @@
               </template>
               <div v-if="item.task" class="item-task">{{ item.task.name }}</div>
               <div class="item-content">{{ getStatusEmoji(item) }} {{ item.content }}</div>
+              <div v-if="getFocusPlanLabel(item)" class="item-focus-plan">{{ getFocusPlanLabel(item) }}</div>
               <div v-if="item.tags?.length" class="item-tag-list">
                 <button
                   v-for="tag in item.tags"
@@ -750,9 +802,9 @@ import SyLoading from '@/components/SiyuanTheme/SyLoading.vue';
 import Card from '@/components/common/Card.vue';
 import TodoItemMeta from '@/components/todo/TodoItemMeta.vue';
 import { formatDateLabel as formatDateLabelUtil, formatTimeRange } from '@/utils/dateUtils';
-import { openDocumentAtLine, updateBlockContent, updateBlockDateTime } from '@/utils/fileUtils';
-import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip } from '@/utils/dialog';
-import { updateBlockPriority } from '@/utils/fileUtils';
+import { openDocumentAtLine } from '@/utils/fileUtils';
+import { showItemDetailModal, showDatePickerDialog, createDialog, showIconTooltip, hideIconTooltip, showFocusPlanDialog } from '@/utils/dialog';
+import { writeBlock } from '@/utils/blockWriter';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import { usePlugin } from '@/main';
@@ -765,6 +817,7 @@ import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus, dateRangeStatusToEmoji, getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
 import { toggleItemPinned } from '@/utils/itemSettingUtils';
+import { formatFocusPlanDisplay } from '@/utils/focusPlanReview';
 import type {
   TodoSidebarDragPayload,
   TodoSidebarHoverPayload,
@@ -776,6 +829,17 @@ const getPriorityEmoji = (item: Item): string => {
   if (item.priority === 'medium') return '🌱';
   if (item.priority === 'low') return '🍃';
   return '';
+};
+
+const getFocusPlanLabel = (item: Item): string => {
+  const display = formatFocusPlanDisplay(item.focusPlan);
+  return display ? `${t('focusPlan').estimatedShort || '预计'} ${display}` : '';
+};
+
+const getFocusPlanActionLabel = (item: Item): string => {
+  return item.focusPlan
+    ? (t('focusPlan').editAction || '修改预计')
+    : (t('focusPlan').setAction || '设置预计');
 };
 
 // 获取状态 emoji
@@ -897,9 +961,25 @@ const toggleCollapseAll = () => {
 
 defineExpose({ collapseAll, expandAll, toggleCollapseAll, allCollapsed });
 
-// 根据状态获取标签（使用 i18n）
-const getStatusTag = (status: 'completed' | 'abandoned'): string => {
-  return t('statusTag')[status] || '';
+const buildDatePatch = (item: Item, targetDate: string) => {
+  const completeSiblingItems = [
+    ...(item.siblingItems || []),
+    ...(item.date ? [{
+      date: item.date,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime,
+    }] : []),
+  ];
+
+  return {
+    type: 'addDate' as const,
+    date: targetDate,
+    startTime: item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
+    endTime: item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
+    allDay: !item.startDateTime,
+    originalDate: item.date,
+    siblingItems: completeSiblingItems,
+  };
 };
 
 // 获取今天的日期字符串（基于 store 的 currentDate）
@@ -1214,6 +1294,10 @@ const openCalendar = (item: Item) => {
   }
 };
 
+const openFocusPlanDialog = (item: Item) => {
+  showFocusPlanDialog(item);
+};
+
 // 标记完成
 const handleDone = async (item: Item) => {
   if (!item.blockId) return;
@@ -1221,9 +1305,7 @@ const handleDone = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    // 标记事项完成
-    const tag = getStatusTag('completed');
-    await updateBlockContent(item.blockId, tag);
+    await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
 
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
     // 避免重复调用 createNextOccurrence
@@ -1242,30 +1324,8 @@ const handleMigrate = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    // 计算明天的日期
     const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
-
-    // 构建完整的 siblingItems（包含当前日期）
-    const completeSiblingItems = [
-      ...(item.siblingItems || []),
-      ...(item.date ? [{
-        date: item.date,
-        startDateTime: item.startDateTime,
-        endDateTime: item.endDateTime
-      }] : [])
-    ];
-
-    // 使用 updateBlockDateTime 更新日期，保留原时间
-    const success = await updateBlockDateTime(
-      item.blockId,
-      tomorrowStr,
-      item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-      item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-      !item.startDateTime,
-      item.date,
-      completeSiblingItems,
-      item.status
-    );
+    await writeBlock({ blockId: item.blockId }, buildDatePatch(item, tomorrowStr));
 
     // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
@@ -1281,27 +1341,7 @@ const handleMigrateToday = async (item: Item) => {
   isProcessing.value = true;
   try {
     const todayStr = dayjs().format('YYYY-MM-DD');
-
-    // 构建完整的 siblingItems（包含当前日期）
-    const completeSiblingItems = [
-      ...(item.siblingItems || []),
-      ...(item.date ? [{
-        date: item.date,
-        startDateTime: item.startDateTime,
-        endDateTime: item.endDateTime
-      }] : [])
-    ];
-
-    const success = await updateBlockDateTime(
-      item.blockId,
-      todayStr,
-      item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-      item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-      !item.startDateTime,
-      item.date,
-      completeSiblingItems,
-      item.status
-    );
+    await writeBlock({ blockId: item.blockId }, buildDatePatch(item, todayStr));
 
     // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
@@ -1314,30 +1354,11 @@ const handleMigrateCustom = (item: Item) => {
   if (!item.blockId) return;
   if (isProcessing.value) return; // 防止重复点击
 
-  // 构建完整的 siblingItems（包含当前日期）
-  const completeSiblingItems = [
-    ...(item.siblingItems || []),
-    ...(item.date ? [{
-      date: item.date,
-      startDateTime: item.startDateTime,
-      endDateTime: item.endDateTime
-    }] : [])
-  ];
-
   showDatePickerDialog(t('todo').chooseMigrateDate, item.date, async (newDate) => {
     if (isProcessing.value) return; // 防止在回调中重复点击
     isProcessing.value = true;
     try {
-      const success = await updateBlockDateTime(
-        item.blockId,
-        newDate,
-        item.startDateTime ? item.startDateTime.split(' ')[1] : undefined,
-        item.endDateTime ? item.endDateTime.split(' ')[1] : undefined,
-        !item.startDateTime,
-        item.date,
-        completeSiblingItems,
-        item.status
-      );
+      await writeBlock({ blockId: item.blockId }, buildDatePatch(item, newDate));
 
       // 操作成功，等待 ws-main 事件触发定向刷新
     } finally {
@@ -1353,8 +1374,7 @@ const handleAbandon = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    const tag = getStatusTag('abandoned');
-    const success = await updateBlockContent(item.blockId, tag);
+    await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
     // 操作成功，等待 ws-main 事件触发定向刷新
   } finally {
     isProcessing.value = false;
@@ -1426,7 +1446,7 @@ const handleContextMenu = (event: MouseEvent, item: Item) => {
       onShowCalendar: () => openCalendar(item),
       onSetPriority: (priority: PriorityLevel | undefined) => {
         if (!item.blockId) return;
-        updateBlockPriority(item.blockId, priority).then(success => {
+        writeBlock({ blockId: item.blockId }, { type: 'setPriority', priority }).then(success => {
           if (success) {
             item.priority = priority;
           }
@@ -1691,6 +1711,13 @@ const handleCreateExample = async () => {
   color: var(--b3-theme-on-background);
   word-break: break-all;
   line-height: 1.4;
+}
+
+.item-focus-plan {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--b3-theme-on-surface-light);
 }
 
 .item-tag-list {

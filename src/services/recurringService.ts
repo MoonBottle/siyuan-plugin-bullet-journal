@@ -5,6 +5,7 @@
 
 import type { Plugin } from 'siyuan';
 import type { Item } from '@/types/models';
+import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
 import {
   getNextOccurrenceDate,
   checkEndCondition,
@@ -13,7 +14,6 @@ import {
   stripRecurringMarkers
 } from '@/parser/recurringParser';
 import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
-import * as siyuanAPI from '@/api';
 
 /**
  * 检查是否需要创建下次
@@ -78,15 +78,12 @@ export async function createNextOccurrence(
     console.log(`[RecurringService] Inserting after block: ${insertAfterId}, isTaskList: ${item.isTaskList}`);
 
     // 在最后一个相关块后插入新事项
-    const result = await siyuanAPI.insertBlock(
-      'markdown',
-      newBlockContent,
-      undefined,
-      insertAfterId,
-      undefined
-    );
+    const result = await insertBlockAfter(insertAfterId, {
+      type: 'replaceMarkdown',
+      markdown: newBlockContent,
+    });
 
-    if (result && result[0]) {
+    if (result) {
       console.log(`[RecurringService] Created next occurrence: ${nextDate}`);
       return true;
     }
@@ -173,13 +170,12 @@ export async function skipCurrentOccurrence(
     const newBlockContent = buildNextOccurrenceBlock(item, nextDate);
 
     // 更新当前 block
-    const result = await siyuanAPI.updateBlock(
-      'markdown',
-      newBlockContent,
-      item.blockId
+    const result = await writeBlock(
+      { blockId: item.blockId },
+      { type: 'replaceMarkdown', markdown: newBlockContent },
     );
 
-    if (result && result[0]) {
+    if (result) {
       console.log(`[RecurringService] Skipped to: ${nextDate}`);
       return true;
     }

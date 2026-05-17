@@ -135,4 +135,33 @@ describe('calculateHabitStats', () => {
     expect(stats.longestStreak).toBe(1);
     expect(stats.currentStreak).toBe(1);
   });
+
+  it('ebbinghaus 完成率应按到期节点而不是活跃天数计算', () => {
+    const habit = mkHabit({
+      name: '英语单词',
+      startDate: '2026-05-14',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [
+        mkRecord('2026-05-14', { content: '英语单词' }),
+        mkRecord('2026-05-15', { content: '英语单词' }),
+      ],
+    });
+
+    const stats = calculateHabitStats(habit, '2026-05-20');
+    expect(stats.totalCheckins).toBe(2);
+    expect(stats.completionRate).toBeCloseTo(2 / 3, 5);
+  });
+
+  it('ebbinghaus 第一版 streak 统一返回 0', () => {
+    const habit = mkHabit({
+      name: '英语单词',
+      startDate: '2026-05-14',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+      records: [mkRecord('2026-05-14', { content: '英语单词' })],
+    });
+
+    const stats = calculateHabitStats(habit, '2026-05-20');
+    expect(stats.currentStreak).toBe(0);
+    expect(stats.longestStreak).toBe(0);
+  });
 });

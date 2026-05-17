@@ -12,6 +12,30 @@ const BREAK_ICON = `
   </svg>
 `;
 
+const PLAY_ICON = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <path d="M8 5v14l11-7z"/>
+  </svg>
+`;
+
+const PAUSE_ICON = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+  </svg>
+`;
+
+const COMPLETE_ICON = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+  </svg>
+`;
+
+const SKIP_ICON = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+  </svg>
+`;
+
 export function createFloatingPomodoroMarkup(): string {
   return `
     <div class="floating-tomato-shell">
@@ -70,16 +94,20 @@ export function applyFloatingPomodoroViewState(
     pauseEl.hidden = false;
     completeEl.hidden = false;
     skipEl.hidden = true;
-    pauseEl.textContent = state.pauseResumeLabel;
-    completeEl.textContent = state.endLabel;
-    skipEl.textContent = '';
+    setActionButton(
+      pauseEl,
+      state.pauseResumeLabel,
+      state.isPaused ? PLAY_ICON : PAUSE_ICON
+    );
+    setActionButton(completeEl, state.endLabel, COMPLETE_ICON);
+    setActionButton(skipEl, '', '');
   } else {
     pauseEl.hidden = true;
     completeEl.hidden = true;
     skipEl.hidden = false;
-    pauseEl.textContent = '';
-    completeEl.textContent = '';
-    skipEl.textContent = state.skipBreakLabel;
+    setActionButton(pauseEl, '', '');
+    setActionButton(completeEl, '', '');
+    setActionButton(skipEl, state.skipBreakLabel, SKIP_ICON);
   }
 
   fillEl.style.transform = `scaleX(${clampProgress(state.progress)})`;
@@ -98,5 +126,19 @@ function setClass(host: HTMLElement, className: string, enabled: boolean): void 
     host.classList.add(className);
   } else {
     host.classList.remove(className);
+  }
+}
+
+function setActionButton(
+  button: HTMLButtonElement,
+  label: string,
+  iconMarkup: string
+): void {
+  button.innerHTML = iconMarkup;
+  button.setAttribute('aria-label', label);
+  if (label) {
+    button.dataset.tooltip = label;
+  } else {
+    delete button.dataset.tooltip;
   }
 }

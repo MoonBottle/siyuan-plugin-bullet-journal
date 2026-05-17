@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parseHabitLine, parseCheckInRecordLine, parseHabitRecordLine } from '@/parser/habitParser';
+import {
+  buildHabitDefinitionMarkdown,
+  parseCheckInRecordLine,
+  parseHabitFrequency,
+  parseHabitLine,
+  parseHabitRecordLine,
+} from '@/parser/habitParser';
 import type { Habit, CheckInRecord } from '@/types/models';
 
 describe('parseHabitLine', () => {
@@ -100,6 +106,58 @@ describe('parseHabitLine', () => {
     expect(result!.type).toBe('count');
     expect(result!.target).toBe(8);
     expect(result!.unit).toBe('杯');
+  });
+
+  it('解析默认艾宾浩斯频率', () => {
+    const result = parseHabitLine('英语单词 🎯2026-05-14 🔄艾宾浩斯');
+    expect(result).not.toBeNull();
+    expect(result!.frequency).toEqual({ type: 'ebbinghaus' });
+  });
+
+  it('解析自定义艾宾浩斯频率模板', () => {
+    const result = parseHabitLine('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]');
+    expect(result).not.toBeNull();
+    expect(result!.frequency).toEqual({
+      type: 'ebbinghaus',
+      intervals: [1, 2, 4, 7, 15],
+    });
+  });
+
+  it('解析英文艾宾浩斯频率模板', () => {
+    const result = parseHabitLine('Vocabulary 🎯2026-05-14 🔄ebbinghaus[1,2,4,7,15]');
+    expect(result).not.toBeNull();
+    expect(result!.frequency).toEqual({
+      type: 'ebbinghaus',
+      intervals: [1, 2, 4, 7, 15],
+    });
+  });
+});
+
+describe('parseHabitFrequency', () => {
+  it('解析默认艾宾浩斯频率字符串', () => {
+    expect(parseHabitFrequency('艾宾浩斯')).toEqual({
+      type: 'ebbinghaus',
+    });
+  });
+
+  it('解析艾宾浩斯频率模板字符串', () => {
+    expect(parseHabitFrequency('艾宾浩斯[1,2,4,7,15]')).toEqual({
+      type: 'ebbinghaus',
+      intervals: [1, 2, 4, 7, 15],
+    });
+  });
+
+  it('解析英文艾宾浩斯频率字符串', () => {
+    expect(parseHabitFrequency('ebbinghaus[1,2,4,7,15]')).toEqual({
+      type: 'ebbinghaus',
+      intervals: [1, 2, 4, 7, 15],
+    });
+  });
+
+  it('拒绝非法艾宾浩斯频率模板', () => {
+    expect(parseHabitFrequency('艾宾浩斯[1,2,2]')).toBeNull();
+    expect(parseHabitFrequency('艾宾浩斯[0,2,4]')).toBeNull();
+    expect(parseHabitFrequency('艾宾浩斯[a,2,4]')).toBeNull();
   });
 });
 
@@ -259,5 +317,28 @@ describe('parseHabitRecordLine', () => {
     const result = parseHabitRecordLine('早起 📅2026-04-06 ❌', 'habit-block-1');
     expect(result).not.toBeNull();
     expect(result?.status).toBe('missed');
+  });
+});
+
+describe('buildHabitDefinitionMarkdown', () => {
+  it('序列化艾宾浩斯频率回 markdown', () => {
+    expect(buildHabitDefinitionMarkdown({
+      name: '英语单词',
+      startDate: '2026-05-14',
+      type: 'binary',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+    })).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]');
+  });
+
+  it('序列化归档标记回 markdown', () => {
+    expect(buildHabitDefinitionMarkdown({
+      name: '喝水',
+      startDate: '2026-04-01',
+      type: 'count',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      archivedAt: '2026-05-04',
+    })).toBe('喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04');
   });
 });

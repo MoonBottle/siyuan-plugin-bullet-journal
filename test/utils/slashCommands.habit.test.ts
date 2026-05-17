@@ -47,8 +47,12 @@ vi.mock('@/utils/sharedPinia', () => ({
 
 vi.mock('@/utils/fileUtils', () => ({
   updateBlockContent: vi.fn(),
-  updateBlockDateTime: vi.fn(),
   updateBlockPriority: vi.fn(),
+}));
+
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: vi.fn().mockResolvedValue(true),
+  insertBlockAfter: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({
@@ -85,6 +89,8 @@ vi.mock('@/utils/refreshRequests', () => ({
 vi.mock('@/utils/protyleWriterDom', () => ({
   findFirstProtyleVisibleTextNode: vi.fn(),
   isProtyleBlockSafeForWriterFastPath: vi.fn(() => false),
+  renderMarkdownIntoBlockEditable: vi.fn(() => false),
+  blockElementToMarkdownContent: vi.fn(() => null),
 }));
 
 import { showHabitCreateDialog } from '@/utils/dialog';
@@ -93,7 +99,7 @@ import { processLineText, extractDatesFromBlock } from '@/utils/slashCommandUtil
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
 import { eventBus, Events } from '@/utils/eventBus';
-import { updateBlockDateTime } from '@/utils/fileUtils';
+import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
 
 const projectStoreMock = {
   getHabits: vi.fn(() => []),
@@ -113,10 +119,10 @@ describe('habit slash commands', () => {
     projectStoreMock.getHabits.mockReturnValue([]);
   });
 
-  it('/xg 在习惯行上应进入编辑模式', () => {
+  it('/xg 在习惯行上应进入编辑模式，并在保存后走习惯定义 patch 更新', async () => {
     const showSpy = vi.mocked(showHabitCreateDialog);
     showSpy.mockImplementation((onSave: (markdown: string) => void) => {
-      onSave('已更新的习惯');
+      onSave('喝水 🎯2026-04-01 10杯 ⏰09:00 🔄每天');
       return {} as any;
     });
     const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
@@ -125,12 +131,25 @@ describe('habit slash commands', () => {
     node.textContent = '喝水 🎯2026-04-01 8杯 ⏰09:00 🔄每天';
 
     handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
       name: '喝水',
       target: 8,
       unit: '杯',
     }));
+    expect(writeBlock).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'block-1' }),
+      {
+        type: 'setHabitDefinition',
+        habit: expect.objectContaining({
+          name: '喝水',
+          target: 10,
+          unit: '杯',
+        }),
+      },
+    );
   });
 
   it('/xg 删除命令后即使残留零宽字符也应进入编辑模式', () => {
@@ -159,6 +178,13 @@ describe('habit slash commands', () => {
 
     handler(protyle as any, node);
 
+    expect(writeBlock).toHaveBeenCalledWith({
+      blockId: 'block-zwsp',
+      nodeElement: node,
+      protyle,
+    }, {
+      type: 'removeSlashCommand',
+    });
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
       name: '喝水',
       target: 8,
@@ -254,15 +280,42 @@ describe('habit slash commands', () => {
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), undefined);
   });
 
-  it('/jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {
+  it('/xg 在普通事项行保存后应通过 blockWriter 插入新的习惯定义块', async () => {
+    const showSpy = vi.mocked(showHabitCreateDialog);
+    showSpy.mockImplementation((onSave: (markdown: string) => void) => {
+      onSave('早起 🎯2026-04-01 🔄每天');
+      return {} as any;
+    });
+    const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'task-create');
+    node.textContent = 'Buy milk @2026-04-30';
+
+    handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(insertBlockAfter).toHaveBeenCalledWith(
+      'task-create',
+      {
+        type: 'setHabitDefinition',
+        habit: expect.objectContaining({
+          name: '早起',
+          type: 'binary',
+          frequency: expect.objectContaining({ type: 'daily' }),
+        }),
+      },
+    );
+  });
+
+  it('、jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([{ date: '2026-04-29' }] as any);
-    vi.mocked(updateBlockDateTime).mockResolvedValue(true as any);
-    vi.mocked(processLineText).mockImplementation((text: string) => text.replace('/jt', '').trimEnd());
+    vi.mocked(processLineText).mockImplementation((text: string) => text.replace('、jt', '').trimEnd());
 
     const handler = getActionHandler('today', {} as any, ['/jt']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-today');
-    const textNode = document.createTextNode('测试独立事项 📅2026-04-29 /jt');
+    const textNode = document.createTextNode('测试独立事项 📅2026-04-29 、jt');
     node.appendChild(textNode);
     document.body.appendChild(node);
 
@@ -284,8 +337,16 @@ describe('habit slash commands', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(updateBlockDateTime).toHaveBeenCalled();
-    expect(textNode.textContent).toBe('测试独立事项 📅2026-04-29');
+    expect(writeBlock).toHaveBeenCalledWith({
+      blockId: 'block-today',
+      nodeElement: node,
+      protyle,
+    }, {
+      type: 'addDate',
+      date: '2026-04-30',
+      allDay: true,
+      siblingItems: [{ date: '2026-04-29' }],
+    });
     expect(protyle.transaction).not.toHaveBeenCalled();
   });
 
@@ -334,7 +395,7 @@ describe('habit slash commands', () => {
     expect(checkInSpy).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-precision',
       type: 'binary',
-    }), '2026-04-30', undefined, 'minute');
+    }), '2026-04-30', expect.any(Object), 'minute');
   });
 
   it('/dk 在计数型习惯定义行上应走 checkInCount(1)', async () => {
@@ -360,7 +421,7 @@ describe('habit slash commands', () => {
     expect(checkInCountSpy).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-2',
       type: 'count',
-    }), '2026-04-30', 1, undefined, 'day');
+    }), '2026-04-30', 1, expect.any(Object), 'day');
   });
 
   it('/dk 成功打卡后应立即触发数据刷新，避免定义行连续打卡产生重复 record', async () => {
@@ -423,7 +484,72 @@ describe('habit slash commands', () => {
         blockId: 'record-today-3',
         currentValue: 1,
       })],
-    }), '2026-04-30', 1, undefined, 'day');
+    }), '2026-04-30', 1, expect.any(Object), 'day');
+  });
+
+  it('/dk 在定义行命中今日 count record 时，writer.update 应回退到 API 写目标 record 块', async () => {
+    const checkInCountSpy = vi.mocked(checkInCount);
+    checkInCountSpy.mockImplementation(async (_habit, _date, _incrementBy, writer) => {
+      await writer?.update('record-today-3', {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 2,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      });
+      return true;
+    });
+
+    const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-3');
+    node.textContent = '喝水 🎯2026-04-01 8杯 🔄每天';
+    const protyle = { transaction: vi.fn() };
+    projectStoreMock.getHabits.mockReturnValue([{
+      name: '喝水',
+      docId: 'doc-1',
+      blockId: 'block-3',
+      type: 'count',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      records: [{
+        content: '喝水',
+        date: '2026-04-30',
+        docId: 'doc-1',
+        blockId: 'record-today-3',
+        habitId: 'block-3',
+        currentValue: 1,
+        targetValue: 8,
+        unit: '杯',
+      }],
+    }]);
+
+    await handler(protyle as any, node);
+
+    expect(writeBlock).toHaveBeenLastCalledWith(
+      { blockId: 'record-today-3' },
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 2,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
+    );
   });
 
   it('/dk 在定义行未命中 store 中的 habit 时不应直接写 record', async () => {
@@ -499,12 +625,29 @@ describe('habit slash commands', () => {
 
   it('/dk 在今天的计数打卡记录上应走 checkInCount(1)', async () => {
     const checkInCountSpy = vi.mocked(checkInCount);
+    checkInCountSpy.mockImplementation(async (_habit, _date, _incrementBy, writer) => {
+      await writer?.update('record-4', {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 4,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      });
+      return true;
+    });
     const handler = getActionHandler('checkIn', { openHabitDock: vi.fn() } as any, ['/dk']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'record-4');
     node.textContent = '喝水 3/8杯 📅2026-04-30';
+    const protyle = { transaction: vi.fn() };
 
-    await handler({} as any, node);
+    await handler(protyle as any, node);
 
     expect(checkInCountSpy).toHaveBeenCalledWith(expect.objectContaining({
       type: 'count',
@@ -512,7 +655,27 @@ describe('habit slash commands', () => {
         currentValue: 3,
         targetValue: 8,
       })],
-    }), '2026-04-30', 1, undefined, 'day');
+    }), '2026-04-30', 1, expect.any(Object), 'day');
+    expect(writeBlock).toHaveBeenLastCalledWith(
+      {
+        blockId: 'record-4',
+        nodeElement: node,
+        protyle,
+      },
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-30',
+          value: 4,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
+    );
   });
 
   it('/dk 在已打卡的习惯定义行上应提示已打卡而不是重复创建 record', async () => {

@@ -108,7 +108,7 @@ import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
 import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
 import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
 import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant';
-import { updateBlockPriority } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
 import type { PriorityLevel } from '@/types/models';
 import type { TodoSidebarDragPayload } from '@/components/todo/todoSidebarTypes';
@@ -273,7 +273,10 @@ async function handleQuadrantDrop(panelId: string, event: DragEvent) {
   const targetPriority = getPanelTargetPriority(panelId);
   if (payload.priority === targetPriority) return;
 
-  const success = await updateBlockPriority(payload.blockId, targetPriority);
+  const success = await writeBlock(
+    { blockId: payload.blockId },
+    { type: 'setPriority', priority: targetPriority },
+  );
   if (!success || !plugin) {
     showMessage(t('common').actionFailed, 'error');
     return;

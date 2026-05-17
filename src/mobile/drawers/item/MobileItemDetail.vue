@@ -356,7 +356,8 @@ import { generateRepeatRuleMarker, generateEndConditionMarker } from '@/parser/r
 import { useSettingsStore } from '@/stores';
 import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue';
 import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue';
-import { updateBlockDateTime, updateBlockPriority, updateBlockContent } from '@/utils/fileUtils';
+import { writeBlock } from '@/utils/blockWriter';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
 import MobileConfirmDrawer from '../confirm/MobileConfirmDrawer.vue';
 import { TimeSettingDrawer } from '@/mobile/components/time-picker';
@@ -622,8 +623,7 @@ const handleLinkClick = (url: string) => {
 
 const handleComplete = async () => {
   if (!props.item?.blockId) return;
-  const tag = t('statusTag').completed || '✅';
-  await updateBlockContent(props.item.blockId, tag);
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
   close();
 };
 
@@ -634,8 +634,7 @@ const handleAbandon = () => {
 
 const handleConfirmAbandon = async () => {
   if (!props.item?.blockId) return;
-  const tag = t('statusTag').abandoned || '❌';
-  await updateBlockContent(props.item.blockId, tag);
+  await writeBlock({ blockId: props.item.blockId, listItemBlockId: props.item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
   close();
 };
 
@@ -659,26 +658,10 @@ const handleMigrateToToday = async () => {
   showMigrateDrawer.value = false;
   
   const todayStr = dayjs().format('YYYY-MM-DD');
-  
-  // 构建完整的 siblingItems（包含当前日期）
-  const completeSiblingItems = [
-    ...(props.item.siblingItems || []),
-    ...(props.item.date ? [{
-      date: props.item.date,
-      startDateTime: props.item.startDateTime,
-      endDateTime: props.item.endDateTime
-    }] : [])
-  ];
-  
-  await updateBlockDateTime(
-    props.item.blockId,
-    todayStr,
-    props.item.startDateTime ? props.item.startDateTime.split(' ')[1] : undefined,
-    props.item.endDateTime ? props.item.endDateTime.split(' ')[1] : undefined,
-    !props.item.startDateTime,
-    props.item.date,
-    completeSiblingItems,
-    props.item.status
+
+  await writeBlock(
+    { blockId: props.item.blockId },
+    buildDatePatchFromItem(props.item, todayStr, { includeCurrentItemInSiblings: true }),
   );
   
   close();
@@ -690,26 +673,10 @@ const handleMigrateToTomorrow = async () => {
   showMigrateDrawer.value = false;
   
   const tomorrowStr = dayjs().add(1, 'day').format('YYYY-MM-DD');
-  
-  // 构建完整的 siblingItems（包含当前日期）
-  const completeSiblingItems = [
-    ...(props.item.siblingItems || []),
-    ...(props.item.date ? [{
-      date: props.item.date,
-      startDateTime: props.item.startDateTime,
-      endDateTime: props.item.endDateTime
-    }] : [])
-  ];
-  
-  await updateBlockDateTime(
-    props.item.blockId,
-    tomorrowStr,
-    props.item.startDateTime ? props.item.startDateTime.split(' ')[1] : undefined,
-    props.item.endDateTime ? props.item.endDateTime.split(' ')[1] : undefined,
-    !props.item.startDateTime,
-    props.item.date,
-    completeSiblingItems,
-    props.item.status
+
+  await writeBlock(
+    { blockId: props.item.blockId },
+    buildDatePatchFromItem(props.item, tomorrowStr, { includeCurrentItemInSiblings: true }),
   );
   
   close();
@@ -751,12 +718,9 @@ const saveContent = async () => {
   if (!props.item?.blockId || !editingContent.value.trim()) return;
   
   try {
-    // Use updateBlockContent with newItemContent parameter to preserve markdown format
-    const success = await updateBlockContent(
-      props.item.blockId,
-      '', // no suffix to add
-      undefined, // no writer
-      editingContent.value.trim() // new item content
+    const success = await writeBlock(
+      { blockId: props.item.blockId },
+      { type: 'setContent', newItemContent: editingContent.value.trim() },
     );
     
     if (success) {
@@ -781,15 +745,9 @@ const onDateChange = async (newDate: string) => {
   if (!props.item || newDate === props.item.date) return;
   
   try {
-    // Use updateBlockDateTime to properly update the date
-    const success = await updateBlockDateTime(
-      props.item.blockId,
-      newDate,
-      props.item.startDateTime, // preserve existing time
-      props.item.endDateTime,   // preserve existing time
-      !props.item.startDateTime && !props.item.endDateTime, // allDay if no time
-      props.item.date, // original date to replace
-      props.item.siblingItems
+    const success = await writeBlock(
+      { blockId: props.item.blockId },
+      buildDatePatchFromItem(props.item, newDate, { includeCurrentItemInSiblings: true }),
     );
     
     if (success) {
@@ -809,8 +767,10 @@ const onPriorityChange = async (newPriority: PriorityLevel | undefined) => {
   if (!props.item || newPriority === props.item.priority) return;
   
   try {
-    // Use updateBlockPriority to properly update the priority
-    const success = await updateBlockPriority(props.item.blockId, newPriority);
+    const success = await writeBlock(
+      { blockId: props.item.blockId },
+      { type: 'setPriority', priority: newPriority },
+    );
     
     if (success) {
       emit('refresh');
@@ -825,14 +785,14 @@ const onTimeSettingSave = async (payload: { isAllDay: boolean; startTime?: strin
   if (!props.item) return;
   
   try {
-    const success = await updateBlockDateTime(
-      props.item.blockId,
-      props.item.date,
-      payload.startTime,
-      payload.endTime,
-      payload.isAllDay,
-      props.item.date, // original date to replace
-      props.item.siblingItems
+    const success = await writeBlock(
+      { blockId: props.item.blockId },
+      buildDatePatchFromItem(props.item, props.item.date, {
+        includeCurrentItemInSiblings: true,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        allDay: payload.isAllDay,
+      }),
     );
     
     if (success) {

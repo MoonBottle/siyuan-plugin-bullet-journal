@@ -2,17 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initI18n } from '@/i18n';
 import { persistCalendarEventChange } from '@/utils/calendarEventChange';
 
-const { mockShowMessage, mockUpdateBlockDateTime } = vi.hoisted(() => ({
+const { mockShowMessage, mockWriteBlock } = vi.hoisted(() => ({
   mockShowMessage: vi.fn(),
-  mockUpdateBlockDateTime: vi.fn(),
+  mockWriteBlock: vi.fn(),
 }));
 
 vi.mock('@/utils/dialog', () => ({
   showMessage: mockShowMessage,
 }));
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockDateTime: mockUpdateBlockDateTime,
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: mockWriteBlock,
 }));
 
 describe('persistCalendarEventChange', () => {
@@ -22,7 +22,7 @@ describe('persistCalendarEventChange', () => {
   });
 
   it('persists moved timed events back to document blocks', async () => {
-    mockUpdateBlockDateTime.mockResolvedValue(true);
+    mockWriteBlock.mockResolvedValue(true);
 
     const result = await persistCalendarEventChange({
       blockId: 'block-1',
@@ -43,29 +43,30 @@ describe('persistCalendarEventChange', () => {
     }, 'move');
 
     expect(result).toBe(true);
-    expect(mockUpdateBlockDateTime).toHaveBeenCalledWith(
-      'block-1',
-      '2026-05-02',
-      '10:00:00',
-      '11:30:00',
-      false,
-      '2026-05-01',
-      [
-        {
-          date: '2026-05-03',
-          startDateTime: '2026-05-03 14:00:00',
-          endDateTime: '2026-05-03 15:00:00',
-        },
-        {
-          date: '2026-05-01',
-          startDateTime: '2026-05-01 09:00:00',
-          endDateTime: '2026-05-01 10:00:00',
-          timePrecision: 'second',
-        },
-      ],
-      'pending',
-      undefined,
-      'second',
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      {
+        type: 'addDate',
+        date: '2026-05-02',
+        startTime: '10:00:00',
+        endTime: '11:30:00',
+        allDay: false,
+        originalDate: '2026-05-01',
+        siblingItems: [
+          {
+            date: '2026-05-03',
+            startDateTime: '2026-05-03 14:00:00',
+            endDateTime: '2026-05-03 15:00:00',
+          },
+          {
+            date: '2026-05-01',
+            startDateTime: '2026-05-01 09:00:00',
+            endDateTime: '2026-05-01 10:00:00',
+            timePrecision: 'second',
+          },
+        ],
+        timePrecision: 'second',
+      },
     );
     expect(mockShowMessage).toHaveBeenCalledTimes(1);
   });
@@ -76,7 +77,7 @@ describe('persistCalendarEventChange', () => {
     }, 'resize');
 
     expect(result).toBe(false);
-    expect(mockUpdateBlockDateTime).not.toHaveBeenCalled();
+    expect(mockWriteBlock).not.toHaveBeenCalled();
     expect(mockShowMessage).toHaveBeenCalledTimes(1);
   });
 });

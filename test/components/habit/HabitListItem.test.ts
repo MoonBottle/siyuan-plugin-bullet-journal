@@ -10,6 +10,8 @@ type EmitSpies = {
   openDetail?: ReturnType<typeof vi.fn>;
   checkIn?: ReturnType<typeof vi.fn>;
   increment?: ReturnType<typeof vi.fn>;
+  markMissed?: ReturnType<typeof vi.fn>;
+  resetRecord?: ReturnType<typeof vi.fn>;
 };
 
 function mountComponent(props: Record<string, unknown>, emits: EmitSpies = {}) {
@@ -24,6 +26,8 @@ function mountComponent(props: Record<string, unknown>, emits: EmitSpies = {}) {
         onOpenDetail: emits.openDetail,
         onCheckIn: emits.checkIn,
         onIncrement: emits.increment,
+        onMarkMissed: emits.markMissed,
+        onResetRecord: emits.resetRecord,
       });
     },
   });
@@ -230,6 +234,251 @@ describe('HabitListItem', () => {
     await nextTick();
 
     expect(mounted.container.querySelector('[data-testid="habit-list-item-open-doc"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('renders ebbinghaus overdue hints', async () => {
+    vi.setSystemTime(new Date('2026-05-18T10:00:00+08:00'));
+
+    const habit: Habit = {
+      name: '英语单词',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-05-14',
+      frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-05-18',
+      hasRecord: false,
+      isCompleted: false,
+      isDue: true,
+      isOverdue: true,
+      overdueDays: 3,
+      nextDueDate: '2026-05-15',
+      currentStageIndex: 0,
+      currentIntervalDays: 1,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-05-18',
+      periodEnd: '2026-05-18',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+      nextDueDate: '2026-05-15',
+      currentStageIndex: 0,
+      currentIntervalDays: 1,
+      overdueDays: 3,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-05-18' });
+
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('艾宾浩斯');
+    expect(mounted.container.textContent).toContain('已逾期 3 天');
+
+    mounted.unmount();
+  });
+
+  it('right-clicking a completed binary action opens reset menu and confirms on click', async () => {
+    const habit: Habit = {
+      name: '晨间拉伸',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-12',
+      hasRecord: true,
+      isCompleted: true,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-12',
+      periodEnd: '2026-04-12',
+      requiredCount: 1,
+      completedCount: 1,
+      remainingCount: 0,
+      isCompleted: true,
+      eligibleToday: true,
+    };
+    const emits = {
+      checkIn: vi.fn(),
+      resetRecord: vi.fn(),
+      openDetail: vi.fn(),
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' }, emits);
+    await nextTick();
+
+    const target = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
+    expect(target).not.toBeNull();
+
+    target?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    await nextTick();
+
+    expect(emits.resetRecord).not.toHaveBeenCalled();
+    expect(emits.checkIn).not.toHaveBeenCalled();
+    expect(emits.openDetail).not.toHaveBeenCalled();
+
+    const menuItem = mounted.container.querySelector('[data-testid="habit-list-item-reset-menu-item"]') as HTMLButtonElement | null;
+    expect(menuItem).not.toBeNull();
+
+    menuItem?.click();
+
+    expect(emits.resetRecord).toHaveBeenCalledTimes(1);
+    expect(emits.resetRecord).toHaveBeenCalledWith(habit, '2026-04-12');
+
+    mounted.unmount();
+  });
+
+  it('right-clicking an eligible pending binary action opens mark-missed menu and confirms on click', async () => {
+    const habit: Habit = {
+      name: '晨间拉伸',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-12',
+      hasRecord: false,
+      isCompleted: false,
+      isMissed: false,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-12',
+      periodEnd: '2026-04-12',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+    const emits = {
+      checkIn: vi.fn(),
+      markMissed: vi.fn(),
+      resetRecord: vi.fn(),
+      openDetail: vi.fn(),
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' }, emits);
+    await nextTick();
+
+    const target = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
+    expect(target).not.toBeNull();
+
+    target?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    await nextTick();
+
+    expect(emits.markMissed).not.toHaveBeenCalled();
+    expect(emits.resetRecord).not.toHaveBeenCalled();
+
+    const menuItem = mounted.container.querySelector('[data-testid="habit-list-item-mark-missed-menu-item"]') as HTMLButtonElement | null;
+    expect(menuItem).not.toBeNull();
+
+    menuItem?.click();
+
+    expect(emits.markMissed).toHaveBeenCalledTimes(1);
+    expect(emits.markMissed).toHaveBeenCalledWith(habit, '2026-04-12');
+    expect(emits.resetRecord).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('renders missed binary action as an x marker', async () => {
+    const habit: Habit = {
+      name: '晨间拉伸',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-12',
+      hasRecord: true,
+      isCompleted: false,
+      isMissed: true,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-12',
+      periodEnd: '2026-04-12',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' });
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-action-missed"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-action-empty"]')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-action-check"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('clicking a missed binary action emits reset-record only', async () => {
+    const habit: Habit = {
+      name: '晨间拉伸',
+      type: 'binary',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-12',
+      hasRecord: true,
+      isCompleted: false,
+      isMissed: true,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-12',
+      periodEnd: '2026-04-12',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+    const emits = {
+      checkIn: vi.fn(),
+      resetRecord: vi.fn(),
+      openDetail: vi.fn(),
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' }, emits);
+    await nextTick();
+
+    const target = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
+    expect(target).not.toBeNull();
+
+    target?.click();
+
+    expect(emits.resetRecord).toHaveBeenCalledTimes(1);
+    expect(emits.resetRecord).toHaveBeenCalledWith(habit, '2026-04-12');
+    expect(emits.checkIn).not.toHaveBeenCalled();
+    expect(emits.openDetail).not.toHaveBeenCalled();
 
     mounted.unmount();
   });
@@ -695,7 +944,7 @@ describe('HabitListItem', () => {
 
     const button = mounted.container.querySelector('[data-testid="habit-list-item-check-in"]') as HTMLButtonElement | null;
     expect(button).not.toBeNull();
-    expect(button?.textContent?.trim()).toBe('');
+    expect(button?.textContent?.trim()).toBe('✓');
     expect(button?.querySelector('[data-testid="habit-action-check"]')).not.toBeNull();
 
     mounted.unmount();
@@ -742,6 +991,65 @@ describe('HabitListItem', () => {
     expect(button?.textContent?.trim()).toBe('');
     expect(ring).not.toBeNull();
     expect(ring?.getAttribute('data-progress')).toBe('0.375');
+
+    mounted.unmount();
+  });
+
+  it('right-clicking a partial count action opens reset menu and confirms on click', async () => {
+    const habit: Habit = {
+      name: '喝水',
+      type: 'count',
+      records: [],
+      blockId: 'habit-1',
+      docId: 'doc-1',
+      startDate: '2026-04-01',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+    };
+    const dayState: HabitDayState = {
+      date: '2026-04-12',
+      hasRecord: true,
+      isCompleted: false,
+      isMissed: false,
+      currentValue: 3,
+      targetValue: 8,
+    };
+    const periodState: HabitPeriodState = {
+      periodType: 'day',
+      periodStart: '2026-04-12',
+      periodEnd: '2026-04-12',
+      requiredCount: 1,
+      completedCount: 0,
+      remainingCount: 1,
+      isCompleted: false,
+      eligibleToday: true,
+    };
+    const emits = {
+      increment: vi.fn(),
+      markMissed: vi.fn(),
+      resetRecord: vi.fn(),
+    };
+
+    const mounted = mountComponent({ habit, dayState, periodState, currentDate: '2026-04-12' }, emits);
+    await nextTick();
+
+    const target = mounted.container.querySelector('[data-testid="habit-list-item-increment"]') as HTMLButtonElement | null;
+    expect(target).not.toBeNull();
+
+    target?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    await nextTick();
+
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-reset-menu-item"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="habit-list-item-mark-missed-menu-item"]')).toBeNull();
+
+    const menuItem = mounted.container.querySelector('[data-testid="habit-list-item-reset-menu-item"]') as HTMLButtonElement | null;
+    menuItem?.click();
+
+    expect(emits.resetRecord).toHaveBeenCalledTimes(1);
+    expect(emits.resetRecord).toHaveBeenCalledWith(habit, '2026-04-12');
+    expect(emits.markMissed).not.toHaveBeenCalled();
+    expect(emits.increment).not.toHaveBeenCalled();
 
     mounted.unmount();
   });

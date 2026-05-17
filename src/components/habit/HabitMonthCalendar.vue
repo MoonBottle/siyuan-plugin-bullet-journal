@@ -456,7 +456,7 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(217, 107, 120, 0.14);
+  background: color-mix(in srgb, var(--b3-theme-error) 14%, var(--b3-theme-background) 86%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -464,7 +464,7 @@ onUnmounted(() => {
 }
 
 .habit-month-calendar__missed path {
-  stroke: #d96b78;
+  stroke: var(--b3-theme-error);
   stroke-width: 2;
   stroke-linecap: round;
 }

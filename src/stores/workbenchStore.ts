@@ -54,6 +54,10 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
       title: t('pomodoroStats').statsTitle,
       icon: 'iconClock',
     },
+    focusReview: {
+      title: t('focusReview').title,
+      icon: 'iconList',
+    },
   };
 
   return definitions[viewType];

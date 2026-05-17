@@ -8,7 +8,7 @@ import { initI18n } from '@/i18n';
 import { TAB_TYPES } from '@/constants';
 
 const todoSidebarProps = vi.fn();
-const mockUpdateBlockPriority = vi.fn(() => Promise.resolve(true));
+const mockWriteBlock = vi.fn(() => Promise.resolve(true));
 const nativePreviewOpen = vi.fn();
 const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
@@ -105,8 +105,8 @@ vi.mock('@/utils/dialog', async (importOriginal) => {
   };
 });
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockPriority: mockUpdateBlockPriority,
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: mockWriteBlock,
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -257,7 +257,7 @@ describe('QuadrantTab', () => {
     mockProjectStore.hideCompleted = false;
     mockProjectStore.hideAbandoned = false;
     mockGetFilteredAndSortedItems.mockReturnValue([]);
-    mockUpdateBlockPriority.mockResolvedValue(true);
+    mockWriteBlock.mockResolvedValue(true);
     mockRequestDataRefresh.mockClear();
     mockQuadrantConfigStore.loaded = false;
     mockQuadrantConfigStore.panels = [
@@ -375,7 +375,10 @@ describe('QuadrantTab', () => {
     targetPanel.dispatchEvent(dropEvent);
     await nextTick();
 
-    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-q1', 'medium');
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-q1' },
+      { type: 'setPriority', priority: 'medium' },
+    );
     expect(targetPanel.classList.contains('quadrant-panel--drag-over')).toBe(false);
 
     mounted.unmount();
@@ -421,7 +424,10 @@ describe('QuadrantTab', () => {
     targetPanel.dispatchEvent(dropEvent);
     await nextTick();
 
-    expect(mockUpdateBlockPriority).toHaveBeenCalledWith('block-q1', 'medium');
+    expect(mockWriteBlock).toHaveBeenCalledWith(
+      { blockId: 'block-q1' },
+      { type: 'setPriority', priority: 'medium' },
+    );
 
     mounted.unmount();
   });

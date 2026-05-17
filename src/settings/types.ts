@@ -12,6 +12,7 @@ export type TodoSortField =
 
 export type TodoSortDirection = 'asc' | 'desc';
 export type HabitCheckInTimePrecision = 'day' | 'minute' | 'second';
+export type PomodoroFloatingDisplayMode = 'inline' | 'desktop' | 'both';
 
 export interface TodoSortRule {
   field: TodoSortField;
@@ -39,6 +40,7 @@ export interface PomodoroSettings {
   enableStatusBar?: boolean;
   enableStatusBarTimer?: boolean;
   enableFloatingButton?: boolean;
+  floatingDisplayMode?: PomodoroFloatingDisplayMode;
   recordMode: 'block' | 'attr';
   attrPrefix?: string;
   autoCompleteOnItemDone?: boolean; // 事项完成时自动结束番茄钟，默认 true
@@ -62,11 +64,36 @@ export interface PomodoroSettings {
 }
 
 // 自定义斜杠命令配置
+export type CustomSlashCommandAction =
+  | 'today'
+  | 'tomorrow'
+  | 'date'
+  | 'done'
+  | 'abandon'
+  | 'calendar'
+  | 'calendarDay'
+  | 'calendarWeek'
+  | 'calendarMonth'
+  | 'calendarList'
+  | 'gantt'
+  | 'focus'
+  | 'todo'
+  | 'setProjectDir'
+  | 'markAsTask'
+  | 'viewDetail'
+  | 'setFocusPlan'
+  | 'setReminder'
+  | 'setRecurring'
+  | 'createSkill'
+  | 'setPriority'
+  | 'createHabit'
+  | 'checkIn';
+
 export interface CustomSlashCommand {
   id: string;
   name: string;
   commands: string[];
-  action: 'today' | 'tomorrow' | 'date' | 'done' | 'abandon' | 'calendar' | 'calendarDay' | 'calendarWeek' | 'calendarMonth' | 'calendarList' | 'gantt' | 'focus' | 'todo' | 'setProjectDir' | 'markAsTask' | 'viewDetail' | 'setReminder' | 'setRecurring';
+  action: CustomSlashCommandAction;
 }
 
 // 设置数据结构
@@ -84,6 +111,9 @@ export interface SettingsData {
   showPomodoroBlocks?: boolean;     // 日历日视图是否显示番茄钟时间块，默认 true
   showPomodoroTotal?: boolean;      // 事项条是否显示专注总时长，默认 true
   todoDock: TodoDockSettings;
+  focusReview?: {
+    selectedGroup?: string;
+  };
   ai?: {
     providers: AIProviderConfig[];
     activeProviderId: string | null;
@@ -102,6 +132,7 @@ export const defaultPomodoroSettings: PomodoroSettings = {
   enableStatusBar: false,
   enableStatusBarTimer: false,
   enableFloatingButton: true,
+  floatingDisplayMode: 'inline',
   recordMode: 'block',
   attrPrefix: 'custom-pomodoro',
   autoCompleteOnItemDone: true,
@@ -148,6 +179,9 @@ export const defaultSettings: SettingsData = {
     showLinks: false,
     showReminderAndRecurring: false,
     sortRules: [...defaultTodoSortRules],
+    selectedGroup: '',
+  },
+  focusReview: {
     selectedGroup: '',
   },
   ai: {

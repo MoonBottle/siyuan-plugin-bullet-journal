@@ -278,10 +278,11 @@ import { useProjectStore } from '@/stores';
 import { t } from '@/i18n';
 import type { Item, PriorityLevel } from '@/types/models';
 import dayjs from '@/utils/dayjs';
+import { writeBlock } from '@/utils/blockWriter';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
 import { formatDateLabel as formatDateLabelUtil } from '@/utils/dateUtils';
 import { getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';
-import { updateBlockDateTime } from '@/utils/fileUtils';
 import { showMessage } from '@/utils/dialog';
 
 const props = defineProps<{
@@ -509,13 +510,13 @@ const handlePostponeAll = async (items: Item[]) => {
   for (const item of items) {
     if (item.blockId) {
       try {
-        await updateBlockDateTime(
-          item.blockId,
-          tomorrow,
-          item.startDateTime?.split(' ')[1],
-          item.endDateTime?.split(' ')[1]
+        const success = await writeBlock(
+          { blockId: item.blockId },
+          buildDatePatchFromItem(item, tomorrow, { includeCurrentItemInSiblings: true }),
         );
-        successCount++;
+        if (success) {
+          successCount++;
+        }
       } catch (e) {
         console.error('Failed to postpone item:', e);
       }
