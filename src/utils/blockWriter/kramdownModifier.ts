@@ -13,6 +13,14 @@ import {
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 
 const DATE_MARKER_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/g;
+const DATE_MARKER_START_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/u;
+const PRIORITY_MARKER_RE = /(?:^|\s)[🔥🌱🍃](?=\s|$)/u;
+const STATUS_MARKER_RE = /(?:^|\s)(?:#已完成|#已放弃|#done|#abandoned|✅|❌)(?=\s|$)/iu;
+const PINNED_MARKER_RE = /(?:^|\s)📌(?=\s|$)/u;
+const FOCUS_PLAN_MARKER_RE = /(?:^|\s)(?:⏳\S+|🍅x\d+)(?=\s|$)/u;
+const REMINDER_MARKER_RE = /(?:^|\s)⏰(?:\d{2}:\d{2}(?::\d{2})?|提前\d+(?:分钟|小时|天)|结束前\d+(?:分钟|小时|天)|\d+\s*(?:minutes?|hours?|days?|m|h|d)\s*before(?:\s*end)?)(?=\s|$)/iu;
+const RECURRING_MARKER_RE = /(?:^|\s)🔁(?:每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)/iu;
+const END_CONDITION_MARKER_RE = /(?:^|\s)(?:截止到\d{4}-\d{2}-\d{2}|until\s+\d{4}-\d{2}-\d{2}|剩余\s*\d+\s*次|\d+\s*(?:times?\s*)?remaining)(?=\s|$)/iu;
 
 function primaryLineIndex(contentLines: string[]): number {
   return 0;
@@ -114,21 +122,35 @@ function applyContent(line: string, suffix?: string, newItemContent?: string): s
 
 function findFirstMarker(line: string): number {
   const candidates: number[] = [];
-  const dateIdx = line.search(DATE_MARKER_RE);
+  const dateIdx = line.search(DATE_MARKER_START_RE);
   if (dateIdx >= 0) candidates.push(dateIdx);
-  const durationIdx = line.indexOf('⏳');
-  if (durationIdx >= 0) candidates.push(durationIdx);
-  const pomodoroIdx = line.search(/🍅x\d+/);
-  if (pomodoroIdx >= 0) candidates.push(pomodoroIdx);
-  for (const tag of ['#已完成', '#已放弃', '#done', '#abandoned', '✅', '❌']) {
-    const idx = line.indexOf(tag);
+
+  const markerRegexes = [
+    PRIORITY_MARKER_RE,
+    STATUS_MARKER_RE,
+    PINNED_MARKER_RE,
+    FOCUS_PLAN_MARKER_RE,
+    REMINDER_MARKER_RE,
+    RECURRING_MARKER_RE,
+    END_CONDITION_MARKER_RE,
+  ];
+
+  for (const regex of markerRegexes) {
+    const idx = findPatternStart(line, regex);
     if (idx >= 0) candidates.push(idx);
   }
-  for (const pri of ['🔥', '🌱', '🍃']) {
-    const idx = line.indexOf(pri);
-    if (idx >= 0) candidates.push(idx);
-  }
+
   return candidates.length > 0 ? Math.min(...candidates) : -1;
+}
+
+function findPatternStart(line: string, regex: RegExp): number {
+  regex.lastIndex = 0;
+  const match = regex.exec(line);
+  if (!match || match.index === undefined) {
+    return -1;
+  }
+  const relativeStart = match[0].search(/\S/u);
+  return relativeStart >= 0 ? match.index + relativeStart : match.index;
 }
 
 function applyFocusPlan(line: string, patch: Extract<BlockPatch, { type: 'setFocusPlan' }>): string {

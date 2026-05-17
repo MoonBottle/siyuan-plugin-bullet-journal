@@ -129,6 +129,26 @@ describe('kramdownModifier', () => {
         '新任务 🔥 📅2026-05-14 #已完成\n{: id="abc"}',
       );
     });
+
+    it('replaces content preserving reminder, recurring, end condition, and pin markers', () => {
+      expect(applyBlockPatch(parts('- [ ] 旧任务 📌 🌱 📅2026-03-08 ⏰09:00 🔁每月1,15日 剩余30次\n{: id="abc"}'), {
+        type: 'setContent',
+        newItemContent: '新任务',
+      })).toBe(
+        '- [ ] 新任务 📌 🌱 📅2026-03-08 ⏰09:00 🔁每月1,15日 剩余30次\n{: id="abc"}',
+      );
+    });
+
+    it('does not treat pin-like text inside block refs as a pinned marker', () => {
+      expect(applyBlockPatch(parts(`跟进((20260310210016-gkixdit '📌 #Alpha 设计稿')) @2026-03-21 #done
+{: id="abc"}`), {
+        type: 'setContent',
+        newItemContent: '新跟进',
+      })).toBe(
+        `新跟进 @2026-03-21 #done
+{: id="abc"}`,
+      );
+    });
   });
 
   describe('setFocusPlan', () => {
