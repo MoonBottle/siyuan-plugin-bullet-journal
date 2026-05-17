@@ -27,6 +27,7 @@ import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
 import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
 import { insertBlockAfter, writeBlock, type DatePatch } from '@/utils/blockWriter';
+import { findSlashCommandStartOffset } from '@/utils/blockWriter/slashRange';
 import {
   RefreshReasons,
   createFullRefreshRequest,
@@ -56,21 +57,47 @@ function removeSlashCommandViaWriter(
   );
 }
 
-function cleanupActiveSlashCommandLocally(): void {
+function cleanupActiveSlashCommandLocally(nodeElement?: HTMLElement | null): void {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
+  const showText = typeof NodeFilter === 'undefined' ? 4 : NodeFilter.SHOW_TEXT;
+  const filterAccept = typeof NodeFilter === 'undefined' ? 1 : NodeFilter.FILTER_ACCEPT;
+  const filterSkip = typeof NodeFilter === 'undefined' ? 3 : NodeFilter.FILTER_SKIP;
+
+  let textNode: Text | null = null;
+  let currentOffset = 0;
+
+  if (selection && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+      textNode = range.startContainer as Text;
+      currentOffset = range.startOffset;
+    }
+  }
+
+  if (!textNode && nodeElement) {
+    const walker = document.createTreeWalker(nodeElement, showText, {
+      acceptNode(node) {
+        return (node.textContent ?? '').trim().length > 0
+          ? filterAccept
+          : filterSkip;
+      },
+    });
+
+    while (walker.nextNode()) {
+      textNode = walker.currentNode as Text;
+    }
+
+    if (textNode) {
+      currentOffset = textNode.textContent?.length ?? 0;
+    }
+  }
+
+  if (!textNode) {
     return;
   }
 
-  const range = selection.getRangeAt(0);
-  if (range.startContainer.nodeType !== Node.TEXT_NODE) {
-    return;
-  }
-
-  const textNode = range.startContainer as Text;
   const textContent = textNode.textContent || '';
-  const currentOffset = range.startOffset;
-  const slashIndex = textContent.lastIndexOf('/', currentOffset);
+  const slashIndex = findSlashCommandStartOffset(textContent, currentOffset);
   if (slashIndex === -1) {
     return;
   }
@@ -93,8 +120,8 @@ function cleanupActiveSlashCommandLocally(): void {
   const nextRange = document.createRange();
   nextRange.setStart(textNode, Math.min(deleteStart, newText.length));
   nextRange.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(nextRange);
+  selection?.removeAllRanges();
+  selection?.addRange(nextRange);
 }
 
 /**
@@ -1006,7 +1033,7 @@ async function markAsTodayItem(
   });
 
   if (success) {
-    cleanupActiveSlashCommandLocally();
+    cleanupActiveSlashCommandLocally(nodeElement);
     showMessage(t('slash').markSuccess, 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1044,7 +1071,7 @@ async function markAsTomorrowItem(
   });
 
   if (success) {
-    cleanupActiveSlashCommandLocally();
+    cleanupActiveSlashCommandLocally(nodeElement);
     showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1085,7 +1112,7 @@ async function markAsDateItem(
       });
 
       if (success) {
-        cleanupActiveSlashCommandLocally();
+        cleanupActiveSlashCommandLocally(nodeElement);
         showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
       } else {
         showMessage(t('slash').markFailed, 2000, 'error');

@@ -53,6 +53,45 @@ describe('protyleTransport', () => {
     document.body.removeChild(div);
   });
 
+  it('removes Chinese punctuation slash command text from DOM', async () => {
+    const div = document.createElement('div');
+    div.setAttribute('data-node-id', 'block-123');
+    div.textContent = '任务 、wc 测试内容';
+    document.body.appendChild(div);
+
+    const textNode = div.firstChild!;
+    const range = document.createRange();
+    range.setStart(textNode, '任务 、wc'.length);
+    range.setEnd(textNode, '任务 、wc'.length);
+
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const context = {
+      blockId: 'block-123',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: div,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'removeSlashCommand',
+      suffix: '',
+    });
+
+    expect(result).toBe(true);
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(div.textContent).not.toContain('、wc');
+    expect(div.textContent).toContain('测试内容');
+
+    document.body.removeChild(div);
+  });
+
   it('returns false for non-slash non-status patches', async () => {
     const div = createDiv();
     const context = {

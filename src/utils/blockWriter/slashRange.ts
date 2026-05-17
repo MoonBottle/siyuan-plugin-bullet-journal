@@ -5,6 +5,25 @@ export interface ActiveSlashRange {
   slashStartOffset: number;
 }
 
+const SLASH_COMMAND_START_CHARS = ['/', '、'] as const;
+
+function isSlashCommandStartChar(char: string | undefined): boolean {
+  return SLASH_COMMAND_START_CHARS.some(candidate => candidate === char);
+}
+
+export function findSlashCommandStartOffset(textContent: string, cursorOffset: number): number {
+  let startOffset = -1;
+
+  for (const marker of SLASH_COMMAND_START_CHARS) {
+    const markerOffset = textContent.lastIndexOf(marker, cursorOffset);
+    if (markerOffset > startOffset) {
+      startOffset = markerOffset;
+    }
+  }
+
+  return startOffset;
+}
+
 export function getActiveSlashRange(): ActiveSlashRange | null {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return null;
@@ -22,7 +41,7 @@ export function getActiveSlashRange(): ActiveSlashRange | null {
   if (!blockId) return null;
 
   const textContent = startNode.textContent ?? '';
-  const slashIdx = textContent.lastIndexOf('/', range.startOffset);
+  const slashIdx = findSlashCommandStartOffset(textContent, range.startOffset);
 
   if (slashIdx === -1) return null;
 
@@ -42,7 +61,7 @@ export function deleteSlashRangeText(range: Range, slashStartOffset: number): vo
     throw new Error(`Invalid slashStartOffset ${slashStartOffset}`);
   }
   const text = range.startContainer.textContent ?? '';
-  if (text[slashStartOffset] !== '/') return;
+  if (!isSlashCommandStartChar(text[slashStartOffset])) return;
 
   range.setStart(range.startContainer, slashStartOffset);
   range.deleteContents();

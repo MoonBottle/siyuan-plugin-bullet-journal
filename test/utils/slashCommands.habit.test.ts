@@ -308,14 +308,14 @@ describe('habit slash commands', () => {
     );
   });
 
-  it('/jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {
+  it('、jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([{ date: '2026-04-29' }] as any);
-    vi.mocked(processLineText).mockImplementation((text: string) => text.replace('/jt', '').trimEnd());
+    vi.mocked(processLineText).mockImplementation((text: string) => text.replace('、jt', '').trimEnd());
 
     const handler = getActionHandler('today', {} as any, ['/jt']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-today');
-    const textNode = document.createTextNode('测试独立事项 📅2026-04-29 /jt');
+    const textNode = document.createTextNode('测试独立事项 📅2026-04-29 、jt');
     node.appendChild(textNode);
     document.body.appendChild(node);
 
