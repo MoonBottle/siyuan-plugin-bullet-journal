@@ -107,6 +107,7 @@ import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
 import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
 import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
+import type { WorkbenchQuadrantWidgetConfig } from '@/types/workbench';
 import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant';
 import { writeBlock } from '@/utils/blockWriter';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
@@ -126,7 +127,11 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const quadrantConfigStore = useQuadrantConfigStore();
 
-const selectedGroup = ref(settingsStore.defaultGroup || '');
+const selectedGroup = ref(
+  (props.viewConfig as WorkbenchQuadrantWidgetConfig | undefined)?.groupId
+  || settingsStore.defaultGroup
+  || '',
+);
 const isSelectedGroupDefaultDriven = ref(true);
 const searchQuery = ref('');
 const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebarList> | null>>([]);
