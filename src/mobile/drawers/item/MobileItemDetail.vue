@@ -767,7 +767,6 @@ const onPriorityChange = async (newPriority: PriorityLevel | undefined) => {
   if (!props.item || newPriority === props.item.priority) return;
   
   try {
-    // Use updateBlockPriority to properly update the priority
     const success = await writeBlock(
       { blockId: props.item.blockId },
       { type: 'setPriority', priority: newPriority },

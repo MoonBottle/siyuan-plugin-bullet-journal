@@ -9,16 +9,17 @@
   "repository": "",
   "scripts": {
     "check:deprecated-fileutils-imports": "node ./scripts/check-deprecated-fileutils-imports.mjs",
+    "check:direct-updateblock-imports": "node ./scripts/check-direct-updateblock-imports.mjs",
     "dev": "vite build --config vite.mcp.config.ts && concurrently \"vite build --config vite.mcp.config.ts -w\" \"vite build -w\"",
     "release": "node ./release.js",
     "release:manual": "node ./release.js --mode=manual",
     "release:patch": "node ./release.js --mode=patch",
     "release:minor": "node ./release.js --mode=minor",
     "release:major": "node ./release.js --mode=major",
-    "build": "npm run check:deprecated-fileutils-imports && vite build --config vite.mcp.config.ts && vite build --config vite.kernel.config.ts && cross-env EMPTY_OUT_DIR=false vite build",
+    "build": "npm run check:deprecated-fileutils-imports && npm run check:direct-updateblock-imports && vite build --config vite.mcp.config.ts && vite build --config vite.kernel.config.ts && cross-env EMPTY_OUT_DIR=false vite build",
     "mcp": "node dist/mcp-server.js",
     "build:kernel": "vite build --config vite.kernel.config.ts",
-    "test": "npm run check:deprecated-fileutils-imports && vitest run",
+    "test": "npm run check:deprecated-fileutils-imports && npm run check:direct-updateblock-imports && vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
