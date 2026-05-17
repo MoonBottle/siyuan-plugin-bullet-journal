@@ -264,6 +264,52 @@ describe('protyleTransport', () => {
     document.body.removeChild(block);
   });
 
+  it('renders completed status on the primary line for multiline paragraphs', async () => {
+    const block = document.createElement('div');
+    block.classList.add('p');
+    block.setAttribute('data-node-id', 'block-multiline');
+    block.setAttribute('data-type', 'NodeParagraph');
+    block.innerHTML = `
+      <div contenteditable="true" spellcheck="false">测试事项 <span data-type="tag">\u200b测试</span>\u200b 📅2026-05-16
+测试换行</div>
+      <div class="protyle-attr" contenteditable="false">\u200b</div>
+    `;
+    document.body.appendChild(block);
+
+    const context = {
+      blockId: 'block-multiline',
+      protyle: {
+        lute: {
+          SpinBlockDOM: vi.fn((html: string) => html),
+          BlockDOM2Content: vi.fn(() => '测试事项 #测试# 📅2026-05-16\n测试换行'),
+          Md2BlockDOM: vi.fn(() => `
+            <div data-type="NodeParagraph" class="p">
+              <div contenteditable="true" spellcheck="false">测试事项 <span data-type="tag">\u200b测试</span>\u200b 📅2026-05-16 ✅
+测试换行</div>
+              <div class="protyle-attr" contenteditable="false">\u200b</div>
+            </div>
+          `),
+        },
+        transaction: vi.fn(),
+      } as any,
+      nodeElement: block,
+    };
+
+    const result = await writeViaProtyle(context, {
+      type: 'setStatus',
+      status: 'completed',
+    });
+
+    expect(result).toBe(true);
+    expect(context.protyle.lute.Md2BlockDOM).toHaveBeenCalledWith('测试事项 #测试# 📅2026-05-16 ✅\n测试换行');
+    expect(context.protyle.transaction).toHaveBeenCalledOnce();
+    expect(block.querySelector('[data-type="tag"]')).not.toBeNull();
+    expect(block.textContent).toContain('测试换行');
+    expect(block.textContent).toContain('✅');
+
+    document.body.removeChild(block);
+  });
+
   it('updates habit records through Protyle DOM on the current block', async () => {
     const block = createParagraphBlock('record-1', '喝水 3/8杯 📅2026-05-17');
     document.body.appendChild(block);

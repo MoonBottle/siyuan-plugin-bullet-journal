@@ -1,6 +1,7 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, StatusPatch } from './types';
 import { deleteSlashRangeText, getActiveSlashRange } from './slashRange';
 import { applyBlockPatch } from './kramdownModifier';
+import { splitKramdownBlock } from './kramdownBlocks';
 import { blockElementToMarkdownContent, renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 
 interface CursorState {
@@ -122,11 +123,22 @@ function handleRenderedMarkdownPatchViaDOM(
     return false;
   }
 
-  const nextMarkdown = applyBlockPatch({
-    contentLines: [currentMarkdown],
-    ialLines: [],
-    raw: currentMarkdown,
-  }, patch);
+  if (nodeElement.querySelector('[data-type="tag"]') && !/#.+#/u.test(currentMarkdown)) {
+    console.debug(`${PROTYLE_WRITER_LOG_PREFIX} tag marker missing from current markdown`, {
+      patchType: patch.type,
+      blockId,
+      currentMarkdown,
+      textPreview: (nodeElement.textContent ?? '').slice(0, 160),
+    });
+  }
+
+  const nextMarkdown = applyBlockPatch(splitKramdownBlock(currentMarkdown), patch);
+  console.debug(`${PROTYLE_WRITER_LOG_PREFIX} rendered markdown patch`, {
+    patchType: patch.type,
+    blockId,
+    currentMarkdown,
+    nextMarkdown,
+  });
   const oldHTML = nodeElement.outerHTML;
   if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, nextMarkdown)) {
     console.debug(`${PROTYLE_WRITER_LOG_PREFIX} render markdown into editable failed`, {
