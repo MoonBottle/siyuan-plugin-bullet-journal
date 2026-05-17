@@ -1,6 +1,8 @@
 import type {
   EndCondition,
   FocusPlan,
+  Habit,
+  HabitRecordStatus,
   ItemDateTimeInfo as ModelItemDateTimeInfo,
   ItemStatus,
   PriorityLevel,
@@ -8,6 +10,7 @@ import type {
   RepeatRule,
   TimePrecision,
 } from '@/types/models';
+import type { HabitCheckInTimePrecision } from '@/settings/types';
 
 export type { ItemDateTimeInfo } from '@/types/models';
 
@@ -73,6 +76,36 @@ export type SlashCommandPatch = {
   suffix?: string;
 };
 
+export type HabitDefinitionPatch = {
+  type: 'setHabitDefinition';
+  habit: Partial<Habit>;
+};
+
+export type HabitRecordPatch = {
+  type: 'setHabitRecord';
+  record: {
+    content: string;
+    habitType: Habit['type'];
+    date: string;
+    value?: number;
+    target?: number;
+    unit?: string;
+    precision?: HabitCheckInTimePrecision;
+    recordStatus?: HabitRecordStatus;
+  };
+};
+
+export type HabitArchivePatch = {
+  type: 'setHabitArchive';
+  archivedAt?: string;
+};
+
+export type ReplaceMarkdownPatch = {
+  type: 'replaceMarkdown';
+  markdown: string;
+  preserveIAL?: boolean;
+};
+
 export type BlockPatch =
   | DatePatch
   | StatusPatch
@@ -82,9 +115,14 @@ export type BlockPatch =
   | ReminderPatch
   | RecurringPatch
   | PinnedPatch
-  | SlashCommandPatch;
+  | SlashCommandPatch
+  | HabitDefinitionPatch
+  | HabitRecordPatch
+  | HabitArchivePatch
+  | ReplaceMarkdownPatch;
 
 export type BatchBlockPatch = BlockPatch[];
+export type InsertableBlockPatch = HabitDefinitionPatch | HabitRecordPatch | ReplaceMarkdownPatch;
 
 export interface KramdownBlockParts {
   contentLines: string[];

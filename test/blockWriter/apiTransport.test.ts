@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/api', () => ({
   getBlockByID: vi.fn().mockResolvedValue({ id: 'abc', type: 'NodeParagraph' }),
   getBlockKramdown: vi.fn().mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' }),
+  insertBlock: vi.fn().mockResolvedValue([]),
   updateBlock: vi.fn().mockResolvedValue([]),
 }));
 
-import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
-import { writeViaApi } from '@/utils/blockWriter/apiTransport';
+import { getBlockByID, getBlockKramdown, insertBlock, updateBlock } from '@/api';
+import { insertViaApi, writeViaApi } from '@/utils/blockWriter/apiTransport';
 
 describe('apiTransport', () => {
   beforeEach(() => {
@@ -135,6 +136,36 @@ describe('apiTransport', () => {
     const result = await writeViaApi('block123', { type: 'removeSlashCommand' });
 
     expect(result).toBe(false);
+    expect(updateBlock).not.toHaveBeenCalled();
+  });
+
+  it('inserts habit records via API as dom when Lute is available', async () => {
+    vi.mocked(insertBlock).mockResolvedValue([]);
+    const md2BlockDOM = stubLute((markdown) => `<div data-type="NodeParagraph">${markdown}</div>`);
+
+    const result = await insertViaApi('block123', {
+      type: 'setHabitRecord',
+      record: {
+        content: '喝水',
+        habitType: 'count',
+        date: '2026-05-16',
+        value: 3,
+        target: 8,
+        unit: '杯',
+        precision: 'day',
+        recordStatus: 'completed',
+      },
+    });
+
+    expect(result).toBe(true);
+    expect(md2BlockDOM).toHaveBeenCalledWith('喝水 3/8杯 📅2026-05-16');
+    expect(insertBlock).toHaveBeenCalledWith(
+      'dom',
+      '<div data-type="NodeParagraph">喝水 3/8杯 📅2026-05-16</div>',
+      undefined,
+      'block123',
+      undefined,
+    );
     expect(updateBlock).not.toHaveBeenCalled();
   });
 });

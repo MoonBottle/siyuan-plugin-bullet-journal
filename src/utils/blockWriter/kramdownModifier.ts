@@ -1,7 +1,8 @@
-import type { BlockPatch, DatePatch, KramdownBlockParts } from './types';
+import type { BlockPatch, DatePatch, InsertableBlockPatch, KramdownBlockParts } from './types';
 import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
 import { generatePriorityMarker, isTaskListFormat, statusToLabel, stripPriorityMarker } from './itemLineMarkers';
 import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
+import { buildHabitDefinitionMarkdown } from '@/parser/habitParser';
 import { generatePinnedMarker, parsePinnedFromLine, stripPinnedMarker } from '@/parser/pinParser';
 import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
 import {
@@ -9,6 +10,7 @@ import {
   generateRepeatRuleMarker,
   stripRecurringMarkers,
 } from '@/parser/recurringParser';
+import { buildHabitRecordMarkdown } from '@/utils/habitMarkdown';
 
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 
@@ -21,6 +23,7 @@ const FOCUS_PLAN_MARKER_RE = /(?:^|\s)(?:⏳\S+|🍅x\d+)(?=\s|$)/u;
 const REMINDER_MARKER_RE = /(?:^|\s)⏰(?:\d{2}:\d{2}(?::\d{2})?|提前\d+(?:分钟|小时|天)|结束前\d+(?:分钟|小时|天)|\d+\s*(?:minutes?|hours?|days?|m|h|d)\s*before(?:\s*end)?)(?=\s|$)/iu;
 const RECURRING_MARKER_RE = /(?:^|\s)🔁(?:每天|每周|每月|每年|工作日|daily|weekly|monthly|yearly|workday)/iu;
 const END_CONDITION_MARKER_RE = /(?:^|\s)(?:截止到\d{4}-\d{2}-\d{2}|until\s+\d{4}-\d{2}-\d{2}|剩余\s*\d+\s*次|\d+\s*(?:times?\s*)?remaining)(?=\s|$)/iu;
+const HABIT_ARCHIVE_MARKER_RE = /(?:^|\s)📦\d{4}-\d{2}-\d{2}(?=\s|$)/gu;
 
 function primaryLineIndex(contentLines: string[]): number {
   return 0;
@@ -197,6 +200,45 @@ function applyPinned(
   return nextLines;
 }
 
+function applyHabitDefinition(
+  patch: Extract<BlockPatch, { type: 'setHabitDefinition' }>,
+): string {
+  return buildHabitDefinitionMarkdown(patch.habit);
+}
+
+function applyHabitRecord(
+  patch: Extract<BlockPatch, { type: 'setHabitRecord' }>,
+): string {
+  return buildHabitRecordMarkdown(patch.record);
+}
+
+function applyHabitArchive(
+  line: string,
+  patch: Extract<BlockPatch, { type: 'setHabitArchive' }>,
+): string {
+  const clean = line
+    .replace(HABIT_ARCHIVE_MARKER_RE, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  if (!patch.archivedAt) {
+    return clean;
+  }
+
+  return `${clean} 📦${patch.archivedAt}`.trim();
+}
+
+function applyReplaceMarkdown(
+  parts: KramdownBlockParts,
+  patch: Extract<BlockPatch, { type: 'replaceMarkdown' }>,
+): string {
+  const nextParts = splitKramdownBlock(patch.markdown);
+  return rebuildKramdownBlock({
+    ...nextParts,
+    ialLines: patch.preserveIAL === false ? nextParts.ialLines : parts.ialLines,
+  });
+}
+
 export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): string {
   const contentLines = [...parts.contentLines];
   const index = primaryLineIndex(contentLines);
@@ -246,6 +288,25 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
     return replaceContentLines(parts, applyPinned(contentLines, patch));
   }
 
+  if (patch.type === 'setHabitDefinition') {
+    contentLines[index] = applyHabitDefinition(patch);
+    return replaceContentLines(parts, contentLines);
+  }
+
+  if (patch.type === 'setHabitRecord') {
+    contentLines[index] = applyHabitRecord(patch);
+    return replaceContentLines(parts, contentLines);
+  }
+
+  if (patch.type === 'setHabitArchive') {
+    contentLines[index] = applyHabitArchive(line, patch);
+    return replaceContentLines(parts, contentLines);
+  }
+
+  if (patch.type === 'replaceMarkdown') {
+    return applyReplaceMarkdown(parts, patch);
+  }
+
   throw new Error(`Patch type '${(patch as any).type}' is not implemented yet`);
 }
 
@@ -256,4 +317,20 @@ export function applyBlockPatches(parts: KramdownBlockParts, patches: BlockPatch
     currentParts = splitKramdownBlock(result);
   }
   return rebuildKramdownBlock(currentParts);
+}
+
+export function renderInsertableBlockPatch(patch: InsertableBlockPatch): string {
+  if (patch.type === 'setHabitDefinition') {
+    return applyHabitDefinition(patch);
+  }
+
+  if (patch.type === 'setHabitRecord') {
+    return applyHabitRecord(patch);
+  }
+
+  if (patch.type === 'replaceMarkdown') {
+    return patch.markdown;
+  }
+
+  throw new Error(`Patch type '${(patch as any).type}' is not insertable`);
 }

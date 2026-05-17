@@ -1,5 +1,5 @@
-import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
-import { writeViaApi } from './apiTransport';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from './types';
+import { insertViaApi, writeViaApi } from './apiTransport';
 import { createProtyleMarkdownWriter } from './markdownWriter';
 import { writeDatePatch } from './datePatchWriter';
 import { writeViaProtyle } from './protyleTransport';
@@ -11,9 +11,14 @@ export type {
   ContentPatch,
   DatePatch,
   FocusPlanPatch,
+  HabitArchivePatch,
+  HabitDefinitionPatch,
+  HabitRecordPatch,
   ItemDateTimeInfo,
+  InsertableBlockPatch,
   PinnedPatch,
   PriorityPatch,
+  ReplaceMarkdownPatch,
   RecurringPatch,
   ReminderPatch,
   ResolvedBlockTarget,
@@ -22,6 +27,10 @@ export type {
 } from './types';
 
 export { createProtyleMarkdownWriter } from './markdownWriter';
+
+export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
+  return insertViaApi(previousBlockId, patch);
+}
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   const patchArray = Array.isArray(patches) ? patches : [patches];

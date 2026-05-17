@@ -9,7 +9,6 @@ import { t } from '@/i18n';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
-import { insertBlock } from '@/api';
 import { usePlugin } from '@/main';
 import {
   generateSlashPatterns,
@@ -26,8 +25,8 @@ import type { Habit, Item, ProjectDirectory, PriorityLevel } from '@/types/model
 import { parseHabitRecordLine, parseHabitLine } from '@/parser/habitParser';
 import { parsePriorityFromLine } from '@/parser/priorityParser';
 import type { CustomSlashCommand } from '@/settings/types';
-import { getHPathByID, getBlockByID, renameDocByID, updateBlock } from '@/api';
-import { writeBlock, type DatePatch } from '@/utils/blockWriter';
+import { getHPathByID, getBlockByID, renameDocByID } from '@/api';
+import { insertBlockAfter, writeBlock, type DatePatch } from '@/utils/blockWriter';
 import {
   RefreshReasons,
   createFullRefreshRequest,
@@ -765,11 +764,14 @@ export function getActionHandler(
             return;
           }
 
-          if (parsedHabit) {
-            updateBlock('markdown', markdown, blockId);
-          } else {
-            insertBlock('markdown', markdown, undefined, blockId);
+          const nextHabit = parseHabitLine(markdown);
+          if (!nextHabit) {
+            return;
           }
+
+          void (parsedHabit
+            ? writeBlock({ blockId }, { type: 'setHabitDefinition', habit: nextHabit })
+            : insertBlockAfter(blockId, { type: 'setHabitDefinition', habit: nextHabit }));
         }, parsedHabit || undefined);
       };
     case 'checkIn':

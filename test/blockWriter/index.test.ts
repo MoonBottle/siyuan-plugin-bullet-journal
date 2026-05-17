@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/api', () => ({
   getBlockByID: vi.fn().mockResolvedValue({ id: 'abc', type: 'NodeParagraph' }),
   getBlockKramdown: vi.fn().mockResolvedValue({ id: 'abc', kramdown: '- [ ] 任务\n{: id="abc"}' }),
+  insertBlock: vi.fn().mockResolvedValue([]),
   updateBlock: vi.fn().mockResolvedValue([]),
 }));
 
-import { updateBlock } from '@/api';
-import { writeBlock } from '@/utils/blockWriter';
+import { insertBlock, updateBlock } from '@/api';
+import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
 
 describe('writeBlock', () => {
   beforeEach(() => {
@@ -176,5 +177,28 @@ describe('writeBlock', () => {
     );
 
     document.body.removeChild(li);
+  });
+
+  it('inserts habit definitions through blockWriter', async () => {
+    const result = await insertBlockAfter('block123', {
+      type: 'setHabitDefinition',
+      habit: {
+        name: '喝水',
+        startDate: '2026-04-01',
+        type: 'count',
+        target: 8,
+        unit: '杯',
+        frequency: { type: 'daily' },
+      },
+    });
+
+    expect(result).toBe(true);
+    expect(insertBlock).toHaveBeenCalledWith(
+      'markdown',
+      '喝水 🎯2026-04-01 8杯 🔄每天',
+      undefined,
+      'block123',
+      undefined,
+    );
   });
 });

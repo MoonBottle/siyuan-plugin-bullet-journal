@@ -329,4 +329,16 @@ describe('buildHabitDefinitionMarkdown', () => {
       frequency: { type: 'ebbinghaus', intervals: [1, 2, 4, 7, 15] },
     })).toBe('英语单词 🎯2026-05-14 🔄艾宾浩斯[1,2,4,7,15]');
   });
+
+  it('序列化归档标记回 markdown', () => {
+    expect(buildHabitDefinitionMarkdown({
+      name: '喝水',
+      startDate: '2026-04-01',
+      type: 'count',
+      target: 8,
+      unit: '杯',
+      frequency: { type: 'daily' },
+      archivedAt: '2026-05-04',
+    })).toBe('喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04');
+  });
 });

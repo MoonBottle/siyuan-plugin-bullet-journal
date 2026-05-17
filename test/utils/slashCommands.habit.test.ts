@@ -52,6 +52,7 @@ vi.mock('@/utils/fileUtils', () => ({
 
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: vi.fn().mockResolvedValue(true),
+  insertBlockAfter: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({
@@ -98,7 +99,7 @@ import { processLineText, extractDatesFromBlock } from '@/utils/slashCommandUtil
 import { useProjectStore, useSettingsStore } from '@/stores';
 import { getActionHandler } from '@/utils/slashCommands';
 import { eventBus, Events } from '@/utils/eventBus';
-import { writeBlock } from '@/utils/blockWriter';
+import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
 
 const projectStoreMock = {
   getHabits: vi.fn(() => []),
@@ -118,10 +119,10 @@ describe('habit slash commands', () => {
     projectStoreMock.getHabits.mockReturnValue([]);
   });
 
-  it('/xg 在习惯行上应进入编辑模式', () => {
+  it('/xg 在习惯行上应进入编辑模式，并在保存后走习惯定义 patch 更新', async () => {
     const showSpy = vi.mocked(showHabitCreateDialog);
     showSpy.mockImplementation((onSave: (markdown: string) => void) => {
-      onSave('已更新的习惯');
+      onSave('喝水 🎯2026-04-01 10杯 ⏰09:00 🔄每天');
       return {} as any;
     });
     const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
@@ -130,12 +131,25 @@ describe('habit slash commands', () => {
     node.textContent = '喝水 🎯2026-04-01 8杯 ⏰09:00 🔄每天';
 
     handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
       name: '喝水',
       target: 8,
       unit: '杯',
     }));
+    expect(writeBlock).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'block-1' }),
+      {
+        type: 'setHabitDefinition',
+        habit: expect.objectContaining({
+          name: '喝水',
+          target: 10,
+          unit: '杯',
+        }),
+      },
+    );
   });
 
   it('/xg 删除命令后即使残留零宽字符也应进入编辑模式', () => {
@@ -264,6 +278,34 @@ describe('habit slash commands', () => {
     handler({} as any, node);
 
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), undefined);
+  });
+
+  it('/xg 在普通事项行保存后应通过 blockWriter 插入新的习惯定义块', async () => {
+    const showSpy = vi.mocked(showHabitCreateDialog);
+    showSpy.mockImplementation((onSave: (markdown: string) => void) => {
+      onSave('早起 🎯2026-04-01 🔄每天');
+      return {} as any;
+    });
+    const handler = getActionHandler('createHabit', { openHabitDock: vi.fn() } as any, ['/xg']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'task-create');
+    node.textContent = 'Buy milk @2026-04-30';
+
+    handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(insertBlockAfter).toHaveBeenCalledWith(
+      'task-create',
+      {
+        type: 'setHabitDefinition',
+        habit: expect.objectContaining({
+          name: '早起',
+          type: 'binary',
+          frequency: expect.objectContaining({ type: 'daily' }),
+        }),
+      },
+    );
   });
 
   it('/jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {

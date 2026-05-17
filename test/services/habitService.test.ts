@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/api', () => ({
-  updateBlock: vi.fn(),
-  insertBlock: vi.fn(),
   getBlockKramdown: vi.fn(),
   deleteBlock: vi.fn(),
+}));
+
+vi.mock('@/utils/blockWriter', () => ({
+  writeBlock: vi.fn().mockResolvedValue(true),
+  insertBlockAfter: vi.fn().mockResolvedValue(true),
 }));
 
 import {
@@ -24,7 +27,8 @@ import {
   updateCheckInMarkdown,
 } from '@/services/habitService';
 import type { Habit, CheckInRecord } from '@/types/models';
-import { deleteBlock, getBlockKramdown, insertBlock, updateBlock } from '@/api';
+import { deleteBlock, getBlockKramdown } from '@/api';
+import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
 
 const successfulBlockResult = [{ doOperations: [{ id: 'op-1' }] }];
 
@@ -125,15 +129,21 @@ describe('checkIn', () => {
 
   it('#19: 二元型打卡 — 创建新记录', async () => {
     const habit = mkHabit({ name: '早起', type: 'binary' });
-    (insertBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await checkIn(habit, '2026-04-07');
     expect(result).toBe(true);
-    expect(insertBlock).toHaveBeenCalledWith(
-      'markdown',
-      '早起 📅2026-04-07',
-      undefined,
-      'habit-1'
+    expect(insertBlockAfter).toHaveBeenCalledWith(
+      'habit-1',
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '早起',
+          habitType: 'binary',
+          date: '2026-04-07',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
     );
   });
 
@@ -146,7 +156,7 @@ describe('checkIn', () => {
 
     const result = await checkIn(habit, '2026-04-07');
     expect(result).toBe(false);
-    expect(insertBlock).not.toHaveBeenCalled();
+    expect(insertBlockAfter).not.toHaveBeenCalled();
   });
 
   it('使用 lastBlockId 作为插入位置', async () => {
@@ -155,15 +165,14 @@ describe('checkIn', () => {
       type: 'binary',
       lastBlockId: 'last-block-id'
     });
-    (insertBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await checkIn(habit, '2026-04-07');
     expect(result).toBe(true);
-    expect(insertBlock).toHaveBeenCalledWith(
-      'markdown',
-      '早起 📅2026-04-07',
-      undefined,
-      'last-block-id'
+    expect(insertBlockAfter).toHaveBeenCalledWith(
+      'last-block-id',
+      expect.objectContaining({
+        type: 'setHabitRecord',
+      }),
     );
   });
 
@@ -175,7 +184,7 @@ describe('checkIn', () => {
 
   it('insertBlock 返回空操作时应返回 false', async () => {
     const habit = mkHabit({ name: '早起', type: 'binary' });
-    (insertBlock as any).mockResolvedValue([]);
+    vi.mocked(insertBlockAfter).mockResolvedValueOnce(false);
 
     const result = await checkIn(habit, '2026-04-07');
 
@@ -190,15 +199,24 @@ describe('checkInCount', () => {
 
   it('#21: 计数型 +1 — 创建新记录', async () => {
     const habit = mkHabit({ name: '喝水', type: 'count', target: 8, unit: '杯' });
-    (insertBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await checkInCount(habit, '2026-04-07', 1);
     expect(result).toBe(true);
-    expect(insertBlock).toHaveBeenCalledWith(
-      'markdown',
-      '喝水 1/8杯 📅2026-04-07',
-      undefined,
-      'habit-1'
+    expect(insertBlockAfter).toHaveBeenCalledWith(
+      'habit-1',
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-07',
+          value: 1,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
     );
   });
 
@@ -210,14 +228,24 @@ describe('checkInCount', () => {
       unit: '杯',
       records: [mkRecord('2026-04-07', { currentValue: 3, targetValue: 8, unit: '杯' })]
     });
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await checkInCount(habit, '2026-04-07', 1);
     expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '喝水 4/8杯 📅2026-04-07',
-      'record-2026-04-07'
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'record-2026-04-07' },
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-07',
+          value: 4,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
     );
   });
 
@@ -229,14 +257,17 @@ describe('checkInCount', () => {
       unit: '杯',
       records: [mkRecord('2026-04-07', { currentValue: 7, targetValue: 8, unit: '杯' })]
     });
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await checkInCount(habit, '2026-04-07', 1);
     expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '喝水 8/8杯 📅2026-04-07',
-      'record-2026-04-07'
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'record-2026-04-07' },
+      expect.objectContaining({
+        type: 'setHabitRecord',
+        record: expect.objectContaining({
+          value: 8,
+        }),
+      }),
     );
   });
 
@@ -254,15 +285,24 @@ describe('setCheckInValue', () => {
 
   it('设置计数型值 — 创建新记录', async () => {
     const habit = mkHabit({ name: '喝水', type: 'count', target: 8, unit: '杯' });
-    (insertBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await setCheckInValue(habit, '2026-04-07', 5);
     expect(result).toBe(true);
-    expect(insertBlock).toHaveBeenCalledWith(
-      'markdown',
-      '喝水 5/8杯 📅2026-04-07',
-      undefined,
-      'habit-1'
+    expect(insertBlockAfter).toHaveBeenCalledWith(
+      'habit-1',
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-07',
+          value: 5,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
     );
   });
 
@@ -274,22 +314,28 @@ describe('setCheckInValue', () => {
       unit: '杯',
       records: [mkRecord('2026-04-07', { currentValue: 3, targetValue: 8, unit: '杯' })]
     });
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await setCheckInValue(habit, '2026-04-07', 6);
     expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '喝水 6/8杯 📅2026-04-07',
-      'record-2026-04-07'
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'record-2026-04-07' },
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-04-07',
+          value: 6,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      },
     );
   });
 
   it('setCheckInValue 应把值设为目标值，而不是在现有值上累加', async () => {
-    const writer = {
-      update: vi.fn().mockResolvedValue(true),
-      insertAfter: vi.fn().mockResolvedValue(true),
-    };
     const habit = mkHabit({
       name: '喝水',
       type: 'count',
@@ -298,11 +344,19 @@ describe('setCheckInValue', () => {
       records: [mkRecord('2026-04-07', { currentValue: 3, targetValue: 8, unit: '杯' })]
     });
 
-    const result = await setCheckInValue(habit, '2026-04-07', 4, writer);
+    const result = await setCheckInValue(habit, '2026-04-07', 4);
 
     expect(result).toBe(true);
-    expect(writer.update).toHaveBeenCalledWith('喝水 4/8杯 📅2026-04-07', 'record-2026-04-07');
-    expect(writer.insertAfter).not.toHaveBeenCalled();
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'record-2026-04-07' },
+      expect.objectContaining({
+        type: 'setHabitRecord',
+        record: expect.objectContaining({
+          value: 4,
+        }),
+      }),
+    );
+    expect(insertBlockAfter).not.toHaveBeenCalled();
   });
 
   it('binary habit 传入 setCheckInValue 时应返回 false', async () => {
@@ -311,8 +365,8 @@ describe('setCheckInValue', () => {
     const result = await setCheckInValue(habit, '2026-04-07', 4);
 
     expect(result).toBe(false);
-    expect(insertBlock).not.toHaveBeenCalled();
-    expect(updateBlock).not.toHaveBeenCalled();
+    expect(insertBlockAfter).not.toHaveBeenCalled();
+    expect(writeBlock).not.toHaveBeenCalled();
   });
 
   it('updateBlock 返回空操作时应返回 false', async () => {
@@ -323,7 +377,7 @@ describe('setCheckInValue', () => {
       unit: '杯',
       records: [mkRecord('2026-04-07', { currentValue: 3, targetValue: 8, unit: '杯' })]
     });
-    (updateBlock as any).mockResolvedValue([]);
+    vi.mocked(writeBlock).mockResolvedValueOnce(false);
 
     const result = await setCheckInValue(habit, '2026-04-07', 6);
 
@@ -358,15 +412,23 @@ describe('markHabitMissed', () => {
         mkRecord('2026-04-05', { blockId: 'r5' }),
       ],
     });
-    const writer = {
-      insertAfter: vi.fn().mockResolvedValue(true),
-      update: vi.fn().mockResolvedValue(true),
-    };
 
-    const result = await markHabitMissed(habit, '2026-04-04', writer);
+    const result = await markHabitMissed(habit, '2026-04-04');
 
     expect(result).toBe(true);
-    expect(writer.insertAfter).toHaveBeenCalledWith('早起 📅2026-04-04 ❌', 'r3');
+    expect(insertBlockAfter).toHaveBeenCalledWith(
+      'r3',
+      {
+        type: 'setHabitRecord',
+        record: {
+          content: '早起',
+          habitType: 'binary',
+          date: '2026-04-04',
+          precision: 'day',
+          recordStatus: 'missed',
+        },
+      },
+    );
   });
 });
 
@@ -452,15 +514,16 @@ describe('updateCheckInMarkdown', () => {
 
   it('应更新记录块 markdown', async () => {
     const record = mkRecord('2026-04-07');
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
 
     const result = await updateCheckInMarkdown(record, '早起 📅2026-04-07 #补签');
 
     expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '早起 📅2026-04-07 #补签',
-      'record-2026-04-07',
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'record-2026-04-07' },
+      {
+        type: 'replaceMarkdown',
+        markdown: '早起 📅2026-04-07 #补签',
+      },
     );
   });
 });
@@ -471,12 +534,6 @@ describe('archiveHabit', () => {
   });
 
   it('archives a habit by appending 📦YYYY-MM-DD to the definition line', async () => {
-    (getBlockKramdown as any).mockResolvedValue({
-      id: 'habit-1',
-      kramdown: '喝水 🎯2026-04-01 8杯 🔄每天',
-    });
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
-
     const result = await archiveHabit(
       mkHabit({
         name: '喝水',
@@ -488,37 +545,22 @@ describe('archiveHabit', () => {
     );
 
     expect(result).toBe(true);
-    expect(getBlockKramdown).toHaveBeenCalledWith('habit-1');
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04',
-      'habit-1',
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'habit-1' },
+      {
+        type: 'setHabitArchive',
+        archivedAt: '2026-05-04',
+      },
     );
   });
 
-  it('archives only the definition line when the block also contains an attrs line', async () => {
-    (getBlockKramdown as any).mockResolvedValue({
-      id: 'habit-1',
-      kramdown: '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
-    });
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
+  it('已归档习惯再次归档应返回 false', async () => {
+    const result = await archiveHabit(mkHabit({
+      archivedAt: '2026-05-04',
+    }), '2026-05-05');
 
-    const result = await archiveHabit(
-      mkHabit({
-        name: '跑步',
-        type: 'count',
-        target: 3,
-        unit: '公里',
-      }),
-      '2026-05-04',
-    );
-
-    expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天 📦2026-05-04\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
-      'habit-1',
-    );
+    expect(result).toBe(false);
+    expect(writeBlock).not.toHaveBeenCalled();
   });
 });
 
@@ -528,12 +570,6 @@ describe('unarchiveHabit', () => {
   });
 
   it('unarchives a habit by removing the 📦YYYY-MM-DD marker only', async () => {
-    (getBlockKramdown as any).mockResolvedValue({
-      id: 'habit-1',
-      kramdown: '喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04',
-    });
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
-
     const result = await unarchiveHabit(
       mkHabit({
         name: '喝水',
@@ -545,36 +581,20 @@ describe('unarchiveHabit', () => {
     );
 
     expect(result).toBe(true);
-    expect(getBlockKramdown).toHaveBeenCalledWith('habit-1');
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '喝水 🎯2026-04-01 8杯 🔄每天',
-      'habit-1',
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'habit-1' },
+      {
+        type: 'setHabitArchive',
+      },
     );
   });
 
-  it('unarchives only the definition line when the block also contains an attrs line', async () => {
-    (getBlockKramdown as any).mockResolvedValue({
-      id: 'habit-1',
-      kramdown: '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天 📦2026-05-04\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
-    });
-    (updateBlock as any).mockResolvedValue(successfulBlockResult);
+  it('未归档习惯取消归档应返回 false', async () => {
+    const result = await unarchiveHabit(mkHabit({
+      archivedAt: undefined,
+    }));
 
-    const result = await unarchiveHabit(
-      mkHabit({
-        name: '跑步',
-        type: 'count',
-        target: 3,
-        unit: '公里',
-        archivedAt: '2026-05-04',
-      }) as Habit,
-    );
-
-    expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '跑步 🎯2026-05-04 3公里 ⏰12:50 🔄每2天\n{: id="20260504095648-fzyb645" updated="20260504095648"}',
-      'habit-1',
-    );
+    expect(result).toBe(false);
+    expect(writeBlock).not.toHaveBeenCalled();
   });
 });

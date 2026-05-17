@@ -1,8 +1,8 @@
-import { updateBlock } from '@/api';
-import type { BatchBlockPatch, BlockPatch } from './types';
+import { insertBlock, updateBlock } from '@/api';
+import type { BatchBlockPatch, BlockPatch, InsertableBlockPatch } from './types';
 import { resolveApiBlockTarget } from './blockTargetResolver';
 import { markdownToBlockDOM } from './domSerializer';
-import { applyBlockPatch, applyBlockPatches } from './kramdownModifier';
+import { applyBlockPatch, applyBlockPatches, renderInsertableBlockPatch } from './kramdownModifier';
 
 export async function writeViaApi(blockId: string, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   try {
@@ -23,6 +23,21 @@ export async function writeViaApi(blockId: string, patches: BlockPatch | BatchBl
   }
   catch (error) {
     console.error('[BlockWriter] writeViaApi failed:', error);
+    return false;
+  }
+}
+
+export async function insertViaApi(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
+  try {
+    const markdown = renderInsertableBlockPatch(patch);
+    const blockDOM = markdownToBlockDOM(markdown);
+    const result = blockDOM
+      ? await insertBlock('dom', blockDOM, undefined, previousBlockId, undefined)
+      : await insertBlock('markdown', markdown, undefined, previousBlockId, undefined);
+    return Array.isArray(result);
+  }
+  catch (error) {
+    console.error('[BlockWriter] insertViaApi failed:', error);
     return false;
   }
 }

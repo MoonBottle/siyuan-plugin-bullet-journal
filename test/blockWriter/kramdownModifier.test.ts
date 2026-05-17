@@ -279,6 +279,91 @@ describe('kramdownModifier', () => {
     });
   });
 
+  describe('habit patches', () => {
+    it('replaces habit definition line and preserves IAL', () => {
+      expect(applyBlockPatch(parts('喝水 🎯2026-04-01 6杯 🔄每天\n{: id="abc"}'), {
+        type: 'setHabitDefinition',
+        habit: {
+          name: '喝水',
+          startDate: '2026-04-01',
+          type: 'count',
+          target: 8,
+          unit: '杯',
+          frequency: { type: 'daily' },
+        },
+      })).toBe(
+        '喝水 🎯2026-04-01 8杯 🔄每天\n{: id="abc"}',
+      );
+    });
+
+    it('replaces habit record line and preserves IAL', () => {
+      expect(applyBlockPatch(parts('喝水 1/8杯 📅2026-05-16\n{: id="abc"}'), {
+        type: 'setHabitRecord',
+        record: {
+          content: '喝水',
+          habitType: 'count',
+          date: '2026-05-16',
+          value: 3,
+          target: 8,
+          unit: '杯',
+          precision: 'day',
+          recordStatus: 'completed',
+        },
+      })).toBe(
+        '喝水 3/8杯 📅2026-05-16\n{: id="abc"}',
+      );
+    });
+
+    it('writes missed habit record with trailing emoji', () => {
+      expect(applyBlockPatch(parts('早起 📅2026-05-16\n{: id="abc"}'), {
+        type: 'setHabitRecord',
+        record: {
+          content: '早起',
+          habitType: 'binary',
+          date: '2026-05-16',
+          precision: 'day',
+          recordStatus: 'missed',
+        },
+      })).toBe(
+        '早起 📅2026-05-16 ❌\n{: id="abc"}',
+      );
+    });
+
+    it('adds archive marker while preserving extra lines and IAL', () => {
+      expect(applyBlockPatch(parts(`喝水 🎯2026-04-01 8杯 🔄每天
+说明行
+{: id="abc"}`), {
+        type: 'setHabitArchive',
+        archivedAt: '2026-05-04',
+      })).toBe(
+        `喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04
+说明行
+{: id="abc"}`,
+      );
+    });
+
+    it('removes archive marker while preserving extra lines and IAL', () => {
+      expect(applyBlockPatch(parts(`喝水 🎯2026-04-01 8杯 🔄每天 📦2026-05-04
+说明行
+{: id="abc"}`), {
+        type: 'setHabitArchive',
+      })).toBe(
+        `喝水 🎯2026-04-01 8杯 🔄每天
+说明行
+{: id="abc"}`,
+      );
+    });
+
+    it('replaces markdown content and preserves original IAL by default', () => {
+      expect(applyBlockPatch(parts('早起 📅2026-05-16\n{: id="abc" custom-x="1"}'), {
+        type: 'replaceMarkdown',
+        markdown: '早起 📅2026-05-16 #补签',
+      })).toBe(
+        '早起 📅2026-05-16 #补签\n{: id="abc" custom-x="1"}',
+      );
+    });
+  });
+
   describe('batch patches', () => {
     it('applies priority then date', () => {
       const result = applyBlockPatches(parts('任务\n{: id="abc"}'), [

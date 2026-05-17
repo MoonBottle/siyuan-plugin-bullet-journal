@@ -366,6 +366,10 @@ export function buildHabitDefinitionMarkdown(habit: Partial<Habit>): string {
     parts.push(`🔄${frequencyToMarkdown(habit.frequency)}`);
   }
 
+  if (habit.archivedAt) {
+    parts.push(`📦${habit.archivedAt}`);
+  }
+
   return parts.join(' ');
 }
 
