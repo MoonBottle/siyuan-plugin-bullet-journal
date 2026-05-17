@@ -11,6 +11,8 @@ import type {
 import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
 import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
 import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
+import { openFocusReviewViewConfigDialog } from '@/workbench/focusReviewViewConfigDialog';
+import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
 type WorkbenchViewConfigContext = {
@@ -111,15 +113,13 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       createDefaultConfig: (): WorkbenchFocusReviewViewConfig => ({}),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
         const config = entry.config as WorkbenchFocusReviewViewConfig;
-        import('@/workbench/focusReviewViewConfigDialog').then(({ openFocusReviewViewConfigDialog }) => {
-          openFocusReviewViewConfigDialog({
-            initialConfig: {
-              groupId: config?.groupId,
-            },
-            onConfirm: async (nextConfig) => {
-              await onUpdateConfig({ groupId: nextConfig.groupId });
-            },
-          });
+        openFocusReviewViewConfigDialog({
+          initialConfig: {
+            groupId: config?.groupId,
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({ groupId: nextConfig.groupId });
+          },
         });
       },
     },
@@ -128,15 +128,13 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       createDefaultConfig: (): WorkbenchProjectViewConfig => ({}),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
         const config = entry.config as WorkbenchProjectViewConfig;
-        import('@/workbench/projectViewConfigDialog').then(({ openProjectViewConfigDialog }) => {
-          openProjectViewConfigDialog({
-            initialConfig: {
-              groupId: config?.groupId,
-            },
-            onConfirm: async (nextConfig) => {
-              await onUpdateConfig({ groupId: nextConfig.groupId });
-            },
-          });
+        openProjectViewConfigDialog({
+          initialConfig: {
+            groupId: config?.groupId,
+          },
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig({ groupId: nextConfig.groupId });
+          },
         });
       },
     },
