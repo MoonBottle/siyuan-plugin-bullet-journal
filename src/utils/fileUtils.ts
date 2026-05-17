@@ -493,6 +493,10 @@ function handleSingleLineUpdate(
   return `${taskListMarker}${itemContent} ${optimizedExpr} ${statusTag}`.trim();
 }
 
+/**
+ * @deprecated 使用 `writeBlock({ blockId }, buildDatePatch(...))` 或
+ * `writeDatePatchWithWriter`。保留此入口仅为兼容旧调用与旧测试。
+ */
 export async function updateBlockDateTime(
   blockId: string,
   newDate: string,
@@ -597,6 +601,8 @@ export async function openDocumentAtLine(
 
 /**
  * 更新块内容（用于添加标签或修改事项内容）
+ * @deprecated 使用 `writeBlock` 搭配 `setContent` / `setStatus` patch。
+ * 保留此入口仅为兼容旧调用与旧测试，不再继续扩展行为。
  * @param blockId 块 ID
  * @param suffix 要添加的后缀（如 #done、@2024-01-16）
  * @param writer 可选的写入器
@@ -905,6 +911,8 @@ export async function updateBlockContent(
 
 /**
  * 更新块的优先级
+ * @deprecated 使用 `writeBlock({ blockId }, { type: 'setPriority', priority })`。
+ * 保留此入口仅为兼容旧调用与旧测试，不再继续扩展行为。
  * @param blockId 块 ID
  * @param priority 优先级（undefined 表示清除）
  * @param writer 可选的写入器
