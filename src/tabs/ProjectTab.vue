@@ -36,6 +36,7 @@ import { buildViewDebugContext } from '@/utils/viewDebug';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import ProjectView from '@/components/project/ProjectView.vue';
 import { t } from '@/i18n';
+import type { WorkbenchProjectViewConfig } from '@/types/workbench';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
@@ -93,7 +94,10 @@ onMounted(async () => {
   // 从插件加载设置
   settingsStore.loadFromPlugin();
 
-  if (selectedGroup.value === '' && settingsStore.defaultGroup) {
+  const viewConfigGroupId = (props.viewConfig as WorkbenchProjectViewConfig | undefined)?.groupId;
+  if (viewConfigGroupId) {
+    selectedGroup.value = viewConfigGroupId;
+  } else if (selectedGroup.value === '' && settingsStore.defaultGroup) {
     selectedGroup.value = settingsStore.defaultGroup;
   }
 
