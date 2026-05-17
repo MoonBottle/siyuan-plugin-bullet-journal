@@ -69,12 +69,57 @@ describe('saveFocusPlanWithOptionalDate', () => {
     );
     expect(writeBlock).toHaveBeenCalledWith(
       { blockId: 'block-1' },
-      {
-        type: 'replaceMarkdown',
-        markdown: '事项 📅2026-05-14, 2026-05-15 ⏳30m\n{: id="block-1" }',
-      },
+      [
+        {
+          type: 'replaceMarkdown',
+          markdown: '事项 📅2026-05-14, 2026-05-15\n{: id="block-1" }',
+          preserveIAL: false,
+        },
+        {
+          type: 'setFocusPlan',
+          plan,
+        },
+      ],
     );
     expect(updateItemWithFocusPlan).not.toHaveBeenCalled();
+  });
+
+  it('keeps indented IAL untouched and delegates focus-plan placement to block writer patches', async () => {
+    vi.mocked(writeDatePatchWithWriter).mockImplementationOnce(async (
+      _blockId: string,
+      patch: { date: string },
+      writer?: (content: string, targetBlockId: string) => Promise<boolean>,
+    ) => {
+      if (!writer) {
+        return true;
+      }
+      return writer(
+        `- {: updated="20260517144207" id="list-1"}[ ] 测试任务列表事项235 📅2026-05-14, ${patch.date} #测试#
+  测试换行
+  {: id="block-1" updated="20260517144207" bookmark="🍅"}`,
+        'block-1',
+      );
+    });
+
+    const saved = await saveFocusPlanWithOptionalDate(createItem({ date: '2026-05-14' }), plan, { ensureDate: '2026-05-15' });
+
+    expect(saved).toBe(true);
+    expect(writeBlock).toHaveBeenCalledWith(
+      { blockId: 'block-1' },
+      [
+        {
+          type: 'replaceMarkdown',
+          markdown: `- {: updated="20260517144207" id="list-1"}[ ] 测试任务列表事项235 📅2026-05-14, 2026-05-15 #测试#
+  测试换行
+  {: id="block-1" updated="20260517144207" bookmark="🍅"}`,
+          preserveIAL: false,
+        },
+        {
+          type: 'setFocusPlan',
+          plan,
+        },
+      ],
+    );
   });
 
   it('does not add a date when the item already contains the ensured date', async () => {

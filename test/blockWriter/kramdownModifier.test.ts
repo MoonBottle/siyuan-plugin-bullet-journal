@@ -368,6 +368,16 @@ describe('kramdownModifier', () => {
         '早起 📅2026-05-16 #补签\n{: id="abc" custom-x="1"}',
       );
     });
+
+    it('replaces markdown with provided indented IAL when preserveIAL is false', () => {
+      expect(applyBlockPatch(parts('早起 📅2026-05-16\n{: id="abc" custom-x="1"}'), {
+        type: 'replaceMarkdown',
+        markdown: '早起 📅2026-05-17\n  {: id="abc" custom-y="2"}',
+        preserveIAL: false,
+      })).toBe(
+        '早起 📅2026-05-17\n  {: id="abc" custom-y="2"}',
+      );
+    });
   });
 
   describe('batch patches', () => {
@@ -397,6 +407,26 @@ describe('kramdownModifier', () => {
       expect(result).toContain('🔥');
       expect(result).toContain('📅2026-05-16');
       expect(result).toContain('{: id="abc"}');
+    });
+
+    it('applies focus plan onto the primary line after replaceMarkdown for multiline task-list content', () => {
+      const result = applyBlockPatches(parts('占位内容\n{: id="abc"}'), [
+        {
+          type: 'replaceMarkdown',
+          markdown: `- {: updated="20260517144207" id="list-1"}[ ] 测试任务列表事项235 📅2026-05-13, 2026-05-17 #测试#
+  测试换行
+  {: id="abc" updated="20260517144207" bookmark="🍅"}`,
+          preserveIAL: false,
+        },
+        {
+          type: 'setFocusPlan',
+          plan: { type: 'pomodoro', rawValue: 1 },
+        },
+      ]);
+
+      expect(result).toBe(`- {: updated="20260517144207" id="list-1"}[ ] 测试任务列表事项235 📅2026-05-13, 2026-05-17 #测试# 🍅x1
+  测试换行
+  {: id="abc" updated="20260517144207" bookmark="🍅"}`);
     });
 
   });
