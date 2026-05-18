@@ -14,7 +14,7 @@ const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
 const nativePreviewOpenCalls: Array<Record<string, any>> = [];
 const mockRefresh = vi.fn(() => Promise.resolve());
-const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
+const mockRequestRefresh = vi.fn(() => Promise.resolve());
 const mockShowMessage = vi.fn();
 const mockLoadFromPlugin = vi.fn();
 const mockSaveToPlugin = vi.fn();
@@ -24,7 +24,7 @@ const menuAddItem = vi.fn();
 const menuOpen = vi.fn();
 const mockGetFilteredAndSortedItems = vi.fn(() => []);
 
-const mockPlugin = { name: 'plugin', requestDataRefresh: mockRequestDataRefresh };
+const mockPlugin = { name: 'plugin', requestRefresh: mockRequestRefresh };
 const mockApp = { name: 'app' };
 const mockSettingsStore = {
   scanMode: 'all',
@@ -258,7 +258,7 @@ describe('QuadrantTab', () => {
     mockProjectStore.hideAbandoned = false;
     mockGetFilteredAndSortedItems.mockReturnValue([]);
     mockWriteBlock.mockResolvedValue(true);
-    mockRequestDataRefresh.mockClear();
+    mockRequestRefresh.mockClear();
     mockQuadrantConfigStore.loaded = false;
     mockQuadrantConfigStore.panels = [
       { id: 'q1', title: '重要且紧急', rules: { priority: ['high'] } },
@@ -523,7 +523,7 @@ describe('QuadrantTab', () => {
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mockRequestDataRefresh).toHaveBeenCalledWith({
+    expect(mockRequestRefresh).toHaveBeenCalledWith({
       type: 'full',
       reason: 'quadrant-tab:manual-refresh',
     });

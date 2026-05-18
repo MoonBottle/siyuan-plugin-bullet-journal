@@ -395,7 +395,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'desktop-todo:manual-refresh',
     });

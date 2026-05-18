@@ -12,7 +12,7 @@ const mockPlugin = { name: 'plugin' };
 const mockApp = { name: 'app' };
 const mockLoad = vi.fn(() => Promise.resolve());
 const mockSettingsLoadFromPlugin = vi.fn();
-const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
+const mockRequestRefresh = vi.fn(() => Promise.resolve());
 const mockEventBusOn = vi.fn(() => () => {});
 const mockRefreshChannelDispose = vi.fn();
 const mockCreateRefreshChannelGuard = vi.fn(() => ({
@@ -73,9 +73,9 @@ vi.mock('@/main', async () => {
   const actual = await vi.importActual<typeof import('@/main')>('@/main');
   return {
     ...actual,
-    usePlugin: vi.fn(() => ({ ...mockPlugin, requestDataRefresh: mockRequestDataRefresh })),
+    usePlugin: vi.fn(() => ({ ...mockPlugin, requestRefresh: mockRequestRefresh })),
     useApp: vi.fn(() => mockApp),
-    getCurrentPlugin: vi.fn(() => ({ ...mockPlugin, requestDataRefresh: mockRequestDataRefresh })),
+    getCurrentPlugin: vi.fn(() => ({ ...mockPlugin, requestRefresh: mockRequestRefresh })),
   };
 });
 
@@ -194,7 +194,7 @@ describe('WorkbenchTab shell', () => {
     mockSettingsStore.scanMode = 'all';
     mockSettingsStore.directories = [];
     mockSettingsStore.sidebarCollapsed = false;
-    mockRequestDataRefresh.mockClear();
+    mockRequestRefresh.mockClear();
     mockEntries.value = [
       {
         id: 'entry-dashboard',

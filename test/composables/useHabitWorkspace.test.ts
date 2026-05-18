@@ -53,7 +53,7 @@ const {
 })); 
 
 vi.mock('@/main', () => ({
-  usePlugin: vi.fn(() => ({ debugInstanceId: 'plugin-1', requestDataRefresh: vi.fn().mockResolvedValue(undefined) })),
+  usePlugin: vi.fn(() => ({ debugInstanceId: 'plugin-1', requestRefresh: vi.fn().mockResolvedValue(undefined) })),
 }));
 
 vi.mock('@/services/habitService', () => ({

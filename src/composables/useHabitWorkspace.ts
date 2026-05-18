@@ -144,7 +144,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
     if (!plugin) {
       return;
     }
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'habit-workspace:manual-refresh',
     });
@@ -214,7 +214,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
     const success = await archiveHabit(selectedHabit.value, dayjs().format('YYYY-MM-DD'));
     if (success) {
-      await plugin?.requestDataRefresh?.({
+      await plugin?.requestRefresh?.({
         type: 'full',
         reason: 'habit-workspace:archive',
       });
@@ -229,7 +229,7 @@ export function useHabitWorkspace(options: UseHabitWorkspaceOptions = {}) {
 
     const success = await unarchiveHabit(selectedHabit.value);
     if (success) {
-      await plugin?.requestDataRefresh?.({
+      await plugin?.requestRefresh?.({
         type: 'full',
         reason: 'habit-workspace:unarchive',
       });

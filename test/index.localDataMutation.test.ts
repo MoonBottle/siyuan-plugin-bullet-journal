@@ -11,11 +11,14 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
     );
   });
 
-  it('keeps processRefreshRequest as a thin facade over the coordinator without local scheduling state', () => {
+  it('keeps public requestRefresh as a thin facade over the coordinator without local scheduling state', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /public async processRefreshRequest\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.enqueueRefreshRequest\(request\);[\s\S]*this\.emitRefreshCompletionSignals\(request\);[\s\S]*\}/s,
+      /public requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\);[\s\S]*\}/s,
+    );
+    expect(indexSource).toMatch(
+      /private async processRefreshRequest\(request: RefreshRequestPayload\)\s*\{[\s\S]*await this\.enqueueRefreshRequest\(request\);[\s\S]*this\.emitRefreshCompletionSignals\(request\);[\s\S]*\}/s,
     );
     expect(indexSource).not.toContain('private refreshTimeout:');
     expect(indexSource).not.toContain('private scheduledRefreshRequest:');
@@ -62,7 +65,7 @@ describe('TaskAssistantPlugin local data mutation refresh wiring', () => {
       /this\.registerAppEventListener\(\s*Events\.LOCAL_DATA_MUTATED,[\s\S]*void this\.requestRefresh\(this\.createLocalMutationRefreshRequest\(payload\)\);/s,
     );
     expect(indexSource).toMatch(
-      /private requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\);[\s\S]*\}/s,
+      /public requestRefresh\(request: RefreshRequestPayload\)\s*\{[\s\S]*return this\.processRefreshRequest\(request\);[\s\S]*\}/s,
     );
     expect(indexSource).toMatch(
       /createDirectedRefreshRequest\(rootIDs,\s*\{[\s\S]*reason: createWsMainDirectedRefreshReason\(data\?\.cmd\),[\s\S]*\}\)/s,

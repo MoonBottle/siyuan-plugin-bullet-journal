@@ -67,7 +67,7 @@ vi.mock('@/main', () => ({
       },
     }),
     openCustomTab: vi.fn(),
-    requestDataRefresh: vi.fn(() => Promise.resolve()),
+    requestRefresh: vi.fn(() => Promise.resolve()),
   })),
 }));
 

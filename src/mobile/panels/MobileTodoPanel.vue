@@ -219,7 +219,7 @@ const updateSelectedItems = () => {
 };
 
 const handleRefresh = async () => {
-  await plugin?.requestDataRefresh?.({
+  await plugin?.requestRefresh?.({
     type: 'full',
     reason: 'mobile-todo:manual-refresh',
   });

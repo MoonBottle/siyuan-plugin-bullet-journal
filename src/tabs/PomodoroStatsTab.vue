@@ -57,7 +57,7 @@ const projectStore = useProjectStore();
 
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'pomodoro-stats:manual-refresh',
     });

@@ -3,7 +3,7 @@
 import { createApp, nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
+const mockRequestRefresh = vi.fn(() => Promise.resolve());
 const mockShowFocusPlanItemPickerDialog = vi.fn();
 
 const mockEntries = [
@@ -167,7 +167,7 @@ vi.mock('@/stores', () => ({
 
 vi.mock('@/main', () => ({
   usePlugin: () => ({
-    requestDataRefresh: mockRequestDataRefresh,
+    requestRefresh: mockRequestRefresh,
   }),
   useApp: () => ({
     name: 'app',

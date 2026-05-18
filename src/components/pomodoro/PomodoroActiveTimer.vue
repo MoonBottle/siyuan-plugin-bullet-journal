@@ -378,7 +378,7 @@ const handleDone = async () => {
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
 
     if (success && plugin) {
-      await plugin.requestDataRefresh?.({
+      await plugin.requestRefresh?.({
         type: 'full',
         reason: 'pomodoro-active:complete-item',
       });
@@ -400,7 +400,7 @@ const handleAbandon = async () => {
       { type: 'setStatus', status: 'abandoned' },
     );
     if (success && plugin) {
-      await plugin.requestDataRefresh?.({
+      await plugin.requestRefresh?.({
         type: 'full',
         reason: 'pomodoro-active:abandon-item',
       });

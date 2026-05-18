@@ -146,7 +146,7 @@ onUnmounted(() => {
 
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'project-tab:manual-refresh',
     });

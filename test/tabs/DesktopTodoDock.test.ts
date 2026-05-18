@@ -16,7 +16,7 @@ const todoContentPaneProps = vi.fn();
 const nativePreviewOpen = vi.fn();
 const nativePreviewClose = vi.fn();
 const nativePreviewContainsTarget = vi.fn(() => false);
-const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
+const mockRequestRefresh = vi.fn(() => Promise.resolve());
 
 vi.mock('siyuan', () => ({
   Menu: vi.fn(function () {
@@ -29,8 +29,8 @@ vi.mock('siyuan', () => ({
 }));
 
 vi.mock('@/main', () => ({
-  usePlugin: vi.fn(() => ({ requestDataRefresh: mockRequestDataRefresh })),
-  getCurrentPlugin: vi.fn(() => ({ requestDataRefresh: mockRequestDataRefresh })),
+  usePlugin: vi.fn(() => ({ requestRefresh: mockRequestRefresh })),
+  getCurrentPlugin: vi.fn(() => ({ requestRefresh: mockRequestRefresh })),
   useApp: vi.fn(() => ({})),
 }));
 
@@ -270,7 +270,7 @@ describe('DesktopTodoDock', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
-    mockRequestDataRefresh.mockClear();
+    mockRequestRefresh.mockClear();
     (globalThis as any).BroadcastChannel = vi.fn(() => ({ close: vi.fn() }));
   });
 
@@ -310,7 +310,10 @@ describe('DesktopTodoDock', () => {
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mockRequestDataRefresh).toHaveBeenCalled();
+    expect(mockRequestRefresh).toHaveBeenCalledWith({
+      type: 'full',
+      reason: 'desktop-todo:manual-refresh',
+    });
 
     mounted.unmount();
   });

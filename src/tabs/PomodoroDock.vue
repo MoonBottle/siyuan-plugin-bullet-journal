@@ -76,7 +76,7 @@ const handleDataRefresh = async () => {
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'pomodoro-dock:manual-refresh',
     });

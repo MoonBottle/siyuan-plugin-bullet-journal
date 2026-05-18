@@ -323,7 +323,7 @@ function formatDelta(delta: number): string {
 
 async function handleRefresh() {
   if (!plugin) return;
-  await plugin.requestDataRefresh?.({
+  await plugin.requestRefresh?.({
     type: 'full',
     reason: 'focus-workbench:manual-refresh',
   });

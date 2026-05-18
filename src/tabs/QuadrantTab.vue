@@ -286,7 +286,7 @@ async function handleQuadrantDrop(panelId: string, event: DragEvent) {
     return;
   }
 
-  await plugin.requestDataRefresh?.({
+  await plugin.requestRefresh?.({
     type: 'full',
     reason: 'quadrant-drop-update-priority',
   });
@@ -314,7 +314,7 @@ function syncSelectedGroupWithDefault() {
 
 async function handleRefresh() {
   if (!plugin) return;
-  await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
     type: 'full',
     reason: 'quadrant-tab:manual-refresh',
   });

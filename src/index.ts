@@ -932,7 +932,7 @@ export default class TaskAssistantPlugin extends Plugin {
     }
   }
 
-  public async processRefreshRequest(request: RefreshRequestPayload) {
+  private async processRefreshRequest(request: RefreshRequestPayload) {
     console.log("[Task Assistant] processRefreshRequest called:", {
       dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
       request,
@@ -941,7 +941,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.emitRefreshCompletionSignals(request);
   }
 
-  private requestRefresh(request: RefreshRequestPayload) {
+  public requestRefresh(request: RefreshRequestPayload) {
     return this.processRefreshRequest(request);
   }
 
