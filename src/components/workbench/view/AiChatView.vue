@@ -2,19 +2,24 @@
   <div class="ai-chat-view" data-testid="ai-chat-view">
     <aside class="ai-chat-view__sidebar">
       <div class="ai-chat-view__sidebar-header">
+        <ProjectPaneSearchBox
+          :model-value="searchQuery"
+          :placeholder="t('aiChat').searchConversations ?? '搜索会话...'"
+          :clear-label="t('common').clear"
+          test-id="ai-chat-search-input"
+          @update:model-value="searchQuery = $event"
+        />
         <span
-          class="block__icon b3-tooltips b3-tooltips__sw"
+          class="ai-chat-view__sidebar-header-btn b3-tooltips b3-tooltips__sw"
           :aria-label="t('aiChat').newConversation"
           @click="handleNew"
         >
           <svg><use xlink:href="#iconAdd"></use></svg>
         </span>
-        <span class="fn__flex-1 fn__space"></span>
-        <span class="ai-chat-view__sidebar-count">{{ conversationsList.length }}</span>
       </div>
       <div class="ai-chat-view__sidebar-list">
         <div
-          v-for="conv in conversationsList"
+          v-for="conv in filteredConversations"
           :key="conv.id"
           class="ai-chat-view__sidebar-item"
           :class="{ 'is-active': conv.id === activeId }"
@@ -38,6 +43,9 @@
         <div v-if="conversationsList.length === 0" class="ai-chat-view__sidebar-empty">
           {{ t('aiChat').noConversations ?? '暂无对话' }}
         </div>
+        <div v-else-if="filteredConversations.length === 0" class="ai-chat-view__sidebar-empty">
+          {{ t('common').noMatches ?? '无匹配结果' }}
+        </div>
       </div>
     </aside>
     <div class="ai-chat-view__dock-area">
@@ -57,6 +65,7 @@ import { useAIStore } from '@/stores';
 import type { ConversationIndexItem } from '@/services/conversationStorageService';
 import { t } from '@/i18n';
 import AiChatDock from '@/tabs/AiChatDock.vue';
+import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue';
 
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
@@ -68,8 +77,17 @@ defineProps<{
 const aiStore = useAIStore();
 
 const conversationsList = ref<ConversationIndexItem[]>([]);
+const searchQuery = ref('');
 
 const activeId = computed(() => aiStore.currentConversationId);
+
+const filteredConversations = computed(() => {
+  if (!searchQuery.value.trim()) return conversationsList.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return conversationsList.value.filter(
+    conv => conv.title.toLowerCase().includes(q),
+  );
+});
 
 async function refreshConversationsList() {
   conversationsList.value = await aiStore.getConversationsList();
@@ -146,14 +164,32 @@ onMounted(async () => {
   &__sidebar-header {
     display: flex;
     align-items: center;
+    gap: 6px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--b3-theme-surface-lighter);
     flex-shrink: 0;
   }
 
-  &__sidebar-count {
-    font-size: 12px;
-    color: var(--b3-theme-on-surface-medium);
+  &__sidebar-header-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: var(--b3-border-radius);
+    transition: background-color 0.15s;
+
+    &:hover {
+      background: var(--b3-theme-hover);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--b3-theme-on-surface);
+    }
   }
 
   &__sidebar-list {
