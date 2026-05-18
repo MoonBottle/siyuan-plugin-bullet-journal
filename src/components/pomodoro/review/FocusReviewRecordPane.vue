@@ -1,6 +1,6 @@
 <template>
   <div class="focus-review-record-pane">
-    <div class="focus-review-record-pane__header">{{ title }}</div>
+    <div v-if="title" class="focus-review-record-pane__header">{{ title }}</div>
     <div
       class="focus-review-record-pane__content"
       :class="{ 'focus-review-record-pane__content--empty': recordsByDate.length === 0 }"

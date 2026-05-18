@@ -152,13 +152,18 @@
               </div>
             </div>
 
-            <FocusReviewRecordPane
-              :records="selectedItem?.pomodoros ?? []"
-              :item-content="selectedEntry.itemContent || selectedItem?.content"
-              :title="t('pomodoroStats').focusRecords"
-              :empty-title="t('pomodoroStats').noData"
-              :empty-desc="detailEmptyDesc"
-            />
+            <div class="focus-review-view__detail-panel">
+              <div class="focus-review-view__detail-panel-header">{{ t('pomodoroStats').focusRecords }}</div>
+              <div class="focus-review-view__detail-panel-body">
+                <FocusReviewRecordPane
+                  :records="selectedItem?.pomodoros ?? []"
+                  :item-content="selectedEntry.itemContent || selectedItem?.content"
+                  :title="''"
+                  :empty-title="t('pomodoroStats').noData"
+                  :empty-desc="detailEmptyDesc"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
