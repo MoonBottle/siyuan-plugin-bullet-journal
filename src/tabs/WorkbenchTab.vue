@@ -53,7 +53,7 @@
           </div>
         </div>
 
-        <div v-if="isViewActive" class="workbench-tab__toolbar-actions">
+        <div v-if="canConfigureActiveView" class="workbench-tab__toolbar-actions">
           <button
             class="workbench-tab__toolbar-button"
             data-testid="workbench-view-config-trigger"
@@ -92,7 +92,14 @@ const settingsStore = useSettingsStore();
 const currentActiveEntryId = computed(() => workbenchStore.activeEntryId);
 const currentActiveEntry = computed(() => workbenchStore.activeEntry);
 const isDashboardActive = computed(() => currentActiveEntry.value?.type === 'dashboard');
-const isViewActive = computed(() => currentActiveEntry.value?.type === 'view');
+const canConfigureActiveView = computed(() => {
+  const entry = currentActiveEntry.value;
+  if (!entry || entry.type !== 'view' || !entry.viewType) {
+    return false;
+  }
+
+  return Boolean(getViewDefinition(entry.viewType).openConfigDialog);
+});
 const isWidgetMenuOpen = ref(false);
 const widgetDefinitions = computed(() => Object.values(getWidgetRegistry()));
 let unsubscribeRefresh: (() => void) | null = null;

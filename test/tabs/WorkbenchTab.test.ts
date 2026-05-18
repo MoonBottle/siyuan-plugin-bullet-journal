@@ -93,6 +93,13 @@ vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   },
 }));
 
+vi.mock('@/components/workbench/view/AiChatView.vue', () => ({
+  default: {
+    name: 'AiChatViewStub',
+    template: '<div data-testid="ai-chat-view-stub"></div>',
+  },
+}));
+
 vi.mock('@/utils/eventBus', () => ({
   eventBus: { on: mockEventBusOn, emit: vi.fn() },
   Events: { SETTINGS_CHANGED: 'settings:changed' },
@@ -172,7 +179,7 @@ vi.mock('@/workbench/viewRegistry', () => ({
     return {
       type: viewType,
       createDefaultConfig: defaults[viewType] ?? (() => ({})),
-      openConfigDialog: viewType === 'calendar' || viewType === 'gantt'
+      openConfigDialog: viewType === 'calendar' || viewType === 'gantt' || viewType === 'aiChat'
         ? undefined
         : mockViewConfigDialog,
     };
@@ -421,6 +428,29 @@ describe('WorkbenchTab shell', () => {
     await nextTick();
 
     expect(document.querySelector('[data-testid="workbench-view-config-trigger"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('hides configure button for ai chat view entries without config dialog', async () => {
+    mockEntries.value = [
+      ...mockEntries.value,
+      {
+        id: 'entry-ai-chat',
+        type: 'view',
+        title: 'AI Chat',
+        icon: 'iconSparkles',
+        order: 2,
+        viewType: 'aiChat',
+        config: {},
+      },
+    ];
+    mockActiveEntryId.value = 'entry-ai-chat';
+
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    expect(document.querySelector('[data-testid="workbench-view-config-trigger"]')).toBeNull();
 
     mounted.unmount();
   });
