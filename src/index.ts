@@ -1534,6 +1534,13 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         });
         menu.addItem({
+          icon: "iconFolder",
+          label: t("project").title,
+          click: () => {
+            this.openCustomTab(TAB_TYPES.PROJECT);
+          },
+        });
+        menu.addItem({
           icon: "iconGraph",
           label: t("gantt").title,
           click: () => {
@@ -1541,6 +1548,13 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         });
         if (!this.isMobile) {
+          menu.addItem({
+            icon: "iconLayout",
+            label: t("quadrant").title,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.QUADRANT);
+            },
+          });
           menu.addItem({
             icon: "iconWorkspace",
             label: t("workbench").title,
@@ -1555,21 +1569,7 @@ export default class TaskAssistantPlugin extends Plugin {
               this.openCustomTab(TAB_TYPES.FOCUS_REVIEW);
             },
           });
-          menu.addItem({
-            icon: "iconLayout",
-            label: t("quadrant").title,
-            click: () => {
-              this.openCustomTab(TAB_TYPES.QUADRANT);
-            },
-          });
         }
-        menu.addItem({
-          icon: "iconFolder",
-          label: t("project").title,
-          click: () => {
-            this.openCustomTab(TAB_TYPES.PROJECT);
-          },
-        });
         menu.addSeparator();
         menu.addItem({
           icon: "iconList",
@@ -1579,17 +1579,17 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         });
         menu.addItem({
-          icon: "iconCheck",
-          label: t("habit")?.title || "习惯打卡",
-          click: () => {
-            this.openHabitDock();
-          },
-        });
-        menu.addItem({
           icon: "iconClock",
           label: t("pomodoro").dockTitle,
           click: () => {
             this.openPomodoroDock();
+          },
+        });
+        menu.addItem({
+          icon: "iconCheck",
+          label: t("habit")?.title || "习惯打卡",
+          click: () => {
+            this.openHabitDock();
           },
         });
         menu.addItem({
