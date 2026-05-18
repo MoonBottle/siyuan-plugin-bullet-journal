@@ -615,7 +615,7 @@ defineExpose({
 }
 
 .focus-review-view__detail-panel-body--summary {
-  overflow: visible;
+  overflow-y: auto;
 }
 
 .focus-review-view__detail-panel-body--summary .focus-review-view__detail-card {
