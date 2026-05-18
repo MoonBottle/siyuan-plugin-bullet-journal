@@ -53,6 +53,7 @@ const viewType = computed(() => props.entry.viewType);
 <style lang="scss" scoped>
 .workbench-view-host {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -61,6 +62,7 @@ const viewType = computed(() => props.entry.viewType);
 
 .workbench-view-host__surface {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;

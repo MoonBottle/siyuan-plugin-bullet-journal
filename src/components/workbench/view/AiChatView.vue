@@ -153,6 +153,7 @@ onMounted(async () => {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
     padding: 10px;
     background: var(--b3-theme-background);
     border: 1px solid var(--b3-theme-surface-lighter);
@@ -199,6 +200,7 @@ onMounted(async () => {
     flex-direction: column;
     gap: 8px;
     overflow-y: auto;
+    overflow-x: hidden;
     padding-top: 4px;
   }
 
@@ -206,6 +208,7 @@ onMounted(async () => {
     position: relative;
     width: 100%;
     min-width: 0;
+    box-sizing: border-box;
     padding: 8px 6px;
     padding-right: 24px;
     border: 1px solid var(--b3-theme-surface-lighter);

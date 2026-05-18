@@ -515,6 +515,7 @@ onUnmounted(() => {
 .ai-chat-dock {
   height: 100%;
   max-height: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -563,6 +564,7 @@ onUnmounted(() => {
 
   &__panel {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     overflow: hidden;
   }
@@ -570,6 +572,7 @@ onUnmounted(() => {
 
 .block__icons {
   flex-shrink: 0;
+  min-width: 0;
 
   .block__icon {
     opacity: 1;
