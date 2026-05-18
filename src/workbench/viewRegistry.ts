@@ -1,6 +1,6 @@
 import type {
   WorkbenchEntry,
-  WorkbenchFocusReviewViewConfig,
+  WorkbenchFocusWorkbenchViewConfig,
   WorkbenchHabitWeekWidgetConfig,
   WorkbenchPomodoroStatsWidgetConfig,
   WorkbenchProjectViewConfig,
@@ -13,7 +13,7 @@ import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog
 import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
 import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
 import { openQuadrantViewConfigDialog } from '@/workbench/quadrantViewConfigDialog';
-import { openFocusReviewViewConfigDialog } from '@/workbench/focusReviewViewConfigDialog';
+import { openFocusWorkbenchViewConfigDialog } from '@/workbench/focusWorkbenchViewConfigDialog';
 import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 
@@ -104,12 +104,12 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         });
       },
     },
-    focusReview: {
-      type: 'focusReview',
-      createDefaultConfig: (): WorkbenchFocusReviewViewConfig => ({}),
+    focusWorkbench: {
+      type: 'focusWorkbench',
+      createDefaultConfig: (): WorkbenchFocusWorkbenchViewConfig => ({}),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchFocusReviewViewConfig;
-        openFocusReviewViewConfigDialog({
+        const config = entry.config as WorkbenchFocusWorkbenchViewConfig;
+        openFocusWorkbenchViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
           },

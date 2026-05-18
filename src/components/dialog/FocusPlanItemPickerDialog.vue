@@ -28,7 +28,7 @@
     </div>
 
     <div v-if="sections.length === 0" class="focus-plan-item-picker__empty">
-      {{ t('focusReview').pickerEmpty }}
+      {{ t('focusWorkbench').pickerEmpty }}
     </div>
   </div>
 </template>
@@ -53,8 +53,8 @@ const emit = defineEmits<{
 const selectedDateTitle = computed(() => dayjs(props.selectedDate).format('M月D日事项'));
 
 function getSectionTitle(key: FocusPlanCandidateSection['key']) {
-  if (key === 'expired') return t('focusReview').expiredItems;
-  if (key === 'other-open') return t('focusReview').otherOpenItems;
+  if (key === 'expired') return t('focusWorkbench').expiredItems;
+  if (key === 'other-open') return t('focusWorkbench').otherOpenItems;
   return selectedDateTitle.value;
 }
 </script>

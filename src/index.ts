@@ -53,7 +53,7 @@ import AiChatDock from "@/tabs/AiChatDock.vue";
 import PomodoroDock from "@/tabs/PomodoroDock.vue";
 import HabitDock from "@/tabs/HabitDock.vue";
 import PomodoroStatsTab from "@/tabs/PomodoroStatsTab.vue";
-import FocusReviewTab from "@/tabs/FocusReviewTab.vue";
+import FocusWorkbenchTab from "@/tabs/FocusWorkbenchTab.vue";
 import { TAB_TYPES, DOCK_TYPES } from "@/constants";
 import type { ProjectDirectory } from "@/types/models";
 import { t } from "@/i18n";
@@ -1355,16 +1355,16 @@ export default class TaskAssistantPlugin extends Plugin {
 
     if (!this.isMobile) {
       this.addTab({
-        type: TAB_TYPES.FOCUS_REVIEW,
+        type: TAB_TYPES.FOCUS_WORKBENCH,
         init() {
           try {
             const pinia = getSharedPinia() ?? createPinia();
-            const app = createApp(FocusReviewTab);
+            const app = createApp(FocusWorkbenchTab);
             app.use(pinia);
             mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error(
-              "[Task Assistant] Failed to mount FocusReviewTab:",
+              "[Task Assistant] Failed to mount FocusWorkbenchTab:",
               error,
             );
           }
@@ -1564,9 +1564,9 @@ export default class TaskAssistantPlugin extends Plugin {
           });
           menu.addItem({
             icon: "iconList",
-            label: t("focusReview").title,
+            label: t("focusWorkbench").title,
             click: () => {
-              this.openCustomTab(TAB_TYPES.FOCUS_REVIEW);
+              this.openCustomTab(TAB_TYPES.FOCUS_WORKBENCH);
             },
           });
         }
@@ -1805,7 +1805,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconFolder",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",
-      [TAB_TYPES.FOCUS_REVIEW]: "iconList",
+      [TAB_TYPES.FOCUS_WORKBENCH]: "iconList",
     };
     return icons[type] || "iconFile";
   }
@@ -1821,7 +1821,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.QUADRANT]: t("quadrant").title,
       [TAB_TYPES.PROJECT]: t("project").title,
       [TAB_TYPES.POMODORO_STATS]: t("pomodoroStats").statsTitle,
-      [TAB_TYPES.FOCUS_REVIEW]: t("focusReview").title,
+      [TAB_TYPES.FOCUS_WORKBENCH]: t("focusWorkbench").title,
     };
     return titles[type] || t("title");
   }

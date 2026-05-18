@@ -1,13 +1,13 @@
 <template>
   <WorkbenchConfigDialogLayout>
-    <div class="focus-review-config-dialog__body">
-      <div class="focus-review-config-dialog__field">
-        <label class="focus-review-config-dialog__label">
+    <div class="focus-workbench-config-dialog__body">
+      <div class="focus-workbench-config-dialog__field">
+        <label class="focus-workbench-config-dialog__label">
           {{ t('settings').projectGroups.title }}
         </label>
         <SySelect
           v-model="selectedGroup"
-          data-testid="focus-review-config-group-select"
+          data-testid="focus-workbench-config-group-select"
           :options="groupOptions"
           :placeholder="t('settings').projectGroups.allGroups"
         />
@@ -17,7 +17,7 @@
     <template #footer>
       <button
         class="b3-button b3-button--cancel"
-        data-testid="focus-review-config-cancel"
+        data-testid="focus-workbench-config-cancel"
         type="button"
         @click="onCancel"
       >
@@ -25,7 +25,7 @@
       </button>
       <button
         class="b3-button b3-button--text"
-        data-testid="focus-review-config-confirm"
+        data-testid="focus-workbench-config-confirm"
         type="button"
         @click="handleConfirm"
       >
@@ -41,11 +41,11 @@ import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import WorkbenchConfigDialogLayout from '@/components/workbench/dialogs/WorkbenchConfigDialogLayout.vue';
 import { t } from '@/i18n';
 import { useSettingsStore } from '@/stores';
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
+import type { WorkbenchFocusWorkbenchViewConfig } from '@/types/workbench';
 
 const props = defineProps<{
-  initialConfig: WorkbenchFocusReviewViewConfig;
-  onConfirm: (config: WorkbenchFocusReviewViewConfig) => void;
+  initialConfig: WorkbenchFocusWorkbenchViewConfig;
+  onConfirm: (config: WorkbenchFocusWorkbenchViewConfig) => void;
   onCancel: () => void;
 }>();
 
@@ -74,20 +74,20 @@ function handleConfirm() {
 </script>
 
 <style lang="scss" scoped>
-.focus-review-config-dialog__body {
+.focus-workbench-config-dialog__body {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 0;
 }
 
-.focus-review-config-dialog__field {
+.focus-workbench-config-dialog__field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.focus-review-config-dialog__label {
+.focus-workbench-config-dialog__label {
   font-size: 13px;
   font-weight: 500;
   color: var(--b3-theme-on-background);

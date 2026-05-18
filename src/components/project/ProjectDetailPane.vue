@@ -51,7 +51,7 @@
         <ItemActionBar :item="item" open-doc-mode="preview" />
       </div>
       <div class="project-detail-pane__focus-card">
-        <FocusReviewRecordPane
+        <FocusWorkbenchRecordPane
           :records="item.pomodoros ?? []"
           :item-content="item.content"
           :title="t('pomodoroRecord').title"
@@ -68,7 +68,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useApp, usePlugin } from '@/main';
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
 import ItemActionBar from '@/components/todo/ItemActionBar.vue';
-import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
+import FocusWorkbenchRecordPane from '@/components/pomodoro/review/FocusWorkbenchRecordPane.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { t } from '@/i18n';

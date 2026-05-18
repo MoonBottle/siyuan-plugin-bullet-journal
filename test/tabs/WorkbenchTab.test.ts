@@ -164,7 +164,7 @@ vi.mock('@/workbench/viewRegistry', () => ({
       habit: () => ({ habitScope: 'active' }),
       quadrant: () => ({}),
       pomodoroStats: () => ({ section: 'overview' }),
-      focusReview: () => ({}),
+      focusWorkbench: () => ({}),
       project: () => ({}),
       calendar: () => ({}),
       gantt: () => ({}),
@@ -411,7 +411,7 @@ describe('WorkbenchTab shell', () => {
     expect(getViewDefinition('habit').createDefaultConfig()).toEqual({ habitScope: 'active' });
     expect(getViewDefinition('quadrant').createDefaultConfig()).toEqual({});
     expect(getViewDefinition('pomodoroStats').createDefaultConfig()).toEqual({ section: 'overview' });
-    expect(getViewDefinition('focusReview').createDefaultConfig()).toEqual({});
+    expect(getViewDefinition('focusWorkbench').createDefaultConfig()).toEqual({});
     expect(getViewDefinition('project').createDefaultConfig()).toEqual({});
   });
 
@@ -447,10 +447,10 @@ describe('Workbench registration', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /if\s*\(!this\.isMobile\)\s*\{\s*this\.addTab\(\{\s*type:\s*TAB_TYPES\.WORKBENCH,/s,
+      /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconLayout",/s,
     );
     expect(indexSource).toMatch(
-      /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconWorkspace",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\);/s,
+      /if\s*\(!this\.isMobile\)\s*\{[\s\S]*?menu\.addItem\(\{\s*icon:\s*"iconWorkspace",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\);/s,
     );
     expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*"iconWorkspace"/);
     expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*t\("workbench"\)\.title/);

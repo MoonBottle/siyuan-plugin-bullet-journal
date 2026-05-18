@@ -7,7 +7,7 @@ import type { WorkbenchEntry } from '@/types/workbench';
 
 const desktopTodoDockProps = vi.fn();
 const pomodoroStatsTabProps = vi.fn();
-const focusReviewTabProps = vi.fn();
+const focusWorkbenchTabProps = vi.fn();
 const quadrantTabProps = vi.fn();
 
 vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
@@ -55,16 +55,16 @@ vi.mock('@/tabs/PomodoroStatsTab.vue', () => ({
   },
 }));
 
-vi.mock('@/tabs/FocusReviewTab.vue', () => ({
+vi.mock('@/tabs/FocusWorkbenchTab.vue', () => ({
   default: {
     props: ['embedded'],
     setup(props: any) {
-      focusReviewTabProps({
+      focusWorkbenchTabProps({
         embedded: props.embedded,
       });
       return {};
     },
-    template: '<div data-testid="focus-review-tab-mock">Focus Review</div>',
+    template: '<div data-testid="focus-workbench-tab-mock">Focus Workbench</div>',
   },
 }));
 
@@ -167,15 +167,15 @@ describe('WorkbenchViewHost', () => {
     mounted.unmount();
   });
 
-  it('focus review view entry renders workbench focus review host', async () => {
+  it('focus workbench view entry renders workbench focus workbench host', async () => {
     const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
     const mounted = await mountComponent(WorkbenchViewHost, {
-      entry: createViewEntry('focusReview'),
+      entry: createViewEntry('focusWorkbench'),
     });
 
-    expect(mounted.container.querySelector('[data-testid="workbench-view-focus-review"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="focus-review-tab-mock"]')).not.toBeNull();
-    expect(focusReviewTabProps).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mounted.container.querySelector('[data-testid="workbench-view-focus-workbench"]')).not.toBeNull();
+    expect(mounted.container.querySelector('[data-testid="focus-workbench-tab-mock"]')).not.toBeNull();
+    expect(focusWorkbenchTabProps).toHaveBeenCalledWith(expect.objectContaining({
       embedded: true,
     }));
 

@@ -1,13 +1,13 @@
 import { Dialog } from 'siyuan';
 import { createApp } from 'vue';
-import FocusReviewViewConfigDialog from '@/components/workbench/dialogs/FocusReviewViewConfigDialog.vue';
+import FocusWorkbenchViewConfigDialog from '@/components/workbench/dialogs/FocusWorkbenchViewConfigDialog.vue';
 import { t } from '@/i18n';
-import type { WorkbenchFocusReviewViewConfig } from '@/types/workbench';
+import type { WorkbenchFocusWorkbenchViewConfig } from '@/types/workbench';
 import { getSharedPinia } from '@/utils/sharedPinia';
 
-export function openFocusReviewViewConfigDialog(options: {
-  initialConfig: WorkbenchFocusReviewViewConfig;
-  onConfirm: (config: WorkbenchFocusReviewViewConfig) => void | Promise<void>;
+export function openFocusWorkbenchViewConfigDialog(options: {
+  initialConfig: WorkbenchFocusWorkbenchViewConfig;
+  onConfirm: (config: WorkbenchFocusWorkbenchViewConfig) => void | Promise<void>;
 }): Dialog {
   const mountEl = document.createElement('div');
   let app: ReturnType<typeof createApp> | null = null;
@@ -27,10 +27,10 @@ export function openFocusReviewViewConfigDialog(options: {
     dialog.destroy();
   };
 
-  app = createApp(FocusReviewViewConfigDialog, {
+  app = createApp(FocusWorkbenchViewConfigDialog, {
     initialConfig: options.initialConfig,
     onCancel: closeDialog,
-    onConfirm: async (config: WorkbenchFocusReviewViewConfig) => {
+    onConfirm: async (config: WorkbenchFocusWorkbenchViewConfig) => {
       if (isConfirming) {
         return;
       }

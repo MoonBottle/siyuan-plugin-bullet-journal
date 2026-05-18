@@ -155,7 +155,7 @@ const mockSettingsStore = {
     { id: 'group-b', name: '分组B' },
   ],
   defaultGroup: 'group-a',
-  focusReview: {
+  focusWorkbench: {
     selectedGroup: '',
   },
 };
@@ -211,7 +211,7 @@ vi.mock('@/i18n', () => ({
     if (key === 'settings') return { projectGroups: { allGroups: '全部分组', unnamed: '未命名分组' } };
     if (key === 'focusPlan') return { estimatedShort: '预计' };
     if (key === 'pomodoroStats') return { focusRecords: '专注记录', noData: '暂无记录', today: '今天', formatMonthDay: 'M月D日' };
-    if (key === 'focusReview') {
+    if (key === 'focusWorkbench') {
       return {
         title: '专注工作台',
         openReview: '打开专注工作台',
@@ -256,10 +256,10 @@ vi.mock('@/i18n', () => ({
 }));
 
 async function mountComponent() {
-  const { default: FocusReviewView } = await import('@/components/pomodoro/review/FocusReviewView.vue');
+  const { default: FocusWorkbenchView } = await import('@/components/pomodoro/review/FocusWorkbenchView.vue');
   const container = document.createElement('div');
   document.body.appendChild(container);
-  const app = createApp(FocusReviewView);
+  const app = createApp(FocusWorkbenchView);
   app.mount(container);
   await nextTick();
 
@@ -281,12 +281,12 @@ async function selectSyOption(container: HTMLElement, selectSelector: string, op
   await nextTick();
 }
 
-describe('FocusReviewView', () => {
+describe('FocusWorkbenchView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-14T08:00:00Z'));
-    mockSettingsStore.focusReview.selectedGroup = '';
+    mockSettingsStore.focusWorkbench.selectedGroup = '';
   });
 
   afterEach(() => {
@@ -295,7 +295,7 @@ describe('FocusReviewView', () => {
 
   it('renders summary, list, and detail panes that switch with the calendar date', async () => {
     const mounted = await mountComponent();
-    await selectSyOption(mounted.container, '.focus-review-view__group-select', '全部分组');
+    await selectSyOption(mounted.container, '.focus-workbench-view__group-select', '全部分组');
 
     expect(mounted.container.textContent).toContain('预计总专注');
     expect(mounted.container.textContent).toContain('实际总专注');
@@ -311,7 +311,7 @@ describe('FocusReviewView', () => {
     expect(mounted.container.querySelector('[data-testid="item-detail-content"]')?.textContent).toContain('整理日报');
     expect(mounted.container.querySelector('[data-testid="item-action-bar"]')?.textContent).toContain('整理日报');
 
-    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mounted.container.textContent).toContain('补材料');
@@ -322,8 +322,8 @@ describe('FocusReviewView', () => {
     mounted.unmount();
   });
 
-  it('filters focus review data by selected group and persists the selection', async () => {
-    mockSettingsStore.focusReview.selectedGroup = 'group-b';
+  it('filters focus workbench data by selected group and persists the selection', async () => {
+    mockSettingsStore.focusWorkbench.selectedGroup = 'group-b';
     const mounted = await mountComponent();
 
     expect(mounted.container.textContent).toContain('整理会议结论');
@@ -332,11 +332,11 @@ describe('FocusReviewView', () => {
     expect(mounted.container.textContent).toContain('30m');
     expect(mockProjectStore.getFocusPlanEntriesByDate).toHaveBeenCalledWith('2026-05-14', 'group-b');
 
-    await selectSyOption(mounted.container, '.focus-review-view__group-select', '分组A');
+    await selectSyOption(mounted.container, '.focus-workbench-view__group-select', '分组A');
 
     expect(mounted.container.textContent).toContain('整理日报');
     expect(mounted.container.textContent).not.toContain('整理会议结论');
-    expect(mockSettingsStore.focusReview.selectedGroup).toBe('group-a');
+    expect(mockSettingsStore.focusWorkbench.selectedGroup).toBe('group-a');
     expect(mockSettingsStore.saveToPlugin).toHaveBeenCalled();
 
     mounted.unmount();
@@ -347,7 +347,7 @@ describe('FocusReviewView', () => {
 
     expect(mounted.container.textContent).toContain('添加预计');
 
-    (mounted.container.querySelector('[data-testid="focus-review-add-plan"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-add-plan"]') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mockShowFocusPlanItemPickerDialog).toHaveBeenCalledWith(
@@ -365,13 +365,13 @@ describe('FocusReviewView', () => {
   it('shows empty-state action and reuses the picker when the selected date has no planned items', async () => {
     const mounted = await mountComponent();
 
-    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-16"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-16"]') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mounted.container.textContent).toContain('还没有预计事项');
     expect(mounted.container.textContent).toContain('为事项设置预计');
 
-    (mounted.container.querySelector('.focus-review-view__empty-action') as HTMLButtonElement).click();
+    (mounted.container.querySelector('.focus-workbench-view__empty-action') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mockShowFocusPlanItemPickerDialog).toHaveBeenCalledWith(
@@ -386,14 +386,14 @@ describe('FocusReviewView', () => {
   it('hides add-plan actions on historical dates and still shows unplanned focused entries', async () => {
     const mounted = await mountComponent();
 
-    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-13"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-13"]') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mounted.container.textContent).toContain('历史专注记录');
     expect(mounted.container.textContent).toContain('未预计');
     expect(mounted.container.textContent).toContain('历史事项');
-    expect(mounted.container.querySelector('[data-testid="focus-review-add-plan"]')).toBeNull();
-    expect(mounted.container.querySelector('.focus-review-view__empty-action')).toBeNull();
+    expect(mounted.container.querySelector('[data-testid="focus-workbench-add-plan"]')).toBeNull();
+    expect(mounted.container.querySelector('.focus-workbench-view__empty-action')).toBeNull();
 
     mounted.unmount();
   });
@@ -401,14 +401,14 @@ describe('FocusReviewView', () => {
   it('switches detail empty description with selected date context', async () => {
     const mounted = await mountComponent();
 
-    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-16"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-16"]') as HTMLButtonElement).click();
     await nextTick();
     expect(mounted.container.textContent).toContain('未来说明');
 
     const originalItems = [...mockProjectStore.items];
     mockProjectStore.items = mockProjectStore.items.filter(item => item.id !== 'item-history-1');
 
-    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-13"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-13"]') as HTMLButtonElement).click();
     await nextTick();
     expect(mounted.container.textContent).toContain('历史说明');
 
@@ -418,15 +418,15 @@ describe('FocusReviewView', () => {
 
   it('hides status filters when the selected group has no entries for the selected date', async () => {
     const mounted = await mountComponent();
-    await selectSyOption(mounted.container, '.focus-review-view__group-select', '分组A');
-    (mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
+    await selectSyOption(mounted.container, '.focus-workbench-view__group-select', '分组A');
+    (mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-15"]') as HTMLButtonElement).click();
     await nextTick();
 
-    expect(mounted.container.querySelector('.focus-review-view__filters')).toBeNull();
+    expect(mounted.container.querySelector('.focus-workbench-view__filters')).toBeNull();
     expect(mounted.container.textContent).toContain('还没有预计事项');
     expect(mounted.container.textContent).not.toContain('全部0');
 
-    (mounted.container.querySelector('.focus-review-view__empty-action') as HTMLButtonElement).click();
+    (mounted.container.querySelector('.focus-workbench-view__empty-action') as HTMLButtonElement).click();
     await nextTick();
 
     expect(mockShowFocusPlanItemPickerDialog).toHaveBeenLastCalledWith(

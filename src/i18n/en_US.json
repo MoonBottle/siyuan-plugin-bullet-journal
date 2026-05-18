@@ -767,7 +767,7 @@
     "pomodoroCount": "Pomodoro Count",
     "durationMinutes": "Minutes"
   },
-  "focusReview": {
+  "focusWorkbench": {
     "title": "Focus Workbench",
     "openReview": "Open focus workbench",
     "addPlan": "Add Focus Plan",

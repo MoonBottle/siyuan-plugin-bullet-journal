@@ -45,7 +45,7 @@ const summaryByDate: Record<string, any> = {
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => {
     if (key === 'calendar') return { weekDays: ['一', '二', '三', '四', '五', '六', '日'] };
-    if (key === 'focusReview') {
+    if (key === 'focusWorkbench') {
       return {
         calendarLegendPlanned: '仅有预计',
         calendarLegendFocused: '仅有专注',
@@ -57,10 +57,10 @@ vi.mock('@/i18n', () => ({
 }));
 
 async function mountComponent() {
-  const { default: FocusReviewMiniCalendar } = await import('@/components/pomodoro/review/FocusReviewMiniCalendar.vue');
+  const { default: FocusWorkbenchMiniCalendar } = await import('@/components/pomodoro/review/FocusWorkbenchMiniCalendar.vue');
   const container = document.createElement('div');
   document.body.appendChild(container);
-  const app = createApp(FocusReviewMiniCalendar, {
+  const app = createApp(FocusWorkbenchMiniCalendar, {
     modelValue: '2026-05-14',
     getSummaryByDate: (date: string) => summaryByDate[date],
   });
@@ -76,7 +76,7 @@ async function mountComponent() {
   };
 }
 
-describe('FocusReviewMiniCalendar', () => {
+describe('FocusWorkbenchMiniCalendar', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-14T08:00:00Z'));
@@ -89,22 +89,22 @@ describe('FocusReviewMiniCalendar', () => {
   it('shows distinct marker states for planned-only, focused-only, and hybrid days', async () => {
     const mounted = await mountComponent();
 
-    const focusedOnly = mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-13"]') as HTMLElement;
-    const hybrid = mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-14"]') as HTMLElement;
-    const plannedOnly = mounted.container.querySelector('[data-testid="focus-review-calendar-cell-2026-05-15"]') as HTMLElement;
+    const focusedOnly = mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-13"]') as HTMLElement;
+    const hybrid = mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-14"]') as HTMLElement;
+    const plannedOnly = mounted.container.querySelector('[data-testid="focus-workbench-calendar-cell-2026-05-15"]') as HTMLElement;
 
-    expect(focusedOnly.className).toContain('focus-review-mini-calendar__cell--focused');
-    expect(focusedOnly.className).toContain('focus-review-mini-calendar__cell--unplanned-focus');
-    expect(focusedOnly.className).not.toContain('focus-review-mini-calendar__cell--planned');
-    expect(focusedOnly.querySelector('.focus-review-mini-calendar__dot--focused')).toBeTruthy();
+    expect(focusedOnly.className).toContain('focus-workbench-mini-calendar__cell--focused');
+    expect(focusedOnly.className).toContain('focus-workbench-mini-calendar__cell--unplanned-focus');
+    expect(focusedOnly.className).not.toContain('focus-workbench-mini-calendar__cell--planned');
+    expect(focusedOnly.querySelector('.focus-workbench-mini-calendar__dot--focused')).toBeTruthy();
 
-    expect(hybrid.className).toContain('focus-review-mini-calendar__cell--planned');
-    expect(hybrid.className).toContain('focus-review-mini-calendar__cell--focused');
-    expect(hybrid.querySelector('.focus-review-mini-calendar__dot--hybrid')).toBeTruthy();
+    expect(hybrid.className).toContain('focus-workbench-mini-calendar__cell--planned');
+    expect(hybrid.className).toContain('focus-workbench-mini-calendar__cell--focused');
+    expect(hybrid.querySelector('.focus-workbench-mini-calendar__dot--hybrid')).toBeTruthy();
 
-    expect(plannedOnly.className).toContain('focus-review-mini-calendar__cell--planned');
-    expect(plannedOnly.className).not.toContain('focus-review-mini-calendar__cell--focused');
-    expect(plannedOnly.querySelector('.focus-review-mini-calendar__dot--planned')).toBeTruthy();
+    expect(plannedOnly.className).toContain('focus-workbench-mini-calendar__cell--planned');
+    expect(plannedOnly.className).not.toContain('focus-workbench-mini-calendar__cell--focused');
+    expect(plannedOnly.querySelector('.focus-workbench-mini-calendar__dot--planned')).toBeTruthy();
     expect(focusedOnly.getAttribute('title')).toBe('仅有专注');
     expect(hybrid.getAttribute('title')).toBe('预计并已专注');
     expect(plannedOnly.getAttribute('title')).toBe('仅有预计');

@@ -807,7 +807,7 @@
     "pomodoroCount": "番茄数",
     "durationMinutes": "分钟数"
   },
-  "focusReview": {
+  "focusWorkbench": {
     "title": "专注工作台",
     "openReview": "打开专注工作台",
     "addPlan": "添加预计",

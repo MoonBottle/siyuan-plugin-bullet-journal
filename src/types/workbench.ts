@@ -8,7 +8,7 @@ export type WorkbenchViewType =
   | 'todo'
   | 'habit'
   | 'pomodoroStats'
-  | 'focusReview';
+  | 'focusWorkbench';
 
 export interface WorkbenchEntry {
   id: string;
@@ -64,7 +64,7 @@ export interface WorkbenchPomodoroStatsWidgetConfig {
   section?: WorkbenchPomodoroStatsSectionKey;
 }
 
-export interface WorkbenchFocusReviewViewConfig {
+export interface WorkbenchFocusWorkbenchViewConfig {
   groupId?: string;
 }
 

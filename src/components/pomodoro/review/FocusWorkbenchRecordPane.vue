@@ -1,34 +1,34 @@
 <template>
-  <div class="focus-review-record-pane">
-    <div v-if="title" class="focus-review-record-pane__header">{{ title }}</div>
+  <div class="focus-workbench-record-pane">
+    <div v-if="title" class="focus-workbench-record-pane__header">{{ title }}</div>
     <div
-      class="focus-review-record-pane__content"
-      :class="{ 'focus-review-record-pane__content--empty': recordsByDate.length === 0 }"
+      class="focus-workbench-record-pane__content"
+      :class="{ 'focus-workbench-record-pane__content--empty': recordsByDate.length === 0 }"
     >
-      <div v-if="recordsByDate.length === 0" class="focus-review-record-pane__empty">
-        <div class="focus-review-record-pane__empty-title">{{ emptyTitle }}</div>
-        <div class="focus-review-record-pane__empty-desc">{{ emptyDesc }}</div>
+      <div v-if="recordsByDate.length === 0" class="focus-workbench-record-pane__empty">
+        <div class="focus-workbench-record-pane__empty-title">{{ emptyTitle }}</div>
+        <div class="focus-workbench-record-pane__empty-desc">{{ emptyDesc }}</div>
       </div>
       <div v-else>
-        <div v-for="group in recordsByDate" :key="group.date" class="focus-review-record-pane__group">
-          <div class="focus-review-record-pane__date">{{ formatDate(group.date) }}</div>
-          <div class="focus-review-record-pane__items">
+        <div v-for="group in recordsByDate" :key="group.date" class="focus-workbench-record-pane__group">
+          <div class="focus-workbench-record-pane__date">{{ formatDate(group.date) }}</div>
+          <div class="focus-workbench-record-pane__items">
             <button
               v-for="record in group.records"
               :key="record.id"
-              class="focus-review-record-pane__item"
+              class="focus-workbench-record-pane__item"
               type="button"
               @click="handleRecordClick(record, $event)"
             >
-              <div class="focus-review-record-pane__icon">
+              <div class="focus-workbench-record-pane__icon">
                 <TomatoIcon :width="16" :height="16" />
               </div>
-              <div class="focus-review-record-pane__info">
-                <div class="focus-review-record-pane__time">{{ formatTimeRange(record) }}</div>
-                <div class="focus-review-record-pane__source">{{ record.itemContent || itemContent }}</div>
-                <div v-if="record.description" class="focus-review-record-pane__desc">{{ record.description }}</div>
+              <div class="focus-workbench-record-pane__info">
+                <div class="focus-workbench-record-pane__time">{{ formatTimeRange(record) }}</div>
+                <div class="focus-workbench-record-pane__source">{{ record.itemContent || itemContent }}</div>
+                <div v-if="record.description" class="focus-workbench-record-pane__desc">{{ record.description }}</div>
               </div>
-              <div class="focus-review-record-pane__duration">{{ getMinutes(record) }}m</div>
+              <div class="focus-workbench-record-pane__duration">{{ getMinutes(record) }}m</div>
             </button>
           </div>
         </div>
@@ -151,13 +151,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.focus-review-record-pane {
+.focus-workbench-record-pane {
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.focus-review-record-pane__header {
+.focus-workbench-record-pane__header {
   padding: 12px 14px;
   border-bottom: 1px solid var(--b3-theme-surface-lighter);
   font-size: 14px;
@@ -165,19 +165,19 @@ onBeforeUnmount(() => {
   color: var(--b3-theme-on-background);
 }
 
-.focus-review-record-pane__content {
+.focus-workbench-record-pane__content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 10px 0;
 }
 
-.focus-review-record-pane__content--empty {
+.focus-workbench-record-pane__content--empty {
   overflow: hidden;
   padding: 0;
 }
 
-.focus-review-record-pane__empty {
+.focus-workbench-record-pane__empty {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -188,34 +188,34 @@ onBeforeUnmount(() => {
   padding: 24px;
 }
 
-.focus-review-record-pane__empty-title {
+.focus-workbench-record-pane__empty-title {
   font-size: 15px;
   font-weight: 500;
   color: var(--b3-theme-on-background);
 }
 
-.focus-review-record-pane__empty-desc {
+.focus-workbench-record-pane__empty-desc {
   margin-top: 6px;
   font-size: 12px;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-record-pane__group {
+.focus-workbench-record-pane__group {
   margin-bottom: 12px;
 }
 
-.focus-review-record-pane__date {
+.focus-workbench-record-pane__date {
   padding: 0 14px 8px;
   font-size: 13px;
   font-weight: 500;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-record-pane__items {
+.focus-workbench-record-pane__items {
   padding: 0 10px;
 }
 
-.focus-review-record-pane__item {
+.focus-workbench-record-pane__item {
   width: 100%;
   display: flex;
   align-items: flex-start;
@@ -228,38 +228,38 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.focus-review-record-pane__item:hover {
+.focus-workbench-record-pane__item:hover {
   background: var(--b3-theme-background);
 }
 
-.focus-review-record-pane__icon {
+.focus-workbench-record-pane__icon {
   flex-shrink: 0;
 }
 
-.focus-review-record-pane__info {
+.focus-workbench-record-pane__info {
   flex: 1;
   min-width: 0;
 }
 
-.focus-review-record-pane__time {
+.focus-workbench-record-pane__time {
   font-size: 13px;
-  color: var(--b3-theme-on-background);
+  color: var(--b3-theme-on-surface);
 }
 
-.focus-review-record-pane__source,
-.focus-review-record-pane__desc {
+.focus-workbench-record-pane__source,
+.focus-workbench-record-pane__desc {
   margin-top: 2px;
   font-size: 12px;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-record-pane__source {
+.focus-workbench-record-pane__source {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.focus-review-record-pane__duration {
+.focus-workbench-record-pane__duration {
   flex-shrink: 0;
   font-size: 12px;
   color: var(--b3-theme-on-surface);

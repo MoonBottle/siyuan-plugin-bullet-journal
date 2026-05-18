@@ -58,22 +58,22 @@ describe('settingsStore', () => {
     }));
   });
 
-  it('loads and saves focusReview selectedGroup', () => {
+  it('loads and saves focusWorkbench selectedGroup', () => {
     getSettings.mockReturnValue({
-      focusReview: {
+      focusWorkbench: {
         selectedGroup: 'group-a',
       },
     });
 
     const store = useSettingsStore();
     store.loadFromPlugin();
-    expect(store.focusReview.selectedGroup).toBe('group-a');
+    expect(store.focusWorkbench.selectedGroup).toBe('group-a');
 
-    store.focusReview.selectedGroup = 'group-b';
+    store.focusWorkbench.selectedGroup = 'group-b';
     store.saveToPlugin();
 
     expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
-      focusReview: {
+      focusWorkbench: {
         selectedGroup: 'group-b',
       },
     }));

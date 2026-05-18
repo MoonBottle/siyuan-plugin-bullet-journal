@@ -30,7 +30,7 @@ const {
       habit: { habitScope: 'active' },
       quadrant: {},
       pomodoroStats: { section: 'overview' },
-      focusReview: {},
+      focusWorkbench: {},
       project: {},
       calendar: {},
       gantt: {},
