@@ -1562,13 +1562,6 @@ export default class TaskAssistantPlugin extends Plugin {
               this.openCustomTab(TAB_TYPES.WORKBENCH);
             },
           });
-          menu.addItem({
-            icon: "iconList",
-            label: t("focusWorkbench").title,
-            click: () => {
-              this.openCustomTab(TAB_TYPES.FOCUS_WORKBENCH);
-            },
-          });
         }
         menu.addSeparator();
         menu.addItem({
@@ -1578,6 +1571,15 @@ export default class TaskAssistantPlugin extends Plugin {
             this.openTodoDock();
           },
         });
+        if (!this.isMobile) {
+          menu.addItem({
+            icon: "iconClock",
+            label: t("focusWorkbench").title,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.FOCUS_WORKBENCH);
+            },
+          });
+        }
         menu.addItem({
           icon: "iconClock",
           label: t("pomodoro").dockTitle,
@@ -1805,7 +1807,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconFolder",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",
-      [TAB_TYPES.FOCUS_WORKBENCH]: "iconList",
+      [TAB_TYPES.FOCUS_WORKBENCH]: "iconClock",
     };
     return icons[type] || "iconFile";
   }

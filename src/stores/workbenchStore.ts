@@ -57,7 +57,7 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
     },
     focusWorkbench: {
       title: t('focusWorkbench').title,
-      icon: 'iconList',
+      icon: 'iconClock',
     },
   };
 
