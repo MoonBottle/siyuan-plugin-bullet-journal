@@ -1,11 +1,6 @@
 <template>
   <div class="hk-work-tab quadrant-tab">
     <div class="block__icons quadrant-toolbar">
-      <div v-if="showHeaderTitle" class="block__logo">
-        <svg class="block__logoicon"><use xlink:href="#iconLayout"></use></svg>
-        {{ t('quadrant').title }}
-      </div>
-
       <SySelect
         v-if="groupOptions.length > 1"
         v-model="selectedGroupModel"
@@ -145,7 +140,6 @@ const preview = useBlockFocusPreview({
   popoverLeaveGraceMs: 220,
 });
 const nativePreview = createNativeBlockPreviewController();
-const showHeaderTitle = computed(() => !props.embedded);
 
 const panels = computed(() => quadrantConfigStore.panels);
 const dragEnabled = computed(() => isDefaultPriorityQuadrantConfig(panels.value));
@@ -542,7 +536,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   min-width: 220px;
-  padding: 6px 10px;
+  height: 28px;
+  padding: 0 10px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);
