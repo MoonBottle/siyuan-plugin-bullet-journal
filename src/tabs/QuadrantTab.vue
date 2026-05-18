@@ -407,6 +407,7 @@ async function handleDataRefresh(payload?: Record<string, unknown>) {
 }
 
 let unsubscribeRefresh: (() => void) | null = null;
+let unsubscribeDataRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
@@ -477,6 +478,7 @@ onMounted(async () => {
   await quadrantConfigStore.loadConfig();
 
   unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
+  unsubscribeDataRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -502,6 +504,9 @@ onUnmounted(() => {
 
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (unsubscribeDataRefresh) {
+    unsubscribeDataRefresh();
   }
   if (refreshChannelGuard) {
     refreshChannelGuard.dispose();
