@@ -99,6 +99,19 @@
     "dashboardPlaceholder": "Dashboard canvas coming next",
     "unsupportedView": "Unsupported workbench view"
   },
+  "datePicker": {
+    "title": "Calendar",
+    "month": "Month",
+    "week": "Week",
+    "linkage": "Widget Linkage",
+    "addLinkage": "Add Linkage",
+    "emptyLinkage": "Click to add linkage rule",
+    "editLinkage": "Edit Linkage Rule",
+    "selectTarget": "Select Target Widget",
+    "fieldMapping": "Field Mapping",
+    "dateRangeSource": "Calendar Date Range",
+    "dateRangeTarget": "Todo Date Filter"
+  },
   "quadrant": {
     "title": "Quadrant",
     "placeholder": "Quadrant view is coming soon",

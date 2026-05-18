@@ -99,6 +99,19 @@
     "dashboardPlaceholder": "仪表盘画布将在下一步接入",
     "unsupportedView": "暂不支持该工作台视图"
   },
+  "datePicker": {
+    "title": "日历",
+    "month": "月",
+    "week": "周",
+    "linkage": "组件联动",
+    "addLinkage": "添加联动",
+    "emptyLinkage": "点击添加联动规则",
+    "editLinkage": "编辑联动规则",
+    "selectTarget": "选择目标组件",
+    "fieldMapping": "字段关联",
+    "dateRangeSource": "日历日期范围",
+    "dateRangeTarget": "待办时间过滤"
+  },
   "quadrant": {
     "title": "四象限",
     "placeholder": "四象限视图即将推出",
