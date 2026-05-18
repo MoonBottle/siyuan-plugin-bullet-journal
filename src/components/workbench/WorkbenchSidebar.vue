@@ -213,6 +213,17 @@
         </span>
         <span>{{ t('project').title }}</span>
       </button>
+      <button
+        class="workbench-create-popup__option"
+        data-testid="workbench-create-ai-chat-view"
+        type="button"
+        @click="handleCreateView('aiChat')"
+      >
+        <span class="workbench-create-popup__icon" aria-hidden="true">
+          <svg><use xlink:href="#iconSparkles"></use></svg>
+        </span>
+        <span>{{ t('aiChat').title }}</span>
+      </button>
     </div>
   </Teleport>
 </template>
