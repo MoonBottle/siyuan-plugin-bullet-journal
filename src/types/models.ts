@@ -113,6 +113,7 @@ export interface Task {
   blockId?: string;        // 块 ID（用于精确定位）
   pomodoros?: PomodoroRecord[]; // 任务级别番茄钟记录
   isSyntheticDefault?: boolean; // 运行时标记：是否为解析器合成的默认任务
+  tags?: string[];              // 业务标签
 }
 
 // 事项状态
