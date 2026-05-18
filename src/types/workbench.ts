@@ -8,7 +8,8 @@ export type WorkbenchViewType =
   | 'todo'
   | 'habit'
   | 'pomodoroStats'
-  | 'focusWorkbench';
+  | 'focusWorkbench'
+  | 'aiChat';
 
 export interface WorkbenchEntry {
   id: string;

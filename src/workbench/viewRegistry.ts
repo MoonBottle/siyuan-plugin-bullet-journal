@@ -142,6 +142,10 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
       type: 'gantt',
       createDefaultConfig: () => ({}),
     },
+    aiChat: {
+      type: 'aiChat',
+      createDefaultConfig: () => ({}),
+    },
   };
 }
 

@@ -59,6 +59,10 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
       title: t('focusWorkbench').title,
       icon: 'iconClock',
     },
+    aiChat: {
+      title: t('aiChat').title,
+      icon: 'iconSparkles',
+    },
   };
 
   return definitions[viewType];
