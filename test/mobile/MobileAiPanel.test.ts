@@ -1,8 +1,13 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick, ref } from 'vue';
 import MobileAiPanel from '@/mobile/panels/MobileAiPanel.vue';
+
+const mockConversationsList = ref([
+  { id: 'conv-1', title: '新对话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
+  { id: 'conv-2', title: '工作复盘', createdAt: 2, updatedAt: 2, messageCount: 4, fileSize: 20, hasSkillExecutions: false },
+]);
 
 const mockAiStore = {
   currentConversation: { id: 'conv-1', title: '新对话', messages: [], createdAt: 1, updatedAt: 1 },
@@ -12,7 +17,14 @@ const mockAiStore = {
   hasUnreadWeixin: false,
   getWeixinConversationStatus: vi.fn(),
   loadSettings: vi.fn(),
+  get conversationsList() {
+    return mockConversationsList.value;
+  },
   getConversationsList: vi.fn(),
+  refreshConversationsList: vi.fn().mockImplementation(async () => {
+    mockConversationsList.value = await mockAiStore.getConversationsList();
+  }),
+  startNewConversationDraft: vi.fn(),
   createConversation: vi.fn(),
   switchConversation: vi.fn(),
   deleteConversation: vi.fn(),
@@ -135,6 +147,10 @@ describe('MobileAiPanel', () => {
       { id: 'conv-1', title: '新对话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
       { id: 'conv-2', title: '工作复盘', createdAt: 2, updatedAt: 2, messageCount: 4, fileSize: 20, hasSkillExecutions: false },
     ]);
+    mockConversationsList.value = [
+      { id: 'conv-1', title: '新对话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
+      { id: 'conv-2', title: '工作复盘', createdAt: 2, updatedAt: 2, messageCount: 4, fileSize: 20, hasSkillExecutions: false },
+    ];
     mockPlugin.getSettings.mockReturnValue({
       ai: {
         providers: [
@@ -253,23 +269,21 @@ describe('MobileAiPanel', () => {
     mounted.unmount();
   });
 
-  it('creates a default conversation when the current list is empty on first mount', async () => {
+  it('does not create a default conversation when the current list is empty on first mount', async () => {
     mockAiStore.currentConversation = null;
     mockAiStore.currentConversationId = null;
     mockAiStore.getConversationsList.mockResolvedValueOnce([]);
-    mockAiStore.getConversationsList.mockResolvedValueOnce([
-      { id: 'conv-new', title: '新对话', createdAt: 3, updatedAt: 3, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
-    ]);
+    mockConversationsList.value = [];
 
     const mounted = mountPanel();
     await flushPanelUpdates();
 
-    expect(mockAiStore.createConversation).toHaveBeenCalled();
+    expect(mockAiStore.createConversation).not.toHaveBeenCalled();
 
     mounted.unmount();
   });
 
-  it('creates a replacement conversation after deleting the last history item', async () => {
+  it('returns to chat after deleting the last history item without creating a replacement conversation', async () => {
     mockAiStore.getConversationsList
       .mockResolvedValueOnce([
         { id: 'conv-1', title: '唯一会话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
@@ -277,10 +291,10 @@ describe('MobileAiPanel', () => {
       .mockResolvedValueOnce([
         { id: 'conv-1', title: '唯一会话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
       ])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { id: 'conv-new', title: '新对话', createdAt: 2, updatedAt: 2, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
-      ]);
+      .mockResolvedValueOnce([]);
+    mockConversationsList.value = [
+      { id: 'conv-1', title: '唯一会话', createdAt: 1, updatedAt: 1, messageCount: 0, fileSize: 10, hasSkillExecutions: false },
+    ];
 
     const mounted = mountPanel();
     await flushPanelUpdates();
@@ -294,8 +308,41 @@ describe('MobileAiPanel', () => {
     await flushConfirmFlow();
 
     expect(mockAiStore.deleteConversation).toHaveBeenCalledWith('conv-1');
-    expect(mockAiStore.createConversation).toHaveBeenCalled();
+    expect(mockAiStore.createConversation).not.toHaveBeenCalled();
     expect(mounted.container.querySelector('[data-testid="chat-panel-stub"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('starts a draft instead of creating immediately from the mobile new conversation button', async () => {
+    const mounted = mountPanel();
+    await flushPanelUpdates();
+
+    (mounted.container.querySelector('[data-testid="mobile-ai-new-conversation"]') as HTMLButtonElement | null)?.click();
+    await flushPanelUpdates();
+
+    expect(mockAiStore.startNewConversationDraft).toHaveBeenCalled();
+    expect(mockAiStore.createConversation).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('updates the mobile history page when the store conversation list changes after creation', async () => {
+    const mounted = mountPanel();
+    await flushPanelUpdates();
+
+    (mounted.container.querySelector('[data-testid="mobile-ai-open-history"]') as HTMLButtonElement | null)?.click();
+    await flushPanelUpdates();
+
+    expect(mounted.container.textContent).toContain('工作复盘');
+
+    mockConversationsList.value = [
+      { id: 'conv-new', title: '我这周有哪些待办任务?', createdAt: 3, updatedAt: 3, messageCount: 2, fileSize: 15, hasSkillExecutions: false },
+      ...mockConversationsList.value,
+    ];
+    await flushPanelUpdates();
+
+    expect(mounted.container.textContent).toContain('我这周有哪些待办任务?');
 
     mounted.unmount();
   });

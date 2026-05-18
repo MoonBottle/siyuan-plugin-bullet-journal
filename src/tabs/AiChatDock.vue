@@ -123,8 +123,8 @@ const projectStore = useProjectStore();
 const aiStore = useAIStore();
 const isMobile = computed(() => !!plugin?.isMobile);
 
-// 对话列表（从存储服务获取，仅元数据）
-const conversationsList = ref<ConversationIndexItem[]>([]);
+// 对话列表（直接读取 store，避免组件内副本和 store 脱节）
+const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? []);
 
 // 自动保存防抖定时器
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -275,7 +275,7 @@ const allItems = computed<Item[]>(() => {
 
 // 刷新对话列表
 async function refreshConversationsList() {
-  conversationsList.value = await aiStore.getConversationsList();
+  await aiStore.refreshConversationsList();
 }
 
 // 数据刷新处理函数

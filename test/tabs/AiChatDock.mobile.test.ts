@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick, ref } from 'vue';
 import AiChatDock from '@/tabs/AiChatDock.vue';
 
 const mockPlugin = {
@@ -11,6 +11,18 @@ const mockPlugin = {
   openSetting: vi.fn(),
 };
 
+const mockConversationsList = ref([
+  {
+    id: 'conv-1',
+    title: 'Test',
+    createdAt: 1,
+    updatedAt: 1,
+    messageCount: 0,
+    fileSize: 10,
+    hasSkillExecutions: false,
+  },
+]);
+
 const mockAiStore = {
   currentConversationId: 'conv-1',
   showToolCallsEnabled: false,
@@ -19,6 +31,9 @@ const mockAiStore = {
   getWeixinConversationStatus: vi.fn(),
   providers: [],
   activeProviderId: null,
+  get conversationsList() {
+    return mockConversationsList.value;
+  },
   initializeStorage: vi.fn().mockResolvedValue(undefined),
   initializeClawBot: vi.fn().mockResolvedValue(undefined),
   getConversationsList: vi.fn().mockResolvedValue([
@@ -32,6 +47,9 @@ const mockAiStore = {
       hasSkillExecutions: false,
     },
   ]),
+  refreshConversationsList: vi.fn().mockImplementation(async () => {
+    mockConversationsList.value = await mockAiStore.getConversationsList();
+  }),
   startNewConversationDraft: vi.fn(),
   createConversation: vi.fn().mockResolvedValue('conv-1'),
   switchConversation: vi.fn().mockResolvedValue(undefined),
@@ -104,8 +122,16 @@ vi.mock('@/components/ai/ChatPanel.vue', () => ({
 vi.mock('@/components/ai/ConversationSelect.vue', () => ({
   default: defineComponent({
     name: 'ConversationSelectStub',
-    setup() {
-      return () => h('div', { 'data-testid': 'conversation-select-stub' });
+    props: {
+      conversations: { type: Array, default: () => [] },
+    },
+    setup(props) {
+      return () => h('div', { 'data-testid': 'conversation-select-stub' }, [
+        h('div', {}, `count:${props.conversations.length}`),
+        ...props.conversations.map((conversation: any) =>
+          h('div', { class: 'conversation-select-stub__title' }, conversation.title),
+        ),
+      ]);
     },
   }),
 }));
@@ -215,6 +241,17 @@ beforeEach(() => {
       hasSkillExecutions: false,
     },
   ]);
+  mockConversationsList.value = [
+    {
+      id: 'conv-1',
+      title: 'Test',
+      createdAt: 1,
+      updatedAt: 1,
+      messageCount: 0,
+      fileSize: 10,
+      hasSkillExecutions: false,
+    },
+  ];
   ;(globalThis as any).BroadcastChannel = vi.fn(() => ({ close: vi.fn() }));
 });
 
@@ -252,11 +289,39 @@ describe('AiChatDock mobile clawbot gating', () => {
   it('does not auto-create a conversation on mount when the list is empty', async () => {
     mockAiStore.currentConversationId = null;
     mockAiStore.getConversationsList.mockResolvedValue([]);
+    mockConversationsList.value = [];
 
     const mounted = mountDock();
     await flushDock();
 
     expect(mockAiStore.createConversation).not.toHaveBeenCalled();
+
+    mounted.unmount();
+  });
+
+  it('updates the conversation dropdown when the store list changes after creation', async () => {
+    const mounted = mountDock();
+    await flushDock();
+
+    expect(mounted.container.textContent).toContain('count:1');
+    expect(mounted.container.textContent).toContain('Test');
+
+    mockConversationsList.value = [
+      {
+        id: 'conv-2',
+        title: 'What tasks are pending this week?',
+        createdAt: 2,
+        updatedAt: 2,
+        messageCount: 2,
+        fileSize: 20,
+        hasSkillExecutions: false,
+      },
+      ...mockConversationsList.value,
+    ];
+    await flushDock();
+
+    expect(mounted.container.textContent).toContain('count:2');
+    expect(mounted.container.textContent).toContain('What tasks are pending this week?');
 
     mounted.unmount();
   });

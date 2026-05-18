@@ -119,7 +119,7 @@ const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 
 const viewMode = ref<'chat' | 'history'>('chat');
-const conversationsList = ref<ConversationIndexItem[]>([]);
+const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? []);
 const isLoadingHistory = ref(false);
 const showDeleteConfirm = ref(false);
 const showClearConfirm = ref(false);
@@ -181,17 +181,8 @@ function loadAISettingsFromPlugin() {
 
 async function refreshConversationsList() {
   isLoadingHistory.value = true;
-  conversationsList.value = await aiStore.getConversationsList();
+  await aiStore.refreshConversationsList();
   isLoadingHistory.value = false;
-}
-
-async function ensureConversation() {
-  await refreshConversationsList();
-
-  if (!aiStore.currentConversationId && conversationsList.value.length === 0) {
-    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-    await refreshConversationsList();
-  }
 }
 
 async function handleOpenHistory() {
@@ -208,8 +199,7 @@ async function handleSelectConversation(conversationId: string) {
 }
 
 async function handleCreateConversation() {
-  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  await refreshConversationsList();
+  aiStore.startNewConversationDraft();
   viewMode.value = 'chat';
   await nextTick();
   chatPanelRef.value?.focusInput?.();
@@ -229,15 +219,7 @@ async function handleConfirmDelete() {
   pendingDeleteConversationId.value = null;
   await aiStore.deleteConversation(conversationId);
   await refreshConversationsList();
-
-  if (conversationsList.value.length === 0) {
-    viewMode.value = 'chat';
-    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-    await refreshConversationsList();
-    return;
-  }
-
-  viewMode.value = 'history';
+  viewMode.value = conversationsList.value.length === 0 ? 'chat' : 'history';
 }
 
 async function handleClearConversation() {
@@ -259,7 +241,7 @@ async function handleWeixinSwitch(conversationId: string) {
 
 onMounted(async () => {
   loadAISettingsFromPlugin();
-  await ensureConversation();
+  await refreshConversationsList();
   await nextTick();
   chatPanelRef.value?.scrollToBottom?.();
 });
