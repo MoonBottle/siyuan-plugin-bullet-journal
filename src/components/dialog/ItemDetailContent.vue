@@ -49,6 +49,13 @@
             <svg v-else><use xlink:href="#iconCopy"></use></svg>
           </span>
         </div>
+        <div v-if="taskTags.length" class="item-tags-row">
+          <span
+            v-for="tag in taskTags"
+            :key="tag"
+            class="item-tag-chip"
+          >#{{ tag }}</span>
+        </div>
         <template #footer>
           <TodoTypedLinks :links="taskLinks" @link-click="handleLinkClick" />
         </template>
@@ -245,6 +252,7 @@ const taskLinks = computed(() => task.value?.links || []);
 const itemLinks = computed(() => props.item.links || []);
 const itemContent = computed(() => props.item.content || '');
 const itemTags = computed(() => (props.item.tags ?? []).filter(Boolean));
+const taskTags = computed(() => (task.value?.tags ?? []).filter(Boolean));
 const focusPlanDisplay = computed(() => formatFocusPlanDisplay(props.item.focusPlan));
 const actualFocusMinutes = computed(() => calculateTotalFocusMinutes(props.item.pomodoros || []));
 const focusPlanReview = computed(() => {
