@@ -31,9 +31,9 @@
 │  WorkbenchViewHost (.workbench-view-host__surface)           │
 │  ┌────────────────┬─────────────────────────────────────┐   │
 │  │  会话侧边栏      │          聊天主区域                  │   │
-│  │  (240px, 可调)  │                                     │   │
+│  │  (240px)       │                                     │   │
 │  │                 │  ┌─ 工具栏 (.block__icons) ──────┐ │   │
-│  │  ┌──────────┐   │  │ 标题/状态 | 模型 | 微信 | 更多 │ │   │
+│  │  ┌──────────┐   │  │ 标题/状态 | 微信 | 更多         │ │   │
 │  │  │ + 新建    │   │  └───────────────────────────────┘ │   │
 │  │  └──────────┘   │                                     │   │
 │  │                 │  ┌─ ChatPanel ──────────────────┐  │   │
@@ -62,7 +62,7 @@ AiChatView.vue (新建)
 │   │   │   └── .sidebar-list (会话列表, 可滚动)
 │   │   │       └── .conversation-item × N (每项: 标题 + 时间 + 来源标签)
 │   │   └── main.ai-chat-view__main (右栏, flex: 1, flex-column)
-│   │       ├── .block__icons (工具栏: 标题/状态 + 模型选择 + 微信 + 更多)
+│   │       ├── .block__icons (工具栏: 标题/状态 + 微信 + 更多)
 │   │       ├── WeixinLoginDialog (条件渲染)
 │   │       └── ChatPanel (完全复用)
 ├── <script setup>
@@ -168,7 +168,7 @@ defineProps<{
    - 列表: 可滚动区域，每个会话项显示标题 + 最后消息时间 + 来源标签（微信来源特殊标记）
    - 当前选中项高亮: `background: var(--b3-theme-background-light);`
 3. **右侧主区**: `.ai-chat-view__main` — `flex: 1; min-width: 0; display: flex; flex-direction: column;`
-   - 工具栏: 复用 `.block__icons` 模式，包含标题/状态、模型选择（如需）、微信按钮、更多操作
+   - 工具栏: 复用 `.block__icons` 模式，包含标题/状态、微信按钮、更多操作（模型选择在 ChatPanel 的 ChatInput 内部，无需重复放置）
    - ChatPanel: `flex: 1; min-height: 0;` 完全复用
 
 #### Script 逻辑（从 AiChatDock 迁移）
