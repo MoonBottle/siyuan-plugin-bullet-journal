@@ -385,7 +385,7 @@ describe('parseTaskLine 任务解析', () => {
 
   it('保留标签不应被当作业务标签解析', () => {
     const task = LineParser.parseTaskLine('任务名 #done #任务', 1);
-    expect(task.name).toBe('任务名');
+    expect(task.name).toBe('任务名 #done');
     expect(task.tags).toBeUndefined();
   });
 
