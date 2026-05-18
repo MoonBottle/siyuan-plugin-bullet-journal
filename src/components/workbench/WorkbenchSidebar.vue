@@ -198,7 +198,7 @@
         @click="handleCreateView('focusWorkbench')"
       >
         <span class="workbench-create-popup__icon" aria-hidden="true">
-          <svg><use xlink:href="#iconList"></use></svg>
+          <svg><use xlink:href="#iconClock"></use></svg>
         </span>
         <span>{{ t('focusWorkbench').title }}</span>
       </button>
