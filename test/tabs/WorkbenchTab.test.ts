@@ -162,7 +162,7 @@ vi.mock('@/workbench/viewRegistry', () => ({
     const defaults: Record<string, () => Record<string, unknown>> = {
       todo: () => ({ preset: {} }),
       habit: () => ({ habitScope: 'active' }),
-      quadrant: () => ({ quadrant: 'q1' }),
+      quadrant: () => ({}),
       pomodoroStats: () => ({ section: 'overview' }),
       focusReview: () => ({}),
       project: () => ({}),
@@ -409,7 +409,7 @@ describe('WorkbenchTab shell', () => {
 
     expect(getViewDefinition('todo').createDefaultConfig()).toEqual({ preset: {} });
     expect(getViewDefinition('habit').createDefaultConfig()).toEqual({ habitScope: 'active' });
-    expect(getViewDefinition('quadrant').createDefaultConfig()).toEqual({ quadrant: 'q1' });
+    expect(getViewDefinition('quadrant').createDefaultConfig()).toEqual({});
     expect(getViewDefinition('pomodoroStats').createDefaultConfig()).toEqual({ section: 'overview' });
     expect(getViewDefinition('focusReview').createDefaultConfig()).toEqual({});
     expect(getViewDefinition('project').createDefaultConfig()).toEqual({});

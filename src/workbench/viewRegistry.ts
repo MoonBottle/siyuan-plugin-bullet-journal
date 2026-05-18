@@ -4,6 +4,7 @@ import type {
   WorkbenchHabitWeekWidgetConfig,
   WorkbenchPomodoroStatsWidgetConfig,
   WorkbenchProjectViewConfig,
+  WorkbenchQuadrantViewConfig,
   WorkbenchQuadrantWidgetConfig,
   WorkbenchTodoListWidgetConfig,
   WorkbenchViewType,
@@ -11,6 +12,7 @@ import type {
 import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
 import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
 import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
+import { openQuadrantViewConfigDialog } from '@/workbench/quadrantViewConfigDialog';
 import { openFocusReviewViewConfigDialog } from '@/workbench/focusReviewViewConfigDialog';
 import { openProjectViewConfigDialog } from '@/workbench/projectViewConfigDialog';
 import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
@@ -70,21 +72,15 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
     },
     quadrant: {
       type: 'quadrant',
-      createDefaultConfig: (): WorkbenchQuadrantWidgetConfig => ({
-        quadrant: 'q1',
-      }),
+      createDefaultConfig: (): WorkbenchQuadrantViewConfig => ({}),
       openConfigDialog: ({ entry, onUpdateConfig }) => {
-        const config = entry.config as WorkbenchQuadrantWidgetConfig;
-        openQuadrantWidgetConfigDialog({
+        const config = entry.config as WorkbenchQuadrantViewConfig;
+        openQuadrantViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
-            quadrant: config?.quadrant,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({
-              groupId: nextConfig.groupId,
-              quadrant: nextConfig.quadrant ?? 'q1',
-            });
+            await onUpdateConfig({ groupId: nextConfig.groupId });
           },
         });
       },

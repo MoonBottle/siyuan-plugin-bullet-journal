@@ -46,6 +46,10 @@ export interface WorkbenchQuadrantWidgetConfig {
   quadrant?: WorkbenchQuadrantKey;
 }
 
+export interface WorkbenchQuadrantViewConfig {
+  groupId?: string;
+}
+
 export interface WorkbenchCalendarWidgetConfig {
   groupId?: string;
   view?: 'timeGridDay';

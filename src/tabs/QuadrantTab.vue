@@ -107,7 +107,7 @@ import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
 import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
 import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
-import type { WorkbenchQuadrantWidgetConfig } from '@/types/workbench';
+import type { WorkbenchQuadrantViewConfig } from '@/types/workbench';
 import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant';
 import { writeBlock } from '@/utils/blockWriter';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
@@ -131,7 +131,7 @@ const selectedGroup = ref('');
 const isSelectedGroupDefaultDriven = ref(true);
 
 watch(() => props.viewConfig, (config) => {
-  const groupId = (config as WorkbenchQuadrantWidgetConfig | undefined)?.groupId;
+  const groupId = (config as WorkbenchQuadrantViewConfig | undefined)?.groupId;
   if (groupId) {
     selectedGroup.value = groupId;
     isSelectedGroupDefaultDriven.value = false;

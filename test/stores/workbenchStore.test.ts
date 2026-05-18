@@ -28,7 +28,7 @@ const {
     const defaults: Record<string, Record<string, unknown>> = {
       todo: { preset: {} },
       habit: { habitScope: 'active' },
-      quadrant: { quadrant: 'q1' },
+      quadrant: {},
       pomodoroStats: { section: 'overview' },
       focusReview: {},
       project: {},
