@@ -131,11 +131,11 @@ onMounted(async () => {
   box-sizing: border-box;
 
   &__sidebar {
-    width: 240px;
+    width: 260px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    padding: 12px;
+    padding: 10px;
     background: var(--b3-theme-background);
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 12px;
@@ -170,8 +170,8 @@ onMounted(async () => {
     position: relative;
     width: 100%;
     min-width: 0;
-    padding: 10px 8px;
-    padding-right: 28px;
+    padding: 8px 6px;
+    padding-right: 24px;
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 10px;
     background: var(--b3-theme-surface);
@@ -223,8 +223,8 @@ onMounted(async () => {
 
   &__sidebar-item-action {
     position: absolute;
-    top: 6px;
-    right: 4px;
+    top: 4px;
+    right: 2px;
     opacity: 0;
     transition: opacity 0.15s;
     padding: 3px;
