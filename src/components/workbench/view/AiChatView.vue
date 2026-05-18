@@ -36,7 +36,7 @@
           <span
             class="ai-chat-view__sidebar-item-action"
             :aria-label="t('common').more"
-            @click.stop="handleItemMore(conv.id, $event)"
+            @click.stop="handleItemMore(conv, $event)"
           >
             <svg><use xlink:href="#iconMore"></use></svg>
           </span>
@@ -67,6 +67,7 @@ import type { ConversationIndexItem } from '@/services/conversationStorageServic
 import { t } from '@/i18n';
 import AiChatDock from '@/tabs/AiChatDock.vue';
 import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue';
+import { showInputDialog } from '@/utils/dialog';
 
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
@@ -109,18 +110,39 @@ async function handleSelect(id: string) {
   await aiStore.switchConversation(id);
 }
 
-function handleItemMore(convId: string, event: MouseEvent) {
+function handleItemMore(conversation: ConversationIndexItem, event: MouseEvent) {
   event.stopPropagation();
   const target = event.currentTarget as HTMLElement;
   if (!target) return;
   const rect = target.getBoundingClientRect();
 
   const menu = new Menu('ai-chat-item-more-menu');
+  if (conversation.source !== 'weixin') {
+    menu.addItem({
+      icon: 'iconEdit',
+      label: t('workbench').rename,
+      click: () => {
+        showInputDialog(
+          t('workbench').rename,
+          t('workbench').renamePrompt,
+          conversation.title,
+          async (nextTitle) => {
+            if (!nextTitle || nextTitle === conversation.title) {
+              return;
+            }
+
+            await aiStore.renameConversation(conversation.id, nextTitle);
+            await refreshConversationsList();
+          },
+        );
+      },
+    });
+  }
   menu.addItem({
     icon: 'iconTrashcan',
     label: t('aiChat').deleteConversation,
     click: async () => {
-      await aiStore.deleteConversation(convId);
+      await aiStore.deleteConversation(conversation.id);
       await refreshConversationsList();
     },
   });

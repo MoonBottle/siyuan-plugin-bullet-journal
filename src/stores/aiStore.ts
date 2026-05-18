@@ -545,6 +545,21 @@ export const useAIStore = defineStore('ai', () => {
     }
   }
 
+  async function renameConversation(conversationId: string, title: string) {
+    if (!storageService) return;
+
+    await storageService.updateConversationTitle(conversationId, title);
+    await refreshConversationsList();
+
+    if (currentConversation.value?.id === conversationId) {
+      currentConversation.value = {
+        ...currentConversation.value,
+        title,
+        updatedAt: Date.now(),
+      };
+    }
+  }
+
   async function clearCurrentConversation() {
     if (!storageService || !currentConversation.value) return;
 
@@ -1517,6 +1532,7 @@ export const useAIStore = defineStore('ai', () => {
     setShowToolCalls,
     createConversation,
     switchConversation,
+    renameConversation,
     deleteConversation,
     clearCurrentConversation,
     sendMessage,
