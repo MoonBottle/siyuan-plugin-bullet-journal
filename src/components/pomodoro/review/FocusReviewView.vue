@@ -102,13 +102,6 @@
 
     <section class="focus-review-view__detail">
       <div v-if="selectedEntry" class="focus-review-view__detail-surface" data-testid="focus-review-detail">
-        <div class="focus-review-view__detail-header">
-          <div>
-            <div class="focus-review-view__detail-title">{{ selectedEntry.itemContent || selectedEntry.itemId }}</div>
-            <div class="focus-review-view__detail-subtitle">{{ t('focusReview').detailTitle }}</div>
-          </div>
-        </div>
-
           <div class="focus-review-view__detail-layout">
             <div class="focus-review-view__detail-panel focus-review-view__detail-panel--item">
             <div class="focus-review-view__detail-panel-header">{{ t('todo').item }}</div>
@@ -369,24 +362,6 @@ defineExpose({
   box-sizing: border-box;
 }
 
-.focus-review-view__detail-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.focus-review-view__detail-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-}
-
-.focus-review-view__detail-subtitle {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-}
-
 .focus-review-view__summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -567,7 +542,6 @@ defineExpose({
   flex-direction: column;
   gap: 16px;
   min-height: 0;
-  margin-top: 20px;
   flex: 1;
 }
 
