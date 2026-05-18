@@ -17,4 +17,18 @@ describe('AiChatView layout guards', () => {
     expect(source).toContain('width: 100%;');
     expect(source).toContain('box-sizing: border-box;');
   });
+
+  it('keeps the search box shrinkable so the new-conversation button stays visible', () => {
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/workbench/view/AiChatView.vue'),
+      'utf-8',
+    );
+
+    expect(source).toContain('class="ai-chat-view__sidebar-search"');
+    expect(source).toContain('&__sidebar-header {');
+    expect(source).toContain('&__sidebar-search {');
+    expect(source).toContain('flex: 1;');
+    expect(source).toContain('min-width: 0;');
+    expect(source).toContain('width: auto;');
+  });
 });

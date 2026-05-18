@@ -3,6 +3,7 @@
     <aside class="ai-chat-view__sidebar">
       <div class="ai-chat-view__sidebar-header">
         <ProjectPaneSearchBox
+          class="ai-chat-view__sidebar-search"
           :model-value="searchQuery"
           :placeholder="t('aiChat').searchConversations ?? '搜索会话...'"
           :clear-label="t('common').clear"
@@ -166,9 +167,16 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--b3-theme-surface-lighter);
     flex-shrink: 0;
+  }
+
+  &__sidebar-search {
+    flex: 1;
+    min-width: 0;
+    width: auto;
   }
 
   &__sidebar-header-btn {
