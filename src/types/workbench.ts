@@ -27,7 +27,8 @@ export type WorkbenchWidgetType =
   | 'quadrantSummary'
   | 'habitWeek'
   | 'miniCalendar'
-  | 'pomodoroStats';
+  | 'pomodoroStats'
+  | 'datePicker';
 
 export type WorkbenchQuadrantKey = 'q1' | 'q2' | 'q3' | 'q4';
 export type WorkbenchPomodoroStatsSectionKey =
@@ -63,6 +64,29 @@ export interface WorkbenchHabitWeekWidgetConfig {
 
 export interface WorkbenchPomodoroStatsWidgetConfig {
   section?: WorkbenchPomodoroStatsSectionKey;
+}
+
+/** 可联动的目标组件类型（可扩展） */
+export type LinkableWidgetType = 'todoList';
+
+/** 字段映射：日历产出字段 → 目标组件属性 */
+export interface WidgetLinkageFieldMap {
+  sourceField: 'dateRange';
+  targetProperty: 'dateRange';
+}
+
+/** 单条联动规则 */
+export interface WidgetLinkageRule {
+  id: string;
+  targetWidgetId: string;
+  targetType: LinkableWidgetType;
+  fieldMapping: WidgetLinkageFieldMap;
+}
+
+/** DatePickerWidget 配置 */
+export interface WorkbenchDatePickerWidgetConfig {
+  view?: 'month' | 'week';
+  linkages: WidgetLinkageRule[];
 }
 
 export interface WorkbenchFocusWorkbenchViewConfig {

@@ -87,6 +87,10 @@ export function broadcastPluginUnloading(pluginInstanceId?: string): void {
 }
 
 // 事件类型
+/**
+ * Events payload 类型说明：
+ * - WIDGET_DATE_RANGE_CHANGED: { widgetId: string; dateRange: [start: Date, end: Date] }
+ */
 export const Events = {
   REFRESH_REQUEST_SUBMITTED: 'refresh:request-submitted',
   LOCAL_DATA_MUTATED: 'data:mutated',
@@ -108,4 +112,5 @@ export const Events = {
   BREAK_STARTED: 'break:started',
   BREAK_ENDED: 'break:ended',
   POMODORO_AUTO_EXTENDED: 'pomodoro:auto-extended', // 自动延迟番茄钟，通知弹窗关闭
+  WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed', // DatePicker 日期范围变更，payload: { widgetId, dateRange }
 };
