@@ -18,6 +18,7 @@
 
       <!-- 对话选择下拉框 -->
       <ConversationSelect
+        v-if="!props.embedded"
         :conversations="conversationsList"
         :current-conversation-id="aiStore.currentConversationId"
         @select="handleConversationSelect"
@@ -27,6 +28,7 @@
 
       <!-- 新建对话按钮 -->
       <span
+        v-if="!props.embedded"
         class="block__icon b3-tooltips b3-tooltips__sw"
         :aria-label="t('aiChat').newConversation"
         @click="handleNewConversation"
@@ -110,6 +112,10 @@ import { createApp } from 'vue';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import AiSkillConfigSection from '@/components/settings/AiSkillConfigSection.vue';
 import { openTab } from 'siyuan';
+
+const props = defineProps<{
+  embedded?: boolean;
+}>();
 
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
