@@ -172,13 +172,15 @@ onMounted(async () => {
     align-items: center;
     gap: 4px;
     width: 100%;
-    padding: 10px;
+    min-width: 0;
+    padding: 10px 8px;
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 10px;
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-background);
     cursor: pointer;
     transition: border-color 0.15s, background-color 0.15s;
+    overflow: hidden;
 
     &:hover {
       border-color: var(--b3-theme-primary);
