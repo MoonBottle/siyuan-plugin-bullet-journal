@@ -92,23 +92,30 @@ onMounted(async () => {
 .ai-chat-view {
   display: flex;
   flex-direction: row;
+  gap: 12px;
   height: 100%;
+  padding: 8px;
   overflow: hidden;
+  box-sizing: border-box;
 
   &__sidebar {
     width: 240px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--b3-border-color);
+    padding: 12px;
     background: var(--b3-theme-background);
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 0;
   }
 
   &__sidebar-header {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--b3-border-color);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter);
     flex-shrink: 0;
   }
 
@@ -121,15 +128,16 @@ onMounted(async () => {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 4px 0;
+    padding-top: 4px;
   }
 
   &__sidebar-item {
     display: flex;
     flex-direction: column;
-    padding: 10px 12px;
+    padding: 10px 8px;
     cursor: pointer;
     gap: 4px;
+    border-radius: 8px;
     transition: background-color 0.15s;
 
     &:hover {
@@ -137,7 +145,11 @@ onMounted(async () => {
     }
 
     &.is-active {
-      background: var(--b3-theme-background-light);
+      background: var(--b3-theme-primary-lightest);
+
+      .ai-chat-view__sidebar-item-title {
+        color: var(--b3-theme-primary);
+      }
     }
   }
 
@@ -170,7 +182,7 @@ onMounted(async () => {
   }
 
   &__sidebar-empty {
-    padding: 24px 12px;
+    padding: 24px 8px;
     text-align: center;
     font-size: 13px;
     color: var(--b3-theme-on-surface-medium);
@@ -181,7 +193,12 @@ onMounted(async () => {
     min-width: 0;
     display: flex;
     flex-direction: column;
+    padding: 12px;
+    background: var(--b3-theme-background);
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: 12px;
     overflow: hidden;
+    min-height: 0;
   }
 }
 </style>
