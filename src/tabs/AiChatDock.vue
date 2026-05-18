@@ -3,7 +3,6 @@
     <!-- 头部工具栏 -->
     <div class="block__icons">
       <div class="block__logo ai-chat-dock__title-block">
-        <AiAssistantIcon class="block__logoicon" />
         <div class="ai-chat-dock__title-copy">
           <div class="ai-chat-dock__title-text">{{ currentHeaderTitle }}</div>
           <div
@@ -101,7 +100,6 @@ import { buildViewDebugContext } from '@/utils/viewDebug';
 import { useConversationStorage, type ConversationIndexItem } from '@/services/conversationStorageService';
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
-import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
 import SkillIcon from '@/components/icons/SkillIcon.vue';
 import WeixinIcon from '@/components/icons/WeixinIcon.vue';
 import WeixinLoginDialog from '@/components/ai/WeixinLoginDialog.vue';
