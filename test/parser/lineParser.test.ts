@@ -355,6 +355,55 @@ describe('parseTaskLine 任务解析', () => {
     const task = LineParser.parseTaskLine(line, 1);
     expect(task.name).toBe(expectedName);
   });
+
+  it('带业务标签', () => {
+    const task = LineParser.parseTaskLine('test #测试# @2026-05-18', 1);
+    expect(task.name).toBe('test');
+    expect(task.tags).toEqual(['测试']);
+    expect(task.date).toBe('2026-05-18');
+  });
+
+  it('带多个业务标签', () => {
+    const task = LineParser.parseTaskLine('#task 工作 #紧急 #重要 @L1', 1);
+    expect(task.name).toBe('工作');
+    expect(task.tags).toEqual(['紧急', '重要']);
+    expect(task.level).toBe('L1');
+  });
+
+  it('无业务标签时 tags 为 undefined', () => {
+    const task = LineParser.parseTaskLine('#task 无标签任务 @L2', 1);
+    expect(task.name).toBe('无标签任务');
+    expect(task.tags).toBeUndefined();
+    expect(task.level).toBe('L2');
+  });
+
+  it('业务标签应从任务名中移除', () => {
+    const task = LineParser.parseTaskLine('前置文字 #Alpha #Beta 后续文字 #任务', 1);
+    expect(task.name).toBe('前置文字 后续文字');
+    expect(task.tags).toEqual(['Alpha', 'Beta']);
+  });
+
+  it('保留标签不应被当作业务标签解析', () => {
+    const task = LineParser.parseTaskLine('任务名 #done #任务', 1);
+    expect(task.name).toBe('任务名');
+    expect(task.tags).toBeUndefined();
+  });
+
+  it('思源原生 #标签# 格式正确解析', () => {
+    const task = LineParser.parseTaskLine('test #测试#\u200B #标签B# #任务', 1);
+    expect(task.name).toBe('test');
+    expect(task.tags).toEqual(['测试', '标签B']);
+  });
+
+  it('带块引用和业务标签的组合场景', () => {
+    const task = LineParser.parseTaskLine(
+      "首页((20260310210016-gkixdit '测试'))改版 #Release #任务 @L1",
+      1
+    );
+    expect(task.name).toBe('首页测试改版');
+    expect(task.tags).toEqual(['Release']);
+    expect(task.links).toHaveLength(1);
+  });
 });
 
 describe('parseItemLine - 事项链接', () => {
