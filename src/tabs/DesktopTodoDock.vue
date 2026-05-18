@@ -133,13 +133,6 @@ watch(selectedGroup, (val) => {
   settingsStore.saveToPlugin();
 });
 
-watch(() => props.viewConfig, (config) => {
-  const preset = (config as WorkbenchTodoListWidgetConfig | undefined)?.preset;
-  if (preset?.groupId) {
-    selectedGroup.value = preset.groupId;
-  }
-}, { immediate: true });
-
 const searchQuery = ref('');
 const tagQuery = ref('');
 const selectedTags = ref<string[]>([]);
@@ -149,6 +142,19 @@ const dateFilterType = ref<TodoDateFilterType>('today');
 const startDate = ref(dayjs().format('YYYY-MM-DD'));
 const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
 const currentDate = computed(() => projectStore.currentDate);
+
+watch(() => props.viewConfig, (config) => {
+  const preset = (config as WorkbenchTodoListWidgetConfig | undefined)?.preset;
+  if (!preset) return;
+  if (preset.groupId !== undefined) selectedGroup.value = preset.groupId;
+  if (preset.dateFilterType) dateFilterType.value = preset.dateFilterType;
+  if (preset.startDate) startDate.value = preset.startDate;
+  if (preset.endDate) endDate.value = preset.endDate;
+  if (preset.priorities) selectedPriorities.value = [...preset.priorities];
+  if (preset.selectedTags) selectedTags.value = [...preset.selectedTags];
+  if (preset.searchQuery !== undefined) searchQuery.value = preset.searchQuery;
+  if (preset.sortRules) settingsStore.todoDock.sortRules = preset.sortRules;
+}, { immediate: true, deep: true });
 
 const priorityOptions = [
   { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
