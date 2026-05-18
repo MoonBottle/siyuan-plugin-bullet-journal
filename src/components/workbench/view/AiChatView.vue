@@ -168,19 +168,16 @@ onMounted(async () => {
 
   &__sidebar-item {
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 4px;
     width: 100%;
     min-width: 0;
     padding: 10px 8px;
+    padding-right: 28px;
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 10px;
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-background);
     cursor: pointer;
     transition: border-color 0.15s, background-color 0.15s;
-    overflow: hidden;
 
     &:hover {
       border-color: var(--b3-theme-primary);
@@ -203,7 +200,6 @@ onMounted(async () => {
   }
 
   &__sidebar-item-body {
-    flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -226,10 +222,12 @@ onMounted(async () => {
   }
 
   &__sidebar-item-action {
-    flex-shrink: 0;
+    position: absolute;
+    top: 6px;
+    right: 4px;
     opacity: 0;
     transition: opacity 0.15s;
-    padding: 2px;
+    padding: 3px;
     border-radius: 4px;
     cursor: pointer;
     display: flex;
