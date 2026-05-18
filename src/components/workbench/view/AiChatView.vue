@@ -78,8 +78,8 @@ defineProps<{
 
 const aiStore = useAIStore();
 
-const conversationsList = ref<ConversationIndexItem[]>([]);
 const searchQuery = ref('');
+const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? []);
 
 const activeId = computed(() => aiStore.currentConversationId);
 
@@ -92,7 +92,7 @@ const filteredConversations = computed(() => {
 });
 
 async function refreshConversationsList() {
-  conversationsList.value = await aiStore.getConversationsList();
+  await aiStore.refreshConversationsList();
 }
 
 function formatTime(timestamp?: number): string {
@@ -101,8 +101,7 @@ function formatTime(timestamp?: number): string {
 }
 
 async function handleNew() {
-  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  await refreshConversationsList();
+  aiStore.startNewConversationDraft();
 }
 
 async function handleSelect(id: string) {
@@ -155,9 +154,6 @@ function handleItemMore(conversation: ConversationIndexItem, event: MouseEvent) 
 
 onMounted(async () => {
   await refreshConversationsList();
-  if (conversationsList.value.length === 0) {
-    await handleNew();
-  }
 });
 </script>
 

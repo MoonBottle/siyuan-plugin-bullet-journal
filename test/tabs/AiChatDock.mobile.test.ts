@@ -32,6 +32,7 @@ const mockAiStore = {
       hasSkillExecutions: false,
     },
   ]),
+  startNewConversationDraft: vi.fn(),
   createConversation: vi.fn().mockResolvedValue('conv-1'),
   switchConversation: vi.fn().mockResolvedValue(undefined),
   deleteConversation: vi.fn().mockResolvedValue(undefined),
@@ -244,6 +245,18 @@ describe('AiChatDock mobile clawbot gating', () => {
     expect(mounted.container.querySelector('.weixin-btn')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="weixin-icon-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="weixin-login-dialog-stub"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('does not auto-create a conversation on mount when the list is empty', async () => {
+    mockAiStore.currentConversationId = null;
+    mockAiStore.getConversationsList.mockResolvedValue([]);
+
+    const mounted = mountDock();
+    await flushDock();
+
+    expect(mockAiStore.createConversation).not.toHaveBeenCalled();
 
     mounted.unmount();
   });

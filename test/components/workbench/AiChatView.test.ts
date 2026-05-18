@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h, nextTick, ref } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initI18n } from '@/i18n';
 
@@ -43,9 +43,41 @@ const {
   ]),
 }));
 
+const mockConversationsList = ref([
+  {
+    id: 'conv-normal',
+    title: 'Daily report',
+    updatedAt: Date.now(),
+    createdAt: Date.now(),
+    messageCount: 0,
+    fileSize: 0,
+    hasSkillExecutions: false,
+    source: 'manual',
+  },
+  {
+    id: 'conv-weixin',
+    title: 'Wechat user',
+    updatedAt: Date.now() - 1000,
+    createdAt: Date.now() - 1000,
+    messageCount: 0,
+    fileSize: 0,
+    hasSkillExecutions: false,
+    source: 'weixin',
+    weixinUserId: 'wx-1',
+    weixinUserName: 'Wechat user',
+  },
+]);
+
 const mockAiStore = {
   currentConversationId: 'conv-normal',
+  get conversationsList() {
+    return mockConversationsList.value;
+  },
   getConversationsList: mockGetConversationsList,
+  refreshConversationsList: vi.fn().mockImplementation(async () => {
+    mockConversationsList.value = await mockGetConversationsList();
+  }),
+  startNewConversationDraft: vi.fn(),
   createConversation: vi.fn().mockResolvedValue('conv-new'),
   switchConversation: vi.fn().mockResolvedValue(undefined),
   renameConversation: mockRenameConversation,
@@ -77,7 +109,7 @@ vi.mock('@/tabs/AiChatDock.vue', () => ({
 }));
 
 describe('AiChatView', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     initI18n('en_US');
     vi.clearAllMocks();
     mockGetConversationsList.mockResolvedValue([
@@ -104,6 +136,7 @@ describe('AiChatView', () => {
         weixinUserName: 'Wechat user',
       },
     ]);
+    mockConversationsList.value = await mockGetConversationsList();
   });
 
   async function mountView() {
@@ -166,6 +199,41 @@ describe('AiChatView', () => {
       icon: 'iconTrashcan',
       label: 'Delete Conversation',
     });
+
+    mounted.unmount();
+  });
+
+  it('does not create a conversation immediately when clicking new', async () => {
+    const mounted = await mountView();
+
+    (mounted.container.querySelector('.ai-chat-view__sidebar-header-btn') as HTMLElement)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(mockAiStore.createConversation).not.toHaveBeenCalled();
+    expect(mockAiStore.startNewConversationDraft).toHaveBeenCalledTimes(1);
+
+    mounted.unmount();
+  });
+
+  it('reacts to store conversation list updates after a new conversation is created', async () => {
+    const mounted = await mountView();
+
+    mockConversationsList.value = [
+      {
+        id: 'conv-created',
+        title: 'What tasks are pending this week?',
+        updatedAt: Date.now(),
+        createdAt: Date.now(),
+        messageCount: 2,
+        fileSize: 0,
+        hasSkillExecutions: false,
+        source: 'manual',
+      },
+      ...mockConversationsList.value,
+    ];
+    await nextTick();
+
+    expect(mounted.container.textContent).toContain('What tasks are pending this week?');
 
     mounted.unmount();
   });

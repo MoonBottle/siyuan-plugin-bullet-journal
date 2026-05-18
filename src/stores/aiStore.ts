@@ -524,6 +524,10 @@ export const useAIStore = defineStore('ai', () => {
     return conversation.id;
   }
 
+  function startNewConversationDraft() {
+    currentConversation.value = null;
+  }
+
   async function switchConversation(conversationId: string) {
     if (!storageService) return;
 
@@ -1530,6 +1534,7 @@ export const useAIStore = defineStore('ai', () => {
     setProviders,
     setActiveProvider,
     setShowToolCalls,
+    startNewConversationDraft,
     createConversation,
     switchConversation,
     renameConversation,

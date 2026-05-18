@@ -315,8 +315,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 
 // 新建对话
 const handleNewConversation = async () => {
-  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  await refreshConversationsList();
+  aiStore.startNewConversationDraft();
   nextTick(() => {
     chatPanelRef.value?.focusInput();
   });
@@ -428,12 +427,6 @@ onMounted(async () => {
   
   // 加载对话列表（initializeStorage 已加载，但为保险起见再次刷新）
   await refreshConversationsList();
-
-  // 如果没有对话，创建一个默认对话
-  if (conversationsList.value.length === 0) {
-    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-    // createConversation 内部已刷新对话列表
-  }
 
   // 初始化 ClawBot（如果已启用）
   if (!isMobile.value) {
