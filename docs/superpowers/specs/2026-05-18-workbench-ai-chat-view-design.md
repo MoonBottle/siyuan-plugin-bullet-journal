@@ -86,13 +86,13 @@ AiChatDock.vue (修改, 加 embedded prop)
 
 ### 3.3 复用关系
 
-| 来源组件 | 复用方式 | 说明 |
-|---------|---------|------|
-| `AiChatDock.vue` | 直接引用 + embedded prop | 右侧面板 99% 复用，embedded 模式下隐藏 ConversationSelect 和新建按钮 |
-| `ChatPanel.vue` | 间接复用（通过 AiChatDock） | AiChatDock 内部已引用 |
-| `WeixinLoginDialog.vue` | 间接复用（通过 AiChatDock） | AiChatDock 内部已引用 |
-| `aiStore` | 共享 | 三方共享（AiChatDock + AiChatView 侧边栏 + 可能的外部 Dock） |
-| ConversationSelect 数据逻辑 | 不需要搬运 | 全部留在 AiChatDock 内部 |
+| 来源组件                    | 复用方式                 | 说明                                                  |
+| ----------------------- | -------------------- | --------------------------------------------------- |
+| `AiChatDock.vue`        | 直接引用 + embedded prop | 右侧面板 99% 复用，embedded 模式下隐藏 ConversationSelect 和新建按钮 |
+| `ChatPanel.vue`         | 间接复用（通过 AiChatDock）  | AiChatDock 内部已引用                                    |
+| `WeixinLoginDialog.vue` | 间接复用（通过 AiChatDock）  | AiChatDock 内部已引用                                    |
+| `aiStore`               | 共享                   | 三方共享（AiChatDock + AiChatView 侧边栏 + 可能的外部 Dock）      |
+| ConversationSelect 数据逻辑 | 不需要搬运                | 全部留在 AiChatDock 内部                                  |
 
 **重要：** AiChatView 侧边栏通过 `aiStore.switchConversation(id)` 切换对话，AiChatDock 内部 watch `aiStore.currentConversationId` 自动响应切换。无需组件间 props/events 通信。
 
@@ -100,27 +100,29 @@ AiChatDock.vue (修改, 加 embedded prop)
 
 ### 4.1 新建文件
 
-| 文件路径 | 说明 | 预估行数 |
-|---------|------|---------|
-| `src/components/workbench/view/AiChatView.vue` | 工作台 AI 视图容器（左栏会话列表 + 右栏嵌入 AiChatDock） | ~120 行 |
+| 文件路径                                           | 说明                                    | 预估行数    |
+| ---------------------------------------------- | ------------------------------------- | ------- |
+| `src/components/workbench/view/AiChatView.vue` | 工作台 AI 视图容器（左栏会话列表 + 右栏嵌入 AiChatDock） | \~120 行 |
 
 ### 4.2 修改文件
 
-| 文件路径 | 改动内容 | 改动量 |
-|---------|---------|--------|
-| `src/tabs/AiChatDock.vue` | 新增 `embedded` prop，条件隐藏 ConversationSelect + 新建按钮 | ~10 行 |
-| `src/types/workbench.ts` | `WorkbenchViewType` 联合类型添加 `'aiChat'` | +1 行 |
-| `src/workbench/viewRegistry.ts` | 注册 `aiChat` 视图定义（type + createDefaultConfig） | +5 行 |
-| `src/stores/workbenchStore.ts` | `getViewEntryDefinition()` 添加 aiChat 条目（icon: `iconSparkles`, title: i18n） | +3 行 |
-| `src/components/workbench/view/WorkbenchViewHost.vue` | 添加 `v-else-if="viewType === 'aiChat'"` 分支，引入 AiChatView | +6 行 |
+| 文件路径                                                  | 改动内容                                                                       | 改动量    |
+| ----------------------------------------------------- | -------------------------------------------------------------------------- | ------ |
+| `src/tabs/AiChatDock.vue`                             | 新增 `embedded` prop，条件隐藏 ConversationSelect + 新建按钮                          | \~10 行 |
+| `src/types/workbench.ts`                              | `WorkbenchViewType` 联合类型添加 `'aiChat'`                                      | +1 行   |
+| `src/workbench/viewRegistry.ts`                       | 注册 `aiChat` 视图定义（type + createDefaultConfig）                               | +5 行   |
+| `src/stores/workbenchStore.ts`                        | `getViewEntryDefinition()` 添加 aiChat 条目（icon: `iconSparkles`, title: i18n） | +3 行   |
+| `src/components/workbench/view/WorkbenchViewHost.vue` | 添加 `v-else-if="viewType === 'aiChat'"` 分支，引入 AiChatView                    | +6 行   |
 
 ### 4.3 不变文件
 
 以下文件**不需要修改**：
 
 * `src/index.ts` — 不需要注册新 Tab/Dock，仅通过工作台 View 系统暴露
+
 * `src/components/ai/ChatPanel.vue` — 完全复用，零改动
-* `src/constants.ts` — 不需要新增 TAB_TYPES / DOCK_TYPES
+
+* `src/constants.ts` — 不需要新增 TAB\_TYPES / DOCK\_TYPES
 
 ## 5. 详细设计
 
@@ -186,10 +188,12 @@ defineProps<{
 #### 样式微调（可选）
 
 embedded 模式下可能需要：
+
 * 工具栏左侧标题区域可以保留（显示当前会话标题/状态）
+
 * 无其他样式变更需求（AiChatDock 本身的 flex 布局已适配容器）
 
-### 5.6 AiChatView.vue 详细规格
+### 5.6 AiChatView\.vue 详细规格
 
 #### Props
 
@@ -203,10 +207,14 @@ defineProps<{
 
 1. **根元素**: `.ai-chat-view` — `display: flex; flex-direction: row; height: 100%; overflow: hidden;`
 2. **左侧边栏**: `.ai-chat-view__sidebar` — `width: 240px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--b3-border-color);`
+
    * 头部: 新建对话按钮 (`iconAdd`)
+
    * 列表: 可滚动区域，每个会话项显示标题 + 最后消息时间 + 来源标签（微信来源特殊标记）
+
    * 当前选中项高亮: `background: var(--b3-theme-background-light);`
 3. **右侧区域**: `.ai-chat-view__dock-area` — `flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;`
+
    * 渲染 `<AiChatDock :embedded="true" />`
 
 #### Script 逻辑
@@ -311,18 +319,30 @@ onMounted(async () => {
 2. **集成测试**: 在 WorkbenchViewHost 中正确渲染 aiChat 视图类型
 3. **回归测试**: AiChatDock `embedded=false` 时行为与修改前完全一致
 4. **手动验证**:
+
    * [ ] 工作台侧边栏 → 创建 AI 助理视图 → 显示两栏布局
+
    * [ ] 左侧会话列表: 新建/切换/删除会话
+
    * [ ] 点击侧边栏会话项 → 右侧 AiChatDock 聊天区跟随切换
+
    * [ ] 右侧聊天区: 发送消息、接收回复、工具调用展示
+
    * [ ] 微信功能正常（连接/断开/微信会话切换）
+
    * [ ] 与独立 AiChatDock 并存时数据同步
+
    * [ ] 独立 AiChatDock（embedded=false）功能不受影响
 
 ## 9. 未来迭代（不在本次范围）
 
 * [ ] 侧边栏宽度可拖拽调整
+
 * [ ] View Config 弹窗: 配置是否显示微信按钮、工具调用等
+
 * [ ] 会话搜索/过滤
+
 * [ ] 会话分组/归档
+
 * [ ] 移动端适配（折叠侧边栏为抽屉）
+
