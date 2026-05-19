@@ -39,9 +39,9 @@
             cell.date === selectedDate,
           'date-picker-month-grid__cell--in-range': isInRange(cell.date),
           'date-picker-month-grid__cell--range-start':
-            cell.date === rangeStart,
+            cell.date && cell.date === rangeStart,
           'date-picker-month-grid__cell--range-end':
-            cell.date === rangeEnd,
+            cell.date && cell.date === rangeEnd,
           'date-picker-month-grid__cell--planned': hasPlanned(cell.summary),
           'date-picker-month-grid__cell--focused':
             cell.summary.actualMinutes > 0,
