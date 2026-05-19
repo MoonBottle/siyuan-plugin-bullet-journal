@@ -63,6 +63,36 @@ describe('createProtyleMarkdownWriter', () => {
     expect(updateBlock).not.toHaveBeenCalled();
   });
 
+  it('uses the protyle fast path for same-block multiline markdown', async () => {
+    const block = createBlock('block-1', '第一行\n第二行 /jt');
+    const protyle = {
+      transaction: vi.fn(),
+    };
+    vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
+      const editable = element.querySelector('[contenteditable="true"]');
+      if (!editable) return false;
+      editable.textContent = markdown;
+      return true;
+    });
+
+    const writer = createProtyleMarkdownWriter({
+      blockId: 'block-1',
+      nodeElement: block,
+      protyle,
+    });
+
+    const ok = await writer?.('第一行 📅2026-05-14\n第二行\n{: id="block-1"}', 'block-1');
+
+    expect(ok).toBe(true);
+    expect(renderMarkdownIntoBlockEditable).toHaveBeenCalledWith(
+      protyle,
+      block,
+      '第一行 📅2026-05-14\n第二行',
+    );
+    expect(protyle.transaction).toHaveBeenCalledOnce();
+    expect(updateBlock).not.toHaveBeenCalled();
+  });
+
   it('falls back to API dom writes for complex updates when Lute is available', async () => {
     const block = createBlock();
     const protyle = {

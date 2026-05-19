@@ -36,8 +36,7 @@ export function createProtyleMarkdownWriter(
     try {
       const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
       const isSameBlock = targetBlockId === currentBlockId;
-      const isSingleLine = !textContent.includes('\n');
-      const canRenderInline = isSameBlock && isSingleLine;
+      const canRenderInline = isSameBlock;
 
       if (canRenderInline && renderMarkdownIntoBlockEditable(protyle, nodeElement, textContent)) {
         nodeElement.setAttribute('updated', formatUpdatedAttr());
