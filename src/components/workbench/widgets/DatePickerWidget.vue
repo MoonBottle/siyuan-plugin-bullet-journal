@@ -97,6 +97,6 @@ function emitLinkageEvent(start: string, end: string) {
 .workbench-widget-date-picker__calendar {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 </style>

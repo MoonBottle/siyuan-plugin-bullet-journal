@@ -197,6 +197,10 @@ function isInRange(date: string): boolean {
 
 <style lang="scss" scoped>
 .date-picker-month-grid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
   padding: 12px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 10px;
@@ -249,12 +253,13 @@ function isInRange(date: string): boolean {
 }
 
 .date-picker-month-grid__days {
+  flex: 1;
+  min-height: 0;
   margin-top: 6px;
 }
 
 .date-picker-month-grid__cell {
   min-width: 0;
-  aspect-ratio: 1 / 1;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 8px;

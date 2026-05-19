@@ -161,6 +161,10 @@ function isInRange(date: string): boolean {
 
 <style lang="scss" scoped>
 .date-picker-week-grid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
   padding: 8px 12px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 10px;
@@ -213,12 +217,13 @@ function isInRange(date: string): boolean {
 }
 
 .date-picker-week-grid__days {
+  flex: 1;
+  min-height: 0;
   margin-top: 2px;
 }
 
 .date-picker-week-grid__cell {
   min-width: 0;
-  aspect-ratio: 1 / 1;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 8px;
