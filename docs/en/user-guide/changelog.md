@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.9] - 2026-05-19
+
+### Fixes
+
+- **Task List Item Status Update**: Fixed an issue where marking task list items as completed occasionally showed a ✅ emoji instead of a checked checkbox
+
 ## [0.13.8] - 2026-05-19
 
 ### Features
