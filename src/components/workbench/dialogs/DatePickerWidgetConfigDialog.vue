@@ -116,7 +116,7 @@ function openEditor(editingRule: WidgetLinkageRule | null) {
   dialog = new Dialog({
     title: editingRule ? t('datePicker').editLinkage : t('datePicker').addLinkage,
     content: '',
-    width: '480px',
+    width: '560px',
     destroyCallback: () => {
       app?.unmount();
       app = null;
