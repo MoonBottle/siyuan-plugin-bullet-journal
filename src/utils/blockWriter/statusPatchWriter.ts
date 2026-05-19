@@ -85,91 +85,8 @@ function formatUpdatedAttr(date = new Date()): string {
   ].join('');
 }
 
-export async function writeTaskListStatusWithSlashCleanup(
-  context: Pick<BlockWriteContext, 'blockId' | 'listItemBlockId' | 'protyle' | 'nodeElement' | 'slashRange' | 'slashStartOffset'>,
-  patch: StatusPatch,
-): Promise<boolean> {
-  if (patch.status !== 'abandoned') {
-    return false;
-  }
-
-  const { protyle, nodeElement } = context;
-  if (!protyle || !nodeElement) {
-    return false;
-  }
-
-  const listItemElement = nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement | null;
-  if (!listItemElement) {
-    return false;
-  }
-
-  const listItemId = context.listItemBlockId || listItemElement.getAttribute('data-node-id');
-  if (!listItemId) {
-    return false;
-  }
-
-  const slashContext = resolveSlashContext(context);
-  if (!slashContext) {
-    return false;
-  }
-
-  const paragraphId = slashContext.nodeElement.getAttribute('data-node-id');
-  if (!paragraphId) {
-    return false;
-  }
-
-  const path = getNodePath(slashContext.nodeElement, slashContext.slashRange.startContainer);
-  if (!path) {
-    return false;
-  }
-
-  const draftListItem = listItemElement.cloneNode(true) as HTMLElement;
-  const draftParagraph = draftListItem.querySelector(`[data-node-id="${paragraphId}"]`) as HTMLElement | null;
-  if (!draftParagraph) {
-    return false;
-  }
-
-  const draftStartNode = getNodeByPath(draftParagraph, path);
-  if (!draftStartNode || draftStartNode.nodeType !== Node.TEXT_NODE) {
-    return false;
-  }
-
-  const draftRange = document.createRange();
-  draftRange.setStart(draftStartNode, slashContext.slashRange.startOffset);
-  draftRange.collapse(true);
-  deleteSlashRangeText(draftRange, slashContext.slashStartOffset);
-
-  const currentMarkdown = blockElementToMarkdownContent(protyle, draftListItem);
-  if (!currentMarkdown) {
-    return false;
-  }
-
-  const nextMarkdown = applyBlockPatch(
-    splitKramdownBlock(
-      currentMarkdown
-        .split('\n')
-        .map((line) => {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith('{:')) {
-            return line;
-          }
-          return processLineText(line, ALL_SLASH_COMMAND_FILTERS);
-        })
-        .join('\n'),
-    ),
-    patch,
-  );
-
-  const oldHTML = listItemElement.outerHTML;
-  if (!renderMarkdownIntoBlockEditable(protyle, listItemElement, nextMarkdown)) {
-    return false;
-  }
-
-  const updated = formatUpdatedAttr();
-  listItemElement.setAttribute('updated', updated);
-  nodeElement.setAttribute('updated', updated);
-
-  const rawNewHTML = listItemElement.outerHTML;
+function commitProtyleUpdate(protyle: any, id: string, targetElement: HTMLElement, oldHTML: string): boolean {
+  const rawNewHTML = targetElement.outerHTML;
   const newHTML = typeof protyle?.lute?.SpinBlockDOM === 'function'
     ? protyle.lute.SpinBlockDOM(rawNewHTML)
     : rawNewHTML;
@@ -179,12 +96,12 @@ export async function writeTaskListStatusWithSlashCleanup(
   }
 
   const doOperations = [{
-    id: listItemId,
+    id,
     data: newHTML,
     action: 'update',
   }];
   const undoOperations = [{
-    id: listItemId,
+    id,
     data: oldHTML,
     action: 'update',
   }];
@@ -205,4 +122,90 @@ export async function writeTaskListStatusWithSlashCleanup(
   }
 
   return false;
+}
+
+export async function writeStatusWithSlashCleanup(
+  context: Pick<BlockWriteContext, 'blockId' | 'listItemBlockId' | 'protyle' | 'nodeElement' | 'slashRange' | 'slashStartOffset'>,
+  patch: StatusPatch,
+): Promise<boolean> {
+  const { protyle, nodeElement } = context;
+  if (!protyle || !nodeElement) {
+    return false;
+  }
+
+  const slashContext = resolveSlashContext(context);
+  if (!slashContext) {
+    return false;
+  }
+
+  const listItemElement = patch.status === 'abandoned'
+    ? nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement | null
+    : null;
+  const targetElement = listItemElement ?? nodeElement;
+  const targetBlockId = listItemElement
+    ? (context.listItemBlockId || listItemElement.getAttribute('data-node-id'))
+    : context.blockId;
+  if (!targetBlockId) {
+    return false;
+  }
+
+  const paragraphId = slashContext.nodeElement.getAttribute('data-node-id');
+  if (!paragraphId) {
+    return false;
+  }
+
+  const path = getNodePath(slashContext.nodeElement, slashContext.slashRange.startContainer);
+  if (!path) {
+    return false;
+  }
+
+  const draftTarget = targetElement.cloneNode(true) as HTMLElement;
+  const draftParagraph = listItemElement
+    ? draftTarget.querySelector(`[data-node-id="${paragraphId}"]`) as HTMLElement | null
+    : draftTarget;
+  if (!draftParagraph) {
+    return false;
+  }
+
+  const draftStartNode = getNodeByPath(draftParagraph, path);
+  if (!draftStartNode || draftStartNode.nodeType !== Node.TEXT_NODE) {
+    return false;
+  }
+
+  const draftRange = document.createRange();
+  draftRange.setStart(draftStartNode, slashContext.slashRange.startOffset);
+  draftRange.collapse(true);
+  deleteSlashRangeText(draftRange, slashContext.slashStartOffset);
+
+  const currentMarkdown = blockElementToMarkdownContent(protyle, draftTarget);
+  if (!currentMarkdown) {
+    return false;
+  }
+
+  const nextMarkdown = applyBlockPatch(
+    splitKramdownBlock(
+      currentMarkdown
+        .split('\n')
+        .map((line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('{:')) {
+            return line;
+          }
+          return processLineText(line, ALL_SLASH_COMMAND_FILTERS);
+        })
+        .join('\n'),
+    ),
+    patch,
+  );
+
+  const oldHTML = targetElement.outerHTML;
+  if (!renderMarkdownIntoBlockEditable(protyle, targetElement, nextMarkdown)) {
+    return false;
+  }
+
+  const updated = formatUpdatedAttr();
+  targetElement.setAttribute('updated', updated);
+  nodeElement.setAttribute('updated', updated);
+
+  return commitProtyleUpdate(protyle, targetBlockId, targetElement, oldHTML);
 }

@@ -670,22 +670,13 @@ export function getActionHandler(
             return;
           }
 
-          const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
-          if (isTaskListBlock) {
-            const success = await writeBlock(writeContext, [
-              { type: 'removeSlashCommand' },
-              { type: 'setStatus', status: 'abandoned' },
-            ]);
-            if (success) {
-              showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
-            }
-            return;
+          const success = await writeBlock(writeContext, [
+            { type: 'removeSlashCommand' },
+            { type: 'setStatus', status: 'abandoned' },
+          ]);
+          if (success) {
+            showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
           }
-
-          await writeBlock(writeContext, { type: 'removeSlashCommand' });
-          await waitForProtyleTransactionsFlush();
-          void writeBlock(writeContext, { type: 'setStatus', status: 'abandoned' });
-          showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
         })();
       };
     case 'calendar':

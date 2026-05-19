@@ -3,7 +3,7 @@ import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTranspor
 import { createProtyleMarkdownWriter, waitForProtyleTransactionsFlush } from './markdownWriter';
 import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter';
 import { writeViaProtyle } from './protyleTransport';
-import { writeTaskListStatusWithSlashCleanup } from './statusPatchWriter';
+import { writeStatusWithSlashCleanup } from './statusPatchWriter';
 
 export type {
   BatchBlockPatch,
@@ -61,7 +61,7 @@ export async function writeBlock(context: BlockWriteContext, patches: BlockPatch
     && patchArray.every((patch) => patch.type === 'removeSlashCommand' || patch.type === 'setStatus')
     && !batchedRemoveSlashPatch.suffix
   ) {
-    const combinedStatusOk = await writeTaskListStatusWithSlashCleanup(context, batchedStatusPatch);
+    const combinedStatusOk = await writeStatusWithSlashCleanup(context, batchedStatusPatch);
     if (combinedStatusOk) {
       return true;
     }

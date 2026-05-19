@@ -502,7 +502,7 @@ describe('item-only slash command validation', () => {
     );
   });
 
-  it('/fq 在未标记已放弃时通过 BlockWriter 先删 slash 再写入 abandoned 状态', async () => {
+  it('/fq 在未标记已放弃时通过一次批量 BlockWriter 写入删除 slash 与 abandoned 状态', async () => {
     const item = {
       blockId: 'block-item',
       content: '整理资料',
@@ -522,15 +522,13 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(250);
 
-    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
-      1,
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
       { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
-      { type: 'removeSlashCommand' },
-    );
-    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
-      2,
-      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
-      { type: 'setStatus', status: 'abandoned' },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setStatus', status: 'abandoned' },
+      ],
     );
     expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已标记为已放弃', 2000, 'info');
   });
