@@ -308,7 +308,7 @@ describe('habit slash commands', () => {
     );
   });
 
-  it('、jt 成功后应仅清理当前编辑中的斜杠命令，不应再提交覆盖事务', async () => {
+  it('、jt 成功后应先持久化删除斜杠命令，再写入日期', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([{ date: '2026-04-29' }] as any);
     vi.mocked(processLineText).mockImplementation((text: string) => text.replace('、jt', '').trimEnd());
 
@@ -336,8 +336,16 @@ describe('habit slash commands', () => {
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(250);
 
-    expect(writeBlock).toHaveBeenCalledWith({
+    expect(writeBlock).toHaveBeenNthCalledWith(1, {
+      blockId: 'block-today',
+      nodeElement: node,
+      protyle,
+    }, {
+      type: 'removeSlashCommand',
+    });
+    expect(writeBlock).toHaveBeenNthCalledWith(2, {
       blockId: 'block-today',
       nodeElement: node,
       protyle,
@@ -348,6 +356,54 @@ describe('habit slash commands', () => {
       siblingItems: [{ date: '2026-04-29' }],
     });
     expect(protyle.transaction).not.toHaveBeenCalled();
+  });
+
+  it('/mt 成功后应先持久化删除斜杠命令，再写入明天日期', async () => {
+    vi.mocked(extractDatesFromBlock).mockResolvedValue([] as any);
+
+    const handler = getActionHandler('tomorrow', {} as any, ['/mt']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-tomorrow');
+    const textNode = document.createTextNode('测试独立事项 /mt');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(writeBlock).toHaveBeenNthCalledWith(1, {
+      blockId: 'block-tomorrow',
+      nodeElement: node,
+      protyle,
+    }, {
+      type: 'removeSlashCommand',
+    });
+    expect(writeBlock).toHaveBeenNthCalledWith(2, {
+      blockId: 'block-tomorrow',
+      nodeElement: node,
+      protyle,
+    }, {
+      type: 'addDate',
+      date: '2026-05-01',
+      allDay: true,
+      siblingItems: undefined,
+    });
   });
 
   it('/dk 应调用真实打卡逻辑而不是 placeholder', async () => {

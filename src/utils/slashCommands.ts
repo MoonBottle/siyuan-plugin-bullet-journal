@@ -999,6 +999,18 @@ async function writeDatePatchForSlashCommand(
   );
 }
 
+async function removeSlashCommandBeforeDateWrite(
+  protyle: any,
+  nodeElement: HTMLElement,
+  blockId: string,
+): Promise<boolean> {
+  const removed = await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+  if (removed) {
+    await waitForProtyleTransactionsFlush();
+  }
+  return removed;
+}
+
 /**
  * 标记为今日事项
  * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
@@ -1031,7 +1043,7 @@ async function markAsTodayItem(
   if (todayItem) {
     console.log('[SlashCommand] markAsTodayItem: today already exists');
     // 日期已存在，删除斜杠命令并提示
-    void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
     showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
     return;
   }
@@ -1049,6 +1061,7 @@ async function markAsTodayItem(
     hasProtyle: !!protyle,
   });
 
+  const slashRemoved = await removeSlashCommandBeforeDateWrite(protyle, nodeElement, blockId);
   const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
     date: today,
     allDay: true,
@@ -1062,7 +1075,9 @@ async function markAsTodayItem(
   });
 
   if (success) {
-    cleanupActiveSlashCommandLocally(nodeElement);
+    if (!slashRemoved) {
+      cleanupActiveSlashCommandLocally(nodeElement);
+    }
     showMessage(t('slash').markSuccess, 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1088,11 +1103,12 @@ async function markAsTomorrowItem(
   // 检查明天是否已存在
   const tomorrowItem = existingItems.find(item => item.date === tomorrow);
   if (tomorrowItem) {
-    void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
     showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
     return;
   }
 
+  const slashRemoved = await removeSlashCommandBeforeDateWrite(protyle, nodeElement, blockId);
   const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
     date: tomorrow,
     allDay: true,
@@ -1100,7 +1116,9 @@ async function markAsTomorrowItem(
   });
 
   if (success) {
-    cleanupActiveSlashCommandLocally(nodeElement);
+    if (!slashRemoved) {
+      cleanupActiveSlashCommandLocally(nodeElement);
+    }
     showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
