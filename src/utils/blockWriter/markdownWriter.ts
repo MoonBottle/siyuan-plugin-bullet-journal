@@ -13,13 +13,43 @@ function formatUpdatedAttr(date = new Date()): string {
   return `${y}${mo}${d}${h}${mi}${s}`;
 }
 
-async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
+export async function waitForProtyleTransactionsFlush(timeout = 3000): Promise<void> {
   const start = Date.now();
   const siyuanWin = window as any;
   while (siyuanWin.siyuan?.transactions?.length > 0 && Date.now() - start < timeout) {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   await new Promise(resolve => setTimeout(resolve, 200));
+}
+
+export async function writeMarkdownToCurrentBlock(
+  context: Pick<BlockWriteContext, 'blockId' | 'protyle' | 'nodeElement'>,
+  content: string,
+  options?: {
+    oldHTML?: string;
+  },
+): Promise<boolean> {
+  const { blockId, protyle, nodeElement } = context;
+  if (!blockId || !protyle || !nodeElement) {
+    return false;
+  }
+
+  const oldHTML = options?.oldHTML ?? nodeElement.outerHTML;
+  const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
+  if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, textContent)) {
+    return false;
+  }
+
+  nodeElement.setAttribute('updated', formatUpdatedAttr());
+
+  const newHTML = nodeElement.outerHTML;
+  if (newHTML !== oldHTML && typeof protyle.transaction === 'function') {
+    protyle.transaction(
+      [{ id: blockId, data: newHTML, action: 'update' }],
+      [{ id: blockId, data: oldHTML, action: 'update' }],
+    );
+  }
+  return true;
 }
 
 export function createProtyleMarkdownWriter(
@@ -34,20 +64,14 @@ export function createProtyleMarkdownWriter(
 
   return async (content: string, targetBlockId: string): Promise<boolean> => {
     try {
-      const textContent = content.replace(/\n\{:[^}]*\}/g, '').trim();
       const isSameBlock = targetBlockId === currentBlockId;
       const canRenderInline = isSameBlock;
 
-      if (canRenderInline && renderMarkdownIntoBlockEditable(protyle, nodeElement, textContent)) {
-        nodeElement.setAttribute('updated', formatUpdatedAttr());
-
-        const newHTML = nodeElement.outerHTML;
-        if (newHTML !== oldHTML && typeof protyle.transaction === 'function') {
-          protyle.transaction(
-            [{ id: targetBlockId, data: newHTML, action: 'update' }],
-            [{ id: targetBlockId, data: oldHTML, action: 'update' }],
-          );
-        }
+      if (canRenderInline && await writeMarkdownToCurrentBlock(
+        context,
+        content,
+        { oldHTML },
+      )) {
         return true;
       }
 

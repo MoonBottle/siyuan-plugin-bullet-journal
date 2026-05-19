@@ -308,7 +308,7 @@ describe('habit slash commands', () => {
     );
   });
 
-  it('、jt 成功后应先持久化删除斜杠命令，再写入日期', async () => {
+  it('、jt 成功后应通过一次 blockWriter 批量写入删除斜杠命令并写入日期', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([{ date: '2026-04-29' }] as any);
     vi.mocked(processLineText).mockImplementation((text: string) => text.replace('、jt', '').trimEnd());
 
@@ -338,27 +338,26 @@ describe('habit slash commands', () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(250);
 
-    expect(writeBlock).toHaveBeenNthCalledWith(1, {
+    expect(writeBlock).toHaveBeenCalledTimes(1);
+    expect(writeBlock).toHaveBeenCalledWith({
       blockId: 'block-today',
       nodeElement: node,
       protyle,
-    }, {
-      type: 'removeSlashCommand',
-    });
-    expect(writeBlock).toHaveBeenNthCalledWith(2, {
-      blockId: 'block-today',
-      nodeElement: node,
-      protyle,
-    }, {
-      type: 'addDate',
-      date: '2026-04-30',
-      allDay: true,
-      siblingItems: [{ date: '2026-04-29' }],
-    });
+    }, [
+      {
+        type: 'removeSlashCommand',
+      },
+      {
+        type: 'addDate',
+        date: '2026-04-30',
+        allDay: true,
+        siblingItems: [{ date: '2026-04-29' }],
+      },
+    ]);
     expect(protyle.transaction).not.toHaveBeenCalled();
   });
 
-  it('/mt 成功后应先持久化删除斜杠命令，再写入明天日期', async () => {
+  it('/mt 成功后应通过一次 blockWriter 批量写入删除斜杠命令并写入明天日期', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([] as any);
 
     const handler = getActionHandler('tomorrow', {} as any, ['/mt']);
@@ -387,23 +386,22 @@ describe('habit slash commands', () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(250);
 
-    expect(writeBlock).toHaveBeenNthCalledWith(1, {
+    expect(writeBlock).toHaveBeenCalledTimes(1);
+    expect(writeBlock).toHaveBeenCalledWith({
       blockId: 'block-tomorrow',
       nodeElement: node,
       protyle,
-    }, {
-      type: 'removeSlashCommand',
-    });
-    expect(writeBlock).toHaveBeenNthCalledWith(2, {
-      blockId: 'block-tomorrow',
-      nodeElement: node,
-      protyle,
-    }, {
-      type: 'addDate',
-      date: '2026-05-01',
-      allDay: true,
-      siblingItems: undefined,
-    });
+    }, [
+      {
+        type: 'removeSlashCommand',
+      },
+      {
+        type: 'addDate',
+        date: '2026-05-01',
+        allDay: true,
+        siblingItems: undefined,
+      },
+    ]);
   });
 
   it('/dk 应调用真实打卡逻辑而不是 placeholder', async () => {

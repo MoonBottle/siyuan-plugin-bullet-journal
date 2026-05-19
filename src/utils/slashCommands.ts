@@ -999,18 +999,6 @@ async function writeDatePatchForSlashCommand(
   );
 }
 
-async function removeSlashCommandBeforeDateWrite(
-  protyle: any,
-  nodeElement: HTMLElement,
-  blockId: string,
-): Promise<boolean> {
-  const removed = await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
-  if (removed) {
-    await waitForProtyleTransactionsFlush();
-  }
-  return removed;
-}
-
 /**
  * 标记为今日事项
  * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
@@ -1061,12 +1049,18 @@ async function markAsTodayItem(
     hasProtyle: !!protyle,
   });
 
-  const slashRemoved = await removeSlashCommandBeforeDateWrite(protyle, nodeElement, blockId);
-  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
-    date: today,
-    allDay: true,
-    siblingItems: existingItems.length > 0 ? existingItems : undefined,
-  });
+  const success = await writeBlock(
+    { blockId, nodeElement, protyle },
+    [
+      { type: 'removeSlashCommand' },
+      {
+        type: 'addDate',
+        date: today,
+        allDay: true,
+        siblingItems: existingItems.length > 0 ? existingItems : undefined,
+      },
+    ],
+  );
 
   console.log('[SlashCommand] markAsTodayItem: writeBlock addDate result', success);
   console.log('[JTDBG][slash.today] writeBlock.addDate result', {
@@ -1075,9 +1069,6 @@ async function markAsTodayItem(
   });
 
   if (success) {
-    if (!slashRemoved) {
-      cleanupActiveSlashCommandLocally(nodeElement);
-    }
     showMessage(t('slash').markSuccess, 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1108,17 +1099,20 @@ async function markAsTomorrowItem(
     return;
   }
 
-  const slashRemoved = await removeSlashCommandBeforeDateWrite(protyle, nodeElement, blockId);
-  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
-    date: tomorrow,
-    allDay: true,
-    siblingItems: existingItems.length > 0 ? existingItems : undefined,
-  });
+  const success = await writeBlock(
+    { blockId, nodeElement, protyle },
+    [
+      { type: 'removeSlashCommand' },
+      {
+        type: 'addDate',
+        date: tomorrow,
+        allDay: true,
+        siblingItems: existingItems.length > 0 ? existingItems : undefined,
+      },
+    ],
+  );
 
   if (success) {
-    if (!slashRemoved) {
-      cleanupActiveSlashCommandLocally(nodeElement);
-    }
     showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');

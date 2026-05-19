@@ -3,11 +3,13 @@ import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
 import { isStandaloneBlockRefLine } from '@/parser/lineParser';
 import type { ItemDateTimeInfo, ItemStatus, TimePrecision } from '@/types/models';
+import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom';
 import { processLineText } from '@/utils/slashCommandUtils';
 import { markdownToBlockDOM } from './domSerializer';
-import { createProtyleMarkdownWriter } from './markdownWriter';
+import { createProtyleMarkdownWriter, writeMarkdownToCurrentBlock } from './markdownWriter';
 import { isTaskListFormat, statusToLabel } from './itemLineMarkers';
 import type { BlockWriteContext, DatePatch } from './types';
+import { deleteSlashRangeText, getActiveSlashRange } from './slashRange';
 
 const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
 const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;
@@ -21,6 +23,100 @@ export type DatePatchWriter = (
   content: string,
   targetBlockId: string,
 ) => Promise<boolean>;
+
+interface DatePatchSource {
+  originalBlockId: string;
+  kramdown: string;
+  targetBlockId: string;
+  targetItemBlockRaw: string | null;
+  usedParentDocumentContext: boolean;
+}
+
+interface PreparedDateWrite {
+  content: string;
+  targetBlockId: string;
+}
+
+function stripSlashCommandsFromMarkdownContent(markdown: string): string {
+  return markdown
+    .split('\n')
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('{:')) {
+        return line;
+      }
+      return processLineText(line, ALL_SLASH_COMMAND_FILTERS);
+    })
+    .join('\n');
+}
+
+function getNodePath(root: Node, target: Node): number[] | null {
+  const path: number[] = [];
+  let current: Node | null = target;
+
+  while (current && current !== root) {
+    const parent = current.parentNode;
+    if (!parent) {
+      return null;
+    }
+    path.unshift(Array.prototype.indexOf.call(parent.childNodes, current));
+    current = parent;
+  }
+
+  return current === root ? path : null;
+}
+
+function getNodeByPath(root: Node, path: number[]): Node | null {
+  let current: Node | null = root;
+  for (const index of path) {
+    current = current?.childNodes?.[index] ?? null;
+    if (!current) {
+      return null;
+    }
+  }
+  return current;
+}
+
+function resolveSlashContext(context: Pick<BlockWriteContext, 'blockId' | 'nodeElement' | 'slashRange' | 'slashStartOffset'>): {
+  blockId: string;
+  nodeElement: HTMLElement;
+  slashRange: Range;
+  slashStartOffset: number;
+} | null {
+  const { blockId, nodeElement, slashRange, slashStartOffset } = context;
+  if (!nodeElement) {
+    return null;
+  }
+
+  if (slashRange && slashStartOffset !== undefined) {
+    return {
+      blockId,
+      nodeElement,
+      slashRange,
+      slashStartOffset,
+    };
+  }
+
+  const activeSlash = getActiveSlashRange();
+  if (!activeSlash) {
+    return null;
+  }
+
+  if (
+    activeSlash.blockId !== blockId
+    && activeSlash.blockElement !== nodeElement
+    && !nodeElement.contains(activeSlash.range.startContainer)
+  ) {
+    return null;
+  }
+
+  return {
+    blockId: activeSlash.blockId,
+    nodeElement: activeSlash.blockElement,
+    slashRange: activeSlash.range,
+    slashStartOffset: activeSlash.slashStartOffset,
+  };
+}
 
 function addOneHour(timeStr: string): string {
   const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
@@ -309,6 +405,174 @@ async function persistDateContent(
   return true;
 }
 
+async function resolveDatePatchSource(blockId: string): Promise<DatePatchSource | null> {
+  let kramdown: string | null = null;
+  let targetBlockId = blockId;
+  let targetItemBlockRaw: string | null = null;
+  let usedParentDocumentContext = false;
+  const block = await getBlockByID(blockId);
+
+  if (block?.parent_id) {
+    const parentResult = await getBlockKramdown(block.parent_id);
+    if (parentResult?.kramdown) {
+      const blocks = parseKramdownBlocks(parentResult.kramdown);
+      const itemBlockIndex = blocks.findIndex(candidate => candidate.blockId === blockId);
+      const itemBlock = itemBlockIndex >= 0 ? blocks[itemBlockIndex] : null;
+      usedParentDocumentContext = blocks.length > 1;
+      if (itemBlock) {
+        targetItemBlockRaw = itemBlock.raw;
+      }
+
+      const blocksToCheck = itemBlock
+        ? (itemBlockIndex > 0 ? [itemBlock, blocks[itemBlockIndex - 1]] : [itemBlock])
+        : [];
+
+      for (const checkBlock of blocksToCheck) {
+        const linesToCheck = checkBlock.content.split('\n');
+        for (const line of linesToCheck) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
+            continue;
+          }
+          const hasDateMarker = trimmed.includes('@') || trimmed.includes('📅');
+          const hasDateValue = /\d{4}-\d{2}-\d{2}/.test(trimmed);
+          if (hasDateMarker && hasDateValue && (isTaskListFormat(trimmed) || isListItemLine(line))) {
+            kramdown = parentResult.kramdown;
+            targetBlockId = block.parent_id;
+            break;
+          }
+        }
+        if (kramdown) break;
+      }
+    }
+  }
+
+  if (!kramdown) {
+    const result = await getBlockKramdown(blockId);
+    if (!result?.kramdown) {
+      console.error('[BlockWriter] Failed to get block kramdown for addDate patch');
+      return null;
+    }
+    kramdown = result.kramdown;
+  }
+
+  return {
+    originalBlockId: blockId,
+    kramdown,
+    targetBlockId,
+    targetItemBlockRaw,
+    usedParentDocumentContext,
+  };
+}
+
+export function prepareDatePatchWriteFromSource(
+  source: DatePatchSource,
+  patch: DatePatch,
+): PreparedDateWrite | null {
+  const {
+    originalBlockId,
+    kramdown,
+    targetBlockId,
+    targetItemBlockRaw,
+    usedParentDocumentContext,
+  } = source;
+
+  const lines = kramdown.split('\n');
+  const hasTomatoClock = lines.some(line => line.trim().startsWith('🍅'));
+  const contentLineCount = lines.filter((line) => {
+    const trimmed = line.trim();
+    return trimmed !== '' && !trimmed.startsWith('{:');
+  }).length;
+  const useMultiLineForStructure = (targetBlockId !== originalBlockId && lines.length > 1) || contentLineCount > 1;
+
+  const formattedStartTime = patch.startTime ? formatTimeToSeconds(patch.startTime) : undefined;
+  const formattedEndTime = patch.endTime
+    ? formatTimeToSeconds(patch.endTime)
+    : (formattedStartTime ? addOneHour(formattedStartTime) : undefined);
+
+  if (!hasTomatoClock && !useMultiLineForStructure) {
+    const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
+    const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
+    return {
+      content: rebuildSingleLineContent(
+        content,
+        patch,
+        formattedStartTime,
+        formattedEndTime,
+      ) + attrSuffix,
+      targetBlockId,
+    };
+  }
+
+  let itemLineIndex = findPrimaryItemLineIndex(lines);
+  if (targetBlockId !== originalBlockId && targetItemBlockRaw) {
+    const targetBlockStartLineIndex = findBlockStartLineIndex(lines, targetItemBlockRaw);
+    if (targetBlockStartLineIndex >= 0) {
+      const targetBlockRelativeLineIndex = findPrimaryItemLineIndex(targetItemBlockRaw.split('\n'));
+      if (targetBlockRelativeLineIndex >= 0) {
+        itemLineIndex = targetBlockStartLineIndex + targetBlockRelativeLineIndex;
+      }
+    }
+  }
+
+  if (itemLineIndex === -1) {
+    const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
+    const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
+    return {
+      content: rebuildSingleLineContent(
+        content,
+        patch,
+        formattedStartTime,
+        formattedEndTime,
+      ) + attrSuffix,
+      targetBlockId,
+    };
+  }
+
+  const itemLine = lines[itemLineIndex];
+  const cleanedItemLine = stripListAndBlockAttr(itemLine);
+  let itemContent = cleanedItemLine
+    .replace(DATE_MARKER_REGEX, '')
+    .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
+    .replace(RESIDUAL_DATE_MARKER_REGEX, '')
+    .trim();
+  itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS);
+
+  const dedupedItems = buildUpdatedDateItems(patch, formattedStartTime, formattedEndTime);
+  const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
+  const taskList = isTaskListFormat(itemLine);
+  const status = inferStatus(itemLine, patch.status);
+
+  let newItemLine: string;
+  if (targetBlockId !== originalBlockId) {
+    const dateExpr = new RegExp(`${DATE_MARKER_PATTERN}(?:\\s*[,，]\\s*\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?)*`, 'g');
+    const cleanedLine = processLineText(itemLine, ALL_SLASH_COMMAND_FILTERS);
+    newItemLine = cleanedLine.replace(dateExpr, optimizedExpr);
+  } else {
+    const taskListMarker = taskList ? buildTaskListMarker(status) : '';
+    const statusSuffix = buildStatusSuffix(status, taskList);
+    newItemLine = `${taskListMarker}${itemContent} ${optimizedExpr}${statusSuffix}`.trim();
+  }
+
+  lines[itemLineIndex] = newItemLine;
+
+  let content = lines.join('\n');
+  let finalTargetBlockId = targetBlockId;
+  if (usedParentDocumentContext && targetItemBlockRaw) {
+    const updatedBlocks = parseKramdownBlocks(content);
+    const updatedItemBlock = updatedBlocks.find(candidate => candidate.blockId === originalBlockId);
+    if (updatedItemBlock) {
+      content = updatedItemBlock.raw;
+      finalTargetBlockId = originalBlockId;
+    }
+  }
+
+  return {
+    content,
+    targetBlockId: finalTargetBlockId,
+  };
+}
+
 export async function writeDatePatchWithWriter(
   blockId: string,
   patch: DatePatch,
@@ -317,147 +581,84 @@ export async function writeDatePatchWithWriter(
   if (!blockId) return false;
 
   try {
-    let kramdown: string | null = null;
-    let targetBlockId = blockId;
-    let targetItemBlockRaw: string | null = null;
-    let usedParentDocumentContext = false;
-    const block = await getBlockByID(blockId);
-
-    if (block?.parent_id) {
-      const parentResult = await getBlockKramdown(block.parent_id);
-      if (parentResult?.kramdown) {
-        const blocks = parseKramdownBlocks(parentResult.kramdown);
-        const itemBlockIndex = blocks.findIndex((candidate) => candidate.blockId === blockId);
-        const itemBlock = itemBlockIndex >= 0 ? blocks[itemBlockIndex] : null;
-        usedParentDocumentContext = blocks.length > 1;
-        if (itemBlock) {
-          targetItemBlockRaw = itemBlock.raw;
-        }
-
-        const blocksToCheck = itemBlock
-          ? (itemBlockIndex > 0 ? [itemBlock, blocks[itemBlockIndex - 1]] : [itemBlock])
-          : [];
-
-        for (const checkBlock of blocksToCheck) {
-          const linesToCheck = checkBlock.content.split('\n');
-          for (const line of linesToCheck) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
-              continue;
-            }
-            const hasDateMarker = trimmed.includes('@') || trimmed.includes('📅');
-            const hasDateValue = /\d{4}-\d{2}-\d{2}/.test(trimmed);
-            if (hasDateMarker && hasDateValue && (isTaskListFormat(trimmed) || isListItemLine(line))) {
-              kramdown = parentResult.kramdown;
-              targetBlockId = block.parent_id;
-              break;
-            }
-          }
-          if (kramdown) break;
-        }
-      }
+    const source = await resolveDatePatchSource(blockId);
+    if (!source) {
+      return false;
     }
 
-    if (!kramdown) {
-      const result = await getBlockKramdown(blockId);
-      if (!result?.kramdown) {
-        console.error('[BlockWriter] Failed to get block kramdown for addDate patch');
-        return false;
-      }
-      kramdown = result.kramdown;
+    const prepared = prepareDatePatchWriteFromSource(source, patch);
+    if (!prepared) {
+      return false;
     }
 
-    const lines = kramdown.split('\n');
-    const hasTomatoClock = lines.some(line => line.trim().startsWith('🍅'));
-    const contentLineCount = lines.filter((line) => {
-      const trimmed = line.trim();
-      return trimmed !== '' && !trimmed.startsWith('{:');
-    }).length;
-    const useMultiLineForStructure = (targetBlockId !== blockId && lines.length > 1) || contentLineCount > 1;
-
-    const formattedStartTime = patch.startTime ? formatTimeToSeconds(patch.startTime) : undefined;
-    const formattedEndTime = patch.endTime
-      ? formatTimeToSeconds(patch.endTime)
-      : (formattedStartTime ? addOneHour(formattedStartTime) : undefined);
-
-    if (!hasTomatoClock && !useMultiLineForStructure) {
-      const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
-      const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
-      const singleLineResult = rebuildSingleLineContent(
-        content,
-        patch,
-        formattedStartTime,
-        formattedEndTime,
-      ) + attrSuffix;
-      return await persistDateContent(singleLineResult, targetBlockId, writer);
-    }
-
-    let itemLineIndex = findPrimaryItemLineIndex(lines);
-    if (targetBlockId !== blockId && targetItemBlockRaw) {
-      const targetBlockStartLineIndex = findBlockStartLineIndex(lines, targetItemBlockRaw);
-      if (targetBlockStartLineIndex >= 0) {
-        const targetBlockRelativeLineIndex = findPrimaryItemLineIndex(targetItemBlockRaw.split('\n'));
-        if (targetBlockRelativeLineIndex >= 0) {
-          itemLineIndex = targetBlockStartLineIndex + targetBlockRelativeLineIndex;
-        }
-      }
-    }
-
-    if (itemLineIndex === -1) {
-      const attrSuffix = (kramdown.match(/\n\{:[^}]*\}/g) || []).join('');
-      const content = kramdown.replace(/\n\{:[^}]*\}/g, '').trim();
-      const fallbackResult = rebuildSingleLineContent(
-        content,
-        patch,
-        formattedStartTime,
-        formattedEndTime,
-      ) + attrSuffix;
-      return await persistDateContent(fallbackResult, targetBlockId, writer);
-    }
-
-    const itemLine = lines[itemLineIndex];
-    const cleanedItemLine = stripListAndBlockAttr(itemLine);
-    let itemContent = cleanedItemLine
-      .replace(DATE_MARKER_REGEX, '')
-      .replace(/#done|#abandoned|#已完成|#已放弃|[✅❌]/g, '')
-      .replace(RESIDUAL_DATE_MARKER_REGEX, '')
-      .trim();
-    itemContent = processLineText(itemContent, ALL_SLASH_COMMAND_FILTERS);
-
-    const dedupedItems = buildUpdatedDateItems(patch, formattedStartTime, formattedEndTime);
-    const optimizedExpr = optimizeDateTimeExpressions(dedupedItems);
-    const taskList = isTaskListFormat(itemLine);
-    const status = inferStatus(itemLine, patch.status);
-
-    let newItemLine: string;
-    if (targetBlockId !== blockId) {
-      const dateExpr = new RegExp(`${DATE_MARKER_PATTERN}(?:\\s*[,，]\\s*\\d{4}-\\d{2}-\\d{2}(?:~\\d{4}-\\d{2}-\\d{2}|~\\d{2}-\\d{2})?(?:\\s+${TIME_RANGE_PATTERN})?)*`, 'g');
-      const cleanedLine = processLineText(itemLine, ALL_SLASH_COMMAND_FILTERS);
-      newItemLine = cleanedLine.replace(dateExpr, optimizedExpr);
-    } else {
-      const taskListMarker = taskList ? buildTaskListMarker(status) : '';
-      const statusSuffix = buildStatusSuffix(status, taskList);
-      newItemLine = `${taskListMarker}${itemContent} ${optimizedExpr}${statusSuffix}`.trim();
-    }
-
-    lines[itemLineIndex] = newItemLine;
-
-    let newContent = lines.join('\n');
-    let finalTargetBlockId = targetBlockId;
-    if (usedParentDocumentContext && targetItemBlockRaw) {
-      const updatedBlocks = parseKramdownBlocks(newContent);
-      const updatedItemBlock = updatedBlocks.find(candidate => candidate.blockId === blockId);
-      if (updatedItemBlock) {
-        newContent = updatedItemBlock.raw;
-        finalTargetBlockId = blockId;
-      }
-    }
-
-    return await persistDateContent(newContent, finalTargetBlockId, writer);
+    return await persistDateContent(prepared.content, prepared.targetBlockId, writer);
   } catch (error) {
     console.error('[BlockWriter] Failed to write addDate patch:', error);
     return false;
   }
+}
+
+export async function writeDatePatchWithSlashCleanup(
+  context: Pick<BlockWriteContext, 'blockId' | 'protyle' | 'nodeElement' | 'slashRange' | 'slashStartOffset'>,
+  patch: DatePatch,
+): Promise<boolean> {
+  const { blockId, protyle, nodeElement } = context;
+  if (!blockId || !protyle || !nodeElement) {
+    return false;
+  }
+
+  const previewSource = await resolveDatePatchSource(blockId);
+  if (!previewSource) {
+    return false;
+  }
+
+  const preview = prepareDatePatchWriteFromSource(previewSource, patch);
+  if (!preview || preview.targetBlockId !== blockId) {
+    return false;
+  }
+
+  const slashContext = resolveSlashContext(context);
+  if (!slashContext || slashContext.blockId !== blockId) {
+    return false;
+  }
+
+  const rangeStartNode = slashContext.slashRange.startContainer;
+  const path = getNodePath(nodeElement, rangeStartNode);
+  if (!path) {
+    return false;
+  }
+
+  const draftBlock = nodeElement.cloneNode(true) as HTMLElement;
+  const draftStartNode = getNodeByPath(draftBlock, path);
+  if (!draftStartNode || draftStartNode.nodeType !== Node.TEXT_NODE) {
+    return false;
+  }
+
+  const draftRange = document.createRange();
+  draftRange.setStart(draftStartNode, slashContext.slashRange.startOffset);
+  draftRange.collapse(true);
+  deleteSlashRangeText(draftRange, slashContext.slashStartOffset);
+
+  const currentMarkdown = blockElementToMarkdownContent(protyle, draftBlock);
+  if (!currentMarkdown) {
+    return false;
+  }
+
+  const prepared = prepareDatePatchWriteFromSource({
+    originalBlockId: blockId,
+    kramdown: currentMarkdown,
+    targetBlockId: blockId,
+    targetItemBlockRaw: null,
+    usedParentDocumentContext: false,
+  }, patch);
+
+  if (!prepared || prepared.targetBlockId !== blockId) {
+    return false;
+  }
+
+  return writeMarkdownToCurrentBlock(context, stripSlashCommandsFromMarkdownContent(prepared.content), {
+    oldHTML: nodeElement.outerHTML,
+  });
 }
 
 export async function writeDatePatch(

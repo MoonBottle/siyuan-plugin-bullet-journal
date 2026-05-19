@@ -8,12 +8,19 @@ vi.mock('@/api', () => ({
   updateBlock: vi.fn().mockResolvedValue([]),
 }));
 
-import { insertBlock, updateBlock } from '@/api';
+vi.mock('@/utils/protyleWriterDom', () => ({
+  blockElementToMarkdownContent: vi.fn(),
+  renderMarkdownIntoBlockEditable: vi.fn(),
+}));
+
+import { getBlockKramdown, insertBlock, updateBlock } from '@/api';
+import { blockElementToMarkdownContent, renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
 
 describe('writeBlock', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    document.body.innerHTML = '';
   });
 
   it('writes single patch via API', async () => {
@@ -140,6 +147,131 @@ describe('writeBlock', () => {
     expect(updateBlock).not.toHaveBeenCalled();
 
     document.body.removeChild(div);
+  });
+
+  it('uses a single protyle transaction for same-block multiline removeSlashCommand + addDate', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'block123',
+      kramdown: '第一行\n第二行 /jt\n{: id="block123"}',
+    } as any);
+    vi.mocked(blockElementToMarkdownContent).mockImplementation((_protyle, element) => {
+      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null;
+      return editable?.textContent ?? null;
+    });
+    vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      if (!editable) {
+        return false;
+      }
+      editable.textContent = markdown;
+      return true;
+    });
+
+    const div = document.createElement('div');
+    div.setAttribute('data-node-id', 'block123');
+    div.setAttribute('data-type', 'NodeParagraph');
+    div.className = 'p';
+    div.innerHTML = `
+      <div contenteditable="true" spellcheck="false">第一行
+第二行 /jt</div>
+      <div class="protyle-attr" contenteditable="false">\u200b</div>
+    `;
+    document.body.appendChild(div);
+
+    const editableTextNode = div.querySelector('[contenteditable="true"]')?.firstChild;
+    expect(editableTextNode).toBeTruthy();
+
+    const range = document.createRange();
+    const textContent = editableTextNode!.textContent ?? '';
+    range.setStart(editableTextNode!, textContent.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const protyle = {
+      transaction: vi.fn(),
+    };
+
+    const result = await writeBlock(
+      {
+        blockId: 'block123',
+        protyle,
+        nodeElement: div,
+      },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'addDate', date: '2026-05-16', allDay: true },
+      ],
+    );
+
+    expect(result).toBe(true);
+    expect(protyle.transaction).toHaveBeenCalledOnce();
+    expect(updateBlock).not.toHaveBeenCalled();
+    expect((div.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe('第一行 📅2026-05-16\n第二行');
+  });
+
+  it('strips slash command from secondary lines before the combined date transaction is committed', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'block123',
+      kramdown: '测试事项 #测试# ⏳3m 📌 📅2026-05-14, 2026-05-17\n测试换行/jt\n{: id="block123"}',
+    } as any);
+    vi.mocked(blockElementToMarkdownContent).mockReturnValue(
+      '测试事项 #测试# ⏳3m 📌 📅2026-05-14, 2026-05-17\n测试换行/jt',
+    );
+    vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      if (!editable) {
+        return false;
+      }
+      editable.textContent = markdown;
+      return true;
+    });
+
+    const div = document.createElement('div');
+    div.setAttribute('data-node-id', 'block123');
+    div.setAttribute('data-type', 'NodeParagraph');
+    div.className = 'p';
+    div.innerHTML = `
+      <div contenteditable="true" spellcheck="false">测试事项 <span data-type="tag">\u200b测试</span>\u200b ⏳3m 📌 📅2026-05-14, 2026-05-17
+测试换行/jt</div>
+      <div class="protyle-attr" contenteditable="false">\u200b</div>
+    `;
+    document.body.appendChild(div);
+
+    const trailingTextNode = div.querySelector('[data-type="tag"]')?.nextSibling;
+    expect(trailingTextNode?.nodeType).toBe(Node.TEXT_NODE);
+
+    const range = document.createRange();
+    const textContent = trailingTextNode!.textContent ?? '';
+    range.setStart(trailingTextNode!, textContent.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const protyle = {
+      transaction: vi.fn(),
+    };
+
+    const result = await writeBlock(
+      {
+        blockId: 'block123',
+        protyle,
+        nodeElement: div,
+      },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'addDate', date: '2026-05-19', allDay: true, siblingItems: [{ date: '2026-05-14' }, { date: '2026-05-17' }] },
+      ],
+    );
+
+    expect(result).toBe(true);
+    expect(protyle.transaction).toHaveBeenCalledOnce();
+    expect(updateBlock).not.toHaveBeenCalled();
+    expect((div.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe(
+      '测试事项 #测试# ⏳3m 📌 📅2026-05-14, 2026-05-17, 2026-05-19\n测试换行',
+    );
   });
 
   it('falls back to API for abandoned task-list status to preserve emoji marker', async () => {
