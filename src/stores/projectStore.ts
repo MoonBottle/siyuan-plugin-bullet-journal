@@ -812,11 +812,7 @@ export const useProjectStore = defineStore('project', {
       const today = dayjs().format('YYYY-MM-DD');
       let items = allItems.filter((item: Item) => {
         if (groupId && item.project?.groupId !== groupId) return false;
-        if (item.date === date) return true;
-        if (item.dateRangeStart && item.dateRangeEnd && date >= item.dateRangeStart && date <= item.dateRangeEnd) {
-          return item.date !== item.dateRangeStart;
-        }
-        return false;
+        return item.date === date;
       });
       const total = items.length;
       const completed = items.filter((i: Item) => i.status === 'completed').length;
