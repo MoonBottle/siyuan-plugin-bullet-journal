@@ -45,8 +45,8 @@
               {{ getTargetWidgetName(rule.targetWidgetId) }}
             </span>
             <div class="date-picker-config-dialog__rule-actions">
-              <button type="button" title="编辑" @click="handleEdit(rule)">✏️</button>
-              <button type="button" title="删除" @click="handleDelete(rule.id)">🗑️</button>
+              <button type="button" :title="t('datePicker').editLinkage" @click="handleEdit(rule)"><svg><use xlink:href="#iconEdit"></use></svg></button>
+              <button type="button" :title="t('datePicker').deleteLinkage" @click="handleDelete(rule.id)"><svg><use xlink:href="#iconTrashcan"></use></svg></button>
             </div>
           </div>
         </div>
@@ -248,11 +248,19 @@ function handleConfirm() {
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 14px;
   opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     opacity: 1;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--b3-theme-on-surface);
   }
 }
 </style>

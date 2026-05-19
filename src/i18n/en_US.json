@@ -108,6 +108,7 @@
     "addLinkage": "Add Linkage",
     "emptyLinkage": "Click to add linkage rule",
     "editLinkage": "Edit Linkage Rule",
+    "deleteLinkage": "Delete Linkage Rule",
     "selectTarget": "Select Target Widget",
     "fieldMapping": "Field Mapping",
     "dateRangeSource": "Calendar Date Range",

@@ -108,6 +108,7 @@
     "addLinkage": "添加联动",
     "emptyLinkage": "点击添加联动规则",
     "editLinkage": "编辑联动规则",
+    "deleteLinkage": "删除联动规则",
     "selectTarget": "选择目标组件",
     "fieldMapping": "字段关联",
     "dateRangeSource": "日历日期范围",
