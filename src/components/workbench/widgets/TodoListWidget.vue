@@ -64,6 +64,7 @@ import type { WorkbenchTodoListWidgetConfig, WorkbenchWidgetInstance } from '@/t
 import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { useSafeProjectStore } from './useSafeProjectStore';
+import { eventBus, Events } from '@/utils/eventBus';
 
 const props = defineProps<{
   widget?: WorkbenchWidgetInstance;
@@ -81,6 +82,7 @@ const preview = useBlockFocusPreview({
 const nativePreview = createNativeBlockPreviewController();
 const widgetRootRef = ref<HTMLElement | null>(null);
 let widgetScrollbarObserver: ResizeObserver | null = null;
+let unsubscribeDateRange: (() => void) | undefined;
 const todoConfig = computed(() => {
   return (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig;
 });
@@ -233,7 +235,16 @@ watch(
 );
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+    unsubscribeDateRange = eventBus.on(
+      Events.WIDGET_DATE_RANGE_CHANGED,
+      (payload: { sourceWidgetId: string; targetWidgetId: string; dateRange: { start: string; end: string } }) => {
+        if (!props.widget || payload.targetWidgetId !== props.widget.id) return;
+        todoState.dateFilterType.value = 'custom';
+        todoState.startDate.value = payload.dateRange.start;
+        todoState.endDate.value = payload.dateRange.end;
+      },
+    );
+    document.addEventListener('pointerdown', handleDocumentPointerDown, true);
   nextTick(() => {
     syncWidgetScrollbarGutter();
     const scrollEl = todoContentPaneRef.value?.getScrollElement?.() as HTMLElement | null | undefined;
@@ -255,7 +266,8 @@ onUnmounted(() => {
   widgetScrollbarObserver?.disconnect();
   widgetScrollbarObserver = null;
   nativePreview.close();
-  preview.dispose();
+    unsubscribeDateRange?.();
+    preview.dispose();
 });
 </script>
 
