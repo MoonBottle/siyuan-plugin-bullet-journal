@@ -25,7 +25,7 @@ function handleMouseDown(event: MouseEvent) {
 <style scoped lang="scss">
 .resize-handle {
   position: relative;
-  width: 4px;
+  width: 16px;
   cursor: col-resize;
   flex-shrink: 0;
 
@@ -33,8 +33,8 @@ function handleMouseDown(event: MouseEvent) {
     content: '';
     position: absolute;
     top: 0;
-    left: -2px;
-    right: -2px;
+    left: -4px;
+    right: -4px;
     bottom: 0;
   }
 

@@ -24,7 +24,7 @@
         :selected-project-id="selectedProjectId"
         @select-project="selectProject"
       />
-      <ResizeHandle @drag-start="(e: MouseEvent) => onMouseDown(e, 0)" />
+      <ResizeHandle :is-active="activeHandleIndex === 0" @drag-start="(e: MouseEvent) => onMouseDown(e, 0)" />
       <ProjectTreePane
         v-model:search-query="treeSearchQuery"
         :project="selectedProject"
@@ -43,7 +43,7 @@
         @update:tag-query="treeTagQuery = $event"
         @update:selected-tags="treeSelectedTags = $event"
       />
-      <ResizeHandle @drag-start="(e: MouseEvent) => onMouseDown(e, 1)" />
+      <ResizeHandle :is-active="activeHandleIndex === 1" @drag-start="(e: MouseEvent) => onMouseDown(e, 1)" />
       <ProjectDetailPane
         :project="selectedProject"
         :task="detailTask"
@@ -89,12 +89,18 @@ const workbenchRef = ref<HTMLElement>();
 
 const {
   gridTemplateColumns,
+  activeHandleIndex,
   onMouseDown,
   reset,
+  setRatios,
 } = useResizableColumns({
   containerRef: workbenchRef,
   initialRatios: props.columnRatios,
   onChange: (ratios) => emit('update:columnRatios', ratios),
+});
+
+watch(() => props.columnRatios, (newRatios) => {
+  if (newRatios) setRatios(newRatios);
 });
 
 const filteredProjects = computed(() => {
@@ -247,7 +253,7 @@ defineExpose({
 
 .project-workbench {
   display: grid;
-  gap: 16px;
+  gap: 0;
   height: 100%;
   min-height: 0;
   max-height: 100%;

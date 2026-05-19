@@ -127,9 +127,13 @@ function createViewRegistry(): Record<WorkbenchViewType, WorkbenchViewDefinition
         openProjectViewConfigDialog({
           initialConfig: {
             groupId: config?.groupId,
+            columnRatios: config?.columnRatios,
           },
           onConfirm: async (nextConfig) => {
-            await onUpdateConfig({ groupId: nextConfig.groupId });
+            await onUpdateConfig({
+              groupId: nextConfig.groupId,
+              columnRatios: nextConfig.columnRatios,
+            });
           },
         });
       },

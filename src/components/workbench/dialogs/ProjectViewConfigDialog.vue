@@ -69,6 +69,7 @@ const groupOptions = computed(() => [
 function handleConfirm() {
   props.onConfirm({
     groupId: selectedGroup.value || undefined,
+    columnRatios: props.initialConfig.columnRatios,
   });
 }
 </script>

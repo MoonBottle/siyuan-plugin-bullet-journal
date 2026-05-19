@@ -105,6 +105,10 @@ function persistColumnRatios(ratios: [number, number, number]) {
 }
 
 function handleResetColumnRatios() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
   columnRatios.value = [...DEFAULT_COLUMN_RATIOS];
   if (props.embedded && props.onUpdateConfig) {
     props.onUpdateConfig({
