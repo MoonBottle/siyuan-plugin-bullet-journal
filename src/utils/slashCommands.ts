@@ -655,20 +655,36 @@ export function getActionHandler(
             return;
           }
 
+          const writeContext = {
+            blockId,
+            listItemBlockId: item.listItemBlockId,
+            nodeElement,
+            protyle,
+          };
+
           const abandonedTag = getStatusTag('abandoned');
           const blockContent = nodeElement.textContent || '';
           if (abandonedTag && blockContent.includes(abandonedTag)) {
-            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+            void writeBlock(writeContext, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
             return;
           }
 
-          await writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
           const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
-          if (!isTaskListBlock) {
-            await waitForProtyleTransactionsFlush();
+          if (isTaskListBlock) {
+            const success = await writeBlock(writeContext, [
+              { type: 'removeSlashCommand' },
+              { type: 'setStatus', status: 'abandoned' },
+            ]);
+            if (success) {
+              showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
+            }
+            return;
           }
-          void writeBlock({ blockId, nodeElement, protyle }, { type: 'setStatus', status: 'abandoned' });
+
+          await writeBlock(writeContext, { type: 'removeSlashCommand' });
+          await waitForProtyleTransactionsFlush();
+          void writeBlock(writeContext, { type: 'setStatus', status: 'abandoned' });
           showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
         })();
       };

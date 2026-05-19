@@ -3,6 +3,7 @@ import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTranspor
 import { createProtyleMarkdownWriter, waitForProtyleTransactionsFlush } from './markdownWriter';
 import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter';
 import { writeViaProtyle } from './protyleTransport';
+import { writeTaskListStatusWithSlashCleanup } from './statusPatchWriter';
 
 export type {
   BatchBlockPatch,
@@ -46,9 +47,33 @@ export async function writeBlock(context: BlockWriteContext, patches: BlockPatch
     : undefined;
   const batchedAddDatePatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'addDate' }> => patch.type === 'addDate');
   const batchedRemoveSlashPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'removeSlashCommand' }> => patch.type === 'removeSlashCommand');
+  const batchedStatusPatch = patchArray.find((patch): patch is Extract<BlockPatch, { type: 'setStatus' }> => patch.type === 'setStatus');
   const hasStatusPatch = patchArray.some((patch) => patch.type === 'setStatus');
   const requiresProtyle = patchArray.some((patch) => patch.type === 'removeSlashCommand');
   const statusTargetBlockId = context.listItemBlockId || context.blockId;
+
+  if (
+    context.protyle
+    && context.nodeElement
+    && batchedStatusPatch
+    && batchedRemoveSlashPatch
+    && patchArray.length === 2
+    && patchArray.every((patch) => patch.type === 'removeSlashCommand' || patch.type === 'setStatus')
+    && !batchedRemoveSlashPatch.suffix
+  ) {
+    const combinedStatusOk = await writeTaskListStatusWithSlashCleanup(context, batchedStatusPatch);
+    if (combinedStatusOk) {
+      return true;
+    }
+
+    const slashOk = await writeViaProtyle(context, batchedRemoveSlashPatch);
+    if (!slashOk) {
+      return false;
+    }
+
+    await waitForProtyleTransactionsFlush();
+    return writeBlock(context, batchedStatusPatch);
+  }
 
   if (
     context.protyle

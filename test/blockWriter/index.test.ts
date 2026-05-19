@@ -274,6 +274,89 @@ describe('writeBlock', () => {
     );
   });
 
+  it('writes task-list abandoned status through a single protyle transaction when removeSlashCommand is batched', async () => {
+    vi.mocked(blockElementToMarkdownContent).mockImplementation((_protyle, element) => {
+      const editable = (element as HTMLElement).querySelector('[contenteditable="true"]') as HTMLElement | null;
+      if (!editable) {
+        return null;
+      }
+      const text = editable.textContent ?? '';
+      const lines = text.split('\n');
+      const [firstLine = '', ...restLines] = lines;
+      return [`- [ ] ${firstLine}`, ...restLines].join('\n');
+    });
+    vi.mocked(renderMarkdownIntoBlockEditable).mockImplementation((_protyle, element, markdown) => {
+      const editable = element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      if (!editable) {
+        return false;
+      }
+      const lines = markdown.split('\n');
+      const [firstLine = '', ...restLines] = lines;
+      editable.textContent = [firstLine.replace(/^- \[ \]\s*/, ''), ...restLines].join('\n');
+      return true;
+    });
+
+    const li = document.createElement('div');
+    li.classList.add('li');
+    li.setAttribute('data-type', 'NodeListItem');
+    li.setAttribute('data-subtype', 't');
+    li.setAttribute('data-node-id', 'task-1');
+
+    const taskAction = document.createElement('span');
+    taskAction.classList.add('protyle-action--task');
+    const svg = document.createElement('svg');
+    const useEl = document.createElement('use');
+    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#iconUncheck');
+    svg.appendChild(useEl);
+    taskAction.appendChild(svg);
+    li.appendChild(taskAction);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('p');
+    contentDiv.setAttribute('data-node-id', 'block123');
+    contentDiv.setAttribute('data-type', 'NodeParagraph');
+    contentDiv.innerHTML = '<div contenteditable="true" spellcheck="false">测试任务列表事项235\n测试换行 /fq</div><div class="protyle-attr" contenteditable="false">\u200b</div>';
+    li.appendChild(contentDiv);
+    document.body.appendChild(li);
+
+    const editableTextNode = contentDiv.querySelector('[contenteditable="true"]')?.firstChild;
+    expect(editableTextNode).toBeTruthy();
+
+    const range = document.createRange();
+    const textContent = editableTextNode!.textContent ?? '';
+    range.setStart(editableTextNode!, textContent.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const protyle = {
+      transaction: vi.fn(),
+    };
+
+    const result = await writeBlock(
+      {
+        blockId: 'block123',
+        listItemBlockId: 'task-1',
+        protyle,
+        nodeElement: contentDiv,
+      },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setStatus', status: 'abandoned' },
+      ],
+    );
+
+    expect(result).toBe(true);
+    expect(protyle.transaction).toHaveBeenCalledOnce();
+    expect(updateBlock).not.toHaveBeenCalled();
+    expect((contentDiv.querySelector('[contenteditable="true"]') as HTMLElement).textContent).toBe(
+      '测试任务列表事项235 ❌\n测试换行',
+    );
+
+    document.body.removeChild(li);
+  });
+
   it('falls back to API for abandoned task-list status to preserve emoji marker', async () => {
     vi.mocked(updateBlock).mockResolvedValue([]);
     const li = document.createElement('div');
