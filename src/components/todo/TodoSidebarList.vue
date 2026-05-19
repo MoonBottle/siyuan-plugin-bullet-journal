@@ -1305,7 +1305,10 @@ const handleDone = async (item: Item) => {
 
   isProcessing.value = true;
   try {
-    await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
+    await writeBlock(
+      { blockId: item.blockId, listItemBlockId: item.listItemBlockId },
+      { type: 'setStatus', status: 'completed' },
+    );
 
     // 注意：重复事项的自动创建由 WebSocket 处理器处理
     // 避免重复调用 createNextOccurrence
