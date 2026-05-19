@@ -164,6 +164,7 @@ function handleConfirm() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 8px;
 }
 
 .date-picker-config-dialog__section-title {
