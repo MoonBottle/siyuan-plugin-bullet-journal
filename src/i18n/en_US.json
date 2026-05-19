@@ -103,6 +103,7 @@
     "title": "Date Picker",
     "month": "Month",
     "week": "Week",
+    "defaultView": "Default View",
     "linkage": "Widget Linkage",
     "addLinkage": "Add Linkage",
     "emptyLinkage": "Click to add linkage rule",

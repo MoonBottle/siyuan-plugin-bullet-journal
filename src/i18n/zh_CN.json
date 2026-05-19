@@ -103,6 +103,7 @@
     "title": "日期选择器",
     "month": "月",
     "week": "周",
+    "defaultView": "默认视图",
     "linkage": "组件联动",
     "addLinkage": "添加联动",
     "emptyLinkage": "点击添加联动规则",

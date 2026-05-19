@@ -3,6 +3,26 @@
     <div class="date-picker-config-dialog__body">
       <div class="date-picker-config-dialog__section">
         <div class="date-picker-config-dialog__section-header">
+          <span class="date-picker-config-dialog__section-title">{{ t('datePicker').defaultView }}</span>
+        </div>
+        <div class="date-picker-config-dialog__view-toggle">
+          <button
+            class="date-picker-config-dialog__view-btn"
+            :class="{ 'is-active': defaultView === 'month' }"
+            type="button"
+            @click="defaultView = 'month'"
+          >{{ t('datePicker').month }}</button>
+          <button
+            class="date-picker-config-dialog__view-btn"
+            :class="{ 'is-active': defaultView === 'week' }"
+            type="button"
+            @click="defaultView = 'week'"
+          >{{ t('datePicker').week }}</button>
+        </div>
+      </div>
+
+      <div class="date-picker-config-dialog__section">
+        <div class="date-picker-config-dialog__section-header">
           <span class="date-picker-config-dialog__section-title">{{ t('datePicker').linkage }}</span>
           <button
             class="date-picker-config-dialog__add-btn"
@@ -66,6 +86,7 @@ const props = defineProps<{
   onCancel: () => void;
 }>();
 
+const defaultView = ref<'month' | 'week'>(props.initialConfig.view ?? 'month');
 const linkages = ref<WidgetLinkageRule[]>([...(props.initialConfig.linkages ?? [])]);
 
 function getTargetWidgetName(widgetId: string): string {
@@ -126,7 +147,7 @@ function openEditor(editingRule: WidgetLinkageRule | null) {
 
 function handleConfirm() {
   props.onConfirm({
-    view: props.initialConfig.view ?? 'month',
+    view: defaultView.value,
     linkages: linkages.value,
   });
 }
@@ -149,6 +170,28 @@ function handleConfirm() {
   font-size: 14px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
+}
+
+.date-picker-config-dialog__view-toggle {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.date-picker-config-dialog__view-btn {
+  padding: 4px 14px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--b3-theme-on-surface);
+  font-size: 13px;
+  cursor: pointer;
+
+  &.is-active {
+    border-color: var(--b3-theme-primary);
+    color: var(--b3-theme-primary);
+    background: var(--b3-theme-primary-lightest);
+  }
 }
 
 .date-picker-config-dialog__add-btn {
