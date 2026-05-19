@@ -655,21 +655,28 @@ export function getActionHandler(
             return;
           }
 
+          const writeContext = {
+            blockId,
+            listItemBlockId: item.listItemBlockId,
+            nodeElement,
+            protyle,
+          };
+
           const abandonedTag = getStatusTag('abandoned');
           const blockContent = nodeElement.textContent || '';
           if (abandonedTag && blockContent.includes(abandonedTag)) {
-            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+            void writeBlock(writeContext, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
             return;
           }
 
-          await writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
-          const isTaskListBlock = !!nodeElement.closest('[data-type="NodeListItem"][data-subtype="t"]');
-          if (!isTaskListBlock) {
-            await waitForProtyleTransactionsFlush();
+          const success = await writeBlock(writeContext, [
+            { type: 'removeSlashCommand' },
+            { type: 'setStatus', status: 'abandoned' },
+          ]);
+          if (success) {
+            showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
           }
-          void writeBlock({ blockId, nodeElement, protyle }, { type: 'setStatus', status: 'abandoned' });
-          showMessage(t('slash').markAbandonSuccess || '已标记为已放弃', 2000, 'info');
         })();
       };
     case 'calendar':
@@ -1031,7 +1038,7 @@ async function markAsTodayItem(
   if (todayItem) {
     console.log('[SlashCommand] markAsTodayItem: today already exists');
     // 日期已存在，删除斜杠命令并提示
-    void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
     showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
     return;
   }
@@ -1049,11 +1056,18 @@ async function markAsTodayItem(
     hasProtyle: !!protyle,
   });
 
-  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
-    date: today,
-    allDay: true,
-    siblingItems: existingItems.length > 0 ? existingItems : undefined,
-  });
+  const success = await writeBlock(
+    { blockId, nodeElement, protyle },
+    [
+      { type: 'removeSlashCommand' },
+      {
+        type: 'addDate',
+        date: today,
+        allDay: true,
+        siblingItems: existingItems.length > 0 ? existingItems : undefined,
+      },
+    ],
+  );
 
   console.log('[SlashCommand] markAsTodayItem: writeBlock addDate result', success);
   console.log('[JTDBG][slash.today] writeBlock.addDate result', {
@@ -1062,7 +1076,6 @@ async function markAsTodayItem(
   });
 
   if (success) {
-    cleanupActiveSlashCommandLocally(nodeElement);
     showMessage(t('slash').markSuccess, 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');
@@ -1088,19 +1101,25 @@ async function markAsTomorrowItem(
   // 检查明天是否已存在
   const tomorrowItem = existingItems.find(item => item.date === tomorrow);
   if (tomorrowItem) {
-    void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
     showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
     return;
   }
 
-  const success = await writeDatePatchForSlashCommand(protyle, nodeElement, {
-    date: tomorrow,
-    allDay: true,
-    siblingItems: existingItems.length > 0 ? existingItems : undefined,
-  });
+  const success = await writeBlock(
+    { blockId, nodeElement, protyle },
+    [
+      { type: 'removeSlashCommand' },
+      {
+        type: 'addDate',
+        date: tomorrow,
+        allDay: true,
+        siblingItems: existingItems.length > 0 ? existingItems : undefined,
+      },
+    ],
+  );
 
   if (success) {
-    cleanupActiveSlashCommandLocally(nodeElement);
     showMessage(t('slash').markTomorrowSuccess || '已标记为明天事项', 2000, 'info');
   } else {
     showMessage(t('slash').markFailed, 2000, 'error');

@@ -234,11 +234,11 @@ export function parseKramdown(
 
     // 检测是否是任务列表项（包含 - [ ] 或 - [x]）
     // 思源格式: - {: id="list-item-id" ...}[ ] 内容
-    const taskListMatch = content.match(/^(\s*)-\s*\{\:\s*id="([^"]+)"/);
+    const taskListMatch = content.match(/^-\s*\{\:[^}]*\bid="([^"]+)"/);
     const taskListCheckboxMatch = content.match(/\[\s*([xX])?\s*\]/);
     if (taskListMatch && taskListCheckboxMatch) {
       // 从行内属性中提取列表项块 ID
-      const listItemBlockId = taskListMatch[2];
+      const listItemBlockId = taskListMatch[1];
       
       // 弹出栈顶层级大于等于当前层级的项（处理同级或上级列表项）
       while (listItemBlockIdStack.length > 0 && listItemBlockIdStack[listItemBlockIdStack.length - 1].level >= indentLevel) {

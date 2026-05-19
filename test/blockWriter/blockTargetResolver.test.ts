@@ -76,6 +76,26 @@ describe('resolveApiBlockTarget', () => {
     expect(target.originalBlockId).toBe('child-1');
   });
 
+  it('resolves to task-list ancestor when Siyuan returns short block type names', async () => {
+    mockGetBlockByID.mockResolvedValueOnce({
+      id: 'child-1',
+      type: 'p',
+      parent_id: 'parent-1',
+    } as any);
+    mockGetBlockByID.mockResolvedValueOnce({
+      id: 'parent-1',
+      type: 'i',
+      subtype: 't',
+    } as any);
+    mockGetBlockKramdown.mockResolvedValue({ id: 'parent-1', kramdown: '- [ ] 任务 📅2026-05-14\n{: id="parent-1"}' } as any);
+
+    const target = await resolveApiBlockTarget('child-1', { type: 'setStatus', status: 'completed' });
+
+    expect(target.targetBlockId).toBe('parent-1');
+    expect(target.targetType).toBe('NodeListItem');
+    expect(target.targetSubType).toBe('t');
+  });
+
   it('does not resolve to parent for non-setStatus patches', async () => {
     mockGetBlockByID.mockResolvedValue({
       id: 'child-1',

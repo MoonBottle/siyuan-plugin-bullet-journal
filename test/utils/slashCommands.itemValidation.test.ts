@@ -502,7 +502,7 @@ describe('item-only slash command validation', () => {
     );
   });
 
-  it('/fq 在未标记已放弃时通过 BlockWriter 先删 slash 再写入 abandoned 状态', async () => {
+  it('/fq 在未标记已放弃时通过一次批量 BlockWriter 写入删除 slash 与 abandoned 状态', async () => {
     const item = {
       blockId: 'block-item',
       content: '整理资料',
@@ -522,15 +522,51 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(250);
 
-    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
-      1,
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
       { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
-      { type: 'removeSlashCommand' },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setStatus', status: 'abandoned' },
+      ],
     );
-    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
-      2,
-      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
-      { type: 'setStatus', status: 'abandoned' },
+    expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已标记为已放弃', 2000, 'info');
+  });
+
+  it('/fq 在任务列表事项上通过一次批量 BlockWriter 写入删除 slash 与 abandoned 状态', async () => {
+    const item = {
+      blockId: 'block-paragraph',
+      listItemBlockId: 'block-list-item',
+      isTaskList: true,
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'pending',
+    };
+    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    const handler = getActionHandler('abandon', {} as any, ['/fq']);
+    const listItem = document.createElement('div');
+    listItem.setAttribute('data-type', 'NodeListItem');
+    listItem.setAttribute('data-subtype', 't');
+    listItem.setAttribute('data-node-id', 'block-list-item');
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-paragraph');
+    node.textContent = '整理资料 /fq';
+    listItem.appendChild(node);
+
+    handler({ transaction: vi.fn() } as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-paragraph', listItemBlockId: 'block-list-item', nodeElement: node, protyle: expect.any(Object) },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setStatus', status: 'abandoned' },
+      ],
     );
     expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已标记为已放弃', 2000, 'info');
   });

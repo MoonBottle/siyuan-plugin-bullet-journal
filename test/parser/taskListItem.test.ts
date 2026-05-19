@@ -52,6 +52,27 @@ describe('任务列表事项解析', () => {
     expect(item.listItemBlockId).toBe('list-item-block');
   });
 
+  it('当 id 不是列表项属性中的第一个字段时也应该提取 listItemBlockId', () => {
+    const kramdown = `# 测试项目
+{: id="doc-block" type="doc" }
+## 任务A #任务
+{: id="task-block" }
+- {: updated="xxx" id="list-item-block" custom-t="1"}[ ] 事项内容 @2026-03-08
+  {: id="content-block" updated="yyy"}
+{: id="wrapper-block" }
+`;
+    const project = parseKramdown(kramdown, 'test-doc');
+
+    expect(project).not.toBeNull();
+    expect(project!.tasks).toHaveLength(1);
+    expect(project!.tasks[0].items).toHaveLength(1);
+
+    const item = project!.tasks[0].items[0];
+    expect(item.isTaskList).toBe(true);
+    expect(item.blockId).toBe('content-block');
+    expect(item.listItemBlockId).toBe('list-item-block');
+  });
+
   it('普通文本事项不应该设置 isTaskList', () => {
     const kramdown = `# 测试项目
 {: id="doc-block" type="doc" }

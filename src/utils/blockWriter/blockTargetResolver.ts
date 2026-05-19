@@ -13,6 +13,18 @@ function parentIdOf(block: any): string | undefined {
   return block?.parent_id ?? block?.parentId;
 }
 
+function isTaskListNode(block: any): boolean {
+  const type = block?.type;
+  return (type === 'NodeListItem' || type === 'i') && subtypeOf(block) === 't';
+}
+
+function normalizeResolvedType(block: any): string | undefined {
+  if (!block?.type) return undefined;
+  if (block.type === 'i') return 'NodeListItem';
+  if (block.type === 'p') return 'NodeParagraph';
+  return block.type;
+}
+
 async function findNearestTaskListAncestor(block: any): Promise<{
   taskListBlock: any | null;
   chain: Array<{ id?: string; type?: string; subtype?: string; parentId?: string }>;
@@ -28,7 +40,7 @@ async function findNearestTaskListAncestor(block: any): Promise<{
       subtype: subtypeOf(current),
       parentId: parentIdOf(current),
     });
-    if (current?.type === 'NodeListItem' && subtypeOf(current) === 't') {
+    if (isTaskListNode(current)) {
       return { taskListBlock: current, chain };
     }
 
@@ -53,7 +65,7 @@ export async function resolveApiBlockTarget(blockId: string, patch: BlockPatch):
     const { taskListBlock, chain } = await findNearestTaskListAncestor(block);
     if (taskListBlock) {
       targetBlockId = taskListBlock.id;
-      targetType = taskListBlock.type;
+      targetType = normalizeResolvedType(taskListBlock);
       targetSubType = subtypeOf(taskListBlock);
       if (taskListBlock.id !== blockId) {
         console.debug(`${BLOCK_TARGET_RESOLVER_LOG_PREFIX} resolved status target to ancestor task list item`, {
