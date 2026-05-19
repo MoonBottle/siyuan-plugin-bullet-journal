@@ -1,20 +1,5 @@
 <template>
   <div class="workbench-widget-date-picker" data-testid="workbench-widget-date-picker">
-    <div class="workbench-widget-date-picker__toolbar">
-      <button
-        class="workbench-widget-date-picker__view-btn"
-        :class="{ 'is-active': currentView === 'month' }"
-        type="button"
-        @click="currentView = 'month'"
-      >{{ t('datePicker').month }}</button>
-      <button
-        class="workbench-widget-date-picker__view-btn"
-        :class="{ 'is-active': currentView === 'week' }"
-        type="button"
-        @click="currentView = 'week'"
-      >{{ t('datePicker').week }}</button>
-    </div>
-
     <div v-if="currentView === 'month'" class="workbench-widget-date-picker__calendar">
       <DatePickerMonthGrid
         :selected-date="selectedDate"
@@ -39,7 +24,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { t } from '@/i18n';
 import { eventBus, Events } from '@/utils/eventBus';
 import { useSafeProjectStore } from './useSafeProjectStore';
 import type { WorkbenchDatePickerWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
@@ -107,29 +91,6 @@ function emitLinkageEvent(start: string, end: string) {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-}
-
-.workbench-widget-date-picker__toolbar {
-  display: flex;
-  gap: 4px;
-  padding: 0 4px 8px;
-  flex-shrink: 0;
-}
-
-.workbench-widget-date-picker__view-btn {
-  padding: 2px 10px;
-  border: 1px solid var(--b3-border-color);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--b3-theme-on-surface);
-  font-size: 12px;
-  cursor: pointer;
-
-  &.is-active {
-    border-color: var(--b3-theme-primary);
-    color: var(--b3-theme-primary);
-    background: var(--b3-theme-primary-lightest);
-  }
 }
 
 .workbench-widget-date-picker__calendar {
