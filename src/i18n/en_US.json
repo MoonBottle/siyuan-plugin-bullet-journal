@@ -100,7 +100,7 @@
     "unsupportedView": "Unsupported workbench view"
   },
   "datePicker": {
-    "title": "Calendar",
+    "title": "Date Picker",
     "month": "Month",
     "week": "Week",
     "linkage": "Widget Linkage",

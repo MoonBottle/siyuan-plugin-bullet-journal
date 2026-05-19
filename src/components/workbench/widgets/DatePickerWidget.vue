@@ -46,6 +46,7 @@ import type { WorkbenchDatePickerWidgetConfig, WorkbenchWidgetInstance } from '@
 import dayjs from '@/utils/dayjs';
 import DatePickerMonthGrid from './DatePickerMonthGrid.vue';
 import DatePickerWeekGrid from './DatePickerWeekGrid.vue';
+import { emptySummary } from './datePickerUtils';
 
 const props = defineProps<{
   widget?: WorkbenchWidgetInstance;
@@ -95,21 +96,6 @@ function emitLinkageEvent(start: string, end: string) {
       dateRange: { start, end },
     });
   }
-}
-
-function emptySummary() {
-  return {
-    date: '',
-    total: 0,
-    estimatedMinutes: 0,
-    actualMinutes: 0,
-    matched: 0,
-    overrun: 0,
-    underrun: 0,
-    notStarted: 0,
-    inProgress: 0,
-    unplanned: 0,
-  };
 }
 </script>
 

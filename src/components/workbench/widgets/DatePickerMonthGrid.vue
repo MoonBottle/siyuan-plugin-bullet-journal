@@ -108,8 +108,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import dayjs from '@/utils/dayjs';
-import { t } from '@/i18n';
+import { getCurrentLocale, t } from '@/i18n';
 import type { FocusPlanDailySummary } from '@/utils/focusPlanReview';
+import {
+  emptySummary,
+  getCellMarkerLabel,
+  hasFocusedOnly,
+  hasMarker,
+  hasPlanned,
+  hasPlannedAndFocused,
+  hasPlannedOnly,
+} from './datePickerUtils';
 
 type CalendarCell = {
   date: string;
@@ -142,9 +151,11 @@ watch(
 );
 
 const weekDayLabels = computed(() => t('calendar').weekDays);
-const title = computed(() =>
-  dayjs(`${viewMonth.value}-01`).format('YYYY年M月'),
-);
+const title = computed(() => {
+  const d = dayjs(`${viewMonth.value}-01`);
+  const locale = getCurrentLocale();
+  return locale.startsWith('en') ? d.format('MMMM YYYY') : d.format('YYYY年M月');
+});
 
 const calendarCells = computed(() => {
   const firstDay = dayjs(`${viewMonth.value}-01`);
@@ -190,56 +201,9 @@ function isInRange(date: string): boolean {
   if (!props.rangeStart || !props.rangeEnd || !date) return false;
   return date >= props.rangeStart && date <= props.rangeEnd;
 }
-
-function hasPlanned(summary: FocusPlanDailySummary): boolean {
-  return summary.estimatedMinutes > 0;
-}
-
-function hasFocused(summary: FocusPlanDailySummary): boolean {
-  return summary.actualMinutes > 0;
-}
-
-function hasPlannedOnly(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && !hasFocused(summary);
-}
-
-function hasFocusedOnly(summary: FocusPlanDailySummary): boolean {
-  return !hasPlanned(summary) && hasFocused(summary);
-}
-
-function hasPlannedAndFocused(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && hasFocused(summary);
-}
-
-function hasMarker(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) || hasFocused(summary);
-}
-
-function getCellMarkerLabel(summary: FocusPlanDailySummary): string {
-  if (hasPlannedAndFocused(summary))
-    return t('focusWorkbench').calendarLegendHybrid;
-  if (hasFocusedOnly(summary)) return t('focusWorkbench').calendarLegendFocused;
-  if (hasPlannedOnly(summary)) return t('focusWorkbench').calendarLegendPlanned;
-  return '';
-}
-
-function emptySummary(): FocusPlanDailySummary {
-  return {
-    date: '',
-    total: 0,
-    estimatedMinutes: 0,
-    actualMinutes: 0,
-    matched: 0,
-    overrun: 0,
-    underrun: 0,
-    notStarted: 0,
-    inProgress: 0,
-    unplanned: 0,
-  };
-}
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .date-picker-month-grid {
   padding: 12px;
   border: 1px solid var(--b3-theme-surface-lighter);

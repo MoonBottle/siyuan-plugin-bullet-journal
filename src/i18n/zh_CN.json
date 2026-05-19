@@ -100,7 +100,7 @@
     "unsupportedView": "暂不支持该工作台视图"
   },
   "datePicker": {
-    "title": "日历",
+    "title": "日期选择器",
     "month": "月",
     "week": "周",
     "linkage": "组件联动",

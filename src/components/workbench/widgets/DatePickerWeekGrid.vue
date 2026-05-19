@@ -1,5 +1,23 @@
 <template>
   <div class="date-picker-week-grid">
+    <div class="date-picker-week-grid__header">
+      <button
+        class="date-picker-week-grid__nav"
+        type="button"
+        @click="prevWeek"
+      >
+        ‹
+      </button>
+      <span class="date-picker-week-grid__title">{{ title }}</span>
+      <button
+        class="date-picker-week-grid__nav"
+        type="button"
+        @click="nextWeek"
+      >
+        ›
+      </button>
+    </div>
+
     <div class="date-picker-week-grid__weekdays">
       <span
         v-for="day in weekDayLabels"
@@ -60,10 +78,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import dayjs from '@/utils/dayjs';
-import { t } from '@/i18n';
+import { getCurrentLocale, t } from '@/i18n';
 import type { FocusPlanDailySummary } from '@/utils/focusPlanReview';
+import {
+  getCellMarkerLabel,
+  hasFocusedOnly,
+  hasMarker,
+  hasPlanned,
+  hasPlannedAndFocused,
+  hasPlannedOnly,
+} from './datePickerUtils';
 
 const props = defineProps<{
   selectedDate: string;
@@ -79,60 +105,103 @@ const emit = defineEmits<{
 const today = dayjs().format('YYYY-MM-DD');
 const weekDayLabels = computed(() => t('calendar').weekDays);
 
-const weekDates = computed(() => {
-  const d = dayjs(props.selectedDate);
+const viewWeekStart = ref(getMonday(props.selectedDate));
+
+watch(
+  () => props.selectedDate,
+  (value) => {
+    const nextMonday = getMonday(value);
+    if (nextMonday !== viewWeekStart.value) {
+      viewWeekStart.value = nextMonday;
+    }
+  },
+);
+
+function getMonday(dateStr: string): string {
+  const d = dayjs(dateStr);
   let dow: number = d.day();
   if (dow === 0) dow = 7;
-  const monday = d.subtract(dow - 1, 'day');
+  return d.subtract(dow - 1, 'day').format('YYYY-MM-DD');
+}
+
+const weekDates = computed(() => {
+  const monday = dayjs(viewWeekStart.value);
   return Array.from({ length: 7 }, (_, i) =>
     monday.add(i, 'day').format('YYYY-MM-DD'),
   );
 });
 
+const title = computed(() => {
+  const monday = dayjs(viewWeekStart.value);
+  const sunday = monday.add(6, 'day');
+  const locale = getCurrentLocale();
+  if (locale.startsWith('en')) {
+    if (monday.month() === sunday.month()) {
+      return `${monday.format('MMM D')} – ${sunday.format('D, YYYY')}`;
+    }
+    return `${monday.format('MMM D')} – ${sunday.format('MMM D, YYYY')}`;
+  }
+  if (monday.month() === sunday.month()) {
+    return `${monday.format('M月D日')} – ${sunday.format('D日')}`;
+  }
+  return `${monday.format('M月D日')} – ${sunday.format('M月D日')}`;
+});
+
+function prevWeek() {
+  viewWeekStart.value = dayjs(viewWeekStart.value)
+    .subtract(1, 'week')
+    .format('YYYY-MM-DD');
+}
+
+function nextWeek() {
+  viewWeekStart.value = dayjs(viewWeekStart.value)
+    .add(1, 'week')
+    .format('YYYY-MM-DD');
+}
+
 function isInRange(date: string): boolean {
   if (!props.rangeStart || !props.rangeEnd || !date) return false;
   return date >= props.rangeStart && date <= props.rangeEnd;
 }
-
-function hasPlanned(summary: FocusPlanDailySummary): boolean {
-  return summary.estimatedMinutes > 0;
-}
-
-function hasFocused(summary: FocusPlanDailySummary): boolean {
-  return summary.actualMinutes > 0;
-}
-
-function hasPlannedOnly(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && !hasFocused(summary);
-}
-
-function hasFocusedOnly(summary: FocusPlanDailySummary): boolean {
-  return !hasPlanned(summary) && hasFocused(summary);
-}
-
-function hasPlannedAndFocused(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && hasFocused(summary);
-}
-
-function hasMarker(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) || hasFocused(summary);
-}
-
-function getCellMarkerLabel(summary: FocusPlanDailySummary): string {
-  if (hasPlannedAndFocused(summary))
-    return t('focusWorkbench').calendarLegendHybrid;
-  if (hasFocusedOnly(summary)) return t('focusWorkbench').calendarLegendFocused;
-  if (hasPlannedOnly(summary)) return t('focusWorkbench').calendarLegendPlanned;
-  return '';
-}
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .date-picker-week-grid {
   padding: 8px 12px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 10px;
   background: var(--b3-theme-background);
+}
+
+.date-picker-week-grid__header {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.date-picker-week-grid__nav {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--b3-theme-on-background);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.date-picker-week-grid__title {
+  justify-self: center;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .date-picker-week-grid__weekdays,
