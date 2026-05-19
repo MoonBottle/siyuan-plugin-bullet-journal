@@ -292,6 +292,7 @@ function handleConfigureWidget(widgetId: string) {
     onUpdateConfig: async (config) => {
       await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config);
     },
+    dashboardWidgets: dashboard.value?.widgets ?? [],
   });
 }
 
