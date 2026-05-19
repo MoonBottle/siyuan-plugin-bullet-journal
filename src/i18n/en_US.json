@@ -104,6 +104,7 @@
     "month": "Month",
     "week": "Week",
     "defaultView": "Default View",
+    "groupFilter": "Group Filter",
     "linkage": "Widget Linkage",
     "addLinkage": "Add Linkage",
     "emptyLinkage": "Click to add linkage rule",

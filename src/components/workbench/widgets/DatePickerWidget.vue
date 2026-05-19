@@ -53,7 +53,7 @@ watch(
 );
 
 function getSummaryByDate(date: string): DatePickerDailySummary {
-  return projectStore?.getItemSummaryByDate(date, '') ?? emptySummary();
+  return projectStore?.getItemSummaryByDate(date, pickerConfig.value.groupId ?? '') ?? emptySummary();
 }
 
 function handleDateClick(date: string, mouseEvent: MouseEvent) {

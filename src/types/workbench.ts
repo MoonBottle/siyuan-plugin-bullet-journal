@@ -86,6 +86,7 @@ export interface WidgetLinkageRule {
 /** DatePickerWidget 配置 */
 export interface WorkbenchDatePickerWidgetConfig {
   view?: 'month' | 'week';
+  groupId?: string;
   linkages: WidgetLinkageRule[];
 }
 

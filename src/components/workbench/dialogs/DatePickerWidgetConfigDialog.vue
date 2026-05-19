@@ -23,6 +23,19 @@
 
       <div class="date-picker-config-dialog__section">
         <div class="date-picker-config-dialog__section-header">
+          <span class="date-picker-config-dialog__section-title">{{ t('datePicker').groupFilter }}</span>
+        </div>
+        <SySelect
+          :model-value="groupId"
+          :options="groupOptions"
+          :placeholder="t('settings').projectGroups.allGroups"
+          class="date-picker-config-dialog__group-select"
+          @update:model-value="groupId = String($event ?? '')"
+        />
+      </div>
+
+      <div class="date-picker-config-dialog__section">
+        <div class="date-picker-config-dialog__section-header">
           <span class="date-picker-config-dialog__section-title">{{ t('datePicker').linkage }}</span>
           <button
             class="date-picker-config-dialog__add-btn"
@@ -65,14 +78,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { createApp } from 'vue';
 import { Dialog } from 'siyuan';
 import { getSharedPinia } from '@/utils/sharedPinia';
 import WorkbenchConfigDialogLayout from './WorkbenchConfigDialogLayout.vue';
 import DatePickerLinkageEditorDialog from './DatePickerLinkageEditorDialog.vue';
+import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import { t } from '@/i18n';
 import { getWidgetDefinition } from '@/workbench/widgetRegistry';
+import { useSettingsStore } from '@/stores';
 import type {
   WorkbenchDatePickerWidgetConfig,
   WidgetLinkageRule,
@@ -87,7 +102,17 @@ const props = defineProps<{
 }>();
 
 const defaultView = ref<'month' | 'week'>(props.initialConfig.view ?? 'month');
+const groupId = ref(props.initialConfig.groupId ?? '');
 const linkages = ref<WidgetLinkageRule[]>([...(props.initialConfig.linkages ?? [])]);
+const settingsStore = useSettingsStore();
+
+const groupOptions = computed(() => {
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  settingsStore.groups.forEach((g: any) => {
+    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
+  });
+  return options;
+});
 
 function getTargetWidgetName(widgetId: string): string {
   const w = props.dashboardWidgets.find((w) => w.id === widgetId);
@@ -148,6 +173,7 @@ function openEditor(editingRule: WidgetLinkageRule | null) {
 function handleConfirm() {
   props.onConfirm({
     view: defaultView.value,
+    groupId: groupId.value || undefined,
     linkages: linkages.value,
   });
 }
@@ -193,6 +219,11 @@ function handleConfirm() {
     color: var(--b3-theme-primary);
     background: var(--b3-theme-primary-lightest);
   }
+}
+
+.date-picker-config-dialog__group-select {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .date-picker-config-dialog__add-btn {
