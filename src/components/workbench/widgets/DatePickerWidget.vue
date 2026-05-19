@@ -52,9 +52,11 @@ watch(
   },
 );
 
-function getSummaryByDate(date: string): DatePickerDailySummary {
-  return projectStore?.getItemSummaryByDate(date, pickerConfig.value.groupId ?? '') ?? emptySummary();
-}
+const getSummaryByDate = computed(() => {
+  const gid = pickerConfig.value.groupId ?? '';
+  return (date: string): DatePickerDailySummary =>
+    projectStore?.getItemSummaryByDate(date, gid) ?? emptySummary();
+});
 
 function handleDateClick(date: string, mouseEvent: MouseEvent) {
   if (mouseEvent.shiftKey && lastClickedDate) {

@@ -21,7 +21,7 @@
         </div>
 
         <div v-if="isDashboardActive" class="workbench-tab__toolbar-actions">
-          <div class="workbench-tab__toolbar-menu-wrap">
+          <div ref="widgetMenuWrapRef" class="workbench-tab__toolbar-menu-wrap">
             <button
               class="workbench-tab__toolbar-button"
               data-testid="workbench-add-widget-trigger"
@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue';
 import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue';
 import { t } from '@/i18n';
@@ -101,6 +101,7 @@ const canConfigureActiveView = computed(() => {
   return Boolean(getViewDefinition(entry.viewType).openConfigDialog);
 });
 const isWidgetMenuOpen = ref(false);
+const widgetMenuWrapRef = ref<HTMLElement>();
 const widgetDefinitions = computed(() => Object.values(getWidgetRegistry()));
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
@@ -141,6 +142,24 @@ function toggleWidgetMenu() {
 function openWidgetMenu() {
   isWidgetMenuOpen.value = true;
 }
+
+function handleWidgetMenuClickOutside(e: MouseEvent) {
+  if (!widgetMenuWrapRef.value?.contains(e.target as Node)) {
+    isWidgetMenuOpen.value = false;
+  }
+}
+
+watch(isWidgetMenuOpen, (val) => {
+  if (val) {
+    document.addEventListener('mousedown', handleWidgetMenuClickOutside);
+  } else {
+    document.removeEventListener('mousedown', handleWidgetMenuClickOutside);
+  }
+});
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleWidgetMenuClickOutside);
+});
 
 async function handleAddWidget(type: WorkbenchWidgetType) {
   if (currentActiveEntry.value?.type !== 'dashboard' || !currentActiveEntry.value.dashboardId) {
