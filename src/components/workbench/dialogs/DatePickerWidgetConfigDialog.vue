@@ -45,8 +45,8 @@
               {{ getTargetWidgetName(rule.targetWidgetId) }}
             </span>
             <div class="date-picker-config-dialog__rule-actions">
-              <button type="button" :title="t('datePicker').editLinkage" @click="handleEdit(rule)"><svg><use xlink:href="#iconEdit"></use></svg></button>
-              <button type="button" :title="t('datePicker').deleteLinkage" @click="handleDelete(rule.id)"><svg><use xlink:href="#iconTrashcan"></use></svg></button>
+              <button type="button" class="b3-tooltips b3-tooltips__nw" :aria-label="t('datePicker').editLinkage" @click="handleEdit(rule)"><svg><use xlink:href="#iconEdit"></use></svg></button>
+              <button type="button" class="b3-tooltips b3-tooltips__nw" :aria-label="t('datePicker').deleteLinkage" @click="handleDelete(rule.id)"><svg><use xlink:href="#iconTrashcan"></use></svg></button>
             </div>
           </div>
         </div>
