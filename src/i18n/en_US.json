@@ -171,7 +171,9 @@
     "completedCount": "Completed",
     "abandonedCount": "Abandoned",
     "openDocument": "Open Document",
-    "linked": "Has links"
+    "linked": "Has links",
+    "resetColumnWidths": "Reset Widths",
+    "resetColumnWidthsTooltip": "Reset column widths to default"
   },
   "todo": {
     "title": "Todo",

@@ -171,7 +171,9 @@
     "completedCount": "已完成",
     "abandonedCount": "已放弃",
     "openDocument": "打开文档",
-    "linked": "有链接"
+    "linked": "有链接",
+    "resetColumnWidths": "重置列宽",
+    "resetColumnWidthsTooltip": "恢复默认列宽比例"
   },
   "todo": {
     "title": "待办事项",

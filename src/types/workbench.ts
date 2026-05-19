@@ -96,6 +96,7 @@ export interface WorkbenchFocusWorkbenchViewConfig {
 
 export interface WorkbenchProjectViewConfig {
   groupId?: string;
+  columnRatios?: [number, number, number];
 }
 
 export interface WorkbenchWidgetInstance {

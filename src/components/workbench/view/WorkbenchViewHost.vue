@@ -16,7 +16,11 @@
       <FocusWorkbenchTab :embedded="true" :view-config="entry.config" />
     </div>
     <div v-else-if="viewType === 'project'" class="workbench-view-host__surface" data-testid="workbench-view-project">
-      <ProjectTab :embedded="true" :view-config="entry.config" />
+      <ProjectTab
+        :embedded="true"
+        :view-config="entry.config"
+        :on-update-config="handleProjectViewConfigUpdate"
+      />
     </div>
     <div v-else-if="viewType === 'aiChat'" class="workbench-view-host__surface" data-testid="workbench-view-ai-chat">
       <AiChatView :view-config="entry.config" />
@@ -41,11 +45,18 @@ import FocusWorkbenchTab from '@/tabs/FocusWorkbenchTab.vue';
 import ProjectTab from '@/tabs/ProjectTab.vue';
 import AiChatView from '@/components/workbench/view/AiChatView.vue';
 import { t } from '@/i18n';
+import { useWorkbenchStore } from '@/stores';
 import type { WorkbenchEntry } from '@/types/workbench';
 
 const props = defineProps<{
   entry: WorkbenchEntry;
 }>();
+
+const workbenchStore = useWorkbenchStore();
+
+async function handleProjectViewConfigUpdate(config: Record<string, unknown>) {
+  await workbenchStore.updateViewConfig(props.entry.id, config);
+}
 
 const viewType = computed(() => props.entry.viewType);
 </script>
