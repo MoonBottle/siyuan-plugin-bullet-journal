@@ -809,7 +809,7 @@ export const useProjectStore = defineStore('project', {
 
     getItemSummaryByDate: (state) => (date: string, groupId: string = '') => {
       const allItems = (state as any).items as Item[];
-      const today = dayjs().format('YYYY-MM-DD');
+      const today = state.currentDate;
       let items = allItems.filter((item: Item) => {
         if (groupId && item.project?.groupId !== groupId) return false;
         return item.date === date;
