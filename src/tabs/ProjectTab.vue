@@ -10,6 +10,13 @@
       <span class="fn__flex-1 fn__space"></span>
       <span
         class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="projectViewRef?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
+        @click="projectViewRef?.toggleCollapseAll()"
+      >
+        <svg><use :xlink:href="projectViewRef?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
+      </span>
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
         :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
         @click="handleRefresh"
       >
@@ -18,6 +25,7 @@
     </div>
     <div class="tab-content">
       <ProjectView
+        ref="projectViewRef"
         :projects="filteredProjects"
         :embedded="embedded"
       />
@@ -50,6 +58,7 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const selectedGroup = ref('');
+const projectViewRef = ref<InstanceType<typeof ProjectView> | null>(null);
 
 const filteredProjects = computed(() => {
   return projectStore.getFilteredProjects(selectedGroup.value);

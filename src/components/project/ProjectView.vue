@@ -157,6 +157,28 @@ function findItemById(project: Project | null, itemId: string): Item | null {
   }
   return null;
 }
+
+const allCollapsed = computed(() => {
+  if (!selectedProject.value) return true;
+  return selectedProject.value.tasks.every(task => !expandedTaskIds.value.has(task.id));
+});
+
+function toggleCollapseAll() {
+  if (!selectedProject.value) return;
+  const currentTaskIds = new Set(selectedProject.value.tasks.map(task => task.id));
+  if (allCollapsed.value) {
+    expandedTaskIds.value = new Set([...expandedTaskIds.value, ...currentTaskIds]);
+  } else {
+    const next = new Set(expandedTaskIds.value);
+    currentTaskIds.forEach(id => next.delete(id));
+    expandedTaskIds.value = next;
+  }
+}
+
+defineExpose({
+  allCollapsed,
+  toggleCollapseAll,
+});
 </script>
 
 <style lang="scss" scoped>
