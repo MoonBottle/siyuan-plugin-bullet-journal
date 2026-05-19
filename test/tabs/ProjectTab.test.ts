@@ -10,6 +10,7 @@ const mockSettingsStore = {
 };
 const mockProjectStore = {
   loading: false,
+  projects: [],
   getFilteredProjects: vi.fn(() => []),
 };
 

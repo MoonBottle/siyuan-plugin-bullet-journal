@@ -182,7 +182,7 @@ describe('ChatPanel layout guards', () => {
     const source = fs.readFileSync(
       path.resolve(process.cwd(), 'src/components/ai/ChatPanel.vue'),
       'utf-8',
-    );
+    ).replace(/\r\n/g, '\n');
 
     expect(source).toContain('.chat-panel {');
     expect(source).toContain('min-width: 0;');

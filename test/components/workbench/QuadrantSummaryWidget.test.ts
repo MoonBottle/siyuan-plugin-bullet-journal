@@ -198,6 +198,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
   const { default: QuadrantSummaryWidget } = await import('@/components/workbench/widgets/QuadrantSummaryWidget.vue');
   const container = document.createElement('div');
   document.body.appendChild(container);
+  const onTitleMetaChange = vi.fn();
 
   const app = createApp(QuadrantSummaryWidget, {
     widget: {
@@ -207,6 +208,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
       layout: { x: 0, y: 0, w: 6, h: 4 },
       config: widgetConfig,
     },
+    onTitleMetaChange,
   });
 
   app.use(pinia);
@@ -215,6 +217,7 @@ async function mountWidget(widgetConfig: Record<string, unknown>) {
 
   return {
     container,
+    onTitleMetaChange,
     unmount() {
       app.unmount();
       container.remove();
@@ -296,7 +299,7 @@ describe('QuadrantSummaryWidget', () => {
       quadrant: 'q4',
     });
 
-    expect(mounted.container.textContent).toContain('不重要不紧急');
+    expect(mounted.onTitleMetaChange).toHaveBeenLastCalledWith('1 项 · 不重要不紧急');
 
     const sidebar = mounted.container.querySelector('[data-testid="quadrant-widget-todo-sidebar"]');
     expect(sidebar?.getAttribute('data-items-count')).toBe('1');
@@ -310,7 +313,7 @@ describe('QuadrantSummaryWidget', () => {
       quadrant: 'q2',
     });
 
-    expect(mounted.container.textContent).toContain('Follow-up');
+    expect(mounted.onTitleMetaChange).toHaveBeenLastCalledWith(expect.stringContaining('Follow-up'));
 
     mounted.unmount();
   });

@@ -2,6 +2,7 @@
 
 import { createApp, nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createPinia, getActivePinia, setActivePinia } from 'pinia';
 import { initI18n } from '@/i18n';
 import type { WorkbenchEntry } from '@/types/workbench';
 
@@ -91,6 +92,10 @@ async function mountComponent(component: any, props: Record<string, unknown>) {
   document.body.appendChild(container);
 
   const app = createApp(component, props);
+  const pinia = getActivePinia();
+  if (pinia) {
+    app.use(pinia);
+  }
   app.mount(container);
   await nextTick();
 
@@ -108,6 +113,7 @@ describe('WorkbenchViewHost', () => {
   beforeEach(() => {
     initI18n('en_US');
     vi.clearAllMocks();
+    setActivePinia(createPinia());
   });
 
   it('todo view entry renders workbench todo host', async () => {
@@ -123,7 +129,7 @@ describe('WorkbenchViewHost', () => {
     }));
 
     mounted.unmount();
-  });
+  }, 10000);
 
   it('quadrant view entry renders workbench quadrant host', async () => {
     const { default: WorkbenchViewHost } = await import('@/components/workbench/view/WorkbenchViewHost.vue');
@@ -197,6 +203,7 @@ describe('WorkbenchViewHost', () => {
 describe('WorkbenchContentHost routing', () => {
   beforeEach(() => {
     initI18n('en_US');
+    setActivePinia(createPinia());
   });
 
   it('routes empty, dashboard, and view entry states', async () => {

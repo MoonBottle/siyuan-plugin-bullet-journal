@@ -185,7 +185,8 @@ describe('TodoListWidget', () => {
 
     expect(mounted.container.querySelector('[data-testid="todo-content-pane-stub"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-content"]')).not.toBeNull();
-    expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-search"]')).not.toBeNull();
+    expect(mounted.container.querySelector('.todo-filter-card')).not.toBeNull();
+    expect(mounted.container.querySelector('.search-input')).not.toBeNull();
     expect(mounted.container.querySelector('[data-group-id="group-a"]')).not.toBeNull();
     expect(mounted.container.querySelector('[data-display-mode="embedded"]')).not.toBeNull();
     expect(mounted.container.querySelector('.workbench-widget-todo-list__meta')).toBeNull();
@@ -215,7 +216,7 @@ describe('TodoListWidget', () => {
       },
     }, pinia);
 
-    const searchInput = mounted.container.querySelector('[data-testid="workbench-todo-widget-search"]') as HTMLInputElement;
+    const searchInput = mounted.container.querySelector('.search-input') as HTMLInputElement;
     expect(searchInput.value).toBe('');
 
     searchInput.value = 'runtime search';
@@ -269,7 +270,7 @@ describe('TodoListWidget', () => {
       },
     }, pinia);
 
-    expect(mounted.container.querySelector('[data-testid="workbench-todo-widget-tag-filter"]')).not.toBeNull();
+    expect(mounted.container.querySelector('.tag-search-input')).not.toBeNull();
 
     const contentProps = todoContentPaneProps.mock.calls.at(-1)?.[0];
     expect(contentProps.selectedTags).toEqual(['Alpha']);
