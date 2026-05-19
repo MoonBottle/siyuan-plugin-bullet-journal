@@ -1,49 +1,55 @@
 import { t } from '@/i18n';
-import type { FocusPlanDailySummary } from '@/utils/focusPlanReview';
 
-export function emptySummary(): FocusPlanDailySummary {
+export interface DatePickerDailySummary {
+  date: string;
+  total: number;
+  completed: number;
+  abandoned: number;
+  pending: number;
+  overdue: number;
+}
+
+export function emptySummary(): DatePickerDailySummary {
   return {
     date: '',
     total: 0,
-    estimatedMinutes: 0,
-    actualMinutes: 0,
-    matched: 0,
-    overrun: 0,
-    underrun: 0,
-    notStarted: 0,
-    inProgress: 0,
-    unplanned: 0,
+    completed: 0,
+    abandoned: 0,
+    pending: 0,
+    overdue: 0,
   };
 }
 
-export function hasPlanned(summary: FocusPlanDailySummary): boolean {
-  return summary.estimatedMinutes > 0;
+export function hasItems(summary: DatePickerDailySummary): boolean {
+  return summary.total > 0;
 }
 
-export function hasFocused(summary: FocusPlanDailySummary): boolean {
-  return summary.actualMinutes > 0;
+export function hasOverdue(summary: DatePickerDailySummary): boolean {
+  return summary.overdue > 0;
 }
 
-export function hasPlannedOnly(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && !hasFocused(summary);
+export function hasPending(summary: DatePickerDailySummary): boolean {
+  return summary.pending > 0;
 }
 
-export function hasFocusedOnly(summary: FocusPlanDailySummary): boolean {
-  return !hasPlanned(summary) && hasFocused(summary);
+export function hasCompleted(summary: DatePickerDailySummary): boolean {
+  return summary.completed > 0;
 }
 
-export function hasPlannedAndFocused(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) && hasFocused(summary);
+export function hasMarker(summary: DatePickerDailySummary): boolean {
+  return hasItems(summary);
 }
 
-export function hasMarker(summary: FocusPlanDailySummary): boolean {
-  return hasPlanned(summary) || hasFocused(summary);
+export function getCellMarkerLabel(summary: DatePickerDailySummary): string {
+  if (hasOverdue(summary)) return t('datePicker').legendOverdue;
+  if (hasPending(summary)) return t('datePicker').legendPending;
+  if (hasCompleted(summary)) return t('datePicker').legendCompleted;
+  return '';
 }
 
-export function getCellMarkerLabel(summary: FocusPlanDailySummary): string {
-  if (hasPlannedAndFocused(summary))
-    return t('focusWorkbench').calendarLegendHybrid;
-  if (hasFocusedOnly(summary)) return t('focusWorkbench').calendarLegendFocused;
-  if (hasPlannedOnly(summary)) return t('focusWorkbench').calendarLegendPlanned;
+export function getDotType(summary: DatePickerDailySummary): 'overdue' | 'pending' | 'completed' | '' {
+  if (hasOverdue(summary)) return 'overdue';
+  if (hasPending(summary)) return 'pending';
+  if (hasCompleted(summary)) return 'completed';
   return '';
 }

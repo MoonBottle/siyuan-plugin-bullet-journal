@@ -31,6 +31,7 @@ import dayjs from '@/utils/dayjs';
 import DatePickerMonthGrid from './DatePickerMonthGrid.vue';
 import DatePickerWeekGrid from './DatePickerWeekGrid.vue';
 import { emptySummary } from './datePickerUtils';
+import type { DatePickerDailySummary } from './datePickerUtils';
 
 const props = defineProps<{
   widget?: WorkbenchWidgetInstance;
@@ -51,8 +52,8 @@ watch(
   },
 );
 
-function getSummaryByDate(date: string) {
-  return projectStore?.getFocusPlanSummaryByDate(date, '') ?? emptySummary();
+function getSummaryByDate(date: string): DatePickerDailySummary {
+  return projectStore?.getItemSummaryByDate(date, '') ?? emptySummary();
 }
 
 function handleDateClick(date: string, mouseEvent: MouseEvent) {

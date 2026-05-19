@@ -38,14 +38,14 @@
           'date-picker-week-grid__cell--in-range': isInRange(date),
           'date-picker-week-grid__cell--range-start': date === rangeStart,
           'date-picker-week-grid__cell--range-end': date === rangeEnd,
-          'date-picker-week-grid__cell--planned': hasPlanned(
+          'date-picker-week-grid__cell--pending': hasPending(
             getSummaryByDate(date),
           ),
-          'date-picker-week-grid__cell--focused':
-            getSummaryByDate(date).actualMinutes > 0,
-          'date-picker-week-grid__cell--unplanned-focus': hasFocusedOnly(
+          'date-picker-week-grid__cell--overdue': hasOverdue(
             getSummaryByDate(date),
           ),
+          'date-picker-week-grid__cell--completed':
+            hasCompleted(getSummaryByDate(date)) && !hasPending(getSummaryByDate(date)) && !hasOverdue(getSummaryByDate(date)),
         }"
         :data-testid="`date-picker-week-cell-${date}`"
         type="button"
@@ -57,20 +57,14 @@
         }}</span>
         <span class="date-picker-week-grid__marker">
           <span
-            v-if="hasMarker(getSummaryByDate(date))"
-            class="date-picker-week-grid__dot"
-            :class="{
-              'date-picker-week-grid__dot--planned': hasPlannedOnly(
-                getSummaryByDate(date),
-              ),
-              'date-picker-week-grid__dot--focused': hasFocusedOnly(
-                getSummaryByDate(date),
-              ),
-              'date-picker-week-grid__dot--hybrid': hasPlannedAndFocused(
-                getSummaryByDate(date),
-              ),
-            }"
-          ></span>
+              v-if="hasMarker(getSummaryByDate(date))"
+              class="date-picker-week-grid__dot"
+              :class="{
+                'date-picker-week-grid__dot--overdue': getDotType(getSummaryByDate(date)) === 'overdue',
+                'date-picker-week-grid__dot--pending': getDotType(getSummaryByDate(date)) === 'pending',
+                'date-picker-week-grid__dot--completed': getDotType(getSummaryByDate(date)) === 'completed',
+              }"
+            ></span>
         </span>
       </button>
     </div>
@@ -81,21 +75,21 @@
 import { computed, ref, watch } from 'vue';
 import dayjs from '@/utils/dayjs';
 import { getCurrentLocale, t } from '@/i18n';
-import type { FocusPlanDailySummary } from '@/utils/focusPlanReview';
+import type { DatePickerDailySummary } from './datePickerUtils';
 import {
   getCellMarkerLabel,
-  hasFocusedOnly,
+  getDotType,
+  hasCompleted,
   hasMarker,
-  hasPlanned,
-  hasPlannedAndFocused,
-  hasPlannedOnly,
+  hasOverdue,
+  hasPending,
 } from './datePickerUtils';
 
 const props = defineProps<{
   selectedDate: string;
   rangeStart: string;
   rangeEnd: string;
-  getSummaryByDate: (date: string) => FocusPlanDailySummary;
+  getSummaryByDate: (date: string) => DatePickerDailySummary;
 }>();
 
 const emit = defineEmits<{
@@ -259,13 +253,20 @@ function isInRange(date: string): boolean {
   border-color: var(--b3-theme-primary);
 }
 
-.date-picker-week-grid__cell--focused:not(
+.date-picker-week-grid__cell--overdue:not(
+  .date-picker-week-grid__cell--selected
+) {
+  background: rgba(210, 63, 49, 0.08);
+}
+
+.date-picker-week-grid__cell--completed:not(
   .date-picker-week-grid__cell--selected
 ) {
   background: var(--b3-theme-surface);
 }
 
-.date-picker-week-grid__cell--planned .date-picker-week-grid__day-num {
+.date-picker-week-grid__cell--pending
+  .date-picker-week-grid__day-num {
   font-weight: 600;
 }
 
@@ -286,26 +287,21 @@ function isInRange(date: string): boolean {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: var(--b3-theme-surface-lighter);
   transition:
     transform 0.2s ease,
     background 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.date-picker-week-grid__dot--planned {
-  background: var(--b3-theme-surface-lighter);
+.date-picker-week-grid__dot--overdue {
+  background: var(--b3-theme-error);
 }
 
-.date-picker-week-grid__dot--focused {
-  background: var(--b3-theme-primary);
+.date-picker-week-grid__dot--pending {
+  background: var(--b3-theme-secondary);
 }
 
-.date-picker-week-grid__dot--hybrid {
-  background: var(--b3-theme-primary);
-  box-shadow:
-    0 0 0 1px var(--b3-theme-background),
-    0 0 0 2px var(--b3-theme-primary-light);
-  transform: scale(1.1);
+.date-picker-week-grid__dot--completed {
+  background: var(--b3-theme-success);
 }
 </style>

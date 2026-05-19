@@ -807,6 +807,23 @@ export const useProjectStore = defineStore('project', {
       );
     },
 
+    getItemSummaryByDate: (state) => (date: string, groupId: string = '') => {
+      const allItems = (state as any).items as Item[];
+      const today = dayjs().format('YYYY-MM-DD');
+      let items = allItems.filter((item: Item) => {
+        if (groupId && item.project?.groupId !== groupId) return false;
+        return item.date === date
+          || (item.dateRangeStart && item.dateRangeEnd && date >= item.dateRangeStart && date <= item.dateRangeEnd);
+      });
+      const total = items.length;
+      const completed = items.filter((i: Item) => i.status === 'completed').length;
+      const abandoned = items.filter((i: Item) => i.status === 'abandoned').length;
+      const isOverdueDate = date < today;
+      const overdue = isOverdueDate ? items.filter((i: Item) => i.status !== 'completed' && i.status !== 'abandoned').length : 0;
+      const pending = total - completed - abandoned - overdue;
+      return { date, total, completed, abandoned, pending, overdue };
+    },
+
     // 从 projects 计算所有习惯
     habits: (state): Habit[] => {
       const habits: Habit[] = [];

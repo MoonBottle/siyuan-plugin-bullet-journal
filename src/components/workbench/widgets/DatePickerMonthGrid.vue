@@ -42,12 +42,10 @@
             cell.date && cell.date === rangeStart,
           'date-picker-month-grid__cell--range-end':
             cell.date && cell.date === rangeEnd,
-          'date-picker-month-grid__cell--planned': hasPlanned(cell.summary),
-          'date-picker-month-grid__cell--focused':
-            cell.summary.actualMinutes > 0,
-          'date-picker-month-grid__cell--unplanned-focus': hasFocusedOnly(
-            cell.summary,
-          ),
+          'date-picker-month-grid__cell--pending': hasPending(cell.summary),
+          'date-picker-month-grid__cell--overdue': hasOverdue(cell.summary),
+          'date-picker-month-grid__cell--completed':
+            hasCompleted(cell.summary) && !hasPending(cell.summary) && !hasOverdue(cell.summary),
         }"
         :data-testid="
           cell.date ? `date-picker-month-cell-${cell.date}` : undefined
@@ -66,15 +64,9 @@
               v-if="hasMarker(cell.summary)"
               class="date-picker-month-grid__dot"
               :class="{
-                'date-picker-month-grid__dot--planned': hasPlannedOnly(
-                  cell.summary,
-                ),
-                'date-picker-month-grid__dot--focused': hasFocusedOnly(
-                  cell.summary,
-                ),
-                'date-picker-month-grid__dot--hybrid': hasPlannedAndFocused(
-                  cell.summary,
-                ),
+                'date-picker-month-grid__dot--overdue': getDotType(cell.summary) === 'overdue',
+                'date-picker-month-grid__dot--pending': getDotType(cell.summary) === 'pending',
+                'date-picker-month-grid__dot--completed': getDotType(cell.summary) === 'completed',
               }"
             ></span>
           </span>
@@ -85,21 +77,21 @@
     <div class="date-picker-month-grid__legend">
       <span class="date-picker-month-grid__legend-item">
         <span
-          class="date-picker-month-grid__dot date-picker-month-grid__dot--planned"
+          class="date-picker-month-grid__dot date-picker-month-grid__dot--overdue"
         ></span>
-        <span>{{ t('focusWorkbench').calendarLegendPlanned }}</span>
+        <span>{{ t('datePicker').legendOverdue }}</span>
       </span>
       <span class="date-picker-month-grid__legend-item">
         <span
-          class="date-picker-month-grid__dot date-picker-month-grid__dot--focused"
+          class="date-picker-month-grid__dot date-picker-month-grid__dot--pending"
         ></span>
-        <span>{{ t('focusWorkbench').calendarLegendFocused }}</span>
+        <span>{{ t('datePicker').legendPending }}</span>
       </span>
       <span class="date-picker-month-grid__legend-item">
         <span
-          class="date-picker-month-grid__dot date-picker-month-grid__dot--hybrid"
+          class="date-picker-month-grid__dot date-picker-month-grid__dot--completed"
         ></span>
-        <span>{{ t('focusWorkbench').calendarLegendHybrid }}</span>
+        <span>{{ t('datePicker').legendCompleted }}</span>
       </span>
     </div>
   </div>
@@ -109,28 +101,28 @@
 import { computed, ref, watch } from 'vue';
 import dayjs from '@/utils/dayjs';
 import { getCurrentLocale, t } from '@/i18n';
-import type { FocusPlanDailySummary } from '@/utils/focusPlanReview';
+import type { DatePickerDailySummary } from './datePickerUtils';
 import {
   emptySummary,
   getCellMarkerLabel,
-  hasFocusedOnly,
+  getDotType,
+  hasCompleted,
   hasMarker,
-  hasPlanned,
-  hasPlannedAndFocused,
-  hasPlannedOnly,
+  hasOverdue,
+  hasPending,
 } from './datePickerUtils';
 
 type CalendarCell = {
   date: string;
   dayNum: number;
-  summary: FocusPlanDailySummary;
+  summary: DatePickerDailySummary;
 };
 
 const props = defineProps<{
   selectedDate: string;
   rangeStart: string;
   rangeEnd: string;
-  getSummaryByDate: (date: string) => FocusPlanDailySummary;
+  getSummaryByDate: (date: string) => DatePickerDailySummary;
 }>();
 
 const emit = defineEmits<{
@@ -301,13 +293,19 @@ function isInRange(date: string): boolean {
   border-color: var(--b3-theme-primary);
 }
 
-.date-picker-month-grid__cell--focused:not(
+.date-picker-month-grid__cell--overdue:not(
+  .date-picker-month-grid__cell--selected
+) {
+  background: rgba(210, 63, 49, 0.08);
+}
+
+.date-picker-month-grid__cell--completed:not(
   .date-picker-month-grid__cell--selected
 ) {
   background: var(--b3-theme-surface);
 }
 
-.date-picker-month-grid__cell--planned
+.date-picker-month-grid__cell--pending
   .date-picker-month-grid__day-num {
   font-weight: 600;
 }
@@ -329,27 +327,22 @@ function isInRange(date: string): boolean {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: var(--b3-theme-surface-lighter);
   transition:
     transform 0.2s ease,
     background 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.date-picker-month-grid__dot--planned {
-  background: var(--b3-theme-surface-lighter);
+.date-picker-month-grid__dot--overdue {
+  background: var(--b3-theme-error);
 }
 
-.date-picker-month-grid__dot--focused {
-  background: var(--b3-theme-primary);
+.date-picker-month-grid__dot--pending {
+  background: var(--b3-theme-secondary);
 }
 
-.date-picker-month-grid__dot--hybrid {
-  background: var(--b3-theme-primary);
-  box-shadow:
-    0 0 0 1px var(--b3-theme-background),
-    0 0 0 2px var(--b3-theme-primary-light);
-  transform: scale(1.1);
+.date-picker-month-grid__dot--completed {
+  background: var(--b3-theme-success);
 }
 
 .date-picker-month-grid__legend {
