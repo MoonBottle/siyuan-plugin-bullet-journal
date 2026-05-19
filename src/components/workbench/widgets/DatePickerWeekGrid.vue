@@ -50,7 +50,7 @@
         :data-testid="`date-picker-week-cell-${date}`"
         type="button"
         :title="getCellMarkerLabel(getSummaryByDate(date))"
-        @click="emit('date-click', date, $event)"
+        @click="emit('date-click', date, $event); ($event.currentTarget as HTMLElement)?.blur()"
       >
         <span class="date-picker-week-grid__day-num">{{
           dayjs(date).format('D')

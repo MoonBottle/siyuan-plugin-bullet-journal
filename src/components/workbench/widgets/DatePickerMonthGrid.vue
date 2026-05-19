@@ -53,7 +53,7 @@
         :disabled="!cell.date"
         type="button"
         :title="cell.date ? getCellMarkerLabel(cell.summary) : ''"
-        @click="cell.date && emit('date-click', cell.date, $event)"
+        @click="cell.date && (emit('date-click', cell.date, $event), ($event.currentTarget as HTMLElement)?.blur())"
       >
         <template v-if="cell.date">
           <span class="date-picker-month-grid__day-num">{{
