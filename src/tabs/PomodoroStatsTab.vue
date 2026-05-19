@@ -41,6 +41,7 @@ import AnnualHeatmap from '@/components/pomodoro/stats/AnnualHeatmap.vue';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
+  viewConfig?: Record<string, unknown>;
 }>(), {
   embedded: false,
 });
@@ -56,7 +57,7 @@ const projectStore = useProjectStore();
 
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'pomodoro-stats:manual-refresh',
     });

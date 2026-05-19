@@ -99,6 +99,25 @@
     "dashboardPlaceholder": "仪表盘画布将在下一步接入",
     "unsupportedView": "暂不支持该工作台视图"
   },
+  "datePicker": {
+    "title": "日期选择器",
+    "month": "月",
+    "week": "周",
+    "defaultView": "默认视图",
+    "groupFilter": "分组筛选",
+    "linkage": "组件联动",
+    "addLinkage": "添加联动",
+    "emptyLinkage": "点击添加联动规则",
+    "editLinkage": "编辑联动规则",
+    "deleteLinkage": "删除联动规则",
+    "legendOverdue": "过期",
+    "legendPending": "待办",
+    "legendCompleted": "已完成",
+    "selectTarget": "选择目标组件",
+    "fieldMapping": "字段关联",
+    "dateRangeSource": "日历日期范围",
+    "dateRangeTarget": "待办时间过滤"
+  },
   "quadrant": {
     "title": "四象限",
     "placeholder": "四象限视图即将推出",
@@ -126,7 +145,7 @@
     }
   },
   "project": {
-    "title": "项目列表",
+    "title": "项目工作台",
     "taskCount": "任务数",
     "tasksUnit": "个任务",
     "itemsLabel": "事项",
@@ -152,7 +171,9 @@
     "completedCount": "已完成",
     "abandonedCount": "已放弃",
     "openDocument": "打开文档",
-    "linked": "有链接"
+    "linked": "有链接",
+    "resetColumnWidths": "重置列宽",
+    "resetColumnWidthsTooltip": "恢复默认列宽比例"
   },
   "todo": {
     "title": "待办事项",
@@ -807,7 +828,7 @@
     "pomodoroCount": "番茄数",
     "durationMinutes": "分钟数"
   },
-  "focusReview": {
+  "focusWorkbench": {
     "title": "专注工作台",
     "openReview": "打开专注工作台",
     "addPlan": "添加预计",

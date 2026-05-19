@@ -1,118 +1,111 @@
 <template>
-  <div class="focus-review-view" data-testid="focus-review-view">
-    <aside class="focus-review-view__sidebar">
-      <FocusReviewMiniCalendar
+  <div class="focus-workbench-view" data-testid="focus-workbench-view">
+    <aside class="focus-workbench-view__sidebar">
+      <FocusWorkbenchMiniCalendar
         v-model="selectedDate"
         :get-summary-by-date="getSummaryByDate"
       />
 
-      <div class="focus-review-view__selected-date">
+      <div class="focus-workbench-view__selected-date">
         <div>
-          <div class="focus-review-view__selected-date-title">{{ selectedDateLabel }}</div>
-          <div class="focus-review-view__selected-date-subtitle">{{ selectedDateSubtitle }}</div>
+          <div class="focus-workbench-view__selected-date-title">{{ selectedDateLabel }}</div>
+          <div class="focus-workbench-view__selected-date-subtitle">{{ selectedDateSubtitle }}</div>
         </div>
       </div>
 
-      <div class="focus-review-view__summary-grid">
-        <div class="focus-review-view__summary-card">
-          <div class="focus-review-view__summary-label">{{ t('focusReview').plannedTotal }}</div>
-          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.estimatedMinutes) }}</div>
+      <div class="focus-workbench-view__summary-grid">
+        <div class="focus-workbench-view__summary-card">
+          <div class="focus-workbench-view__summary-label">{{ t('focusWorkbench').plannedTotal }}</div>
+          <div class="focus-workbench-view__summary-value">{{ formatDuration(selectedSummary.estimatedMinutes) }}</div>
         </div>
-        <div class="focus-review-view__summary-card">
-          <div class="focus-review-view__summary-label">{{ t('focusReview').actualTotal }}</div>
-          <div class="focus-review-view__summary-value">{{ formatDuration(selectedSummary.actualMinutes) }}</div>
+        <div class="focus-workbench-view__summary-card">
+          <div class="focus-workbench-view__summary-label">{{ t('focusWorkbench').actualTotal }}</div>
+          <div class="focus-workbench-view__summary-value">{{ formatDuration(selectedSummary.actualMinutes) }}</div>
         </div>
-        <div class="focus-review-view__summary-card">
-          <div class="focus-review-view__summary-label">{{ t('focusReview').varianceTotal }}</div>
-          <div class="focus-review-view__summary-value">{{ summaryVarianceDisplay }}</div>
+        <div class="focus-workbench-view__summary-card">
+          <div class="focus-workbench-view__summary-label">{{ t('focusWorkbench').varianceTotal }}</div>
+          <div class="focus-workbench-view__summary-value">{{ summaryVarianceDisplay }}</div>
         </div>
       </div>
 
-      <div class="focus-review-view__group-filter">
+      <div class="focus-workbench-view__group-filter">
         <SySelect
           :model-value="selectedGroup"
           :options="groupOptions"
           :placeholder="t('settings').projectGroups.allGroups"
-          class="focus-review-view__group-select"
+          class="focus-workbench-view__group-select"
           @update:model-value="handleGroupChange"
         />
       </div>
 
-      <div v-if="statusFilters.length > 0" class="focus-review-view__filters">
+      <div v-if="statusFilters.length > 0" class="focus-workbench-view__filters">
         <button
           v-for="filter in statusFilters"
           :key="filter.value"
-          class="focus-review-view__filter-pill"
+          class="focus-workbench-view__filter-pill"
           :class="{ 'is-active': activeStatus === filter.value }"
           type="button"
           @click="activeStatus = filter.value"
         >
           <span>{{ filter.label }}</span>
-          <span class="focus-review-view__filter-count">{{ filter.count }}</span>
+          <span class="focus-workbench-view__filter-count">{{ filter.count }}</span>
         </button>
       </div>
 
-      <div class="focus-review-view__toolbar">
+      <div class="focus-workbench-view__toolbar">
         <button
           v-if="canAddFocusPlan"
-          class="focus-review-view__toolbar-button"
-          data-testid="focus-review-add-plan"
+          class="focus-workbench-view__toolbar-button"
+          data-testid="focus-workbench-add-plan"
           type="button"
           @click="handleAddFocusPlan"
         >
-          {{ t('focusReview').addPlan }}
+          {{ t('focusWorkbench').addPlan }}
         </button>
       </div>
 
-      <div v-if="filteredEntries.length > 0" class="focus-review-view__list" data-testid="focus-review-list">
+      <div v-if="filteredEntries.length > 0" class="focus-workbench-view__list" data-testid="focus-workbench-list">
         <button
           v-for="entry in filteredEntries"
           :key="entry.blockId ?? entry.itemId"
-          class="focus-review-view__list-item"
+          class="focus-workbench-view__list-item"
           :class="{ 'is-active': selectedEntryKey === getEntryKey(entry) }"
           type="button"
           @click="selectEntry(entry)"
         >
-          <div class="focus-review-view__list-item-top">
-            <span class="focus-review-view__list-item-title">{{ entry.itemContent || entry.itemId }}</span>
-            <span class="focus-review-view__list-item-status" :data-status="entry.reviewStatus">
+          <div class="focus-workbench-view__list-item-top">
+            <span class="focus-workbench-view__list-item-title">{{ entry.itemContent || entry.itemId }}</span>
+            <span class="focus-workbench-view__list-item-status" :data-status="entry.reviewStatus">
               {{ getStatusLabel(entry.reviewStatus) }}
             </span>
           </div>
-          <div class="focus-review-view__list-item-meta">
+          <div class="focus-workbench-view__list-item-meta">
             <span>{{ formatDuration(entry.actualMinutes) }} / {{ formatDuration(entry.estimatedMinutes) }}</span>
             <span>{{ formatDelta(entry.deltaMinutes) }}</span>
           </div>
         </button>
       </div>
 
-      <div v-else class="focus-review-view__empty" data-testid="focus-review-empty">
-        <div class="focus-review-view__empty-title">{{ t('focusReview').emptyTitle }}</div>
-        <div class="focus-review-view__empty-desc">{{ t('focusReview').emptyDesc }}</div>
+      <div v-else class="focus-workbench-view__empty" data-testid="focus-workbench-empty">
+        <div class="focus-workbench-view__empty-title">{{ t('focusWorkbench').emptyTitle }}</div>
+        <div class="focus-workbench-view__empty-desc">{{ t('focusWorkbench').emptyDesc }}</div>
         <button
           v-if="canAddFocusPlan"
-          class="focus-review-view__empty-action"
+          class="focus-workbench-view__empty-action"
           type="button"
           @click="handleAddFocusPlan"
         >
-          {{ t('focusReview').emptyAction }}
+          {{ t('focusWorkbench').emptyAction }}
         </button>
       </div>
     </aside>
 
-    <section class="focus-review-view__detail">
-      <div v-if="selectedEntry" class="focus-review-view__detail-surface" data-testid="focus-review-detail">
-        <div class="focus-review-view__detail-header">
-          <div>
-            <div class="focus-review-view__detail-title">{{ selectedEntry.itemContent || selectedEntry.itemId }}</div>
-            <div class="focus-review-view__detail-subtitle">{{ t('focusReview').detailTitle }}</div>
-          </div>
-        </div>
-
-          <div class="focus-review-view__detail-layout">
-            <div class="focus-review-view__detail-panel focus-review-view__detail-panel--item">
-            <div class="focus-review-view__detail-panel-header">{{ t('todo').item }}</div>
-            <div v-if="selectedItem" class="focus-review-view__detail-panel-body">
+    <section class="focus-workbench-view__detail">
+      <div v-if="selectedEntry" class="focus-workbench-view__detail-surface" data-testid="focus-workbench-detail">
+          <div class="focus-workbench-view__detail-layout">
+            <div class="focus-workbench-view__detail-panel focus-workbench-view__detail-panel--item">
+            <div class="focus-workbench-view__detail-panel-header">{{ t('todo').item }}</div>
+            <div v-if="selectedItem" class="focus-workbench-view__detail-panel-body">
               <ItemDetailContent
                 :item="selectedItem"
                 :show-all-dates="false"
@@ -121,51 +114,56 @@
               />
               <ItemActionBar :item="selectedItem" open-doc-mode="preview" />
             </div>
-            <div v-else class="focus-review-view__detail-panel-empty">
-              <div class="focus-review-view__empty-title">{{ t('focusReview').detailEmptyTitle }}</div>
-              <div class="focus-review-view__empty-desc">{{ detailEmptyDesc }}</div>
+            <div v-else class="focus-workbench-view__detail-panel-empty">
+              <div class="focus-workbench-view__empty-title">{{ t('focusWorkbench').detailEmptyTitle }}</div>
+                <div class="focus-workbench-view__empty-desc">{{ detailEmptyDesc }}</div>
             </div>
           </div>
 
-          <div class="focus-review-view__detail-lower">
-            <div class="focus-review-view__detail-panel">
-              <div class="focus-review-view__detail-panel-header">{{ t('focusReview').overviewTitle }}</div>
-              <div class="focus-review-view__detail-panel-body focus-review-view__detail-panel-body--summary">
-                <div class="focus-review-view__detail-grid">
-                  <div class="focus-review-view__detail-card">
-                    <div class="focus-review-view__detail-label">{{ t('focusPlan').estimatedShort }}</div>
-                    <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.estimatedMinutes) }}</div>
+          <div class="focus-workbench-view__detail-lower">
+            <div class="focus-workbench-view__detail-panel">
+              <div class="focus-workbench-view__detail-panel-header">{{ t('focusWorkbench').overviewTitle }}</div>
+              <div class="focus-workbench-view__detail-panel-body focus-workbench-view__detail-panel-body--summary">
+                <div class="focus-workbench-view__detail-grid">
+                  <div class="focus-workbench-view__detail-card">
+                    <div class="focus-workbench-view__detail-label">{{ t('focusPlan').estimatedShort }}</div>
+                    <div class="focus-workbench-view__detail-value">{{ formatDuration(selectedEntry.estimatedMinutes) }}</div>
                   </div>
-                  <div class="focus-review-view__detail-card">
-                    <div class="focus-review-view__detail-label">{{ t('focusReview').actualTotal }}</div>
-                    <div class="focus-review-view__detail-value">{{ formatDuration(selectedEntry.actualMinutes) }}</div>
+                  <div class="focus-workbench-view__detail-card">
+                    <div class="focus-workbench-view__detail-label">{{ t('focusWorkbench').actualTotal }}</div>
+                    <div class="focus-workbench-view__detail-value">{{ formatDuration(selectedEntry.actualMinutes) }}</div>
                   </div>
-                  <div class="focus-review-view__detail-card">
-                    <div class="focus-review-view__detail-label">{{ t('focusReview').variance }}</div>
-                    <div class="focus-review-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
+                  <div class="focus-workbench-view__detail-card">
+                    <div class="focus-workbench-view__detail-label">{{ t('focusWorkbench').variance }}</div>
+                    <div class="focus-workbench-view__detail-value">{{ formatDelta(selectedEntry.deltaMinutes) }}</div>
                   </div>
-                  <div class="focus-review-view__detail-card">
-                    <div class="focus-review-view__detail-label">状态</div>
-                    <div class="focus-review-view__detail-value">{{ getStatusLabel(selectedEntry.reviewStatus) }}</div>
+                  <div class="focus-workbench-view__detail-card">
+                    <div class="focus-workbench-view__detail-label">状态</div>
+                    <div class="focus-workbench-view__detail-value">{{ getStatusLabel(selectedEntry.reviewStatus) }}</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <FocusReviewRecordPane
-              :records="selectedItem?.pomodoros ?? []"
-              :item-content="selectedEntry.itemContent || selectedItem?.content"
-              :title="t('pomodoroStats').focusRecords"
-              :empty-title="t('pomodoroStats').noData"
-              :empty-desc="detailEmptyDesc"
-            />
+            <div class="focus-workbench-view__detail-panel">
+              <div class="focus-workbench-view__detail-panel-header">{{ t('pomodoroStats').focusRecords }}</div>
+              <div class="focus-workbench-view__detail-panel-body">
+                <FocusWorkbenchRecordPane
+                  :records="selectedItem?.pomodoros ?? []"
+                  :item-content="selectedEntry.itemContent || selectedItem?.content"
+                  :title="''"
+                  :empty-title="t('pomodoroStats').noData"
+                  :empty-desc="detailEmptyDesc"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div v-else class="focus-review-view__detail-empty" data-testid="focus-review-detail-empty">
-        <div class="focus-review-view__empty-title">{{ t('focusReview').detailEmptyTitle }}</div>
-        <div class="focus-review-view__empty-desc">{{ detailEmptyDesc }}</div>
+      <div v-else class="focus-workbench-view__detail-empty" data-testid="focus-workbench-detail-empty">
+        <div class="focus-workbench-view__empty-title">{{ t('focusWorkbench').detailEmptyTitle }}</div>
+        <div class="focus-workbench-view__empty-desc">{{ detailEmptyDesc }}</div>
       </div>
     </section>
   </div>
@@ -180,8 +178,8 @@ import type { FocusPlanDailyReviewEntry, FocusPlanReviewStatus } from '@/utils/f
 import type { Item } from '@/types/models';
 import { showFocusPlanItemPickerDialog, showMessage } from '@/utils/dialog';
 import dayjs from '@/utils/dayjs';
-import FocusReviewMiniCalendar from '@/components/pomodoro/review/FocusReviewMiniCalendar.vue';
-import FocusReviewRecordPane from '@/components/pomodoro/review/FocusReviewRecordPane.vue';
+import FocusWorkbenchMiniCalendar from '@/components/pomodoro/review/FocusWorkbenchMiniCalendar.vue';
+import FocusWorkbenchRecordPane from '@/components/pomodoro/review/FocusWorkbenchRecordPane.vue';
 import ItemDetailContent from '@/components/dialog/ItemDetailContent.vue';
 import ItemActionBar from '@/components/todo/ItemActionBar.vue';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
@@ -189,6 +187,10 @@ import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 const plugin = usePlugin() as any;
+
+const props = defineProps<{
+  initialGroupId?: string;
+}>();
 
 const activeStatus = ref<'all' | FocusPlanReviewStatus>('all');
 const selectedEntryKey = ref<string>('');
@@ -207,15 +209,15 @@ const selectedSummary = computed(() => projectStore.getFocusPlanSummaryByDate(se
 const selectedDateLabel = computed(() => dayjs(selectedDate.value).format('M月D日'));
 const selectedDateSubtitle = computed(() => {
   const today = dayjs().format('YYYY-MM-DD');
-  if (selectedDate.value === today) return t('focusReview').todayList;
-  if (selectedDate.value < today) return t('focusReview').historyList;
-  return t('focusReview').futureList;
+  if (selectedDate.value === today) return t('focusWorkbench').todayList;
+  if (selectedDate.value < today) return t('focusWorkbench').historyList;
+  return t('focusWorkbench').futureList;
 });
 const detailEmptyDesc = computed(() => {
   const today = dayjs().format('YYYY-MM-DD');
-  if (selectedDate.value === today) return t('focusReview').detailEmptyDescToday;
-  if (selectedDate.value < today) return t('focusReview').detailEmptyDescHistory;
-  return t('focusReview').detailEmptyDescFuture;
+  if (selectedDate.value === today) return t('focusWorkbench').detailEmptyDescToday;
+  if (selectedDate.value < today) return t('focusWorkbench').detailEmptyDescHistory;
+  return t('focusWorkbench').detailEmptyDescFuture;
 });
 const canAddFocusPlan = computed(() => selectedDate.value >= dayjs().format('YYYY-MM-DD'));
 const summaryVarianceDisplay = computed(() => {
@@ -226,7 +228,7 @@ const statusFilters = computed(() => {
   const entries = selectedEntries.value;
   if (entries.length === 0) return [];
   return [
-    { value: 'all' as const, label: t('focusReview').all, count: entries.length },
+    { value: 'all' as const, label: t('focusWorkbench').all, count: entries.length },
     { value: 'overrun' as const, label: getStatusLabel('overrun'), count: entries.filter(entry => entry.reviewStatus === 'overrun').length },
     { value: 'underrun' as const, label: getStatusLabel('underrun'), count: entries.filter(entry => entry.reviewStatus === 'underrun').length },
     { value: 'in-progress' as const, label: getStatusLabel('in-progress'), count: entries.filter(entry => entry.reviewStatus === 'in-progress').length },
@@ -260,7 +262,7 @@ watch(filteredEntries, (entries) => {
   }
 }, { immediate: true });
 watch(selectedGroup, (groupId) => {
-  settingsStore.focusReview.selectedGroup = groupId;
+  settingsStore.focusWorkbench.selectedGroup = groupId;
   settingsStore.saveToPlugin();
 });
 watch(groupOptions, (options) => {
@@ -274,7 +276,8 @@ function getEntryKey(entry: FocusPlanDailyReviewEntry): string {
 }
 
 function resolveInitialGroup() {
-  const preferredGroup = settingsStore.focusReview.selectedGroup || settingsStore.defaultGroup || '';
+  if (props.initialGroupId) return props.initialGroupId;
+  const preferredGroup = settingsStore.focusWorkbench.selectedGroup || settingsStore.defaultGroup || '';
   if (!preferredGroup) return '';
   return settingsStore.groups.some(group => group.id === preferredGroup) ? preferredGroup : '';
 }
@@ -288,7 +291,7 @@ function selectEntry(entry: FocusPlanDailyReviewEntry) {
 }
 
 function getStatusLabel(status: FocusPlanReviewStatus): string {
-  return t('focusReview').status[status];
+  return t('focusWorkbench').status[status];
 }
 
 function getSummaryByDate(date: string) {
@@ -320,9 +323,9 @@ function formatDelta(delta: number): string {
 
 async function handleRefresh() {
   if (!plugin) return;
-  await plugin.requestDataRefresh?.({
+  await plugin.requestRefresh?.({
     type: 'full',
-    reason: 'focus-review:manual-refresh',
+    reason: 'focus-workbench:manual-refresh',
   });
   settingsStore.loadFromPlugin();
   showMessage(t('common').dataRefreshed);
@@ -334,15 +337,15 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-.focus-review-view {
+.focus-workbench-view {
   display: flex;
   gap: 16px;
   min-height: 0;
   height: 100%;
 }
 
-.focus-review-view__sidebar,
-.focus-review-view__detail {
+.focus-workbench-view__sidebar,
+.focus-workbench-view__detail {
   min-height: 0;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 12px;
@@ -350,7 +353,7 @@ defineExpose({
   overflow: hidden;
 }
 
-.focus-review-view__sidebar {
+.focus-workbench-view__sidebar {
   width: 400px;
   min-width: 380px;
   display: flex;
@@ -359,77 +362,59 @@ defineExpose({
   box-sizing: border-box;
 }
 
-.focus-review-view__detail-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.focus-review-view__detail-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--b3-theme-on-background);
-}
-
-.focus-review-view__detail-subtitle {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--b3-theme-on-surface);
-}
-
-.focus-review-view__summary-grid {
+.focus-workbench-view__summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 12px;
 }
 
-.focus-review-view__summary-card,
-.focus-review-view__detail-card {
+.focus-workbench-view__summary-card,
+.focus-workbench-view__detail-card {
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 10px;
   background: var(--b3-theme-surface);
 }
 
-.focus-review-view__summary-card,
-.focus-review-view__detail-card {
+.focus-workbench-view__summary-card,
+.focus-workbench-view__detail-card {
   padding: 12px;
 }
 
-.focus-review-view__summary-label,
-.focus-review-view__detail-label {
+.focus-workbench-view__summary-label,
+.focus-workbench-view__detail-label {
   font-size: 12px;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-view__summary-value,
-.focus-review-view__detail-value {
+.focus-workbench-view__summary-value,
+.focus-workbench-view__detail-value {
   margin-top: 6px;
   font-size: 22px;
   font-weight: 600;
   color: var(--b3-theme-primary);
 }
 
-.focus-review-view__summary-value {
+.focus-workbench-view__summary-value {
   font-size: 18px;
 }
 
-.focus-review-view__group-filter {
+.focus-workbench-view__group-filter {
   margin-top: 14px;
 }
 
-.focus-review-view__group-select {
+.focus-workbench-view__group-select {
   width: 100%;
 }
 
-.focus-review-view__filters {
+.focus-workbench-view__filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 16px;
 }
 
-.focus-review-view__filter-pill {
+.focus-workbench-view__filter-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -447,18 +432,18 @@ defineExpose({
   }
 }
 
-.focus-review-view__filter-count {
+.focus-workbench-view__filter-count {
   font-size: 12px;
   opacity: 0.75;
 }
 
-.focus-review-view__toolbar {
+.focus-workbench-view__toolbar {
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
 }
 
-.focus-review-view__toolbar-button {
+.focus-workbench-view__toolbar-button {
   padding: 0;
   border: none;
   background: transparent;
@@ -467,7 +452,7 @@ defineExpose({
   cursor: pointer;
 }
 
-.focus-review-view__list {
+.focus-workbench-view__list {
   flex: 1;
   min-height: 0;
   margin-top: 16px;
@@ -477,23 +462,23 @@ defineExpose({
   overflow: auto;
 }
 
-.focus-review-view__selected-date {
+.focus-workbench-view__selected-date {
   margin-top: 12px;
 }
 
-.focus-review-view__selected-date-title {
+.focus-workbench-view__selected-date-title {
   font-size: 16px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
 }
 
-.focus-review-view__selected-date-subtitle {
+.focus-workbench-view__selected-date-subtitle {
   margin-top: 2px;
   font-size: 12px;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-view__list-item {
+.focus-workbench-view__list-item {
   width: 100%;
   text-align: left;
   padding: 12px;
@@ -508,32 +493,32 @@ defineExpose({
   }
 }
 
-.focus-review-view__list-item-top,
-.focus-review-view__list-item-meta {
+.focus-workbench-view__list-item-top,
+.focus-workbench-view__list-item-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.focus-review-view__list-item-title {
+.focus-workbench-view__list-item-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
 }
 
-.focus-review-view__list-item-meta {
+.focus-workbench-view__list-item-meta {
   margin-top: 8px;
   font-size: 12px;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-view__list-item-status {
+.focus-workbench-view__list-item-status {
   font-size: 12px;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-view__detail {
+.focus-workbench-view__detail {
   flex: 1;
   min-width: 0;
   padding: 20px;
@@ -541,27 +526,26 @@ defineExpose({
   display: flex;
 }
 
-.focus-review-view__detail-surface,
-.focus-review-view__detail-empty {
+.focus-workbench-view__detail-surface,
+.focus-workbench-view__detail-empty {
   flex: 1;
   min-height: 0;
 }
 
-.focus-review-view__detail-surface {
+.focus-workbench-view__detail-surface {
   display: flex;
   flex-direction: column;
 }
 
-.focus-review-view__detail-layout {
+.focus-workbench-view__detail-layout {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-height: 0;
-  margin-top: 20px;
   flex: 1;
 }
 
-.focus-review-view__detail-lower {
+.focus-workbench-view__detail-lower {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
@@ -569,14 +553,14 @@ defineExpose({
   flex: 1;
 }
 
-.focus-review-view__detail-grid {
+.focus-workbench-view__detail-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
   align-content: start;
 }
 
-.focus-review-view__detail-panel {
+.focus-workbench-view__detail-panel {
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -585,7 +569,7 @@ defineExpose({
   background: var(--b3-theme-surface);
 }
 
-.focus-review-view__detail-panel-header {
+.focus-workbench-view__detail-panel-header {
   padding: 12px 14px;
   border-bottom: 1px solid var(--b3-theme-surface-lighter);
   font-size: 14px;
@@ -593,30 +577,30 @@ defineExpose({
   color: var(--b3-theme-on-background);
 }
 
-.focus-review-view__detail-panel-body,
-.focus-review-view__detail-panel-empty {
+.focus-workbench-view__detail-panel-body,
+.focus-workbench-view__detail-panel-empty {
   flex: 1;
   min-height: 0;
   padding: 14px;
 }
 
-.focus-review-view__detail-panel-body {
+.focus-workbench-view__detail-panel-body {
   overflow-y: auto;
 }
 
-.focus-review-view__detail-panel-body--summary {
-  overflow: visible;
+.focus-workbench-view__detail-panel-body--summary {
+  overflow-y: auto;
 }
 
-.focus-review-view__detail-panel-body--summary .focus-review-view__detail-card {
+.focus-workbench-view__detail-panel-body--summary .focus-workbench-view__detail-card {
   background: var(--b3-theme-background);
 }
 
-.focus-review-view__detail-panel--item :deep(.item-detail-cards) {
+.focus-workbench-view__detail-panel--item :deep(.item-detail-cards) {
   gap: 10px;
 }
 
-.focus-review-view__detail-panel-empty {
+.focus-workbench-view__detail-panel-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -624,8 +608,8 @@ defineExpose({
   text-align: center;
 }
 
-.focus-review-view__empty,
-.focus-review-view__detail-empty {
+.focus-workbench-view__empty,
+.focus-workbench-view__detail-empty {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -635,25 +619,25 @@ defineExpose({
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-view__empty {
+.focus-workbench-view__empty {
   flex: 1;
   min-height: 0;
   margin-top: 16px;
 }
 
-.focus-review-view__empty-title {
+.focus-workbench-view__empty-title {
   font-size: 16px;
   font-weight: 600;
   color: var(--b3-theme-on-background);
 }
 
-.focus-review-view__empty-desc {
+.focus-workbench-view__empty-desc {
   max-width: 440px;
   font-size: 13px;
   line-height: 1.6;
 }
 
-.focus-review-view__empty-action {
+.focus-workbench-view__empty-action {
   margin-top: 4px;
   padding: 8px 14px;
   border: 1px solid var(--b3-theme-primary);
@@ -664,19 +648,19 @@ defineExpose({
 }
 
 @media (max-width: 960px) {
-  .focus-review-view {
+  .focus-workbench-view {
     flex-direction: column;
   }
 
-  .focus-review-view__sidebar {
+  .focus-workbench-view__sidebar {
     width: 100%;
   }
 
-  .focus-review-view__summary-grid {
+  .focus-workbench-view__summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .focus-review-view__detail-lower {
+  .focus-workbench-view__detail-lower {
     grid-template-columns: 1fr;
   }
 }

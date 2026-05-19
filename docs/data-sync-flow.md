@@ -33,6 +33,11 @@
 
 它解决的是“要刷什么、为什么刷、怎么描述这次刷新”。
 
+这里要和 UI 侧 imperative facade 区分开：
+
+- `submitRefreshRequest()` 适合非 UI、解耦触发方提交刷新请求
+- 需要 `await` 刷新稳定完成的 UI/交互场景，应该调用 `plugin.requestRefresh(...)`
+
 ### `src/utils/eventBus.ts`
 
 负责“事件通道”：
@@ -65,6 +70,13 @@
 - `refreshFull()` 全量刷新
 
 这里是真正重算项目、事项、habit/todo 数据的地方。
+
+### `src/index.ts`
+
+这里同时承担两层职责：
+
+- 暴露 `plugin.requestRefresh()`，作为 UI 侧统一的可 `await` 刷新 facade
+- 接收 `submitRefreshRequest()` 投递进来的协议对象，并进入 coordinator / store 主链路
 
 ## 2. 刷新请求类型
 
@@ -133,6 +145,28 @@ flowchart TD
 3. `processRefreshRequest()` 本身不会再本地 emit `DATA_REFRESHED`
 
 ## 4. 触发源分类
+
+### A0. UI / 交互侧直接触发
+
+这类场景直接走：
+
+```ts
+await plugin.requestRefresh({
+  type: 'full',
+  reason: 'some-ui-action',
+})
+```
+
+典型用途：
+
+- 手动刷新按钮
+- 交互写操作后立即等待刷新完成
+- 创建示例文档后刷新
+
+关键约束：
+
+- 这类场景依赖 `await` 完成语义
+- 不要用 `submitRefreshRequest()` 代替
 
 ### A. 插件主类直接触发
 
@@ -212,6 +246,8 @@ submitRefreshRequest(createFullRefreshRequest(...))
 ```
 
 这样所有请求最终仍汇入 `index.ts`。
+
+这一层更偏“协议提交”，而不是“等待刷新完成再继续执行”的 imperative 调用。
 
 ## 5. coordinator 合并规则
 
@@ -455,6 +491,7 @@ coordinator 只负责把 request 交给 `runDirectedRefresh(docIds)`，实际是
 ```mermaid
 flowchart LR
     subgraph Triggers[触发源]
+      A0[UI await plugin.requestRefresh]
       A1[onDataChanged]
       A2[LOCAL_DATA_MUTATED]
       A3[ws-main]
@@ -486,6 +523,7 @@ flowchart LR
       E2[Habit Pomodoro Stats]
     end
 
+    A0 --> C1
     A1 --> B1
     A2 --> B2
     A3 --> B1

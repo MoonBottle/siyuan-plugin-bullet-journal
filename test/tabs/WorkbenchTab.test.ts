@@ -12,7 +12,7 @@ const mockPlugin = { name: 'plugin' };
 const mockApp = { name: 'app' };
 const mockLoad = vi.fn(() => Promise.resolve());
 const mockSettingsLoadFromPlugin = vi.fn();
-const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
+const mockRequestRefresh = vi.fn(() => Promise.resolve());
 const mockEventBusOn = vi.fn(() => () => {});
 const mockRefreshChannelDispose = vi.fn();
 const mockCreateRefreshChannelGuard = vi.fn(() => ({
@@ -33,9 +33,12 @@ const mockCreateViewEntry = vi.fn(() => Promise.resolve({
   icon: 'iconList',
   order: 2,
   viewType: 'todo',
+  config: { preset: {} },
 }));
 const mockSetActiveEntry = vi.fn(() => Promise.resolve());
 const mockAddWidget = vi.fn(() => Promise.resolve());
+const mockSidebarCollapsed = ref(false);
+const mockToggleSidebar = vi.fn(() => Promise.resolve());
 const mockEntries = ref([
   {
     id: 'entry-dashboard',
@@ -52,6 +55,7 @@ const mockEntries = ref([
     icon: 'iconList',
     order: 1,
     viewType: 'todo',
+    config: { preset: {} },
   },
 ]);
 const mockActiveEntryId = ref<string | null>('entry-dashboard');
@@ -69,9 +73,9 @@ vi.mock('@/main', async () => {
   const actual = await vi.importActual<typeof import('@/main')>('@/main');
   return {
     ...actual,
-    usePlugin: vi.fn(() => ({ ...mockPlugin, requestDataRefresh: mockRequestDataRefresh })),
+    usePlugin: vi.fn(() => ({ ...mockPlugin, requestRefresh: mockRequestRefresh })),
     useApp: vi.fn(() => mockApp),
-    getCurrentPlugin: vi.fn(() => ({ ...mockPlugin, requestDataRefresh: mockRequestDataRefresh })),
+    getCurrentPlugin: vi.fn(() => ({ ...mockPlugin, requestRefresh: mockRequestRefresh })),
   };
 });
 
@@ -86,6 +90,13 @@ vi.mock('@/tabs/DesktopTodoDock.vue', () => ({
   default: {
     name: 'DesktopTodoDockStub',
     template: '<div data-testid="desktop-todo-dock-stub"></div>',
+  },
+}));
+
+vi.mock('@/components/workbench/view/AiChatView.vue', () => ({
+  default: {
+    name: 'AiChatViewStub',
+    template: '<div data-testid="ai-chat-view-stub"></div>',
   },
 }));
 
@@ -141,11 +152,39 @@ vi.mock('@/stores', async () => {
           mockActiveEntryId.value = id;
         },
         addWidget: mockAddWidget,
+        get sidebarCollapsed() {
+          return mockSidebarCollapsed.value;
+        },
+        toggleSidebar: mockToggleSidebar,
       };
       return store;
     },
   };
 });
+
+const mockViewConfigDialog = vi.fn();
+
+vi.mock('@/workbench/viewRegistry', () => ({
+  getViewDefinition: (viewType: string) => {
+    const defaults: Record<string, () => Record<string, unknown>> = {
+      todo: () => ({ preset: {} }),
+      habit: () => ({ habitScope: 'active' }),
+      quadrant: () => ({}),
+      pomodoroStats: () => ({ section: 'overview' }),
+      focusWorkbench: () => ({}),
+      project: () => ({}),
+      calendar: () => ({}),
+      gantt: () => ({}),
+    };
+    return {
+      type: viewType,
+      createDefaultConfig: defaults[viewType] ?? (() => ({})),
+      openConfigDialog: viewType === 'calendar' || viewType === 'gantt' || viewType === 'aiChat'
+        ? undefined
+        : mockViewConfigDialog,
+    };
+  },
+}));
 
 describe('Workbench tab constants', () => {
   it('exposes workbench tab type', () => {
@@ -162,7 +201,7 @@ describe('WorkbenchTab shell', () => {
     mockSettingsStore.scanMode = 'all';
     mockSettingsStore.directories = [];
     mockSettingsStore.sidebarCollapsed = false;
-    mockRequestDataRefresh.mockClear();
+    mockRequestRefresh.mockClear();
     mockEntries.value = [
       {
         id: 'entry-dashboard',
@@ -179,6 +218,7 @@ describe('WorkbenchTab shell', () => {
         icon: 'iconList',
         order: 1,
         viewType: 'todo',
+        config: { preset: {} },
       },
     ];
     mockActiveEntryId.value = 'entry-dashboard';
@@ -197,6 +237,7 @@ describe('WorkbenchTab shell', () => {
       icon: 'iconList',
       order: 2,
       viewType: 'todo',
+      config: { preset: {} },
     });
     (globalThis as any).BroadcastChannel = vi.fn(function () {
       return {
@@ -303,7 +344,7 @@ describe('WorkbenchTab shell', () => {
       .click();
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement)
+    (document.querySelector('[data-testid="workbench-create-dashboard"]') as HTMLButtonElement)
       .click();
     await nextTick();
 
@@ -311,7 +352,7 @@ describe('WorkbenchTab shell', () => {
       .click();
     await nextTick();
 
-    (mounted.container.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement)
+    (document.querySelector('[data-testid="workbench-create-todo-view"]') as HTMLButtonElement)
       .click();
     await nextTick();
 
@@ -369,6 +410,66 @@ describe('WorkbenchTab shell', () => {
 
     mounted.unmount();
   });
+
+  it('creates view entries with default config per view type', async () => {
+    const { getViewDefinition } = await import('@/workbench/viewRegistry');
+
+    expect(getViewDefinition('todo').createDefaultConfig()).toEqual({ preset: {} });
+    expect(getViewDefinition('habit').createDefaultConfig()).toEqual({ habitScope: 'active' });
+    expect(getViewDefinition('quadrant').createDefaultConfig()).toEqual({});
+    expect(getViewDefinition('pomodoroStats').createDefaultConfig()).toEqual({ section: 'overview' });
+    expect(getViewDefinition('focusWorkbench').createDefaultConfig()).toEqual({});
+    expect(getViewDefinition('project').createDefaultConfig()).toEqual({});
+  });
+
+  it('shows configure button for view entries', async () => {
+    mockActiveEntryId.value = 'entry-todo';
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    expect(document.querySelector('[data-testid="workbench-view-config-trigger"]')).not.toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('hides configure button for ai chat view entries without config dialog', async () => {
+    mockEntries.value = [
+      ...mockEntries.value,
+      {
+        id: 'entry-ai-chat',
+        type: 'view',
+        title: 'AI Chat',
+        icon: 'iconSparkles',
+        order: 2,
+        viewType: 'aiChat',
+        config: {},
+      },
+    ];
+    mockActiveEntryId.value = 'entry-ai-chat';
+
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    expect(document.querySelector('[data-testid="workbench-view-config-trigger"]')).toBeNull();
+
+    mounted.unmount();
+  });
+
+  it('opens view config dialog when configure button is clicked', async () => {
+    mockActiveEntryId.value = 'entry-todo';
+    const mounted = await mountWorkbenchTab();
+    await nextTick();
+
+    const configBtn = document.querySelector('[data-testid="workbench-view-config-trigger"]') as HTMLButtonElement;
+    expect(configBtn).not.toBeNull();
+
+    configBtn.click();
+    await nextTick();
+
+    expect(mockViewConfigDialog).toHaveBeenCalled();
+
+    mounted.unmount();
+  });
 });
 
 describe('Workbench registration', () => {
@@ -376,10 +477,10 @@ describe('Workbench registration', () => {
     const indexSource = readFileSync(resolve(process.cwd(), 'src/index.ts'), 'utf-8');
 
     expect(indexSource).toMatch(
-      /if\s*\(!this\.isMobile\)\s*\{\s*this\.addTab\(\{\s*type:\s*TAB_TYPES\.WORKBENCH,/s,
+      /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconLayout",/s,
     );
     expect(indexSource).toMatch(
-      /if\s*\(!this\.isMobile\)\s*\{\s*menu\.addItem\(\{\s*icon:\s*"iconWorkspace",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\);/s,
+      /if\s*\(!this\.isMobile\)\s*\{[\s\S]*?menu\.addItem\(\{\s*icon:\s*"iconWorkspace",\s*label:\s*t\("workbench"\)\.title,\s*click:\s*\(\)\s*=>\s*\{\s*this\.openCustomTab\(TAB_TYPES\.WORKBENCH\);/s,
     );
     expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*"iconWorkspace"/);
     expect(indexSource).toMatch(/\[TAB_TYPES\.WORKBENCH\]:\s*t\("workbench"\)\.title/);

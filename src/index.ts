@@ -53,7 +53,7 @@ import AiChatDock from "@/tabs/AiChatDock.vue";
 import PomodoroDock from "@/tabs/PomodoroDock.vue";
 import HabitDock from "@/tabs/HabitDock.vue";
 import PomodoroStatsTab from "@/tabs/PomodoroStatsTab.vue";
-import FocusReviewTab from "@/tabs/FocusReviewTab.vue";
+import FocusWorkbenchTab from "@/tabs/FocusWorkbenchTab.vue";
 import { TAB_TYPES, DOCK_TYPES } from "@/constants";
 import type { ProjectDirectory } from "@/types/models";
 import { t } from "@/i18n";
@@ -932,7 +932,7 @@ export default class TaskAssistantPlugin extends Plugin {
     }
   }
 
-  public async processRefreshRequest(request: RefreshRequestPayload) {
+  private async processRefreshRequest(request: RefreshRequestPayload) {
     console.log("[Task Assistant] processRefreshRequest called:", {
       dirtyDocsBeforeEmit: dirtyDocTracker.getDirtyDocs(),
       request,
@@ -941,7 +941,7 @@ export default class TaskAssistantPlugin extends Plugin {
     this.emitRefreshCompletionSignals(request);
   }
 
-  private requestRefresh(request: RefreshRequestPayload) {
+  public requestRefresh(request: RefreshRequestPayload) {
     return this.processRefreshRequest(request);
   }
 
@@ -1355,16 +1355,16 @@ export default class TaskAssistantPlugin extends Plugin {
 
     if (!this.isMobile) {
       this.addTab({
-        type: TAB_TYPES.FOCUS_REVIEW,
+        type: TAB_TYPES.FOCUS_WORKBENCH,
         init() {
           try {
             const pinia = getSharedPinia() ?? createPinia();
-            const app = createApp(FocusReviewTab);
+            const app = createApp(FocusWorkbenchTab);
             app.use(pinia);
             mountVueAppInHost(this.element, app);
           } catch (error) {
             console.error(
-              "[Task Assistant] Failed to mount FocusReviewTab:",
+              "[Task Assistant] Failed to mount FocusWorkbenchTab:",
               error,
             );
           }
@@ -1534,6 +1534,13 @@ export default class TaskAssistantPlugin extends Plugin {
           },
         });
         menu.addItem({
+          icon: "iconFolder",
+          label: t("project").title,
+          click: () => {
+            this.openCustomTab(TAB_TYPES.PROJECT);
+          },
+        });
+        menu.addItem({
           icon: "iconGraph",
           label: t("gantt").title,
           click: () => {
@@ -1542,34 +1549,20 @@ export default class TaskAssistantPlugin extends Plugin {
         });
         if (!this.isMobile) {
           menu.addItem({
-            icon: "iconWorkspace",
-            label: t("workbench").title,
-            click: () => {
-              this.openCustomTab(TAB_TYPES.WORKBENCH);
-            },
-          });
-          menu.addItem({
-            icon: "iconList",
-            label: t("focusReview").title,
-            click: () => {
-              this.openCustomTab(TAB_TYPES.FOCUS_REVIEW);
-            },
-          });
-          menu.addItem({
             icon: "iconLayout",
             label: t("quadrant").title,
             click: () => {
               this.openCustomTab(TAB_TYPES.QUADRANT);
             },
           });
+          menu.addItem({
+            icon: "iconWorkspace",
+            label: t("workbench").title,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.WORKBENCH);
+            },
+          });
         }
-        menu.addItem({
-          icon: "iconFolder",
-          label: t("project").title,
-          click: () => {
-            this.openCustomTab(TAB_TYPES.PROJECT);
-          },
-        });
         menu.addSeparator();
         menu.addItem({
           icon: "iconList",
@@ -1578,18 +1571,27 @@ export default class TaskAssistantPlugin extends Plugin {
             this.openTodoDock();
           },
         });
-        menu.addItem({
-          icon: "iconCheck",
-          label: t("habit")?.title || "习惯打卡",
-          click: () => {
-            this.openHabitDock();
-          },
-        });
+        if (!this.isMobile) {
+          menu.addItem({
+            icon: "iconClock",
+            label: t("focusWorkbench").title,
+            click: () => {
+              this.openCustomTab(TAB_TYPES.FOCUS_WORKBENCH);
+            },
+          });
+        }
         menu.addItem({
           icon: "iconClock",
           label: t("pomodoro").dockTitle,
           click: () => {
             this.openPomodoroDock();
+          },
+        });
+        menu.addItem({
+          icon: "iconCheck",
+          label: t("habit")?.title || "习惯打卡",
+          click: () => {
+            this.openHabitDock();
           },
         });
         menu.addItem({
@@ -1805,7 +1807,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.QUADRANT]: "iconLayout",
       [TAB_TYPES.PROJECT]: "iconFolder",
       [TAB_TYPES.POMODORO_STATS]: "iconGraph",
-      [TAB_TYPES.FOCUS_REVIEW]: "iconList",
+      [TAB_TYPES.FOCUS_WORKBENCH]: "iconClock",
     };
     return icons[type] || "iconFile";
   }
@@ -1821,7 +1823,7 @@ export default class TaskAssistantPlugin extends Plugin {
       [TAB_TYPES.QUADRANT]: t("quadrant").title,
       [TAB_TYPES.PROJECT]: t("project").title,
       [TAB_TYPES.POMODORO_STATS]: t("pomodoroStats").statsTitle,
-      [TAB_TYPES.FOCUS_REVIEW]: t("focusReview").title,
+      [TAB_TYPES.FOCUS_WORKBENCH]: t("focusWorkbench").title,
     };
     return titles[type] || t("title");
   }

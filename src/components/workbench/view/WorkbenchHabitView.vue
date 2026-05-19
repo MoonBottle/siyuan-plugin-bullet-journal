@@ -128,6 +128,10 @@ import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { showIconTooltip, hideIconTooltip } from '@/utils/dialog';
 
+defineProps<{
+  viewConfig?: Record<string, unknown>;
+}>();
+
 const plugin = usePlugin();
 const app = useApp();
 const preview = useBlockFocusPreview({

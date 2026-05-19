@@ -7,7 +7,7 @@
         <span v-if="subtitle" class="workbench-widget-card__subtitle">{{ subtitle }}</span>
       </div>
       <div class="workbench-widget-card__controls">
-        <div class="workbench-widget-card__menu-wrap">
+        <div ref="menuWrapRef" class="workbench-widget-card__menu-wrap">
           <button
             class="workbench-widget-card__menu-trigger block__icon b3-tooltips b3-tooltips__sw"
             data-testid="workbench-widget-menu-trigger"
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch, onUnmounted } from 'vue';
 import { t } from '@/i18n';
 
 defineProps<{
@@ -74,6 +74,7 @@ const emit = defineEmits<{
 }>();
 
 const isMenuOpen = ref(false);
+const menuWrapRef = ref<HTMLElement>();
 
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value;
@@ -93,6 +94,24 @@ function handleDelete() {
   isMenuOpen.value = false;
   emit('delete');
 }
+
+function handleClickOutside(e: MouseEvent) {
+  if (!menuWrapRef.value?.contains(e.target as Node)) {
+    isMenuOpen.value = false;
+  }
+}
+
+watch(isMenuOpen, (val) => {
+  if (val) {
+    document.addEventListener('mousedown', handleClickOutside);
+  } else {
+    document.removeEventListener('mousedown', handleClickOutside);
+  }
+});
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleClickOutside);
+});
 </script>
 
 <style lang="scss" scoped>

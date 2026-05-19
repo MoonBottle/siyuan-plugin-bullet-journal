@@ -146,6 +146,7 @@
       <p>
         这份文档描述当前实现里的同步主链路：刷新请求如何生成、如何被合并、哪些地方真正刷新数据、
         以及 <code>eventBus</code> 与 <code>BroadcastChannel</code> 如何把结果传回各视图。
+        其中 <code>refreshRequests.ts</code> 负责刷新协议，<code>plugin.requestRefresh()</code> 负责 UI 侧可 <code>await</code> 的 imperative 刷新入口。
       </p>
     </section>
 
@@ -175,7 +176,7 @@
           <rect x="46" y="160" width="228" height="34" rx="8" fill="#fff" class="box"/>
           <text x="58" y="182" class="t">ws-main / savedoc / transactions</text>
           <rect x="46" y="204" width="228" height="34" rx="8" fill="#fff" class="box"/>
-          <text x="58" y="226" class="t">submitRefreshRequest(...)</text>
+          <text x="58" y="226" class="t">UI / submitRefreshRequest(...)</text>
 
           <rect x="334" y="28" width="252" height="230" rx="14" fill="#f5f3ff" class="box"/>
           <text x="352" y="56" class="t">refreshRequests.ts</text>
@@ -186,7 +187,7 @@
           <rect x="352" y="160" width="216" height="34" rx="8" fill="#fff" class="box"/>
           <text x="364" y="182" class="t">ws-main reason helpers</text>
           <rect x="352" y="204" width="216" height="34" rx="8" fill="#fff" class="box"/>
-          <text x="364" y="226" class="t">submitRefreshRequest()</text>
+          <text x="364" y="226" class="t">submitRefreshRequest() protocol helper</text>
 
           <rect x="628" y="28" width="248" height="230" rx="14" fill="#ecfeff" class="box"/>
           <text x="646" y="56" class="t">index.ts</text>
@@ -260,6 +261,7 @@
         <div class="note">
           主链路最容易混淆的地方是：<code>projectStore</code> 负责“本地 DATA_REFRESHED”，
           而 <code>processRefreshRequest()</code> 负责“刷新完成后的 SETTINGS_CHANGED 与跨上下文广播”。
+          需要等待刷新稳定完成的手动刷新或交互写操作，应直接 <code>await plugin.requestRefresh(...)</code>。
         </div>
       </div>
 
@@ -279,6 +281,7 @@
         <section class="panel section">
           <h2>主要触发源</h2>
           <ul class="list muted">
+            <li><code>UI buttons / interaction flows</code> -> <code>await plugin.requestRefresh(...)</code></li>
             <li><code>onDataChanged()</code> -> full</li>
             <li><code>Events.LOCAL_DATA_MUTATED</code> -> directed，失败回退 full</li>
             <li><code>ws-main removeDoc</code> -> full</li>

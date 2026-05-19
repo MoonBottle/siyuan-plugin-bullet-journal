@@ -1,11 +1,6 @@
 <template>
   <div class="hk-work-tab quadrant-tab">
     <div class="block__icons quadrant-toolbar">
-      <div v-if="showHeaderTitle" class="block__logo">
-        <svg class="block__logoicon"><use xlink:href="#iconLayout"></use></svg>
-        {{ t('quadrant').title }}
-      </div>
-
       <SySelect
         v-if="groupOptions.length > 1"
         v-model="selectedGroupModel"
@@ -107,6 +102,7 @@ import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { useQuadrantConfigStore } from '@/stores/quadrantConfigStore';
 import { assignItemsToQuadrants } from '@/utils/quadrantEvaluator';
 import { openQuadrantRuleDialog } from '@/components/quadrant/openQuadrantRuleDialog';
+import type { WorkbenchQuadrantViewConfig } from '@/types/workbench';
 import { isDefaultPriorityQuadrantConfig } from '@/utils/quadrant';
 import { writeBlock } from '@/utils/blockWriter';
 import type { QuadrantPanelConfig } from '@/types/quadrant';
@@ -115,6 +111,7 @@ import type { TodoSidebarDragPayload } from '@/components/todo/todoSidebarTypes'
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
+  viewConfig?: Record<string, unknown>;
 }>(), {
   embedded: false,
 });
@@ -125,8 +122,16 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const quadrantConfigStore = useQuadrantConfigStore();
 
-const selectedGroup = ref(settingsStore.defaultGroup || '');
+const selectedGroup = ref('');
 const isSelectedGroupDefaultDriven = ref(true);
+
+watch(() => props.viewConfig, (config) => {
+  const groupId = (config as WorkbenchQuadrantViewConfig | undefined)?.groupId;
+  if (groupId) {
+    selectedGroup.value = groupId;
+    isSelectedGroupDefaultDriven.value = false;
+  }
+}, { immediate: true });
 const searchQuery = ref('');
 const sidebarRefs = ref<Array<InstanceType<typeof TodoSidebarList> | null>>([]);
 const preview = useBlockFocusPreview({
@@ -135,7 +140,6 @@ const preview = useBlockFocusPreview({
   popoverLeaveGraceMs: 220,
 });
 const nativePreview = createNativeBlockPreviewController();
-const showHeaderTitle = computed(() => !props.embedded);
 
 const panels = computed(() => quadrantConfigStore.panels);
 const dragEnabled = computed(() => isDefaultPriorityQuadrantConfig(panels.value));
@@ -282,7 +286,7 @@ async function handleQuadrantDrop(panelId: string, event: DragEvent) {
     return;
   }
 
-  await plugin.requestDataRefresh?.({
+  await plugin.requestRefresh?.({
     type: 'full',
     reason: 'quadrant-drop-update-priority',
   });
@@ -310,7 +314,7 @@ function syncSelectedGroupWithDefault() {
 
 async function handleRefresh() {
   if (!plugin) return;
-  await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
     type: 'full',
     reason: 'quadrant-tab:manual-refresh',
   });
@@ -403,6 +407,7 @@ async function handleDataRefresh(payload?: Record<string, unknown>) {
 }
 
 let unsubscribeRefresh: (() => void) | null = null;
+let unsubscribeDataRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
 
@@ -473,6 +478,7 @@ onMounted(async () => {
   await quadrantConfigStore.loadConfig();
 
   unsubscribeRefresh = eventBus.on(Events.SETTINGS_CHANGED, handleDataRefresh);
+  unsubscribeDataRefresh = eventBus.on(Events.DATA_REFRESHED, handleDataRefresh);
 
   try {
     refreshChannel = new BroadcastChannel(DATA_REFRESH_CHANNEL);
@@ -498,6 +504,9 @@ onUnmounted(() => {
 
   if (unsubscribeRefresh) {
     unsubscribeRefresh();
+  }
+  if (unsubscribeDataRefresh) {
+    unsubscribeDataRefresh();
   }
   if (refreshChannelGuard) {
     refreshChannelGuard.dispose();
@@ -532,7 +541,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   min-width: 220px;
-  padding: 6px 10px;
+  height: 28px;
+  padding: 0 10px;
   background: var(--b3-theme-background);
   border: 1px solid var(--b3-border-color);
   border-radius: var(--b3-border-radius);

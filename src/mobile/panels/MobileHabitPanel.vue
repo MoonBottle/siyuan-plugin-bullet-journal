@@ -201,7 +201,7 @@ async function refreshHabits() {
   if (!plugin)
     return;
 
-  await plugin.requestDataRefresh?.({
+  await plugin.requestRefresh?.({
     type: 'full',
     reason: 'mobile-habit:manual-refresh',
   });
@@ -249,7 +249,7 @@ async function handleArchiveSelectedHabit() {
 
   const success = await archiveHabit(state.selectedHabit, dayjs().format('YYYY-MM-DD'));
   if (success) {
-    await plugin?.requestDataRefresh?.({
+    await plugin?.requestRefresh?.({
       type: 'full',
       reason: 'mobile-habit:archive',
     });
@@ -263,7 +263,7 @@ async function handleUnarchiveSelectedHabit() {
 
   const success = await unarchiveHabit(state.selectedHabit);
   if (success) {
-    await plugin?.requestDataRefresh?.({
+    await plugin?.requestRefresh?.({
       type: 'full',
       reason: 'mobile-habit:unarchive',
     });

@@ -12,6 +12,7 @@ const {
   mockLoadWorkbenchSettings,
   mockSaveWorkbenchSettings,
   mockGetWidgetDefinition,
+  mockGetViewDefinition,
 } = vi.hoisted(() => ({
   mockLoadWorkbenchSettings: vi.fn(),
   mockSaveWorkbenchSettings: vi.fn(),
@@ -23,6 +24,22 @@ const {
     minSize: { w: 4, h: 3 },
     createDefaultConfig: () => ({ source: 'default-config' }),
   })),
+  mockGetViewDefinition: vi.fn((viewType: string) => {
+    const defaults: Record<string, Record<string, unknown>> = {
+      todo: { preset: {} },
+      habit: { habitScope: 'active' },
+      quadrant: {},
+      pomodoroStats: { section: 'overview' },
+      focusWorkbench: {},
+      project: {},
+      calendar: {},
+      gantt: {},
+    };
+    return {
+      type: viewType,
+      createDefaultConfig: () => defaults[viewType] ?? {},
+    };
+  }),
 }));
 
 vi.mock('@/utils/workbenchStorage', () => ({
@@ -32,6 +49,10 @@ vi.mock('@/utils/workbenchStorage', () => ({
 
 vi.mock('@/workbench/widgetRegistry', () => ({
   getWidgetDefinition: mockGetWidgetDefinition,
+}));
+
+vi.mock('@/workbench/viewRegistry', () => ({
+  getViewDefinition: mockGetViewDefinition,
 }));
 
 import { useWorkbenchStore } from '@/stores/workbenchStore';
@@ -97,10 +118,10 @@ describe('workbenchStore', () => {
     await store.load(plugin);
 
     expect(mockLoadWorkbenchSettings).toHaveBeenCalledWith(plugin);
-    expect(store.entries).toEqual([entry]);
+    expect(store.entries).toEqual([{ ...entry, config: { preset: {} } }]);
     expect(store.dashboards).toEqual([dashboard]);
     expect(store.activeEntryId).toBe(entry.id);
-    expect(store.activeEntry).toEqual(entry);
+    expect(store.activeEntry).toEqual({ ...entry, config: { preset: {} } });
   });
 
   it('falls back stale activeEntryId to first remaining entry on load', async () => {
@@ -118,7 +139,7 @@ describe('workbenchStore', () => {
     await store.load(plugin);
 
     expect(store.activeEntryId).toBe(first.id);
-    expect(store.activeEntry).toEqual(first);
+    expect(store.activeEntry).toEqual({ ...first, config: { preset: {} } });
   });
 
   it('createDashboardEntry creates dashboard and entry together, activates it, and persists when plugin is bound', async () => {
@@ -156,7 +177,7 @@ describe('workbenchStore', () => {
     ['pomodoroStats', 'Focus Statistics', 'iconClock'],
     ['calendar', 'Calendar', 'iconCalendar'],
     ['gantt', 'Gantt Chart', 'iconGraph'],
-    ['project', 'Projects', 'iconFolder'],
+    ['project', 'Project Workbench', 'iconFolder'],
   ] satisfies Array<[WorkbenchViewType, string, string]>)(
     'createViewEntry creates %s view metadata and activates it',
     async (viewType, title, icon) => {

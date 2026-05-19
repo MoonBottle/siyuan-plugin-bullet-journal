@@ -2,7 +2,6 @@
   <div class="fn__flex-1 fn__flex-column todo-dock-container">
     <div class="block__icons">
       <div class="block__logo">
-        <svg class="block__logoicon"><use xlink:href="#iconList"></use></svg>
         {{ t('todo').title }}
       </div>
       <span class="fn__flex-1 fn__space"></span>
@@ -102,10 +101,12 @@ import type { TodoSortDirection, TodoSortField, TodoSortRule } from '@/settings'
 import dayjs from '@/utils/dayjs';
 import { useApp } from '@/main';
 import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
+import type { WorkbenchTodoListWidgetConfig } from '@/types/workbench';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 
 const props = withDefaults(defineProps<{
   enableWorkbenchPreview?: boolean;
+  viewConfig?: Record<string, unknown>;
 }>(), {
   enableWorkbenchPreview: false,
 });
@@ -140,6 +141,19 @@ const dateFilterType = ref<TodoDateFilterType>('today');
 const startDate = ref(dayjs().format('YYYY-MM-DD'));
 const endDate = ref(dayjs().add(7, 'day').format('YYYY-MM-DD'));
 const currentDate = computed(() => projectStore.currentDate);
+
+watch(() => props.viewConfig, (config) => {
+  const preset = (config as WorkbenchTodoListWidgetConfig | undefined)?.preset;
+  if (!preset) return;
+  if (preset.groupId !== undefined) selectedGroup.value = preset.groupId;
+  if (preset.dateFilterType) dateFilterType.value = preset.dateFilterType;
+  if (preset.startDate) startDate.value = preset.startDate;
+  if (preset.endDate) endDate.value = preset.endDate;
+  if (preset.priorities) selectedPriorities.value = [...preset.priorities];
+  if (preset.selectedTags) selectedTags.value = [...preset.selectedTags];
+  if (preset.searchQuery !== undefined) searchQuery.value = preset.searchQuery;
+  if (preset.sortRules) settingsStore.todoDock.sortRules = preset.sortRules;
+}, { immediate: true, deep: true });
 
 const priorityOptions = [
   { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
@@ -381,7 +395,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'desktop-todo:manual-refresh',
     });

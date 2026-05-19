@@ -152,7 +152,7 @@ async function handleCreateExample() {
   try {
     const docId = await createExampleDocument();
     if (docId && plugin) {
-      await plugin.requestDataRefresh?.({
+      await plugin.requestRefresh?.({
         type: 'full',
         reason: 'pomodoro-record-list:create-example',
       });

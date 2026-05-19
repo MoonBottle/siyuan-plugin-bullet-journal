@@ -11,13 +11,20 @@
       <p class="hint">{{ t('project').dirStructureHint }}</p>
     </div>
 
-    <div v-else class="project-workbench" :class="{ 'project-workbench--embedded': embedded }">
+    <div
+      v-else
+      ref="workbenchRef"
+      class="project-workbench"
+      :class="{ 'project-workbench--embedded': embedded }"
+      :style="{ gridTemplateColumns }"
+    >
       <ProjectListPane
         v-model:search-query="projectSearchQuery"
         :projects="filteredProjects"
         :selected-project-id="selectedProjectId"
         @select-project="selectProject"
       />
+      <ResizeHandle :is-active="activeHandleIndex === 0" @drag-start="(e: MouseEvent) => onMouseDown(e, 0)" />
       <ProjectTreePane
         v-model:search-query="treeSearchQuery"
         :project="selectedProject"
@@ -36,6 +43,7 @@
         @update:tag-query="treeTagQuery = $event"
         @update:selected-tags="treeSelectedTags = $event"
       />
+      <ResizeHandle :is-active="activeHandleIndex === 1" @drag-start="(e: MouseEvent) => onMouseDown(e, 1)" />
       <ProjectDetailPane
         :project="selectedProject"
         :task="detailTask"
@@ -50,13 +58,22 @@ import { computed, ref, watch } from 'vue';
 import ProjectDetailPane from '@/components/project/ProjectDetailPane.vue';
 import ProjectListPane from '@/components/project/ProjectListPane.vue';
 import ProjectTreePane from '@/components/project/ProjectTreePane.vue';
+import ResizeHandle from '@/components/project/ResizeHandle.vue';
+import { useResizableColumns } from '@/composables/useResizableColumns';
 import { t } from '@/i18n';
 import { buildProjectTaskTree, filterProjectTaskTree } from '@/utils/projectTaskTree';
 import type { Item, Project, Task } from '@/types/models';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   projects: Project[];
   embedded?: boolean;
+  columnRatios?: [number, number, number];
+}>(), {
+  embedded: false,
+});
+
+const emit = defineEmits<{
+  (e: 'update:columnRatios', ratios: [number, number, number]): void;
 }>();
 
 const selectedProjectId = ref('');
@@ -67,6 +84,24 @@ const treeSearchQuery = ref('');
 const treeTagQuery = ref('');
 const treeSelectedTags = ref<string[]>([]);
 const expandedTaskIds = ref<Set<string>>(new Set());
+
+const workbenchRef = ref<HTMLElement>();
+
+const {
+  gridTemplateColumns,
+  activeHandleIndex,
+  onMouseDown,
+  reset,
+  setRatios,
+} = useResizableColumns({
+  containerRef: workbenchRef,
+  initialRatios: props.columnRatios,
+  onChange: (ratios) => emit('update:columnRatios', ratios),
+});
+
+watch(() => props.columnRatios, (newRatios) => {
+  if (newRatios) setRatios(newRatios);
+});
 
 const filteredProjects = computed(() => {
   const query = projectSearchQuery.value.trim().toLocaleLowerCase();
@@ -157,6 +192,29 @@ function findItemById(project: Project | null, itemId: string): Item | null {
   }
   return null;
 }
+
+const allCollapsed = computed(() => {
+  if (!selectedProject.value) return true;
+  return selectedProject.value.tasks.every(task => !expandedTaskIds.value.has(task.id));
+});
+
+function toggleCollapseAll() {
+  if (!selectedProject.value) return;
+  const currentTaskIds = new Set(selectedProject.value.tasks.map(task => task.id));
+  if (allCollapsed.value) {
+    expandedTaskIds.value = new Set([...expandedTaskIds.value, ...currentTaskIds]);
+  } else {
+    const next = new Set(expandedTaskIds.value);
+    currentTaskIds.forEach(id => next.delete(id));
+    expandedTaskIds.value = next;
+  }
+}
+
+defineExpose({
+  allCollapsed,
+  toggleCollapseAll,
+  resetColumnRatios: reset,
+});
 </script>
 
 <style lang="scss" scoped>
@@ -195,8 +253,7 @@ function findItemById(project: Project | null, itemId: string): Item | null {
 
 .project-workbench {
   display: grid;
-  grid-template-columns: 2fr 2fr 6fr;
-  gap: 16px;
+  gap: 0;
   height: 100%;
   min-height: 0;
   max-height: 100%;

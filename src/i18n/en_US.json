@@ -99,6 +99,25 @@
     "dashboardPlaceholder": "Dashboard canvas coming next",
     "unsupportedView": "Unsupported workbench view"
   },
+  "datePicker": {
+    "title": "Date Picker",
+    "month": "Month",
+    "week": "Week",
+    "defaultView": "Default View",
+    "groupFilter": "Group Filter",
+    "linkage": "Widget Linkage",
+    "addLinkage": "Add Linkage",
+    "emptyLinkage": "Click to add linkage rule",
+    "editLinkage": "Edit Linkage Rule",
+    "deleteLinkage": "Delete Linkage Rule",
+    "legendOverdue": "Overdue",
+    "legendPending": "Pending",
+    "legendCompleted": "Completed",
+    "selectTarget": "Select Target Widget",
+    "fieldMapping": "Field Mapping",
+    "dateRangeSource": "Calendar Date Range",
+    "dateRangeTarget": "Todo Date Filter"
+  },
   "quadrant": {
     "title": "Quadrant",
     "placeholder": "Quadrant view is coming soon",
@@ -126,7 +145,7 @@
     }
   },
   "project": {
-    "title": "Projects",
+    "title": "Project Workbench",
     "taskCount": "Tasks",
     "tasksUnit": "tasks",
     "itemsLabel": "Items",
@@ -152,7 +171,9 @@
     "completedCount": "Completed",
     "abandonedCount": "Abandoned",
     "openDocument": "Open Document",
-    "linked": "Has links"
+    "linked": "Has links",
+    "resetColumnWidths": "Reset Widths",
+    "resetColumnWidthsTooltip": "Reset column widths to default"
   },
   "todo": {
     "title": "Todo",
@@ -767,7 +788,7 @@
     "pomodoroCount": "Pomodoro Count",
     "durationMinutes": "Minutes"
   },
-  "focusReview": {
+  "focusWorkbench": {
     "title": "Focus Workbench",
     "openReview": "Open focus workbench",
     "addPlan": "Add Focus Plan",

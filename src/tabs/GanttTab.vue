@@ -165,7 +165,7 @@ onUnmounted(() => {
 
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'gantt-tab:manual-refresh',
     });

@@ -529,6 +529,7 @@ function formatTime(timestamp: number): string {
   flex-direction: column;
   height: 100%;
   max-height: 100%;
+  min-width: 0;
   background: var(--b3-theme-background);
   overflow: hidden;
 
@@ -612,6 +613,7 @@ function formatTime(timestamp: number): string {
   }
 
   &__input-area {
+    min-width: 0;
     background: transparent;
     border-top: none;
     padding: 12px 16px;
@@ -619,6 +621,7 @@ function formatTime(timestamp: number): string {
   }
 
   &__input-card {
+    min-width: 0;
     background: var(--b3-theme-surface);
     border: 1px solid var(--b3-theme-surface-lighter);
     border-radius: 12px;
@@ -632,6 +635,7 @@ function formatTime(timestamp: number): string {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    min-width: 0;
     padding: 10px 12px;
     border-bottom: none;
   }
@@ -640,6 +644,8 @@ function formatTime(timestamp: number): string {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex: 1;
+    min-width: 0;
   }
 
   &__provider-avatar {
@@ -688,12 +694,14 @@ function formatTime(timestamp: number): string {
   }
 
   &__card-body {
+    min-width: 0;
     padding: 8px 12px;
   }
 
   &__card-footer {
     display: flex;
     align-items: center;
+    min-width: 0;
     padding: 8px 12px;
     background: transparent;
   }
@@ -707,6 +715,7 @@ function formatTime(timestamp: number): string {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
     flex-shrink: 0;
   }
 

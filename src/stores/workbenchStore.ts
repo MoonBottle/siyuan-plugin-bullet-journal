@@ -14,6 +14,7 @@ import {
 } from '@/utils/workbenchStorage';
 import { areWidgetLayoutsEqual, findNextWidgetLayout } from '@/workbench/grid';
 import { getWidgetDefinition } from '@/workbench/widgetRegistry';
+import { getViewDefinition } from '@/workbench/viewRegistry';
 
 type WorkbenchPlugin = Parameters<typeof loadWorkbenchSettings>[0];
 
@@ -54,9 +55,13 @@ function getViewEntryDefinition(viewType: WorkbenchViewType): ViewEntryDefinitio
       title: t('pomodoroStats').statsTitle,
       icon: 'iconClock',
     },
-    focusReview: {
-      title: t('focusReview').title,
-      icon: 'iconList',
+    focusWorkbench: {
+      title: t('focusWorkbench').title,
+      icon: 'iconClock',
+    },
+    aiChat: {
+      title: t('aiChat').title,
+      icon: 'iconSparkles',
     },
   };
 
@@ -127,7 +132,17 @@ export const useWorkbenchStore = defineStore('workbench', () => {
   async function load(plugin: WorkbenchPlugin): Promise<void> {
     bindPlugin(plugin);
     const settings = await loadWorkbenchSettings(plugin);
-    entries.value = normalizeOrders(settings.entries ?? []);
+    entries.value = normalizeOrders(
+      (settings.entries ?? []).map(entry => {
+        if (entry.type === 'view' && entry.viewType && !entry.config) {
+          return {
+            ...entry,
+            config: getViewDefinition(entry.viewType).createDefaultConfig(),
+          };
+        }
+        return entry;
+      }),
+    );
     dashboards.value = settings.dashboards ?? [];
     sidebarCollapsed.value = settings.sidebarCollapsed ?? false;
 
@@ -162,6 +177,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
 
   async function createViewEntry(viewType: WorkbenchViewType): Promise<WorkbenchEntry> {
     const definition = getViewEntryDefinition(viewType);
+    const viewDef = getViewDefinition(viewType);
     const entry: WorkbenchEntry = {
       id: createId('entry'),
       type: 'view',
@@ -169,6 +185,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
       icon: definition.icon,
       order: entries.value.length,
       viewType,
+      config: viewDef.createDefaultConfig(),
     };
 
     entries.value = [...entries.value, entry];
@@ -431,6 +448,18 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     await persist();
   }
 
+  async function updateViewConfig(
+    entryId: string,
+    config: Record<string, unknown>,
+  ): Promise<void> {
+    entries.value = entries.value.map(entry =>
+      entry.id === entryId
+        ? { ...entry, config }
+        : entry,
+    );
+    await persist();
+  }
+
   return {
     entries,
     dashboards,
@@ -454,5 +483,6 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     updateWidgetLayout,
     updateWidgetLayouts,
     updateWidgetConfig,
+    updateViewConfig,
   };
 });

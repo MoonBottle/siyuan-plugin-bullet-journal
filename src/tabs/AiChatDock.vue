@@ -3,7 +3,6 @@
     <!-- 头部工具栏 -->
     <div class="block__icons">
       <div class="block__logo ai-chat-dock__title-block">
-        <AiAssistantIcon class="block__logoicon" />
         <div class="ai-chat-dock__title-copy">
           <div class="ai-chat-dock__title-text">{{ currentHeaderTitle }}</div>
           <div
@@ -19,6 +18,7 @@
 
       <!-- 对话选择下拉框 -->
       <ConversationSelect
+        v-if="!props.embedded"
         :conversations="conversationsList"
         :current-conversation-id="aiStore.currentConversationId"
         @select="handleConversationSelect"
@@ -28,6 +28,7 @@
 
       <!-- 新建对话按钮 -->
       <span
+        v-if="!props.embedded"
         class="block__icon b3-tooltips b3-tooltips__sw"
         :aria-label="t('aiChat').newConversation"
         @click="handleNewConversation"
@@ -101,7 +102,6 @@ import { buildViewDebugContext } from '@/utils/viewDebug';
 import { useConversationStorage, type ConversationIndexItem } from '@/services/conversationStorageService';
 import ChatPanel from '@/components/ai/ChatPanel.vue';
 import ConversationSelect from '@/components/ai/ConversationSelect.vue';
-import AiAssistantIcon from '@/components/icons/AiAssistantIcon.vue';
 import SkillIcon from '@/components/icons/SkillIcon.vue';
 import WeixinIcon from '@/components/icons/WeixinIcon.vue';
 import WeixinLoginDialog from '@/components/ai/WeixinLoginDialog.vue';
@@ -113,14 +113,18 @@ import { getSharedPinia } from '@/utils/sharedPinia';
 import AiSkillConfigSection from '@/components/settings/AiSkillConfigSection.vue';
 import { openTab } from 'siyuan';
 
+const props = defineProps<{
+  embedded?: boolean;
+}>();
+
 const plugin = usePlugin() as any;
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const aiStore = useAIStore();
 const isMobile = computed(() => !!plugin?.isMobile);
 
-// 对话列表（从存储服务获取，仅元数据）
-const conversationsList = ref<ConversationIndexItem[]>([]);
+// 对话列表（直接读取 store，避免组件内副本和 store 脱节）
+const conversationsList = computed<ConversationIndexItem[]>(() => aiStore.conversationsList ?? []);
 
 // 自动保存防抖定时器
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -271,7 +275,7 @@ const allItems = computed<Item[]>(() => {
 
 // 刷新对话列表
 async function refreshConversationsList() {
-  conversationsList.value = await aiStore.getConversationsList();
+  await aiStore.refreshConversationsList();
 }
 
 // 数据刷新处理函数
@@ -311,8 +315,7 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 
 // 新建对话
 const handleNewConversation = async () => {
-  await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-  await refreshConversationsList();
+  aiStore.startNewConversationDraft();
   nextTick(() => {
     chatPanelRef.value?.focusInput();
   });
@@ -425,12 +428,6 @@ onMounted(async () => {
   // 加载对话列表（initializeStorage 已加载，但为保险起见再次刷新）
   await refreshConversationsList();
 
-  // 如果没有对话，创建一个默认对话
-  if (conversationsList.value.length === 0) {
-    await aiStore.createConversation(t('aiChat').defaultConversationTitle);
-    // createConversation 内部已刷新对话列表
-  }
-
   // 初始化 ClawBot（如果已启用）
   if (!isMobile.value) {
     await aiStore.initializeClawBot(plugin);
@@ -511,6 +508,7 @@ onUnmounted(() => {
 .ai-chat-dock {
   height: 100%;
   max-height: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -559,6 +557,7 @@ onUnmounted(() => {
 
   &__panel {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     overflow: hidden;
   }
@@ -566,6 +565,7 @@ onUnmounted(() => {
 
 .block__icons {
   flex-shrink: 0;
+  min-width: 0;
 
   .block__icon {
     opacity: 1;

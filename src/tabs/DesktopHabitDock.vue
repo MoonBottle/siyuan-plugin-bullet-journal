@@ -77,8 +77,7 @@
         </button>
       </template>
       <template v-else>
-        <div class="block__logo">
-          <svg class="block__logoicon"><use xlink:href="#iconCheck"></use></svg>
+        <div class="block__logo" data-testid="habit-list-header">
           {{ t('habit').title }}
         </div>
         <span class="fn__flex-1 fn__space"></span>

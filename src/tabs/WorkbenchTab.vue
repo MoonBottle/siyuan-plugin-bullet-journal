@@ -21,7 +21,7 @@
         </div>
 
         <div v-if="isDashboardActive" class="workbench-tab__toolbar-actions">
-          <div class="workbench-tab__toolbar-menu-wrap">
+          <div ref="widgetMenuWrapRef" class="workbench-tab__toolbar-menu-wrap">
             <button
               class="workbench-tab__toolbar-button"
               data-testid="workbench-add-widget-trigger"
@@ -52,6 +52,17 @@
             </div>
           </div>
         </div>
+
+        <div v-if="canConfigureActiveView" class="workbench-tab__toolbar-actions">
+          <button
+            class="workbench-tab__toolbar-button"
+            data-testid="workbench-view-config-trigger"
+            type="button"
+            @click="openViewConfigDialog"
+          >
+            {{ t('workbench').configure }}
+          </button>
+        </div>
       </div>
       <WorkbenchContentHost
         :active-entry="currentActiveEntry"
@@ -62,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import WorkbenchContentHost from '@/components/workbench/WorkbenchContentHost.vue';
 import WorkbenchSidebar from '@/components/workbench/WorkbenchSidebar.vue';
 import { t } from '@/i18n';
@@ -72,6 +83,7 @@ import type { WorkbenchViewType, WorkbenchWidgetType } from '@/types/workbench';
 import { eventBus, Events, DATA_REFRESH_CHANNEL } from '@/utils/eventBus';
 import { createRefreshChannelGuard } from '@/utils/refreshChannelGuard';
 import { getWidgetRegistry } from '@/workbench/widgetRegistry';
+import { getViewDefinition } from '@/workbench/viewRegistry';
 
 const plugin = usePlugin();
 const projectStore = useProjectStore();
@@ -80,7 +92,16 @@ const settingsStore = useSettingsStore();
 const currentActiveEntryId = computed(() => workbenchStore.activeEntryId);
 const currentActiveEntry = computed(() => workbenchStore.activeEntry);
 const isDashboardActive = computed(() => currentActiveEntry.value?.type === 'dashboard');
+const canConfigureActiveView = computed(() => {
+  const entry = currentActiveEntry.value;
+  if (!entry || entry.type !== 'view' || !entry.viewType) {
+    return false;
+  }
+
+  return Boolean(getViewDefinition(entry.viewType).openConfigDialog);
+});
 const isWidgetMenuOpen = ref(false);
+const widgetMenuWrapRef = ref<HTMLElement>();
 const widgetDefinitions = computed(() => Object.values(getWidgetRegistry()));
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
@@ -122,6 +143,24 @@ function openWidgetMenu() {
   isWidgetMenuOpen.value = true;
 }
 
+function handleWidgetMenuClickOutside(e: MouseEvent) {
+  if (!widgetMenuWrapRef.value?.contains(e.target as Node)) {
+    isWidgetMenuOpen.value = false;
+  }
+}
+
+watch(isWidgetMenuOpen, (val) => {
+  if (val) {
+    document.addEventListener('mousedown', handleWidgetMenuClickOutside);
+  } else {
+    document.removeEventListener('mousedown', handleWidgetMenuClickOutside);
+  }
+});
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleWidgetMenuClickOutside);
+});
+
 async function handleAddWidget(type: WorkbenchWidgetType) {
   if (currentActiveEntry.value?.type !== 'dashboard' || !currentActiveEntry.value.dashboardId) {
     return;
@@ -129,6 +168,21 @@ async function handleAddWidget(type: WorkbenchWidgetType) {
 
   await workbenchStore.addWidget(currentActiveEntry.value.dashboardId, type);
   isWidgetMenuOpen.value = false;
+}
+
+async function openViewConfigDialog() {
+  const entry = currentActiveEntry.value;
+  if (!entry || entry.type !== 'view' || !entry.viewType) {
+    return;
+  }
+
+  const viewDef = getViewDefinition(entry.viewType);
+  viewDef.openConfigDialog?.({
+    entry,
+    onUpdateConfig: async (config) => {
+      await workbenchStore.updateViewConfig(entry.id, config);
+    },
+  });
 }
 
 async function handleDataRefresh(payload?: Record<string, unknown>) {

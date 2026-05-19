@@ -126,6 +126,9 @@ export class LineParser {
       links.push(createLink('链接', urlMatch[1]));
     }
 
+    // 解析业务标签
+    const tags = parseTagsFromLine(line);
+
     // 提取任务名称（移除所有标记）
     // 注意：思源 Kramdown 中 #任务 会显示为 #任务#（末尾多一个 #）
     // 先移除行首的 Markdown 标题标记（### ... #），避免标题任务名残留
@@ -136,8 +139,10 @@ export class LineParser {
       .replace(/📋/g, '')
       .replace(/@L[123]/g, '')
       .replace(new RegExp(DATE_WITH_OPTIONAL_TIME_PATTERN, 'g'), '')
-      .replace(/https?:\/\/[^\s]+/g, '')
-      .trim();
+      .replace(/https?:\/\/[^\s]+/g, '');
+    // 移除业务标签（保留系统保留标签）
+    name = stripTagsFromLine(name);
+    name = name.trim();
 
     // 解析块引用：strip 显示名，提取到 links
     const { stripped: nameStripped, links: blockRefLinks } = parseBlockRefs(name);
@@ -159,7 +164,8 @@ export class LineParser {
         : undefined,
       links: allLinks.length > 0 ? allLinks : undefined,
       items: [],
-      lineNumber
+      lineNumber,
+      tags: tags.length > 0 ? tags : undefined,
     };
   }
 

@@ -9,6 +9,21 @@
       />
       <span class="fn__flex-1 fn__space"></span>
       <span
+        v-if="projectStore.projects.length > 0"
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="t('project').resetColumnWidthsTooltip"
+        @click="handleResetColumnRatios"
+      >
+        <svg><use xlink:href="#iconFullscreen"></use></svg>
+      </span>
+      <span
+        class="block__icon b3-tooltips b3-tooltips__sw"
+        :aria-label="projectViewRef?.allCollapsed ? t('todo').expandAll : t('todo').collapseAll"
+        @click="projectViewRef?.toggleCollapseAll()"
+      >
+        <svg><use :xlink:href="projectViewRef?.allCollapsed ? '#iconExpand' : '#iconContract'"></use></svg>
+      </span>
+      <span
         class="block__icon b3-tooltips b3-tooltips__sw"
         :aria-label="projectStore.loading ? t('common').loading : t('common').refresh"
         @click="handleRefresh"
@@ -18,15 +33,18 @@
     </div>
     <div class="tab-content">
       <ProjectView
+        ref="projectViewRef"
         :projects="filteredProjects"
         :embedded="embedded"
+        :column-ratios="columnRatios"
+        @update:column-ratios="handleColumnRatiosChange"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { getCurrentPlugin, usePlugin } from '@/main';
 import { useSettingsStore, useProjectStore } from '@/stores';
 import { showMessage } from '@/utils/dialog';
@@ -36,9 +54,12 @@ import { buildViewDebugContext } from '@/utils/viewDebug';
 import SySelect from '@/components/SiyuanTheme/SySelect.vue';
 import ProjectView from '@/components/project/ProjectView.vue';
 import { t } from '@/i18n';
+import type { WorkbenchProjectViewConfig } from '@/types/workbench';
 
 const props = withDefaults(defineProps<{
   embedded?: boolean;
+  viewConfig?: Record<string, unknown>;
+  onUpdateConfig?: (config: Record<string, unknown>) => void;
 }>(), {
   embedded: false,
 });
@@ -48,6 +69,54 @@ const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 
 const selectedGroup = ref('');
+const projectViewRef = ref<InstanceType<typeof ProjectView> | null>(null);
+
+const DEFAULT_COLUMN_RATIOS: [number, number, number] = [20, 20, 60];
+
+const columnRatios = ref<[number, number, number]>(getInitialColumnRatios());
+
+function getInitialColumnRatios(): [number, number, number] {
+  if (props.embedded && props.viewConfig?.columnRatios) {
+    const ratios = props.viewConfig.columnRatios as [number, number, number];
+    if (Array.isArray(ratios) && ratios.length === 3) {
+      return ratios;
+    }
+  }
+  return [...DEFAULT_COLUMN_RATIOS];
+}
+
+function handleColumnRatiosChange(newRatios: [number, number, number]) {
+  columnRatios.value = newRatios;
+  persistColumnRatios(newRatios);
+}
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function persistColumnRatios(ratios: [number, number, number]) {
+  if (!props.embedded || !props.onUpdateConfig) return;
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    props.onUpdateConfig!({
+      ...(props.viewConfig ?? {}),
+      columnRatios: ratios,
+    });
+    persistTimer = null;
+  }, 300);
+}
+
+function handleResetColumnRatios() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  columnRatios.value = [...DEFAULT_COLUMN_RATIOS];
+  if (props.embedded && props.onUpdateConfig) {
+    props.onUpdateConfig({
+      ...(props.viewConfig ?? {}),
+      columnRatios: [...DEFAULT_COLUMN_RATIOS],
+    });
+  }
+}
 
 const filteredProjects = computed(() => {
   return projectStore.getFilteredProjects(selectedGroup.value);
@@ -85,6 +154,17 @@ const handleDataRefresh = async (payload?: Record<string, unknown>) => {
 let unsubscribeRefresh: (() => void) | null = null;
 let refreshChannel: BroadcastChannel | null = null;
 let refreshChannelGuard: ReturnType<typeof createRefreshChannelGuard> | null = null;
+
+watch(() => props.viewConfig, (config) => {
+  const groupId = (config as WorkbenchProjectViewConfig | undefined)?.groupId;
+  if (groupId) {
+    selectedGroup.value = groupId;
+  }
+  const ratios = (config as WorkbenchProjectViewConfig | undefined)?.columnRatios;
+  if (ratios && Array.isArray(ratios) && ratios.length === 3) {
+    columnRatios.value = [...ratios];
+  }
+}, { immediate: true });
 
 // 初始化数据
 onMounted(async () => {
@@ -137,7 +217,7 @@ onUnmounted(() => {
 
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'project-tab:manual-refresh',
     });

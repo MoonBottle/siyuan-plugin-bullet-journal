@@ -10,7 +10,7 @@ export const TAB_TYPES = {
   QUADRANT: 'bullet-journal-quadrant',
   PROJECT: 'bullet-journal-project',
   POMODORO_STATS: 'bullet-journal-pomodoro-stats',
-  FOCUS_REVIEW: 'bullet-journal-focus-review'
+  FOCUS_WORKBENCH: 'bullet-journal-focus-workbench'
 };
 
 // Dock 类型常量

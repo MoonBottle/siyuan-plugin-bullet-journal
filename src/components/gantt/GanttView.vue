@@ -242,7 +242,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'completed' });
         // 注意：重复事项的自动创建由 WebSocket 处理器处理
         if (success && plugin) {
-          await plugin.requestDataRefresh?.({
+          await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:complete',
           });
@@ -257,7 +257,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
           buildDatePatchFromItem(item, todayStr, { includeCurrentItemInSiblings: true }),
         );
         if (plugin) {
-          await plugin.requestDataRefresh?.({
+          await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:migrate-today',
           });
@@ -271,7 +271,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
           buildDatePatchFromItem(item, tomorrowStr, { includeCurrentItemInSiblings: true }),
         );
         if (plugin) {
-          await plugin.requestDataRefresh?.({
+          await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:migrate-tomorrow',
           });
@@ -285,7 +285,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
             buildDatePatchFromItem(item, newDate, { includeCurrentItemInSiblings: true }),
           );
           if (plugin) {
-            await plugin.requestDataRefresh?.({
+            await plugin.requestRefresh?.({
               type: 'full',
               reason: 'gantt-view:migrate-custom',
             });
@@ -296,7 +296,7 @@ const handleGanttContextMenu = (taskId: string | number, _linkId: string | numbe
         if (!item.blockId) return;
         const success = await writeBlock({ blockId: item.blockId, listItemBlockId: item.listItemBlockId }, { type: 'setStatus', status: 'abandoned' });
         if (success && plugin) {
-          await plugin.requestDataRefresh?.({
+          await plugin.requestRefresh?.({
             type: 'full',
             reason: 'gantt-view:abandon',
           });

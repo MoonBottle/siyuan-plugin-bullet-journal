@@ -524,6 +524,10 @@ export const useAIStore = defineStore('ai', () => {
     return conversation.id;
   }
 
+  function startNewConversationDraft() {
+    currentConversation.value = null;
+  }
+
   async function switchConversation(conversationId: string) {
     if (!storageService) return;
 
@@ -542,6 +546,21 @@ export const useAIStore = defineStore('ai', () => {
 
     if (currentConversation.value?.id === conversationId) {
       currentConversation.value = null;
+    }
+  }
+
+  async function renameConversation(conversationId: string, title: string) {
+    if (!storageService) return;
+
+    await storageService.updateConversationTitle(conversationId, title);
+    await refreshConversationsList();
+
+    if (currentConversation.value?.id === conversationId) {
+      currentConversation.value = {
+        ...currentConversation.value,
+        title,
+        updatedAt: Date.now(),
+      };
     }
   }
 
@@ -1515,8 +1534,10 @@ export const useAIStore = defineStore('ai', () => {
     setProviders,
     setActiveProvider,
     setShowToolCalls,
+    startNewConversationDraft,
     createConversation,
     switchConversation,
+    renameConversation,
     deleteConversation,
     clearCurrentConversation,
     sendMessage,

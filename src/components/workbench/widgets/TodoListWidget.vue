@@ -4,42 +4,47 @@
     class="workbench-widget-todo-list"
     data-testid="workbench-widget-todo-list"
   >
-    <div class="workbench-widget-todo-list__search">
-      <svg class="workbench-widget-todo-list__search-icon"><use xlink:href="#iconSearch"></use></svg>
-      <input
-        v-model="searchQuery"
-        type="text"
-        :placeholder="t('todo').searchPlaceholder"
-        class="workbench-widget-todo-list__search-input"
-        data-testid="workbench-todo-widget-search"
-      />
-      <button
-        v-if="searchQuery"
-        type="button"
-        class="workbench-widget-todo-list__search-clear"
-        data-testid="workbench-todo-widget-search-clear"
-        @click="searchQuery = ''"
-      >
-        <svg><use xlink:href="#iconClose"></use></svg>
-      </button>
-    </div>
-    <div
-      class="workbench-widget-todo-list__tag-filter"
-      data-testid="workbench-todo-widget-tag-filter"
-    >
-      <TodoTagFilterInput
-        v-model:tag-query="tagQuery"
-        v-model:selected-tags="selectedTags"
-        :tag-options="tagOptions"
-      />
-    </div>
+    <TodoFilterBar
+      :selected-group="todoState.selectedGroup.value"
+      :search-query="searchQuery"
+      :tag-query="tagQuery"
+      :selected-tags="selectedTags"
+      :date-filter-type="todoState.dateFilterType.value"
+      :selected-priorities="todoState.selectedPriorities.value"
+      :start-date="todoState.startDate.value"
+      :end-date="todoState.endDate.value"
+      :show-sort-panel="showSortPanel"
+      :sort-rules="sortRules"
+      :group-options="groupOptions"
+      :tag-options="tagOptions"
+      :date-filter-options="dateFilterOptions"
+      :priority-options="priorityOptions"
+      :sort-direction-options="sortDirectionOptions"
+      :available-field-options="availableFieldOptions"
+      @update:selected-group="todoState.selectedGroup.value = $event"
+      @update:search-query="searchQuery = $event"
+      @update:tag-query="tagQuery = $event"
+      @update:selected-tags="selectedTags = $event"
+      @update:date-filter-type="onDateFilterChange"
+      @change:date-filter-type="onDateFilterChange"
+      @update:start-date="todoState.startDate.value = $event"
+      @update:end-date="todoState.endDate.value = $event"
+      @toggle-priority="togglePriority"
+      @toggle-sort-panel="showSortPanel = !showSortPanel"
+      @update-sort-field="updateSortField"
+      @update-sort-direction="updateSortDirection"
+      @move-sort-rule="moveSortRule"
+      @remove-sort-rule="removeSortRule"
+      @add-sort-rule="addSortRule"
+      @reset-sort-rules="resetSortRules"
+    />
     <div class="workbench-widget-todo-list__content" data-testid="workbench-todo-widget-content">
       <TodoContentPane
         ref="todoContentPaneRef"
         :group-id="todoState.selectedGroup.value"
         :search-query="searchQuery"
         :selected-tags="selectedTags"
-        :sort-rules="presetSortRules"
+        :sort-rules="effectiveSortRules"
         :date-range="todoState.dateRange.value"
         :completed-date-range="todoState.completedDateRange.value"
         :priorities="todoState.selectedPriorities.value"
@@ -54,16 +59,21 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import TodoContentPane from '@/components/todo/TodoContentPane.vue';
-import TodoTagFilterInput from '@/components/todo/TodoTagFilterInput.vue';
+import TodoFilterBar from '@/components/todo/TodoFilterBar.vue';
 import { useBlockFocusPreview } from '@/composables/useBlockFocusPreview';
 import { useTodoViewState } from '@/composables/useTodoViewState';
 import { t } from '@/i18n';
 import { useApp, usePlugin } from '@/main';
-import type { TodoSortRule } from '@/settings';
+import { useSettingsStore } from '@/stores';
+import { defaultTodoSortRules, type TodoSortDirection, type TodoSortField, type TodoSortRule } from '@/settings';
 import type { WorkbenchTodoListWidgetConfig, WorkbenchWidgetInstance } from '@/types/workbench';
 import type { TodoSidebarHoverPayload } from '@/components/todo/TodoSidebar.vue';
+import { PRIORITY_CONFIG } from '@/parser/priorityParser';
+import type { PriorityLevel } from '@/types/models';
+import type { TodoDateFilterType } from '@/utils/todoDateFilter';
 import { createNativeBlockPreviewController } from '@/utils/nativeBlockPreview';
 import { useSafeProjectStore } from './useSafeProjectStore';
+import { eventBus, Events } from '@/utils/eventBus';
 
 const props = defineProps<{
   widget?: WorkbenchWidgetInstance;
@@ -73,6 +83,7 @@ const props = defineProps<{
 const app = useApp();
 const plugin = usePlugin() as any;
 const projectStore = useSafeProjectStore();
+const settingsStore = useSettingsStore();
 const preview = useBlockFocusPreview({
   showDelayMs: 0,
   hideDelayMs: 300,
@@ -81,6 +92,7 @@ const preview = useBlockFocusPreview({
 const nativePreview = createNativeBlockPreviewController();
 const widgetRootRef = ref<HTMLElement | null>(null);
 let widgetScrollbarObserver: ResizeObserver | null = null;
+let unsubscribeDateRange: (() => void) | undefined;
 const todoConfig = computed(() => {
   return (props.widget?.config ?? {}) as WorkbenchTodoListWidgetConfig;
 });
@@ -91,10 +103,47 @@ const todoState = useTodoViewState({
 const selectedTags = todoState.selectedTags;
 const searchQuery = ref('');
 const tagQuery = ref('');
-const presetSortRules = computed<TodoSortRule[] | undefined>(() => {
-  const sortRules = todoConfig.value.preset?.sortRules;
-  return Array.isArray(sortRules) && sortRules.length > 0 ? sortRules : undefined;
+const showSortPanel = ref(false);
+
+const sortRules = computed(() => {
+  return settingsStore.todoDock.sortRules;
 });
+
+const effectiveSortRules = computed<TodoSortRule[] | undefined>(() => {
+  const presetRules = todoConfig.value.preset?.sortRules;
+  return Array.isArray(presetRules) && presetRules.length > 0 ? presetRules : undefined;
+});
+
+const priorityOptions = [
+  { value: 'high' as PriorityLevel, emoji: PRIORITY_CONFIG.high.emoji },
+  { value: 'medium' as PriorityLevel, emoji: PRIORITY_CONFIG.medium.emoji },
+  { value: 'low' as PriorityLevel, emoji: PRIORITY_CONFIG.low.emoji },
+];
+
+const dateFilterOptions = [
+  { value: 'today', label: t('todo.dateFilter.today') },
+  { value: 'thisWeek', label: t('todo.dateFilter.thisWeek') },
+  { value: 'thisMonth', label: t('todo.dateFilter.thisMonth') },
+  { value: 'recent7', label: t('todo.dateFilter.recent7') },
+  { value: 'all', label: t('todo.dateFilter.all') },
+  { value: 'custom', label: t('todo.dateFilter.custom') },
+];
+
+const sortFieldOptions = [
+  { value: 'priority' as TodoSortField, label: t('todo.sortFields.priority') },
+  { value: 'time' as TodoSortField, label: t('todo.sortFields.time') },
+  { value: 'date' as TodoSortField, label: t('todo.sortFields.date') },
+  { value: 'reminderTime' as TodoSortField, label: t('todo.sortFields.reminderTime') },
+  { value: 'project' as TodoSortField, label: t('todo.sortFields.project') },
+  { value: 'task' as TodoSortField, label: t('todo.sortFields.task') },
+  { value: 'content' as TodoSortField, label: t('todo.sortFields.content') },
+];
+
+const sortDirectionOptions = [
+  { value: 'asc' as TodoSortDirection, label: t('todo.sortDirection.asc') },
+  { value: 'desc' as TodoSortDirection, label: t('todo.sortDirection.desc') },
+];
+
 const tagOptions = computed(() => {
   if (!projectStore) {
     return [];
@@ -102,6 +151,93 @@ const tagOptions = computed(() => {
 
   return projectStore.getTodoTagOptions(todoState.selectedGroup.value);
 });
+const groupOptions = computed(() => {
+  const options = [{ value: '', label: t('settings').projectGroups.allGroups }];
+  settingsStore.groups.forEach((g: any) => {
+    options.push({ value: g.id, label: g.name || t('settings').projectGroups.unnamed });
+  });
+  return options;
+});
+
+function onDateFilterChange(type: TodoDateFilterType) {
+  todoState.dateFilterType.value = type;
+}
+
+function togglePriority(priority: PriorityLevel) {
+  const index = todoState.selectedPriorities.value.indexOf(priority);
+  if (index > -1) {
+    todoState.selectedPriorities.value.splice(index, 1);
+  } else {
+    todoState.selectedPriorities.value.push(priority);
+  }
+}
+
+function persistSortRules(nextRules: TodoSortRule[]) {
+  settingsStore.todoDock.sortRules = nextRules.length > 0
+    ? nextRules
+    : [...defaultTodoSortRules];
+  settingsStore.saveToPlugin();
+}
+
+function availableFieldOptions(index: number) {
+  const usedFields = new Set(
+    sortRules.value
+      .filter((_, ruleIndex) => ruleIndex !== index)
+      .map(rule => rule.field),
+  );
+
+  return sortFieldOptions.filter(option =>
+    option.value === sortRules.value[index]?.field || !usedFields.has(option.value),
+  );
+}
+
+function updateSortField(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    field: value as TodoSortField,
+  };
+  persistSortRules(nextRules);
+}
+
+function updateSortDirection(index: number, value: string) {
+  const nextRules = [...sortRules.value];
+  nextRules[index] = {
+    ...nextRules[index],
+    direction: value as TodoSortDirection,
+  };
+  persistSortRules(nextRules);
+}
+
+function addSortRule() {
+  const usedFields = new Set(sortRules.value.map(rule => rule.field));
+  const nextField = sortFieldOptions.find(option => !usedFields.has(option.value));
+  if (!nextField) return;
+
+  persistSortRules([
+    ...sortRules.value,
+    { field: nextField.value, direction: 'asc' },
+  ]);
+}
+
+function moveSortRule(index: number, delta: number) {
+  const targetIndex = index + delta;
+  if (targetIndex < 0 || targetIndex >= sortRules.value.length) return;
+
+  const nextRules = [...sortRules.value];
+  [nextRules[index], nextRules[targetIndex]] = [nextRules[targetIndex], nextRules[index]];
+  persistSortRules(nextRules);
+}
+
+function removeSortRule(index: number) {
+  if (sortRules.value.length <= 1) return;
+  const nextRules = sortRules.value.filter((_, ruleIndex) => ruleIndex !== index);
+  persistSortRules(nextRules);
+}
+
+function resetSortRules() {
+  persistSortRules([...defaultTodoSortRules]);
+}
 
 watch(
   () => todoConfig.value.preset,
@@ -127,7 +263,7 @@ const openItemsCount = computed(() => {
     groupId: todoState.selectedGroup.value,
     searchQuery: searchQuery.value,
     selectedTags: selectedTags.value,
-    sortRules: presetSortRules.value,
+    sortRules: effectiveSortRules.value,
     dateRange: todoState.dateRange.value,
     priorities: todoState.selectedPriorities.value.length > 0
       ? todoState.selectedPriorities.value
@@ -233,6 +369,15 @@ watch(
 );
 
 onMounted(() => {
+  unsubscribeDateRange = eventBus.on(
+    Events.WIDGET_DATE_RANGE_CHANGED,
+    (payload: { sourceWidgetId: string; targetWidgetId: string; dateRange: { start: string; end: string } }) => {
+      if (!props.widget || payload.targetWidgetId !== props.widget.id) return;
+      todoState.dateFilterType.value = 'custom';
+      todoState.startDate.value = payload.dateRange.start;
+      todoState.endDate.value = payload.dateRange.end;
+    },
+  );
   document.addEventListener('pointerdown', handleDocumentPointerDown, true);
   nextTick(() => {
     syncWidgetScrollbarGutter();
@@ -255,6 +400,7 @@ onUnmounted(() => {
   widgetScrollbarObserver?.disconnect();
   widgetScrollbarObserver = null;
   nativePreview.close();
+  unsubscribeDateRange?.();
   preview.dispose();
 });
 </script>
@@ -263,63 +409,10 @@ onUnmounted(() => {
 .workbench-widget-todo-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-}
-
-.workbench-widget-todo-list__search {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: calc(100% - 16px - var(--todo-scrollbar-gutter-width, 0px));
-  margin-left: 8px;
-  box-sizing: border-box;
-  padding: 5px 10px;
-  background: var(--b3-theme-background);
-  border: 1px solid var(--b3-border-color);
-  border-radius: var(--b3-border-radius);
-  flex-shrink: 0;
-}
-
-.workbench-widget-todo-list__search-icon {
-  width: 14px;
-  height: 14px;
-  fill: var(--b3-theme-on-surface);
-  opacity: 0.5;
-}
-
-.workbench-widget-todo-list__search-input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  outline: none;
-  color: var(--b3-theme-on-background);
-}
-
-.workbench-widget-todo-list__search-clear {
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--b3-theme-on-surface);
-  opacity: 0.4;
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.8;
-  }
-
-  svg {
-    width: 12px;
-    height: 12px;
-    fill: currentColor;
-  }
 }
 
 .workbench-widget-todo-list__content {
@@ -330,31 +423,11 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.workbench-widget-todo-list__tag-filter {
-  flex-shrink: 0;
-  width: calc(100% - 16px - var(--todo-scrollbar-gutter-width, 0px));
-  margin-left: 8px;
-}
-
 .workbench-widget-todo-list__content :deep(.todo-dock-content) {
   display: flex;
   flex: 1;
   width: 100%;
   height: 100%;
   min-height: 0;
-}
-
-.workbench-widget-todo-list__tag-filter :deep(.tag-search-row) {
-  margin: 0;
-}
-
-.workbench-widget-todo-list__tag-filter :deep(.tag-search-box) {
-  min-height: 30px;
-  padding: 2px 10px;
-}
-
-.workbench-widget-todo-list__tag-filter :deep(.tag-dropdown) {
-  left: 0;
-  right: 0;
 }
 </style>

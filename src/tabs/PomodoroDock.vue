@@ -2,7 +2,6 @@
   <div class="fn__flex-1 fn__flex-column pomodoro-dock">
     <div class="block__icons">
       <div class="block__logo">
-        <TomatoIcon :width="16" :height="16" class="block__logoicon" />
         {{ t('pomodoro').dockTitle }}
       </div>
       <span class="fn__flex-1 fn__space"></span>
@@ -52,7 +51,7 @@ import PomodoroActiveTimer from '@/components/pomodoro/PomodoroActiveTimer.vue';
 import PomodoroBreakTimer from '@/components/pomodoro/PomodoroBreakTimer.vue';
 import PomodoroCompleteDialog from '@/components/pomodoro/PomodoroCompleteDialog.vue';
 import PomodoroBreakOverlay from '@/components/pomodoro/PomodoroBreakOverlay.vue';
-import TomatoIcon from '@/components/icons/TomatoIcon.vue';
+
 import type { PendingPomodoroCompletion } from '@/types/models';
 import { showMessage, showPomodoroTimerDialog } from '@/utils/dialog';
 import { getBlockByID } from '@/api';
@@ -77,7 +76,7 @@ const handleDataRefresh = async () => {
 // 手动刷新
 const handleRefresh = async () => {
   if (plugin) {
-    await plugin.requestDataRefresh?.({
+    await plugin.requestRefresh?.({
       type: 'full',
       reason: 'pomodoro-dock:manual-refresh',
     });

@@ -23,7 +23,7 @@ const {
   checkIn: vi.fn(),
   checkInCount: vi.fn(),
   mockPlugin: {
-    requestDataRefresh: vi.fn(() => Promise.resolve()),
+    requestRefresh: vi.fn(() => Promise.resolve()),
   },
   unarchiveHabit: vi.fn(),
 }));
@@ -210,7 +210,7 @@ describe('DesktopHabitDock', () => {
     checkIn.mockResolvedValue(false);
     checkInCount.mockResolvedValue(false);
     unarchiveHabit.mockResolvedValue(false);
-    mockPlugin.requestDataRefresh.mockClear();
+    mockPlugin.requestRefresh.mockClear();
   });
 
   it('opening a list item main action enters detail mode', async () => {
@@ -307,7 +307,7 @@ describe('DesktopHabitDock', () => {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+    expect(mockPlugin.requestRefresh).toHaveBeenCalledWith({
       type: 'full',
       reason: 'habit-workspace:manual-refresh',
     });
@@ -385,7 +385,7 @@ describe('DesktopHabitDock', () => {
       expect.objectContaining({ blockId: 'habit-1' }),
       dayjs().format('YYYY-MM-DD'),
     );
-    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+    expect(mockPlugin.requestRefresh).toHaveBeenCalledWith({
       type: 'full',
       reason: 'habit-workspace:archive',
     });
@@ -415,7 +415,7 @@ describe('DesktopHabitDock', () => {
     expect(unarchiveHabit).toHaveBeenCalledWith(
       expect.objectContaining({ blockId: 'habit-1', archivedAt: '2026-05-04' }),
     );
-    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+    expect(mockPlugin.requestRefresh).toHaveBeenCalledWith({
       type: 'full',
       reason: 'habit-workspace:unarchive',
     });

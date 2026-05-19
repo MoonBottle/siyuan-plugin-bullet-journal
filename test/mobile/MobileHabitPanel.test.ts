@@ -67,7 +67,7 @@ const {
     },
     archiveHabit: vi.fn(),
     mockPlugin: {
-      requestDataRefresh: vi.fn(() => Promise.resolve()),
+      requestRefresh: vi.fn(() => Promise.resolve()),
     },
     checkIn: vi.fn(),
     checkInCount: vi.fn(),
@@ -362,7 +362,7 @@ afterEach(() => {
   checkIn.mockResolvedValue(false);
   checkInCount.mockResolvedValue(false);
   archiveHabit.mockResolvedValue(false);
-  mockPlugin.requestDataRefresh.mockClear();
+  mockPlugin.requestRefresh.mockClear();
   unarchiveHabit.mockResolvedValue(false);
 });
 
@@ -480,7 +480,7 @@ describe('MobileHabitPanel', () => {
     await nextTick();
 
     expect(archiveHabit).toHaveBeenCalledWith(habits[0], dayjs().format('YYYY-MM-DD'));
-    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+    expect(mockPlugin.requestRefresh).toHaveBeenCalledWith({
       type: 'full',
       reason: 'mobile-habit:archive',
     });
@@ -507,7 +507,7 @@ describe('MobileHabitPanel', () => {
       blockId: 'habit-1',
       archivedAt: '2026-05-04',
     }));
-    expect(mockPlugin.requestDataRefresh).toHaveBeenCalledWith({
+    expect(mockPlugin.requestRefresh).toHaveBeenCalledWith({
       type: 'full',
       reason: 'mobile-habit:unarchive',
     });

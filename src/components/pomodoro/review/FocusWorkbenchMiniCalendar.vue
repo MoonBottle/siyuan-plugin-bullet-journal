@@ -1,16 +1,16 @@
 <template>
-  <div class="focus-review-mini-calendar">
-    <div class="focus-review-mini-calendar__header">
+  <div class="focus-workbench-mini-calendar">
+    <div class="focus-workbench-mini-calendar__header">
       <button
-        class="focus-review-mini-calendar__nav block__icon"
+        class="focus-workbench-mini-calendar__nav block__icon"
         type="button"
         @click="prevMonth"
       >
         ‹
       </button>
-      <span class="focus-review-mini-calendar__title">{{ title }}</span>
+      <span class="focus-workbench-mini-calendar__title">{{ title }}</span>
       <button
-        class="focus-review-mini-calendar__nav block__icon"
+        class="focus-workbench-mini-calendar__nav block__icon"
         type="button"
         @click="nextMonth"
       >
@@ -18,34 +18,34 @@
       </button>
     </div>
 
-    <div class="focus-review-mini-calendar__weekdays">
+    <div class="focus-workbench-mini-calendar__weekdays">
       <span
         v-for="day in weekDayLabels"
         :key="day"
-        class="focus-review-mini-calendar__weekday"
+        class="focus-workbench-mini-calendar__weekday"
         >{{ day }}</span
       >
     </div>
 
-    <div class="focus-review-mini-calendar__days">
+    <div class="focus-workbench-mini-calendar__days">
       <button
         v-for="(cell, index) in calendarCells"
         :key="cell.date || `empty-${index}`"
-        class="focus-review-mini-calendar__cell"
+        class="focus-workbench-mini-calendar__cell"
         :class="{
-          'focus-review-mini-calendar__cell--empty': !cell.date,
-          'focus-review-mini-calendar__cell--today': cell.date === today,
-          'focus-review-mini-calendar__cell--selected':
+          'focus-workbench-mini-calendar__cell--empty': !cell.date,
+          'focus-workbench-mini-calendar__cell--today': cell.date === today,
+          'focus-workbench-mini-calendar__cell--selected':
             cell.date === modelValue,
-          'focus-review-mini-calendar__cell--planned': hasPlanned(cell.summary),
-          'focus-review-mini-calendar__cell--focused':
+          'focus-workbench-mini-calendar__cell--planned': hasPlanned(cell.summary),
+          'focus-workbench-mini-calendar__cell--focused':
             cell.summary.actualMinutes > 0,
-          'focus-review-mini-calendar__cell--unplanned-focus': hasFocusedOnly(
+          'focus-workbench-mini-calendar__cell--unplanned-focus': hasFocusedOnly(
             cell.summary,
           ),
         }"
         :data-testid="
-          cell.date ? `focus-review-calendar-cell-${cell.date}` : undefined
+          cell.date ? `focus-workbench-calendar-cell-${cell.date}` : undefined
         "
         :disabled="!cell.date"
         type="button"
@@ -53,21 +53,21 @@
         @click="cell.date && emit('update:modelValue', cell.date)"
       >
         <template v-if="cell.date">
-          <span class="focus-review-mini-calendar__day-num">{{
+          <span class="focus-workbench-mini-calendar__day-num">{{
             cell.dayNum
           }}</span>
-          <span class="focus-review-mini-calendar__marker">
+          <span class="focus-workbench-mini-calendar__marker">
             <span
               v-if="hasMarker(cell.summary)"
-              class="focus-review-mini-calendar__dot"
+              class="focus-workbench-mini-calendar__dot"
               :class="{
-                'focus-review-mini-calendar__dot--planned': hasPlannedOnly(
+                'focus-workbench-mini-calendar__dot--planned': hasPlannedOnly(
                   cell.summary,
                 ),
-                'focus-review-mini-calendar__dot--focused': hasFocusedOnly(
+                'focus-workbench-mini-calendar__dot--focused': hasFocusedOnly(
                   cell.summary,
                 ),
-                'focus-review-mini-calendar__dot--hybrid': hasPlannedAndFocused(
+                'focus-workbench-mini-calendar__dot--hybrid': hasPlannedAndFocused(
                   cell.summary,
                 ),
               }"
@@ -77,24 +77,24 @@
       </button>
     </div>
 
-    <div class="focus-review-mini-calendar__legend">
-      <span class="focus-review-mini-calendar__legend-item">
+    <div class="focus-workbench-mini-calendar__legend">
+      <span class="focus-workbench-mini-calendar__legend-item">
         <span
-          class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--planned"
+          class="focus-workbench-mini-calendar__dot focus-workbench-mini-calendar__dot--planned"
         ></span>
-        <span>{{ t("focusReview").calendarLegendPlanned }}</span>
+        <span>{{ t("focusWorkbench").calendarLegendPlanned }}</span>
       </span>
-      <span class="focus-review-mini-calendar__legend-item">
+      <span class="focus-workbench-mini-calendar__legend-item">
         <span
-          class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--focused"
+          class="focus-workbench-mini-calendar__dot focus-workbench-mini-calendar__dot--focused"
         ></span>
-        <span>{{ t("focusReview").calendarLegendFocused }}</span>
+        <span>{{ t("focusWorkbench").calendarLegendFocused }}</span>
       </span>
-      <span class="focus-review-mini-calendar__legend-item">
+      <span class="focus-workbench-mini-calendar__legend-item">
         <span
-          class="focus-review-mini-calendar__dot focus-review-mini-calendar__dot--hybrid"
+          class="focus-workbench-mini-calendar__dot focus-workbench-mini-calendar__dot--hybrid"
         ></span>
-        <span>{{ t("focusReview").calendarLegendHybrid }}</span>
+        <span>{{ t("focusWorkbench").calendarLegendHybrid }}</span>
       </span>
     </div>
   </div>
@@ -205,9 +205,9 @@ function hasMarker(summary: FocusPlanDailySummary): boolean {
 
 function getCellMarkerLabel(summary: FocusPlanDailySummary): string {
   if (hasPlannedAndFocused(summary))
-    return t("focusReview").calendarLegendHybrid;
-  if (hasFocusedOnly(summary)) return t("focusReview").calendarLegendFocused;
-  if (hasPlannedOnly(summary)) return t("focusReview").calendarLegendPlanned;
+    return t("focusWorkbench").calendarLegendHybrid;
+  if (hasFocusedOnly(summary)) return t("focusWorkbench").calendarLegendFocused;
+  if (hasPlannedOnly(summary)) return t("focusWorkbench").calendarLegendPlanned;
   return "";
 }
 
@@ -228,14 +228,14 @@ function emptySummary(): FocusPlanDailySummary {
 </script>
 
 <style scoped>
-.focus-review-mini-calendar {
+.focus-workbench-mini-calendar {
   padding: 12px;
   border: 1px solid var(--b3-theme-surface-lighter);
   border-radius: 10px;
   background: var(--b3-theme-background);
 }
 
-.focus-review-mini-calendar__header {
+.focus-workbench-mini-calendar__header {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 28px;
   align-items: center;
@@ -243,7 +243,7 @@ function emptySummary(): FocusPlanDailySummary {
   margin-bottom: 10px;
 }
 
-.focus-review-mini-calendar__nav {
+.focus-workbench-mini-calendar__nav {
   width: 28px;
   height: 28px;
   border: none;
@@ -260,31 +260,31 @@ function emptySummary(): FocusPlanDailySummary {
   padding: 0;
 }
 
-.focus-review-mini-calendar__title {
+.focus-workbench-mini-calendar__title {
   justify-self: center;
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
 }
 
-.focus-review-mini-calendar__weekdays,
-.focus-review-mini-calendar__days {
+.focus-workbench-mini-calendar__weekdays,
+.focus-workbench-mini-calendar__days {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
-.focus-review-mini-calendar__weekday {
+.focus-workbench-mini-calendar__weekday {
   text-align: center;
   font-size: 11px;
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-mini-calendar__days {
+.focus-workbench-mini-calendar__days {
   margin-top: 6px;
 }
 
-.focus-review-mini-calendar__cell {
+.focus-workbench-mini-calendar__cell {
   min-width: 0;
   aspect-ratio: 1 / 1;
   padding: 0;
@@ -300,36 +300,36 @@ function emptySummary(): FocusPlanDailySummary {
   cursor: pointer;
 }
 
-.focus-review-mini-calendar__cell--empty {
+.focus-workbench-mini-calendar__cell--empty {
   cursor: default;
 }
 
-.focus-review-mini-calendar__cell--today {
+.focus-workbench-mini-calendar__cell--today {
   border-color: var(--b3-theme-primary);
 }
 
-.focus-review-mini-calendar__cell--selected {
+.focus-workbench-mini-calendar__cell--selected {
   background: var(--b3-theme-primary-lightest);
   border-color: var(--b3-theme-primary);
 }
 
-.focus-review-mini-calendar__cell--focused:not(
-  .focus-review-mini-calendar__cell--selected
+.focus-workbench-mini-calendar__cell--focused:not(
+  .focus-workbench-mini-calendar__cell--selected
 ) {
   background: var(--b3-theme-surface);
 }
 
-.focus-review-mini-calendar__cell--planned
-  .focus-review-mini-calendar__day-num {
+.focus-workbench-mini-calendar__cell--planned
+  .focus-workbench-mini-calendar__day-num {
   font-weight: 600;
 }
 
-.focus-review-mini-calendar__day-num {
+.focus-workbench-mini-calendar__day-num {
   font-size: 12px;
   line-height: 1;
 }
 
-.focus-review-mini-calendar__marker {
+.focus-workbench-mini-calendar__marker {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -337,7 +337,7 @@ function emptySummary(): FocusPlanDailySummary {
   margin-top: 5px;
 }
 
-.focus-review-mini-calendar__dot {
+.focus-workbench-mini-calendar__dot {
   width: 6px;
   height: 6px;
   border-radius: 999px;
@@ -348,15 +348,15 @@ function emptySummary(): FocusPlanDailySummary {
     box-shadow 0.2s ease;
 }
 
-.focus-review-mini-calendar__dot--planned {
+.focus-workbench-mini-calendar__dot--planned {
   background: var(--b3-theme-surface-lighter);
 }
 
-.focus-review-mini-calendar__dot--focused {
+.focus-workbench-mini-calendar__dot--focused {
   background: var(--b3-theme-primary);
 }
 
-.focus-review-mini-calendar__dot--hybrid {
+.focus-workbench-mini-calendar__dot--hybrid {
   background: var(--b3-theme-primary);
   box-shadow:
     0 0 0 1px var(--b3-theme-background),
@@ -364,7 +364,7 @@ function emptySummary(): FocusPlanDailySummary {
   transform: scale(1.1);
 }
 
-.focus-review-mini-calendar__legend {
+.focus-workbench-mini-calendar__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 12px;
@@ -375,7 +375,7 @@ function emptySummary(): FocusPlanDailySummary {
   color: var(--b3-theme-on-surface);
 }
 
-.focus-review-mini-calendar__legend-item {
+.focus-workbench-mini-calendar__legend-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;

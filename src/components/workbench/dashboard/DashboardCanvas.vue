@@ -83,6 +83,7 @@ import PomodoroStatsWidget from '@/components/workbench/widgets/PomodoroStatsWid
 import QuadrantSummaryWidget from '@/components/workbench/widgets/QuadrantSummaryWidget.vue';
 import TodoListWidget from '@/components/workbench/widgets/TodoListWidget.vue';
 import HabitWeekWidget from '@/components/workbench/widgets/HabitWeekWidget.vue';
+import DatePickerWidget from '@/components/workbench/widgets/DatePickerWidget.vue';
 import { t } from '@/i18n';
 import { useWorkbenchStore } from '@/stores';
 import type { Component } from 'vue';
@@ -162,6 +163,7 @@ const widgetComponents: Record<WorkbenchWidgetType, Component> = {
   habitWeek: HabitWeekWidget,
   miniCalendar: MiniCalendarWidget,
   pomodoroStats: PomodoroStatsWidget,
+  datePicker: DatePickerWidget,
 };
 
 function normalizeLayout(widget: WorkbenchWidgetInstance) {
@@ -290,6 +292,7 @@ function handleConfigureWidget(widgetId: string) {
     onUpdateConfig: async (config) => {
       await workbenchStore.updateWidgetConfig(dashboard.value!.id, widgetId, config);
     },
+    dashboardWidgets: dashboard.value?.widgets ?? [],
   });
 }
 

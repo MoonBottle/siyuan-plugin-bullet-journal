@@ -17,19 +17,19 @@
         <div class="stat-label">{{ t('pomodoroStats').totalFocusDuration }}</div>
         <div class="stat-value">{{ formatDuration(totalMinutes) }}</div>
       </div>
-      <button class="stat-card stat-card--action" data-testid="focus-review-entry-estimated" type="button" @click="openFocusReview">
+      <button class="stat-card stat-card--action" data-testid="focus-workbench-entry-estimated" type="button" @click="openFocusWorkbench">
         <div class="stat-card__action">
           <div class="stat-label">{{ t('focusPlan').estimatedShort }}</div>
-          <span class="stat-card__action-icon" :aria-label="t('focusReview').openReview">
+          <span class="stat-card__action-icon" :aria-label="t('focusWorkbench').openReview">
             <svg><use xlink:href="#iconRight"></use></svg>
           </span>
         </div>
         <div class="stat-value">{{ formatDuration(todayFocusPlanSummary.estimatedMinutes) }}</div>
       </button>
-      <button class="stat-card stat-card--action" data-testid="focus-review-entry-variance" type="button" @click="openFocusReview">
+      <button class="stat-card stat-card--action" data-testid="focus-workbench-entry-variance" type="button" @click="openFocusWorkbench">
         <div class="stat-card__action">
           <div class="stat-label">{{ t('focusPlan').variance }}</div>
-          <span class="stat-card__action-icon" :aria-label="t('focusReview').openReview">
+          <span class="stat-card__action-icon" :aria-label="t('focusWorkbench').openReview">
             <svg><use xlink:href="#iconRight"></use></svg>
           </span>
         </div>
@@ -61,8 +61,8 @@ const varianceDisplay = computed(() => {
   return `${prefix}${formatDuration(absValue)}`;
 });
 
-function openFocusReview() {
-  plugin?.openCustomTab?.(TAB_TYPES.FOCUS_REVIEW);
+function openFocusWorkbench() {
+  plugin?.openCustomTab?.(TAB_TYPES.FOCUS_WORKBENCH);
 }
 
 /**

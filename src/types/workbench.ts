@@ -8,7 +8,8 @@ export type WorkbenchViewType =
   | 'todo'
   | 'habit'
   | 'pomodoroStats'
-  | 'focusReview';
+  | 'focusWorkbench'
+  | 'aiChat';
 
 export interface WorkbenchEntry {
   id: string;
@@ -18,6 +19,7 @@ export interface WorkbenchEntry {
   order: number;
   viewType?: WorkbenchViewType;
   dashboardId?: string;
+  config?: Record<string, unknown>;
 }
 
 export type WorkbenchWidgetType =
@@ -25,7 +27,8 @@ export type WorkbenchWidgetType =
   | 'quadrantSummary'
   | 'habitWeek'
   | 'miniCalendar'
-  | 'pomodoroStats';
+  | 'pomodoroStats'
+  | 'datePicker';
 
 export type WorkbenchQuadrantKey = 'q1' | 'q2' | 'q3' | 'q4';
 export type WorkbenchPomodoroStatsSectionKey =
@@ -45,6 +48,10 @@ export interface WorkbenchQuadrantWidgetConfig {
   quadrant?: WorkbenchQuadrantKey;
 }
 
+export interface WorkbenchQuadrantViewConfig {
+  groupId?: string;
+}
+
 export interface WorkbenchCalendarWidgetConfig {
   groupId?: string;
   view?: 'timeGridDay';
@@ -57,6 +64,39 @@ export interface WorkbenchHabitWeekWidgetConfig {
 
 export interface WorkbenchPomodoroStatsWidgetConfig {
   section?: WorkbenchPomodoroStatsSectionKey;
+}
+
+/** 可联动的目标组件类型（可扩展） */
+export type LinkableWidgetType = 'todoList';
+
+/** 字段映射：日历产出字段 → 目标组件属性 */
+export interface WidgetLinkageFieldMap {
+  sourceField: 'dateRange';
+  targetProperty: 'dateRange';
+}
+
+/** 单条联动规则 */
+export interface WidgetLinkageRule {
+  id: string;
+  targetWidgetId: string;
+  targetType: LinkableWidgetType;
+  fieldMapping: WidgetLinkageFieldMap;
+}
+
+/** DatePickerWidget 配置 */
+export interface WorkbenchDatePickerWidgetConfig {
+  view?: 'month' | 'week';
+  groupId?: string;
+  linkages: WidgetLinkageRule[];
+}
+
+export interface WorkbenchFocusWorkbenchViewConfig {
+  groupId?: string;
+}
+
+export interface WorkbenchProjectViewConfig {
+  groupId?: string;
+  columnRatios?: [number, number, number];
 }
 
 export interface WorkbenchWidgetInstance {

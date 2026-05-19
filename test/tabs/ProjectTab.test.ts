@@ -2,7 +2,7 @@
 import { createApp, nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockRequestDataRefresh = vi.fn(() => Promise.resolve());
+const mockRequestRefresh = vi.fn(() => Promise.resolve());
 const mockSettingsStore = {
   groups: [{ id: 'group-a', name: '分组 A' }],
   defaultGroup: '',
@@ -19,7 +19,7 @@ vi.mock('@/stores', () => ({
 }));
 
 vi.mock('@/main', () => ({
-  usePlugin: () => ({ requestDataRefresh: mockRequestDataRefresh }),
+  usePlugin: () => ({ requestRefresh: mockRequestRefresh }),
   getCurrentPlugin: () => null,
 }));
 

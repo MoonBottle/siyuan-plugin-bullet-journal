@@ -1,6 +1,7 @@
 import { t } from '@/i18n';
 import type {
   WorkbenchCalendarWidgetConfig,
+  WorkbenchDatePickerWidgetConfig,
   WorkbenchHabitWeekWidgetConfig,
   WorkbenchPomodoroStatsWidgetConfig,
   WorkbenchQuadrantWidgetConfig,
@@ -9,6 +10,7 @@ import type {
   WorkbenchWidgetType,
 } from '@/types/workbench';
 import { openCalendarWidgetConfigDialog } from '@/workbench/calendarWidgetConfigDialog';
+import { openDatePickerWidgetConfigDialog } from '@/workbench/datePickerWidgetConfigDialog';
 import { openHabitWidgetConfigDialog } from '@/workbench/habitWidgetConfigDialog';
 import { openPomodoroWidgetConfigDialog } from '@/workbench/pomodoroWidgetConfigDialog';
 import { openQuadrantWidgetConfigDialog } from '@/workbench/quadrantWidgetConfigDialog';
@@ -18,6 +20,7 @@ import { openTodoWidgetConfigDialog } from '@/workbench/todoWidgetConfigDialog';
 type WorkbenchWidgetConfigContext = {
   widget: WorkbenchWidgetInstance;
   onUpdateConfig: (config: Record<string, unknown>) => Promise<void>;
+  dashboardWidgets?: WorkbenchWidgetInstance[];
 };
 
 export type WorkbenchWidgetDefinition = {
@@ -155,6 +158,27 @@ function createWidgetRegistry(): Record<WorkbenchWidgetType, WorkbenchWidgetDefi
             await onUpdateConfig({
               section: nextConfig.section ?? 'overview',
             });
+          },
+        });
+      },
+    },
+    datePicker: {
+      type: 'datePicker',
+      name: t('datePicker').title,
+      icon: 'iconCalendar',
+      defaultSize: { w: 4, h: 3 },
+      minSize: { w: 3, h: 3 },
+      createDefaultConfig: (): WorkbenchDatePickerWidgetConfig => ({
+        view: 'month',
+        linkages: [],
+      }),
+      openConfigDialog: ({ widget, onUpdateConfig, dashboardWidgets }) => {
+        const pickerConfig = widget.config as WorkbenchDatePickerWidgetConfig;
+        openDatePickerWidgetConfigDialog({
+          initialConfig: pickerConfig,
+          dashboardWidgets: dashboardWidgets ?? [],
+          onConfirm: async (nextConfig) => {
+            await onUpdateConfig(nextConfig);
           },
         });
       },

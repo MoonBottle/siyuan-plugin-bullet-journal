@@ -27,7 +27,7 @@ vi.mock('@/main', () => ({
 
 vi.mock('@/constants', () => ({
   TAB_TYPES: {
-    FOCUS_REVIEW: 'bullet-journal-focus-review',
+    FOCUS_WORKBENCH: 'bullet-journal-focus-workbench',
   },
 }));
 
@@ -47,7 +47,7 @@ vi.mock('@/i18n', () => ({
         variance: '偏差',
       };
     }
-    if (key === 'focusReview') {
+    if (key === 'focusWorkbench') {
       return {
         openReview: '打开专注工作台',
       };
@@ -83,12 +83,12 @@ describe('PomodoroStats', () => {
 
     expect(mounted.container.querySelector('[aria-label="打开专注工作台"]')).toBeTruthy();
 
-    (mounted.container.querySelector('[data-testid="focus-review-entry-estimated"]') as HTMLButtonElement).click();
-    (mounted.container.querySelector('[data-testid="focus-review-entry-variance"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-entry-estimated"]') as HTMLButtonElement).click();
+    (mounted.container.querySelector('[data-testid="focus-workbench-entry-variance"]') as HTMLButtonElement).click();
 
     expect(mockOpenCustomTab).toHaveBeenCalledTimes(2);
-    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(1, 'bullet-journal-focus-review');
-    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(2, 'bullet-journal-focus-review');
+    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(1, 'bullet-journal-focus-workbench');
+    expect(mockOpenCustomTab).toHaveBeenNthCalledWith(2, 'bullet-journal-focus-workbench');
 
     mounted.unmount();
   });
