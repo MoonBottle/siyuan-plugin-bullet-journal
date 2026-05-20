@@ -93,7 +93,7 @@ planner 自己不执行光标恢复，但必须让执行层知道：
 - `removeSlashCommand` 只做 slash cleanup
 - 不再保留 `removeSlashCommand.suffix`
 - 所有 slash 命令插入内容都必须通过显式语义 patch 表达，例如 `setContent`、`addDate`
-- marker 顺序已经在 B 阶段语义层被确定，planner 与 committer 都不再重排
+- marker 顺序已经在 B 阶段语义层被确定：已有 marker 只原位更新，不存在的 marker 才允许追加；planner 与 committer 都不再重排
 - slash 触发位置只影响 cleanup 的局部删除范围，不影响最终语义结果与 marker 顺序
 - 当前块 slash 前置校验优先基于 candidate semantic line，而不是 pinia 的瞬时失配结果
 

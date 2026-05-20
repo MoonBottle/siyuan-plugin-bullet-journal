@@ -469,21 +469,24 @@ update 路径分为两类：
 
 #### 7.1.1 已有 marker 集合的稳定顺序
 
-对于已经包含 metadata marker 的事项行，新 patch 不得因为 commit 路径不同而改变 marker 的相对语义位置。
+对于已经包含 metadata marker 的事项行，新 patch 不得因为 commit 路径不同而改变任何**已有 marker** 的相对顺序。
 
 明确规则：
 
 1. 事项正文与其 trailing marker 视为两段：
    - 正文内容
    - metadata marker cluster
-2. 对已有 marker 集合追加新 marker 时，应写入 marker cluster 内的稳定位置，而不是回插到正文和第一个 marker 之间。
-3. 对 `setPriority` 而言，若当前行已经包含日期 / 时间 / 提醒 / 重复等 marker，则优先级应落在现有 marker cluster 末尾。
-4. slash 命令的触发位置不参与最终 marker 顺序决策：
+2. 对**已存在**的 marker 做 patch 时，应在该 marker 的原位置完成更新，而不是先抽出后重排。
+3. 对**不存在**的 marker 做 patch 时，只允许作为新增 marker 追加到当前 marker cluster；追加动作不得改变任何已有 marker 的相对顺序。
+4. 删除某个 marker 时，也只移除该 marker 本身；其余已有 marker 的相对顺序保持不变。
+5. slash 命令的触发位置不参与最终 marker 顺序决策：
    - 触发发生在正文区，只影响 cleanup 的局部删除
    - 触发发生在 marker 内部，也只影响 cleanup 的局部删除
-   - cleanup 完成后，最终结果仍按同一套 canonical marker 顺序重建
+   - cleanup 完成后，最终结果仍按同一套“已有 marker 原位更新、新 marker 追加、已有顺序不变”的规则重建
 
-例：
+这是一条通用规则，不是 `setPriority` 特例。
+
+例 1：新增一个此前不存在的 marker
 
 ```text
 评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00
@@ -497,13 +500,29 @@ update 路径分为两类：
 评审视觉稿 🌱 📅2026-05-15,2026-05-20 ⏰14:00
 ```
 
+更不允许把任何已有 marker 对调成：
+
+```text
+评审视觉稿 ⏰14:00 📅2026-05-15,2026-05-20 🌱
+```
+
+例 2：更新一个已存在的 marker
+
+```text
+评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00
+-> updateTime(16:00)
+评审视觉稿 📅2026-05-15,2026-05-20 ⏰16:00
+```
+
+这里 `⏰` 只是在原位更新，不能因为更新时间而跑到 `📅` 前面，也不能触发其他已有 marker 的重排。
+
 这条规则同时约束：
 
 - `updateRenderer.ts`
 - `protyleCommitter.ts`
 - `apiCommitter.ts`
 
-也就是说，marker 顺序必须在语义层先被确定，再由两个 committer 提交同一份结果；不允许某个 committer 再做“前插/后插”式的 transport-specific 修正。
+也就是说，marker 顺序必须在语义层先被确定，再由两个 committer 提交同一份结果；不允许某个 committer 再做任何 transport-specific 的 marker 重排、前插、后插、抽出后回填。
 
 这同样意味着：
 
