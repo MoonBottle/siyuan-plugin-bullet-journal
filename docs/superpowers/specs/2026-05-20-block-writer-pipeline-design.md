@@ -15,12 +15,12 @@
 
 这导致几个直接问题：
 
-1. 新增一种组合 patch 时，往往需要同时修改 `writeBlock()`、某个专用 writer、调用方和测试。
+1. 新增一种批量 patch 组合时，往往需要同时修改 `writeBlock()`、某个专用 writer、调用方和测试。
 2. “真实写入目标是谁”这一语义没有独立收口，容易在 transport 或调用方重复判断。
 3. 当前设计难以稳定保证 `DOM-first` 提交策略，尤其在 Protyle / API 混合路径中更明显。
 4. 插入能力仍然以 API 旁路存在，没有与 update 共享统一的编排模型。
 
-本设计将 `blockWriter` 重构为统一的**块变更编排层**，目标是在不破坏现有调用面的前提下，把 `target resolve`、`source loading`、`transform/render`、`commit` 四类职责从现有特判代码中拆开，并按 **B -> C 两阶段** 演进。
+本设计将 `blockWriter` 重构为统一的**块变更编排层**，目标是在不破坏现有调用面的前提下，把 `target resolve`、`source loading`、`transform/render`、`commit` 四类职责从现有特判代码中拆开，并按 **B -> C 两阶段** 演进。最终目标不是为 `/fq`、`/jt`、habit 之类的组合持续加分支，而是让任意批量 patch 都走同一套通用规划与提交流程。
 
 ## 2. 设计目标
 
@@ -30,7 +30,7 @@
    - `protyleCommitter` 优先基于 DOM transaction；
    - `apiCommitter` 优先 `updateBlock('dom', ...)` / `insertBlock('dom', ...)`。
 4. `KramdownModifier` 保持纯函数核心，继续负责统一的内容语义变换。
-5. B 阶段先落统一流水线骨架，C 阶段再把入口特判迁移到策略注册表。
+5. B 阶段先落统一流水线骨架，C 阶段再把任意批量 patch 收敛到通用 mutation planner，消除入口特判。
 6. 新架构需要同时覆盖事项与习惯写入，而不是只服务某一类业务对象。
 
 ## 3. 非目标
@@ -78,6 +78,24 @@
 - `insert` 会纳入统一的 intent / resolve / render / commit 模型；
 - 其默认 commit 目标仍然是 API insert；
 - 未来若补 Protyle insert，只扩 Commit 层，不重写前置层。
+
+### 4.4 任意批量 patch 优先单次 commit
+
+`blockWriter` 对任意批量 patch 都遵守以下规划原则：
+
+1. 先尝试把整批 patch 解析为**同一目标块、同一 source、同一 commit 方式**；
+2. 若条件满足，则优先生成**单次 transaction** 或 **单次 API 请求**；
+3. 只有出现真实跨目标、source 冲突、commit 能力冲突时，才拆分为多个 sub-plan；
+4. 拆分依据是能力边界，而不是 patch 组合名称。
+
+这条原则适用于：
+
+- `slash + status`
+- `slash + addDate`
+- `habit + slash`
+- 任意未来新增的批量 patch 组合
+
+也就是说，设计目标是**消除组合特判**，而不是把更多组合搬进另一套注册表。
 
 ## 5. 总体架构
 
@@ -352,32 +370,38 @@ src/utils/blockWriter/
 
 ### 9.1 目标
 
-C 阶段的目标是去掉 `writeBlock()` 中不断增长的 if/else 特判，把组合逻辑迁入策略注册表。
+C 阶段的目标是去掉 `writeBlock()` 中不断增长的 if/else 特判，把“批量 patch 怎么合并、何时拆分”收敛到通用 mutation planner。
 
-### 9.2 策略注册表
+### 9.2 通用 Mutation Planner
 
 ```ts
-interface BlockMutationStrategy {
-  name: string
-  matches(intent: BlockMutationIntent): boolean
-  execute(intent: BlockMutationIntent): Promise<boolean>
+interface MutationPlanner {
+  build(intent: BlockMutationIntent): MutationExecutionPlan[]
+}
+
+interface MutationExecutionPlan {
+  targetBlockId?: string
+  sourceKind: 'protyle-dom' | 'api-kramdown'
+  commitKind: 'protyle-update' | 'api-update' | 'api-insert' | 'protyle-insert'
+  patches?: BlockPatch[]
+  insertPatch?: InsertableBlockPatch
 }
 ```
 
-策略示例：
+planner 的核心规则：
 
-- `slashStatusStrategy`
-- `slashDateStrategy`
-- `statusStrategy`
-- `dateStrategy`
-- `habitStrategy`
-- `insertStrategy`
+1. 对批量 patch 先做统一 normalize；
+2. 尝试为整批 patch 构建一个 plan；
+3. 若整批 patch 共享同一 target/source/commit 能力，则输出一个 plan；
+4. 若存在真实冲突，则按**最小拆分原则**生成多个 plan；
+5. 拆分规则只基于能力边界，不基于 `/fq`、`/jt`、habit 这类业务组合名。
 
 ### 9.3 C 阶段收益
 
-1. `/fq`、`/jt`、`/wc`、habit 等组合特判不再堆在入口文件。
-2. 新增组合 patch 不再必须直接修改 `writeBlock()` 主分支。
-3. 策略的匹配条件和执行行为能被单独测试。
+1. 任意批量 patch 组合都优先单次 transaction / 单次 API。
+2. 入口文件不再为某几个组合持续增加特判。
+3. 新增 patch 类型时，优先扩展 resolve/render/commit 能力，而不是新增组合分支。
+4. planner 的合并与拆分规则可以独立单测。
 
 ## 10. 现有文件迁移策略
 
@@ -402,7 +426,7 @@ interface BlockMutationStrategy {
 - `setStatus` 对任务块写 `NodeListItem`
 - paragraph / list item / block 的真实目标识别
 - 当前 Protyle 块与目标块是否一致
-- slash/habit/date/status 组合路径是否允许当前块 DOM commit
+- 任意批量 patch 是否允许在当前目标块单次 DOM commit
 
 ### 10.3 `apiTransport.ts`
 
@@ -458,8 +482,9 @@ interface BlockMutationStrategy {
 ### 11.1 总原则
 
 1. 优先保证目标正确；
-2. 其次保证 DOM-first；
-3. 最后才是 markdown fallback。
+2. 其次尽可能合并成单次 commit；
+3. 再保证 DOM-first；
+4. 最后才是 markdown fallback。
 
 ### 11.2 Update fallback
 
@@ -467,6 +492,7 @@ interface BlockMutationStrategy {
 - DOM 渲染失败 -> 回退 markdown commit
 - 当前块与目标块不匹配 -> 禁止误用当前 DOM，回退 API
 - 任务块结构不满足安全更新条件 -> 回退 API
+- 整批 patch 无法共享同一 target/source/commit -> 按最小拆分原则拆成多个 plan
 
 ### 11.3 Insert fallback
 
@@ -506,10 +532,11 @@ interface BlockMutationStrategy {
 ### 12.3 关键断言
 
 1. 任务块完成事项仍写 `NodeListItem`，而不是错误追加 `✅`。
-2. 当前块 slash + status/date 组合路径优先单次 transaction。
-3. 非当前目标块更新不会误用当前 DOM。
-4. insert 默认走 DOM-first API。
-5. DOM 不可用时 markdown fallback 语义不变。
+2. 任意同目标批量 patch 组合优先单次 transaction / 单次 API。
+3. 只有跨目标或 commit/source 能力冲突时，才发生最小必要拆分。
+4. 非当前目标块更新不会误用当前 DOM。
+5. insert 默认走 DOM-first API。
+6. DOM 不可用时 markdown fallback 语义不变。
 
 ## 13. 实施顺序建议
 
@@ -543,7 +570,7 @@ interface BlockMutationStrategy {
 
 ### 第四批
 
-进入 C 阶段，替换入口特判为策略注册表。
+进入 C 阶段，引入通用 mutation planner，替换入口特判。
 
 ## 14. 预期结果
 
@@ -553,7 +580,7 @@ interface BlockMutationStrategy {
 2. 在内部明确区分 intent / resolve / source / render / commit；
 3. 对 update 和 insert 使用统一编排模型；
 4. 对 Protyle 与 API 提交都保持 DOM-first；
-5. 让新组合写入场景以“新增策略或 helper”的方式扩展，而不是继续堆叠入口特判。
+5. 让新写入场景优先通过通用 planner 与能力扩展落地，而不是继续堆叠入口特判。
 
 ## 15. 与现有文档关系
 
