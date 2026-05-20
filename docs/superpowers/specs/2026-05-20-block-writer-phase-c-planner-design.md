@@ -93,6 +93,7 @@ planner 自己不执行光标恢复，但必须让执行层知道：
 - `removeSlashCommand` 只做 slash cleanup
 - 不再保留 `removeSlashCommand.suffix`
 - 所有 slash 命令插入内容都必须通过显式语义 patch 表达，例如 `setContent`、`addDate`
+- marker 顺序已经在 B 阶段语义层被确定，planner 与 committer 都不再重排
 
 ## 5. 核心概念
 
