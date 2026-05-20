@@ -1,0 +1,424 @@
+# BlockWriter C 阶段 Mutation Planner 设计
+
+> 日期：2026-05-20
+> 状态：待评审
+> 范围：`src/utils/blockWriter/` C 阶段通用 planner 重构
+> 前置：B 阶段统一流水线骨架已落地并稳定运行
+
+## 1. 概述
+
+B 阶段解决的是基础设施问题：
+
+- 统一 `intent -> resolve -> load -> render -> commit` 主骨架
+- 收口 `target resolve`
+- 固化 `DOM-first, markdown fallback`
+- 让 update / insert 进入同一套编排模型
+
+但 B 阶段之后，`writeBlock()` 仍可能保留一批“为批量 patch 合并服务的入口判断”。  
+C 阶段的目标，就是把这些组合判断进一步收敛为一个**通用 mutation planner**。
+
+planner 不关注 `/fq`、`/jt`、habit 之类的业务命名；它只关注：
+
+1. 这些 patch 是否指向同一个真实目标
+2. 它们是否能共享同一个 source
+3. 它们是否能共享同一种 commit 方式
+4. 它们是否应当被原子地放进同一次提交
+
+换句话说，C 阶段要解决的是：
+
+> 对任意批量 patch，如何优先得到**最少次数**且**语义正确**的执行计划。
+
+## 2. 设计目标
+
+1. 任意批量 patch 默认先尝试合并成**一个 execution plan**。
+2. 若无法合并，只按**最小必要拆分原则**拆成多个 plan。
+3. 拆分依据只来自能力边界，不来自业务组合名称。
+4. `writeBlock()` 入口不再继续堆叠 “如果是 A+B 就走 X” 的特判。
+5. planner 输出的 plan 必须可单测、可解释、可日志化。
+
+## 3. 非目标
+
+1. 不在 C 阶段重新设计 B 阶段的 source loader / renderer / committer。
+2. 不要求首次落地就支持跨目标真正事务化回滚。
+3. 不要求 insert 与 update 在同一个 plan 中混合提交。
+4. 不要求 planner 感知具体业务文案或 UI 行为。
+
+## 4. 前置约束
+
+### 4.1 B 阶段必须已经提供的能力
+
+C 阶段依赖 B 阶段先提供这些稳定接口：
+
+- `normalizeIntent()`
+- `resolveTarget()`
+- `loadSource()`
+- `renderUpdatePayload()`
+- `renderInsertPayload()`
+- `commitMutationPayload()`
+
+也就是说，planner 自己**不负责**：
+
+- 直接读 DOM / Kramdown
+- 直接 patch markdown
+- 直接调用 API / transaction
+
+planner 负责的是**规划**，不是执行。
+
+### 4.2 Commit 仍保持 DOM-first
+
+planner 不改变 B 阶段已经确定的 commit 规则：
+
+1. 能产出 DOM payload 时优先 DOM
+2. 只有 DOM 不可用时才回退 markdown
+
+planner 决定的是“几个 plan、什么顺序、每个 plan 吃哪些 patch”。
+
+## 5. 核心概念
+
+### 5.1 Patch Unit
+
+planner 不直接处理“裸 patch 数组”，而是先把每个 patch 归一成可规划单元：
+
+```ts
+interface MutationPatchUnit {
+  index: number
+  patch: BlockPatch
+  intentKind: 'update' | 'insertAfter'
+  atomicGroup?: string
+}
+```
+
+说明：
+
+- `index` 保留用户原始输入顺序
+- `atomicGroup` 用于表示“这些 patch 若能合并，应尽量一起提交”
+- 默认情况下，同一次 `writeBlock()` 调用里的 patch 属于同一用户动作
+
+### 5.2 Patch Capability
+
+每个 patch 在 resolve 之后，会变成一个“能力描述”：
+
+```ts
+interface MutationPatchCapability {
+  unit: MutationPatchUnit
+  targetBlockId?: string
+  targetKind?: 'paragraph' | 'task-list-item' | 'block'
+  sourceKind: 'protyle-dom' | 'api-kramdown'
+  commitKind: 'protyle-update' | 'api-update' | 'api-insert' | 'protyle-insert'
+  canSharePlan: boolean
+  requiresCurrentDom: boolean
+  canFallbackToApi: boolean
+}
+```
+
+这里的重点不是字段本身，而是：
+
+- planner 在这一层开始用“能力”而不是“业务名称”思考
+- 所有合并/拆分逻辑都围绕 capability 决策
+
+### 5.3 Execution Plan
+
+planner 输出的是执行计划，而不是最终 payload：
+
+```ts
+interface MutationExecutionPlan {
+  id: string
+  kind: 'update' | 'insertAfter'
+  targetBlockId?: string
+  targetKind?: 'paragraph' | 'task-list-item' | 'block'
+  sourceKind: 'protyle-dom' | 'api-kramdown'
+  commitKind: 'protyle-update' | 'api-update' | 'api-insert' | 'protyle-insert'
+  units: MutationPatchUnit[]
+  order: number
+  atomicBoundary: 'single-commit' | 'split-subplan'
+}
+```
+
+plan 的含义是：
+
+- 这一组 patch 要一起被加载、渲染、提交
+- 若 `units.length > 1`，则这些 patch 共享一次 commit
+
+## 6. Planner 输入输出
+
+### 6.1 输入
+
+```ts
+interface MutationPlannerInput {
+  intent: BlockMutationIntent
+  context: BlockWriteContext | Partial<BlockWriteContext> | undefined
+}
+```
+
+### 6.2 输出
+
+```ts
+interface MutationPlannerResult {
+  plans: MutationExecutionPlan[]
+  reason:
+    | 'single-plan'
+    | 'split-by-target'
+    | 'split-by-source'
+    | 'split-by-commit-kind'
+    | 'split-by-intent-kind'
+}
+```
+
+要求：
+
+- 输出必须可用于日志
+- 输出必须能够解释为什么没有合并成单 plan
+
+## 7. 规划算法
+
+### 7.1 Phase 1: Normalize
+
+步骤：
+
+1. 把输入 patch / patch[] / insert patch 归一成 `MutationPatchUnit[]`
+2. 保留原始顺序
+3. 标记 `intentKind`
+
+产出：
+
+- `units[]`
+
+### 7.2 Phase 2: Capability Annotation
+
+步骤：
+
+1. 对每个 unit 调用 B 阶段 resolve 能力
+2. 得到每个 unit 的 target/source/commit 信息
+3. 标记是否依赖当前 DOM、是否允许 API fallback
+
+产出：
+
+- `MutationPatchCapability[]`
+
+### 7.3 Phase 3: Merge Attempt
+
+planner 先尝试判断整批 unit 是否可以归并成一个 plan。
+
+满足以下条件时，直接生成单 plan：
+
+1. `intentKind` 相同
+2. `targetBlockId` 相同
+3. `sourceKind` 相同
+4. `commitKind` 相同
+5. 不存在互斥顺序要求
+
+其中第 5 条的含义是：
+
+- patch 的应用顺序仍然保留
+- 但它们不要求不同 source 或不同 commit 才能正确执行
+
+### 7.4 Phase 4: Minimal Split
+
+若整批无法合并，则按以下优先级做最小拆分：
+
+1. **按 intent kind 拆**
+   - `update` 和 `insertAfter` 不混合
+2. **按 target 拆**
+   - 不同真实目标块必须拆
+3. **按 source 拆**
+   - `protyle-dom` 和 `api-kramdown` 不能共享同一 plan
+4. **按 commit kind 拆**
+   - `protyle-update` 和 `api-update` 不能共享同一 plan
+
+注意：
+
+- planner 必须用**第一个造成冲突的能力边界**解释拆分原因
+- 不允许为了“看起来清晰”额外过度拆分
+
+### 7.5 Phase 5: Order Resolution
+
+拆分后需要决定 plan 执行顺序：
+
+1. 默认按原始 patch 顺序稳定排序
+2. 同一目标块拆出的多个 plan，按最接近原始用户动作的顺序执行
+3. `removeSlashCommand` 之类 patch 不再被当作特殊业务分支，而是只按其 capability 所属 plan 执行
+
+## 8. 合并规则
+
+### 8.1 可合并
+
+以下场景应优先合并成一个 plan：
+
+1. 当前块 `removeSlashCommand + setStatus`
+2. 当前块 `removeSlashCommand + addDate`
+3. 当前块 `setPriority + setContent + addDate`
+4. 当前块 habit 定义原地更新与 slash cleanup
+5. 任意同目标、同 source、同 commit 的 patch 序列
+
+### 8.2 不可合并
+
+以下场景必须拆分：
+
+1. 当前块 slash cleanup，但真实业务更新目标在另一个 block
+2. 一部分 patch 需要 `protyle-dom`，另一部分只能走 `api-kramdown`
+3. 一个是 `insertAfter`，另一个是 `update`
+4. 真实目标块不同
+
+### 8.3 边界场景
+
+存在一些“理论上同目标，但能力上仍应拆分”的情况：
+
+1. 当前 DOM 无法安全恢复或无法可靠渲染
+2. 某 patch 必须读取当前实时 Range / slash context，而另一个 patch 已经不再依赖它
+3. 某 patch 的 resolve 结果只能 API fallback，另一 patch 仍可在当前 DOM 提交
+
+这些场景仍按能力边界拆，不做人造强并。
+
+## 9. 执行模型
+
+### 9.1 单 plan 执行
+
+若 planner 只输出一个 plan，则：
+
+1. 统一 load source
+2. 按原始 patch 顺序执行 transform
+3. 渲染一次 payload
+4. commit 一次
+
+这是 C 阶段的理想状态，也是默认优先路径。
+
+### 9.2 多 plan 执行
+
+若 planner 输出多个 plan，则执行器遵守：
+
+1. 按 plan order 顺序执行
+2. 每个 plan 内仍只提交一次
+3. 默认 `fail-fast`
+4. 不做跨 plan 的伪事务回滚
+
+原因很直接：
+
+- 同一个 SiYuan transaction 不能覆盖跨目标 API 写入
+- 引入伪回滚会放大复杂度且不可靠
+
+因此 C 阶段的原则是：
+
+> 能单 plan 就单 plan；必须拆时，明确拆、稳定执行、及时失败。
+
+### 9.3 结果语义
+
+建议执行器输出：
+
+```ts
+interface MutationExecutionResult {
+  success: boolean
+  executedPlans: number
+  skippedPlans: number
+  failedPlanId?: string
+}
+```
+
+这样做的好处是，后续日志和回归测试都能更精确定位失败点。
+
+## 10. `writeBlock()` 在 C 阶段的终态
+
+C 阶段完成后，`index.ts` 里的 `writeBlock()` 只保留薄入口职责：
+
+```ts
+async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BlockPatch[]) {
+  const intent = normalizeIntent(context, patches)
+  const plannerResult = mutationPlanner.build(intent)
+  return executePlans(plannerResult.plans)
+}
+```
+
+入口文件不再直接负责：
+
+- 判断某两个 patch 是否是特例组合
+- 判断 slash + status / date / habit 的专门路径
+- 决定先 transaction 再 API 还是直接 API
+
+这些判断都应下沉为：
+
+- resolve 能力
+- planner 合并/拆分
+- execution engine 顺序执行
+
+## 11. 日志与可观测性
+
+planner 需要统一日志前缀，建议：
+
+- `[BJ-MutationPlanner] build`
+- `[BJ-MutationPlanner] split`
+- `[BJ-MutationPlanner] execute`
+
+关键日志字段：
+
+- patch types
+- targetBlockId 列表
+- sourceKind 列表
+- commitKind 列表
+- 最终 plan 数量
+- 拆分原因
+
+这会直接影响后续线上定位成本。
+
+## 12. 测试策略
+
+### 12.1 Planner 单测
+
+必须覆盖：
+
+1. 单 patch -> 单 plan
+2. 同目标批量 patch -> 单 plan
+3. 跨目标 patch -> 拆 plan
+4. source 冲突 -> 拆 plan
+5. commitKind 冲突 -> 拆 plan
+6. insert / update 混合 -> 拆 plan
+
+### 12.2 集成回归
+
+必须覆盖：
+
+1. `/fq`
+2. `/jt`
+3. `/wc`
+4. habit `/dk`
+5. TodoSidebar / Calendar / Gantt / Pomodoro / FocusWorkbench 高频入口
+
+每一类测试都应重点断言：
+
+- 最终 plan 数量
+- 是否只产生一次 transaction / 一次 API
+- 拆分是否符合预期原因
+
+## 13. 实施顺序
+
+1. 在 B 阶段稳定后，新增 `mutationPlanner.ts`
+2. 先只接管批量 update patch
+3. 再接管 slash cleanup 合并
+4. 再接管 habit / date / status 混合场景
+5. 最后收掉 `index.ts` 中保留的组合特判
+
+## 14. 与 B 阶段的边界
+
+为了避免 B / C 混在一次重构里，边界明确如下：
+
+### B 阶段负责
+
+- 基础流水线
+- DOM-first commit
+- update / insert 编排一致性
+- resolve / load / render / commit 的明确模块化
+
+### C 阶段负责
+
+- 批量 patch 通用规划
+- 单次 commit 优先
+- 最小必要拆分
+- `writeBlock()` 入口去特判
+
+## 15. 预期结果
+
+C 阶段完成后，`blockWriter` 的预期状态是：
+
+1. 任意批量 patch 默认先尝试单 plan
+2. 同目标场景尽可能单次 transaction / 单次 API
+3. 入口不再继续堆业务组合特判
+4. planner 成为解释执行行为的唯一规划层
+5. 后续新增 patch 类型时，优先扩展能力模型，而不是继续写“如果 A+B+C”分支

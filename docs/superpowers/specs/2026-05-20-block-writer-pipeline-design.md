@@ -366,42 +366,20 @@ src/utils/blockWriter/
 6. 让 `index.ts` 仅负责 orchestration。
 7. 逐步把 `datePatchWriter.ts` / `statusPatchWriter.ts` 改造成 helper。
 
-## 9. C 阶段设计
+## 9. C 阶段摘要
 
-### 9.1 目标
+本 spec 以 B 阶段为主，即先完成统一流水线骨架与 DOM-first commit 收口。
 
-C 阶段的目标是去掉 `writeBlock()` 中不断增长的 if/else 特判，把“批量 patch 怎么合并、何时拆分”收敛到通用 mutation planner。
+C 阶段单独拆分为专用 spec：
 
-### 9.2 通用 Mutation Planner
+- [`docs/superpowers/specs/2026-05-20-block-writer-phase-c-planner-design.md`](./2026-05-20-block-writer-phase-c-planner-design.md)
 
-```ts
-interface MutationPlanner {
-  build(intent: BlockMutationIntent): MutationExecutionPlan[]
-}
+C 阶段的核心目标不再是“给不同组合 patch 继续加策略分支”，而是：
 
-interface MutationExecutionPlan {
-  targetBlockId?: string
-  sourceKind: 'protyle-dom' | 'api-kramdown'
-  commitKind: 'protyle-update' | 'api-update' | 'api-insert' | 'protyle-insert'
-  patches?: BlockPatch[]
-  insertPatch?: InsertableBlockPatch
-}
-```
-
-planner 的核心规则：
-
-1. 对批量 patch 先做统一 normalize；
-2. 尝试为整批 patch 构建一个 plan；
-3. 若整批 patch 共享同一 target/source/commit 能力，则输出一个 plan；
-4. 若存在真实冲突，则按**最小拆分原则**生成多个 plan；
-5. 拆分规则只基于能力边界，不基于 `/fq`、`/jt`、habit 这类业务组合名。
-
-### 9.3 C 阶段收益
-
-1. 任意批量 patch 组合都优先单次 transaction / 单次 API。
-2. 入口文件不再为某几个组合持续增加特判。
-3. 新增 patch 类型时，优先扩展 resolve/render/commit 能力，而不是新增组合分支。
-4. planner 的合并与拆分规则可以独立单测。
+1. 引入通用 `mutation planner`
+2. 让任意批量 patch 优先合并成单次 transaction / 单次 API
+3. 仅在真实跨目标或 source / commit 能力冲突时按最小必要拆分
+4. 让 `writeBlock()` 最终退化为 planner 驱动的薄执行入口
 
 ## 10. 现有文件迁移策略
 
@@ -570,7 +548,7 @@ planner 的核心规则：
 
 ### 第四批
 
-进入 C 阶段，引入通用 mutation planner，替换入口特判。
+进入 C 阶段，按独立 spec 引入通用 mutation planner，替换入口特判。
 
 ## 14. 预期结果
 
@@ -588,6 +566,7 @@ planner 的核心规则：
 
 - [`docs/superpowers/specs/2026-05-14-block-writer-design.md`](./2026-05-14-block-writer-design.md)
 - [`docs/block-writer-architecture.html`](../../block-writer-architecture.html)
+- [`docs/superpowers/specs/2026-05-20-block-writer-phase-c-planner-design.md`](./2026-05-20-block-writer-phase-c-planner-design.md)
 
 其中：
 
