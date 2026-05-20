@@ -131,6 +131,7 @@
    - 这条规则对 slash 触发位置透明：
      - 可以发生在正文与 marker cluster 之间
      - 也可以发生在已有 marker 内部
+   - 前置校验可以复用这套 cleanup 语义，但不能提前执行真正的 writer commit
 
 3. **恢复目标必须与命令语义一致**
    - 追加新语义单元：
@@ -159,6 +160,83 @@
    - `wbr` 恢复失败 -> 尝试 `focusByOffset()` 等价兜底
    - `offset` 兜底失败 -> 折叠到当前块 editable 末尾
    - 恢复失败不应让写入失败，但必须记录 debug 日志
+
+### 4.6 slash 前置校验的语义回退
+
+当前 Protyle 块中触发的 slash 命令，在执行前往往需要回答两个问题：
+
+1. 当前块是否仍然是有效事项
+2. 当前块是否已经包含目标日期 / 时间 / metadata marker
+
+现有 pinia / parser 快照可以作为常规读取来源，但**不能作为唯一真相**。  
+原因是 slash 触发片段可能临时插入到 marker 内部，短时间破坏展示文本结构，例如：
+
+```text
+评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00
+```
+
+如果这时只依赖 pinia 中当前轮解析结果，可能会把当前块误判成“非事项”，提前弹出：
+
+```text
+当前块不是有效的事项
+```
+
+这不是允许的行为。B 阶段应明确以下规则：
+
+1. **当前块 + 活跃 slash context 时，candidate semantic line 优先**
+   - 基于当前 slash range
+   - 复用 `removeSlashCommand` 的精确 cleanup 语义
+   - 只在内存中删除触发片段本身，不做真实 commit
+   - 保留左右文本重新拼接，得到 `candidate semantic line`
+2. **candidate semantic line 的事项识别复用 `lineParser.ts`**
+   - 事项合法性判断
+   - 已有日期 / 时间 / priority / reminder / recurring marker 判断
+   - 都应以 candidate semantic line 的解析结果为准
+3. **pinia/store 快照只作为次级来源**
+   - 没有当前 slash context 时，可以直接使用 pinia/store
+   - 有当前 slash context 但 candidate line 无法构造时，可以降级参考 pinia/store
+4. **只有两条路径都失败时，才允许提示“当前块不是有效的事项”**
+   - pinia/store 快照识别失败
+   - candidate semantic line 识别也失败
+
+这条规则的复用边界必须写清：
+
+- 可以复用 block writer 的 slash cleanup 语义
+- 可以复用 `lineParser.ts` 的事项解析能力
+- 不允许为了前置校验提前调用 `writeBlock({ type: 'removeSlashCommand' })`
+- 不允许让 `protyleCommitter.ts` / `apiCommitter.ts` 参与这一步判断
+
+例 1：日期 marker 中间触发优先级命令
+
+```text
+评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00
+```
+
+candidate semantic line 必须先恢复为：
+
+```text
+评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00
+```
+
+因此它仍然是有效事项，后续 `setPriority(🌱)` 的最终语义结果为：
+
+```text
+评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00 🌱
+```
+
+例 2：时间 marker 中间触发优先级命令
+
+```text
+评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0
+```
+
+candidate semantic line 必须先恢复为：
+
+```text
+评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00
+```
+
+然后再继续同一套事项语义判断与最终写回。
 
 ## 5. 总体架构
 
