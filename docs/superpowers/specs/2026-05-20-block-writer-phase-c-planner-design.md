@@ -73,6 +73,21 @@ planner 不改变 B 阶段已经确定的 commit 规则：
 
 planner 决定的是“几个 plan、什么顺序、每个 plan 吃哪些 patch”。
 
+### 4.3 光标恢复仍由执行层负责，但 planner 不能丢失 caret policy
+
+slash 相关 plan 在执行后往往需要恢复当前编辑光标，尤其是：
+
+- 删除 slash 后追加纯文本 suffix
+- 删除 slash 后插入结构化 inline 内容
+- 删除 slash 后触发 DOM 重建或 markdown render
+
+planner 自己不执行光标恢复，但必须让执行层知道：
+
+1. 哪个 plan 会成为最终的 caret owner
+2. 这个 plan 期望走 `offset` 还是 `wbr`
+
+因此 C 阶段不能把 caret 语义丢失在 plan 合并过程中。
+
 ## 5. 核心概念
 
 ### 5.1 Patch Unit
@@ -105,6 +120,7 @@ interface MutationPatchCapability {
   targetKind?: 'paragraph' | 'task-list-item' | 'block'
   sourceKind: 'protyle-dom' | 'api-kramdown'
   commitKind: 'protyle-update' | 'api-update' | 'api-insert' | 'protyle-insert'
+  preferredCaretPolicy?: 'none' | 'offset' | 'wbr'
   canSharePlan: boolean
   requiresCurrentDom: boolean
   canFallbackToApi: boolean
@@ -128,6 +144,8 @@ interface MutationExecutionPlan {
   targetKind?: 'paragraph' | 'task-list-item' | 'block'
   sourceKind: 'protyle-dom' | 'api-kramdown'
   commitKind: 'protyle-update' | 'api-update' | 'api-insert' | 'protyle-insert'
+  caretPolicy: 'none' | 'offset' | 'wbr'
+  caretOwner: boolean
   units: MutationPatchUnit[]
   order: number
   atomicBoundary: 'single-commit' | 'split-subplan'
@@ -138,6 +156,7 @@ plan 的含义是：
 
 - 这一组 patch 要一起被加载、渲染、提交
 - 若 `units.length > 1`，则这些 patch 共享一次 commit
+- 若 `caretOwner === true`，则该 plan 负责最终恢复当前编辑光标
 
 ## 6. Planner 输入输出
 
@@ -190,6 +209,7 @@ interface MutationPlannerResult {
 1. 对每个 unit 调用 B 阶段 resolve 能力
 2. 得到每个 unit 的 target/source/commit 信息
 3. 标记是否依赖当前 DOM、是否允许 API fallback
+4. 标记每个 patch 的 `preferredCaretPolicy`
 
 产出：
 
@@ -211,6 +231,10 @@ planner 先尝试判断整批 unit 是否可以归并成一个 plan。
 
 - patch 的应用顺序仍然保留
 - 但它们不要求不同 source 或不同 commit 才能正确执行
+
+若多个 patch 被合并，则该 plan 的 `caretPolicy` 取“更强”的恢复策略：
+
+- `wbr` > `offset` > `none`
 
 ### 7.4 Phase 4: Minimal Split
 
@@ -237,6 +261,7 @@ planner 先尝试判断整批 unit 是否可以归并成一个 plan。
 1. 默认按原始 patch 顺序稳定排序
 2. 同一目标块拆出的多个 plan，按最接近原始用户动作的顺序执行
 3. `removeSlashCommand` 之类 patch 不再被当作特殊业务分支，而是只按其 capability 所属 plan 执行
+4. 最后一个影响当前 Protyle 编辑块的 plan 标记为 `caretOwner`
 
 ## 8. 合并规则
 
@@ -249,6 +274,8 @@ planner 先尝试判断整批 unit 是否可以归并成一个 plan。
 3. 当前块 `setPriority + setContent + addDate`
 4. 当前块 habit 定义原地更新与 slash cleanup
 5. 任意同目标、同 source、同 commit 的 patch 序列
+
+若这些 patch 同时包含 slash cleanup 与后续内容写回，则合并后的单 plan 应保留最终需要的 caret policy，而不是退化为 `none`。
 
 ### 8.2 不可合并
 
@@ -282,6 +309,11 @@ planner 先尝试判断整批 unit 是否可以归并成一个 plan。
 
 这是 C 阶段的理想状态，也是默认优先路径。
 
+若该 plan 影响当前编辑块，则它同时负责：
+
+1. 应用 B 阶段生成的 caret restore plan
+2. 按 `caretPolicy` 执行 `offset` 或 `wbr` 恢复
+
 ### 9.2 多 plan 执行
 
 若 planner 输出多个 plan，则执行器遵守：
@@ -290,6 +322,7 @@ planner 先尝试判断整批 unit 是否可以归并成一个 plan。
 2. 每个 plan 内仍只提交一次
 3. 默认 `fail-fast`
 4. 不做跨 plan 的伪事务回滚
+5. 只有 `caretOwner === true` 的 plan 负责最终光标恢复
 
 原因很直接：
 
@@ -370,6 +403,8 @@ planner 需要统一日志前缀，建议：
 4. source 冲突 -> 拆 plan
 5. commitKind 冲突 -> 拆 plan
 6. insert / update 混合 -> 拆 plan
+7. `offset + wbr` 合并时最终 plan 选择 `wbr`
+8. 多 plan 场景下仅最后一个当前块 plan 为 `caretOwner`
 
 ### 12.2 集成回归
 
