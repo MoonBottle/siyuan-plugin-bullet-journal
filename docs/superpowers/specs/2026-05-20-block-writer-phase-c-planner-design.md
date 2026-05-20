@@ -424,16 +424,18 @@ planner 需要统一日志前缀，建议：
 必须覆盖：
 
 1. `/fq`
-2. `/jt`
-3. `/wc`
-4. habit `/dk`
-5. TodoSidebar / Calendar / Gantt / Pomodoro / FocusWorkbench 高频入口
+2. `/yxj`
+3. `/jt`
+4. `/wc`
+5. habit `/dk`
+6. TodoSidebar / Calendar / Gantt / Pomodoro / FocusWorkbench 高频入口
 
 每一类测试都应重点断言：
 
 - 最终 plan 数量
 - 是否只产生一次 transaction / 一次 API
 - 拆分是否符合预期原因
+- 不同入口表达同一业务语义时，进入 planner 前的 patch 序列顺序已经被 `Intent Normalize` 收敛一致
 - 同次新增多个 marker 时，planner 合并后仍保持 patch 序列决定的新增顺序
 - 已有 marker 更新 / 规范化 / 删除后，其余已有 marker 的相对顺序不变
 
