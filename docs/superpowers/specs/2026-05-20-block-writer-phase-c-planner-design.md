@@ -93,7 +93,7 @@ planner 自己不执行光标恢复，但必须让执行层知道：
 - `removeSlashCommand` 只做 slash cleanup
 - 不再保留 `removeSlashCommand.suffix`
 - 所有 slash 命令插入内容都必须通过显式语义 patch 表达，例如 `setContent`、`addDate`
-- marker 顺序已经在 B 阶段语义层被确定：已有 marker 只原位更新，不存在的 marker 才允许追加；planner 与 committer 都不再重排
+- marker 顺序已经在 B 阶段语义层被确定：已有 marker 只原位更新，允许原位规范化写法，不存在的 marker 才允许追加；若同次新增多个 marker，则按归一化后的 patch 序列顺序追加；planner 与 committer 都不再重排
 - slash 触发位置只影响 cleanup 的局部删除范围，不影响最终语义结果与 marker 顺序
 - 当前块 slash 前置校验优先基于 candidate semantic line，而不是 pinia 的瞬时失配结果
 
@@ -434,6 +434,8 @@ planner 需要统一日志前缀，建议：
 - 最终 plan 数量
 - 是否只产生一次 transaction / 一次 API
 - 拆分是否符合预期原因
+- 同次新增多个 marker 时，planner 合并后仍保持 patch 序列决定的新增顺序
+- 已有 marker 更新 / 规范化 / 删除后，其余已有 marker 的相对顺序不变
 
 ## 13. 实施顺序
 
