@@ -94,6 +94,7 @@ planner 自己不执行光标恢复，但必须让执行层知道：
 - 不再保留 `removeSlashCommand.suffix`
 - 所有 slash 命令插入内容都必须通过显式语义 patch 表达，例如 `setContent`、`addDate`
 - marker 顺序已经在 B 阶段语义层被确定，planner 与 committer 都不再重排
+- slash 触发位置只影响 cleanup 的局部删除范围，不影响最终语义结果与 marker 顺序
 
 ## 5. 核心概念
 
@@ -414,6 +415,7 @@ planner 需要统一日志前缀，建议：
 6. insert / update 混合 -> 拆 plan
 7. slash cleanup 与后续内容写回合并时最终 plan 选择 `wbr`
 8. 多 plan 场景下仅最后一个当前块 plan 为 `caretOwner`
+9. slash 触发在正文区与触发在已有 marker 内部时，planner 产出的语义 plan 不因触发位置而改变
 
 ### 12.2 集成回归
 
