@@ -438,6 +438,7 @@ planner 需要统一日志前缀，建议：
 - 不同入口表达同一业务语义时，进入 planner 前的 patch 序列顺序已经被 `Intent Normalize` 收敛一致
 - 同次新增多个 marker 时，planner 合并后仍保持 patch 序列决定的新增顺序
 - 已有 marker 更新 / 规范化 / 删除后，其余已有 marker 的相对顺序不变
+- 重复事项 completed -> createNextOccurrence 时，生成的新事项保持源事项中 `⏰` / `🔁` / `📅` 等已有 marker 的相对顺序，只推进日期/时间值并移除当前完成状态
 
 ## 13. 实施顺序
 
