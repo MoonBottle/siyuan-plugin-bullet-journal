@@ -1,6 +1,7 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from './types';
 import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTransport';
 import { createProtyleMarkdownWriter, waitForProtyleTransactionsFlush } from './markdownWriter';
+import { normalizePatchSequence } from './normalizePatchSequence';
 import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter';
 import { writeViaProtyle } from './protyleTransport';
 import { writeStatusWithSlashCleanup } from './statusPatchWriter';
@@ -41,7 +42,8 @@ export async function insertBlockAfterWithResult(
 }
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const patchArray = Array.isArray(patches) ? patches : [patches];
+  const patchArray = normalizePatchSequence(Array.isArray(patches) ? patches : [patches]);
+  const payload = Array.isArray(patches) ? patchArray : patchArray[0];
   const addDatePatch = patchArray.length === 1 && patchArray[0]?.type === 'addDate'
     ? patchArray[0]
     : undefined;
@@ -103,9 +105,9 @@ export async function writeBlock(context: BlockWriteContext, patches: BlockPatch
   }
 
   if (context.protyle && context.nodeElement) {
-    const ok = await writeViaProtyle(context, patches);
+    const ok = await writeViaProtyle(context, payload);
     if (ok) return true;
   }
   if (requiresProtyle) return false;
-  return writeViaApi(hasStatusPatch ? statusTargetBlockId : context.blockId, patches);
+  return writeViaApi(hasStatusPatch ? statusTargetBlockId : context.blockId, payload);
 }

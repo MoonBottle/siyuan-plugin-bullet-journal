@@ -1,16 +1,16 @@
 import type { BlockPatch, DatePatch, InsertableBlockPatch, KramdownBlockParts } from './types';
 import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
-import { generatePriorityMarker, isTaskListFormat, statusToLabel, stripPriorityMarker } from './itemLineMarkers';
-import { formatFocusPlanMarker, stripFocusPlanMarkers } from '@/parser/focusPlanParser';
+import { generatePriorityMarker, isTaskListFormat, statusToLabel } from './itemLineMarkers';
+import { formatFocusPlanMarker } from '@/parser/focusPlanParser';
 import { buildHabitDefinitionMarkdown } from '@/parser/habitParser';
 import { generatePinnedMarker, parsePinnedFromLine, stripPinnedMarker } from '@/parser/pinParser';
-import { generateReminderMarker, stripReminderMarker } from '@/parser/reminderParser';
+import { generateReminderMarker } from '@/parser/reminderParser';
 import {
   generateEndConditionMarker,
   generateRepeatRuleMarker,
-  stripRecurringMarkers,
 } from '@/parser/recurringParser';
 import { buildHabitRecordMarkdown } from '@/utils/habitMarkdown';
+import { normalizeMarkerLine, parseMarkerLine, removeMarker, upsertMarker } from './markerCluster';
 
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 
@@ -68,32 +68,19 @@ function applyStatus(line: string, isTaskList: boolean, status: string): string 
 }
 
 function applyPriority(line: string, priority: string | undefined): string {
-  let clean = stripPriorityMarker(line);
+  const parsed = parseMarkerLine(line);
   if (!priority || priority === '') {
-    return clean;
+    return normalizeMarkerLine(removeMarker(parsed, 'priority'));
   }
-  const marker = generatePriorityMarker(priority as any);
-  const dateIdx = clean.indexOf('📅');
-  if (dateIdx > -1) {
-    return `${clean.slice(0, dateIdx).trimEnd()} ${marker} ${clean.slice(dateIdx)}`;
-  }
-  return `${clean} ${marker}`;
+  return normalizeMarkerLine(upsertMarker(parsed, 'priority', generatePriorityMarker(priority as any)));
 }
 
 function applyDate(line: string, patch: DatePatch): string {
-  let result = line;
-  if (patch.originalDate) {
-    result = result.replace(new RegExp(`(?:@|📅)${patch.originalDate.replace(/[-]/g, '\\-')}(?:~[\\d-]+|~\\d{2}-\\d{2})?`), '');
-  }
-  DATE_MARKER_RE.lastIndex = 0;
-  result = result.replace(DATE_MARKER_RE, '').replace(/\s{2,}/g, ' ').trim();
   const startTime = patch.startTime ? ` ${patch.startTime}` : '';
   const endTime = patch.endTime && patch.endTime !== patch.startTime ? `-${patch.endTime}` : '';
+  const parsed = parseMarkerLine(line);
   const dateStr = `📅${patch.date}${patch.allDay ? '' : `${startTime}${endTime}`}`;
-  if (result) {
-    return `${result} ${dateStr}`;
-  }
-  return dateStr;
+  return normalizeMarkerLine(upsertMarker(parsed, 'date', dateStr));
 }
 
 function applyContent(line: string, suffix?: string, newItemContent?: string): string {
@@ -160,30 +147,30 @@ function findPatternStart(line: string, regex: RegExp): number {
 }
 
 function applyFocusPlan(line: string, patch: Extract<BlockPatch, { type: 'setFocusPlan' }>): string {
-  const clean = stripFocusPlanMarkers(line)
-    .replace(/\s{2,}/g, ' ')
-    .trim();
   const marker = patch.plan ? formatFocusPlanMarker(patch.plan) : '';
-  return marker ? `${clean} ${marker}`.trim() : clean;
+  const parsed = parseMarkerLine(line);
+  return marker
+    ? normalizeMarkerLine(upsertMarker(parsed, 'focusPlan', marker))
+    : normalizeMarkerLine(removeMarker(parsed, 'focusPlan'));
 }
 
 function applyReminder(line: string, patch: Extract<BlockPatch, { type: 'setReminder' }>): string {
-  const clean = stripReminderMarker(line)
-    .replace(/\s{2,}/g, ' ')
-    .trim();
   const marker = patch.reminder?.enabled ? generateReminderMarker(patch.reminder) : '';
-  return marker ? `${clean} ${marker}`.trim() : clean;
+  const parsed = parseMarkerLine(line);
+  return marker
+    ? normalizeMarkerLine(upsertMarker(parsed, 'reminder', marker))
+    : normalizeMarkerLine(removeMarker(parsed, 'reminder'));
 }
 
 function applyRecurring(line: string, patch: Extract<BlockPatch, { type: 'setRecurring' }>): string {
-  const clean = stripRecurringMarkers(line)
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-  const markers = [
-    patch.repeatRule ? generateRepeatRuleMarker(patch.repeatRule) : '',
-    patch.endCondition ? generateEndConditionMarker(patch.endCondition) : '',
-  ].filter(Boolean);
-  return markers.length > 0 ? `${clean} ${markers.join(' ')}`.trim() : clean;
+  let parsed = parseMarkerLine(line);
+  parsed = patch.repeatRule
+    ? upsertMarker(parsed, 'recurring', generateRepeatRuleMarker(patch.repeatRule))
+    : removeMarker(parsed, 'recurring');
+  parsed = patch.endCondition
+    ? upsertMarker(parsed, 'endCondition', generateEndConditionMarker(patch.endCondition))
+    : removeMarker(parsed, 'endCondition');
+  return normalizeMarkerLine(parsed);
 }
 
 function applyPinned(
@@ -194,12 +181,10 @@ function applyPinned(
   const index = pinnedTargetLineIndex(nextLines);
   const line = nextLines[index] ?? '';
   const shouldPin = patch.pinned ?? !parsePinnedFromLine(line);
-  const clean = stripPinnedMarker(line)
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  const parsed = parseMarkerLine(line);
   nextLines[index] = shouldPin
-    ? `${clean} ${generatePinnedMarker()}`.trim()
-    : clean;
+    ? normalizeMarkerLine(upsertMarker(parsed, 'pinned', generatePinnedMarker()))
+    : normalizeMarkerLine(removeMarker(parsed, 'pinned'));
   return nextLines;
 }
 

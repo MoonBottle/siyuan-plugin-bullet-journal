@@ -67,6 +67,28 @@ describe('writeBlock', () => {
     expect(call[1]).not.toContain('✅');
   });
 
+  it('normalizes mixed update patch order before applying the batch', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '任务\n{: id="abc"}',
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      [
+        { type: 'setPriority', priority: 'medium' },
+        { type: 'addDate', date: '2026-05-16', allDay: true },
+      ],
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '任务 📅2026-05-16 🌱\n{: id="abc"}',
+      'block123',
+    );
+  });
+
   it('writes addDate patches through blockWriter', async () => {
     const result = await writeBlock(
       { blockId: 'block123' },

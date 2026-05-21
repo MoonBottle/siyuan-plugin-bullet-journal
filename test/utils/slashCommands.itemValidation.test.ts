@@ -3,7 +3,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { showMessage } from 'siyuan';
 
-const { createDialogMock, usePomodoroStoreMock } = vi.hoisted(() => ({
+const { createDialogMock, usePomodoroStoreMock, projectStoreGetItemByBlockIdMock } = vi.hoisted(() => ({
   createDialogMock: vi.fn(() => {
     const element = document.createElement('div');
     element.innerHTML = '<div id="pomodoro-timer-dialog-mount"></div>';
@@ -16,6 +16,7 @@ const { createDialogMock, usePomodoroStoreMock } = vi.hoisted(() => ({
     isFocusing: false,
     isBreakActive: false,
   })),
+  projectStoreGetItemByBlockIdMock: vi.fn(),
 }));
 
 vi.mock('@/components/pomodoro/PomodoroTimerDialog.vue', () => ({
@@ -47,7 +48,10 @@ vi.mock('@/api', () => ({
 vi.mock('@/stores', () => ({
   usePomodoroStore: usePomodoroStoreMock,
   useSettingsStore: vi.fn(() => ({})),
-  useProjectStore: vi.fn(() => ({ getHabits: vi.fn(() => []) })),
+  useProjectStore: vi.fn(() => ({
+    getHabits: vi.fn(() => []),
+    getItemByBlockId: projectStoreGetItemByBlockIdMock,
+  })),
 }));
 
 vi.mock('@/main', () => ({
@@ -84,9 +88,13 @@ vi.mock('@/utils/slashCommandUtils', () => ({
   extractItemFromBlock: vi.fn(),
 }));
 
-vi.mock('@/parser/priorityParser', () => ({
-  parsePriorityFromLine: vi.fn(),
-}));
+vi.mock('@/parser/priorityParser', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/parser/priorityParser')>();
+  return {
+    ...actual,
+    parsePriorityFromLine: vi.fn(),
+  };
+});
 
 vi.mock('@/utils/refreshRequests', () => ({
   RefreshReasons: {
@@ -112,7 +120,7 @@ vi.mock('@/services/habitService', () => ({
 import { updateBlockContent } from '@/utils/fileUtils';
 import { writeBlock } from '@/utils/blockWriter';
 import { showDatePickerDialog, showPrioritySettingDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
-import { extractDatesFromBlock, extractItemFromBlock } from '@/utils/slashCommandUtils';
+import { extractDatesFromBlock } from '@/utils/slashCommandUtils';
 import { getActionHandler } from '@/utils/slashCommands';
 
 describe('item-only slash command validation', () => {
@@ -120,6 +128,7 @@ describe('item-only slash command validation', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     usePomodoroStoreMock.mockReturnValue({
       isFocusing: false,
       isBreakActive: false,
@@ -127,7 +136,7 @@ describe('item-only slash command validation', () => {
   });
 
   it('/wc 在非事项块上不应更新内容，并提示错误', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('done', {} as any, ['/wc']);
     const node = document.createElement('div');
@@ -163,7 +172,7 @@ describe('item-only slash command validation', () => {
   });
 
   it('/fq 在非事项块上不应修改内容，并提示错误', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('abandon', {} as any, ['/fq']);
     const node = document.createElement('div');
@@ -198,7 +207,7 @@ describe('item-only slash command validation', () => {
   });
 
   it('/zz 在非事项块上不应打开番茄钟，但仍应通过 BlockWriter 清理 slash 命令', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('focus', { openPomodoroDock: vi.fn() } as any, ['/zz']);
     const node = document.createElement('div');
@@ -235,7 +244,7 @@ describe('item-only slash command validation', () => {
   });
 
   it('/tx 在非事项块上不应打开提醒弹框', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('setReminder', {} as any, ['/tx']);
     const node = document.createElement('div');
@@ -271,7 +280,7 @@ describe('item-only slash command validation', () => {
   });
 
   it('/cf 在非事项块上不应打开重复弹框', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('setRecurring', {} as any, ['/cf']);
     const node = document.createElement('div');
@@ -307,7 +316,7 @@ describe('item-only slash command validation', () => {
   });
 
   it('/yxj 在非事项块上不应打开优先级弹框', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     const messageSpy = vi.mocked(showMessage);
     const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
     const node = document.createElement('div');
@@ -342,8 +351,89 @@ describe('item-only slash command validation', () => {
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
   });
 
+  it('/yxj 在日期 marker 中缀触发时仍应打开优先级弹框', async () => {
+    projectStoreGetItemByBlockIdMock.mockReturnValue({
+      id: 'item-1',
+      blockId: 'block-item',
+      content: '评审视觉稿',
+      date: '2026-05-15',
+      status: 'pending',
+      lineNumber: 1,
+      docId: 'doc-1',
+      siblingItems: [{ date: '2026-05-20' }],
+    } as any);
+
+    const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    const textNode = document.createTextNode('评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.indexOf('/yxj') + '/yxj'.length);
+    range.collapse(true);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalledOnce();
+    expect(vi.mocked(showMessage)).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
+  it('/yxj 在时间 marker 中缀触发时仍应打开优先级弹框', async () => {
+    projectStoreGetItemByBlockIdMock.mockReturnValue({
+      id: 'item-1',
+      blockId: 'block-item',
+      content: '评审视觉稿',
+      date: '2026-05-15',
+      status: 'pending',
+      lineNumber: 1,
+      docId: 'doc-1',
+      reminder: { enabled: true, type: 'absolute', time: '14:00' },
+      siblingItems: [{ date: '2026-05-20' }],
+    } as any);
+
+    const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    const textNode = document.createTextNode('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0');
+    node.appendChild(textNode);
+    document.body.appendChild(node);
+
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.indexOf('/yxj') + '/yxj'.length);
+    range.collapse(true);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const protyle = {
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+      transaction: vi.fn(),
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalledOnce();
+    expect(vi.mocked(showMessage)).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
+  });
+
   it('/wc 在事项块上通过 BlockWriter 先删 slash 再写入 completed 状态', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue({
+    projectStoreGetItemByBlockIdMock.mockReturnValue({
       blockId: 'block-item',
       content: '整理资料',
       date: '2026-05-14',
@@ -379,7 +469,7 @@ describe('item-only slash command validation', () => {
       docId: 'doc-1',
       status: 'pending',
     };
-    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
     const handler = getActionHandler('setReminder', {} as any, ['/tx']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
@@ -409,7 +499,7 @@ describe('item-only slash command validation', () => {
       docId: 'doc-1',
       status: 'pending',
     };
-    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
     const handler = getActionHandler('setRecurring', {} as any, ['/cf']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
@@ -439,7 +529,7 @@ describe('item-only slash command validation', () => {
       docId: 'doc-1',
       status: 'pending',
     };
-    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
     const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
@@ -511,7 +601,7 @@ describe('item-only slash command validation', () => {
       docId: 'doc-1',
       status: 'pending',
     };
-    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
     const handler = getActionHandler('abandon', {} as any, ['/fq']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
@@ -544,7 +634,7 @@ describe('item-only slash command validation', () => {
       docId: 'doc-1',
       status: 'pending',
     };
-    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
     const handler = getActionHandler('abandon', {} as any, ['/fq']);
     const listItem = document.createElement('div');
     listItem.setAttribute('data-type', 'NodeListItem');
@@ -580,7 +670,7 @@ describe('item-only slash command validation', () => {
       docId: 'doc-1',
       status: 'abandoned',
     };
-    vi.mocked(extractItemFromBlock).mockResolvedValue(item as any);
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
     const handler = getActionHandler('abandon', {} as any, ['/fq']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');

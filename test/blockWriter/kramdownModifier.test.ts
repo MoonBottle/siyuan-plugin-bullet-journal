@@ -54,7 +54,16 @@ describe('kramdownModifier', () => {
 
     it('sets priority before date', () => {
       expect(applyBlockPatch(parts('任务 📅2026-05-14\n{: id="abc"}'), { type: 'setPriority', priority: 'high' })).toBe(
-        '任务 🔥 📅2026-05-14\n{: id="abc"}',
+        '任务 📅2026-05-14 🔥\n{: id="abc"}',
+      );
+    });
+
+    it('appends a new priority marker after existing date/time markers', () => {
+      expect(applyBlockPatch(parts('任务 📅2026-05-14 ⏰14:00\n{: id="abc"}'), {
+        type: 'setPriority',
+        priority: 'medium',
+      })).toBe(
+        '任务 📅2026-05-14 ⏰14:00 🌱\n{: id="abc"}',
       );
     });
   });
@@ -95,6 +104,15 @@ describe('kramdownModifier', () => {
     it('preserves priority marker', () => {
       expect(applyBlockPatch(parts('任务 🔥\n{: id="abc"}'), { type: 'addDate', date: '2026-05-16' })).toBe(
         '任务 🔥 📅2026-05-16\n{: id="abc"}',
+      );
+    });
+
+    it('keeps priority after an updated date marker when the original line already used @ syntax', () => {
+      expect(applyBlockPatch(parts('任务 @2026-05-14 🌱\n{: id="abc"}'), {
+        type: 'addDate',
+        date: '2026-05-16',
+      })).toBe(
+        '任务 📅2026-05-16 🌱\n{: id="abc"}',
       );
     });
 
@@ -163,7 +181,7 @@ describe('kramdownModifier', () => {
         type: 'setFocusPlan',
         plan: { type: 'duration', rawValue: 70 },
       })).toBe(
-        '事项 @2026-05-14 🔥 ⏳1h10m\n{: id="abc"}',
+        '事项 @2026-05-14 ⏳1h10m 🔥\n{: id="abc"}',
       );
     });
 
@@ -404,9 +422,7 @@ describe('kramdownModifier', () => {
         { type: 'setPriority', priority: 'high' },
         { type: 'addDate', date: '2026-05-16' },
       ]);
-      expect(result).toContain('🔥');
-      expect(result).toContain('📅2026-05-16');
-      expect(result).toContain('{: id="abc"}');
+      expect(result).toBe('任务 🔥 📅2026-05-16\n{: id="abc"}');
     });
 
     it('applies focus plan onto the primary line after replaceMarkdown for multiline task-list content', () => {

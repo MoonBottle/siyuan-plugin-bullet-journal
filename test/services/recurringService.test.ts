@@ -10,6 +10,12 @@ import {
 } from '@/services/recurringService';
 import type { Item } from '@/types/models';
 
+const mockGetBlockKramdown = vi.fn();
+
+vi.mock('@/api', () => ({
+  getBlockKramdown: (...args: unknown[]) => mockGetBlockKramdown(...args),
+}));
+
 // Mock getSharedPinia and useProjectStore
 vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => ({})),
@@ -29,6 +35,11 @@ vi.mock('@/utils/blockWriter', () => ({
 }));
 
 describe('recurringService', () => {
+  beforeEach(() => {
+    mockGetBlockKramdown.mockReset();
+    mockGetBlockKramdown.mockResolvedValue(null);
+  });
+
   describe('shouldCreateNextOccurrence', () => {
     it('有重复规则且已完成时应该返回 true', () => {
       const item: Item = {
@@ -593,6 +604,44 @@ describe('recurringService', () => {
       await createNextOccurrence({} as any, item);
       const patch = mockInsertBlockAfter.mock.calls[0][1] as { markdown: string };
       expect(patch.markdown).toContain('📅2026-03-24 14:00:00~16:00:00');
+    });
+
+    it('preserves marker order when creating the next workday occurrence after completion', async () => {
+      mockInsertBlockAfter.mockResolvedValue(true);
+      mockGetBlockKramdown.mockResolvedValueOnce({
+        id: 'block123',
+        kramdown: '填工时 ⏰17:01 🔁工作日 📅2026-05-18 17:00:00~18:00:00 ✅',
+      });
+
+      const item: Item = {
+        id: '1',
+        content: '填工时',
+        date: '2026-05-18',
+        status: 'completed',
+        lineNumber: 1,
+        docId: 'doc1',
+        blockId: 'block123',
+        repeatRule: { type: 'workday' },
+        reminder: {
+          enabled: true,
+          type: 'absolute',
+          time: '17:01',
+          alertMode: { type: 'ontime' },
+        },
+        startDateTime: '2026-05-18 17:00:00',
+        endDateTime: '2026-05-18 18:00:00',
+      };
+
+      const result = await createNextOccurrence({} as any, item);
+
+      expect(result).toBe(true);
+      expect(mockInsertBlockAfter).toHaveBeenCalledWith(
+        'block123',
+        {
+          type: 'replaceMarkdown',
+          markdown: '填工时 ⏰17:01 🔁工作日 📅2026-05-19 17:00:00-18:00:00',
+        },
+      );
     });
 
     it('次数结束条件应递减', async () => {

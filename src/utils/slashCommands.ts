@@ -10,6 +10,7 @@ import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
+import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver';
 import {
   generateSlashPatterns,
   processLineText,
@@ -536,7 +537,7 @@ async function getValidatedItemFromNode(
     return null;
   }
 
-  const item = await extractItemFromBlock(blockId);
+  const item = await resolveItemForSlashCommand({ blockId, nodeElement });
   if (!item) {
     if (protyle) {
       void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
@@ -1344,7 +1345,7 @@ async function startFocusFromSlash(
     return;
   }
 
-  const preselectedItem = item || await extractItemFromBlock(blockId);
+  const preselectedItem = item || await resolveItemForSlashCommand({ blockId, nodeElement });
   if (!preselectedItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
@@ -1366,7 +1367,7 @@ async function setReminderForBlock(nodeElement: HTMLElement, item?: Item) {
     return;
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({ blockId, nodeElement });
   if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
@@ -1383,7 +1384,7 @@ async function setFocusPlanForBlock(nodeElement: HTMLElement, item?: Item) {
     return;
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({ blockId, nodeElement });
   if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
@@ -1402,7 +1403,7 @@ async function setRecurringForBlock(nodeElement: HTMLElement, item?: Item) {
     return;
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({ blockId, nodeElement });
   if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;
@@ -1520,7 +1521,7 @@ async function setPriorityForBlock(nodeElement: HTMLElement, item?: Item) {
     return;
   }
 
-  const targetItem = item || await extractItemFromBlock(blockId);
+  const targetItem = item || await resolveItemForSlashCommand({ blockId, nodeElement });
   if (!targetItem) {
     showMessage('当前块不是有效的事项', 2000, 'error');
     return;

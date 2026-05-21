@@ -5,7 +5,11 @@
 
 import type { Plugin } from 'siyuan';
 import type { Item } from '@/types/models';
+import { getBlockKramdown } from '@/api';
 import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
+import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
+import { applyBlockPatch } from '@/utils/blockWriter/kramdownModifier';
+import { extractTimePart } from '@/utils/blockWriter/itemPatches';
 import {
   getNextOccurrenceDate,
   checkEndCondition,
@@ -37,6 +41,49 @@ export function shouldCreateNextOccurrence(item: Item): boolean {
   return true;
 }
 
+function decrementEndCondition(endCondition?: Item['endCondition']) {
+  if (!endCondition) {
+    return undefined;
+  }
+
+  if (endCondition.type === 'count' && endCondition.maxCount !== undefined) {
+    const nextCount = endCondition.maxCount - 1;
+    return nextCount > 0 ? { ...endCondition, maxCount: nextCount } : undefined;
+  }
+
+  return endCondition;
+}
+
+function buildNextOccurrenceBlockFallback(item: Item, nextDate: string): string {
+  const { reminder, repeatRule } = item;
+  const endCondition = decrementEndCondition(item.endCondition);
+
+  let content = stripRecurringMarkers(stripReminderMarker(item.content))
+    .replace(/[@📅]\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')
+    .replace(/[✅❌✔️]/gu, '')
+    .trim();
+
+  let datePart = `📅${nextDate}`;
+  if (item.startDateTime && item.endDateTime) {
+    const startTime = item.startDateTime.split(' ')[1];
+    const endTime = item.endDateTime.split(' ')[1];
+    datePart = `📅${nextDate} ${startTime}~${endTime}`;
+  } else if (item.startDateTime) {
+    const startTime = item.startDateTime.split(' ')[1];
+    datePart = `📅${nextDate} ${startTime}`;
+  }
+
+  const reminderPart = reminder?.enabled ? ` ${generateReminderMarker(reminder)}` : '';
+  const repeatPart = repeatRule ? ` ${generateRepeatRuleMarker(repeatRule)}` : '';
+  const endConditionPart = endCondition ? ` ${generateEndConditionMarker(endCondition)}` : '';
+
+  let result = `${content} ${datePart}${reminderPart}${repeatPart}${endConditionPart}`.trim();
+  if (item.isTaskList) {
+    result = `- [ ] ${result}`;
+  }
+  return result;
+}
+
 /**
  * 创建下次 occurrence
  * @param plugin 插件实例
@@ -60,8 +107,7 @@ export async function createNextOccurrence(
   }
 
   try {
-    // 构建新的 block 内容
-    const newBlockContent = buildNextOccurrenceBlock(item, nextDate);
+    const newBlockContent = await buildNextOccurrenceBlock(item, nextDate);
 
     // 确定插入点：
     // 1. 对于任务列表事项，使用 listItemBlockId（在列表项后面插入，保持平级）
@@ -95,59 +141,54 @@ export async function createNextOccurrence(
   }
 }
 
-/**
- * 构建下次 occurrence 的 block 内容
- */
-function buildNextOccurrenceBlock(item: Item, nextDate: string): string {
-  const { reminder, repeatRule, endCondition } = item;
-  
-  // 清理内容：使用解析器的 strip 函数
-  let content = stripRecurringMarkers(stripReminderMarker(item.content))
-    .replace(/[@📅]\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2}(?:~\d{2}:\d{2}:\d{2})?)?/g, '')  // 日期和时间
-    .replace(/[✅❌✔️]/gu, '')  // 完成标记
-    .trim();
+async function buildNextOccurrenceBlock(item: Item, nextDate: string): Promise<string> {
+  const sourceKramdown = item.blockId
+    ? (await getBlockKramdown(item.blockId))?.kramdown ?? null
+    : null;
 
-  // 构建日期部分（使用 📅 emoji）
-  let datePart = `📅${nextDate}`;
-  
-  // 如果有时间范围，保持时间
-  if (item.startDateTime && item.endDateTime) {
-    const startTime = item.startDateTime.split(' ')[1];
-    const endTime = item.endDateTime.split(' ')[1];
-    datePart = `📅${nextDate} ${startTime}~${endTime}`;
-  } else if (item.startDateTime) {
-    const startTime = item.startDateTime.split(' ')[1];
-    datePart = `📅${nextDate} ${startTime}`;
+  if (!sourceKramdown) {
+    return buildNextOccurrenceBlockFallback(item, nextDate);
   }
 
-  // 构建提醒部分（使用新的生成器）
-  const reminderPart = reminder?.enabled ? ` ${generateReminderMarker(reminder)}` : '';
+  const nextEndCondition = decrementEndCondition(item.endCondition);
+  const startTime = extractTimePart(item.startDateTime);
+  const endTime = extractTimePart(item.endDateTime);
 
-  // 构建重复规则部分
-  const repeatPart = repeatRule ? ` ${generateRepeatRuleMarker(repeatRule)}` : '';
+  let markdown = applyBlockPatch(
+    splitKramdownBlock(sourceKramdown),
+    { type: 'setStatus', status: 'pending' },
+  );
 
-  // 构建结束条件部分（次数递减）
-  let endConditionPart = '';
-  if (endCondition) {
-    if (endCondition.type === 'date' && endCondition.endDate) {
-      endConditionPart = ` ${generateEndConditionMarker(endCondition)}`;
-    } else if (endCondition.type === 'count' && endCondition.maxCount !== undefined) {
-      const newCount = endCondition.maxCount - 1;
-      if (newCount > 0) {
-        endConditionPart = ` ${generateEndConditionMarker({ ...endCondition, maxCount: newCount })}`;
-      }
-      // 如果递减后为 0，不显示标记
-    }
-  }
+  markdown = applyBlockPatch(
+    splitKramdownBlock(markdown),
+    {
+      type: 'addDate',
+      date: nextDate,
+      originalDate: item.date,
+      startTime,
+      endTime,
+      allDay: !startTime && !endTime,
+    },
+  );
 
-  let result = `${content} ${datePart}${reminderPart}${repeatPart}${endConditionPart}`;
-  
-  // 如果是任务列表格式，添加任务列表标记（- [ ]）
-  if (item.isTaskList) {
-    result = `- [ ] ${result}`;
-  }
-  
-  return result;
+  markdown = applyBlockPatch(
+    splitKramdownBlock(markdown),
+    {
+      type: 'setReminder',
+      reminder: item.reminder?.enabled ? item.reminder : undefined,
+    },
+  );
+
+  markdown = applyBlockPatch(
+    splitKramdownBlock(markdown),
+    {
+      type: 'setRecurring',
+      repeatRule: item.repeatRule,
+      endCondition: nextEndCondition,
+    },
+  );
+
+  return markdown;
 }
 
 /**
@@ -166,8 +207,7 @@ export async function skipCurrentOccurrence(
   const nextDate = getNextOccurrenceDate(item.date, item.repeatRule);
 
   try {
-    // 构建新的 block 内容（保持其他配置，只改日期）
-    const newBlockContent = buildNextOccurrenceBlock(item, nextDate);
+    const newBlockContent = await buildNextOccurrenceBlock(item, nextDate);
 
     // 更新当前 block
     const result = await writeBlock(
