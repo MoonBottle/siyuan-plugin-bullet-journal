@@ -124,6 +124,91 @@ export type BlockPatch =
 
 export type BatchBlockPatch = BlockPatch[];
 export type InsertableBlockPatch = HabitDefinitionPatch | HabitRecordPatch | ReplaceMarkdownPatch;
+export type BlockMutationIntent =
+  | {
+      kind: 'update';
+      context: BlockWriteContext;
+      patches: BlockPatch[];
+    }
+  | {
+      kind: 'insertAfter';
+      anchorBlockId: string;
+      patch: InsertableBlockPatch;
+      context?: Partial<BlockWriteContext>;
+      resultMode: 'boolean' | 'operations';
+    };
+export type ResolvedMutationPlan =
+  | {
+      kind: 'update';
+      targetBlockId: string;
+      targetKind: 'paragraph' | 'task-list-item' | 'block';
+      sourceKind: 'protyle-dom' | 'api-kramdown';
+      commitKind: 'protyle-update' | 'api-update';
+      preferDataType: 'dom';
+      fallbackDataType: 'markdown';
+      context: BlockWriteContext;
+      patches: BlockPatch[];
+    }
+  | {
+      kind: 'insertAfter';
+      anchorBlockId: string;
+      commitKind: 'api-insert';
+      preferDataType: 'dom';
+      fallbackDataType: 'markdown';
+      patch: InsertableBlockPatch;
+      context?: Partial<BlockWriteContext>;
+      resultMode: 'boolean' | 'operations';
+    };
+export type CaretSnapshot =
+  | {
+      policy: 'wbr-first';
+      containerBlockId: string;
+      fallbackOffset?: {
+        start: number;
+        end: number;
+      };
+    }
+  | {
+      policy: 'none';
+    };
+export type LoadedMutationSource =
+  | {
+      kind: 'update';
+      targetBlockId: string;
+      currentMarkdown: string;
+      currentDomHtml?: string;
+      targetElement?: HTMLElement;
+      caretSnapshot?: CaretSnapshot;
+    }
+  | {
+      kind: 'insertAfter';
+      anchorBlockId: string;
+    };
+export interface CaretRestorePlan {
+  policy: 'none' | 'wbr';
+  placement?: 'after-inserted-text' | 'after-inline' | 'placeholder-anchor' | 'block-end';
+}
+export type PreparedMutationPayload =
+  | {
+      kind: 'update';
+      targetBlockId: string;
+      nextMarkdown: string;
+      preferredDataType: 'dom';
+      domHtml?: string;
+      fallbackMarkdown: string;
+      oldDomHtml?: string;
+      targetElement?: HTMLElement;
+      caretRestorePlan?: CaretRestorePlan;
+    }
+  | {
+      kind: 'insertAfter';
+      anchorBlockId: string;
+      preferredDataType: 'dom';
+      domHtml?: string;
+      fallbackMarkdown: string;
+      resultMode: 'boolean' | 'operations';
+      caretRestorePlan?: CaretRestorePlan;
+    };
 
 export interface KramdownBlockParts {
   contentLines: string[];

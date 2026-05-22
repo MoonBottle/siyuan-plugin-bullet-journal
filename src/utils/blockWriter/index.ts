@@ -1,5 +1,6 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from './types';
 import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTransport';
+import { normalizeInsertIntent, normalizeUpdateIntent } from './intent';
 import { createProtyleMarkdownWriter, waitForProtyleTransactionsFlush } from './markdownWriter';
 import { normalizePatchSequence } from './normalizePatchSequence';
 import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter';
@@ -31,18 +32,21 @@ export type {
 export { createProtyleMarkdownWriter } from './markdownWriter';
 
 export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
-  return insertViaApi(previousBlockId, patch);
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' });
+  return insertViaApi(intent.anchorBlockId, intent.patch);
 }
 
 export async function insertBlockAfterWithResult(
   previousBlockId: string,
   patch: InsertableBlockPatch,
 ): Promise<IResdoOperations[] | null> {
-  return insertViaApiWithResult(previousBlockId, patch);
+  const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' });
+  return insertViaApiWithResult(intent.anchorBlockId, intent.patch);
 }
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
-  const patchArray = normalizePatchSequence(Array.isArray(patches) ? patches : [patches]);
+  const intent = normalizeUpdateIntent(context, patches);
+  const patchArray = intent.patches;
   const payload = Array.isArray(patches) ? patchArray : patchArray[0];
   const addDatePatch = patchArray.length === 1 && patchArray[0]?.type === 'addDate'
     ? patchArray[0]
