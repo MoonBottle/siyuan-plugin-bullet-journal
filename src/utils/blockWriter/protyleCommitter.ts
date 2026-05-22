@@ -35,6 +35,10 @@ function resolveWbrOffset(
   return textContent.length;
 }
 
+function previewText(value: string | null | undefined): string {
+  return (value ?? '').replace(/\s+/gu, ' ').slice(0, 160);
+}
+
 export async function commitViaProtyle(
   context: Pick<BlockWriteContext, 'protyle'>,
   payload: Extract<PreparedMutationPayload, { kind: 'update' }>,
@@ -42,11 +46,27 @@ export async function commitViaProtyle(
   const { protyle } = context;
   const targetElement = payload.targetElement;
   if (!protyle || !targetElement || typeof protyle.transaction !== 'function') {
+    console.log('[BWDBG][protyleCommitter] unavailable', {
+      hasProtyle: Boolean(protyle),
+      hasTargetElement: Boolean(targetElement),
+      hasTransaction: typeof protyle?.transaction === 'function',
+      targetBlockId: payload.targetBlockId,
+    });
     return false;
   }
 
   const oldHTML = payload.oldDomHtml ?? targetElement.outerHTML;
+  console.log('[BWDBG][protyleCommitter] before render', {
+    targetBlockId: payload.targetBlockId,
+    beforePreview: previewText(targetElement.textContent),
+    nextMarkdownPreview: previewText(payload.nextMarkdown),
+    caretPolicy: payload.caretRestorePlan?.policy ?? 'none',
+  });
   if (!renderMarkdownIntoBlockEditable(protyle, targetElement, payload.nextMarkdown)) {
+    console.log('[BWDBG][protyleCommitter] render failed', {
+      targetBlockId: payload.targetBlockId,
+      nextMarkdownPreview: previewText(payload.nextMarkdown),
+    });
     return false;
   }
 
@@ -60,13 +80,25 @@ export async function commitViaProtyle(
   }
 
   targetElement.setAttribute('updated', formatUpdatedAttr());
+  console.log('[BWDBG][protyleCommitter] before transaction', {
+    targetBlockId: payload.targetBlockId,
+    afterRenderPreview: previewText(targetElement.textContent),
+  });
   protyle.transaction(
     [{ id: payload.targetBlockId, data: targetElement.outerHTML, action: 'update' }],
     [{ id: payload.targetBlockId, data: oldHTML, action: 'update' }],
   );
 
-  if (payload.caretRestorePlan?.policy === 'wbr' && !focusByWbr(targetElement)) {
-    focusByOffset(targetElement, payload.caretRestorePlan.fallbackOffset);
+  if (payload.caretRestorePlan?.policy === 'wbr') {
+    const restoredByWbr = focusByWbr(targetElement);
+    console.log('[BWDBG][protyleCommitter] caret restore', {
+      targetBlockId: payload.targetBlockId,
+      restoredByWbr,
+      fallbackOffset: payload.caretRestorePlan.fallbackOffset,
+    });
+    if (!restoredByWbr) {
+      focusByOffset(targetElement, payload.caretRestorePlan.fallbackOffset);
+    }
   }
 
   return true;

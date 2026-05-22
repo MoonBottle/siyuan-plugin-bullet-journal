@@ -649,6 +649,14 @@ export function getActionHandler(
           if (!writeContext) {
             return;
           }
+          console.log('[BWDBG][slash.done] resolved context', {
+            blockId,
+            itemStatus: item.status,
+            listItemBlockId: item.listItemBlockId,
+            hasSlashRange: Boolean(writeContext.slashRange),
+            slashStartOffset: writeContext.slashStartOffset,
+            blockPreview: (blockContent || '').replace(/\s+/gu, ' ').slice(0, 160),
+          });
           if (item.status === 'completed' || (completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
             void writeBlock(writeContext, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
@@ -695,6 +703,14 @@ export function getActionHandler(
 
           const abandonedTag = getStatusTag('abandoned');
           const blockContent = nodeElement.textContent || '';
+          console.log('[BWDBG][slash.abandon] resolved context', {
+            blockId,
+            itemStatus: item.status,
+            listItemBlockId: item.listItemBlockId,
+            hasSlashRange: Boolean(writeContext.slashRange),
+            slashStartOffset: writeContext.slashStartOffset,
+            blockPreview: blockContent.replace(/\s+/gu, ' ').slice(0, 160),
+          });
           if (item.status === 'abandoned' || (abandonedTag && blockContent.includes(abandonedTag))) {
             void writeBlock(writeContext, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');

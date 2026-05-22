@@ -68,4 +68,26 @@ describe('slashRange', () => {
 
     expect(textNode.textContent).toBe('keep ');
   });
+
+  it('deletes the matched slash command even when the selection is collapsed at command start', () => {
+    const textNode = document.createTextNode('测试 📅2026-05-21 08:43 /fq\u200B');
+    const range = document.createRange();
+    range.setStart(textNode, '测试 📅2026-05-21 08:43 '.length);
+    range.collapse(true);
+
+    deleteSlashRangeText(range, '测试 📅2026-05-21 08:43 '.length);
+
+    expect(textNode.textContent).toBe('测试 📅2026-05-21 08:43 ');
+  });
+
+  it('deletes only the slash command and preserves trailing marker text for infix triggers', () => {
+    const textNode = document.createTextNode('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0');
+    const range = document.createRange();
+    range.setStart(textNode, '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0'.length);
+    range.collapse(true);
+
+    deleteSlashRangeText(range, '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0'.length);
+
+    expect(textNode.textContent).toBe('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00');
+  });
 });

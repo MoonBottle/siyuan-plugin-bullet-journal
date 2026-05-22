@@ -34,6 +34,10 @@ export type {
 
 export { createProtyleMarkdownWriter } from './markdownWriter';
 
+function hasRemoveSlashPatch(patches: Array<{ type: string }>): boolean {
+  return patches.some(patch => patch.type === 'removeSlashCommand');
+}
+
 async function executeIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
   const plan = await resolveMutationTarget(intent);
   const source = await loadMutationSource(plan);
@@ -44,12 +48,31 @@ async function executeIntent(intent: BlockMutationIntent): Promise<boolean | IRe
   }
 
   const payload = prepareUpdatePayload(plan, source);
+  if (hasRemoveSlashPatch(plan.patches)) {
+    console.log('[BWDBG][executeIntent] slash plan', {
+      targetBlockId: plan.targetBlockId,
+      sourceBlockId: plan.sourceBlockId,
+      sourceKind: plan.sourceKind,
+      commitKind: plan.commitKind,
+      patches: plan.patches.map(patch => patch.type),
+    });
+  }
   if (plan.commitKind === 'protyle-update') {
     const ok = await commitViaProtyle(plan.context, payload);
     if (ok) {
+      if (hasRemoveSlashPatch(plan.patches)) {
+        console.log('[BWDBG][executeIntent] protyle commit success', {
+          targetBlockId: plan.targetBlockId,
+        });
+      }
       return true;
     }
-
+    if (hasRemoveSlashPatch(plan.patches)) {
+      console.log('[BWDBG][executeIntent] protyle commit failed', {
+        targetBlockId: plan.targetBlockId,
+        fallback: 'api-reload-source',
+      });
+    }
     const apiFallbackPlan = {
       ...plan,
       sourceKind: 'api-kramdown' as const,
@@ -96,13 +119,35 @@ async function executePlan(plan: MutationExecutionPlan): Promise<boolean | IResd
   };
   const source = await loadMutationSource(resolvedPlan);
   const payload = prepareUpdatePayload(resolvedPlan, source);
+  if (hasRemoveSlashPatch(resolvedPlan.patches)) {
+    console.log('[BWDBG][executePlan] slash plan', {
+      planId: plan.id,
+      targetBlockId: resolvedPlan.targetBlockId,
+      sourceBlockId: resolvedPlan.sourceBlockId,
+      sourceKind: resolvedPlan.sourceKind,
+      commitKind: resolvedPlan.commitKind,
+      patches: resolvedPlan.patches.map(patch => patch.type),
+    });
+  }
 
   if (resolvedPlan.commitKind === 'protyle-update') {
     const ok = await commitViaProtyle(resolvedPlan.context, payload);
     if (ok) {
+      if (hasRemoveSlashPatch(resolvedPlan.patches)) {
+        console.log('[BWDBG][executePlan] protyle commit success', {
+          planId: plan.id,
+          targetBlockId: resolvedPlan.targetBlockId,
+        });
+      }
       return true;
     }
-
+    if (hasRemoveSlashPatch(resolvedPlan.patches)) {
+      console.log('[BWDBG][executePlan] protyle commit failed', {
+        planId: plan.id,
+        targetBlockId: resolvedPlan.targetBlockId,
+        fallback: 'api-reload-source',
+      });
+    }
     const apiFallbackPlan = {
       ...resolvedPlan,
       sourceKind: 'api-kramdown' as const,

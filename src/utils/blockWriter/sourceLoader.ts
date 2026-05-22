@@ -51,6 +51,10 @@ function getNodeByPath(root: Node, path: number[]): Node | null {
   return current;
 }
 
+function previewText(value: string | null | undefined): string {
+  return (value ?? '').replace(/\s+/gu, ' ').slice(0, 160);
+}
+
 function createSlashCleanedDraft(
   targetElement: HTMLElement,
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
@@ -63,17 +67,34 @@ function createSlashCleanedDraft(
   const range = plan.context.slashRange
     ?? (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null);
   if (!range || range.startContainer.nodeType !== Node.TEXT_NODE) {
+    console.log('[BWDBG][sourceLoader] missing slash range', {
+      targetBlockId: plan.targetBlockId,
+      hasContextRange: Boolean(plan.context.slashRange),
+      selectionRangeCount: selection?.rangeCount ?? 0,
+      startNodeType: range?.startContainer?.nodeType,
+      targetPreview: previewText(targetElement.textContent),
+    });
     return targetElement;
   }
 
   const path = getNodePath(targetElement, range.startContainer);
   if (!path) {
+    console.log('[BWDBG][sourceLoader] slash path not found', {
+      targetBlockId: plan.targetBlockId,
+      startTextPreview: previewText(range.startContainer.textContent),
+      targetPreview: previewText(targetElement.textContent),
+    });
     return targetElement;
   }
 
   const draftTarget = targetElement.cloneNode(true) as HTMLElement;
   const draftStartNode = getNodeByPath(draftTarget, path);
   if (!draftStartNode || draftStartNode.nodeType !== Node.TEXT_NODE) {
+    console.log('[BWDBG][sourceLoader] draft start node invalid', {
+      targetBlockId: plan.targetBlockId,
+      path,
+      draftNodeType: draftStartNode?.nodeType,
+    });
     return draftTarget;
   }
 
@@ -84,9 +105,23 @@ function createSlashCleanedDraft(
   const slashStartOffset = plan.context.slashStartOffset
     ?? findSlashCommandStartOffset(textContent, range.startOffset);
   if (slashStartOffset < 0) {
+    console.log('[BWDBG][sourceLoader] slash start offset not found', {
+      targetBlockId: plan.targetBlockId,
+      rangeStartOffset: range.startOffset,
+      textPreview: previewText(textContent),
+    });
     return draftTarget;
   }
+
+  const beforeText = draftTarget.textContent ?? '';
   deleteSlashRangeText(draftRange, slashStartOffset);
+  console.log('[BWDBG][sourceLoader] slash cleaned draft', {
+    targetBlockId: plan.targetBlockId,
+    slashStartOffset,
+    rangeStartOffset: range.startOffset,
+    beforePreview: previewText(beforeText),
+    afterPreview: previewText(draftTarget.textContent),
+  });
   return draftTarget;
 }
 
