@@ -35,6 +35,15 @@
       </span>
     </div>
     <div class="chat-message__content">
+      <!-- 用户消息复制按钮（hover 显示） -->
+      <span
+        v-if="message.role === 'user' && message.content"
+        class="chat-message__copy-btn b3-tooltips b3-tooltips__ne"
+        :aria-label="t('aiChat').copyMessage"
+        @click="handleCopyMessage"
+      >
+        <svg><use xlink:href="#iconCopy"></use></svg>
+      </span>
       <div class="chat-message__body">
         <!-- 思考中：AI 正在思考但还没有 reasoning 内容 -->
         <ThinkingIndicator
@@ -286,8 +295,10 @@ function formatTime(timestamp: number): string {
   &--user {
     background: transparent;
     align-items: flex-end;
+    position: relative;
 
     .chat-message__content {
+      position: relative;
       background: var(--b3-theme-primary-lightest);
       border-radius: 16px 0 16px 16px;
       padding: 12px 16px;
@@ -712,6 +723,39 @@ function formatTime(timestamp: number): string {
         opacity: 1;
       }
     }
+  }
+
+  &__copy-btn {
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--b3-theme-on-surface-light);
+      transition: fill 0.2s ease;
+    }
+
+    &:hover svg {
+      fill: var(--b3-theme-primary);
+    }
+  }
+
+  &--user:hover &__copy-btn {
+    opacity: 0.7;
+  }
+
+  &--user &__copy-btn:hover {
+    opacity: 1;
   }
 }
 
