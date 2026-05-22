@@ -90,9 +90,38 @@ function lookupItemFromStore(blockId: string): Item | null {
   return projectStore.getItemByBlockId(blockId) ?? null;
 }
 
+function resolveTaskListMetadata(nodeElement?: HTMLElement | null): Pick<Item, 'isTaskList' | 'listItemBlockId'> {
+  const listItemElement = nodeElement?.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement | null;
+  const listItemBlockId = listItemElement?.getAttribute('data-node-id') || undefined;
+  return {
+    isTaskList: Boolean(listItemBlockId),
+    listItemBlockId,
+  };
+}
+
+function mergeResolvedItemMetadata(
+  candidate: Item,
+  storeItem: Item | null,
+  nodeElement?: HTMLElement | null,
+): Item {
+  const taskListMetadata = resolveTaskListMetadata(nodeElement);
+  const preserveStoreId = candidate.id === candidate.blockId ? storeItem?.id : undefined;
+  const preserveStoreDocId = candidate.docId || storeItem?.docId || '';
+
+  return {
+    ...(storeItem ?? {}),
+    ...candidate,
+    id: preserveStoreId || candidate.id,
+    docId: preserveStoreDocId,
+    isTaskList: candidate.isTaskList || storeItem?.isTaskList || taskListMetadata.isTaskList,
+    listItemBlockId: taskListMetadata.listItemBlockId || storeItem?.listItemBlockId || candidate.listItemBlockId,
+  };
+}
+
 export async function resolveItemForSlashCommand(options: ResolveSlashItemOptions): Promise<Item | null> {
   const { blockId, nodeElement } = options;
   const activeSlash = getActiveSlashRange();
+  const storeItem = lookupItemFromStore(blockId);
 
   if (
     nodeElement
@@ -104,9 +133,18 @@ export async function resolveItemForSlashCommand(options: ResolveSlashItemOption
       blockId,
     );
     if (candidate) {
-      return candidate;
+      return mergeResolvedItemMetadata(candidate, storeItem, nodeElement);
     }
   }
 
-  return lookupItemFromStore(blockId);
+  if (storeItem) {
+    const taskListMetadata = resolveTaskListMetadata(nodeElement);
+    return {
+      ...storeItem,
+      isTaskList: storeItem.isTaskList || taskListMetadata.isTaskList,
+      listItemBlockId: taskListMetadata.listItemBlockId || storeItem.listItemBlockId,
+    };
+  }
+
+  return null;
 }

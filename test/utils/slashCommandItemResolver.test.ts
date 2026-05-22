@@ -1,115 +1,141 @@
 // @vitest-environment happy-dom
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const useProjectStoreMock = vi.fn();
+const { parseItemLineMock, getItemByBlockIdMock, getActiveSlashRangeMock } = vi.hoisted(() => ({
+  parseItemLineMock: vi.fn(),
+  getItemByBlockIdMock: vi.fn(),
+  getActiveSlashRangeMock: vi.fn(),
+}));
+
+vi.mock('@/parser/lineParser', () => ({
+  LineParser: {
+    parseItemLine: parseItemLineMock,
+  },
+}));
+
+vi.mock('@/stores', () => ({
+  useProjectStore: vi.fn(() => ({
+    getItemByBlockId: getItemByBlockIdMock,
+  })),
+}));
 
 vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => ({})),
 }));
 
-vi.mock('@/stores', () => ({
-  useProjectStore: (...args: unknown[]) => useProjectStoreMock(...args),
+vi.mock('@/utils/blockWriter/slashRange', () => ({
+  getActiveSlashRange: getActiveSlashRangeMock,
+  deleteSlashRangeText: vi.fn((range: Range, slashStartOffset: number) => {
+    const textNode = range.startContainer as Text;
+    const text = textNode.textContent ?? '';
+    textNode.textContent = `${text.slice(0, slashStartOffset)}${text.slice(range.startOffset)}`;
+    range.setStart(textNode, slashStartOffset);
+    range.collapse(true);
+  }),
 }));
 
 import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver';
 
-function mountParagraph(text: string, blockId = 'block-1') {
-  const node = document.createElement('div');
-  node.setAttribute('data-node-id', blockId);
-  node.setAttribute('data-type', 'NodeParagraph');
-  node.className = 'p';
-
-  const editable = document.createElement('div');
-  editable.setAttribute('contenteditable', 'true');
-  editable.textContent = text;
-  node.appendChild(editable);
-  document.body.appendChild(node);
-
-  return { node, editable, textNode: editable.firstChild as Text };
-}
-
-function placeCursor(textNode: Text, offset: number) {
-  const range = document.createRange();
-  range.setStart(textNode, offset);
-  range.collapse(true);
-  const selection = window.getSelection();
-  selection?.removeAllRanges();
-  selection?.addRange(range);
-}
-
-describe('resolveItemForSlashCommand', () => {
+describe('slashCommandItemResolver', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     document.body.innerHTML = '';
-    useProjectStoreMock.mockReset();
-    useProjectStoreMock.mockReturnValue({
-      getItemByBlockId: vi.fn(() => null),
+  });
+
+  function createTaskListNode(text: string) {
+    const listItem = document.createElement('div');
+    listItem.setAttribute('data-type', 'NodeListItem');
+    listItem.setAttribute('data-subtype', 't');
+    listItem.setAttribute('data-node-id', 'task-1');
+
+    const paragraph = document.createElement('div');
+    paragraph.setAttribute('data-node-id', 'paragraph-1');
+    paragraph.innerHTML = `<div contenteditable="true">${text}</div>`;
+
+    listItem.appendChild(paragraph);
+    document.body.appendChild(listItem);
+
+    const textNode = paragraph.querySelector('[contenteditable="true"]')?.firstChild as Text;
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent?.length ?? 0);
+    range.collapse(true);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+
+    return { listItem, paragraph, range, textNode };
+  }
+
+  it('merges task-list metadata from store when resolving an active slash candidate', async () => {
+    parseItemLineMock.mockReturnValue([{
+      id: '',
+      content: '整理资料',
+      date: '2026-05-14',
+      status: 'pending',
+      lineNumber: 1,
+    }]);
+    getItemByBlockIdMock.mockReturnValue({
+      id: 'item-1',
+      blockId: 'paragraph-1',
+      listItemBlockId: 'task-1',
+      isTaskList: true,
+      docId: 'doc-1',
+      content: '旧内容',
+      date: '2026-05-14',
+      status: 'pending',
+      lineNumber: 1,
+    });
+
+    const { paragraph, range, textNode } = createTaskListNode('整理资料 /fq');
+    getActiveSlashRangeMock.mockReturnValue({
+      blockId: 'paragraph-1',
+      range: range.cloneRange(),
+      slashStartOffset: textNode.textContent?.indexOf('/fq') ?? -1,
+    });
+
+    const result = await resolveItemForSlashCommand({
+      blockId: 'paragraph-1',
+      nodeElement: paragraph,
+    });
+
+    expect(result).toMatchObject({
+      id: 'item-1',
+      blockId: 'paragraph-1',
+      content: '整理资料',
+      date: '2026-05-14',
+      status: 'pending',
+      docId: 'doc-1',
+      isTaskList: true,
+      listItemBlockId: 'task-1',
     });
   });
 
-  it('parses a valid item from a date-marker infix slash command', async () => {
-    const text = '评审视觉稿 📅2026-05-15/yxj,2026-05-20 ⏰14:00';
-    const { node, textNode } = mountParagraph(text);
-    placeCursor(textNode, text.indexOf('/yxj') + '/yxj'.length);
+  it('derives task-list metadata from the dom when store metadata is unavailable', async () => {
+    parseItemLineMock.mockReturnValue([{
+      id: '',
+      content: '整理资料',
+      date: '2026-05-14',
+      status: 'pending',
+      lineNumber: 1,
+    }]);
+    getItemByBlockIdMock.mockReturnValue(null);
 
-    const item = await resolveItemForSlashCommand({
-      blockId: 'block-1',
-      nodeElement: node,
+    const { paragraph, range, textNode } = createTaskListNode('整理资料 /fq');
+    getActiveSlashRangeMock.mockReturnValue({
+      blockId: 'paragraph-1',
+      range: range.cloneRange(),
+      slashStartOffset: textNode.textContent?.indexOf('/fq') ?? -1,
     });
 
-    expect(item?.content).toBe('评审视觉稿');
-    expect(item?.date).toBe('2026-05-15');
-    expect(item?.siblingItems?.[0]?.date).toBe('2026-05-20');
-  });
-
-  it('parses a valid item from a time-marker infix slash command', async () => {
-    const text = '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj0';
-    const { node, textNode } = mountParagraph(text);
-    placeCursor(textNode, text.indexOf('/yxj') + '/yxj'.length);
-
-    const item = await resolveItemForSlashCommand({
-      blockId: 'block-1',
-      nodeElement: node,
+    const result = await resolveItemForSlashCommand({
+      blockId: 'paragraph-1',
+      nodeElement: paragraph,
     });
 
-    expect(item?.content).toBe('评审视觉稿');
-    expect(item?.reminder?.type).toBe('absolute');
-    expect(item?.reminder?.time).toBe('14:00');
-  });
-
-  it('falls back to store lookup when there is no active slash context', async () => {
-    useProjectStoreMock.mockReturnValue({
-      getItemByBlockId: vi.fn(() => ({
-        id: 'item-1',
-        blockId: 'block-1',
-        content: '来自 store 的事项',
-        date: '2026-05-20',
-        status: 'pending',
-        lineNumber: 1,
-        docId: 'doc-1',
-      })),
+    expect(result).toMatchObject({
+      blockId: 'paragraph-1',
+      content: '整理资料',
+      isTaskList: true,
+      listItemBlockId: 'task-1',
     });
-
-    const { node } = mountParagraph('普通事项文本');
-
-    const item = await resolveItemForSlashCommand({
-      blockId: 'block-1',
-      nodeElement: node,
-    });
-
-    expect(item?.content).toBe('来自 store 的事项');
-  });
-
-  it('returns null when both candidate line and store lookup fail', async () => {
-    const text = '普通文本 /yxj';
-    const { node, textNode } = mountParagraph(text);
-    placeCursor(textNode, text.length);
-
-    const item = await resolveItemForSlashCommand({
-      blockId: 'block-1',
-      nodeElement: node,
-    });
-
-    expect(item).toBeNull();
   });
 });

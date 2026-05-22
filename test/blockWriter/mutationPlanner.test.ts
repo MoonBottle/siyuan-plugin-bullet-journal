@@ -71,4 +71,50 @@ describe('mutationPlanner', () => {
     expect(result.plans[0]?.sourceKind).toBe('protyle-dom');
     expect(result.plans[0]?.commitKind).toBe('protyle-update');
   });
+
+  it('assigns wbr restoration to the last split protyle plan for task-list slash status updates', async () => {
+    vi.mocked(getBlockByID).mockImplementation(async (blockId: string) => {
+      if (blockId === 'paragraph-1') {
+        return { id: 'paragraph-1', parent_id: 'task-1', type: 'NodeParagraph' } as any;
+      }
+      if (blockId === 'task-1') {
+        return { id: 'task-1', type: 'NodeListItem', subtype: 't' } as any;
+      }
+      return { id: blockId, type: 'NodeParagraph' } as any;
+    });
+
+    const nodeElement = document.createElement('div');
+    nodeElement.setAttribute('data-node-id', 'paragraph-1');
+    const listItem = document.createElement('div');
+    listItem.setAttribute('data-node-id', 'task-1');
+    listItem.setAttribute('data-type', 'NodeListItem');
+    listItem.setAttribute('data-subtype', 't');
+    listItem.appendChild(nodeElement);
+    document.body.appendChild(listItem);
+
+    const result = await buildMutationPlans(normalizeUpdateIntent(
+      {
+        blockId: 'paragraph-1',
+        protyle: {},
+        nodeElement,
+      },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setStatus', status: 'abandoned' },
+      ],
+    ));
+
+    expect(result.reason).toBe('split-by-target');
+    expect(result.plans).toHaveLength(2);
+    expect(result.plans[0]).toMatchObject({
+      targetBlockId: 'paragraph-1',
+      caretPolicy: 'wbr',
+      caretOwner: false,
+    });
+    expect(result.plans[1]).toMatchObject({
+      targetBlockId: 'task-1',
+      caretPolicy: 'wbr',
+      caretOwner: true,
+    });
+  });
 });

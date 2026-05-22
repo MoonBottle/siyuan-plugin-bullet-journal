@@ -166,9 +166,13 @@ export async function buildMutationPlans(intent: BlockMutationIntent): Promise<M
 
   flush(currentGroup, plans.length, plans.length === 0 ? 'single-commit' : 'split-subplan');
 
+  const strongestPlanCaretPolicy = plans.reduce<'none' | 'wbr'>((policy, plan) => {
+    return strongerCaretPolicy(policy, plan.caretPolicy);
+  }, 'none');
   for (let index = plans.length - 1; index >= 0; index -= 1) {
     const plan = plans[index];
     if (plan.kind === 'update' && plan.sourceKind === 'protyle-dom') {
+      plan.caretPolicy = strongerCaretPolicy(plan.caretPolicy, strongestPlanCaretPolicy);
       plan.caretOwner = true;
       break;
     }

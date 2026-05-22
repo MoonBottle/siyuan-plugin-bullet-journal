@@ -118,7 +118,10 @@ async function executePlan(plan: MutationExecutionPlan): Promise<boolean | IResd
     datePatchSource: plan.datePatchSource,
   };
   const source = await loadMutationSource(resolvedPlan);
-  const payload = prepareUpdatePayload(resolvedPlan, source);
+  const payload = prepareUpdatePayload(resolvedPlan, source, {
+    caretOwner: plan.caretOwner,
+    caretPolicy: plan.caretPolicy,
+  });
   if (hasRemoveSlashPatch(resolvedPlan.patches)) {
     console.log('[BWDBG][executePlan] slash plan', {
       planId: plan.id,

@@ -764,6 +764,7 @@ describe('item-only slash command validation', () => {
     const slashStartOffset = setCaretToCommandEnd(node, '/fq');
     const protyle = { transaction: vi.fn() };
     listItem.appendChild(node);
+    document.body.appendChild(listItem);
 
     handler(protyle as any, node);
     await Promise.resolve();

@@ -104,4 +104,110 @@ describe('protyleCommitter', () => {
     expect(range.collapsed).toBe(true);
     expect(logicalOffset.toString()).toBe('测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌');
   });
+
+  it('restores caret on the live task-list node after transaction replaces the list item', async () => {
+    const targetElement = document.createElement('div');
+    targetElement.classList.add('li');
+    targetElement.setAttribute('data-node-id', 'task-1');
+    targetElement.setAttribute('data-type', 'NodeListItem');
+    targetElement.setAttribute('data-subtype', 't');
+    targetElement.innerHTML = '<span class="protyle-action--task"></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>';
+    document.body.appendChild(targetElement);
+
+    const protyle = {
+      transaction: vi.fn((doOperations: Array<{ data: string }>) => {
+        const template = document.createElement('template');
+        template.innerHTML = doOperations[0].data;
+        const replacement = template.content.firstElementChild as HTMLElement;
+        targetElement.replaceWith(replacement);
+        targetElement.innerHTML = '';
+      }),
+    };
+
+    const success = await commitViaProtyle(
+      { protyle },
+      {
+        kind: 'update',
+        targetBlockId: 'task-1',
+        nextMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
+        preferredDataType: 'dom',
+        domHtml: '<div data-node-id="task-1">测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行</div>',
+        fallbackMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
+        oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div></div>',
+        targetElement,
+        caretRestorePlan: {
+          policy: 'wbr',
+          placement: 'line-end',
+          lineIndex: 0,
+        },
+      },
+    );
+
+    expect(success).toBe(true);
+    const liveTarget = document.querySelector('[data-node-id="task-1"]') as HTMLElement;
+    expect(liveTarget).not.toBe(targetElement);
+
+    const selection = window.getSelection();
+    expect(selection?.rangeCount).toBe(1);
+    const range = selection!.getRangeAt(0);
+    const editable = liveTarget.querySelector('[contenteditable="true"]') as HTMLElement;
+    const logicalOffset = document.createRange();
+    logicalOffset.selectNodeContents(editable);
+    logicalOffset.setEnd(range.startContainer, range.startOffset);
+    expect(range.collapsed).toBe(true);
+    expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
+  });
+
+  it('prefers the connected target element when duplicate block ids exist elsewhere in the document', async () => {
+    const staleDuplicate = document.createElement('div');
+    staleDuplicate.setAttribute('data-node-id', 'task-1');
+    staleDuplicate.textContent = '旧节点 /fq';
+    document.body.appendChild(staleDuplicate);
+
+    const targetElement = document.createElement('div');
+    targetElement.classList.add('li');
+    targetElement.setAttribute('data-node-id', 'task-1');
+    targetElement.setAttribute('data-type', 'NodeListItem');
+    targetElement.setAttribute('data-subtype', 't');
+    targetElement.innerHTML = '<span class="protyle-action--task"></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>';
+    document.body.appendChild(targetElement);
+
+    const protyle = {
+      transaction: vi.fn(),
+      wysiwyg: {
+        element: document.body,
+      },
+    };
+
+    const success = await commitViaProtyle(
+      { protyle },
+      {
+        kind: 'update',
+        targetBlockId: 'task-1',
+        nextMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
+        preferredDataType: 'dom',
+        domHtml: '<div data-node-id="task-1">测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行</div>',
+        fallbackMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
+        oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div></div>',
+        targetElement,
+        caretRestorePlan: {
+          policy: 'wbr',
+          placement: 'line-end',
+          lineIndex: 0,
+        },
+      },
+    );
+
+    expect(success).toBe(true);
+    const selection = window.getSelection();
+    expect(selection?.rangeCount).toBe(1);
+    const range = selection!.getRangeAt(0);
+    const editable = targetElement.querySelector('[contenteditable="true"]') as HTMLElement;
+    const logicalOffset = document.createRange();
+    logicalOffset.selectNodeContents(editable);
+    logicalOffset.setEnd(range.startContainer, range.startOffset);
+    expect(range.collapsed).toBe(true);
+    expect(range.startContainer.textContent).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行');
+    expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
+  });
 });

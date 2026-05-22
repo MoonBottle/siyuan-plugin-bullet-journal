@@ -4,6 +4,11 @@ import { applyBlockPatch } from './kramdownModifier';
 import type { CaretRestorePlan, ContentPatch, LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types';
 import { prepareDatePatchWriteFromSource } from './datePatchWriter';
 
+interface CaretRestoreOptions {
+  caretOwner?: boolean;
+  caretPolicy?: 'none' | 'wbr';
+}
+
 function findEditableTextContent(element?: HTMLElement): string {
   if (!element) {
     return '';
@@ -35,8 +40,11 @@ function resolveCaretLineIndex(source: Extract<LoadedMutationSource, { kind: 'up
 function buildCaretRestorePlan(
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
   source: Extract<LoadedMutationSource, { kind: 'update' }>,
+  options?: CaretRestoreOptions,
 ): CaretRestorePlan {
-  if (!plan.patches.some(patch => patch.type === 'removeSlashCommand')) {
+  const effectivePolicy = options?.caretPolicy
+    ?? (plan.patches.some(patch => patch.type === 'removeSlashCommand') ? 'wbr' : 'none');
+  if (options?.caretOwner === false || effectivePolicy !== 'wbr') {
     return { policy: 'none' };
   }
 
@@ -59,6 +67,7 @@ function buildCaretRestorePlan(
 export function prepareUpdatePayload(
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
   source: Extract<LoadedMutationSource, { kind: 'update' }>,
+  options?: CaretRestoreOptions,
 ): Extract<PreparedMutationPayload, { kind: 'update' }> {
   const renderablePatches = plan.patches.filter(patch => patch.type !== 'removeSlashCommand');
   let nextMarkdown = source.currentMarkdown;
@@ -92,6 +101,6 @@ export function prepareUpdatePayload(
     fallbackMarkdown: nextMarkdown,
     oldDomHtml: source.currentDomHtml,
     targetElement: source.targetElement,
-    caretRestorePlan: buildCaretRestorePlan(plan, source),
+    caretRestorePlan: buildCaretRestorePlan(plan, source, options),
   };
 }

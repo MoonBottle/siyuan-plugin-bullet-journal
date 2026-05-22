@@ -60,6 +60,34 @@ function previewText(value: string | null | undefined): string {
   return (value ?? '').replace(/\s+/gu, ' ').slice(0, 160);
 }
 
+function escapeAttributeValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function resolveSearchRoot(protyle: any, fallback: HTMLElement): ParentNode {
+  const protyleRoot = protyle?.wysiwyg?.element;
+  if (protyleRoot && typeof protyleRoot.querySelector === 'function') {
+    return protyleRoot;
+  }
+
+  const fallbackRoot = fallback.closest('.protyle-wysiwyg');
+  if (fallbackRoot && typeof fallbackRoot.querySelector === 'function') {
+    return fallbackRoot;
+  }
+
+  return fallback.ownerDocument ?? document;
+}
+
+function resolveLiveTargetElement(targetBlockId: string, fallback: HTMLElement, protyle: any): HTMLElement {
+  if (fallback.isConnected && fallback.getAttribute('data-node-id') === targetBlockId) {
+    return fallback;
+  }
+
+  const searchRoot = resolveSearchRoot(protyle, fallback);
+  const liveTarget = searchRoot.querySelector(`[data-node-id="${escapeAttributeValue(targetBlockId)}"]`) as HTMLElement | null;
+  return liveTarget ?? fallback;
+}
+
 export async function commitViaProtyle(
   context: Pick<BlockWriteContext, 'protyle'>,
   payload: Extract<PreparedMutationPayload, { kind: 'update' }>,
@@ -91,12 +119,16 @@ export async function commitViaProtyle(
     return false;
   }
 
+  let plannedCaretOffset: number | undefined;
   if (payload.caretRestorePlan?.policy === 'wbr') {
     const editable = targetElement.getAttribute('contenteditable') === 'true'
       ? targetElement
       : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
     if (editable) {
-      injectWbrIntoEditable(editable, resolveWbrOffset(editable, payload.caretRestorePlan));
+      plannedCaretOffset = resolveWbrOffset(editable, payload.caretRestorePlan);
+      if (plannedCaretOffset === undefined) {
+        injectWbrIntoEditable(editable);
+      }
     }
   }
 
@@ -111,14 +143,25 @@ export async function commitViaProtyle(
   );
 
   if (payload.caretRestorePlan?.policy === 'wbr') {
-    const restoredByWbr = focusByWbr(targetElement);
+    const liveTargetElement = resolveLiveTargetElement(payload.targetBlockId, targetElement, protyle);
+    let restoredByOffset = false;
+    if (typeof plannedCaretOffset === 'number') {
+      restoredByOffset = focusByOffset(liveTargetElement, {
+        start: plannedCaretOffset,
+        end: plannedCaretOffset,
+      });
+    }
+    const restoredByWbr = restoredByOffset ? false : focusByWbr(liveTargetElement);
     console.log('[BWDBG][protyleCommitter] caret restore', {
       targetBlockId: payload.targetBlockId,
+      liveTargetPreview: previewText(liveTargetElement.textContent),
+      plannedCaretOffset,
+      restoredByOffset,
       restoredByWbr,
       fallbackOffset: payload.caretRestorePlan.fallbackOffset,
     });
-    if (!restoredByWbr) {
-      focusByOffset(targetElement, payload.caretRestorePlan.fallbackOffset);
+    if (!restoredByOffset && !restoredByWbr) {
+      focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset);
     }
   }
 
