@@ -49,16 +49,29 @@ function removeSlashCommandViaWriter(
   nodeElement: HTMLElement | null | undefined,
   options?: {
     blockId?: string;
+    listItemBlockId?: string;
+    writeContext?: BlockWriteContext | null;
   },
 ): Promise<boolean> {
-  const blockId = options?.blockId || nodeElement?.getAttribute('data-node-id');
-  if (!nodeElement || !blockId) {
+  const fallbackBlockId = options?.blockId || nodeElement?.getAttribute('data-node-id');
+  const writeContext = resolveSlashAwareWriteContext(
+    options?.writeContext
+      ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
+        blockId: fallbackBlockId,
+        listItemBlockId: options?.listItemBlockId,
+      }),
+    {
+      blockId: fallbackBlockId,
+      listItemBlockId: options?.listItemBlockId,
+      nodeElement,
+      protyle,
+    },
+  );
+
+  if (!writeContext) {
     return Promise.resolve(false);
   }
-  return writeBlock(
-    { blockId, nodeElement, protyle },
-    { type: 'removeSlashCommand' },
-  );
+  return writeBlock(writeContext, { type: 'removeSlashCommand' });
 }
 
 function captureDeferredSlashWriteContext(
@@ -95,6 +108,31 @@ function captureDeferredSlashWriteContext(
   context.slashRange = activeSlash.range.cloneRange();
   context.slashStartOffset = activeSlash.slashStartOffset;
   return context;
+}
+
+function resolveSlashAwareWriteContext(
+  capturedContext: BlockWriteContext | null | undefined,
+  options: {
+    blockId?: string | null;
+    listItemBlockId?: string;
+    nodeElement?: HTMLElement | null;
+    protyle?: any;
+  },
+): BlockWriteContext | null {
+  const blockId = options.blockId || capturedContext?.blockId || options.nodeElement?.getAttribute('data-node-id');
+  const nodeElement = options.nodeElement ?? capturedContext?.nodeElement;
+  if (!blockId || !nodeElement) {
+    return null;
+  }
+
+  return {
+    blockId,
+    listItemBlockId: options.listItemBlockId ?? capturedContext?.listItemBlockId,
+    nodeElement,
+    protyle: options.protyle ?? capturedContext?.protyle,
+    slashRange: capturedContext?.slashRange,
+    slashStartOffset: capturedContext?.slashStartOffset,
+  };
 }
 
 function createCurrentBlockHabitWriter(
@@ -586,6 +624,9 @@ export function getActionHandler(
     case 'done':
       return (protyle, nodeElement) => {
         void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          });
           const item = await getValidatedItemFromNode(nodeElement, protyle);
           if (!item) {
             return;
@@ -599,14 +640,23 @@ export function getActionHandler(
           if (!blockId) {
             return;
           }
-          if ((completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
-            void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+          const writeContext = resolveSlashAwareWriteContext(capturedWriteContext, {
+            blockId,
+            listItemBlockId: item.listItemBlockId,
+            nodeElement,
+            protyle,
+          });
+          if (!writeContext) {
+            return;
+          }
+          if (item.status === 'completed' || (completedTag && blockContent.includes(completedTag)) || isTaskListDone) {
+            void writeBlock(writeContext, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedDone || '已经标记为已完成', 2000, 'info');
             return;
           }
 
           const success = await writeBlock(
-            { blockId, nodeElement, protyle, listItemBlockId: item.listItemBlockId },
+            writeContext,
             [
               { type: 'removeSlashCommand' },
               { type: 'setStatus', status: 'completed' },
@@ -620,6 +670,9 @@ export function getActionHandler(
     case 'abandon':
       return (protyle, nodeElement) => {
         void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          });
           const item = await getValidatedItemFromNode(nodeElement, protyle);
           if (!item) {
             return;
@@ -630,16 +683,19 @@ export function getActionHandler(
             return;
           }
 
-          const writeContext = {
+          const writeContext = resolveSlashAwareWriteContext(capturedWriteContext, {
             blockId,
             listItemBlockId: item.listItemBlockId,
             nodeElement,
             protyle,
-          };
+          });
+          if (!writeContext) {
+            return;
+          }
 
           const abandonedTag = getStatusTag('abandoned');
           const blockContent = nodeElement.textContent || '';
-          if (abandonedTag && blockContent.includes(abandonedTag)) {
+          if (item.status === 'abandoned' || (abandonedTag && blockContent.includes(abandonedTag))) {
             void writeBlock(writeContext, { type: 'removeSlashCommand' });
             showMessage(t('slash').alreadyMarkedAbandoned || '已经标记为已放弃', 2000, 'info');
             return;
@@ -687,12 +743,15 @@ export function getActionHandler(
     case 'focus':
       return (protyle, nodeElement) => {
         void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          });
           const item = await getValidatedItemFromNode(nodeElement, protyle);
           if (!item) {
             return;
           }
 
-          void removeSlashCommandViaWriter(protyle, nodeElement);
+          void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
           startFocusFromSlash(nodeElement, config.openPomodoroDock, item);
         })();
       };
@@ -712,15 +771,22 @@ export function getActionHandler(
         if (!blockId) {
           return;
         }
+        const writeContext = resolveSlashAwareWriteContext(
+          captureDeferredSlashWriteContext(protyle, nodeElement, { blockId }),
+          { blockId, nodeElement, protyle },
+        );
+        if (!writeContext) {
+          return;
+        }
         const taskTag = t('taskTag');
         const blockContent = nodeElement.textContent || '';
         if (blockContent.includes(taskTag)) {
-          void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand' });
+          void writeBlock(writeContext, { type: 'removeSlashCommand' });
           showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
           return;
         }
         void writeBlock(
-          { blockId, nodeElement, protyle },
+          writeContext,
           [
             { type: 'removeSlashCommand' },
             { type: 'setContent', suffix: taskTag },
@@ -736,34 +802,43 @@ export function getActionHandler(
     case 'setFocusPlan':
       return (protyle, nodeElement) => {
         void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          });
           const item = await getValidatedItemFromNode(nodeElement, protyle);
           if (!item) {
             return;
           }
 
-          setFocusPlanForBlock(protyle, nodeElement, item);
+          setFocusPlanForBlock(protyle, nodeElement, item, capturedWriteContext);
         })();
       };
     case 'setReminder':
       return (protyle, nodeElement) => {
         void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          });
           const item = await getValidatedItemFromNode(nodeElement, protyle);
           if (!item) {
             return;
           }
 
-          setReminderForBlock(protyle, nodeElement, item);
+          setReminderForBlock(protyle, nodeElement, item, capturedWriteContext);
         })();
       };
     case 'setRecurring':
       return (protyle, nodeElement) => {
         void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          });
           const item = await getValidatedItemFromNode(nodeElement, protyle);
           if (!item) {
             return;
           }
 
-          setRecurringForBlock(protyle, nodeElement, item);
+          setRecurringForBlock(protyle, nodeElement, item, capturedWriteContext);
         })();
       };
     case 'createSkill':
@@ -774,12 +849,15 @@ export function getActionHandler(
     case 'setPriority':
       return (protyle, nodeElement) => {
         void (async () => {
+          const capturedWriteContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+            blockId: nodeElement.getAttribute('data-node-id') || undefined,
+          });
           const item = await getValidatedItemFromNode(nodeElement, protyle);
           if (!item) {
             return;
           }
 
-          setPriorityForBlock(protyle, nodeElement, item);
+          setPriorityForBlock(protyle, nodeElement, item, capturedWriteContext);
         })();
       };
     case 'createHabit':
@@ -999,6 +1077,13 @@ async function markAsTodayItem(
     console.log('[SlashCommand] markAsTodayItem: no blockId');
     return;
   }
+  const writeContext = resolveSlashAwareWriteContext(
+    captureDeferredSlashWriteContext(protyle, nodeElement, { blockId }),
+    { blockId, nodeElement, protyle },
+  );
+  if (!writeContext) {
+    return;
+  }
 
   const today = formatDate(new Date());
   console.log('[SlashCommand] markAsTodayItem: today date', today);
@@ -1016,7 +1101,7 @@ async function markAsTodayItem(
   if (todayItem) {
     console.log('[SlashCommand] markAsTodayItem: today already exists');
     // 日期已存在，删除斜杠命令并提示
-    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId, writeContext });
     showMessage(t('slash').alreadyMarkedToday || '今天已标记', 2000, 'info');
     return;
   }
@@ -1035,7 +1120,7 @@ async function markAsTodayItem(
   });
 
   const success = await writeBlock(
-    { blockId, nodeElement, protyle },
+    writeContext,
     [
       { type: 'removeSlashCommand' },
       {
@@ -1070,6 +1155,13 @@ async function markAsTomorrowItem(
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
+  const writeContext = resolveSlashAwareWriteContext(
+    captureDeferredSlashWriteContext(protyle, nodeElement, { blockId }),
+    { blockId, nodeElement, protyle },
+  );
+  if (!writeContext) {
+    return;
+  }
 
   const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
 
@@ -1079,13 +1171,13 @@ async function markAsTomorrowItem(
   // 检查明天是否已存在
   const tomorrowItem = existingItems.find(item => item.date === tomorrow);
   if (tomorrowItem) {
-    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+    await removeSlashCommandViaWriter(protyle, nodeElement, { blockId, writeContext });
     showMessage(t('slash').alreadyMarkedTomorrow || '明天已标记', 2000, 'info');
     return;
   }
 
   const success = await writeBlock(
-    { blockId, nodeElement, protyle },
+    writeContext,
     [
       { type: 'removeSlashCommand' },
       {
@@ -1325,7 +1417,12 @@ async function startFocusFromSlash(
 }
 
 
-async function setReminderForBlock(protyle: any, nodeElement: HTMLElement, item?: Item) {
+async function setReminderForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
@@ -1338,9 +1435,14 @@ async function setReminderForBlock(protyle: any, nodeElement: HTMLElement, item?
     return;
   }
 
-  const writeContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
     blockId: targetItem.blockId || blockId,
     listItemBlockId: targetItem.listItemBlockId,
+  }), {
+    blockId: targetItem.blockId || blockId,
+    listItemBlockId: targetItem.listItemBlockId,
+    nodeElement,
+    protyle,
   });
 
   showReminderSettingDialog(targetItem, writeContext
@@ -1348,7 +1450,12 @@ async function setReminderForBlock(protyle: any, nodeElement: HTMLElement, item?
     : undefined);
 }
 
-async function setFocusPlanForBlock(protyle: any, nodeElement: HTMLElement, item?: Item) {
+async function setFocusPlanForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
@@ -1361,9 +1468,14 @@ async function setFocusPlanForBlock(protyle: any, nodeElement: HTMLElement, item
     return;
   }
 
-  const writeContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
     blockId: targetItem.blockId || blockId,
     listItemBlockId: targetItem.listItemBlockId,
+  }), {
+    blockId: targetItem.blockId || blockId,
+    listItemBlockId: targetItem.listItemBlockId,
+    nodeElement,
+    protyle,
   });
 
   showFocusPlanDialog(targetItem, writeContext
@@ -1374,7 +1486,12 @@ async function setFocusPlanForBlock(protyle: any, nodeElement: HTMLElement, item
 /**
  * 为块设置重复
  */
-async function setRecurringForBlock(protyle: any, nodeElement: HTMLElement, item?: Item) {
+async function setRecurringForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
@@ -1388,9 +1505,14 @@ async function setRecurringForBlock(protyle: any, nodeElement: HTMLElement, item
   }
 
   // 打开重复设置弹框
-  const writeContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
     blockId: targetItem.blockId || blockId,
     listItemBlockId: targetItem.listItemBlockId,
+  }), {
+    blockId: targetItem.blockId || blockId,
+    listItemBlockId: targetItem.listItemBlockId,
+    nodeElement,
+    protyle,
   });
 
   showRecurringSettingDialog(targetItem, writeContext
@@ -1499,7 +1621,12 @@ async function createSkillFromSlash(nodeElement: HTMLElement) {
 /**
  * 为块设置优先级
  */
-async function setPriorityForBlock(protyle: any, nodeElement: HTMLElement, item?: Item) {
+async function setPriorityForBlock(
+  protyle: any,
+  nodeElement: HTMLElement,
+  item?: Item,
+  capturedWriteContext?: BlockWriteContext | null,
+) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) {
     showMessage('无法获取块ID', 2000, 'error');
@@ -1514,9 +1641,14 @@ async function setPriorityForBlock(protyle: any, nodeElement: HTMLElement, item?
 
   const blockContent = nodeElement.textContent || targetItem.content || '';
   const currentPriority = parsePriorityFromLine(blockContent);
-  const writeContext = captureDeferredSlashWriteContext(protyle, nodeElement, {
+  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
     blockId: targetItem.blockId || blockId,
     listItemBlockId: targetItem.listItemBlockId,
+  }), {
+    blockId: targetItem.blockId || blockId,
+    listItemBlockId: targetItem.listItemBlockId,
+    nodeElement,
+    protyle,
   });
 
   showPrioritySettingDialog(currentPriority, async (priority) => {

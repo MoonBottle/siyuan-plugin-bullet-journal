@@ -193,7 +193,7 @@ describe('focus plan slash commands', () => {
 
     expect(showFocusPlanDialog).not.toHaveBeenCalled();
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-non-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');

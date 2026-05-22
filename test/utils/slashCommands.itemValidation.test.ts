@@ -181,7 +181,7 @@ describe('item-only slash command validation', () => {
 
     expect(vi.mocked(updateBlockContent)).not.toHaveBeenCalled();
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-non-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
@@ -216,7 +216,7 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-non-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
@@ -253,7 +253,7 @@ describe('item-only slash command validation', () => {
 
     expect(createDialogMock).not.toHaveBeenCalled();
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-non-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
@@ -289,7 +289,7 @@ describe('item-only slash command validation', () => {
 
     expect(vi.mocked(showReminderSettingDialog)).not.toHaveBeenCalled();
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-non-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
@@ -325,7 +325,7 @@ describe('item-only slash command validation', () => {
 
     expect(vi.mocked(showRecurringSettingDialog)).not.toHaveBeenCalled();
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-non-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
@@ -361,7 +361,7 @@ describe('item-only slash command validation', () => {
 
     expect(vi.mocked(showPrioritySettingDialog)).not.toHaveBeenCalled();
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-non-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(messageSpy).toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
@@ -693,7 +693,7 @@ describe('item-only slash command validation', () => {
     handler(protyle as any, node);
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-item', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(openTodoDock).toHaveBeenCalled();
@@ -715,16 +715,24 @@ describe('item-only slash command validation', () => {
     const handler = getActionHandler('abandon', {} as any, ['/fq']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
-    node.textContent = '整理资料 /fq';
+    node.appendChild(document.createTextNode('整理资料 /fq'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const protyle = { transaction: vi.fn() };
 
-    handler({ transaction: vi.fn() } as any, node);
+    handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(250);
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
+      expect.objectContaining({
+        blockId: 'block-item',
+        nodeElement: node,
+        protyle,
+        slashStartOffset,
+        slashRange: expect.any(Range),
+      }),
       [
         { type: 'removeSlashCommand' },
         { type: 'setStatus', status: 'abandoned' },
@@ -752,17 +760,26 @@ describe('item-only slash command validation', () => {
     listItem.setAttribute('data-node-id', 'block-list-item');
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-paragraph');
-    node.textContent = '整理资料 /fq';
+    node.appendChild(document.createTextNode('整理资料 /fq'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const protyle = { transaction: vi.fn() };
     listItem.appendChild(node);
 
-    handler({ transaction: vi.fn() } as any, node);
+    handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(250);
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-paragraph', listItemBlockId: 'block-list-item', nodeElement: node, protyle: expect.any(Object) },
+      expect.objectContaining({
+        blockId: 'block-paragraph',
+        listItemBlockId: 'block-list-item',
+        nodeElement: node,
+        protyle,
+        slashStartOffset,
+        slashRange: expect.any(Range),
+      }),
       [
         { type: 'removeSlashCommand' },
         { type: 'setStatus', status: 'abandoned' },
@@ -784,15 +801,57 @@ describe('item-only slash command validation', () => {
     const handler = getActionHandler('abandon', {} as any, ['/fq']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
-    node.textContent = '整理资料 ❌ /fq';
+    node.appendChild(document.createTextNode('整理资料 ❌ /fq'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const protyle = { transaction: vi.fn() };
 
-    handler({ transaction: vi.fn() } as any, node);
+    handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
+      expect.objectContaining({
+        blockId: 'block-item',
+        nodeElement: node,
+        protyle,
+        slashStartOffset,
+        slashRange: expect.any(Range),
+      }),
+      { type: 'removeSlashCommand' },
+    );
+    expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已经标记为已放弃', 2000, 'info');
+  });
+
+  it('/fq 在 slash 位于已放弃标记前时仍应仅删除 slash 命令', async () => {
+    const item = {
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'abandoned',
+    };
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
+    const handler = getActionHandler('abandon', {} as any, ['/fq']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.appendChild(document.createTextNode('整理资料 /fq ❌'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const protyle = { transaction: vi.fn() };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        nodeElement: node,
+        protyle,
+        slashStartOffset,
+        slashRange: expect.any(Range),
+      }),
       { type: 'removeSlashCommand' },
     );
     expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已经标记为已放弃', 2000, 'info');
@@ -808,7 +867,7 @@ describe('item-only slash command validation', () => {
     handler(protyle as any, node);
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-task', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-task', nodeElement: node, protyle }),
       [
         { type: 'removeSlashCommand' },
         { type: 'setContent', suffix: '📋' },
@@ -827,7 +886,7 @@ describe('item-only slash command validation', () => {
     handler(protyle as any, node);
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-task', nodeElement: node, protyle },
+      expect.objectContaining({ blockId: 'block-task', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },
     );
     expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已经标记为任务', 2000, 'info');
