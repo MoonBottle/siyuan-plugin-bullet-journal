@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   captureCaretSnapshot,
+  focusByOffset,
   focusByWbr,
   injectWbrIntoEditable,
 } from '@/utils/blockWriter/caretController';
@@ -56,5 +57,21 @@ describe('caretController', () => {
     expect(range.startContainer.nodeType).toBe(Node.TEXT_NODE);
     expect(range.startContainer.textContent).toBe('第一行');
     expect(range.startOffset).toBe('第一行'.length);
+  });
+
+  it('falls back to the end of editable text when the requested offset exceeds content length', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<div contenteditable="true">任务</div>';
+    document.body.appendChild(root);
+
+    const restored = focusByOffset(root, { start: 999, end: 999 });
+
+    expect(restored).toBe(true);
+    const selection = window.getSelection();
+    expect(selection?.rangeCount).toBe(1);
+    const range = selection!.getRangeAt(0);
+    expect(range.startContainer.nodeType).toBe(Node.TEXT_NODE);
+    expect(range.startContainer.textContent).toBe('任务');
+    expect(range.startOffset).toBe('任务'.length);
   });
 });

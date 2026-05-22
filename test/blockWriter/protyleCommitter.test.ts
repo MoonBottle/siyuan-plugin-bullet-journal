@@ -15,6 +15,7 @@ vi.mock('@/utils/protyleWriterDom', () => ({
   }),
 }));
 
+import * as caretController from '@/utils/blockWriter/caretController';
 import { commitViaProtyle } from '@/utils/blockWriter/protyleCommitter';
 
 function readUseHref(useEl: Element | null): string | null {
@@ -172,6 +173,55 @@ describe('protyleCommitter', () => {
     expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
   });
 
+  it('restores slash caret by WBR before offset fallback', async () => {
+    const targetElement = document.createElement('div');
+    targetElement.setAttribute('data-node-id', 'task-1');
+    targetElement.innerHTML = '<div contenteditable="true">任务 /rw</div>';
+    document.body.appendChild(targetElement);
+
+    const focusOrder: string[] = [];
+    const originalFocusByWbr = caretController.focusByWbr;
+    const originalFocusByOffset = caretController.focusByOffset;
+    const focusByWbrSpy = vi.spyOn(caretController, 'focusByWbr').mockImplementation((nodeElement: HTMLElement) => {
+      focusOrder.push('wbr');
+      return originalFocusByWbr(nodeElement);
+    });
+    const focusByOffsetSpy = vi.spyOn(caretController, 'focusByOffset').mockImplementation((nodeElement: HTMLElement, offset) => {
+      focusOrder.push('offset');
+      return originalFocusByOffset(nodeElement, offset);
+    });
+
+    const protyle = {
+      transaction: vi.fn(),
+    };
+
+    const success = await commitViaProtyle(
+      { protyle },
+      {
+        kind: 'update',
+        targetBlockId: 'task-1',
+        nextMarkdown: '任务 📋\n{: id="task-1"}',
+        preferredDataType: 'dom',
+        domHtml: '<div data-node-id="task-1">任务 📋</div>',
+        fallbackMarkdown: '任务 📋\n{: id="task-1"}',
+        oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">任务 /rw</div></div>',
+        targetElement,
+        caretRestorePlan: {
+          policy: 'wbr',
+          placement: 'after-inserted-text',
+          anchorText: '📋',
+          fallbackOffset: { start: 2, end: 2 },
+        },
+      },
+    );
+
+    focusByWbrSpy.mockRestore();
+    focusByOffsetSpy.mockRestore();
+
+    expect(success).toBe(true);
+    expect(focusOrder[0]).toBe('wbr');
+  });
+
   it('prefers the connected target element when duplicate block ids exist elsewhere in the document', async () => {
     const staleDuplicate = document.createElement('div');
     staleDuplicate.setAttribute('data-node-id', 'task-1');
@@ -221,7 +271,7 @@ describe('protyleCommitter', () => {
     logicalOffset.selectNodeContents(editable);
     logicalOffset.setEnd(range.startContainer, range.startOffset);
     expect(range.collapsed).toBe(true);
-    expect(range.startContainer.textContent).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行');
+    expect(range.startContainer.textContent).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
     expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
   });
 

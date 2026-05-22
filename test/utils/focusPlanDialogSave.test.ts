@@ -1,21 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { saveFocusPlanWithOptionalDate } from '@/utils/focusPlanDialogSave';
 import { writeBlock } from '@/utils/blockWriter';
-import { writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
+import { prepareDatePatchWrite } from '@/utils/blockWriter/datePatchWriter';
 import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 import type { Item } from '@/types/models';
 
 vi.mock('@/utils/blockWriter/datePatchWriter', () => ({
-  writeDatePatchWithWriter: vi.fn(async (
+  prepareDatePatchWrite: vi.fn(async (
     _blockId: string,
     patch: { date: string },
-    writer?: (content: string, targetBlockId: string) => Promise<boolean>,
-  ) => {
-    if (writer) {
-      return writer(`事项 📅2026-05-14, ${patch.date}\n{: id="block-1" }`, 'block-1');
-    }
-    return true;
-  }),
+  ) => ({
+    content: `事项 📅2026-05-14, ${patch.date}\n{: id="block-1" }`,
+    targetBlockId: 'block-1',
+  })),
 }));
 
 vi.mock('@/utils/itemSettingUtils', () => ({
@@ -56,7 +53,7 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, plan, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(true);
-    expect(writeDatePatchWithWriter).toHaveBeenCalledWith(
+    expect(prepareDatePatchWrite).toHaveBeenCalledWith(
       'block-1',
       {
         type: 'addDate',
@@ -65,7 +62,6 @@ describe('saveFocusPlanWithOptionalDate', () => {
         siblingItems: [item],
         status: 'pending',
       },
-      expect.any(Function),
     );
     expect(writeBlock).toHaveBeenCalledWith(
       { blockId: 'block-1' },
@@ -85,21 +81,15 @@ describe('saveFocusPlanWithOptionalDate', () => {
   });
 
   it('keeps indented IAL untouched and delegates focus-plan placement to block writer patches', async () => {
-    vi.mocked(writeDatePatchWithWriter).mockImplementationOnce(async (
+    vi.mocked(prepareDatePatchWrite).mockImplementationOnce(async (
       _blockId: string,
       patch: { date: string },
-      writer?: (content: string, targetBlockId: string) => Promise<boolean>,
-    ) => {
-      if (!writer) {
-        return true;
-      }
-      return writer(
-        `- {: updated="20260517144207" id="list-1"}[ ] 测试任务列表事项235 📅2026-05-14, ${patch.date} #测试#
+    ) => ({
+      content: `- {: updated="20260517144207" id="list-1"}[ ] 测试任务列表事项235 📅2026-05-14, ${patch.date} #测试#
   测试换行
   {: id="block-1" updated="20260517144207" bookmark="🍅"}`,
-        'block-1',
-      );
-    });
+      targetBlockId: 'block-1',
+    }));
 
     const saved = await saveFocusPlanWithOptionalDate(createItem({ date: '2026-05-14' }), plan, { ensureDate: '2026-05-15' });
 
@@ -131,18 +121,18 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, plan, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(true);
-    expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
+    expect(prepareDatePatchWrite).not.toHaveBeenCalled();
     expect(writeBlock).not.toHaveBeenCalled();
-    expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
+    expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan, { ensureDate: '2026-05-15' });
   });
 
   it('does not save the focus plan when adding the ensured date fails', async () => {
-    vi.mocked(writeDatePatchWithWriter).mockResolvedValueOnce(false);
+    vi.mocked(prepareDatePatchWrite).mockResolvedValueOnce(null);
 
     const saved = await saveFocusPlanWithOptionalDate(createItem(), plan, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(false);
-    expect(writeDatePatchWithWriter).toHaveBeenCalled();
+    expect(prepareDatePatchWrite).toHaveBeenCalled();
     expect(writeBlock).not.toHaveBeenCalled();
     expect(updateItemWithFocusPlan).not.toHaveBeenCalled();
   });
@@ -153,9 +143,9 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, plan);
 
     expect(saved).toBe(true);
-    expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
+    expect(prepareDatePatchWrite).not.toHaveBeenCalled();
     expect(writeBlock).not.toHaveBeenCalled();
-    expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan);
+    expect(updateItemWithFocusPlan).toHaveBeenCalledWith(item, plan, undefined);
   });
 
   it('clears focus plan without adding the ensured date', async () => {
@@ -164,8 +154,8 @@ describe('saveFocusPlanWithOptionalDate', () => {
     const saved = await saveFocusPlanWithOptionalDate(item, undefined, { ensureDate: '2026-05-15' });
 
     expect(saved).toBe(true);
-    expect(writeDatePatchWithWriter).not.toHaveBeenCalled();
+    expect(prepareDatePatchWrite).not.toHaveBeenCalled();
     expect(writeBlock).not.toHaveBeenCalled();
-    expect(clearItemFocusPlan).toHaveBeenCalledWith(item);
+    expect(clearItemFocusPlan).toHaveBeenCalledWith(item, { ensureDate: '2026-05-15' });
   });
 });

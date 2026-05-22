@@ -60,6 +60,7 @@ async function resolveDateSourceContext(
   return {
     originalBlockId: resolved.originalBlockId,
     sourceBlockId: resolved.targetBlockId,
+    sourceMarkdown: resolved.kramdown,
     targetItemBlockRaw: resolved.targetItemBlockRaw,
     usedParentDocumentContext: resolved.usedParentDocumentContext,
     finalTargetBlockId: resolved.usedParentDocumentContext && resolved.targetItemBlockRaw

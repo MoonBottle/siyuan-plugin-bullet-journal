@@ -156,6 +156,15 @@ export async function loadMutationSource(plan: ResolvedMutationPlan): Promise<Lo
   }
 
   const sourceBlockId = plan.sourceBlockId ?? plan.targetBlockId;
+  if (plan.datePatchSource?.sourceMarkdown) {
+    return {
+      kind: 'update',
+      targetBlockId: plan.targetBlockId,
+      sourceBlockId,
+      currentMarkdown: plan.datePatchSource.sourceMarkdown,
+    };
+  }
+
   const result = await getBlockKramdown(sourceBlockId);
   return {
     kind: 'update',

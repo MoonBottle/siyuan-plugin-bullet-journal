@@ -117,4 +117,31 @@ describe('sourceLoader', () => {
     expect(source.currentMarkdown).toContain('任务');
     expect(getBlockKramdown).toHaveBeenCalledWith('parent-1');
   });
+
+  it('reuses resolved addDate source markdown without refetching api kramdown', async () => {
+    const source = await loadMutationSource({
+      kind: 'update',
+      targetBlockId: 'block-1',
+      sourceBlockId: 'block-1',
+      targetKind: 'paragraph',
+      sourceKind: 'api-kramdown',
+      commitKind: 'api-update',
+      preferDataType: 'dom',
+      fallbackDataType: 'markdown',
+      context: { blockId: 'block-1' },
+      patches: [{ type: 'addDate', date: '2026-05-21', allDay: true }],
+      datePatchSource: {
+        originalBlockId: 'block-1',
+        sourceBlockId: 'block-1',
+        sourceMarkdown: '[x] 已完成任务 📅2026-05-15\n{: id="block-1"}',
+        targetItemBlockRaw: null,
+        usedParentDocumentContext: false,
+        finalTargetBlockId: 'block-1',
+      },
+    });
+
+    expect(source.kind).toBe('update');
+    expect(source.currentMarkdown).toBe('[x] 已完成任务 📅2026-05-15\n{: id="block-1"}');
+    expect(getBlockKramdown).not.toHaveBeenCalled();
+  });
 });

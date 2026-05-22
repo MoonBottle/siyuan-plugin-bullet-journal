@@ -2,11 +2,9 @@ import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPat
 import { commitViaApi } from './apiCommitter';
 import { commitViaProtyle } from './protyleCommitter';
 import { normalizeInsertIntent, normalizeUpdateIntent } from './intent';
-import { createProtyleMarkdownWriter } from './markdownWriter';
 import { buildMutationPlans } from './mutationPlanner';
 import { prepareInsertPayload } from './insertRenderer';
 import { loadMutationSource } from './sourceLoader';
-import { resolveMutationTarget } from './targetResolver';
 import { prepareUpdatePayload } from './updateRenderer';
 import type { BlockMutationIntent, MutationExecutionPlan } from './types';
 
@@ -32,59 +30,8 @@ export type {
   StatusPatch,
 } from './types';
 
-export { createProtyleMarkdownWriter } from './markdownWriter';
-
 function hasRemoveSlashPatch(patches: Array<{ type: string }>): boolean {
   return patches.some(patch => patch.type === 'removeSlashCommand');
-}
-
-async function executeIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
-  const plan = await resolveMutationTarget(intent);
-  const source = await loadMutationSource(plan);
-
-  if (plan.kind === 'insertAfter') {
-    const payload = prepareInsertPayload(plan, source);
-    return await commitViaApi(payload);
-  }
-
-  const payload = prepareUpdatePayload(plan, source);
-  if (hasRemoveSlashPatch(plan.patches)) {
-    console.log('[BWDBG][executeIntent] slash plan', {
-      targetBlockId: plan.targetBlockId,
-      sourceBlockId: plan.sourceBlockId,
-      sourceKind: plan.sourceKind,
-      commitKind: plan.commitKind,
-      patches: plan.patches.map(patch => patch.type),
-    });
-  }
-  if (plan.commitKind === 'protyle-update') {
-    const ok = await commitViaProtyle(plan.context, payload);
-    if (ok) {
-      if (hasRemoveSlashPatch(plan.patches)) {
-        console.log('[BWDBG][executeIntent] protyle commit success', {
-          targetBlockId: plan.targetBlockId,
-        });
-      }
-      return true;
-    }
-    if (hasRemoveSlashPatch(plan.patches)) {
-      console.log('[BWDBG][executeIntent] protyle commit failed', {
-        targetBlockId: plan.targetBlockId,
-        fallback: 'api-reload-source',
-      });
-    }
-    const apiFallbackPlan = {
-      ...plan,
-      sourceKind: 'api-kramdown' as const,
-      sourceBlockId: plan.targetBlockId,
-      commitKind: 'api-update' as const,
-    };
-    const apiFallbackSource = await loadMutationSource(apiFallbackPlan);
-    const apiFallbackPayload = prepareUpdatePayload(apiFallbackPlan, apiFallbackSource);
-    return await commitViaApi(apiFallbackPayload);
-  }
-
-  return await commitViaApi(payload);
 }
 
 async function executePlan(plan: MutationExecutionPlan): Promise<boolean | IResdoOperations[] | null> {
@@ -176,9 +123,14 @@ async function executePlans(plans: MutationExecutionPlan[]): Promise<boolean | I
   return lastResult;
 }
 
+async function executeMutationIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
+  const plannerResult = await buildMutationPlans(intent);
+  return executePlans(plannerResult.plans);
+}
+
 export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
   const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' });
-  return (await executeIntent(intent)) === true;
+  return (await executeMutationIntent(intent)) === true;
 }
 
 export async function insertBlockAfterWithResult(
@@ -186,13 +138,12 @@ export async function insertBlockAfterWithResult(
   patch: InsertableBlockPatch,
 ): Promise<IResdoOperations[] | null> {
   const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' });
-  const result = await executeIntent(intent);
+  const result = await executeMutationIntent(intent);
   return Array.isArray(result) ? result : null;
 }
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   const intent = normalizeUpdateIntent(context, patches);
-  const plannerResult = await buildMutationPlans(intent);
-  const result = await executePlans(plannerResult.plans);
+  const result = await executeMutationIntent(intent);
   return result === true;
 }

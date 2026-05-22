@@ -11,7 +11,8 @@ vi.mock('@/utils/protyleWriterDom', () => ({
 
 import { updateBlock } from '@/api';
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { createProtyleMarkdownWriter } from '@/utils/blockWriter';
+import * as blockWriter from '@/utils/blockWriter';
+import { createProtyleMarkdownWriter } from '@/utils/blockWriter/markdownWriter';
 
 function createBlock(blockId = 'block-1', text = '原始事项 /jt'): HTMLElement {
   const block = document.createElement('div');
@@ -31,6 +32,10 @@ describe('createProtyleMarkdownWriter', () => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
     vi.unstubAllGlobals();
+  });
+
+  it('is not exposed from the public blockWriter entry', () => {
+    expect('createProtyleMarkdownWriter' in blockWriter).toBe(false);
   });
 
   it('uses the protyle fast path for same-block single-line markdown', async () => {

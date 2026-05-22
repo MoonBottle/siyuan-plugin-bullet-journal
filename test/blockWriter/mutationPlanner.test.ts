@@ -6,7 +6,7 @@ vi.mock('@/api', () => ({
 }));
 
 import { getBlockByID } from '@/api';
-import { normalizeUpdateIntent } from '@/utils/blockWriter/intent';
+import { normalizeInsertIntent, normalizeUpdateIntent } from '@/utils/blockWriter/intent';
 import { buildMutationPlans } from '@/utils/blockWriter/mutationPlanner';
 
 describe('mutationPlanner', () => {
@@ -115,6 +115,23 @@ describe('mutationPlanner', () => {
       targetBlockId: 'task-1',
       caretPolicy: 'wbr',
       caretOwner: true,
+    });
+  });
+
+  it('builds a single insert plan for insertAfter intents', async () => {
+    const result = await buildMutationPlans(normalizeInsertIntent('block-1', {
+      type: 'replaceMarkdown',
+      markdown: '新块内容\n{: id="new-1"}',
+      preserveIAL: false,
+    }, {
+      resultMode: 'boolean',
+    }));
+
+    expect(result.plans).toHaveLength(1);
+    expect(result.plans[0]).toMatchObject({
+      kind: 'insertAfter',
+      anchorBlockId: 'block-1',
+      commitKind: 'api-insert',
     });
   });
 });

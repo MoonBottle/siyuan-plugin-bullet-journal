@@ -33,7 +33,7 @@ interface DatePatchSource {
   finalTargetBlockId?: string;
 }
 
-interface PreparedDateWrite {
+export interface PreparedDateWrite {
   content: string;
   targetBlockId: string;
 }
@@ -574,6 +574,31 @@ export function prepareDatePatchWriteFromSource(
   };
 }
 
+export async function prepareDatePatchWrite(
+  blockId: string,
+  patch: DatePatch,
+): Promise<PreparedDateWrite | null> {
+  if (!blockId) {
+    return null;
+  }
+
+  try {
+    const source = await resolveDatePatchSource(blockId);
+    if (!source) {
+      return null;
+    }
+
+    return prepareDatePatchWriteFromSource(source, patch);
+  } catch (error) {
+    console.error('[BlockWriter] Failed to prepare addDate patch:', error);
+    return null;
+  }
+}
+
+/**
+ * @deprecated Compat entry only.
+ * New callers should prepare content via `prepareDatePatchWrite()` or use `writeBlock()`.
+ */
 export async function writeDatePatchWithWriter(
   blockId: string,
   patch: DatePatch,
@@ -599,6 +624,10 @@ export async function writeDatePatchWithWriter(
   }
 }
 
+/**
+ * @deprecated Compat entry only.
+ * New slash writes should go through the unified block writer pipeline.
+ */
 export async function writeDatePatchWithSlashCleanup(
   context: Pick<BlockWriteContext, 'blockId' | 'protyle' | 'nodeElement' | 'slashRange' | 'slashStartOffset'>,
   patch: DatePatch,
@@ -662,6 +691,10 @@ export async function writeDatePatchWithSlashCleanup(
   });
 }
 
+/**
+ * @deprecated Compat entry only.
+ * New callers should route addDate writes through `writeBlock()`.
+ */
 export async function writeDatePatch(
   context: Pick<BlockWriteContext, 'blockId' | 'protyle' | 'nodeElement'>,
   patch: DatePatch,

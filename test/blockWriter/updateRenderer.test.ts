@@ -240,6 +240,7 @@ describe('updateRenderer', () => {
         datePatchSource: {
           originalBlockId: 'block-1',
           sourceBlockId: 'parent-1',
+          sourceMarkdown: '任务\n{: id="block-1"}',
           targetItemBlockRaw: '任务\n{: id="block-1"}',
           usedParentDocumentContext: true,
           finalTargetBlockId: 'block-1',
@@ -260,6 +261,7 @@ describe('updateRenderer', () => {
         originalBlockId: 'block-1',
         targetBlockId: 'parent-1',
         finalTargetBlockId: 'block-1',
+        kramdown: '任务\n{: id="block-1"}',
       }),
       { type: 'addDate', date: '2026-05-21', allDay: true },
     );

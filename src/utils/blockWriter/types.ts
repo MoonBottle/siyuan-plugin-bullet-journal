@@ -203,6 +203,7 @@ export interface CaretRestorePlan {
 export interface DatePatchSourceContext {
   originalBlockId: string;
   sourceBlockId: string;
+  sourceMarkdown: string;
   targetItemBlockRaw: string | null;
   usedParentDocumentContext: boolean;
   finalTargetBlockId: string;

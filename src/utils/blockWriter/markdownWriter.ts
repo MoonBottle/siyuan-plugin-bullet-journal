@@ -3,6 +3,10 @@ import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 import { markdownToBlockDOM } from './domSerializer';
 import type { BlockWriteContext } from './types';
 
+/**
+ * @deprecated Compat helpers only.
+ * New write paths must go through sourceLoader/updateRenderer/committers.
+ */
 function formatUpdatedAttr(date = new Date()): string {
   const y = date.getFullYear();
   const mo = String(date.getMonth() + 1).padStart(2, '0');

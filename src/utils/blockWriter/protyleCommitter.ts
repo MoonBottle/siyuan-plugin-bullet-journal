@@ -150,15 +150,14 @@ export async function commitViaProtyle(
   syncTaskListStatusFromMarkdown(targetElement, payload.nextMarkdown);
 
   let plannedCaretOffset: number | undefined;
+  let injectedWbr = false;
   if (payload.caretRestorePlan?.policy === 'wbr') {
     const editable = targetElement.getAttribute('contenteditable') === 'true'
       ? targetElement
       : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
     if (editable) {
       plannedCaretOffset = resolveWbrOffset(editable, payload.caretRestorePlan);
-      if (plannedCaretOffset === undefined) {
-        injectWbrIntoEditable(editable);
-      }
+      injectedWbr = injectWbrIntoEditable(editable, plannedCaretOffset);
     }
   }
 
@@ -174,24 +173,23 @@ export async function commitViaProtyle(
 
   if (payload.caretRestorePlan?.policy === 'wbr') {
     const liveTargetElement = resolveLiveTargetElement(payload.targetBlockId, targetElement, protyle);
-    let restoredByOffset = false;
-    if (typeof plannedCaretOffset === 'number') {
-      restoredByOffset = focusByOffset(liveTargetElement, {
-        start: plannedCaretOffset,
-        end: plannedCaretOffset,
-      });
-    }
-    const restoredByWbr = restoredByOffset ? false : focusByWbr(liveTargetElement);
+    const restoredByWbr = injectedWbr ? focusByWbr(liveTargetElement) : false;
     console.log('[BWDBG][protyleCommitter] caret restore', {
       targetBlockId: payload.targetBlockId,
       liveTargetPreview: previewText(liveTargetElement.textContent),
       plannedCaretOffset,
-      restoredByOffset,
       restoredByWbr,
+      injectedWbr,
       fallbackOffset: payload.caretRestorePlan.fallbackOffset,
     });
-    if (!restoredByOffset && !restoredByWbr) {
-      focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset);
+    if (!restoredByWbr) {
+      const fallbackOffset = typeof plannedCaretOffset === 'number'
+        ? {
+            start: plannedCaretOffset,
+            end: plannedCaretOffset,
+          }
+        : payload.caretRestorePlan.fallbackOffset;
+      focusByOffset(liveTargetElement, fallbackOffset);
     }
   }
 

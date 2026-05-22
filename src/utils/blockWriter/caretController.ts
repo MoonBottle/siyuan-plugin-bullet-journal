@@ -130,6 +130,8 @@ export function injectWbrIntoEditable(editable: HTMLElement, offset?: number): b
   return true;
 }
 
+// WBR is the primary slash restore path.
+// Offset restore exists only for cases where WBR is dropped by DOM normalization.
 export function focusByWbr(nodeElement: HTMLElement): boolean {
   const wbr = nodeElement.querySelector('wbr');
   if (!wbr) {
