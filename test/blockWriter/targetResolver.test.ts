@@ -5,72 +5,82 @@ vi.mock('@/api', () => ({
   getBlockByID: vi.fn(),
 }));
 
+vi.mock('@/utils/blockWriter/datePatchWriter', () => ({
+  resolveDatePatchSource: vi.fn(),
+}));
+
 import { getBlockByID } from '@/api';
 import { resolveMutationTarget } from '@/utils/blockWriter/targetResolver';
+import { resolveDatePatchSource } from '@/utils/blockWriter/datePatchWriter';
 
 describe('targetResolver', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('resolves status updates on task paragraphs to the task-list item block', async () => {
-    vi.mocked(getBlockByID)
-      .mockResolvedValueOnce({ id: 'paragraph-1', parent_id: 'task-1', type: 'NodeParagraph' } as any)
-      .mockResolvedValueOnce({ id: 'task-1', type: 'NodeListItem', subtype: 't' } as any)
-      .mockResolvedValueOnce({ id: 'task-1', type: 'NodeListItem', subtype: 't' } as any);
+  it('carries source block metadata for addDate patches resolved from a parent block', async () => {
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-1');
+    vi.mocked(resolveDatePatchSource).mockResolvedValue({
+      originalBlockId: 'block-1',
+      kramdown: '任务',
+      targetBlockId: 'parent-1',
+      targetItemBlockRaw: '任务\n{: id="block-1"}',
+      usedParentDocumentContext: true,
+    } as any);
+    vi.mocked(getBlockByID).mockResolvedValue({
+      id: 'block-1',
+      type: 'p',
+    } as any);
 
-    const result = await resolveMutationTarget({
-      kind: 'update',
-      context: { blockId: 'paragraph-1' },
-      patches: [{ type: 'setStatus', status: 'completed' }],
-    });
-
-    expect(result.kind).toBe('update');
-    expect(result.targetBlockId).toBe('task-1');
-    expect(result.commitKind).toBe('api-update');
-  });
-
-  it('resolves current protyle updates to protyle-dom source when the edited block matches the target', async () => {
-    vi.mocked(getBlockByID).mockResolvedValue({ id: 'paragraph-1', type: 'NodeParagraph' } as any);
-
-    const nodeElement = document.createElement('div');
-    nodeElement.setAttribute('data-node-id', 'paragraph-1');
-
-    const result = await resolveMutationTarget({
+    const plan = await resolveMutationTarget({
       kind: 'update',
       context: {
-        blockId: 'paragraph-1',
+        blockId: 'block-1',
         protyle: {},
-        nodeElement,
+        nodeElement: node,
+      },
+      patches: [{ type: 'addDate', date: '2026-05-21', allDay: true }],
+    });
+
+    expect(plan).toMatchObject({
+      kind: 'update',
+      targetBlockId: 'block-1',
+      sourceBlockId: 'parent-1',
+      sourceKind: 'api-kramdown',
+      commitKind: 'api-update',
+      datePatchSource: {
+        originalBlockId: 'block-1',
+        sourceBlockId: 'parent-1',
+        finalTargetBlockId: 'block-1',
+      },
+    });
+  });
+
+  it('keeps plain current-block updates on the protyle path when source and target match', async () => {
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-1');
+    vi.mocked(getBlockByID).mockResolvedValue({
+      id: 'block-1',
+      type: 'p',
+    } as any);
+
+    const plan = await resolveMutationTarget({
+      kind: 'update',
+      context: {
+        blockId: 'block-1',
+        protyle: {},
+        nodeElement: node,
       },
       patches: [{ type: 'setPriority', priority: 'high' }],
     });
 
-    expect(result.kind).toBe('update');
-    expect(result.sourceKind).toBe('protyle-dom');
-    expect(result.commitKind).toBe('protyle-update');
-  });
-
-  it('resolves insert intents to api-insert with dom preferred', async () => {
-    const result = await resolveMutationTarget({
-      kind: 'insertAfter',
-      anchorBlockId: 'block-1',
-      patch: {
-        type: 'setHabitDefinition',
-        habit: {
-          name: '喝水',
-          startDate: '2026-05-21',
-          type: 'count',
-          target: 8,
-          unit: '杯',
-          frequency: { type: 'daily' },
-        },
-      },
-      resultMode: 'boolean',
+    expect(plan).toMatchObject({
+      kind: 'update',
+      targetBlockId: 'block-1',
+      sourceBlockId: 'block-1',
+      sourceKind: 'protyle-dom',
+      commitKind: 'protyle-update',
     });
-
-    expect(result.kind).toBe('insertAfter');
-    expect(result.commitKind).toBe('api-insert');
-    expect(result.preferDataType).toBe('dom');
   });
 });

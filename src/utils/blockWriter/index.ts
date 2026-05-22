@@ -53,6 +53,7 @@ async function executeIntent(intent: BlockMutationIntent): Promise<boolean | IRe
     const apiFallbackPlan = {
       ...plan,
       sourceKind: 'api-kramdown' as const,
+      sourceBlockId: plan.targetBlockId,
       commitKind: 'api-update' as const,
     };
     const apiFallbackSource = await loadMutationSource(apiFallbackPlan);
@@ -85,11 +86,13 @@ async function executePlan(plan: MutationExecutionPlan): Promise<boolean | IResd
     targetBlockId: plan.targetBlockId!,
     targetKind: plan.targetKind!,
     sourceKind: plan.sourceKind,
+    sourceBlockId: plan.sourceBlockId,
     commitKind: plan.commitKind,
     preferDataType: 'dom' as const,
     fallbackDataType: 'markdown' as const,
     context: plan.context as BlockWriteContext,
     patches: plan.units.map(unit => unit.patch),
+    datePatchSource: plan.datePatchSource,
   };
   const source = await loadMutationSource(resolvedPlan);
   const payload = prepareUpdatePayload(resolvedPlan, source);
@@ -103,6 +106,7 @@ async function executePlan(plan: MutationExecutionPlan): Promise<boolean | IResd
     const apiFallbackPlan = {
       ...resolvedPlan,
       sourceKind: 'api-kramdown' as const,
+      sourceBlockId: resolvedPlan.targetBlockId,
       commitKind: 'api-update' as const,
     };
     const apiFallbackSource = await loadMutationSource(apiFallbackPlan);

@@ -126,8 +126,24 @@ import { getActionHandler } from '@/utils/slashCommands';
 describe('item-only slash command validation', () => {
   vi.useFakeTimers();
 
+  function setCaretToCommandEnd(node: HTMLElement, command: string): number {
+    const textNode = node.firstChild as Text;
+    const offset = textNode.textContent!.indexOf(command) + command.length;
+    const range = document.createRange();
+    range.setStart(textNode, offset);
+    range.collapse(true);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    return offset - command.length;
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(showDatePickerDialog).mockImplementation(() => undefined as any);
+    vi.mocked(showPrioritySettingDialog).mockImplementation(() => undefined as any);
+    vi.mocked(showReminderSettingDialog).mockImplementation(() => undefined as any);
+    vi.mocked(showRecurringSettingDialog).mockImplementation(() => undefined as any);
     projectStoreGetItemByBlockIdMock.mockReturnValue(null);
     usePomodoroStoreMock.mockReturnValue({
       isFocusing: false,
@@ -442,21 +458,19 @@ describe('item-only slash command validation', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
     node.textContent = '整理资料 @2026-05-14 /wc';
+    const protyle = { transaction: vi.fn() };
 
-    handler({ transaction: vi.fn() } as any, node);
+    handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
-    await vi.advanceTimersByTimeAsync(250);
 
-    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
-      1,
-      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
-      { type: 'removeSlashCommand' },
-    );
-    expect(vi.mocked(writeBlock)).toHaveBeenNthCalledWith(
-      2,
-      { blockId: 'block-item', nodeElement: node, protyle: expect.any(Object) },
-      { type: 'setStatus', status: 'completed' },
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({ blockId: 'block-item', nodeElement: node, protyle }),
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setStatus', status: 'completed' },
+      ],
     );
   });
 
@@ -473,20 +487,32 @@ describe('item-only slash command validation', () => {
     const handler = getActionHandler('setReminder', {} as any, ['/tx']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
-    node.textContent = '整理资料 @2026-05-14 /tx';
+    node.appendChild(document.createTextNode('整理资料 @2026-05-14 /tx'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/tx');
 
     const protyle = {};
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-item', nodeElement: node, protyle },
-      { type: 'removeSlashCommand' },
-    );
-    expect(vi.mocked(showReminderSettingDialog)).toHaveBeenCalledWith(expect.objectContaining(item));
-    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(showReminderSettingDialog).mock.invocationCallOrder[0],
+    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
+    expect(vi.mocked(showReminderSettingDialog)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        content: '整理资料',
+        date: '2026-05-14',
+        status: 'pending',
+      }),
+      expect.objectContaining({
+        leadingPatches: [{ type: 'removeSlashCommand' }],
+        writeContext: expect.objectContaining({
+          blockId: 'block-item',
+          nodeElement: node,
+          protyle,
+          slashStartOffset,
+          slashRange: expect.any(Range),
+        }),
+      }),
     );
   });
 
@@ -503,20 +529,32 @@ describe('item-only slash command validation', () => {
     const handler = getActionHandler('setRecurring', {} as any, ['/cf']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
-    node.textContent = '整理资料 @2026-05-14 /cf';
+    node.appendChild(document.createTextNode('整理资料 @2026-05-14 /cf'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/cf');
 
     const protyle = {};
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-item', nodeElement: node, protyle },
-      { type: 'removeSlashCommand' },
-    );
-    expect(vi.mocked(showRecurringSettingDialog)).toHaveBeenCalledWith(expect.objectContaining(item));
-    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(showRecurringSettingDialog).mock.invocationCallOrder[0],
+    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
+    expect(vi.mocked(showRecurringSettingDialog)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        content: '整理资料',
+        date: '2026-05-14',
+        status: 'pending',
+      }),
+      expect.objectContaining({
+        leadingPatches: [{ type: 'removeSlashCommand' }],
+        writeContext: expect.objectContaining({
+          blockId: 'block-item',
+          nodeElement: node,
+          protyle,
+          slashStartOffset,
+          slashRange: expect.any(Range),
+        }),
+      }),
     );
   });
 
@@ -533,7 +571,8 @@ describe('item-only slash command validation', () => {
     const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
-    node.textContent = '整理资料 🔥 @2026-05-14 /yxj';
+    node.appendChild(document.createTextNode('整理资料 🔥 @2026-05-14 /yxj'));
+    setCaretToCommandEnd(node, '/yxj');
 
     handler({} as any, node);
     await Promise.resolve();
@@ -542,12 +581,53 @@ describe('item-only slash command validation', () => {
     expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalled();
   });
 
-  it('/rq 打开日期弹框前应先通过 BlockWriter 删除 slash 命令', async () => {
+  it('/yxj 在确认优先级后通过一次批量 BlockWriter 写入 cleanup 和 setPriority', async () => {
+    const item = {
+      blockId: 'block-item',
+      content: '整理资料',
+      date: '2026-05-14',
+      lineNumber: 1,
+      docId: 'doc-1',
+      status: 'pending',
+    };
+    projectStoreGetItemByBlockIdMock.mockReturnValue(item as any);
+    vi.mocked(showPrioritySettingDialog).mockImplementation((_, onConfirm) => {
+      void onConfirm('high');
+    });
+    const handler = getActionHandler('setPriority', {} as any, ['/yxj']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.appendChild(document.createTextNode('整理资料 @2026-05-14 /yxj'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/yxj');
+    const protyle = {};
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        nodeElement: node,
+        protyle,
+        slashStartOffset,
+        slashRange: expect.any(Range),
+      }),
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setPriority', priority: 'high' },
+      ],
+    );
+  });
+
+  it('/rq 打开日期弹框时不应提前提交 slash cleanup', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([]);
     const handler = getActionHandler('date', {} as any, ['/rq']);
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
-    node.textContent = '整理资料 @2026-05-14 /rq';
+    node.appendChild(document.createTextNode('整理资料 @2026-05-14 /rq'));
+    setCaretToCommandEnd(node, '/rq');
     const protyle = {
       transaction: vi.fn(),
       wysiwyg: { element: node },
@@ -558,13 +638,43 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-item', nodeElement: node, protyle },
-      { type: 'removeSlashCommand' },
-    );
+    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
     expect(vi.mocked(showDatePickerDialog)).toHaveBeenCalled();
-    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(showDatePickerDialog).mock.invocationCallOrder[0],
+  });
+
+  it('/rq 在确认日期后通过一次批量 BlockWriter 写入 cleanup 和 addDate', async () => {
+    vi.mocked(extractDatesFromBlock).mockResolvedValue([]);
+    vi.mocked(showDatePickerDialog).mockImplementation((_, __, onSelect) => {
+      void onSelect('2026-05-20');
+    });
+    const handler = getActionHandler('date', {} as any, ['/rq']);
+    const node = document.createElement('div');
+    node.setAttribute('data-node-id', 'block-item');
+    node.appendChild(document.createTextNode('整理资料 @2026-05-14 /rq'));
+    const slashStartOffset = setCaretToCommandEnd(node, '/rq');
+    const protyle = {
+      transaction: vi.fn(),
+      wysiwyg: { element: node },
+      toolbar: { setInlineMark: vi.fn() },
+    };
+
+    handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        nodeElement: node,
+        protyle,
+        slashStartOffset,
+        slashRange: expect.any(Range),
+      }),
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'addDate', date: '2026-05-20', allDay: true, siblingItems: undefined },
+      ],
     );
   });
 

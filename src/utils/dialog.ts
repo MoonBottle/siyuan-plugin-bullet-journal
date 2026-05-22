@@ -34,7 +34,7 @@ import { generateRepeatRuleMarker, generateEndConditionMarker, stripRecurringMar
 import { skipCurrentOccurrence } from '@/services/recurringService';
 import * as siyuanAPI from '@/api';
 import { removePendingCompletion } from '@/utils/pomodoroStorage';
-import { updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
+import { type ItemSettingWriteOptions, updateItemWithReminder, updateItemWithRecurring } from './itemSettingUtils';
 import { buildFocusPlanCandidateSections } from './focusPlanWorkbench';
 import { saveFocusPlanWithOptionalDate } from './focusPlanDialogSave';
 
@@ -1121,14 +1121,14 @@ export function showDatePickerDialog(
 /**
  * 显示提醒设置弹框
  */
-export function showReminderSettingDialog(item: Item): Dialog {
+export function showReminderSettingDialog(item: Item, options?: ItemSettingWriteOptions): Dialog {
   const container = document.createElement('div');
 
   const app = createApp(ReminderSettingDialog, {
     blockId: item.blockId!,
     initialConfig: item.reminder,
     onSave: async (config: ReminderConfig) => {
-      await updateItemWithReminder(item, config);
+      await updateItemWithReminder(item, config, options);
       dialog.destroy();
     },
     onCancel: () => {
@@ -1167,7 +1167,7 @@ export function showReminderSettingDialog(item: Item): Dialog {
 /**
  * 显示重复设置弹框
  */
-export function showRecurringSettingDialog(item: Item): Dialog {
+export function showRecurringSettingDialog(item: Item, options?: ItemSettingWriteOptions): Dialog {
   const container = document.createElement('div');
 
   const app = createApp(RecurringSettingDialog, {
@@ -1175,7 +1175,7 @@ export function showRecurringSettingDialog(item: Item): Dialog {
     initialRepeatRule: item.repeatRule,
     initialEndCondition: item.endCondition,
     onSave: async (repeatRule: RepeatRule | undefined, endCondition: EndCondition | undefined) => {
-      await updateItemWithRecurring(item, repeatRule, endCondition);
+      await updateItemWithRecurring(item, repeatRule, endCondition, options);
       dialog.destroy();
     },
     onCancel: () => {
@@ -1261,7 +1261,7 @@ export function showPrioritySettingDialog(
   return dialog;
 }
 
-export function showFocusPlanDialog(item: Item, options?: { ensureDate?: string }): Dialog {
+export function showFocusPlanDialog(item: Item, options?: ({ ensureDate?: string } & ItemSettingWriteOptions)): Dialog {
   const container = document.createElement('div');
 
   const app = createApp(FocusPlanDialog, {

@@ -18,6 +18,35 @@ function collectTextNodes(root: Node): Text[] {
   return nodes;
 }
 
+function getNodePath(root: Node, target: Node): number[] | null {
+  const path: number[] = [];
+  let current: Node | null = target;
+
+  while (current && current !== root) {
+    const parent = current.parentNode;
+    if (!parent) {
+      return null;
+    }
+    path.unshift(Array.prototype.indexOf.call(parent.childNodes, current));
+    current = parent;
+  }
+
+  return current === root ? path : null;
+}
+
+function getNodeByPath(root: Node, path: number[]): Node | null {
+  let current: Node | null = root;
+
+  for (const index of path) {
+    current = current?.childNodes?.[index] ?? null;
+    if (!current) {
+      return null;
+    }
+  }
+
+  return current;
+}
+
 function computeOffsetWithin(root: Node, targetNode: Node, targetOffset: number): number | undefined {
   const textNodes = collectTextNodes(root);
   let total = 0;
@@ -32,20 +61,43 @@ function computeOffsetWithin(root: Node, targetNode: Node, targetOffset: number)
   return undefined;
 }
 
-export function captureCaretSnapshot(nodeElement: HTMLElement): CaretSnapshot {
+function createClonedHtmlWithWbr(nodeElement: HTMLElement, range: Range): string | undefined {
+  const path = getNodePath(nodeElement, range.startContainer);
+  if (!path) {
+    return undefined;
+  }
+
+  const clone = nodeElement.cloneNode(true) as HTMLElement;
+  const clonedStartNode = getNodeByPath(clone, path);
+  if (!clonedStartNode || clonedStartNode.nodeType !== Node.TEXT_NODE) {
+    return undefined;
+  }
+
+  const wbrRange = document.createRange();
+  wbrRange.setStart(
+    clonedStartNode,
+    Math.min(range.startOffset, clonedStartNode.textContent?.length ?? 0),
+  );
+  wbrRange.collapse(true);
+  wbrRange.insertNode(document.createElement('wbr'));
+  return clone.outerHTML;
+}
+
+export function captureCaretSnapshot(nodeElement: HTMLElement, range?: Range | null): CaretSnapshot {
   const editable = findEditable(nodeElement);
   if (!editable) {
     return { policy: 'none' };
   }
 
   const selection = window.getSelection();
-  const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-  const fallbackStart = range ? computeOffsetWithin(editable, range.startContainer, range.startOffset) : undefined;
-  const fallbackEnd = range ? computeOffsetWithin(editable, range.endContainer, range.endOffset) : undefined;
+  const activeRange = range ?? (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null);
+  const fallbackStart = activeRange ? computeOffsetWithin(editable, activeRange.startContainer, activeRange.startOffset) : undefined;
+  const fallbackEnd = activeRange ? computeOffsetWithin(editable, activeRange.endContainer, activeRange.endOffset) : undefined;
 
   return {
     policy: 'wbr-first',
     containerBlockId: nodeElement.getAttribute('data-node-id') ?? '',
+    clonedHtmlWithWbr: activeRange ? createClonedHtmlWithWbr(nodeElement, activeRange) : undefined,
     fallbackOffset: fallbackStart === undefined || fallbackEnd === undefined
       ? undefined
       : { start: fallbackStart, end: fallbackEnd },

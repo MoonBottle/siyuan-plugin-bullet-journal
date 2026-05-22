@@ -1,5 +1,6 @@
 import { getBlockByID } from '@/api';
-import type { BlockMutationIntent, ResolvedMutationPlan } from './types';
+import type { BlockMutationIntent, DatePatchSourceContext, ResolvedMutationPlan } from './types';
+import { resolveDatePatchSource } from './datePatchWriter';
 
 function subtypeOf(block: any): string | undefined {
   return block?.subtype ?? block?.subType;
@@ -15,6 +16,11 @@ function isTaskListNode(block: any): boolean {
 }
 
 async function resolveUpdateTargetBlockId(intent: Extract<BlockMutationIntent, { kind: 'update' }>): Promise<string> {
+  const datePatchSource = await resolveDateSourceContext(intent);
+  if (datePatchSource) {
+    return datePatchSource.finalTargetBlockId;
+  }
+
   if (!intent.patches.some(patch => patch.type === 'setStatus')) {
     return intent.context.listItemBlockId || intent.context.blockId;
   }
@@ -39,6 +45,29 @@ async function resolveUpdateTargetBlockId(intent: Extract<BlockMutationIntent, {
   return intent.context.listItemBlockId || startBlockId;
 }
 
+async function resolveDateSourceContext(
+  intent: Extract<BlockMutationIntent, { kind: 'update' }>,
+): Promise<DatePatchSourceContext | null> {
+  if (!intent.patches.some(patch => patch.type === 'addDate')) {
+    return null;
+  }
+
+  const resolved = await resolveDatePatchSource(intent.context.blockId);
+  if (!resolved) {
+    return null;
+  }
+
+  return {
+    originalBlockId: resolved.originalBlockId,
+    sourceBlockId: resolved.targetBlockId,
+    targetItemBlockRaw: resolved.targetItemBlockRaw,
+    usedParentDocumentContext: resolved.usedParentDocumentContext,
+    finalTargetBlockId: resolved.usedParentDocumentContext && resolved.targetItemBlockRaw
+      ? resolved.originalBlockId
+      : resolved.targetBlockId,
+  };
+}
+
 function resolveTargetKind(block: any): 'paragraph' | 'task-list-item' | 'block' {
   if (isTaskListNode(block)) {
     return 'task-list-item';
@@ -52,9 +81,10 @@ function resolveTargetKind(block: any): 'paragraph' | 'task-list-item' | 'block'
 function canUseCurrentProtyleDom(
   intent: Extract<BlockMutationIntent, { kind: 'update' }>,
   targetBlockId: string,
+  sourceBlockId: string,
 ): boolean {
   const nodeElement = intent.context.nodeElement;
-  if (!intent.context.protyle || !nodeElement) {
+  if (!intent.context.protyle || !nodeElement || sourceBlockId !== targetBlockId) {
     return false;
   }
 
@@ -79,19 +109,23 @@ export async function resolveMutationTarget(intent: BlockMutationIntent): Promis
     };
   }
 
-  const targetBlockId = await resolveUpdateTargetBlockId(intent);
+  const datePatchSource = await resolveDateSourceContext(intent);
+  const targetBlockId = datePatchSource?.finalTargetBlockId ?? await resolveUpdateTargetBlockId(intent);
   const block = await getBlockByID(targetBlockId);
-  const useCurrentProtyle = canUseCurrentProtyleDom(intent, targetBlockId);
+  const sourceBlockId = datePatchSource?.sourceBlockId ?? targetBlockId;
+  const useCurrentProtyle = canUseCurrentProtyleDom(intent, targetBlockId, sourceBlockId);
 
   return {
     kind: 'update',
     targetBlockId,
     targetKind: resolveTargetKind(block),
     sourceKind: useCurrentProtyle ? 'protyle-dom' : 'api-kramdown',
+    sourceBlockId,
     commitKind: useCurrentProtyle ? 'protyle-update' : 'api-update',
     preferDataType: 'dom',
     fallbackDataType: 'markdown',
     context: intent.context,
     patches: intent.patches,
+    datePatchSource: datePatchSource ?? undefined,
   };
 }

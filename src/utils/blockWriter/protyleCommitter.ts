@@ -12,6 +12,29 @@ function formatUpdatedAttr(date = new Date()): string {
   return `${y}${mo}${d}${h}${mi}${s}`;
 }
 
+function resolveWbrOffset(
+  editable: HTMLElement,
+  plan: Extract<PreparedMutationPayload, { kind: 'update' }>['caretRestorePlan'],
+): number | undefined {
+  const textContent = editable.textContent ?? '';
+  if (!plan) {
+    return undefined;
+  }
+
+  if (typeof plan.targetOffset === 'number') {
+    return Math.max(0, Math.min(plan.targetOffset, textContent.length));
+  }
+
+  if (plan.anchorText) {
+    const anchorIndex = textContent.lastIndexOf(plan.anchorText);
+    if (anchorIndex >= 0) {
+      return anchorIndex + plan.anchorText.length;
+    }
+  }
+
+  return textContent.length;
+}
+
 export async function commitViaProtyle(
   context: Pick<BlockWriteContext, 'protyle'>,
   payload: Extract<PreparedMutationPayload, { kind: 'update' }>,
@@ -32,7 +55,7 @@ export async function commitViaProtyle(
       ? targetElement
       : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
     if (editable) {
-      injectWbrIntoEditable(editable);
+      injectWbrIntoEditable(editable, resolveWbrOffset(editable, payload.caretRestorePlan));
     }
   }
 

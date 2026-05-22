@@ -1,7 +1,7 @@
 import type { FocusPlan, Item } from '@/types/models';
 import { writeBlock } from '@/utils/blockWriter';
 import { writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
-import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
+import { clearItemFocusPlan, type ItemSettingWriteOptions, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 
 function itemHasDate(item: Item, date: string): boolean {
   if (item.date === date) return true;
@@ -11,10 +11,10 @@ function itemHasDate(item: Item, date: string): boolean {
 export async function saveFocusPlanWithOptionalDate(
   item: Item,
   plan: Pick<FocusPlan, 'type' | 'rawValue'> | undefined,
-  options?: { ensureDate?: string },
+  options?: { ensureDate?: string } & ItemSettingWriteOptions,
 ): Promise<boolean> {
   if (!plan) {
-    await clearItemFocusPlan(item);
+    await clearItemFocusPlan(item, options);
     return true;
   }
 
@@ -55,6 +55,6 @@ export async function saveFocusPlanWithOptionalDate(
     return true;
   }
 
-  await updateItemWithFocusPlan(item, plan);
+  await updateItemWithFocusPlan(item, plan, options);
   return true;
 }

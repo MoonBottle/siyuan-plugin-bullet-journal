@@ -61,9 +61,13 @@ vi.mock('@/utils/slashCommandUtils', () => ({
   extractItemFromBlock: vi.fn(),
 }));
 
-vi.mock('@/parser/priorityParser', () => ({
-  parsePriorityFromLine: vi.fn(),
-}));
+vi.mock('@/parser/priorityParser', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/parser/priorityParser')>();
+  return {
+    ...actual,
+    parsePriorityFromLine: vi.fn(),
+  };
+});
 
 vi.mock('@/utils/refreshRequests', () => ({
   RefreshReasons: {
@@ -90,7 +94,6 @@ import { createSlashCommands, getActionHandler } from '@/utils/slashCommands';
 import { writeBlock } from '@/utils/blockWriter';
 import { SLASH_COMMAND_FILTERS } from '@/constants';
 import { showFocusPlanDialog } from '@/utils/dialog';
-import { extractItemFromBlock } from '@/utils/slashCommandUtils';
 import { showMessage } from 'siyuan';
 
 describe('focus plan slash commands', () => {
@@ -111,15 +114,6 @@ describe('focus plan slash commands', () => {
   });
 
   it('触发 setFocusPlan 时打开当前事项的预计编辑器', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue({
-      blockId: 'block-1',
-      content: '整理资料',
-      date: '2026-05-14',
-      lineNumber: 1,
-      docId: 'doc-1',
-      status: 'pending',
-    } as any);
-
     const handler = getActionHandler('setFocusPlan', {
       pluginName: 'task-assistant',
       openCustomTab: vi.fn(),
@@ -130,29 +124,39 @@ describe('focus plan slash commands', () => {
 
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-1');
-    node.textContent = '整理资料 @2026-05-14 /focusplan';
+    const textNode = document.createTextNode('整理资料 @2026-05-14 /focusplan');
+    node.appendChild(textNode);
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
 
     const protyle = {};
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(extractItemFromBlock).toHaveBeenCalledWith('block-1');
-    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      { blockId: 'block-1', nodeElement: node, protyle },
-      { type: 'removeSlashCommand' },
-    );
-    expect(showFocusPlanDialog).toHaveBeenCalledWith(expect.objectContaining({
-      blockId: 'block-1',
-      content: '整理资料',
-    }));
-    expect(vi.mocked(writeBlock).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(showFocusPlanDialog).mock.invocationCallOrder[0],
+    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
+    expect(showFocusPlanDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-1',
+        content: '整理资料',
+      }),
+      expect.objectContaining({
+        leadingPatches: [{ type: 'removeSlashCommand' }],
+        writeContext: expect.objectContaining({
+          blockId: 'block-1',
+          nodeElement: node,
+          protyle,
+          slashRange: expect.any(Range),
+        }),
+      }),
     );
   });
 
   it('当前块不是事项时不应打开预计编辑器，并提示错误', async () => {
-    vi.mocked(extractItemFromBlock).mockResolvedValue(null);
     const messageSpy = vi.mocked(showMessage);
 
     const handler = getActionHandler('setFocusPlan', {

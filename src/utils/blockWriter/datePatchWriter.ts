@@ -30,6 +30,7 @@ interface DatePatchSource {
   targetBlockId: string;
   targetItemBlockRaw: string | null;
   usedParentDocumentContext: boolean;
+  finalTargetBlockId?: string;
 }
 
 interface PreparedDateWrite {
@@ -557,13 +558,13 @@ export function prepareDatePatchWriteFromSource(
   lines[itemLineIndex] = newItemLine;
 
   let content = lines.join('\n');
-  let finalTargetBlockId = targetBlockId;
+  let finalTargetBlockId = source.finalTargetBlockId ?? targetBlockId;
   if (usedParentDocumentContext && targetItemBlockRaw) {
     const updatedBlocks = parseKramdownBlocks(content);
     const updatedItemBlock = updatedBlocks.find(candidate => candidate.blockId === originalBlockId);
     if (updatedItemBlock) {
       content = updatedItemBlock.raw;
-      finalTargetBlockId = originalBlockId;
+      finalTargetBlockId = source.finalTargetBlockId ?? originalBlockId;
     }
   }
 

@@ -3,7 +3,6 @@ import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom';
 import { captureCaretSnapshot } from './caretController';
 import { deleteSlashRangeText, findSlashCommandStartOffset } from './slashRange';
 import type { LoadedMutationSource, ResolvedMutationPlan } from './types';
-import { resolveDatePatchSource } from './datePatchWriter';
 
 function trimTrailingSpacesPerLine(markdown: string): string {
   return markdown
@@ -61,7 +60,8 @@ function createSlashCleanedDraft(
   }
 
   const selection = window.getSelection();
-  const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+  const range = plan.context.slashRange
+    ?? (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null);
   if (!range || range.startContainer.nodeType !== Node.TEXT_NODE) {
     return targetElement;
   }
@@ -103,34 +103,29 @@ export async function loadMutationSource(plan: ResolvedMutationPlan): Promise<Lo
     const paragraphElement = plan.context.nodeElement ?? targetElement;
     const draftTarget = createSlashCleanedDraft(targetElement, plan);
     const currentMarkdown = blockElementToMarkdownContent(plan.context.protyle, draftTarget ?? targetElement) ?? '';
+    const selection = window.getSelection();
+    const activeRange = plan.context.slashRange
+      ?? (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null);
     return {
       kind: 'update',
       targetBlockId: plan.targetBlockId,
+      sourceBlockId: plan.sourceBlockId ?? plan.targetBlockId,
       currentMarkdown: plan.patches.some(patch => patch.type === 'removeSlashCommand')
         ? trimTrailingSpacesPerLine(currentMarkdown)
         : currentMarkdown,
       currentDomHtml: targetElement.outerHTML,
       targetElement,
       paragraphElement,
-      caretSnapshot: captureCaretSnapshot(targetElement),
+      caretSnapshot: captureCaretSnapshot(targetElement, activeRange),
     };
   }
 
-  if (plan.patches.some(patch => patch.type === 'addDate')) {
-    const resolved = await resolveDatePatchSource(plan.context.blockId);
-    if (resolved) {
-      return {
-        kind: 'update',
-        targetBlockId: resolved.targetBlockId,
-        currentMarkdown: resolved.kramdown,
-      };
-    }
-  }
-
-  const result = await getBlockKramdown(plan.targetBlockId);
+  const sourceBlockId = plan.sourceBlockId ?? plan.targetBlockId;
+  const result = await getBlockKramdown(sourceBlockId);
   return {
     kind: 'update',
     targetBlockId: plan.targetBlockId,
+    sourceBlockId,
     currentMarkdown: result?.kramdown ?? '',
   };
 }

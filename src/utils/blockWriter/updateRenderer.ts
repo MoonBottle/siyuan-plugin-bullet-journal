@@ -1,8 +1,30 @@
 import { markdownToBlockDOM } from './domSerializer';
 import { splitKramdownBlock } from './kramdownBlocks';
 import { applyBlockPatch } from './kramdownModifier';
-import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types';
+import type { CaretRestorePlan, ContentPatch, LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types';
 import { prepareDatePatchWriteFromSource } from './datePatchWriter';
+
+function buildCaretRestorePlan(
+  plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
+  source: Extract<LoadedMutationSource, { kind: 'update' }>,
+): CaretRestorePlan {
+  if (!plan.patches.some(patch => patch.type === 'removeSlashCommand')) {
+    return { policy: 'none' };
+  }
+
+  const contentPatchWithSuffix = plan.patches.find((patch): patch is ContentPatch => {
+    return patch.type === 'setContent' && typeof patch.suffix === 'string' && patch.suffix.length > 0;
+  });
+
+  return {
+    policy: 'wbr',
+    placement: contentPatchWithSuffix ? 'after-inserted-text' : 'block-end',
+    anchorText: contentPatchWithSuffix?.suffix,
+    fallbackOffset: source.caretSnapshot?.policy === 'wbr-first'
+      ? source.caretSnapshot.fallbackOffset
+      : undefined,
+  };
+}
 
 export function prepareUpdatePayload(
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
@@ -10,20 +32,20 @@ export function prepareUpdatePayload(
 ): Extract<PreparedMutationPayload, { kind: 'update' }> {
   const renderablePatches = plan.patches.filter(patch => patch.type !== 'removeSlashCommand');
   let nextMarkdown = source.currentMarkdown;
-  let targetBlockId = source.targetBlockId;
+  const sourceBlockId = plan.sourceBlockId ?? source.sourceBlockId ?? source.targetBlockId;
 
   for (const patch of renderablePatches) {
     if (patch.type === 'addDate') {
       const prepared = prepareDatePatchWriteFromSource({
-        originalBlockId: plan.context.blockId,
+        originalBlockId: plan.datePatchSource?.originalBlockId ?? plan.context.blockId,
         kramdown: nextMarkdown,
-        targetBlockId,
-        targetItemBlockRaw: null,
-        usedParentDocumentContext: false,
+        targetBlockId: sourceBlockId,
+        targetItemBlockRaw: plan.datePatchSource?.targetItemBlockRaw ?? null,
+        usedParentDocumentContext: plan.datePatchSource?.usedParentDocumentContext ?? false,
+        finalTargetBlockId: plan.targetBlockId,
       }, patch);
       if (prepared) {
         nextMarkdown = prepared.content;
-        targetBlockId = prepared.targetBlockId;
       }
       continue;
     }
@@ -33,21 +55,13 @@ export function prepareUpdatePayload(
 
   return {
     kind: 'update',
-    targetBlockId,
+    targetBlockId: plan.targetBlockId,
     nextMarkdown,
     preferredDataType: 'dom',
     domHtml: markdownToBlockDOM(nextMarkdown) ?? undefined,
     fallbackMarkdown: nextMarkdown,
     oldDomHtml: source.currentDomHtml,
     targetElement: source.targetElement,
-    caretRestorePlan: plan.patches.some(patch => patch.type === 'removeSlashCommand')
-      ? {
-          policy: 'wbr',
-          placement: 'block-end',
-          fallbackOffset: source.caretSnapshot?.policy === 'wbr-first'
-            ? source.caretSnapshot.fallbackOffset
-            : undefined,
-        }
-      : { policy: 'none' },
+    caretRestorePlan: buildCaretRestorePlan(plan, source),
   };
 }

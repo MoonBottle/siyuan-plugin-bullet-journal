@@ -142,11 +142,13 @@ export type ResolvedMutationPlan =
       targetBlockId: string;
       targetKind: 'paragraph' | 'task-list-item' | 'block';
       sourceKind: 'protyle-dom' | 'api-kramdown';
+      sourceBlockId?: string;
       commitKind: 'protyle-update' | 'api-update';
       preferDataType: 'dom';
       fallbackDataType: 'markdown';
       context: BlockWriteContext;
       patches: BlockPatch[];
+      datePatchSource?: DatePatchSourceContext;
     }
   | {
       kind: 'insertAfter';
@@ -162,6 +164,7 @@ export type CaretSnapshot =
   | {
       policy: 'wbr-first';
       containerBlockId: string;
+      clonedHtmlWithWbr?: string;
       fallbackOffset?: {
         start: number;
         end: number;
@@ -174,6 +177,7 @@ export type LoadedMutationSource =
   | {
       kind: 'update';
       targetBlockId: string;
+      sourceBlockId?: string;
       currentMarkdown: string;
       currentDomHtml?: string;
       targetElement?: HTMLElement;
@@ -187,11 +191,22 @@ export type LoadedMutationSource =
 export interface CaretRestorePlan {
   policy: 'none' | 'wbr';
   placement?: 'after-inserted-text' | 'after-inline' | 'placeholder-anchor' | 'block-end';
+  anchorText?: string;
+  targetOffset?: number;
   fallbackOffset?: {
     start: number;
     end: number;
   };
 }
+
+export interface DatePatchSourceContext {
+  originalBlockId: string;
+  sourceBlockId: string;
+  targetItemBlockRaw: string | null;
+  usedParentDocumentContext: boolean;
+  finalTargetBlockId: string;
+}
+
 export type PreparedMutationPayload =
   | {
       kind: 'update';
@@ -243,11 +258,13 @@ export interface MutationPatchCapability {
   targetBlockId?: string;
   targetKind?: 'paragraph' | 'task-list-item' | 'block';
   sourceKind: 'protyle-dom' | 'api-kramdown';
+  sourceBlockId?: string;
   commitKind: 'protyle-update' | 'api-update' | 'api-insert';
   preferredCaretPolicy: 'none' | 'wbr';
   canSharePlan: boolean;
   requiresCurrentDom: boolean;
   canFallbackToApi: boolean;
+  datePatchSource?: DatePatchSourceContext;
 }
 
 export interface MutationExecutionPlan {
@@ -256,6 +273,7 @@ export interface MutationExecutionPlan {
   targetBlockId?: string;
   targetKind?: 'paragraph' | 'task-list-item' | 'block';
   sourceKind: 'protyle-dom' | 'api-kramdown';
+  sourceBlockId?: string;
   commitKind: 'protyle-update' | 'api-update' | 'api-insert';
   caretPolicy: 'none' | 'wbr';
   caretOwner: boolean;
@@ -265,6 +283,7 @@ export interface MutationExecutionPlan {
   context?: BlockWriteContext | Partial<BlockWriteContext>;
   anchorBlockId?: string;
   resultMode?: 'boolean' | 'operations';
+  datePatchSource?: DatePatchSourceContext;
 }
 
 export interface MutationPlannerResult {

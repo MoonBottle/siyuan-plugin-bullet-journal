@@ -20,6 +20,7 @@ import {
 } from '@/parser/recurringParser';
 import { generatePriorityMarker } from '@/parser/priorityParser';
 import { writeBlock } from '@/utils/blockWriter';
+import type { BlockPatch, BlockWriteContext } from '@/utils/blockWriter';
 import { eventBus, Events } from '@/utils/eventBus';
 
 /**
@@ -40,6 +41,29 @@ export interface BuildItemContentOptions {
   endCondition?: EndCondition;
 }
 
+export interface ItemSettingWriteOptions {
+  writeContext?: BlockWriteContext;
+  leadingPatches?: BlockPatch[];
+}
+
+function buildWritePayload(
+  patch: BlockPatch,
+  options?: ItemSettingWriteOptions,
+): BlockPatch | BlockPatch[] {
+  if (!options?.leadingPatches?.length) {
+    return patch;
+  }
+
+  return [...options.leadingPatches, patch];
+}
+
+function buildWriteContext(
+  item: Item,
+  options?: ItemSettingWriteOptions,
+): BlockWriteContext {
+  return options?.writeContext ?? { blockId: item.blockId! };
+}
+
 function emitItemSettingMutation(
   kind: 'reminder' | 'recurring' | 'pin' | 'focus-plan',
   blockId: string,
@@ -58,15 +82,16 @@ function emitItemSettingMutation(
  */
 export async function updateItemWithReminder(
   item: Item,
-  config: ReminderConfig
+  config: ReminderConfig,
+  options?: ItemSettingWriteOptions,
 ): Promise<void> {
   if (!item.blockId) {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
   const updated = await writeBlock(
-    { blockId: item.blockId },
-    { type: 'setReminder', reminder: config },
+    buildWriteContext(item, options),
+    buildWritePayload({ type: 'setReminder', reminder: config }, options),
   );
   if (!updated) {
     throw new Error(`更新块内容失败 (${item.blockId})`);
@@ -83,15 +108,16 @@ export async function updateItemWithReminder(
 export async function updateItemWithRecurring(
   item: Item,
   repeatRule?: RepeatRule,
-  endCondition?: EndCondition
+  endCondition?: EndCondition,
+  options?: ItemSettingWriteOptions,
 ): Promise<void> {
   if (!item.blockId) {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
   const updated = await writeBlock(
-    { blockId: item.blockId },
-    { type: 'setRecurring', repeatRule, endCondition },
+    buildWriteContext(item, options),
+    buildWritePayload({ type: 'setRecurring', repeatRule, endCondition }, options),
   );
   if (!updated) {
     throw new Error(`更新块内容失败 (${item.blockId})`);
@@ -117,14 +143,15 @@ export async function toggleItemPinned(item: Item): Promise<void> {
 export async function updateItemWithFocusPlan(
   item: Item,
   plan: Pick<FocusPlan, 'type' | 'rawValue'>,
+  options?: ItemSettingWriteOptions,
 ): Promise<void> {
   if (!item.blockId) {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
   const updated = await writeBlock(
-    { blockId: item.blockId },
-    { type: 'setFocusPlan', plan },
+    buildWriteContext(item, options),
+    buildWritePayload({ type: 'setFocusPlan', plan }, options),
   );
   if (!updated) {
     throw new Error(`更新块内容失败 (${item.blockId})`);
@@ -132,14 +159,14 @@ export async function updateItemWithFocusPlan(
   emitItemSettingMutation('focus-plan', item.blockId);
 }
 
-export async function clearItemFocusPlan(item: Item): Promise<void> {
+export async function clearItemFocusPlan(item: Item, options?: ItemSettingWriteOptions): Promise<void> {
   if (!item.blockId) {
     throw new Error('事项缺少 blockId，无法更新');
   }
 
   const updated = await writeBlock(
-    { blockId: item.blockId },
-    { type: 'setFocusPlan' },
+    buildWriteContext(item, options),
+    buildWritePayload({ type: 'setFocusPlan' }, options),
   );
   if (!updated) {
     throw new Error(`更新块内容失败 (${item.blockId})`);

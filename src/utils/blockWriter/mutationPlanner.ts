@@ -49,17 +49,19 @@ async function annotateCapabilities(intent: BlockMutationIntent, units: Mutation
     }
 
     const resolved = await resolveMutationTarget(normalizeUpdateIntent(intent.context, unit.patch));
-    capabilities.push({
-      unit,
-      targetBlockId: resolved.targetBlockId,
-      targetKind: resolved.targetKind,
-      sourceKind: resolved.sourceKind,
-      commitKind: resolved.commitKind,
-      preferredCaretPolicy: unit.patch.type === 'removeSlashCommand' ? 'wbr' : 'none',
-      canSharePlan: true,
-      requiresCurrentDom: resolved.sourceKind === 'protyle-dom',
-      canFallbackToApi: true,
-    });
+      capabilities.push({
+        unit,
+        targetBlockId: resolved.targetBlockId,
+        targetKind: resolved.targetKind,
+        sourceKind: resolved.sourceKind,
+        sourceBlockId: resolved.sourceBlockId,
+        commitKind: resolved.commitKind,
+        preferredCaretPolicy: unit.patch.type === 'removeSlashCommand' ? 'wbr' : 'none',
+        canSharePlan: true,
+        requiresCurrentDom: resolved.sourceKind === 'protyle-dom',
+        canFallbackToApi: true,
+        datePatchSource: resolved.datePatchSource,
+      });
   }
 
   return capabilities;
@@ -76,6 +78,9 @@ function mergeReasonForConflict(
     return 'split-by-target';
   }
   if (current.sourceKind !== previous.sourceKind) {
+    return 'split-by-source';
+  }
+  if (current.sourceBlockId !== previous.sourceBlockId) {
     return 'split-by-source';
   }
   if (current.commitKind !== previous.commitKind) {
@@ -119,19 +124,21 @@ export async function buildMutationPlans(intent: BlockMutationIntent): Promise<M
     plans.push({
       id: `plan-${order}`,
       kind: 'update',
-      targetBlockId: first.targetBlockId,
-      targetKind: first.targetKind,
-      sourceKind: first.sourceKind,
-      commitKind: first.commitKind,
+        targetBlockId: first.targetBlockId,
+        targetKind: first.targetKind,
+        sourceKind: first.sourceKind,
+        sourceBlockId: first.sourceBlockId,
+        commitKind: first.commitKind,
       caretPolicy: group.reduce<'none' | 'wbr'>((policy, capability) => {
         return strongerCaretPolicy(policy, capability.preferredCaretPolicy);
       }, 'none'),
       caretOwner: false,
       units: group.map(capability => capability.unit),
       order,
-      atomicBoundary,
-      context: intent.context,
-    });
+        atomicBoundary,
+        context: intent.context,
+        datePatchSource: group.map(capability => capability.datePatchSource).find(Boolean),
+      });
   };
 
   for (const capability of capabilities) {
@@ -144,6 +151,7 @@ export async function buildMutationPlans(intent: BlockMutationIntent): Promise<M
     const shareable = capability.unit.intentKind === previous.unit.intentKind
       && capability.targetBlockId === previous.targetBlockId
       && capability.sourceKind === previous.sourceKind
+      && capability.sourceBlockId === previous.sourceBlockId
       && capability.commitKind === previous.commitKind;
 
     if (shareable) {
