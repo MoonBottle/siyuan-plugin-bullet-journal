@@ -190,9 +190,10 @@ export type LoadedMutationSource =
     };
 export interface CaretRestorePlan {
   policy: 'none' | 'wbr';
-  placement?: 'after-inserted-text' | 'after-inline' | 'placeholder-anchor' | 'block-end';
+  placement?: 'after-inserted-text' | 'after-inline' | 'placeholder-anchor' | 'block-end' | 'line-end';
   anchorText?: string;
   targetOffset?: number;
+  lineIndex?: number;
   fallbackOffset?: {
     start: number;
     end: number;

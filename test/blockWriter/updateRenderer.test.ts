@@ -44,6 +44,8 @@ describe('updateRenderer', () => {
   });
 
   it('marks slash cleanup payloads as wbr-restored updates', () => {
+    const node = document.createElement('div');
+    node.innerHTML = '<div contenteditable="true">任务 /jt</div>';
     const payload = prepareUpdatePayload(
       {
         kind: 'update',
@@ -54,7 +56,7 @@ describe('updateRenderer', () => {
         commitKind: 'protyle-update',
         preferDataType: 'dom',
         fallbackDataType: 'markdown',
-        context: { blockId: 'block-1', protyle: {}, nodeElement: document.createElement('div') as any },
+        context: { blockId: 'block-1', protyle: {}, nodeElement: node as any },
         patches: [{ type: 'removeSlashCommand' }],
       },
       {
@@ -63,16 +65,19 @@ describe('updateRenderer', () => {
         sourceBlockId: 'block-1',
         currentMarkdown: '任务 /jt\n{: id="block-1"}',
         currentDomHtml: '<div data-node-id="block-1"><div contenteditable="true">任务 /jt</div></div>',
-        targetElement: document.createElement('div'),
-        caretSnapshot: { policy: 'wbr-first', containerBlockId: 'block-1' },
+        targetElement: node,
+        caretSnapshot: { policy: 'wbr-first', containerBlockId: 'block-1', fallbackOffset: { start: 4, end: 4 } },
       },
     );
 
     expect(payload.caretRestorePlan?.policy).toBe('wbr');
-    expect(payload.caretRestorePlan?.placement).toBe('block-end');
+    expect(payload.caretRestorePlan?.placement).toBe('line-end');
+    expect(payload.caretRestorePlan?.lineIndex).toBe(0);
   });
 
   it('anchors caret after inserted suffix content when slash cleanup and setContent share one plan', () => {
+    const node = document.createElement('div');
+    node.innerHTML = '<div contenteditable="true">任务 /rw</div>';
     const payload = prepareUpdatePayload(
       {
         kind: 'update',
@@ -83,7 +88,7 @@ describe('updateRenderer', () => {
         commitKind: 'protyle-update',
         preferDataType: 'dom',
         fallbackDataType: 'markdown',
-        context: { blockId: 'block-1', protyle: {}, nodeElement: document.createElement('div') as any },
+        context: { blockId: 'block-1', protyle: {}, nodeElement: node as any },
         patches: [
           { type: 'removeSlashCommand' },
           { type: 'setContent', suffix: '📋' },
@@ -95,8 +100,8 @@ describe('updateRenderer', () => {
         sourceBlockId: 'block-1',
         currentMarkdown: '任务 /rw\n{: id="block-1"}',
         currentDomHtml: '<div data-node-id="block-1"><div contenteditable="true">任务 /rw</div></div>',
-        targetElement: document.createElement('div'),
-        caretSnapshot: { policy: 'wbr-first', containerBlockId: 'block-1' },
+        targetElement: node,
+        caretSnapshot: { policy: 'wbr-first', containerBlockId: 'block-1', fallbackOffset: { start: 4, end: 4 } },
       },
     );
 
@@ -105,7 +110,46 @@ describe('updateRenderer', () => {
       policy: 'wbr',
       placement: 'after-inserted-text',
       anchorText: '📋',
+      lineIndex: 0,
     });
+  });
+
+  it('targets the slash line end for multiline slash cleanup payloads', () => {
+    const node = document.createElement('div');
+    node.innerHTML = '<div contenteditable="true">测试任务列表事项236 /fq\n测试换行</div>';
+    const payload = prepareUpdatePayload(
+      {
+        kind: 'update',
+        targetBlockId: 'block-1',
+        sourceBlockId: 'block-1',
+        targetKind: 'paragraph',
+        sourceKind: 'protyle-dom',
+        commitKind: 'protyle-update',
+        preferDataType: 'dom',
+        fallbackDataType: 'markdown',
+        context: { blockId: 'block-1', protyle: {}, nodeElement: node as any },
+        patches: [
+          { type: 'removeSlashCommand' },
+          { type: 'setStatus', status: 'abandoned' },
+        ],
+      },
+      {
+        kind: 'update',
+        targetBlockId: 'block-1',
+        sourceBlockId: 'block-1',
+        currentMarkdown: '测试任务列表事项236\n测试换行\n{: id="block-1"}',
+        currentDomHtml: '<div data-node-id="block-1"><div contenteditable="true">测试任务列表事项236 /fq\n测试换行</div></div>',
+        targetElement: node,
+        caretSnapshot: { policy: 'wbr-first', containerBlockId: 'block-1', fallbackOffset: { start: 13, end: 13 } },
+      },
+    );
+
+    expect(payload.caretRestorePlan).toMatchObject({
+      policy: 'wbr',
+      placement: 'line-end',
+      lineIndex: 0,
+    });
+    expect(payload.nextMarkdown).toContain('❌');
   });
 
   it('keeps target block while rendering date patches from a different source block', () => {

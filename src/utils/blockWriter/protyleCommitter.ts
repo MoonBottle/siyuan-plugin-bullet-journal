@@ -25,6 +25,27 @@ function resolveWbrOffset(
     return Math.max(0, Math.min(plan.targetOffset, textContent.length));
   }
 
+  if (typeof plan.lineIndex === 'number') {
+    const lines = textContent.split('\n');
+    const safeLineIndex = Math.max(0, Math.min(plan.lineIndex, Math.max(0, lines.length - 1)));
+    let lineStartOffset = 0;
+    for (let index = 0; index < safeLineIndex; index += 1) {
+      lineStartOffset += lines[index].length + 1;
+    }
+    const targetLine = lines[safeLineIndex] ?? '';
+
+    if (plan.anchorText) {
+      const anchorIndex = targetLine.lastIndexOf(plan.anchorText);
+      if (anchorIndex >= 0) {
+        return lineStartOffset + anchorIndex + plan.anchorText.length;
+      }
+    }
+
+    if (plan.placement === 'line-end') {
+      return lineStartOffset + targetLine.length;
+    }
+  }
+
   if (plan.anchorText) {
     const anchorIndex = textContent.lastIndexOf(plan.anchorText);
     if (anchorIndex >= 0) {

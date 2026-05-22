@@ -39,4 +39,22 @@ describe('caretController', () => {
     expect(restored).toBe(true);
     expect(root.querySelector('wbr')).toBeNull();
   });
+
+  it('restores selection before the newline when wbr is inserted at a multiline line end', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<div contenteditable="true">第一行\n第二行</div>';
+    document.body.appendChild(root);
+
+    const editable = root.querySelector('[contenteditable="true"]') as HTMLElement;
+    injectWbrIntoEditable(editable, '第一行'.length);
+    const restored = focusByWbr(root);
+
+    expect(restored).toBe(true);
+    const selection = window.getSelection();
+    expect(selection?.rangeCount).toBe(1);
+    const range = selection!.getRangeAt(0);
+    expect(range.startContainer.nodeType).toBe(Node.TEXT_NODE);
+    expect(range.startContainer.textContent).toBe('第一行');
+    expect(range.startOffset).toBe('第一行'.length);
+  });
 });

@@ -137,7 +137,22 @@ export function focusByWbr(nodeElement: HTMLElement): boolean {
   }
 
   const range = document.createRange();
-  range.setStartAfter(wbr);
+  const previousTextNode = wbr.previousSibling?.nodeType === Node.TEXT_NODE
+    ? wbr.previousSibling as Text
+    : null;
+  const nextTextNode = wbr.nextSibling?.nodeType === Node.TEXT_NODE
+    ? wbr.nextSibling as Text
+    : null;
+
+  if (previousTextNode) {
+    range.setStart(previousTextNode, previousTextNode.textContent?.length ?? 0);
+  }
+  else if (nextTextNode) {
+    range.setStart(nextTextNode, 0);
+  }
+  else {
+    range.setStartAfter(wbr);
+  }
   range.collapse(true);
   const selection = window.getSelection();
   selection?.removeAllRanges();
