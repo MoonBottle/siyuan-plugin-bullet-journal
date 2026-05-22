@@ -1,5 +1,6 @@
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 import { focusByOffset, focusByWbr, injectWbrIntoEditable } from './caretController';
+import { isTaskListFormat } from './itemLineMarkers';
 import type { BlockWriteContext, PreparedMutationPayload } from './types';
 
 function formatUpdatedAttr(date = new Date()): string {
@@ -88,6 +89,34 @@ function resolveLiveTargetElement(targetBlockId: string, fallback: HTMLElement, 
   return liveTarget ?? fallback;
 }
 
+function resolvePrimaryMarkdownLine(markdown: string): string {
+  const lines = markdown.split('\n');
+  return lines.find(line => line.trim().length > 0 && !line.trim().startsWith('{:')) ?? '';
+}
+
+function syncTaskListStatusFromMarkdown(targetElement: HTMLElement, markdown: string): void {
+  const listItemElement = targetElement.matches('[data-type="NodeListItem"][data-subtype="t"]')
+    ? targetElement
+    : targetElement.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement | null;
+  if (!listItemElement) {
+    return;
+  }
+
+  const primaryLine = resolvePrimaryMarkdownLine(markdown);
+  if (!isTaskListFormat(primaryLine)) {
+    return;
+  }
+
+  const isDone = /\[\s*[xX]\s*\]/.test(primaryLine);
+  listItemElement.classList.toggle('protyle-task--done', isDone);
+  listItemElement.setAttribute('data-task', isDone ? 'X' : ' ');
+
+  const useEl = listItemElement.querySelector('.protyle-action--task use');
+  if (useEl) {
+    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', isDone ? '#iconCheck' : '#iconUncheck');
+  }
+}
+
 export async function commitViaProtyle(
   context: Pick<BlockWriteContext, 'protyle'>,
   payload: Extract<PreparedMutationPayload, { kind: 'update' }>,
@@ -118,6 +147,7 @@ export async function commitViaProtyle(
     });
     return false;
   }
+  syncTaskListStatusFromMarkdown(targetElement, payload.nextMarkdown);
 
   let plannedCaretOffset: number | undefined;
   if (payload.caretRestorePlan?.policy === 'wbr') {

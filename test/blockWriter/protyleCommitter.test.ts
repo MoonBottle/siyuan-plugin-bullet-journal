@@ -3,12 +3,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/utils/protyleWriterDom', () => ({
   renderMarkdownIntoBlockEditable: vi.fn((_: unknown, targetElement: HTMLElement, markdown: string) => {
-    targetElement.innerHTML = `<div contenteditable="true">${markdown.replace(/\n\{:[^}]*\}/g, '')}</div>`;
+    const editable = targetElement.getAttribute('contenteditable') === 'true'
+      ? targetElement
+      : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
+    if (editable) {
+      editable.innerHTML = markdown.replace(/\n\{:[^}]*\}/g, '');
+    } else {
+      targetElement.innerHTML = `<div contenteditable="true">${markdown.replace(/\n\{:[^}]*\}/g, '')}</div>`;
+    }
     return true;
   }),
 }));
 
 import { commitViaProtyle } from '@/utils/blockWriter/protyleCommitter';
+
+function readUseHref(useEl: Element | null): string | null {
+  return useEl?.getAttribute('href')
+    ?? useEl?.getAttribute('xlink:href')
+    ?? useEl?.getAttributeNS('http://www.w3.org/1999/xlink', 'href')
+    ?? null;
+}
 
 describe('protyleCommitter', () => {
   beforeEach(() => {
@@ -111,7 +125,7 @@ describe('protyleCommitter', () => {
     targetElement.setAttribute('data-node-id', 'task-1');
     targetElement.setAttribute('data-type', 'NodeListItem');
     targetElement.setAttribute('data-subtype', 't');
-    targetElement.innerHTML = '<span class="protyle-action--task"></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>';
+    targetElement.innerHTML = '<span class="protyle-action--task"><svg><use xlink:href="#iconUncheck"></use></svg></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div>';
     document.body.appendChild(targetElement);
 
     const protyle = {
@@ -209,5 +223,42 @@ describe('protyleCommitter', () => {
     expect(range.collapsed).toBe(true);
     expect(range.startContainer.textContent).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行');
     expect(logicalOffset.toString()).toBe('测试任务列表事项235 📅2026-05-13 测试 ❌');
+  });
+
+  it('toggles task checkbox DOM when next markdown completes a task list item', async () => {
+    const targetElement = document.createElement('div');
+    targetElement.classList.add('li');
+    targetElement.setAttribute('data-node-id', 'task-1');
+    targetElement.setAttribute('data-type', 'NodeListItem');
+    targetElement.setAttribute('data-subtype', 't');
+    targetElement.setAttribute('data-task', ' ');
+    targetElement.innerHTML = '<span class="protyle-action--task"><svg><use xlink:href="#iconUncheck"></use></svg></span><div contenteditable="true">任务 /wc</div>';
+    document.body.appendChild(targetElement);
+
+    const protyle = {
+      transaction: vi.fn(),
+    };
+
+    const success = await commitViaProtyle(
+      { protyle },
+      {
+        kind: 'update',
+        targetBlockId: 'task-1',
+        nextMarkdown: '* [x] 任务\n{: id="task-1"}',
+        preferredDataType: 'dom',
+        domHtml: '<div data-node-id="task-1">任务</div>',
+        fallbackMarkdown: '* [x] 任务\n{: id="task-1"}',
+        oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">任务 /wc</div></div>',
+        targetElement,
+        caretRestorePlan: {
+          policy: 'none',
+        },
+      },
+    );
+
+    expect(success).toBe(true);
+    expect(targetElement.classList.contains('protyle-task--done')).toBe(true);
+    expect(targetElement.getAttribute('data-task')).toBe('X');
+    expect(readUseHref(targetElement.querySelector('use'))).toBe('#iconCheck');
   });
 });
