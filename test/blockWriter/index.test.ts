@@ -15,7 +15,7 @@ vi.mock('@/utils/protyleWriterDom', () => ({
 
 import { getBlockKramdown, insertBlock, updateBlock } from '@/api';
 import { blockElementToMarkdownContent, renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
+import { insertBlockAfter, insertBlockAfterWithResult, writeBlock } from '@/utils/blockWriter';
 
 describe('writeBlock', () => {
   beforeEach(() => {
@@ -65,6 +65,16 @@ describe('writeBlock', () => {
     expect(call[1]).toContain('🔥');
     expect(call[1]).not.toContain('#已完成');
     expect(call[1]).not.toContain('✅');
+  });
+
+  it('routes writeBlock through the unified pipeline for generic updates', async () => {
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      { type: 'setPriority', priority: 'high' },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalled();
   });
 
   it('normalizes mixed update patch order before applying the batch', async () => {
@@ -513,5 +523,23 @@ describe('writeBlock', () => {
       'block123',
       undefined,
     );
+  });
+
+  it('routes insertBlockAfterWithResult through the same pipeline and returns operations', async () => {
+    vi.mocked(insertBlock).mockResolvedValueOnce([{ doOperations: [], undoOperations: [] }] as any);
+
+    const result = await insertBlockAfterWithResult('block123', {
+      type: 'setHabitDefinition',
+      habit: {
+        name: '喝水',
+        startDate: '2026-05-21',
+        type: 'count',
+        target: 8,
+        unit: '杯',
+        frequency: { type: 'daily' },
+      },
+    });
+
+    expect(Array.isArray(result)).toBe(true);
   });
 });

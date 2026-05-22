@@ -1,11 +1,16 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from './types';
-import { insertViaApi, insertViaApiWithResult, writeViaApi } from './apiTransport';
+import { commitViaApi } from './apiCommitter';
+import { commitViaProtyle } from './protyleCommitter';
 import { normalizeInsertIntent, normalizeUpdateIntent } from './intent';
 import { createProtyleMarkdownWriter, waitForProtyleTransactionsFlush } from './markdownWriter';
-import { normalizePatchSequence } from './normalizePatchSequence';
+import { prepareInsertPayload } from './insertRenderer';
+import { loadMutationSource } from './sourceLoader';
+import { resolveMutationTarget } from './targetResolver';
+import { prepareUpdatePayload } from './updateRenderer';
 import { writeDatePatch, writeDatePatchWithSlashCleanup } from './datePatchWriter';
 import { writeViaProtyle } from './protyleTransport';
 import { writeStatusWithSlashCleanup } from './statusPatchWriter';
+import type { BlockMutationIntent } from './types';
 
 export type {
   BatchBlockPatch,
@@ -31,9 +36,38 @@ export type {
 
 export { createProtyleMarkdownWriter } from './markdownWriter';
 
+async function executeIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
+  const plan = await resolveMutationTarget(intent);
+  const source = await loadMutationSource(plan);
+
+  if (plan.kind === 'insertAfter') {
+    const payload = prepareInsertPayload(plan, source);
+    return await commitViaApi(payload);
+  }
+
+  const payload = prepareUpdatePayload(plan, source);
+  if (plan.commitKind === 'protyle-update') {
+    const ok = await commitViaProtyle(plan.context, payload);
+    if (ok) {
+      return true;
+    }
+
+    const apiFallbackPlan = {
+      ...plan,
+      sourceKind: 'api-kramdown' as const,
+      commitKind: 'api-update' as const,
+    };
+    const apiFallbackSource = await loadMutationSource(apiFallbackPlan);
+    const apiFallbackPayload = prepareUpdatePayload(apiFallbackPlan, apiFallbackSource);
+    return await commitViaApi(apiFallbackPayload);
+  }
+
+  return await commitViaApi(payload);
+}
+
 export async function insertBlockAfter(previousBlockId: string, patch: InsertableBlockPatch): Promise<boolean> {
   const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'boolean' });
-  return insertViaApi(intent.anchorBlockId, intent.patch);
+  return (await executeIntent(intent)) === true;
 }
 
 export async function insertBlockAfterWithResult(
@@ -41,13 +75,13 @@ export async function insertBlockAfterWithResult(
   patch: InsertableBlockPatch,
 ): Promise<IResdoOperations[] | null> {
   const intent = normalizeInsertIntent(previousBlockId, patch, { resultMode: 'operations' });
-  return insertViaApiWithResult(intent.anchorBlockId, intent.patch);
+  const result = await executeIntent(intent);
+  return Array.isArray(result) ? result : null;
 }
 
 export async function writeBlock(context: BlockWriteContext, patches: BlockPatch | BatchBlockPatch): Promise<boolean> {
   const intent = normalizeUpdateIntent(context, patches);
   const patchArray = intent.patches;
-  const payload = Array.isArray(patches) ? patchArray : patchArray[0];
   const addDatePatch = patchArray.length === 1 && patchArray[0]?.type === 'addDate'
     ? patchArray[0]
     : undefined;
@@ -108,10 +142,21 @@ export async function writeBlock(context: BlockWriteContext, patches: BlockPatch
     return writeDatePatch(context, addDatePatch);
   }
 
-  if (context.protyle && context.nodeElement) {
+  if (requiresProtyle && context.protyle && context.nodeElement) {
+    const payload = Array.isArray(patches) ? patchArray : patchArray[0];
     const ok = await writeViaProtyle(context, payload);
-    if (ok) return true;
+    return ok;
   }
-  if (requiresProtyle) return false;
-  return writeViaApi(hasStatusPatch ? statusTargetBlockId : context.blockId, payload);
+  if (requiresProtyle) {
+    return false;
+  }
+
+  const result = await executeIntent({
+    ...intent,
+    context: {
+      ...intent.context,
+      blockId: hasStatusPatch ? statusTargetBlockId : intent.context.blockId,
+    },
+  });
+  return result === true;
 }

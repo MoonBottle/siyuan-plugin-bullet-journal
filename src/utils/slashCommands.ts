@@ -537,6 +537,17 @@ async function getValidatedItemFromNode(
     return null;
   }
 
+  const extractedItem = await extractItemFromBlock(blockId);
+  if (extractedItem) {
+    return extractedItem as Item;
+  }
+
+  const pinia = getSharedPinia();
+  const storeItem = pinia ? useProjectStore(pinia).getItemByBlockId?.(blockId) : null;
+  if (storeItem) {
+    return storeItem as Item;
+  }
+
   const item = await resolveItemForSlashCommand({ blockId, nodeElement });
   if (!item) {
     if (protyle) {
