@@ -1,10 +1,10 @@
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 import { processLineText } from '@/utils/slashCommandUtils';
 import { blockElementToMarkdownContent, renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { applyBlockPatch } from './kramdownModifier';
-import { splitKramdownBlock } from './kramdownBlocks';
-import { deleteSlashRangeText, getActiveSlashRange } from './slashRange';
-import type { BlockWriteContext, StatusPatch } from './types';
+import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
+import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
+import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange';
+import type { BlockWriteContext, StatusPatch } from '@/utils/blockWriter/shared/types';
 
 function getNodePath(root: Node, target: Node): number[] | null {
   const path: number[] = [];

@@ -1,6 +1,6 @@
 import { getBlockByID } from '@/api';
-import type { BlockMutationIntent, DatePatchSourceContext, ResolvedMutationPlan } from './types';
-import { resolveDatePatchSource } from './datePatchWriter';
+import type { BlockMutationIntent, DatePatchSourceContext, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
+import { resolveDatePatchSource } from '@/utils/blockWriter/compat/datePatchWriter';
 
 function subtypeOf(block: any): string | undefined {
   return block?.subtype ?? block?.subType;

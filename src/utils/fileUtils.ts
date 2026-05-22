@@ -12,7 +12,7 @@ import { isStandaloneBlockRefLine } from '@/parser/lineParser';
 import { processLineText } from '@/utils/slashCommandUtils';
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
 import { generatePriorityMarker, stripPriorityMarker } from '@/parser/priorityParser';
-import { writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
+import { writeDatePatchWithWriter } from '@/utils/blockWriter/compat/datePatchWriter';
 
 const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
 const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;

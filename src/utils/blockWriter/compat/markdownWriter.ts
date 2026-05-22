@@ -1,7 +1,7 @@
 import { updateBlock } from '@/api';
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { markdownToBlockDOM } from './domSerializer';
-import type { BlockWriteContext } from './types';
+import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer';
+import type { BlockWriteContext } from '@/utils/blockWriter/shared/types';
 
 /**
  * @deprecated Compat helpers only.

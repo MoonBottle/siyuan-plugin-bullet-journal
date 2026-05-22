@@ -6,7 +6,7 @@ import type { ToolCall } from '@/types/ai';
 import type { Item, ItemStatus, Project, ProjectDirectory, ProjectGroup } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { insertBlockAfterWithResult, writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches';
 import {
   aggregatePomodorosFromProjects,
   filterPomodoros,

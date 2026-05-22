@@ -2,7 +2,7 @@ import { LineParser } from '@/parser/lineParser';
 import { useProjectStore } from '@/stores';
 import type { Item } from '@/types/models';
 import { getSharedPinia } from '@/utils/sharedPinia';
-import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/slashRange';
+import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange';
 
 export interface ResolveSlashItemOptions {
   blockId: string;

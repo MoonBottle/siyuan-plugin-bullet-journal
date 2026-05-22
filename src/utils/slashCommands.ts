@@ -34,7 +34,7 @@ import {
   type DatePatch,
   type InsertableBlockPatch,
 } from '@/utils/blockWriter';
-import { getActiveSlashRange } from '@/utils/blockWriter/slashRange';
+import { getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange';
 import {
   RefreshReasons,
   createFullRefreshRequest,

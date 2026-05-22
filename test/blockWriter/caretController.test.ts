@@ -5,7 +5,7 @@ import {
   focusByOffset,
   focusByWbr,
   injectWbrIntoEditable,
-} from '@/utils/blockWriter/caretController';
+} from '@/utils/blockWriter/shared/caretController';
 
 describe('caretController', () => {
   it('captures a wbr-first snapshot for the current editable selection', () => {

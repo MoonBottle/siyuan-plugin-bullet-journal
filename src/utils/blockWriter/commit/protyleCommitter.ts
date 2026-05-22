@@ -1,7 +1,7 @@
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { focusByOffset, focusByWbr, injectWbrIntoEditable } from './caretController';
-import { isTaskListFormat } from './itemLineMarkers';
-import type { BlockWriteContext, PreparedMutationPayload } from './types';
+import { focusByOffset, focusByWbr, injectWbrIntoEditable } from '@/utils/blockWriter/shared/caretController';
+import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers';
+import type { BlockWriteContext, PreparedMutationPayload } from '@/utils/blockWriter/shared/types';
 
 function formatUpdatedAttr(date = new Date()): string {
   const y = date.getFullYear();

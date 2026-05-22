@@ -7,9 +7,9 @@ import type { Plugin } from 'siyuan';
 import type { Item } from '@/types/models';
 import { getBlockKramdown } from '@/api';
 import { insertBlockAfter, writeBlock } from '@/utils/blockWriter';
-import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
-import { applyBlockPatch } from '@/utils/blockWriter/kramdownModifier';
-import { extractTimePart } from '@/utils/blockWriter/itemPatches';
+import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
+import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
+import { extractTimePart } from '@/utils/blockWriter/intent/itemPatches';
 import {
   getNextOccurrenceDate,
   checkEndCondition,

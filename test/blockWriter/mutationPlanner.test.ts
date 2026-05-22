@@ -6,8 +6,8 @@ vi.mock('@/api', () => ({
 }));
 
 import { getBlockByID } from '@/api';
-import { normalizeInsertIntent, normalizeUpdateIntent } from '@/utils/blockWriter/intent';
-import { buildMutationPlans } from '@/utils/blockWriter/mutationPlanner';
+import { normalizeInsertIntent, normalizeUpdateIntent } from '@/utils/blockWriter/intent/intent';
+import { buildMutationPlans } from '@/utils/blockWriter/planner/mutationPlanner';
 
 describe('mutationPlanner', () => {
   beforeEach(() => {

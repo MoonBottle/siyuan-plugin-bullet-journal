@@ -7,7 +7,7 @@ vi.mock('@/api', () => ({
 }));
 
 import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
-import { prepareDatePatchWrite, writeDatePatchWithWriter } from '@/utils/blockWriter/datePatchWriter';
+import { prepareDatePatchWrite, writeDatePatchWithWriter } from '@/utils/blockWriter/compat/datePatchWriter';
 
 describe('datePatchWriter', () => {
   beforeEach(() => {

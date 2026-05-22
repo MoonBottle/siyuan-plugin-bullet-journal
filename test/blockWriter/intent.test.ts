@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   normalizeInsertIntent,
   normalizeUpdateIntent,
-} from '@/utils/blockWriter/intent';
+} from '@/utils/blockWriter/intent/intent';
 
 describe('intent', () => {
   it('normalizes a single update patch into an update intent', () => {

@@ -1,12 +1,12 @@
-import { normalizeUpdateIntent } from './intent';
-import { resolveMutationTarget } from './targetResolver';
+import { normalizeUpdateIntent } from '@/utils/blockWriter/intent/intent';
+import { resolveMutationTarget } from '@/utils/blockWriter/resolve/targetResolver';
 import type {
   BlockMutationIntent,
   MutationExecutionPlan,
   MutationPatchCapability,
   MutationPatchUnit,
   MutationPlannerResult,
-} from './types';
+} from '@/utils/blockWriter/shared/types';
 
 function strongerCaretPolicy(left: 'none' | 'wbr', right: 'none' | 'wbr'): 'none' | 'wbr' {
   return left === 'wbr' || right === 'wbr' ? 'wbr' : 'none';

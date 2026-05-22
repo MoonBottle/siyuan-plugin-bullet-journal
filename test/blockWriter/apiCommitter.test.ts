@@ -6,7 +6,7 @@ vi.mock('@/api', () => ({
 }));
 
 import { insertBlock, updateBlock } from '@/api';
-import { commitViaApi } from '@/utils/blockWriter/apiCommitter';
+import { commitViaApi } from '@/utils/blockWriter/commit/apiCommitter';
 
 describe('apiCommitter', () => {
   beforeEach(() => {

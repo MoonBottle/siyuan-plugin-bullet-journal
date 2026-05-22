@@ -1,12 +1,12 @@
-import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from './types';
-import { commitViaApi } from './apiCommitter';
-import { commitViaProtyle } from './protyleCommitter';
-import { normalizeInsertIntent, normalizeUpdateIntent } from './intent';
-import { buildMutationPlans } from './mutationPlanner';
-import { prepareInsertPayload } from './insertRenderer';
-import { loadMutationSource } from './sourceLoader';
-import { prepareUpdatePayload } from './updateRenderer';
-import type { BlockMutationIntent, MutationExecutionPlan } from './types';
+import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from '@/utils/blockWriter/shared/types';
+import { commitViaApi } from '@/utils/blockWriter/commit/apiCommitter';
+import { commitViaProtyle } from '@/utils/blockWriter/commit/protyleCommitter';
+import { normalizeInsertIntent, normalizeUpdateIntent } from '@/utils/blockWriter/intent/intent';
+import { buildMutationPlans } from '@/utils/blockWriter/planner/mutationPlanner';
+import { prepareInsertPayload } from '@/utils/blockWriter/render/insertRenderer';
+import { loadMutationSource } from '@/utils/blockWriter/source/sourceLoader';
+import { prepareUpdatePayload } from '@/utils/blockWriter/render/updateRenderer';
+import type { BlockMutationIntent, MutationExecutionPlan } from '@/utils/blockWriter/shared/types';
 
 export type {
   BatchBlockPatch,
@@ -28,7 +28,7 @@ export type {
   ResolvedBlockTarget,
   SlashCommandPatch,
   StatusPatch,
-} from './types';
+} from '@/utils/blockWriter/shared/types';
 
 function hasRemoveSlashPatch(patches: Array<{ type: string }>): boolean {
   return patches.some(patch => patch.type === 'removeSlashCommand');

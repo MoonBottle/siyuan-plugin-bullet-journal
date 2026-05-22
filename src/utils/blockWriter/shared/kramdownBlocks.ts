@@ -1,4 +1,4 @@
-import type { KramdownBlockParts } from './types';
+import type { KramdownBlockParts } from '@/utils/blockWriter/shared/types';
 
 function isIALLine(line: string): boolean {
   const trimmed = line.trim();

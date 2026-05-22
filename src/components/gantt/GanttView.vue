@@ -24,7 +24,7 @@ import { computeTooltipPosition } from '@/utils/tooltipPosition';
 import { showContextMenu, createItemMenu } from '@/utils/contextMenu';
 import { openDocumentAtLine } from '@/utils/fileUtils';
 import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches';
 import PomodoroTimerDialog from '@/components/pomodoro/PomodoroTimerDialog.vue';
 import { createApp } from 'vue';
 import type { Item } from '@/types/models';

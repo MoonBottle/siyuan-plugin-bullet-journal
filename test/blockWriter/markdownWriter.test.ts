@@ -12,7 +12,7 @@ vi.mock('@/utils/protyleWriterDom', () => ({
 import { updateBlock } from '@/api';
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 import * as blockWriter from '@/utils/blockWriter';
-import { createProtyleMarkdownWriter } from '@/utils/blockWriter/markdownWriter';
+import { createProtyleMarkdownWriter } from '@/utils/blockWriter/compat/markdownWriter';
 
 function createBlock(blockId = 'block-1', text = '原始事项 /jt'): HTMLElement {
   const block = document.createElement('div');

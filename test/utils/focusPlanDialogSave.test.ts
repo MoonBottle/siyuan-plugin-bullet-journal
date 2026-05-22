@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { saveFocusPlanWithOptionalDate } from '@/utils/focusPlanDialogSave';
 import { writeBlock } from '@/utils/blockWriter';
-import { prepareDatePatchWrite } from '@/utils/blockWriter/datePatchWriter';
+import { prepareDatePatchWrite } from '@/utils/blockWriter/compat/datePatchWriter';
 import { clearItemFocusPlan, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 import type { Item } from '@/types/models';
 
-vi.mock('@/utils/blockWriter/datePatchWriter', () => ({
+vi.mock('@/utils/blockWriter/compat/datePatchWriter', () => ({
   prepareDatePatchWrite: vi.fn(async (
     _blockId: string,
     patch: { date: string },

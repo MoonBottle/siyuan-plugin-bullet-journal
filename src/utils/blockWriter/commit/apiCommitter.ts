@@ -1,5 +1,5 @@
 import { insertBlock, updateBlock } from '@/api';
-import type { PreparedMutationPayload } from './types';
+import type { PreparedMutationPayload } from '@/utils/blockWriter/shared/types';
 
 function isApiCommitSuccess(result: unknown): result is IResdoOperations[] {
   return Array.isArray(result);

@@ -2,7 +2,7 @@
  * Protyle 块 DOM 辅助：writer 单行快路径仅适用于「整块一个可见文本节点」，
  * 否则块引用等行内结构会拆成多个 Text，不能只改首节点。
  */
-import { createApiLute } from '@/utils/blockWriter/domSerializer';
+import { createApiLute } from '@/utils/blockWriter/render/domSerializer';
 
 const PROTYLE_WRITER_LOG_PREFIX = '[BJ-ProtyleWriter]';
 

@@ -82,7 +82,7 @@
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches';
 import type { Item } from '@/types/models';
 
 const props = defineProps<{

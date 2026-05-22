@@ -1,6 +1,6 @@
-import { markdownToBlockDOM } from './domSerializer';
-import { renderInsertableBlockPatch } from './kramdownModifier';
-import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types';
+import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer';
+import { renderInsertableBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
+import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
 
 export function prepareInsertPayload(
   plan: Extract<ResolvedMutationPlan, { kind: 'insertAfter' }>,

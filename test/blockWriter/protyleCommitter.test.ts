@@ -15,8 +15,8 @@ vi.mock('@/utils/protyleWriterDom', () => ({
   }),
 }));
 
-import * as caretController from '@/utils/blockWriter/caretController';
-import { commitViaProtyle } from '@/utils/blockWriter/protyleCommitter';
+import * as caretController from '@/utils/blockWriter/shared/caretController';
+import { commitViaProtyle } from '@/utils/blockWriter/commit/protyleCommitter';
 
 function readUseHref(useEl: Element | null): string | null {
   return useEl?.getAttribute('href')

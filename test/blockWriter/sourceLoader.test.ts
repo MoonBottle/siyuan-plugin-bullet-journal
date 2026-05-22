@@ -11,7 +11,7 @@ vi.mock('@/utils/protyleWriterDom', () => ({
 
 import { getBlockKramdown } from '@/api';
 import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom';
-import { loadMutationSource } from '@/utils/blockWriter/sourceLoader';
+import { loadMutationSource } from '@/utils/blockWriter/source/sourceLoader';
 
 describe('sourceLoader', () => {
   beforeEach(() => {

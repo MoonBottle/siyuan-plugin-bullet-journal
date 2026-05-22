@@ -1,8 +1,8 @@
-import { markdownToBlockDOM } from './domSerializer';
-import { splitKramdownBlock } from './kramdownBlocks';
-import { applyBlockPatch } from './kramdownModifier';
-import type { CaretRestorePlan, ContentPatch, LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from './types';
-import { prepareDatePatchWriteFromSource } from './datePatchWriter';
+import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer';
+import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
+import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
+import type { CaretRestorePlan, ContentPatch, LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
+import { prepareDatePatchWriteFromSource } from '@/utils/blockWriter/compat/datePatchWriter';
 
 interface CaretRestoreOptions {
   caretOwner?: boolean;

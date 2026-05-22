@@ -279,7 +279,7 @@ import { t } from '@/i18n';
 import type { Item, PriorityLevel } from '@/types/models';
 import dayjs from '@/utils/dayjs';
 import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches';
 import { formatDateLabel as formatDateLabelUtil } from '@/utils/dateUtils';
 import { getEffectiveDate } from '@/utils/dateRangeUtils';
 import { createExampleDocument } from '@/utils/exampleDocUtils';

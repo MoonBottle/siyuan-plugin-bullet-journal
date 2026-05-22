@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/slashRange';
+import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange';
 
 describe('slashRange', () => {
   it('finds the slash before the cursor instead of the last slash in the block', () => {

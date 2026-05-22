@@ -5,11 +5,11 @@ import { isStandaloneBlockRefLine } from '@/parser/lineParser';
 import type { ItemDateTimeInfo, ItemStatus, TimePrecision } from '@/types/models';
 import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom';
 import { processLineText } from '@/utils/slashCommandUtils';
-import { markdownToBlockDOM } from './domSerializer';
-import { createProtyleMarkdownWriter, writeMarkdownToCurrentBlock } from './markdownWriter';
-import { isTaskListFormat, statusToLabel } from './itemLineMarkers';
-import type { BlockWriteContext, DatePatch } from './types';
-import { deleteSlashRangeText, getActiveSlashRange } from './slashRange';
+import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer';
+import { createProtyleMarkdownWriter, writeMarkdownToCurrentBlock } from '@/utils/blockWriter/compat/markdownWriter';
+import { isTaskListFormat, statusToLabel } from '@/utils/blockWriter/shared/itemLineMarkers';
+import type { BlockWriteContext, DatePatch } from '@/utils/blockWriter/shared/types';
+import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange';
 
 const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
 const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;

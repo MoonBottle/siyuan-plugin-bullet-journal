@@ -357,7 +357,7 @@ import { useSettingsStore } from '@/stores';
 import MobilePriorityPicker from '@/mobile/components/pickers/MobilePriorityPicker.vue';
 import MobileDatePicker from '@/mobile/components/pickers/MobileDatePicker.vue';
 import { writeBlock } from '@/utils/blockWriter';
-import { buildDatePatchFromItem } from '@/utils/blockWriter/itemPatches';
+import { buildDatePatchFromItem } from '@/utils/blockWriter/intent/itemPatches';
 import type { Item, PriorityLevel, PomodoroRecord } from '@/types/models';
 import MobileConfirmDrawer from '../confirm/MobileConfirmDrawer.vue';
 import { TimeSettingDrawer } from '@/mobile/components/time-picker';

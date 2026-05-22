@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
-import { applyBlockPatch, applyBlockPatches } from '@/utils/blockWriter/kramdownModifier';
+import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
+import { applyBlockPatch, applyBlockPatches } from '@/utils/blockWriter/render/kramdownModifier';
 
 describe('kramdownModifier', () => {
   function parts(raw: string) {

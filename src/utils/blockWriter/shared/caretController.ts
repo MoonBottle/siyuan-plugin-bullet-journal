@@ -1,4 +1,4 @@
-import type { CaretSnapshot } from './types';
+import type { CaretSnapshot } from '@/utils/blockWriter/shared/types';
 
 function findEditable(nodeElement: HTMLElement): HTMLElement | null {
   if (nodeElement.getAttribute('contenteditable') === 'true') {

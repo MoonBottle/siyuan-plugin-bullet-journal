@@ -1,8 +1,8 @@
 import { getBlockKramdown } from '@/api';
 import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom';
-import { captureCaretSnapshot } from './caretController';
-import { deleteSlashRangeText, findSlashCommandStartOffset } from './slashRange';
-import type { LoadedMutationSource, ResolvedMutationPlan } from './types';
+import { captureCaretSnapshot } from '@/utils/blockWriter/shared/caretController';
+import { deleteSlashRangeText, findSlashCommandStartOffset } from '@/utils/blockWriter/shared/slashRange';
+import type { LoadedMutationSource, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
 
 function trimTrailingSpacesPerLine(markdown: string): string {
   return markdown

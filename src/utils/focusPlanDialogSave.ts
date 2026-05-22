@@ -1,6 +1,6 @@
 import type { FocusPlan, Item } from '@/types/models';
 import { writeBlock } from '@/utils/blockWriter';
-import { prepareDatePatchWrite } from '@/utils/blockWriter/datePatchWriter';
+import { prepareDatePatchWrite } from '@/utils/blockWriter/compat/datePatchWriter';
 import { clearItemFocusPlan, type ItemSettingWriteOptions, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 
 function itemHasDate(item: Item, date: string): boolean {

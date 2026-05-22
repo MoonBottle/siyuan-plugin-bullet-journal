@@ -1,5 +1,5 @@
 import type { ItemDateTimeInfo, ItemStatus, TimePrecision } from '@/types/models';
-import type { DatePatch } from './types';
+import type { DatePatch } from '@/utils/blockWriter/shared/types';
 
 export interface ItemDatePatchSource {
   date: string;

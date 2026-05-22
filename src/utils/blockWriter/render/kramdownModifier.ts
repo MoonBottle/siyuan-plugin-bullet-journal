@@ -1,6 +1,6 @@
-import type { BlockPatch, DatePatch, InsertableBlockPatch, KramdownBlockParts } from './types';
-import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from './kramdownBlocks';
-import { generatePriorityMarker, isTaskListFormat, statusToLabel } from './itemLineMarkers';
+import type { BlockPatch, DatePatch, InsertableBlockPatch, KramdownBlockParts } from '@/utils/blockWriter/shared/types';
+import { rebuildKramdownBlock, replaceContentLines, splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
+import { generatePriorityMarker, isTaskListFormat, statusToLabel } from '@/utils/blockWriter/shared/itemLineMarkers';
 import { formatFocusPlanMarker } from '@/parser/focusPlanParser';
 import { buildHabitDefinitionMarkdown } from '@/parser/habitParser';
 import { generatePinnedMarker, parsePinnedFromLine, stripPinnedMarker } from '@/parser/pinParser';
@@ -10,7 +10,7 @@ import {
   generateRepeatRuleMarker,
 } from '@/parser/recurringParser';
 import { buildHabitRecordMarkdown } from '@/utils/habitMarkdown';
-import { normalizeMarkerLine, parseMarkerLine, removeMarker, upsertMarker } from './markerCluster';
+import { normalizeMarkerLine, parseMarkerLine, removeMarker, upsertMarker } from '@/utils/blockWriter/render/markerCluster';
 
 const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 

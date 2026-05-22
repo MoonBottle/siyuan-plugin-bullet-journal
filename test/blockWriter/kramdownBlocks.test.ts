@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { replaceContentLines, splitKramdownBlock } from '@/utils/blockWriter/kramdownBlocks';
+import { replaceContentLines, splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
 
 describe('kramdownBlocks', () => {
   it('splits content and trailing IAL', () => {

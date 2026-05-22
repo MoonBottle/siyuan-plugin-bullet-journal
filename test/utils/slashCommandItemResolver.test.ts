@@ -23,7 +23,7 @@ vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => ({})),
 }));
 
-vi.mock('@/utils/blockWriter/slashRange', () => ({
+vi.mock('@/utils/blockWriter/shared/slashRange', () => ({
   getActiveSlashRange: getActiveSlashRangeMock,
   deleteSlashRangeText: vi.fn((range: Range, slashStartOffset: number) => {
     const textNode = range.startContainer as Text;

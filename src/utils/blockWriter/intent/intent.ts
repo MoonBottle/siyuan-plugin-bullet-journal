@@ -1,11 +1,11 @@
-import { normalizePatchSequence } from './normalizePatchSequence';
+import { normalizePatchSequence } from '@/utils/blockWriter/intent/normalizePatchSequence';
 import type {
   BatchBlockPatch,
   BlockMutationIntent,
   BlockPatch,
   BlockWriteContext,
   InsertableBlockPatch,
-} from './types';
+} from '@/utils/blockWriter/shared/types';
 
 export function normalizeUpdateIntent(
   context: BlockWriteContext,

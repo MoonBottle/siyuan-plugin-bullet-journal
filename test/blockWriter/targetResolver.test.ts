@@ -5,13 +5,13 @@ vi.mock('@/api', () => ({
   getBlockByID: vi.fn(),
 }));
 
-vi.mock('@/utils/blockWriter/datePatchWriter', () => ({
+vi.mock('@/utils/blockWriter/compat/datePatchWriter', () => ({
   resolveDatePatchSource: vi.fn(),
 }));
 
 import { getBlockByID } from '@/api';
-import { resolveMutationTarget } from '@/utils/blockWriter/targetResolver';
-import { resolveDatePatchSource } from '@/utils/blockWriter/datePatchWriter';
+import { resolveMutationTarget } from '@/utils/blockWriter/resolve/targetResolver';
+import { resolveDatePatchSource } from '@/utils/blockWriter/compat/datePatchWriter';
 
 describe('targetResolver', () => {
   beforeEach(() => {

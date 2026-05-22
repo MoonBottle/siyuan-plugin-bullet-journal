@@ -1,19 +1,19 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/utils/blockWriter/domSerializer', () => ({
+vi.mock('@/utils/blockWriter/render/domSerializer', () => ({
   markdownToBlockDOM: vi.fn((markdown: string) => `<div data-type="NodeParagraph">${markdown}</div>`),
 }));
 
-vi.mock('@/utils/blockWriter/datePatchWriter', () => ({
+vi.mock('@/utils/blockWriter/compat/datePatchWriter', () => ({
   prepareDatePatchWriteFromSource: vi.fn((source: { kramdown: string; finalTargetBlockId?: string; targetBlockId: string }, patch: { date: string }) => ({
     content: `${source.kramdown}\n@${patch.date}`,
     targetBlockId: source.finalTargetBlockId ?? source.targetBlockId,
   })),
 }));
 
-import { prepareDatePatchWriteFromSource } from '@/utils/blockWriter/datePatchWriter';
-import { prepareUpdatePayload } from '@/utils/blockWriter/updateRenderer';
+import { prepareDatePatchWriteFromSource } from '@/utils/blockWriter/compat/datePatchWriter';
+import { prepareUpdatePayload } from '@/utils/blockWriter/render/updateRenderer';
 
 describe('updateRenderer', () => {
   it('prepares nextMarkdown and domHtml for api updates', () => {

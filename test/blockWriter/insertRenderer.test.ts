@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/utils/blockWriter/domSerializer', () => ({
+vi.mock('@/utils/blockWriter/render/domSerializer', () => ({
   markdownToBlockDOM: vi.fn((markdown: string) => `<div data-type="NodeParagraph">${markdown}</div>`),
 }));
 
-import { prepareInsertPayload } from '@/utils/blockWriter/insertRenderer';
+import { prepareInsertPayload } from '@/utils/blockWriter/render/insertRenderer';
 
 describe('insertRenderer', () => {
   it('prepares domHtml and markdown for insert payloads', () => {

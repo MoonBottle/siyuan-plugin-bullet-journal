@@ -1,4 +1,4 @@
-import type { BlockPatch } from './types';
+import type { BlockPatch } from '@/utils/blockWriter/shared/types';
 
 const PATCH_ORDER: Record<BlockPatch['type'], number> = {
   removeSlashCommand: 0,
