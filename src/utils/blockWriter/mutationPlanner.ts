@@ -1,222 +1,173 @@
-import type { BatchBlockPatch, BlockPatch, BlockWriteContext } from './types';
+import { normalizeUpdateIntent } from './intent';
+import { resolveMutationTarget } from './targetResolver';
+import type {
+  BlockMutationIntent,
+  MutationExecutionPlan,
+  MutationPatchCapability,
+  MutationPatchUnit,
+  MutationPlannerResult,
+} from './types';
 
-export type MutationIntentKind = 'update';
-export type MutationSourceKind = 'protyle-dom' | 'api-kramdown';
-export type MutationCommitKind = 'protyle-update' | 'api-update';
-export type MutationCaretPolicy = 'none' | 'wbr';
-
-export interface MutationPatchUnit {
-  index: number;
-  patch: BlockPatch;
-  intentKind: MutationIntentKind;
+function strongerCaretPolicy(left: 'none' | 'wbr', right: 'none' | 'wbr'): 'none' | 'wbr' {
+  return left === 'wbr' || right === 'wbr' ? 'wbr' : 'none';
 }
 
-interface MutationPatchCapability {
-  unit: MutationPatchUnit;
-  targetBlockId: string;
-  targetKind: 'paragraph' | 'task-list-item' | 'block';
-  sourceKind: MutationSourceKind;
-  commitKind: MutationCommitKind;
-  preferredCaretPolicy: MutationCaretPolicy;
-  canFallbackToApi: boolean;
-}
-
-export interface MutationExecutionPlan {
-  id: string;
-  kind: MutationIntentKind;
-  targetBlockId: string;
-  targetKind: 'paragraph' | 'task-list-item' | 'block';
-  sourceKind: MutationSourceKind;
-  commitKind: MutationCommitKind;
-  caretPolicy: MutationCaretPolicy;
-  caretOwner: boolean;
-  units: MutationPatchUnit[];
-  order: number;
-  atomicBoundary: 'single-commit' | 'split-subplan';
-  canFallbackToApi: boolean;
-}
-
-export interface MutationPlannerResult {
-  plans: MutationExecutionPlan[];
-  reason:
-    | 'single-plan'
-    | 'split-by-target'
-    | 'split-by-source'
-    | 'split-by-commit-kind'
-    | 'split-by-intent-kind';
-}
-
-function resolveBatchTargetBlockId(context: BlockWriteContext, patches: BatchBlockPatch): string {
-  if (patches.some(patch => patch.type === 'setStatus')) {
-    return context.listItemBlockId || context.blockId;
+function patchUnitsForIntent(intent: BlockMutationIntent): MutationPatchUnit[] {
+  if (intent.kind === 'insertAfter') {
+    return [{
+      index: 0,
+      patch: intent.patch,
+      intentKind: 'insertAfter',
+      atomicGroup: 'intent-0',
+    }];
   }
-  return context.blockId;
-}
 
-function resolveTargetKind(context: BlockWriteContext, patches: BatchBlockPatch): 'paragraph' | 'task-list-item' | 'block' {
-  if (patches.some(patch => patch.type === 'setStatus') && context.listItemBlockId) {
-    return 'task-list-item';
-  }
-  return 'paragraph';
-}
-
-function annotateCapability(
-  context: BlockWriteContext,
-  unit: MutationPatchUnit,
-  targetBlockId: string,
-  targetKind: 'paragraph' | 'task-list-item' | 'block',
-): MutationPatchCapability {
-  const hasActiveProtyle = Boolean(context.protyle && context.nodeElement);
-
-  switch (unit.patch.type) {
-    case 'removeSlashCommand':
-      return {
-        unit,
-        targetBlockId,
-        targetKind,
-        sourceKind: 'protyle-dom',
-        commitKind: 'protyle-update',
-        preferredCaretPolicy: 'wbr',
-        canFallbackToApi: false,
-      };
-    case 'setStatus':
-    case 'setHabitDefinition':
-    case 'setHabitRecord':
-    case 'setHabitArchive':
-      return {
-        unit,
-        targetBlockId,
-        targetKind,
-        sourceKind: hasActiveProtyle ? 'protyle-dom' : 'api-kramdown',
-        commitKind: hasActiveProtyle ? 'protyle-update' : 'api-update',
-        preferredCaretPolicy: 'none',
-        canFallbackToApi: true,
-      };
-    default:
-      return {
-        unit,
-        targetBlockId,
-        targetKind,
-        sourceKind: 'api-kramdown',
-        commitKind: 'api-update',
-        preferredCaretPolicy: 'none',
-        canFallbackToApi: false,
-      };
-  }
-}
-
-function strongestCaretPolicy(capabilities: MutationPatchCapability[]): MutationCaretPolicy {
-  return capabilities.some(capability => capability.preferredCaretPolicy === 'wbr') ? 'wbr' : 'none';
-}
-
-function buildPlan(
-  capabilities: MutationPatchCapability[],
-  order: number,
-  reasonBoundary: 'single-commit' | 'split-subplan',
-  overrides?: Partial<Pick<MutationExecutionPlan, 'sourceKind' | 'commitKind' | 'canFallbackToApi'>>,
-): MutationExecutionPlan {
-  const first = capabilities[0];
-  return {
-    id: `plan-${order + 1}`,
-    kind: 'update',
-    targetBlockId: first.targetBlockId,
-    targetKind: first.targetKind,
-    sourceKind: overrides?.sourceKind ?? first.sourceKind,
-    commitKind: overrides?.commitKind ?? first.commitKind,
-    caretPolicy: strongestCaretPolicy(capabilities),
-    caretOwner: false,
-    units: capabilities.map(capability => capability.unit),
-    order,
-    atomicBoundary: reasonBoundary,
-    canFallbackToApi: overrides?.canFallbackToApi ?? capabilities.every(capability => capability.canFallbackToApi),
-  };
-}
-
-export function buildUpdateMutationPlan(
-  context: BlockWriteContext,
-  patches: BatchBlockPatch,
-): MutationPlannerResult {
-  const targetBlockId = resolveBatchTargetBlockId(context, patches);
-  const targetKind = resolveTargetKind(context, patches);
-  const units = patches.map((patch, index): MutationPatchUnit => ({
+  return intent.patches.map((patch, index) => ({
     index,
     patch,
-    intentKind: 'update',
+    intentKind: 'update' as const,
+    atomicGroup: 'intent-0',
   }));
-  const capabilities = units.map(unit => annotateCapability(context, unit, targetBlockId, targetKind));
+}
 
-  const sameTarget = capabilities.every(capability => capability.targetBlockId === capabilities[0]?.targetBlockId);
-  if (!sameTarget) {
-    const plans = capabilities.map((capability, index) =>
-      buildPlan([capability], index, 'split-subplan'),
-    );
-    if (plans.length > 0) {
-      plans[plans.length - 1].caretOwner = true;
-    }
-    return { plans, reason: 'split-by-target' };
-  }
+async function annotateCapabilities(intent: BlockMutationIntent, units: MutationPatchUnit[]): Promise<MutationPatchCapability[]> {
+  const capabilities: MutationPatchCapability[] = [];
 
-  const canMergeToApi = capabilities.every(capability =>
-    capability.sourceKind === 'api-kramdown' || capability.canFallbackToApi,
-  );
-  if (canMergeToApi) {
-    return {
-      plans: [
-        {
-          ...buildPlan(capabilities, 0, 'single-commit', {
-            sourceKind: 'api-kramdown',
-            commitKind: 'api-update',
-            canFallbackToApi: true,
-          }),
-          caretOwner: true,
-        },
-      ],
-      reason: 'single-plan',
-    };
-  }
-
-  const sameSource = capabilities.every(capability => capability.sourceKind === capabilities[0]?.sourceKind);
-  const sameCommit = capabilities.every(capability => capability.commitKind === capabilities[0]?.commitKind);
-  if (sameSource && sameCommit) {
-    return {
-      plans: [
-        {
-          ...buildPlan(capabilities, 0, 'single-commit'),
-          caretOwner: true,
-        },
-      ],
-      reason: 'single-plan',
-    };
-  }
-
-  const grouped: MutationPatchCapability[][] = [];
-  for (const capability of capabilities) {
-    const currentGroup = grouped[grouped.length - 1];
-    if (!currentGroup) {
-      grouped.push([capability]);
+  for (const unit of units) {
+    if (intent.kind === 'insertAfter') {
+      const resolved = await resolveMutationTarget(intent);
+      capabilities.push({
+        unit,
+        sourceKind: 'api-kramdown',
+        commitKind: resolved.commitKind,
+        preferredCaretPolicy: 'none',
+        canSharePlan: true,
+        requiresCurrentDom: false,
+        canFallbackToApi: true,
+      });
       continue;
     }
 
-    const previous = currentGroup[0];
-    if (
-      previous.sourceKind === capability.sourceKind
-      && previous.commitKind === capability.commitKind
-      && previous.targetBlockId === capability.targetBlockId
-    ) {
+    const resolved = await resolveMutationTarget(normalizeUpdateIntent(intent.context, unit.patch));
+    capabilities.push({
+      unit,
+      targetBlockId: resolved.targetBlockId,
+      targetKind: resolved.targetKind,
+      sourceKind: resolved.sourceKind,
+      commitKind: resolved.commitKind,
+      preferredCaretPolicy: unit.patch.type === 'removeSlashCommand' ? 'wbr' : 'none',
+      canSharePlan: true,
+      requiresCurrentDom: resolved.sourceKind === 'protyle-dom',
+      canFallbackToApi: true,
+    });
+  }
+
+  return capabilities;
+}
+
+function mergeReasonForConflict(
+  current: MutationPatchCapability,
+  previous: MutationPatchCapability,
+): MutationPlannerResult['reason'] {
+  if (current.unit.intentKind !== previous.unit.intentKind) {
+    return 'split-by-intent-kind';
+  }
+  if (current.targetBlockId !== previous.targetBlockId) {
+    return 'split-by-target';
+  }
+  if (current.sourceKind !== previous.sourceKind) {
+    return 'split-by-source';
+  }
+  if (current.commitKind !== previous.commitKind) {
+    return 'split-by-commit-kind';
+  }
+  return 'split-by-target';
+}
+
+export async function buildMutationPlans(intent: BlockMutationIntent): Promise<MutationPlannerResult> {
+  const units = patchUnitsForIntent(intent);
+  if (intent.kind === 'insertAfter') {
+    return {
+      reason: 'single-plan',
+      plans: [{
+        id: 'plan-0',
+        kind: 'insertAfter',
+        anchorBlockId: intent.anchorBlockId,
+        sourceKind: 'api-kramdown',
+        commitKind: 'api-insert',
+        caretPolicy: 'none',
+        caretOwner: false,
+        units,
+        order: 0,
+        atomicBoundary: 'single-commit',
+        context: intent.context,
+        resultMode: intent.resultMode,
+      }],
+    };
+  }
+
+  const capabilities = await annotateCapabilities(intent, units);
+  const plans: MutationExecutionPlan[] = [];
+  let currentGroup: MutationPatchCapability[] = [];
+  let reason: MutationPlannerResult['reason'] = 'single-plan';
+
+  const flush = (group: MutationPatchCapability[], order: number, atomicBoundary: 'single-commit' | 'split-subplan') => {
+    if (group.length === 0) {
+      return;
+    }
+    const first = group[0];
+    plans.push({
+      id: `plan-${order}`,
+      kind: 'update',
+      targetBlockId: first.targetBlockId,
+      targetKind: first.targetKind,
+      sourceKind: first.sourceKind,
+      commitKind: first.commitKind,
+      caretPolicy: group.reduce<'none' | 'wbr'>((policy, capability) => {
+        return strongerCaretPolicy(policy, capability.preferredCaretPolicy);
+      }, 'none'),
+      caretOwner: false,
+      units: group.map(capability => capability.unit),
+      order,
+      atomicBoundary,
+      context: intent.context,
+    });
+  };
+
+  for (const capability of capabilities) {
+    const previous = currentGroup.at(-1);
+    if (!previous) {
       currentGroup.push(capability);
       continue;
     }
 
-    grouped.push([capability]);
+    const shareable = capability.unit.intentKind === previous.unit.intentKind
+      && capability.targetBlockId === previous.targetBlockId
+      && capability.sourceKind === previous.sourceKind
+      && capability.commitKind === previous.commitKind;
+
+    if (shareable) {
+      currentGroup.push(capability);
+      continue;
+    }
+
+    reason = reason === 'single-plan' ? mergeReasonForConflict(capability, previous) : reason;
+    flush(currentGroup, plans.length, 'split-subplan');
+    currentGroup = [capability];
   }
 
-  const plans = grouped.map((group, index) => buildPlan(group, index, 'split-subplan'));
-  if (plans.length > 0) {
-    plans[plans.length - 1].caretOwner = true;
+  flush(currentGroup, plans.length, plans.length === 0 ? 'single-commit' : 'split-subplan');
+
+  for (let index = plans.length - 1; index >= 0; index -= 1) {
+    const plan = plans[index];
+    if (plan.kind === 'update' && plan.sourceKind === 'protyle-dom') {
+      plan.caretOwner = true;
+      break;
+    }
   }
 
   return {
     plans,
-    reason: sameSource ? 'split-by-commit-kind' : 'split-by-source',
+    reason,
   };
 }

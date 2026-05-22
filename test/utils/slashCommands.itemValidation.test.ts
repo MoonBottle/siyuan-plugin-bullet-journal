@@ -699,7 +699,10 @@ describe('item-only slash command validation', () => {
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
       { blockId: 'block-task', nodeElement: node, protyle },
-      { type: 'removeSlashCommand', suffix: '📋' },
+      [
+        { type: 'removeSlashCommand' },
+        { type: 'setContent', suffix: '📋' },
+      ],
     );
     expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已标记为任务', 2000, 'info');
   });

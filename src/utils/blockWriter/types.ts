@@ -74,7 +74,6 @@ export type PinnedPatch = {
 
 export type SlashCommandPatch = {
   type: 'removeSlashCommand';
-  suffix?: string;
 };
 
 export type HabitDefinitionPatch = {
@@ -178,6 +177,7 @@ export type LoadedMutationSource =
       currentMarkdown: string;
       currentDomHtml?: string;
       targetElement?: HTMLElement;
+      paragraphElement?: HTMLElement;
       caretSnapshot?: CaretSnapshot;
     }
   | {
@@ -187,6 +187,10 @@ export type LoadedMutationSource =
 export interface CaretRestorePlan {
   policy: 'none' | 'wbr';
   placement?: 'after-inserted-text' | 'after-inline' | 'placeholder-anchor' | 'block-end';
+  fallbackOffset?: {
+    start: number;
+    end: number;
+  };
 }
 export type PreparedMutationPayload =
   | {
@@ -225,4 +229,50 @@ export interface ResolvedBlockTarget {
   targetRaw: string;
   parts: KramdownBlockParts;
   replaceMode: 'whole-block' | 'raw-within-parent';
+}
+
+export interface MutationPatchUnit {
+  index: number;
+  patch: BlockPatch;
+  intentKind: 'update' | 'insertAfter';
+  atomicGroup?: string;
+}
+
+export interface MutationPatchCapability {
+  unit: MutationPatchUnit;
+  targetBlockId?: string;
+  targetKind?: 'paragraph' | 'task-list-item' | 'block';
+  sourceKind: 'protyle-dom' | 'api-kramdown';
+  commitKind: 'protyle-update' | 'api-update' | 'api-insert';
+  preferredCaretPolicy: 'none' | 'wbr';
+  canSharePlan: boolean;
+  requiresCurrentDom: boolean;
+  canFallbackToApi: boolean;
+}
+
+export interface MutationExecutionPlan {
+  id: string;
+  kind: 'update' | 'insertAfter';
+  targetBlockId?: string;
+  targetKind?: 'paragraph' | 'task-list-item' | 'block';
+  sourceKind: 'protyle-dom' | 'api-kramdown';
+  commitKind: 'protyle-update' | 'api-update' | 'api-insert';
+  caretPolicy: 'none' | 'wbr';
+  caretOwner: boolean;
+  units: MutationPatchUnit[];
+  order: number;
+  atomicBoundary: 'single-commit' | 'split-subplan';
+  context?: BlockWriteContext | Partial<BlockWriteContext>;
+  anchorBlockId?: string;
+  resultMode?: 'boolean' | 'operations';
+}
+
+export interface MutationPlannerResult {
+  plans: MutationExecutionPlan[];
+  reason:
+    | 'single-plan'
+    | 'split-by-target'
+    | 'split-by-source'
+    | 'split-by-commit-kind'
+    | 'split-by-intent-kind';
 }

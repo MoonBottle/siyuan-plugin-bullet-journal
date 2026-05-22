@@ -1,5 +1,5 @@
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { focusByOffset, focusByWbr } from './caretController';
+import { focusByOffset, focusByWbr, injectWbrIntoEditable } from './caretController';
 import type { BlockWriteContext, PreparedMutationPayload } from './types';
 
 function formatUpdatedAttr(date = new Date()): string {
@@ -13,28 +13,37 @@ function formatUpdatedAttr(date = new Date()): string {
 }
 
 export async function commitViaProtyle(
-  context: Pick<BlockWriteContext, 'blockId' | 'protyle' | 'nodeElement'>,
+  context: Pick<BlockWriteContext, 'protyle'>,
   payload: Extract<PreparedMutationPayload, { kind: 'update' }>,
 ): Promise<boolean> {
-  const { protyle, nodeElement, blockId } = context;
-  if (!protyle || !nodeElement || payload.targetBlockId !== blockId || typeof protyle.transaction !== 'function') {
+  const { protyle } = context;
+  const targetElement = payload.targetElement;
+  if (!protyle || !targetElement || typeof protyle.transaction !== 'function') {
     return false;
   }
 
-  const oldHTML = payload.oldDomHtml ?? nodeElement.outerHTML;
-  if (!renderMarkdownIntoBlockEditable(protyle, nodeElement, payload.nextMarkdown)) {
+  const oldHTML = payload.oldDomHtml ?? targetElement.outerHTML;
+  if (!renderMarkdownIntoBlockEditable(protyle, targetElement, payload.nextMarkdown)) {
     return false;
   }
 
-  nodeElement.setAttribute('updated', formatUpdatedAttr());
+  if (payload.caretRestorePlan?.policy === 'wbr') {
+    const editable = targetElement.getAttribute('contenteditable') === 'true'
+      ? targetElement
+      : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
+    if (editable) {
+      injectWbrIntoEditable(editable);
+    }
+  }
+
+  targetElement.setAttribute('updated', formatUpdatedAttr());
   protyle.transaction(
-    [{ id: blockId, data: nodeElement.outerHTML, action: 'update' }],
-    [{ id: blockId, data: oldHTML, action: 'update' }],
+    [{ id: payload.targetBlockId, data: targetElement.outerHTML, action: 'update' }],
+    [{ id: payload.targetBlockId, data: oldHTML, action: 'update' }],
   );
 
-  if (payload.caretRestorePlan?.policy === 'wbr' && !focusByWbr(nodeElement)) {
-    const fallbackOffset = payload.targetElement ? undefined : undefined;
-    focusByOffset(nodeElement, fallbackOffset);
+  if (payload.caretRestorePlan?.policy === 'wbr' && !focusByWbr(targetElement)) {
+    focusByOffset(targetElement, payload.caretRestorePlan.fallbackOffset);
   }
 
   return true;

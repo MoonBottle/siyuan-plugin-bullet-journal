@@ -53,8 +53,16 @@ function canUseCurrentProtyleDom(
   intent: Extract<BlockMutationIntent, { kind: 'update' }>,
   targetBlockId: string,
 ): boolean {
-  const nodeBlockId = intent.context.nodeElement?.getAttribute?.('data-node-id');
-  return Boolean(intent.context.protyle && intent.context.nodeElement && nodeBlockId === targetBlockId);
+  const nodeElement = intent.context.nodeElement;
+  if (!intent.context.protyle || !nodeElement) {
+    return false;
+  }
+
+  if (nodeElement.getAttribute?.('data-node-id') === targetBlockId) {
+    return true;
+  }
+
+  return Boolean(nodeElement.closest?.(`[data-node-id="${targetBlockId}"]`));
 }
 
 export async function resolveMutationTarget(intent: BlockMutationIntent): Promise<ResolvedMutationPlan> {

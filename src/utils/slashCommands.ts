@@ -49,7 +49,6 @@ function removeSlashCommandViaWriter(
   nodeElement: HTMLElement | null | undefined,
   options?: {
     blockId?: string;
-    suffix?: string;
   },
 ): Promise<boolean> {
   const blockId = options?.blockId || nodeElement?.getAttribute('data-node-id');
@@ -58,9 +57,7 @@ function removeSlashCommandViaWriter(
   }
   return writeBlock(
     { blockId, nodeElement, protyle },
-    options?.suffix
-      ? { type: 'removeSlashCommand', suffix: options.suffix }
-      : { type: 'removeSlashCommand' },
+    { type: 'removeSlashCommand' },
   );
 }
 
@@ -756,7 +753,13 @@ export function getActionHandler(
           showMessage(t('slash').alreadyMarkedTask, 2000, 'info');
           return;
         }
-        void writeBlock({ blockId, nodeElement, protyle }, { type: 'removeSlashCommand', suffix: taskTag });
+        void writeBlock(
+          { blockId, nodeElement, protyle },
+          [
+            { type: 'removeSlashCommand' },
+            { type: 'setContent', suffix: taskTag },
+          ],
+        );
         showMessage(t('slash').markTaskSuccess, 2000, 'info');
       };
     case 'viewDetail':

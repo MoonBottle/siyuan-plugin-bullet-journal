@@ -405,7 +405,7 @@ async function persistDateContent(
   return true;
 }
 
-async function resolveDatePatchSource(blockId: string): Promise<DatePatchSource | null> {
+export async function resolveDatePatchSource(blockId: string): Promise<DatePatchSource | null> {
   let kramdown: string | null = null;
   let targetBlockId = blockId;
   let targetItemBlockRaw: string | null = null;
