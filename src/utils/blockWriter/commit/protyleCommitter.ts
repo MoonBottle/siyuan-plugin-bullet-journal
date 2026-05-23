@@ -1,3 +1,15 @@
+/**
+ * Protyle 提交器：通过 SiYuan 的 protyle.transaction 机制提交变更
+ *
+ * Transaction 机制：
+ * - do 操作：新 DOM HTML（含 <wbr> 标记）
+ * - undo 操作：旧 DOM HTML（用于撤销）
+ * protyle.transaction 会将变更写入内核并更新编辑器视图
+ *
+ * 光标恢复：
+ * 1. 优先通过 <wbr> 标记定位（focusByWbr）
+ * 2. wbr 定位失败时通过 fallbackOffset 定位（focusByOffset）
+ */
 import { focusByOffset, focusByWbr } from '@/utils/blockWriter/shared/caretController';
 import type { BlockWriteContext, PreparedMutationPayload } from '@/utils/blockWriter/shared/types';
 
@@ -86,6 +98,7 @@ function syncTaskActionIcon(targetElement: HTMLElement, renderedElement: HTMLEle
   }
 }
 
+/** 将渲染后的 DOM HTML 应用到目标元素：同步属性、替换内容、更新任务图标 */
 function applyTransactionDomHtml(targetElement: HTMLElement, transactionDomHtml: string): boolean {
   const template = document.createElement('template');
   template.innerHTML = transactionDomHtml.trim();
@@ -108,6 +121,13 @@ function applyTransactionDomHtml(targetElement: HTMLElement, transactionDomHtml:
   return true;
 }
 
+/**
+ * 通过 protyle transaction 提交更新：
+ * 1. 将 transactionDomHtml 应用到目标元素
+ * 2. 调用 protyle.transaction 提交 do/undo 操作
+ * 3. 恢复光标位置
+ * 返回 false 表示 protyle 不可用或应用失败，调用方应回退到 API 提交
+ */
 export async function commitViaProtyle(
   context: Pick<BlockWriteContext, 'protyle'>,
   payload: Extract<PreparedMutationPayload, { kind: 'update' }>,

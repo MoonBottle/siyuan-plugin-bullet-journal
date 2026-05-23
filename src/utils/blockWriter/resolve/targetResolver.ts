@@ -1,8 +1,19 @@
+/**
+ * 目标解析器：确定变更的实际目标块、数据来源和提交方式
+ *
+ * DOM-first 策略：优先使用 protyle 中的 DOM 作为数据源（保留内联样式和光标），
+ * 仅在 DOM 不可用时回退到 API 获取 kramdown。
+ *
+ * 日期 patch 的特殊处理：
+ * 日期标记可能位于父文档中而非当前块，需要向上查找包含日期的父块作为源，
+ * 同时记录 originalBlockId → sourceBlockId 的映射关系。
+ */
 import { getBlockByID, getBlockKramdown } from '@/api';
 import { parseKramdownBlocks } from '@/parser/core';
 import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers';
 import type { BlockMutationIntent, DatePatchSourceContext, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
 
+/** 日期 patch 源解析结果 */
 export interface DatePatchSource {
   originalBlockId: string;
   kramdown: string;
@@ -16,6 +27,11 @@ function isListItemLine(line: string): boolean {
   return /^\s*([-]|\d+\.)\s+/.test(line);
 }
 
+/**
+ * 解析日期 patch 的源块：向上查找包含日期标记的父文档
+ * 如果父文档中包含日期标记，则用父文档 kramdown 作为源；
+ * 否则回退到当前块自身的 kramdown
+ */
 export async function resolveDatePatchSource(blockId: string): Promise<DatePatchSource | null> {
   let kramdown: string | null = null;
   let targetBlockId = blockId;
@@ -89,6 +105,7 @@ function isTaskListNode(block: any): boolean {
   return (type === 'NodeListItem' || type === 'i') && subtypeOf(block) === 't';
 }
 
+/** 解析 update 意图的实际目标块 ID：日期 patch 取日期源，状态/优先级/内容 patch 向上查找任务列表祖先 */
 async function resolveUpdateTargetBlockId(intent: Extract<BlockMutationIntent, { kind: 'update' }>): Promise<string> {
   const datePatchSource = await resolveDateSourceContext(intent);
   if (datePatchSource) {
@@ -123,6 +140,7 @@ async function resolveUpdateTargetBlockId(intent: Extract<BlockMutationIntent, {
   return intent.context.listItemBlockId || startBlockId;
 }
 
+/** 构建 DatePatchSourceContext：仅当意图包含 addDate patch 时才解析 */
 async function resolveDateSourceContext(
   intent: Extract<BlockMutationIntent, { kind: 'update' }>,
 ): Promise<DatePatchSourceContext | null> {
@@ -157,6 +175,7 @@ function resolveTargetKind(block: any): 'paragraph' | 'task-list-item' | 'block'
   return 'block';
 }
 
+/** 判断当前 protyle DOM 是否可用作数据源：需要 protyle 实例和匹配的 nodeElement */
 function canUseCurrentProtyleDom(
   intent: Extract<BlockMutationIntent, { kind: 'update' }>,
   targetBlockId: string,
@@ -174,6 +193,7 @@ function canUseCurrentProtyleDom(
   return Boolean(nodeElement.closest?.(`[data-node-id="${targetBlockId}"]`));
 }
 
+/** 目标解析主入口：根据意图类型和 patch 内容确定目标块、来源和提交方式 */
 export async function resolveMutationTarget(intent: BlockMutationIntent): Promise<ResolvedMutationPlan> {
   if (intent.kind === 'insertAfter') {
     return {

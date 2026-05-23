@@ -1,3 +1,12 @@
+/**
+ * 变更执行引擎：加载源 → 渲染 → 提交
+ *
+ * 执行模型：
+ * - 单计划：loadSource → render → commit（protyle 优先，API 兜底）
+ * - 多计划：顺序执行，任一计划失败则中断
+ *
+ * API fallback 策略：protyle 提交失败时，重新以 api-kramdown 来源加载源并提交
+ */
 import { commitViaApi } from '@/utils/blockWriter/commit/apiCommitter';
 import { commitViaProtyle } from '@/utils/blockWriter/commit/protyleCommitter';
 import { prepareInsertPayload } from '@/utils/blockWriter/render/insertRenderer';
@@ -9,6 +18,7 @@ function hasRemoveSlashPatch(plan: Extract<ResolvedMutationPlan, { kind: 'update
   return plan.patches.some(patch => patch.type === 'removeSlashCommand');
 }
 
+/** 执行单个变更计划：加载源 → 渲染载荷 → 提交（含 API fallback） */
 export async function executePlan(plan: MutationExecutionPlan): Promise<boolean | IResdoOperations[] | null> {
   const resolvedPlan = plan.resolvedPlan;
   const source = await loadMutationSource(resolvedPlan);
@@ -70,6 +80,7 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
   return await commitViaApi(payload);
 }
 
+/** 顺序执行多个计划，任一失败则中断并返回失败结果 */
 export async function executePlans(plans: MutationExecutionPlan[]): Promise<boolean | IResdoOperations[] | null> {
   let lastResult: boolean | IResdoOperations[] | null = true;
   for (const plan of plans) {

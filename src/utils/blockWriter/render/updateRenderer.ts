@@ -1,3 +1,12 @@
+/**
+ * 更新渲染器：将 patch 应用到 markdown，生成最终提交载荷
+ *
+ * 核心流程：
+ * 1. Markdown Transform — 逐个应用 patch 到源 markdown，生成 nextMarkdown
+ * 2. DOM Render — 将 nextMarkdown 渲染为 DOM HTML（用于 API 提交）
+ * 3. Transaction Render — 在克隆 DOM 上渲染并注入 <wbr>（用于 protyle transaction）
+ * 4. Caret Plan — 根据光标策略生成光标恢复计划
+ */
 import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer';
 import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
 import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
@@ -30,6 +39,7 @@ function findEditableElement(element?: HTMLElement): HTMLElement | null {
     : element.querySelector('[contenteditable="true"]') as HTMLElement | null;
 }
 
+/** 根据光标快照的 fallbackOffset 计算光标所在行索引 */
 function resolveCaretLineIndex(source: Extract<LoadedMutationSource, { kind: 'update' }>): number | undefined {
   const fallbackStart = source.caretSnapshot?.policy === 'wbr-first'
     ? source.caretSnapshot.fallbackOffset?.start
@@ -47,6 +57,7 @@ function resolveCaretLineIndex(source: Extract<LoadedMutationSource, { kind: 'up
   return textContent.slice(0, safeOffset).split('\n').length - 1;
 }
 
+/** 构建光标恢复计划：根据 caretPolicy 和光标快照决定恢复策略 */
 function buildCaretRestorePlan(
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
   source: Extract<LoadedMutationSource, { kind: 'update' }>,
@@ -70,6 +81,7 @@ function buildCaretRestorePlan(
   };
 }
 
+/** 根据 CaretRestorePlan 计算 <wbr> 应注入的文本偏移量 */
 function resolveWbrOffset(
   editable: HTMLElement,
   plan: CaretRestorePlan,
@@ -116,6 +128,7 @@ function resolvePrimaryMarkdownLine(markdown: string): string {
   return lines.find(line => line.trim().length > 0 && !line.trim().startsWith('{:')) ?? '';
 }
 
+/** 同步任务列表的完成状态到 DOM（class、data-task、图标） */
 function syncTaskListStatusFromMarkdown(targetElement: HTMLElement, markdown: string): void {
   const listItemElement = targetElement.matches('[data-type="NodeListItem"][data-subtype="t"]')
     ? targetElement
@@ -139,6 +152,11 @@ function syncTaskListStatusFromMarkdown(targetElement: HTMLElement, markdown: st
   }
 }
 
+/**
+ * 构建 protyle transaction 所需的 DOM HTML：
+ * 克隆目标元素 → 渲染 markdown → 同步任务状态 → 注入 <wbr>
+ * 返回的 HTML 将作为 protyle.transaction 的 do 操作数据
+ */
 function buildProtyleTransactionHtml(
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
   source: Extract<LoadedMutationSource, { kind: 'update' }>,
@@ -167,6 +185,10 @@ function buildProtyleTransactionHtml(
   return draftTarget.outerHTML;
 }
 
+/**
+ * 准备更新载荷：应用 patch 到源 markdown，生成 DOM HTML、transaction HTML 和光标恢复计划
+ * removeSlashCommand patch 不参与 markdown 变换（已在源加载阶段处理）
+ */
 export function prepareUpdatePayload(
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
   source: Extract<LoadedMutationSource, { kind: 'update' }>,

@@ -1,3 +1,15 @@
+/**
+ * 源加载器：根据计划的数据来源加载当前块内容
+ *
+ * 两种 source：
+ * - protyle-dom：从当前 protyle DOM 中提取 markdown，保留内联样式和光标位置
+ * - api-kramdown：从 SiYuan API 获取 kramdown 文本
+ *
+ * Slash cleanup draft 机制：
+ * 当 patch 包含 removeSlashCommand 时，先克隆 DOM 节点，
+ * 在克隆副本上删除斜杠触发文本，再从清理后的副本提取 markdown，
+ * 避免斜杠文本残留到最终内容中。
+ */
 import { getBlockKramdown } from '@/api';
 import { blockElementToMarkdownContent } from '@/utils/protyleWriterDom';
 import { captureCaretSnapshot } from '@/utils/blockWriter/shared/caretController';
@@ -55,6 +67,10 @@ function previewText(value: string | null | undefined): string {
   return (value ?? '').replace(/\s+/gu, ' ').slice(0, 160);
 }
 
+/**
+ * 创建斜杠清理草稿：克隆目标元素，在副本上删除斜杠触发文本
+ * 返回清理后的副本；若无斜杠 patch 或清理失败则返回原始元素
+ */
 function createSlashCleanedDraft(
   targetElement: HTMLElement,
   plan: Extract<ResolvedMutationPlan, { kind: 'update' }>,
@@ -128,6 +144,7 @@ function createSlashCleanedDraft(
   return draftTarget;
 }
 
+/** 加载变更源：根据计划的 sourceKind 从 protyle DOM 或 API 获取当前内容 */
 export async function loadMutationSource(plan: ResolvedMutationPlan): Promise<LoadedMutationSource> {
   if (plan.kind === 'insertAfter') {
     return {
