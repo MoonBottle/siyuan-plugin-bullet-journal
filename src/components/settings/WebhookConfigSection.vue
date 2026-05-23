@@ -32,12 +32,12 @@
             <div class="custom-item-actions">
               <SyButton
                 icon="iconEdit"
-                :aria-label="t('common').edit"
+                :aria-label="(t('common') as any).edit ?? '编辑'"
                 @click="editChannel(channel)"
               />
               <SyButton
                 icon="iconTrashcan"
-                :aria-label="t('common').delete"
+                :aria-label="(t('common') as any).delete ?? '删除'"
                 @click="deleteChannel(channel.id)"
               />
               <SySwitch v-model="channel.enabled" />

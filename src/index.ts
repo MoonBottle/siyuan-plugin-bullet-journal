@@ -2168,16 +2168,12 @@ export default class TaskAssistantPlugin extends Plugin {
 
         // 只处理 update 操作
         if (op.action === "update" && op.id && typeof op.data === "string") {
-          // 检测方式1：任务列表勾选完成（protyle-task--done 类名）
           const hasDoneClass = op.data.includes("protyle-task--done");
-          // 检测方式2：直接添加完成标记（✅、#done、#已完成）
           const hasDoneMarker =
             op.data.includes("✅") ||
             op.data.includes("#done") ||
             op.data.includes("#已完成");
 
-          // 关键：检查 undoOperations 中是否已经有完成标记
-          // 如果 undoOperations 中已有，说明这不是新的完成动作
           const undoOp = transaction.undoOperations?.find(
             (u: any) => u.id === op.id && u.action === "update",
           );
@@ -2187,7 +2183,6 @@ export default class TaskAssistantPlugin extends Plugin {
             undoOp?.data?.includes("#done") ||
             undoOp?.data?.includes("#已完成");
 
-          // 新完成动作：do 有完成标记，且 undo 没有完成标记
           const isNewCompletion =
             (hasDoneClass && !hadDoneClass) ||
             (hasDoneMarker && !hadDoneMarker);
@@ -2204,6 +2199,28 @@ export default class TaskAssistantPlugin extends Plugin {
             "isNewCompletion:",
             isNewCompletion,
           );
+
+          // [DIAG] 诊断日志：钉住已完成重复事项被斜杠命令误触发的根因
+          if (isNewCompletion) {
+            const hasUndoOp = Boolean(undoOp);
+            const undoOpId = undoOp?.id ?? "N/A";
+            const doDataPreview = op.data.substring(0, 300);
+            const undoDataPreview = undoOp?.data?.substring?.(0, 300) ?? "NO_UNDO_DATA";
+            console.log(
+              "[Task Assistant][DIAG] isNewCompletion=true details:",
+              JSON.stringify({
+                opId: op.id,
+                hasUndoOp,
+                undoOpId,
+                hasDoneClass,
+                hadDoneClass,
+                hasDoneMarker,
+                hadDoneMarker,
+                doDataPreview,
+                undoDataPreview,
+              }),
+            );
+          }
 
           if (isNewCompletion) {
             console.log(
@@ -2319,11 +2336,18 @@ export default class TaskAssistantPlugin extends Plugin {
       return;
     }
 
+    // [DIAG] 诊断日志：记录 store 中 item 的真实状态
     console.log(
-      "[Task Assistant] Found item:",
-      item.content,
-      "repeatRule:",
-      item.repeatRule,
+      "[Task Assistant][DIAG] doHandleTaskListCompletion item state:",
+      JSON.stringify({
+        contentBlockId,
+        listItemBlockId,
+        itemContent: item.content?.substring(0, 80),
+        itemStatus: item.status,
+        itemRepeatRule: item.repeatRule,
+        itemDate: item.date,
+        itemBlockId: item.blockId,
+      }),
     );
 
     if (!item.repeatRule) {
@@ -2334,8 +2358,20 @@ export default class TaskAssistantPlugin extends Plugin {
       return;
     }
 
-    // 检查是否允许创建下一次（检查结束条件）
-    if (!shouldCreateNextOccurrence({ ...item, status: "completed" })) {
+    // [DIAG] 诊断日志：记录 shouldCreateNextOccurrence 的输入和结果
+    const itemWithCompletedStatus = { ...item, status: "completed" };
+    const canCreateNext = shouldCreateNextOccurrence(itemWithCompletedStatus);
+    console.log(
+      "[Task Assistant][DIAG] shouldCreateNextOccurrence check:",
+      JSON.stringify({
+        originalItemStatus: item.status,
+        forcedStatus: "completed",
+        repeatRule: item.repeatRule,
+        canCreateNext,
+      }),
+    );
+
+    if (!canCreateNext) {
       console.log(
         "[Task Assistant] Cannot create next occurrence for:",
         item.content,
