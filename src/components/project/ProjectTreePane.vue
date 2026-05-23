@@ -506,5 +506,6 @@ function handleSelectItem(itemId: string) {
 
 .project-tree-pane__tree {
   min-height: 0;
+  outline: none;
 }
 </style>
