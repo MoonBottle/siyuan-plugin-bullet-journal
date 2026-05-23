@@ -58,20 +58,26 @@
     <div
       v-if="showEditDialog"
       class="b3-dialog"
-      @click.self="showEditDialog = false"
     >
+      <div class="b3-dialog__scrim" @click="closeDialog"></div>
       <div class="b3-dialog__container">
         <div class="b3-dialog__header">
-          <div class="b3-dialog__header-title">
-            {{ t('settings').webhook.editChannel }}
-          </div>
+          <div class="b3-dialog__title">{{ t('settings').webhook.editChannel }}</div>
+          <svg class="b3-dialog__close" @click="closeDialog"><use xlink:href="#iconCloseRound"></use></svg>
         </div>
-        <div class="b3-dialog__body">
+        <div class="b3-dialog__content">
           <WebhookChannelEditForm
+            ref="formRef"
             :channel="editingChannel"
-            @save="saveChannel"
-            @cancel="showEditDialog = false"
           />
+        </div>
+        <div class="b3-dialog__action">
+          <button class="b3-button b3-button--cancel" @click="closeDialog">
+            {{ t('common').cancel }}
+          </button>
+          <button class="b3-button b3-button--text form-save-btn" @click="saveFromDialog">
+            {{ t('common').save }}
+          </button>
         </div>
       </div>
     </div>
@@ -105,6 +111,7 @@ const localWebhook = ref<WebhookConfig>(
 
 const showEditDialog = ref(false)
 const editingChannel = ref<WebhookChannel>(createEmptyChannel())
+const formRef = ref<InstanceType<typeof WebhookChannelEditForm> | null>(null)
 
 watch(
   () => props.webhook,
@@ -145,6 +152,10 @@ function getTypeLabel(type: string): string {
   return labels[type] || type
 }
 
+function closeDialog() {
+  showEditDialog.value = false
+}
+
 function addChannel() {
   editingChannel.value = createEmptyChannel()
   showEditDialog.value = true
@@ -155,12 +166,14 @@ function editChannel(channel: WebhookChannel) {
   showEditDialog.value = true
 }
 
-function saveChannel(channel: WebhookChannel) {
-  const idx = localWebhook.value.channels.findIndex(c => c.id === channel.id)
+function saveFromDialog() {
+  if (!formRef.value) return
+  const result = formRef.value.buildResult()
+  const idx = localWebhook.value.channels.findIndex(c => c.id === result.id)
   if (idx >= 0) {
-    localWebhook.value.channels[idx] = channel
+    localWebhook.value.channels[idx] = result
   } else {
-    localWebhook.value.channels.push(channel)
+    localWebhook.value.channels.push(result)
   }
   showEditDialog.value = false
 }
@@ -227,5 +240,17 @@ function deleteChannel(id: string) {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.b3-dialog {
+  z-index: 100;
+}
+
+.b3-dialog__container {
+  width: 520px;
+}
+
+.form-save-btn {
+  margin-left: 3px;
 }
 </style>

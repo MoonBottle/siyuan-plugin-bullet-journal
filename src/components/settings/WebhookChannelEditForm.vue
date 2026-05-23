@@ -65,33 +65,18 @@
         />
       </div>
     </div>
-
-    <div class="form-actions">
-      <SyButton @click="$emit('cancel')">
-        {{ t('common').cancel }}
-      </SyButton>
-      <SyButton type="primary" @click="handleSave">
-        {{ t('common').confirm }}
-      </SyButton>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { t } from '@/i18n'
 import type { WebhookChannel } from '@/settings/types'
 import SyInput from '@/components/SiyuanTheme/SyInput.vue'
 import SySelect from '@/components/SiyuanTheme/SySelect.vue'
-import SyButton from '@/components/SiyuanTheme/SyButton.vue'
 
 const props = defineProps<{
   channel: WebhookChannel
-}>()
-
-const emit = defineEmits<{
-  save: [channel: WebhookChannel]
-  cancel: []
 }>()
 
 const customMethod = ref(props.channel.customTemplate?.method || 'POST')
@@ -125,7 +110,7 @@ function toggleEvent(evt: 'reminder' | 'pomodoro' | 'break' | 'habit') {
   }
 }
 
-function handleSave() {
+function buildResult(): WebhookChannel {
   const result: WebhookChannel = {
     ...props.channel,
     events: [...props.channel.events],
@@ -139,8 +124,10 @@ function handleSave() {
   } else {
     delete result.customTemplate
   }
-  emit('save', result)
+  return result
 }
+
+defineExpose({ buildResult })
 </script>
 
 <style scoped lang="scss">
@@ -196,12 +183,5 @@ function handleSave() {
     margin: 0 0 12px;
     font-size: 14px;
   }
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 8px;
 }
 </style>
