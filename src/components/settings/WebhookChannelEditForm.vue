@@ -218,15 +218,9 @@ async function sendTestMessage() {
       'application/json',
     )
 
-    if (resp && (resp as any).code === 0) {
-      const data = (resp as any).data
-      if (data && data.status >= 400) {
-        testResult.value = 'failed'
-        showMessage(t('settings').webhook.testFailed, 3000, 'error')
-      } else {
-        testResult.value = 'success'
-        showMessage(t('settings').webhook.testSuccess, 3000, 'info')
-      }
+    if (resp && resp.status && resp.status < 400) {
+      testResult.value = 'success'
+      showMessage(t('settings').webhook.testSuccess, 3000, 'info')
     } else {
       testResult.value = 'failed'
       showMessage(t('settings').webhook.testFailed, 3000, 'error')
