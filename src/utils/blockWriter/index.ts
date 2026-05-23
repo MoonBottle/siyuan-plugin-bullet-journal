@@ -1,12 +1,8 @@
 import type { BatchBlockPatch, BlockPatch, BlockWriteContext, InsertableBlockPatch } from '@/utils/blockWriter/shared/types';
-import { commitViaApi } from '@/utils/blockWriter/commit/apiCommitter';
-import { commitViaProtyle } from '@/utils/blockWriter/commit/protyleCommitter';
 import { normalizeInsertIntent, normalizeUpdateIntent } from '@/utils/blockWriter/intent/intent';
 import { buildMutationPlans } from '@/utils/blockWriter/planner/mutationPlanner';
-import { prepareInsertPayload } from '@/utils/blockWriter/render/insertRenderer';
-import { loadMutationSource } from '@/utils/blockWriter/source/sourceLoader';
-import { prepareUpdatePayload } from '@/utils/blockWriter/render/updateRenderer';
-import type { BlockMutationIntent, MutationExecutionPlan } from '@/utils/blockWriter/shared/types';
+import { executePlans } from '@/utils/blockWriter/runtime/mutationExecutor';
+import type { BlockMutationIntent } from '@/utils/blockWriter/shared/types';
 
 export type {
   BatchBlockPatch,
@@ -29,99 +25,6 @@ export type {
   SlashCommandPatch,
   StatusPatch,
 } from '@/utils/blockWriter/shared/types';
-
-function hasRemoveSlashPatch(patches: Array<{ type: string }>): boolean {
-  return patches.some(patch => patch.type === 'removeSlashCommand');
-}
-
-async function executePlan(plan: MutationExecutionPlan): Promise<boolean | IResdoOperations[] | null> {
-  if (plan.kind === 'insertAfter') {
-    const resolvedPlan = {
-      kind: 'insertAfter' as const,
-      anchorBlockId: plan.anchorBlockId!,
-      commitKind: plan.commitKind,
-      preferDataType: 'dom' as const,
-      fallbackDataType: 'markdown' as const,
-      patch: plan.units[0].patch as InsertableBlockPatch,
-      context: plan.context as Partial<BlockWriteContext> | undefined,
-      resultMode: plan.resultMode ?? 'boolean',
-    };
-    const source = await loadMutationSource(resolvedPlan);
-    const payload = prepareInsertPayload(resolvedPlan, source);
-    return await commitViaApi(payload);
-  }
-
-  const resolvedPlan = {
-    kind: 'update' as const,
-    targetBlockId: plan.targetBlockId!,
-    targetKind: plan.targetKind!,
-    sourceKind: plan.sourceKind,
-    sourceBlockId: plan.sourceBlockId,
-    commitKind: plan.commitKind,
-    preferDataType: 'dom' as const,
-    fallbackDataType: 'markdown' as const,
-    context: plan.context as BlockWriteContext,
-    patches: plan.units.map(unit => unit.patch),
-    datePatchSource: plan.datePatchSource,
-  };
-  const source = await loadMutationSource(resolvedPlan);
-  const payload = prepareUpdatePayload(resolvedPlan, source, {
-    caretOwner: plan.caretOwner,
-    caretPolicy: plan.caretPolicy,
-  });
-  if (hasRemoveSlashPatch(resolvedPlan.patches)) {
-    console.log('[BWDBG][executePlan] slash plan', {
-      planId: plan.id,
-      targetBlockId: resolvedPlan.targetBlockId,
-      sourceBlockId: resolvedPlan.sourceBlockId,
-      sourceKind: resolvedPlan.sourceKind,
-      commitKind: resolvedPlan.commitKind,
-      patches: resolvedPlan.patches.map(patch => patch.type),
-    });
-  }
-
-  if (resolvedPlan.commitKind === 'protyle-update') {
-    const ok = await commitViaProtyle(resolvedPlan.context, payload);
-    if (ok) {
-      if (hasRemoveSlashPatch(resolvedPlan.patches)) {
-        console.log('[BWDBG][executePlan] protyle commit success', {
-          planId: plan.id,
-          targetBlockId: resolvedPlan.targetBlockId,
-        });
-      }
-      return true;
-    }
-    if (hasRemoveSlashPatch(resolvedPlan.patches)) {
-      console.log('[BWDBG][executePlan] protyle commit failed', {
-        planId: plan.id,
-        targetBlockId: resolvedPlan.targetBlockId,
-        fallback: 'api-reload-source',
-      });
-    }
-    const apiFallbackPlan = {
-      ...resolvedPlan,
-      sourceKind: 'api-kramdown' as const,
-      sourceBlockId: resolvedPlan.targetBlockId,
-      commitKind: 'api-update' as const,
-    };
-    const apiFallbackSource = await loadMutationSource(apiFallbackPlan);
-    const apiFallbackPayload = prepareUpdatePayload(apiFallbackPlan, apiFallbackSource);
-    return await commitViaApi(apiFallbackPayload);
-  }
-
-  return await commitViaApi(payload);
-}
-
-async function executePlans(plans: MutationExecutionPlan[]): Promise<boolean | IResdoOperations[] | null> {
-  let lastResult: boolean | IResdoOperations[] | null = true;
-  for (const plan of plans) {
-    lastResult = await executePlan(plan);
-    if (lastResult !== true && !Array.isArray(lastResult)) {
-      return lastResult;
-    }
-  }
-  return lastResult;
-}
 
 async function executeMutationIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {
   const plannerResult = await buildMutationPlans(intent);

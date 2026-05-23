@@ -1,6 +1,4 @@
-import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
-import { focusByOffset, focusByWbr, injectWbrIntoEditable } from '@/utils/blockWriter/shared/caretController';
-import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers';
+import { focusByOffset, focusByWbr } from '@/utils/blockWriter/shared/caretController';
 import type { BlockWriteContext, PreparedMutationPayload } from '@/utils/blockWriter/shared/types';
 
 function formatUpdatedAttr(date = new Date()): string {
@@ -11,50 +9,6 @@ function formatUpdatedAttr(date = new Date()): string {
   const mi = String(date.getMinutes()).padStart(2, '0');
   const s = String(date.getSeconds()).padStart(2, '0');
   return `${y}${mo}${d}${h}${mi}${s}`;
-}
-
-function resolveWbrOffset(
-  editable: HTMLElement,
-  plan: Extract<PreparedMutationPayload, { kind: 'update' }>['caretRestorePlan'],
-): number | undefined {
-  const textContent = editable.textContent ?? '';
-  if (!plan) {
-    return undefined;
-  }
-
-  if (typeof plan.targetOffset === 'number') {
-    return Math.max(0, Math.min(plan.targetOffset, textContent.length));
-  }
-
-  if (typeof plan.lineIndex === 'number') {
-    const lines = textContent.split('\n');
-    const safeLineIndex = Math.max(0, Math.min(plan.lineIndex, Math.max(0, lines.length - 1)));
-    let lineStartOffset = 0;
-    for (let index = 0; index < safeLineIndex; index += 1) {
-      lineStartOffset += lines[index].length + 1;
-    }
-    const targetLine = lines[safeLineIndex] ?? '';
-
-    if (plan.anchorText) {
-      const anchorIndex = targetLine.lastIndexOf(plan.anchorText);
-      if (anchorIndex >= 0) {
-        return lineStartOffset + anchorIndex + plan.anchorText.length;
-      }
-    }
-
-    if (plan.placement === 'line-end') {
-      return lineStartOffset + targetLine.length;
-    }
-  }
-
-  if (plan.anchorText) {
-    const anchorIndex = textContent.lastIndexOf(plan.anchorText);
-    if (anchorIndex >= 0) {
-      return anchorIndex + plan.anchorText.length;
-    }
-  }
-
-  return textContent.length;
 }
 
 function previewText(value: string | null | undefined): string {
@@ -94,27 +48,64 @@ function resolvePrimaryMarkdownLine(markdown: string): string {
   return lines.find(line => line.trim().length > 0 && !line.trim().startsWith('{:')) ?? '';
 }
 
-function syncTaskListStatusFromMarkdown(targetElement: HTMLElement, markdown: string): void {
-  const listItemElement = targetElement.matches('[data-type="NodeListItem"][data-subtype="t"]')
-    ? targetElement
-    : targetElement.closest('[data-type="NodeListItem"][data-subtype="t"]') as HTMLElement | null;
-  if (!listItemElement) {
+function findEditableElement(element: HTMLElement): HTMLElement | null {
+  return element.getAttribute('contenteditable') === 'true'
+    ? element
+    : element.querySelector('[contenteditable="true"]') as HTMLElement | null;
+}
+
+function syncElementAttributes(targetElement: HTMLElement, renderedElement: HTMLElement): void {
+  const nextAttributeNames = new Set(renderedElement.getAttributeNames());
+  for (const attributeName of targetElement.getAttributeNames()) {
+    if (!nextAttributeNames.has(attributeName)) {
+      targetElement.removeAttribute(attributeName);
+    }
+  }
+  for (const attributeName of nextAttributeNames) {
+    const attributeValue = renderedElement.getAttribute(attributeName);
+    if (attributeValue === null) {
+      targetElement.removeAttribute(attributeName);
+      continue;
+    }
+    targetElement.setAttribute(attributeName, attributeValue);
+  }
+}
+
+function syncTaskActionIcon(targetElement: HTMLElement, renderedElement: HTMLElement): void {
+  const targetUse = targetElement.querySelector('.protyle-action--task use');
+  const renderedUse = renderedElement.querySelector('.protyle-action--task use');
+  if (!targetUse || !renderedUse) {
     return;
   }
 
-  const primaryLine = resolvePrimaryMarkdownLine(markdown);
-  if (!isTaskListFormat(primaryLine)) {
-    return;
+  const href = renderedUse.getAttribute('href')
+    ?? renderedUse.getAttribute('xlink:href')
+    ?? renderedUse.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+  if (href) {
+    targetUse.setAttributeNS('http://www.w3.org/1999/xlink', 'href', href);
+  }
+}
+
+function applyTransactionDomHtml(targetElement: HTMLElement, transactionDomHtml: string): boolean {
+  const template = document.createElement('template');
+  template.innerHTML = transactionDomHtml.trim();
+  const renderedElement = template.content.firstElementChild as HTMLElement | null;
+  if (!renderedElement) {
+    return false;
   }
 
-  const isDone = /\[\s*[xX]\s*\]/.test(primaryLine);
-  listItemElement.classList.toggle('protyle-task--done', isDone);
-  listItemElement.setAttribute('data-task', isDone ? 'X' : ' ');
-
-  const useEl = listItemElement.querySelector('.protyle-action--task use');
-  if (useEl) {
-    useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', isDone ? '#iconCheck' : '#iconUncheck');
+  syncElementAttributes(targetElement, renderedElement);
+  const targetEditable = findEditableElement(targetElement);
+  const renderedEditable = findEditableElement(renderedElement);
+  if (targetEditable && renderedEditable) {
+    syncElementAttributes(targetEditable, renderedEditable);
+    targetEditable.innerHTML = renderedEditable.innerHTML;
+    syncTaskActionIcon(targetElement, renderedElement);
+    return true;
   }
+
+  targetElement.innerHTML = renderedElement.innerHTML;
+  return true;
 }
 
 export async function commitViaProtyle(
@@ -123,11 +114,12 @@ export async function commitViaProtyle(
 ): Promise<boolean> {
   const { protyle } = context;
   const targetElement = payload.targetElement;
-  if (!protyle || !targetElement || typeof protyle.transaction !== 'function') {
+  if (!protyle || !targetElement || typeof protyle.transaction !== 'function' || !payload.transactionDomHtml) {
     console.log('[BWDBG][protyleCommitter] unavailable', {
       hasProtyle: Boolean(protyle),
       hasTargetElement: Boolean(targetElement),
       hasTransaction: typeof protyle?.transaction === 'function',
+      hasTransactionDomHtml: Boolean(payload.transactionDomHtml),
       targetBlockId: payload.targetBlockId,
     });
     return false;
@@ -140,25 +132,13 @@ export async function commitViaProtyle(
     nextMarkdownPreview: previewText(payload.nextMarkdown),
     caretPolicy: payload.caretRestorePlan?.policy ?? 'none',
   });
-  if (!renderMarkdownIntoBlockEditable(protyle, targetElement, payload.nextMarkdown)) {
-    console.log('[BWDBG][protyleCommitter] render failed', {
+
+  if (!applyTransactionDomHtml(targetElement, payload.transactionDomHtml)) {
+    console.log('[BWDBG][protyleCommitter] apply transaction html failed', {
       targetBlockId: payload.targetBlockId,
-      nextMarkdownPreview: previewText(payload.nextMarkdown),
+      transactionPreview: previewText(resolvePrimaryMarkdownLine(payload.nextMarkdown)),
     });
     return false;
-  }
-  syncTaskListStatusFromMarkdown(targetElement, payload.nextMarkdown);
-
-  let plannedCaretOffset: number | undefined;
-  let injectedWbr = false;
-  if (payload.caretRestorePlan?.policy === 'wbr') {
-    const editable = targetElement.getAttribute('contenteditable') === 'true'
-      ? targetElement
-      : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
-    if (editable) {
-      plannedCaretOffset = resolveWbrOffset(editable, payload.caretRestorePlan);
-      injectedWbr = injectWbrIntoEditable(editable, plannedCaretOffset);
-    }
   }
 
   targetElement.setAttribute('updated', formatUpdatedAttr());
@@ -173,23 +153,15 @@ export async function commitViaProtyle(
 
   if (payload.caretRestorePlan?.policy === 'wbr') {
     const liveTargetElement = resolveLiveTargetElement(payload.targetBlockId, targetElement, protyle);
-    const restoredByWbr = injectedWbr ? focusByWbr(liveTargetElement) : false;
+    const restoredByWbr = focusByWbr(liveTargetElement);
     console.log('[BWDBG][protyleCommitter] caret restore', {
       targetBlockId: payload.targetBlockId,
       liveTargetPreview: previewText(liveTargetElement.textContent),
-      plannedCaretOffset,
       restoredByWbr,
-      injectedWbr,
       fallbackOffset: payload.caretRestorePlan.fallbackOffset,
     });
     if (!restoredByWbr) {
-      const fallbackOffset = typeof plannedCaretOffset === 'number'
-        ? {
-            start: plannedCaretOffset,
-            end: plannedCaretOffset,
-          }
-        : payload.caretRestorePlan.fallbackOffset;
-      focusByOffset(liveTargetElement, fallbackOffset);
+      focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset);
     }
   }
 

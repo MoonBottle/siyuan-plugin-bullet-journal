@@ -5,6 +5,19 @@ vi.mock('@/utils/blockWriter/render/domSerializer', () => ({
   markdownToBlockDOM: vi.fn((markdown: string) => `<div data-type="NodeParagraph">${markdown}</div>`),
 }));
 
+vi.mock('@/utils/protyleWriterDom', () => ({
+  renderMarkdownIntoBlockEditable: vi.fn((_: unknown, targetElement: HTMLElement, markdown: string) => {
+    const editable = targetElement.getAttribute('contenteditable') === 'true'
+      ? targetElement
+      : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
+    if (!editable) {
+      return false;
+    }
+    editable.textContent = markdown.replace(/\n\{:[^}]*\}/g, '');
+    return true;
+  }),
+}));
+
 vi.mock('@/utils/blockWriter/compat/datePatchWriter', () => ({
   prepareDatePatchWriteFromSource: vi.fn((source: { kramdown: string; finalTargetBlockId?: string; targetBlockId: string }, patch: { date: string }) => ({
     content: `${source.kramdown}\n@${patch.date}`,
@@ -73,6 +86,7 @@ describe('updateRenderer', () => {
     expect(payload.caretRestorePlan?.policy).toBe('wbr');
     expect(payload.caretRestorePlan?.placement).toBe('line-end');
     expect(payload.caretRestorePlan?.lineIndex).toBe(0);
+    expect(payload.transactionDomHtml).toContain('<wbr>');
   });
 
   it('suppresses caret restoration when the execution plan is not the caret owner', () => {
@@ -146,6 +160,8 @@ describe('updateRenderer', () => {
       anchorText: '📋',
       lineIndex: 0,
     });
+    expect(payload.transactionDomHtml).toContain('📋');
+    expect(payload.transactionDomHtml).toContain('<wbr>');
   });
 
   it('targets the slash line end for multiline slash cleanup payloads', () => {

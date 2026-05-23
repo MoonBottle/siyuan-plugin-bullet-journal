@@ -1,20 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/utils/protyleWriterDom', () => ({
-  renderMarkdownIntoBlockEditable: vi.fn((_: unknown, targetElement: HTMLElement, markdown: string) => {
-    const editable = targetElement.getAttribute('contenteditable') === 'true'
-      ? targetElement
-      : targetElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
-    if (editable) {
-      editable.innerHTML = markdown.replace(/\n\{:[^}]*\}/g, '');
-    } else {
-      targetElement.innerHTML = `<div contenteditable="true">${markdown.replace(/\n\{:[^}]*\}/g, '')}</div>`;
-    }
-    return true;
-  }),
-}));
-
 import * as caretController from '@/utils/blockWriter/shared/caretController';
 import { commitViaProtyle } from '@/utils/blockWriter/commit/protyleCommitter';
 
@@ -49,6 +35,7 @@ describe('protyleCommitter', () => {
         nextMarkdown: '任务 📋\n{: id="block-1"}',
         preferredDataType: 'dom',
         domHtml: '<div data-node-id="block-1">任务 📋</div>',
+        transactionDomHtml: '<div data-node-id="block-1"><div contenteditable="true">任务 📋<wbr></wbr></div></div>',
         fallbackMarkdown: '任务 📋\n{: id="block-1"}',
         oldDomHtml: '<div data-node-id="block-1"><div contenteditable="true">任务 /rw</div></div>',
         targetElement,
@@ -94,6 +81,7 @@ describe('protyleCommitter', () => {
         nextMarkdown: '测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌\n测试换行\n{: id="block-1"}',
         preferredDataType: 'dom',
         domHtml: '<div data-node-id="block-1">测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌\n测试换行</div>',
+        transactionDomHtml: '<div data-node-id="block-1"><div contenteditable="true">测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌<wbr></wbr>\n测试换行</div></div>',
         fallbackMarkdown: '测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 ❌\n测试换行\n{: id="block-1"}',
         oldDomHtml: '<div data-node-id="block-1"><div contenteditable="true">测试任务列表事项236 测试 ⏳1h51m 📅2026-05-17 /fq\n测试换行</div></div>',
         targetElement,
@@ -147,6 +135,7 @@ describe('protyleCommitter', () => {
         nextMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
         preferredDataType: 'dom',
         domHtml: '<div data-node-id="task-1">测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行</div>',
+        transactionDomHtml: '<div class="li" data-node-id="task-1" data-type="NodeListItem" data-subtype="t"><span class="protyle-action--task"><svg><use xlink:href="#iconUncheck"></use></svg></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 ❌<wbr></wbr>\n测试换行</div></div>',
         fallbackMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
         oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div></div>',
         targetElement,
@@ -203,6 +192,7 @@ describe('protyleCommitter', () => {
         nextMarkdown: '任务 📋\n{: id="task-1"}',
         preferredDataType: 'dom',
         domHtml: '<div data-node-id="task-1">任务 📋</div>',
+        transactionDomHtml: '<div data-node-id="task-1"><div contenteditable="true">任务 📋<wbr></wbr></div></div>',
         fallbackMarkdown: '任务 📋\n{: id="task-1"}',
         oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">任务 /rw</div></div>',
         targetElement,
@@ -251,6 +241,7 @@ describe('protyleCommitter', () => {
         nextMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
         preferredDataType: 'dom',
         domHtml: '<div data-node-id="task-1">测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行</div>',
+        transactionDomHtml: '<div class="li" data-node-id="task-1" data-type="NodeListItem" data-subtype="t"><span class="protyle-action--task"></span><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 ❌<wbr></wbr>\n测试换行</div></div>',
         fallbackMarkdown: '测试任务列表事项235 📅2026-05-13 测试 ❌\n测试换行\n{: id="task-1"}',
         oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">测试任务列表事项235 📅2026-05-13 测试 /fq\n测试换行</div></div>',
         targetElement,
@@ -297,6 +288,7 @@ describe('protyleCommitter', () => {
         nextMarkdown: '* [x] 任务\n{: id="task-1"}',
         preferredDataType: 'dom',
         domHtml: '<div data-node-id="task-1">任务</div>',
+        transactionDomHtml: '<div class="li protyle-task--done" data-node-id="task-1" data-type="NodeListItem" data-subtype="t" data-task="X"><span class="protyle-action--task"><svg><use xlink:href="#iconCheck"></use></svg></span><div contenteditable="true">任务</div></div>',
         fallbackMarkdown: '* [x] 任务\n{: id="task-1"}',
         oldDomHtml: '<div data-node-id="task-1"><div contenteditable="true">任务 /wc</div></div>',
         targetElement,

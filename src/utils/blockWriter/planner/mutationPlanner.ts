@@ -34,34 +34,20 @@ async function annotateCapabilities(intent: BlockMutationIntent, units: Mutation
   const capabilities: MutationPatchCapability[] = [];
 
   for (const unit of units) {
-    if (intent.kind === 'insertAfter') {
-      const resolved = await resolveMutationTarget(intent);
-      capabilities.push({
-        unit,
-        sourceKind: 'api-kramdown',
-        commitKind: resolved.commitKind,
-        preferredCaretPolicy: 'none',
-        canSharePlan: true,
-        requiresCurrentDom: false,
-        canFallbackToApi: true,
-      });
-      continue;
-    }
-
     const resolved = await resolveMutationTarget(normalizeUpdateIntent(intent.context, unit.patch));
-      capabilities.push({
-        unit,
-        targetBlockId: resolved.targetBlockId,
-        targetKind: resolved.targetKind,
-        sourceKind: resolved.sourceKind,
-        sourceBlockId: resolved.sourceBlockId,
-        commitKind: resolved.commitKind,
-        preferredCaretPolicy: unit.patch.type === 'removeSlashCommand' ? 'wbr' : 'none',
-        canSharePlan: true,
-        requiresCurrentDom: resolved.sourceKind === 'protyle-dom',
-        canFallbackToApi: true,
-        datePatchSource: resolved.datePatchSource,
-      });
+    capabilities.push({
+      unit,
+      targetBlockId: resolved.targetBlockId,
+      targetKind: resolved.targetKind,
+      sourceKind: resolved.sourceKind,
+      sourceBlockId: resolved.sourceBlockId,
+      commitKind: resolved.commitKind,
+      preferredCaretPolicy: unit.patch.type === 'removeSlashCommand' ? 'wbr' : 'none',
+      canSharePlan: true,
+      requiresCurrentDom: resolved.sourceKind === 'protyle-dom',
+      canFallbackToApi: true,
+      datePatchSource: resolved.datePatchSource,
+    });
   }
 
   return capabilities;
@@ -92,14 +78,16 @@ function mergeReasonForConflict(
 export async function buildMutationPlans(intent: BlockMutationIntent): Promise<MutationPlannerResult> {
   const units = patchUnitsForIntent(intent);
   if (intent.kind === 'insertAfter') {
+    const resolvedPlan = await resolveMutationTarget(intent);
     return {
       reason: 'single-plan',
       plans: [{
         id: 'plan-0',
         kind: 'insertAfter',
+        resolvedPlan,
         anchorBlockId: intent.anchorBlockId,
         sourceKind: 'api-kramdown',
-        commitKind: 'api-insert',
+        commitKind: resolvedPlan.commitKind,
         caretPolicy: 'none',
         caretOwner: false,
         units,
@@ -121,9 +109,25 @@ export async function buildMutationPlans(intent: BlockMutationIntent): Promise<M
       return;
     }
     const first = group[0];
+    const patches = group.map(capability => capability.unit.patch);
+    const datePatchSource = group.map(capability => capability.datePatchSource).find(Boolean);
+    const resolvedPlan = {
+      kind: 'update' as const,
+      targetBlockId: first.targetBlockId!,
+      targetKind: first.targetKind!,
+      sourceKind: first.sourceKind,
+      sourceBlockId: first.sourceBlockId,
+      commitKind: first.commitKind,
+      preferDataType: 'dom' as const,
+      fallbackDataType: 'markdown' as const,
+      context: intent.context,
+      patches,
+      datePatchSource,
+    };
     plans.push({
       id: `plan-${order}`,
       kind: 'update',
+      resolvedPlan,
         targetBlockId: first.targetBlockId,
         targetKind: first.targetKind,
         sourceKind: first.sourceKind,
@@ -137,7 +141,7 @@ export async function buildMutationPlans(intent: BlockMutationIntent): Promise<M
       order,
         atomicBoundary,
         context: intent.context,
-        datePatchSource: group.map(capability => capability.datePatchSource).find(Boolean),
+        datePatchSource,
       });
   };
 

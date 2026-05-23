@@ -216,6 +216,7 @@ export type PreparedMutationPayload =
       nextMarkdown: string;
       preferredDataType: 'dom';
       domHtml?: string;
+      transactionDomHtml?: string;
       fallbackMarkdown: string;
       oldDomHtml?: string;
       targetElement?: HTMLElement;
@@ -272,6 +273,7 @@ export interface MutationPatchCapability {
 export interface MutationExecutionPlan {
   id: string;
   kind: 'update' | 'insertAfter';
+  resolvedPlan: ResolvedMutationPlan;
   targetBlockId?: string;
   targetKind?: 'paragraph' | 'task-list-item' | 'block';
   sourceKind: 'protyle-dom' | 'api-kramdown';
