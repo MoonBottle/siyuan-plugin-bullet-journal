@@ -161,7 +161,14 @@ export async function commitViaProtyle(
       fallbackOffset: payload.caretRestorePlan.fallbackOffset,
     });
     if (!restoredByWbr) {
-      focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset);
+      const restoredByOffset = focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset);
+      if (!restoredByOffset) {
+        console.log('[BWDBG][protyleCommitter] caret restore fully failed', {
+          targetBlockId: payload.targetBlockId,
+          caretRestoreFailed: true,
+          fallbackOffset: payload.caretRestorePlan.fallbackOffset,
+        });
+      }
     }
   }
 

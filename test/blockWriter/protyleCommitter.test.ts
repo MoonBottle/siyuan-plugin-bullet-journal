@@ -302,4 +302,50 @@ describe('protyleCommitter', () => {
     expect(targetElement.getAttribute('data-task')).toBe('X');
     expect(readUseHref(targetElement.querySelector('use'))).toBe('#iconCheck');
   });
+
+  it('logs debug when both wbr and offset caret restore fail', async () => {
+    const targetElement = document.createElement('div');
+    targetElement.setAttribute('data-node-id', 'block-fail');
+    targetElement.innerHTML = '<div contenteditable="true">任务</div>';
+    document.body.appendChild(targetElement);
+
+    const protyle = {
+      transaction: vi.fn(),
+    };
+
+    vi.spyOn(caretController, 'focusByWbr').mockReturnValue(false);
+    vi.spyOn(caretController, 'focusByOffset').mockReturnValue(false);
+    const consoleSpy = vi.spyOn(console, 'log');
+
+    const success = await commitViaProtyle(
+      { protyle },
+      {
+        kind: 'update',
+        targetBlockId: 'block-fail',
+        nextMarkdown: '任务\n{: id="block-fail"}',
+        preferredDataType: 'dom',
+        domHtml: '<div data-node-id="block-fail">任务</div>',
+        transactionDomHtml: '<div data-node-id="block-fail"><div contenteditable="true">任务</div></div>',
+        fallbackMarkdown: '任务\n{: id="block-fail"}',
+        oldDomHtml: '<div data-node-id="block-fail"><div contenteditable="true">任务</div></div>',
+        targetElement,
+        caretRestorePlan: {
+          policy: 'wbr',
+          fallbackOffset: { start: 2, end: 2 },
+        },
+      },
+    );
+
+    expect(success).toBe(true);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[BWDBG][protyleCommitter] caret restore fully failed',
+      expect.objectContaining({
+        targetBlockId: 'block-fail',
+        caretRestoreFailed: true,
+        fallbackOffset: { start: 2, end: 2 },
+      }),
+    );
+
+    vi.restoreAllMocks();
+  });
 });

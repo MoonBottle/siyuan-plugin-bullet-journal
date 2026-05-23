@@ -74,4 +74,21 @@ describe('caretController', () => {
     expect(range.startContainer.textContent).toBe('任务');
     expect(range.startOffset).toBe('任务'.length);
   });
+
+  it('collapses to editable start when editable has no text nodes', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<div contenteditable="true"></div>';
+    document.body.appendChild(root);
+
+    const restored = focusByOffset(root);
+
+    expect(restored).toBe(true);
+    const selection = window.getSelection();
+    expect(selection?.rangeCount).toBe(1);
+    const range = selection!.getRangeAt(0);
+    expect(range.collapsed).toBe(true);
+    const editable = root.querySelector('[contenteditable="true"]')!;
+    expect(range.startContainer).toBe(editable);
+    expect(range.startOffset).toBe(0);
+  });
 });

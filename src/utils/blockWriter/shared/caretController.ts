@@ -171,7 +171,13 @@ export function focusByOffset(nodeElement: HTMLElement, offset?: { start: number
 
   const textNodes = collectTextNodes(editable);
   if (textNodes.length === 0) {
-    return false;
+    const range = document.createRange();
+    range.setStart(editable, 0);
+    range.collapse(true);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    return true;
   }
 
   let remaining = offset?.start ?? textNodes.reduce((sum, node) => sum + (node.textContent?.length ?? 0), 0);
