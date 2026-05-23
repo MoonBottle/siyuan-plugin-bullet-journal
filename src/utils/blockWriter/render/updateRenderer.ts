@@ -3,7 +3,7 @@ import { splitKramdownBlock } from '@/utils/blockWriter/shared/kramdownBlocks';
 import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
 import { injectWbrIntoEditable } from '@/utils/blockWriter/shared/caretController';
 import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers';
-import type { CaretRestorePlan, ContentPatch, LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
+import type { CaretRestorePlan, LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
 import { prepareDatePatchWriteFromSource } from '@/utils/blockWriter/compat/datePatchWriter';
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 
@@ -58,15 +58,11 @@ function buildCaretRestorePlan(
     return { policy: 'none' };
   }
 
-  const contentPatchWithSuffix = plan.patches.find((patch): patch is ContentPatch => {
-    return patch.type === 'setContent' && typeof patch.suffix === 'string' && patch.suffix.length > 0;
-  });
   const lineIndex = resolveCaretLineIndex(source);
 
   return {
     policy: 'wbr',
-    placement: contentPatchWithSuffix ? 'after-inserted-text' : (typeof lineIndex === 'number' ? 'line-end' : 'block-end'),
-    anchorText: contentPatchWithSuffix?.suffix,
+    placement: typeof lineIndex === 'number' ? 'line-end' : 'block-end',
     lineIndex,
     fallbackOffset: source.caretSnapshot?.policy === 'wbr-first'
       ? source.caretSnapshot.fallbackOffset

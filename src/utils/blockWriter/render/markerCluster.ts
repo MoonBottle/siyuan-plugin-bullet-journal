@@ -1,6 +1,7 @@
 export type MarkerKind =
   | 'date'
   | 'priority'
+  | 'taskTag'
   | 'status'
   | 'pinned'
   | 'focusPlan'
@@ -29,6 +30,7 @@ export interface ParsedMarkerLine {
 const MARKER_PATTERNS: Array<{ kind: MarkerKind; regex: RegExp }> = [
   { kind: 'date', regex: /^(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?(?:,\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?)*(?:\s+\d{2}:\d{2}(?::\d{2})?(?:-\d{2}:\d{2}(?::\d{2})?)?)?$/u },
   { kind: 'priority', regex: /^[🔥🌱🍃]$/u },
+  { kind: 'taskTag', regex: /^📋$/u },
   { kind: 'status', regex: /^(?:#已完成|#已放弃|#done|#abandoned|✅|❌)$/iu },
   { kind: 'pinned', regex: /^📌$/u },
   { kind: 'focusPlan', regex: /^(?:⏳\S+|🍅x\d+)$/u },

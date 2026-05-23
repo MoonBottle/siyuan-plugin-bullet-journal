@@ -7,6 +7,7 @@ const PATCH_ORDER: Record<BlockPatch['type'], number> = {
   setReminder: 30,
   setRecurring: 40,
   setPriority: 50,
+  setTaskTag: 55,
   setFocusPlan: 60,
   togglePinned: 70,
   setHabitArchive: 80,

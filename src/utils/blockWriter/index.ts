@@ -24,6 +24,7 @@ export type {
   ResolvedBlockTarget,
   SlashCommandPatch,
   StatusPatch,
+  TaskTagPatch,
 } from '@/utils/blockWriter/shared/types';
 
 async function executeMutationIntent(intent: BlockMutationIntent): Promise<boolean | IResdoOperations[] | null> {

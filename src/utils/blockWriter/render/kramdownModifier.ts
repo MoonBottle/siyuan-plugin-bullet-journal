@@ -75,6 +75,14 @@ function applyPriority(line: string, priority: string | undefined): string {
   return normalizeMarkerLine(upsertMarker(parsed, 'priority', generatePriorityMarker(priority as any)));
 }
 
+function applyTaskTag(line: string, patch: Extract<BlockPatch, { type: 'setTaskTag' }>): string {
+  const parsed = parseMarkerLine(line);
+  if (!patch.tag) {
+    return normalizeMarkerLine(removeMarker(parsed, 'taskTag'));
+  }
+  return normalizeMarkerLine(upsertMarker(parsed, 'taskTag', patch.tag));
+}
+
 function applyDate(line: string, patch: DatePatch): string {
   const startTime = patch.startTime ? ` ${patch.startTime}` : '';
   const endTime = patch.endTime && patch.endTime !== patch.startTime ? `-${patch.endTime}` : '';
@@ -83,7 +91,7 @@ function applyDate(line: string, patch: DatePatch): string {
   return normalizeMarkerLine(upsertMarker(parsed, 'date', dateStr));
 }
 
-function applyContent(line: string, suffix?: string, newItemContent?: string): string {
+function applyContent(line: string, newItemContent?: string): string {
   if (newItemContent !== undefined && newItemContent !== null) {
     const listPrefixMatch = line.match(/^(\s*-(?:\s*\{:[^}]*\}\s*)?)/);
     const listPrefix = listPrefixMatch ? listPrefixMatch[1] : '';
@@ -105,10 +113,6 @@ function applyContent(line: string, suffix?: string, newItemContent?: string): s
       .join(' ')
       .replace(/\s{2,}/g, ' ')
       .trim();
-  }
-  if (suffix) {
-    if (line.includes(suffix)) return line;
-    return `${line} ${suffix}`.replace(/\s{2,}/g, ' ').trim();
   }
   return line;
 }
@@ -243,6 +247,11 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
     return replaceContentLines(parts, contentLines);
   }
 
+  if (patch.type === 'setTaskTag') {
+    contentLines[index] = applyTaskTag(line, patch);
+    return replaceContentLines(parts, contentLines);
+  }
+
   if (patch.type === 'removeSlashCommand') {
     throw new Error('removeSlashCommand requires an active Protyle Range');
   }
@@ -253,7 +262,7 @@ export function applyBlockPatch(parts: KramdownBlockParts, patch: BlockPatch): s
   }
 
   if (patch.type === 'setContent') {
-    contentLines[index] = applyContent(line, patch.suffix, patch.newItemContent);
+    contentLines[index] = applyContent(line, patch.newItemContent);
     return replaceContentLines(parts, contentLines);
   }
 

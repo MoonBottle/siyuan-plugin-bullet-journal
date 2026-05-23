@@ -878,7 +878,7 @@ describe('item-only slash command validation', () => {
       expect.objectContaining({ blockId: 'block-task', nodeElement: node, protyle }),
       [
         { type: 'removeSlashCommand' },
-        { type: 'setContent', suffix: '📋' },
+        { type: 'setTaskTag', tag: '📋' },
       ],
     );
     expect(vi.mocked(showMessage)).toHaveBeenCalledWith('已标记为任务', 2000, 'info');

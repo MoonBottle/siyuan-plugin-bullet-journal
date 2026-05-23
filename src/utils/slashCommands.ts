@@ -806,7 +806,7 @@ export function getActionHandler(
           writeContext,
           [
             { type: 'removeSlashCommand' },
-            { type: 'setContent', suffix: taskTag },
+            { type: 'setTaskTag', tag: taskTag },
           ],
         );
         showMessage(t('slash').markTaskSuccess, 2000, 'info');

@@ -123,7 +123,7 @@ describe('updateRenderer', () => {
     expect(payload.caretRestorePlan).toEqual({ policy: 'none' });
   });
 
-  it('anchors caret after inserted suffix content when slash cleanup and setContent share one plan', () => {
+  it('anchors caret at line end for slash cleanup with setTaskTag', () => {
     const node = document.createElement('div');
     node.innerHTML = '<div contenteditable="true">任务 /rw</div>';
     const payload = prepareUpdatePayload(
@@ -139,7 +139,7 @@ describe('updateRenderer', () => {
         context: { blockId: 'block-1', protyle: {}, nodeElement: node as any },
         patches: [
           { type: 'removeSlashCommand' },
-          { type: 'setContent', suffix: '📋' },
+          { type: 'setTaskTag', tag: '📋' },
         ],
       },
       {
@@ -156,10 +156,10 @@ describe('updateRenderer', () => {
     expect(payload.nextMarkdown).toContain('📋');
     expect(payload.caretRestorePlan).toMatchObject({
       policy: 'wbr',
-      placement: 'after-inserted-text',
-      anchorText: '📋',
+      placement: 'line-end',
       lineIndex: 0,
     });
+    expect(payload.caretRestorePlan?.anchorText).toBeUndefined();
     expect(payload.transactionDomHtml).toContain('📋');
     expect(payload.transactionDomHtml).toContain('<wbr>');
   });

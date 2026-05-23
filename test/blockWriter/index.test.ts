@@ -319,25 +319,6 @@ describe('writeBlock', () => {
     );
   });
 
-  it('appends non-status suffix content through setContent', async () => {
-    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
-      id: 'abc',
-      kramdown: '整理资料 📅2024-01-01\n{: id="abc"}',
-    } as any);
-
-    const result = await writeBlock(
-      { blockId: 'block123' },
-      { type: 'setContent', suffix: '#重要' },
-    );
-
-    expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      '整理资料 📅2024-01-01 #重要\n{: id="abc"}',
-      'block123',
-    );
-  });
-
   it('replaces item content while preserving markers before applying completed status', async () => {
     vi.mocked(getBlockKramdown).mockResolvedValueOnce({
       id: 'abc',
@@ -357,30 +338,6 @@ describe('writeBlock', () => {
     expect(updateBlock).toHaveBeenCalledWith(
       'markdown',
       `[x] 新任务名称 🌱 📅2026-03-08 ⏰14:00 🔁每月 截止到2026-12-31
-  {: id="yyy"}`,
-      'block123',
-    );
-  });
-
-  it('preserves empty replacement content and appended suffix ordering', async () => {
-    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
-      id: 'abc',
-      kramdown: `[ ] 旧任务名称 📅2026-03-08
-  {: id="yyy"}`,
-    } as any);
-
-    const result = await writeBlock(
-      { blockId: 'block123' },
-      [
-        { type: 'setContent', newItemContent: '' },
-        { type: 'setContent', suffix: '#标签' },
-      ],
-    );
-
-    expect(result).toBe(true);
-    expect(updateBlock).toHaveBeenCalledWith(
-      'markdown',
-      `[ ] 📅2026-03-08 #标签
   {: id="yyy"}`,
       'block123',
     );
@@ -519,7 +476,7 @@ describe('writeBlock', () => {
       },
       [
         { type: 'removeSlashCommand' },
-        { type: 'setContent', suffix: '#done' },
+        { type: 'setTaskTag', tag: '📋' },
       ],
     );
 

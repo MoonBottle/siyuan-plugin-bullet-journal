@@ -17,7 +17,7 @@ describe('protyleCommitter', () => {
     window.getSelection()?.removeAllRanges();
   });
 
-  it('restores caret after inserted suffix content', async () => {
+  it('restores caret at line end after setTaskTag', async () => {
     const targetElement = document.createElement('div');
     targetElement.setAttribute('data-node-id', 'block-1');
     targetElement.innerHTML = '<div contenteditable="true">任务 /rw</div>';
@@ -41,8 +41,7 @@ describe('protyleCommitter', () => {
         targetElement,
         caretRestorePlan: {
           policy: 'wbr',
-          placement: 'after-inserted-text',
-          anchorText: '📋',
+          placement: 'line-end',
         },
       },
     );

@@ -124,18 +124,6 @@ describe('kramdownModifier', () => {
   });
 
   describe('setContent', () => {
-    it('appends suffix', () => {
-      expect(applyBlockPatch(parts('任务\n{: id="abc"}'), { type: 'setContent', suffix: '#done' })).toBe(
-        '任务 #done\n{: id="abc"}',
-      );
-    });
-
-    it('does not duplicate suffix', () => {
-      expect(applyBlockPatch(parts('任务 #done\n{: id="abc"}'), { type: 'setContent', suffix: '#done' })).toBe(
-        '任务 #done\n{: id="abc"}',
-      );
-    });
-
     it('preserves heading prefix when replacing content', () => {
       expect(applyBlockPatch(parts('### 旧标题 🍃 📅2026-05-17 #测试#\n{: id="abc"}'), { type: 'setContent', newItemContent: '新标题事项356' })).toBe(
         '### 新标题事项356 🍃 📅2026-05-17 #测试#\n{: id="abc"}',
@@ -172,6 +160,40 @@ describe('kramdownModifier', () => {
         `新跟进 @2026-03-21 #done
 {: id="abc"}`,
       );
+    });
+
+    it('applyContent no longer accepts suffix', () => {
+      const result = applyBlockPatch(
+        splitKramdownBlock('评审视觉稿 📅2026-05-15\n{: id="b1"}'),
+        { type: 'setContent', suffix: '📋' } as any,
+      );
+      expect(result).toBe('评审视觉稿 📅2026-05-15\n{: id="b1"}');
+    });
+  });
+
+  describe('setTaskTag', () => {
+    it('applies setTaskTag by appending 📋 after existing markers', () => {
+      const result = applyBlockPatch(
+        splitKramdownBlock('评审视觉稿 📅2026-05-15 ⏰14:00\n{: id="b1"}'),
+        { type: 'setTaskTag', tag: '📋' },
+      );
+      expect(result).toBe('评审视觉稿 📅2026-05-15 ⏰14:00 📋\n{: id="b1"}');
+    });
+
+    it('removes taskTag when tag is undefined', () => {
+      const result = applyBlockPatch(
+        splitKramdownBlock('评审视觉稿 📅2026-05-15 📋\n{: id="b1"}'),
+        { type: 'setTaskTag' },
+      );
+      expect(result).toBe('评审视觉稿 📅2026-05-15\n{: id="b1"}');
+    });
+
+    it('inserts taskTag after priority marker', () => {
+      const result = applyBlockPatch(
+        splitKramdownBlock('任务 🔥 📅2026-05-15\n{: id="b1"}'),
+        { type: 'setTaskTag', tag: '📋' },
+      );
+      expect(result).toBe('任务 🔥 📅2026-05-15 📋\n{: id="b1"}');
     });
   });
 

@@ -48,8 +48,12 @@ export type PriorityPatch = {
 
 export type ContentPatch = {
   type: 'setContent';
-  suffix?: string;
   newItemContent?: string;
+};
+
+export type TaskTagPatch = {
+  type: 'setTaskTag';
+  tag?: string;
 };
 
 export type FocusPlanPatch = {
@@ -111,6 +115,7 @@ export type BlockPatch =
   | DatePatch
   | StatusPatch
   | PriorityPatch
+  | TaskTagPatch
   | ContentPatch
   | FocusPlanPatch
   | ReminderPatch
