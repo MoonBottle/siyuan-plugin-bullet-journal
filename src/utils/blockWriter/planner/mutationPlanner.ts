@@ -124,25 +124,33 @@ export async function buildMutationPlans(intent: BlockMutationIntent): Promise<M
       patches,
       datePatchSource,
     };
-    plans.push({
+    const plan: MutationExecutionPlan = {
       id: `plan-${order}`,
       kind: 'update',
       resolvedPlan,
-        targetBlockId: first.targetBlockId,
-        targetKind: first.targetKind,
-        sourceKind: first.sourceKind,
-        sourceBlockId: first.sourceBlockId,
-        commitKind: first.commitKind,
+      targetBlockId: first.targetBlockId,
+      targetKind: first.targetKind,
+      sourceKind: first.sourceKind,
+      sourceBlockId: first.sourceBlockId,
+      commitKind: first.commitKind,
       caretPolicy: group.reduce<'none' | 'wbr'>((policy, capability) => {
         return strongerCaretPolicy(policy, capability.preferredCaretPolicy);
       }, 'none'),
       caretOwner: false,
       units: group.map(capability => capability.unit),
       order,
-        atomicBoundary,
-        context: intent.context,
-        datePatchSource,
-      });
+      atomicBoundary,
+      context: intent.context,
+      datePatchSource,
+    };
+    if (first.commitKind === 'protyle-update') {
+      plan.apiFallbackPlan = {
+        sourceKind: 'api-kramdown',
+        sourceBlockId: first.targetBlockId!,
+        commitKind: 'api-update',
+      };
+    }
+    plans.push(plan);
   };
 
   for (const capability of capabilities) {

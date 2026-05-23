@@ -294,6 +294,11 @@ export interface MutationExecutionPlan {
   anchorBlockId?: string;
   resultMode?: 'boolean' | 'operations';
   datePatchSource?: DatePatchSourceContext;
+  apiFallbackPlan?: {
+    sourceKind: 'api-kramdown';
+    sourceBlockId: string;
+    commitKind: 'api-update';
+  };
 }
 
 export interface MutationPlannerResult {

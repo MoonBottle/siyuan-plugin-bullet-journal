@@ -54,15 +54,17 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
       });
     }
 
-    const apiFallbackPlan: Extract<ResolvedMutationPlan, { kind: 'update' }> = {
-      ...resolvedPlan,
-      sourceKind: 'api-kramdown',
-      sourceBlockId: resolvedPlan.targetBlockId,
-      commitKind: 'api-update',
-    };
-    const apiFallbackSource = await loadMutationSource(apiFallbackPlan);
-    const apiFallbackPayload = prepareUpdatePayload(apiFallbackPlan, apiFallbackSource);
-    return await commitViaApi(apiFallbackPayload);
+    if (plan.apiFallbackPlan) {
+      const fallbackResolved: Extract<ResolvedMutationPlan, { kind: 'update' }> = {
+        ...resolvedPlan,
+        sourceKind: plan.apiFallbackPlan.sourceKind,
+        sourceBlockId: plan.apiFallbackPlan.sourceBlockId,
+        commitKind: plan.apiFallbackPlan.commitKind,
+      };
+      const fallbackSource = await loadMutationSource(fallbackResolved);
+      const fallbackPayload = prepareUpdatePayload(fallbackResolved, fallbackSource);
+      return await commitViaApi(fallbackPayload);
+    }
   }
 
   return await commitViaApi(payload);
