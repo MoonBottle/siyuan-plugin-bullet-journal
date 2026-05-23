@@ -1,5 +1,5 @@
 import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
-import { getBlockByID, getBlockKramdown, updateBlock } from '@/api';
+import { getBlockKramdown, updateBlock } from '@/api';
 import { stripListAndBlockAttr, parseKramdownBlocks } from '@/parser/core';
 import { isStandaloneBlockRefLine } from '@/parser/lineParser';
 import type { ItemDateTimeInfo, ItemStatus, TimePrecision } from '@/types/models';
@@ -10,6 +10,8 @@ import { createProtyleMarkdownWriter, writeMarkdownToCurrentBlock } from '@/util
 import { isTaskListFormat, statusToLabel } from '@/utils/blockWriter/shared/itemLineMarkers';
 import type { BlockWriteContext, DatePatch } from '@/utils/blockWriter/shared/types';
 import { deleteSlashRangeText, getActiveSlashRange } from '@/utils/blockWriter/shared/slashRange';
+import { resolveDatePatchSource } from '@/utils/blockWriter/resolve/targetResolver';
+import type { DatePatchSource } from '@/utils/blockWriter/resolve/targetResolver';
 
 const TIME_PART_PATTERN = '\\d{2}:\\d{2}(?::\\d{2})?';
 const TIME_RANGE_PATTERN = `${TIME_PART_PATTERN}(?:~${TIME_PART_PATTERN})?`;
@@ -23,15 +25,6 @@ export type DatePatchWriter = (
   content: string,
   targetBlockId: string,
 ) => Promise<boolean>;
-
-interface DatePatchSource {
-  originalBlockId: string;
-  kramdown: string;
-  targetBlockId: string;
-  targetItemBlockRaw: string | null;
-  usedParentDocumentContext: boolean;
-  finalTargetBlockId?: string;
-}
 
 export interface PreparedDateWrite {
   content: string;
@@ -181,10 +174,6 @@ function findPrimaryItemLineIndex(lines: string[]): number {
   }
 
   return fallbackIndex;
-}
-
-function isListItemLine(line: string): boolean {
-  return /^\s*([-]|\d+\.)\s+/.test(line);
 }
 
 function findBlockStartLineIndex(lines: string[], blockRaw: string): number {
@@ -407,66 +396,6 @@ async function persistDateContent(
   const blockDOM = markdownToBlockDOM(content);
   await updateBlock(blockDOM ? 'dom' : 'markdown', blockDOM ?? content, targetBlockId);
   return true;
-}
-
-export async function resolveDatePatchSource(blockId: string): Promise<DatePatchSource | null> {
-  let kramdown: string | null = null;
-  let targetBlockId = blockId;
-  let targetItemBlockRaw: string | null = null;
-  let usedParentDocumentContext = false;
-  const block = await getBlockByID(blockId);
-
-  if (block?.parent_id) {
-    const parentResult = await getBlockKramdown(block.parent_id);
-    if (parentResult?.kramdown) {
-      const blocks = parseKramdownBlocks(parentResult.kramdown);
-      const itemBlockIndex = blocks.findIndex(candidate => candidate.blockId === blockId);
-      const itemBlock = itemBlockIndex >= 0 ? blocks[itemBlockIndex] : null;
-      usedParentDocumentContext = blocks.length > 1;
-      if (itemBlock) {
-        targetItemBlockRaw = itemBlock.raw;
-      }
-
-      const blocksToCheck = itemBlock
-        ? (itemBlockIndex > 0 ? [itemBlock, blocks[itemBlockIndex - 1]] : [itemBlock])
-        : [];
-
-      for (const checkBlock of blocksToCheck) {
-        const linesToCheck = checkBlock.content.split('\n');
-        for (const line of linesToCheck) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith('{:') || trimmed.startsWith('🍅')) {
-            continue;
-          }
-          const hasDateMarker = trimmed.includes('@') || trimmed.includes('📅');
-          const hasDateValue = /\d{4}-\d{2}-\d{2}/.test(trimmed);
-          if (hasDateMarker && hasDateValue && (isTaskListFormat(trimmed) || isListItemLine(line))) {
-            kramdown = parentResult.kramdown;
-            targetBlockId = block.parent_id;
-            break;
-          }
-        }
-        if (kramdown) break;
-      }
-    }
-  }
-
-  if (!kramdown) {
-    const result = await getBlockKramdown(blockId);
-    if (!result?.kramdown) {
-      console.error('[BlockWriter] Failed to get block kramdown for addDate patch');
-      return null;
-    }
-    kramdown = result.kramdown;
-  }
-
-  return {
-    originalBlockId: blockId,
-    kramdown,
-    targetBlockId,
-    targetItemBlockRaw,
-    usedParentDocumentContext,
-  };
 }
 
 export function prepareDatePatchWriteFromSource(

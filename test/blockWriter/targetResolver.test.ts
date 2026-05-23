@@ -3,15 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/api', () => ({
   getBlockByID: vi.fn(),
+  getBlockKramdown: vi.fn(),
 }));
 
-vi.mock('@/utils/blockWriter/compat/datePatchWriter', () => ({
-  resolveDatePatchSource: vi.fn(),
-}));
+vi.mock('@/parser/core', async (importOriginal) => {
+  const original = await importOriginal() as any;
+  return {
+    ...original,
+    parseKramdownBlocks: vi.fn(),
+  };
+});
 
-import { getBlockByID } from '@/api';
+import { getBlockByID, getBlockKramdown } from '@/api';
+import { parseKramdownBlocks } from '@/parser/core';
 import { resolveMutationTarget } from '@/utils/blockWriter/resolve/targetResolver';
-import { resolveDatePatchSource } from '@/utils/blockWriter/compat/datePatchWriter';
 
 describe('targetResolver', () => {
   beforeEach(() => {
@@ -21,17 +26,22 @@ describe('targetResolver', () => {
   it('carries source block metadata for addDate patches resolved from a parent block', async () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-1');
-    vi.mocked(resolveDatePatchSource).mockResolvedValue({
-      originalBlockId: 'block-1',
-      kramdown: '任务',
-      targetBlockId: 'parent-1',
-      targetItemBlockRaw: '任务\n{: id="block-1"}',
-      usedParentDocumentContext: true,
-    } as any);
-    vi.mocked(getBlockByID).mockResolvedValue({
-      id: 'block-1',
-      type: 'p',
-    } as any);
+
+    vi.mocked(getBlockByID).mockImplementation(async (id: string) => {
+      if (id === 'block-1') {
+        return { id: 'block-1', parent_id: 'parent-1', type: 'p' } as any;
+      }
+      return null;
+    });
+    vi.mocked(getBlockKramdown).mockResolvedValue({ kramdown: '任务' } as any);
+    vi.mocked(parseKramdownBlocks).mockReturnValue([
+      { blockId: 'other', raw: 'other\n{: id="other"}', content: 'other' },
+      {
+        blockId: 'block-1',
+        raw: '任务\n{: id="block-1"}',
+        content: '- 📅2026-05-21 任务',
+      },
+    ] as any);
 
     const plan = await resolveMutationTarget({
       kind: 'update',
