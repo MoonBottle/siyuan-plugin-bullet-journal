@@ -96,6 +96,7 @@ function cancel() {
 .priority-setting-dialog {
   padding: 16px;
   min-width: 200px;
+  outline: none;
 }
 
 .priority-options {
