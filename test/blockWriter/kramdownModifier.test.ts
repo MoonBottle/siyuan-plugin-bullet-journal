@@ -70,7 +70,7 @@ describe('kramdownModifier', () => {
 
   describe('removeSlashCommand', () => {
     it('requires an active Protyle Range', () => {
-      expect(() => applyBlockPatch(parts('任务 /done\n{: id="abc"}'), { type: 'removeSlashCommand', suffix: '#done' })).toThrow(
+      expect(() => applyBlockPatch(parts('任务 /done\n{: id="abc"}'), { type: 'removeSlashCommand' })).toThrow(
         'removeSlashCommand requires an active Protyle Range',
       );
     });
@@ -169,6 +169,12 @@ describe('kramdownModifier', () => {
       );
       expect(result).toBe('评审视觉稿 📅2026-05-15\n{: id="b1"}');
     });
+
+    it('preserves taskTag marker when replacing content', () => {
+      expect(applyBlockPatch(parts('任务 📋 📅2026-05-15\n{: id="abc"}'), {
+        type: 'setContent', newItemContent: '新任务',
+      })).toBe('新任务 📋 📅2026-05-15\n{: id="abc"}');
+    });
   });
 
   describe('setTaskTag', () => {
@@ -194,6 +200,14 @@ describe('kramdownModifier', () => {
         { type: 'setTaskTag', tag: '📋' },
       );
       expect(result).toBe('任务 🔥 📅2026-05-15 📋\n{: id="b1"}');
+    });
+
+    it('removes taskTag when tag is empty string', () => {
+      const result = applyBlockPatch(
+        splitKramdownBlock('评审视觉稿 📅2026-05-15 📋\n{: id="b1"}'),
+        { type: 'setTaskTag', tag: '' },
+      );
+      expect(result).toBe('评审视觉稿 📅2026-05-15\n{: id="b1"}');
     });
   });
 

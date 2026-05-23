@@ -17,6 +17,7 @@ const STATUS_MARKERS_RE = /#已完成|#已放弃|#done|#abandoned|✅|❌/gu;
 const DATE_MARKER_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/g;
 const DATE_MARKER_START_RE = /(?:@|📅)\d{4}-\d{2}-\d{2}(?:~\d{4}-\d{2}-\d{2}|~\d{2}-\d{2})?/u;
 const PRIORITY_MARKER_RE = /(?:^|\s)[🔥🌱🍃](?=\s|$)/u;
+const TASK_TAG_MARKER_RE = /(?:^|\s)📋(?=\s|$)/u;
 const STATUS_MARKER_RE = /(?:^|\s)(?:#已完成|#已放弃|#done|#abandoned|✅|❌)(?=\s|$)/iu;
 const PINNED_MARKER_RE = /(?:^|\s)📌(?=\s|$)/u;
 const FOCUS_PLAN_MARKER_RE = /(?:^|\s)(?:⏳\S+|🍅x\d+)(?=\s|$)/u;
@@ -124,6 +125,7 @@ function findFirstMarker(line: string): number {
 
   const markerRegexes = [
     PRIORITY_MARKER_RE,
+    TASK_TAG_MARKER_RE,
     STATUS_MARKER_RE,
     PINNED_MARKER_RE,
     FOCUS_PLAN_MARKER_RE,
