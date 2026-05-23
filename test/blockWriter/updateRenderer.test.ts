@@ -18,14 +18,11 @@ vi.mock('@/utils/protyleWriterDom', () => ({
   }),
 }));
 
-vi.mock('@/utils/blockWriter/compat/datePatchWriter', () => ({
-  prepareDatePatchWriteFromSource: vi.fn((source: { kramdown: string; finalTargetBlockId?: string; targetBlockId: string }, patch: { date: string }) => ({
-    content: `${source.kramdown}\n@${patch.date}`,
-    targetBlockId: source.finalTargetBlockId ?? source.targetBlockId,
-  })),
+vi.mock('@/utils/blockWriter/render/datePatchRender', () => ({
+  renderDatePatch: vi.fn((kramdown: string, patch: { date: string }) => `${kramdown}\n@${patch.date}`),
 }));
 
-import { prepareDatePatchWriteFromSource } from '@/utils/blockWriter/compat/datePatchWriter';
+import { renderDatePatch } from '@/utils/blockWriter/render/datePatchRender';
 import { prepareUpdatePayload } from '@/utils/blockWriter/render/updateRenderer';
 
 describe('updateRenderer', () => {
@@ -272,14 +269,16 @@ describe('updateRenderer', () => {
 
     expect(payload.targetBlockId).toBe('block-1');
     expect(payload.nextMarkdown).toContain('@2026-05-21');
-    expect(vi.mocked(prepareDatePatchWriteFromSource)).toHaveBeenCalledWith(
+    expect(vi.mocked(renderDatePatch)).toHaveBeenCalledWith(
+      '任务\n{: id="block-1"}',
+      { type: 'addDate', date: '2026-05-21', allDay: true },
       expect.objectContaining({
         originalBlockId: 'block-1',
-        targetBlockId: 'parent-1',
+        sourceBlockId: 'parent-1',
+        targetItemBlockRaw: '任务\n{: id="block-1"}',
+        usedParentDocumentContext: true,
         finalTargetBlockId: 'block-1',
-        kramdown: '任务\n{: id="block-1"}',
       }),
-      { type: 'addDate', date: '2026-05-21', allDay: true },
     );
   });
 });

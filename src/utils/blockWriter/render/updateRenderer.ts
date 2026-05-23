@@ -4,7 +4,7 @@ import { applyBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
 import { injectWbrIntoEditable } from '@/utils/blockWriter/shared/caretController';
 import { isTaskListFormat } from '@/utils/blockWriter/shared/itemLineMarkers';
 import type { CaretRestorePlan, LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
-import { prepareDatePatchWriteFromSource } from '@/utils/blockWriter/compat/datePatchWriter';
+import { renderDatePatch } from '@/utils/blockWriter/render/datePatchRender';
 import { renderMarkdownIntoBlockEditable } from '@/utils/protyleWriterDom';
 
 interface CaretRestoreOptions {
@@ -178,17 +178,15 @@ export function prepareUpdatePayload(
 
   for (const patch of renderablePatches) {
     if (patch.type === 'addDate') {
-      const prepared = prepareDatePatchWriteFromSource({
-        originalBlockId: plan.datePatchSource?.originalBlockId ?? plan.context.blockId,
-        kramdown: nextMarkdown,
-        targetBlockId: sourceBlockId,
-        targetItemBlockRaw: plan.datePatchSource?.targetItemBlockRaw ?? null,
-        usedParentDocumentContext: plan.datePatchSource?.usedParentDocumentContext ?? false,
-        finalTargetBlockId: plan.targetBlockId,
-      }, patch);
-      if (prepared) {
-        nextMarkdown = prepared.content;
-      }
+      nextMarkdown = renderDatePatch(nextMarkdown, patch, plan.datePatchSource
+        ? {
+            originalBlockId: plan.datePatchSource.originalBlockId,
+            sourceBlockId: plan.datePatchSource.sourceBlockId,
+            targetItemBlockRaw: plan.datePatchSource.targetItemBlockRaw,
+            usedParentDocumentContext: plan.datePatchSource.usedParentDocumentContext,
+            finalTargetBlockId: plan.datePatchSource.finalTargetBlockId,
+          }
+        : undefined);
       continue;
     }
 
