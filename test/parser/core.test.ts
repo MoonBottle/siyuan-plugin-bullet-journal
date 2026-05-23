@@ -1257,6 +1257,44 @@ describe('parseKramdown 习惯打卡解析', () => {
     const result = parseKramdown(kramdown, 'doc-3');
     expect(result!.habits).toHaveLength(2);
   });
+
+  it('含 ✅ 的打卡记录不应穿透到事项解析导致重复默认任务分组', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+独立事项 📅2026-05-22
+{: id="standalone-1" }
+显式任务 📋
+{: id="task-1" }
+任务事项 📅2026-05-22
+{: id="item-1" }
+早起 🎯2026-04-01 🔄每天
+{: id="habit-1" }
+早起 📅2026-04-06 ✅
+{: id="record-1" }`;
+    const result = parseKramdown(kramdown, 'doc-checkin');
+    expect(result).not.toBeNull();
+    const defaultTaskCount = result!.tasks.filter(t => t.isSyntheticDefault).length;
+    expect(defaultTaskCount).toBe(1);
+    expect(result!.habits).toHaveLength(1);
+    expect(result!.habits[0].records).toHaveLength(1);
+    expect(result!.habits[0].records[0].status).toBe('completed');
+  });
+
+  it('习惯上下文中含 ✅ 的打卡记录不应被解析为事项', () => {
+    const kramdown = `## 项目
+{: id="doc-block" type="doc" }
+早起 🎯2026-04-01 🔄每天
+{: id="habit-1" }
+早起 📅2026-04-06 ✅
+{: id="record-1" }`;
+    const result = parseKramdown(kramdown, 'doc-checkin-only');
+    expect(result).not.toBeNull();
+    expect(result!.tasks).toHaveLength(0);
+    expect(result!.habits).toHaveLength(1);
+    expect(result!.habits[0].records).toHaveLength(1);
+    expect(result!.habits[0].records[0].date).toBe('2026-04-06');
+    expect(result!.habits[0].records[0].status).toBe('completed');
+  });
 });
 
 describe('parseKramdown 独立事项解析', () => {

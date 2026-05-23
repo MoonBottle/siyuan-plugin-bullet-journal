@@ -241,8 +241,9 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
   const normalizedLine = normalizeHabitText(line);
   const hasArchiveMarker = /(?:^|\s)📦\d{4}-\d{2}-\d{2}(?=\s|$)/.test(normalizedLine);
   const isMissedRecord = /(?:^|\s)❌$/.test(normalizedLine);
+  const hasCompletedMarker = /(?:^|\s)✅$/.test(normalizedLine);
 
-  if (normalizedLine.includes('✅') || hasArchiveMarker) {
+  if (hasArchiveMarker) {
     return null;
   }
 
@@ -273,6 +274,7 @@ export function parseCheckInRecordLine(line: string, habitId: string): Partial<C
     .replace(/@\d{4}-\d{2}-\d{2}/g, '')
     .replace(/\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/g, '')
     .replace(/(?:^|\s)❌$/g, '')
+    .replace(/(?:^|\s)✅$/g, '')
     .trim();
 
   // 清理多余空格
@@ -317,7 +319,7 @@ export function parseHabitRecordLine(line: string, habitId: string): Partial<Che
     return null;
   }
 
-  const hasHabitRecordMarkers = /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(normalizedLine) || /(?:^|\s)❌$/.test(normalizedLine);
+  const hasHabitRecordMarkers = /\d+\/\d+[a-zA-Z\u4e00-\u9fff]+/.test(normalizedLine) || /(?:^|\s)❌$/.test(normalizedLine) || /(?:^|\s)✅$/.test(normalizedLine);
   return hasHabitRecordMarkers ? parsedRecord : null;
 }
 

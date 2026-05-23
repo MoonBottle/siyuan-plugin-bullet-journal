@@ -241,9 +241,29 @@ describe('parseCheckInRecordLine', () => {
     expect(parseCheckInRecordLine('早起 📅2026-04-06 07:30:45~10:00:00', 'habit-block-1')).toBeNull();
   });
 
-  it('带 ✅ 的旧格式记录不再兼容', () => {
-    expect(parseCheckInRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1')).toBeNull();
-    expect(parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06 ✅', 'habit-block-1')).toBeNull();
+  it('带 ✅ 的记录解析为已完成打卡', () => {
+    const result = parseCheckInRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      content: '早起',
+      date: '2026-04-06',
+      completedAt: '2026-04-06',
+      habitId: 'habit-block-1',
+      status: 'completed',
+    });
+  });
+
+  it('带 ✅ 的计数型记录解析为已完成打卡', () => {
+    const result = parseCheckInRecordLine('喝水 8/8杯 📅2026-04-06 ✅', 'habit-block-1');
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      content: '喝水',
+      date: '2026-04-06',
+      currentValue: 8,
+      targetValue: 8,
+      unit: '杯',
+      status: 'completed',
+    });
   });
 
   it('包含归档标记的记录行不应识别为打卡记录', () => {
@@ -302,9 +322,14 @@ describe('parseHabitRecordLine', () => {
     expect(result).toBeNull();
   });
 
-  it('带完成标记的旧二元记录不再识别为习惯打卡记录', () => {
+  it('带 ✅ 完成标记的二元记录解析为已完成打卡', () => {
     const result = parseHabitRecordLine('早起 📅2026-04-06 ✅', 'habit-block-1');
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      content: '早起',
+      date: '2026-04-06',
+      status: 'completed',
+    });
   });
 
   it('带计数进度的记录应识别为习惯打卡记录', () => {

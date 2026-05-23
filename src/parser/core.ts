@@ -370,8 +370,8 @@ export function parseKramdown(
         currentHabit.records.push(record as CheckInRecord);
         currentHabit.lastBlockId = block.blockId;
         lastBlockType = 'habit';
-        continue;
       }
+      continue;
     }
 
     // 解析任务行（包含 #任务、#task 或 📋，且不是反引号内的说明文字）
