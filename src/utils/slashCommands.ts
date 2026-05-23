@@ -10,7 +10,7 @@ import { getSharedPinia } from '@/utils/sharedPinia';
 import { usePomodoroStore, useProjectStore, useSettingsStore } from '@/stores';
 import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSettingDialog, showRecurringSettingDialog, showPrioritySettingDialog, showHabitCreateDialog, showFocusPlanDialog } from '@/utils/dialog';
 import { usePlugin } from '@/main';
-import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver';
+import { buildCandidateSemanticLine, resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver';
 import {
   processLineText,
   formatDate,
@@ -910,9 +910,14 @@ export function getActionHandler(
       };
     case 'checkIn':
       return async (protyle, nodeElement) => {
-        void removeSlashCommandViaWriter(protyle, nodeElement);
-        const text = nodeElement?.textContent?.trim() || '';
         const blockId = nodeElement?.getAttribute?.('data-node-id');
+        const activeSlash = getActiveSlashRange();
+        const candidateText = nodeElement && activeSlash && (activeSlash.blockId === blockId || nodeElement.contains(activeSlash.range.startContainer))
+          ? buildCandidateSemanticLine(nodeElement, activeSlash.range, activeSlash.slashStartOffset, activeSlash.slashEndOffset)
+          : null;
+
+        await removeSlashCommandViaWriter(protyle, nodeElement);
+        const text = candidateText ?? nodeElement?.textContent?.trim() ?? '';
         const parsedHabit = parseHabitLine(text);
         const matchedRecord = findHabitAndRecordByRecordBlockId(blockId);
         const parsedRecord = parseHabitRecordLine(text, blockId || '');

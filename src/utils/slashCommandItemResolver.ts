@@ -36,7 +36,7 @@ function getNodeByPath(root: Node, path: number[]): Node | null {
   return current;
 }
 
-function buildCandidateSemanticLine(
+export function buildCandidateSemanticLine(
   nodeElement: HTMLElement,
   slashRange: Range,
   slashStartOffset: number,
