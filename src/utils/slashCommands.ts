@@ -1063,22 +1063,6 @@ function getActionLabel(action: CustomSlashCommand['action']): string {
   return labels[action] || action;
 }
 
-async function writeDatePatchForSlashCommand(
-  writeContext: BlockWriteContext,
-  patch: Omit<DatePatch, 'type'>,
-): Promise<boolean> {
-  if (!writeContext.blockId) {
-    return false;
-  }
-  return writeBlock(
-    writeContext,
-    [
-      { type: 'removeSlashCommand' },
-      { type: 'addDate', ...patch },
-    ],
-  );
-}
-
 /**
  * 标记为今日事项
  * @param protyle 编辑器实例，日期已存在时用于删除斜杠命令
@@ -1223,32 +1207,30 @@ async function markAsDateItem(
 ) {
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
-  const writeContext = captureDeferredSlashWriteContext(protyle, nodeElement, { blockId });
-  if (!writeContext) {
-    return;
-  }
 
-  // 从 pinia 中获取已有日期时间信息
+  void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+
   const existingItems = await extractDatesFromBlock(blockId);
 
-  // 使用 showDatePickerDialog 选择日期
   showDatePickerDialog(
     t('slash').selectDateTitle || '选择日期',
     dayjs().format('YYYY-MM-DD'),
     async (selectedDate) => {
-      // 检查日期是否已存在
       const existingItem = existingItems.find(item => item.date === selectedDate);
       if (existingItem) {
-        void writeBlock(writeContext, { type: 'removeSlashCommand' });
         showMessage(t('slash').alreadyMarkedDate || '该日期已标记', 2000, 'info');
         return;
       }
 
-      const success = await writeDatePatchForSlashCommand(writeContext, {
-        date: selectedDate,
-        allDay: true,
-        siblingItems: existingItems.length > 0 ? existingItems : undefined,
-      });
+      const success = await writeBlock(
+        { blockId },
+        {
+          type: 'addDate',
+          date: selectedDate,
+          allDay: true,
+          siblingItems: existingItems.length > 0 ? existingItems : undefined,
+        },
+      );
 
       if (success) {
         showMessage(t('slash').markDateSuccess || '已标记日期', 2000, 'info');
@@ -1452,19 +1434,9 @@ async function setReminderForBlock(
     return;
   }
 
-  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-  }), {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-    nodeElement,
-    protyle,
-  });
+  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
-  showReminderSettingDialog(targetItem, writeContext
-    ? { writeContext, leadingPatches: [{ type: 'removeSlashCommand' }] }
-    : undefined);
+  showReminderSettingDialog(targetItem);
 }
 
 async function setFocusPlanForBlock(
@@ -1485,19 +1457,9 @@ async function setFocusPlanForBlock(
     return;
   }
 
-  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-  }), {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-    nodeElement,
-    protyle,
-  });
+  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
-  showFocusPlanDialog(targetItem, writeContext
-    ? { writeContext, leadingPatches: [{ type: 'removeSlashCommand' }] }
-    : undefined);
+  showFocusPlanDialog(targetItem);
 }
 
 /**
@@ -1521,20 +1483,9 @@ async function setRecurringForBlock(
     return;
   }
 
-  // 打开重复设置弹框
-  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-  }), {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-    nodeElement,
-    protyle,
-  });
+  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
-  showRecurringSettingDialog(targetItem, writeContext
-    ? { writeContext, leadingPatches: [{ type: 'removeSlashCommand' }] }
-    : undefined);
+  showRecurringSettingDialog(targetItem);
 }
 
 /**
@@ -1658,25 +1609,13 @@ async function setPriorityForBlock(
 
   const blockContent = nodeElement.textContent || targetItem.content || '';
   const currentPriority = parsePriorityFromLine(blockContent);
-  const writeContext = resolveSlashAwareWriteContext(capturedWriteContext ?? captureDeferredSlashWriteContext(protyle, nodeElement, {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-  }), {
-    blockId: targetItem.blockId || blockId,
-    listItemBlockId: targetItem.listItemBlockId,
-    nodeElement,
-    protyle,
-  });
+
+  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
   showPrioritySettingDialog(currentPriority, async (priority) => {
     const success = await writeBlock(
-      writeContext ?? { blockId },
-      writeContext
-        ? [
-            { type: 'removeSlashCommand' },
-            { type: 'setPriority', priority },
-          ]
-        : { type: 'setPriority', priority },
+      { blockId: targetItem.blockId || blockId },
+      { type: 'setPriority', priority },
     );
     if (success) {
       showMessage(priority ? '优先级已设置' : '优先级已清除', 2000, 'info');

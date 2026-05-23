@@ -106,7 +106,7 @@ describe('focus plan slash commands', () => {
     expect(commands.some(cmd => cmd.id === 'bullet-journal-set-focus-plan')).toBe(true);
   });
 
-  it('触发 setFocusPlan 时打开当前事项的预计编辑器', async () => {
+  it('触发 setFocusPlan 时弹框前先删除 slash 命令', async () => {
     const handler = getActionHandler('setFocusPlan', {
       pluginName: 'task-assistant',
       openCustomTab: vi.fn(),
@@ -131,20 +131,17 @@ describe('focus plan slash commands', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-1',
+        slashRange: expect.any(Range),
+      }),
+      { type: 'removeSlashCommand' },
+    );
     expect(showFocusPlanDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         blockId: 'block-1',
         content: '整理资料',
-      }),
-      expect.objectContaining({
-        leadingPatches: [{ type: 'removeSlashCommand' }],
-        writeContext: expect.objectContaining({
-          blockId: 'block-1',
-          nodeElement: node,
-          protyle,
-          slashRange: expect.any(Range),
-        }),
       }),
     );
   });

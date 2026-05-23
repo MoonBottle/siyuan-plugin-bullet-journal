@@ -43,18 +43,13 @@ export interface BuildItemContentOptions {
 
 export interface ItemSettingWriteOptions {
   writeContext?: BlockWriteContext;
-  leadingPatches?: BlockPatch[];
 }
 
 function buildWritePayload(
   patch: BlockPatch,
-  options?: ItemSettingWriteOptions,
-): BlockPatch | BlockPatch[] {
-  if (!options?.leadingPatches?.length) {
-    return patch;
-  }
-
-  return [...options.leadingPatches, patch];
+  _options?: ItemSettingWriteOptions,
+): BlockPatch {
+  return patch;
 }
 
 function buildWriteContext(

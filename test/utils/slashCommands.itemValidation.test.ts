@@ -465,7 +465,7 @@ describe('item-only slash command validation', () => {
     );
   });
 
-  it('/tx 在事项块上沿用现有提醒弹框逻辑', async () => {
+  it('/tx 在事项块上弹框前先删除 slash 命令', async () => {
     const item = {
       blockId: 'block-item',
       content: '整理资料',
@@ -479,15 +479,20 @@ describe('item-only slash command validation', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /tx'));
-    const slashStartOffset = setCaretToCommandEnd(node, '/tx');
-    const slashEndOffset = slashStartOffset + '/tx'.length;
+    setCaretToCommandEnd(node, '/tx');
 
     const protyle = {};
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        slashRange: expect.any(Range),
+      }),
+      { type: 'removeSlashCommand' },
+    );
     expect(vi.mocked(showReminderSettingDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         blockId: 'block-item',
@@ -495,21 +500,10 @@ describe('item-only slash command validation', () => {
         date: '2026-05-14',
         status: 'pending',
       }),
-      expect.objectContaining({
-        leadingPatches: [{ type: 'removeSlashCommand' }],
-        writeContext: expect.objectContaining({
-          blockId: 'block-item',
-          nodeElement: node,
-          protyle,
-          slashStartOffset,
-          slashEndOffset,
-          slashRange: expect.any(Range),
-        }),
-      }),
     );
   });
 
-  it('/cf 在事项块上沿用现有重复弹框逻辑', async () => {
+  it('/cf 在事项块上弹框前先删除 slash 命令', async () => {
     const item = {
       blockId: 'block-item',
       content: '整理资料',
@@ -523,32 +517,26 @@ describe('item-only slash command validation', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /cf'));
-    const slashStartOffset = setCaretToCommandEnd(node, '/cf');
-    const slashEndOffset = slashStartOffset + '/cf'.length;
+    setCaretToCommandEnd(node, '/cf');
 
     const protyle = {};
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        slashRange: expect.any(Range),
+      }),
+      { type: 'removeSlashCommand' },
+    );
     expect(vi.mocked(showRecurringSettingDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         blockId: 'block-item',
         content: '整理资料',
         date: '2026-05-14',
         status: 'pending',
-      }),
-      expect.objectContaining({
-        leadingPatches: [{ type: 'removeSlashCommand' }],
-        writeContext: expect.objectContaining({
-          blockId: 'block-item',
-          nodeElement: node,
-          protyle,
-          slashStartOffset,
-          slashEndOffset,
-          slashRange: expect.any(Range),
-        }),
       }),
     );
   });
@@ -576,7 +564,7 @@ describe('item-only slash command validation', () => {
     expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalled();
   });
 
-  it('/yxj 在确认优先级后通过一次批量 BlockWriter 写入 cleanup 和 setPriority', async () => {
+  it('/yxj 在确认优先级后通过 BlockWriter 写入 setPriority（slash 已在弹框前删除）', async () => {
     const item = {
       blockId: 'block-item',
       content: '整理资料',
@@ -593,8 +581,7 @@ describe('item-only slash command validation', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /yxj'));
-    const slashStartOffset = setCaretToCommandEnd(node, '/yxj');
-    const slashEndOffset = slashStartOffset + '/yxj'.length;
+    setCaretToCommandEnd(node, '/yxj');
     const protyle = {};
 
     handler(protyle as any, node);
@@ -603,22 +590,12 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        blockId: 'block-item',
-        nodeElement: node,
-        protyle,
-        slashStartOffset,
-        slashEndOffset,
-        slashRange: expect.any(Range),
-      }),
-      [
-        { type: 'removeSlashCommand' },
-        { type: 'setPriority', priority: 'high' },
-      ],
+      { blockId: 'block-item' },
+      { type: 'setPriority', priority: 'high' },
     );
   });
 
-  it('/rq 打开日期弹框时不应提前提交 slash cleanup', async () => {
+  it('/rq 打开日期弹框前应先删除 slash 命令', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([]);
     const handler = getActionHandler('date', {} as any, ['/rq']);
     const node = document.createElement('div');
@@ -635,11 +612,17 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(writeBlock)).not.toHaveBeenCalled();
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockId: 'block-item',
+        slashRange: expect.any(Range),
+      }),
+      { type: 'removeSlashCommand' },
+    );
     expect(vi.mocked(showDatePickerDialog)).toHaveBeenCalled();
   });
 
-  it('/rq 在确认日期后通过一次批量 BlockWriter 写入 cleanup 和 addDate', async () => {
+  it('/rq 在确认日期后通过 BlockWriter 写入 addDate（slash 已在弹框前删除）', async () => {
     vi.mocked(extractDatesFromBlock).mockResolvedValue([]);
     vi.mocked(showDatePickerDialog).mockImplementation((_, __, onSelect) => {
       void onSelect('2026-05-20');
@@ -648,8 +631,7 @@ describe('item-only slash command validation', () => {
     const node = document.createElement('div');
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /rq'));
-    const slashStartOffset = setCaretToCommandEnd(node, '/rq');
-    const slashEndOffset = slashStartOffset + '/rq'.length;
+    setCaretToCommandEnd(node, '/rq');
     const protyle = {
       transaction: vi.fn(),
       wysiwyg: { element: node },
@@ -666,14 +648,13 @@ describe('item-only slash command validation', () => {
         blockId: 'block-item',
         nodeElement: node,
         protyle,
-        slashStartOffset,
-        slashEndOffset,
         slashRange: expect.any(Range),
       }),
-      [
-        { type: 'removeSlashCommand' },
-        { type: 'addDate', date: '2026-05-20', allDay: true, siblingItems: undefined },
-      ],
+      { type: 'removeSlashCommand' },
+    );
+    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+      { blockId: 'block-item' },
+      { type: 'addDate', date: '2026-05-20', allDay: true, siblingItems: undefined },
     );
   });
 
