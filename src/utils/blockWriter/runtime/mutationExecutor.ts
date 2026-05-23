@@ -24,7 +24,7 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
   });
 
   if (hasRemoveSlashPatch(resolvedPlan)) {
-    console.log('[BWDBG][executePlan] slash plan', {
+    console.log('[BJ-MutationPlanner][executePlan] slash plan', {
       planId: plan.id,
       targetBlockId: resolvedPlan.targetBlockId,
       sourceBlockId: resolvedPlan.sourceBlockId,
@@ -38,7 +38,7 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
     const ok = await commitViaProtyle(resolvedPlan.context, payload);
     if (ok) {
       if (hasRemoveSlashPatch(resolvedPlan)) {
-        console.log('[BWDBG][executePlan] protyle commit success', {
+        console.log('[BJ-MutationPlanner][executePlan] protyle commit success', {
           planId: plan.id,
           targetBlockId: resolvedPlan.targetBlockId,
         });
@@ -47,7 +47,7 @@ export async function executePlan(plan: MutationExecutionPlan): Promise<boolean 
     }
 
     if (hasRemoveSlashPatch(resolvedPlan)) {
-      console.log('[BWDBG][executePlan] protyle commit failed', {
+      console.log('[BJ-MutationPlanner][executePlan] protyle commit failed', {
         planId: plan.id,
         targetBlockId: resolvedPlan.targetBlockId,
         fallback: 'api-reload-source',

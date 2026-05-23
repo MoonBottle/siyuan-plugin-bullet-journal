@@ -1,6 +1,5 @@
 import type { FocusPlan, Item } from '@/types/models';
 import { writeBlock } from '@/utils/blockWriter';
-import { prepareDatePatchWrite } from '@/utils/blockWriter/compat/datePatchWriter';
 import { clearItemFocusPlan, type ItemSettingWriteOptions, updateItemWithFocusPlan } from '@/utils/itemSettingUtils';
 
 function itemHasDate(item: Item, date: string): boolean {
@@ -19,31 +18,20 @@ export async function saveFocusPlanWithOptionalDate(
   }
 
   if (options?.ensureDate && !itemHasDate(item, options.ensureDate)) {
-    const prepared = await prepareDatePatchWrite(
-      item.blockId ?? '',
-      {
-        type: 'addDate',
-        date: options.ensureDate,
-        allDay: true,
-        siblingItems: [item, ...(item.siblingItems ?? [])],
-        status: item.status,
-      },
-    );
-    if (!prepared) {
-      console.error('[Task Assistant] Failed to add focus review date before saving focus plan', {
-        blockId: item.blockId,
-        ensureDate: options.ensureDate,
-      });
+    const blockId = item.blockId ?? '';
+    if (!blockId) {
       return false;
     }
 
     return writeBlock(
-      { blockId: prepared.targetBlockId },
+      { blockId },
       [
         {
-          type: 'replaceMarkdown',
-          markdown: prepared.content,
-          preserveIAL: false,
+          type: 'addDate',
+          date: options.ensureDate,
+          allDay: true,
+          siblingItems: [item, ...(item.siblingItems ?? [])],
+          status: item.status,
         },
         {
           type: 'setFocusPlan',

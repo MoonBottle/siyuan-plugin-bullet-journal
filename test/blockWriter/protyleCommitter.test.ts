@@ -338,7 +338,7 @@ describe('protyleCommitter', () => {
 
     expect(success).toBe(true);
     expect(consoleSpy).toHaveBeenCalledWith(
-      '[BWDBG][protyleCommitter] caret restore fully failed',
+      '[BJ-MutationPlanner][protyleCommitter] caret restore fully failed',
       expect.objectContaining({
         targetBlockId: 'block-fail',
         caretRestoreFailed: true,

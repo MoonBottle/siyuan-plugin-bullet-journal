@@ -650,7 +650,7 @@ export function getActionHandler(
           if (!writeContext) {
             return;
           }
-          console.log('[BWDBG][slash.done] resolved context', {
+          console.log('[BJ-MutationPlanner][slash.done] resolved context', {
             blockId,
             itemStatus: item.status,
             listItemBlockId: item.listItemBlockId,
@@ -704,7 +704,7 @@ export function getActionHandler(
 
           const abandonedTag = getStatusTag('abandoned');
           const blockContent = nodeElement.textContent || '';
-          console.log('[BWDBG][slash.abandon] resolved context', {
+          console.log('[BJ-MutationPlanner][slash.abandon] resolved context', {
             blockId,
             itemStatus: item.status,
             listItemBlockId: item.listItemBlockId,

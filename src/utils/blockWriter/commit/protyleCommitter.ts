@@ -115,7 +115,7 @@ export async function commitViaProtyle(
   const { protyle } = context;
   const targetElement = payload.targetElement;
   if (!protyle || !targetElement || typeof protyle.transaction !== 'function' || !payload.transactionDomHtml) {
-    console.log('[BWDBG][protyleCommitter] unavailable', {
+    console.log('[BJ-MutationPlanner][protyleCommitter] unavailable', {
       hasProtyle: Boolean(protyle),
       hasTargetElement: Boolean(targetElement),
       hasTransaction: typeof protyle?.transaction === 'function',
@@ -126,7 +126,7 @@ export async function commitViaProtyle(
   }
 
   const oldHTML = payload.oldDomHtml ?? targetElement.outerHTML;
-  console.log('[BWDBG][protyleCommitter] before render', {
+  console.log('[BJ-MutationPlanner][protyleCommitter] before render', {
     targetBlockId: payload.targetBlockId,
     beforePreview: previewText(targetElement.textContent),
     nextMarkdownPreview: previewText(payload.nextMarkdown),
@@ -134,7 +134,7 @@ export async function commitViaProtyle(
   });
 
   if (!applyTransactionDomHtml(targetElement, payload.transactionDomHtml)) {
-    console.log('[BWDBG][protyleCommitter] apply transaction html failed', {
+    console.log('[BJ-MutationPlanner][protyleCommitter] apply transaction html failed', {
       targetBlockId: payload.targetBlockId,
       transactionPreview: previewText(resolvePrimaryMarkdownLine(payload.nextMarkdown)),
     });
@@ -142,7 +142,7 @@ export async function commitViaProtyle(
   }
 
   targetElement.setAttribute('updated', formatUpdatedAttr());
-  console.log('[BWDBG][protyleCommitter] before transaction', {
+  console.log('[BJ-MutationPlanner][protyleCommitter] before transaction', {
     targetBlockId: payload.targetBlockId,
     afterRenderPreview: previewText(targetElement.textContent),
   });
@@ -154,7 +154,7 @@ export async function commitViaProtyle(
   if (payload.caretRestorePlan?.policy === 'wbr') {
     const liveTargetElement = resolveLiveTargetElement(payload.targetBlockId, targetElement, protyle);
     const restoredByWbr = focusByWbr(liveTargetElement);
-    console.log('[BWDBG][protyleCommitter] caret restore', {
+    console.log('[BJ-MutationPlanner][protyleCommitter] caret restore', {
       targetBlockId: payload.targetBlockId,
       liveTargetPreview: previewText(liveTargetElement.textContent),
       restoredByWbr,
@@ -163,7 +163,7 @@ export async function commitViaProtyle(
     if (!restoredByWbr) {
       const restoredByOffset = focusByOffset(liveTargetElement, payload.caretRestorePlan.fallbackOffset);
       if (!restoredByOffset) {
-        console.log('[BWDBG][protyleCommitter] caret restore fully failed', {
+        console.log('[BJ-MutationPlanner][protyleCommitter] caret restore fully failed', {
           targetBlockId: payload.targetBlockId,
           caretRestoreFailed: true,
           fallbackOffset: payload.caretRestorePlan.fallbackOffset,

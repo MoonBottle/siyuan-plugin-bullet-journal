@@ -75,8 +75,8 @@ interface TimerEntry {
 ### 存储
 
 - 运行时维护在内存 `Map<string, TimerEntry>`
-- 变更时异步写入 `siyuan.storage.put('timer-registry.json', ...)`，5 秒防抖
-- 内核插件启动时从 `siyuan.storage.get('timer-registry.json')` 恢复
+- **仅提醒和习惯计时器持久化**：变更时异步写入 `siyuan.storage.put('timer-registry.json', ...)`，5 秒防抖。内核插件启动时从 `siyuan.storage.get('timer-registry.json')` 恢复
+- **番茄钟/休息计时器不持久化**：这些是用户交互产生的瞬态数据，内核重启后不应自动恢复（用户可能已离开）。前端重新打开时通过 `getActiveTimers()` 查询内核状态，发现 pomodoro/break 计时器不存在则自行处理（恢复或标记过期）
 
 ## Section 2：Scheduler
 
@@ -104,7 +104,7 @@ checkTimers (每秒):
 
 ```
 onrunning:
-  1. siyuan.storage.watcher.add('kernel-data.json') 注册文件监听
+  1. siyuan.storage.watcher.add('.') 注册 storage 根目录监听（监听目录而非单个文件，避免原子写入导致 watcher 失效）
   2. siyuan.storage.get('kernel-data.json') 首次加载 → 解析出所有 Item 和 Habit
   3. 过滤有 reminder 的事项 + 有 reminder 的习惯
   4. 对每个计算 calculateReminderTime() → 生成 TimerEntry
@@ -118,17 +118,27 @@ fs-notify 事件（文件变更时）:
 
 无需定时轮询，前端写入 `kernel-data.json` 后内核通过 `fsnotify` 立即感知变更并重新计算提醒，零延迟。
 
-`siyuan.event.handler` 的注册方式：
+`siyuan.event.handler` 的注册方式（分发器模式 + 防抖）：
 
 ```javascript
+// siyuan.event.handler 只能设置一个函数，需用分发器模式
+var fsNotifyDebounceTimer = null
+
 siyuan.event.handler = function(event) {
   if (event.type === 'fs-notify') {
-    if (event.detail.path === 'kernel-data.json') {
-      rebuildReminderSchedule()
-    }
-    if (event.detail.path === 'webhook-config.json') {
-      reloadWebhookConfig()
-    }
+    // 防抖：fsnotify 写入文件可能连续触发 CREATE+WRITE 多个事件
+    // 思源内核自身用 100ms 防抖，插件侧同样需要
+    if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
+    fsNotifyDebounceTimer = setTimeout(function() {
+      // path 在 Windows 上使用反斜杠，需标准化
+      var path = event.detail.path.replace(/\\/g, '/')
+      if (path === 'kernel-data.json') {
+        rebuildReminderSchedule()
+      }
+      if (path === 'webhook-config.json') {
+        reloadWebhookConfig()
+      }
+    }, 200)
   }
 }
 ```
@@ -307,12 +317,15 @@ async function sendWebhook(channel, entry) {
     method = 'POST'
   }
 
+  // forwardProxy headers 格式：[{ "HeaderName": "value" }]，每个元素是一个对象
   var headerArray = []
   for (var key in headers) {
-    headerArray.push({ key: key, value: headers[key] })
+    var obj = {}
+    obj[key] = headers[key]
+    headerArray.push(obj)
   }
 
-  return siyuan.client.fetch('/api/network/forwardProxy', {
+  var resp = await siyuan.client.fetch('/api/network/forwardProxy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -320,10 +333,23 @@ async function sendWebhook(channel, entry) {
       method: method,
       headers: headerArray,
       payload: payload,
-      payloadEncoding: 'text',
       timeout: 5000
     })
   })
+
+  // siyuan.client.fetch 返回类 Fetch API Response
+  // forwardProxy 响应体是思源标准格式 { code, msg, data }
+  // data.status 是目标服务器的 HTTP 状态码
+  if (resp.ok) {
+    var result = await resp.json()
+    if (result.code !== 0) {
+      siyuan.logger.warn('webhook forwardProxy failed: code=' + result.code + ' msg=' + result.msg)
+    } else if (result.data && result.data.status >= 400) {
+      siyuan.logger.warn('webhook target returned status=' + result.data.status)
+    }
+  } else {
+    siyuan.logger.warn('webhook siyuan.client.fetch failed: status=' + resp.status)
+  }
 }
 ```
 
@@ -350,6 +376,8 @@ async function sendWebhook(channel, entry) {
 | `cancelTimersByType` | `{ type }` | 取消某类型的所有计时器 |
 | `getActiveTimers` | `{ type? }` | 查询活跃计时器 |
 
+> **RPC 参数传递规则**：前端调用时 `params` 使用对象格式（如 `{ id: "xxx" }`），内核 JS 绑定函数收到的是**单个对象参数**（不是多个参数）。这是因为 JSON-RPC 2.0 中 `params` 为对象时，Go 层将其作为单个 goja.Value 传入 JS 函数；为数组时才展开为多个参数。本设计统一使用对象格式。
+
 > Webhook 配置不通过 RPC 传递，而是通过共享存储文件 + `fsnotify` 监听实现。前端 `plugin.saveData()` 写入，内核 `siyuan.storage.watcher` 自动感知变更并重新加载。
 
 ### RPC Broadcast 事件
@@ -359,26 +387,43 @@ async function sendWebhook(channel, entry) {
 | `timer-expired` | `{ id, type, metadata, endTime }` | 计时器到期 |
 | `date-changed` | `{ date }` | 零点日期变更 |
 
-前端调用方式：`POST /api/plugin/rpc/siyuan-plugin-bullet-journal`，body 为 JSON-RPC 2.0 格式。
+前端调用方式：`POST /api/plugin/rpc/siyuan-plugin-bullet-journal`，body 为 JSON-RPC 2.0 格式。响应也是标准 JSON-RPC 2.0 格式（成功返回 `{jsonrpc, result, id}`，错误返回 `{jsonrpc, error, id}`），不能使用思源前端的 `fetchPost`（它期望 `{code, msg, data}` 格式）。
 
 ## Section 5：前端改造
 
 ### 内核可用性检测
 
-新增 `useKernelTimer.ts` composable：
+新增 `useKernelTimer.ts` composable，包含内核可用性检测、JSON-RPC 2.0 客户端封装、WebSocket 广播监听。
+
+**注意**：思源前端的 `fetchPost`/`fetchSyncPost` 不兼容 JSON-RPC 2.0 格式（它们期望思源标准 `{code, msg, data}` 响应），需自行封装 RPC 客户端。
 
 ```typescript
 const kernelAvailable = ref(false)
+const PLUGIN_NAME = 'siyuan-plugin-bullet-journal'
+
+// JSON-RPC 2.0 客户端
+async function rpcCall<T = any>(method: string, params?: Record<string, any>): Promise<T> {
+  const resp = await fetch(`/api/plugin/rpc/${PLUGIN_NAME}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method,
+      params: params ?? {},
+      id: Date.now(),
+    }),
+  })
+  const data = await resp.json()
+  if (data.error) {
+    throw new Error(`RPC Error ${data.error.code}: ${data.error.message}`)
+  }
+  return data.result
+}
 
 async function checkKernelAvailable(): Promise<boolean> {
   try {
-    const resp = await fetch('/api/plugin/rpc/siyuan-plugin-bullet-journal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', method: 'ping', id: 1 })
-    })
-    const data = await resp.json()
-    kernelAvailable.value = data?.result !== undefined
+    await rpcCall('ping')
+    kernelAvailable.value = true
   } catch {
     kernelAvailable.value = false
   }
@@ -394,12 +439,17 @@ async function checkKernelAvailable(): Promise<boolean> {
 
 ```typescript
 function connectKernelWebSocket() {
-  const token = (window as any).siyuan?.config?.accessToken || ''
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-  const ws = new WebSocket(
-    `${protocol}://${location.host}/ws/plugin/rpc/siyuan-plugin-bullet-journal?token=${encodeURIComponent(token)}`
-  )
+  // 浏览器 WebSocket 不支持自定义 Header，认证方式：
+  // 1. Cookie（浏览器自动携带 siyuan session cookie，最常用）
+  // 2. Query 参数 ?token=xxx（Docker/跨域场景）
+  const token = (window as any).siyuan?.config?.accessToken || ''
+  const wsUrl = token
+    ? `${protocol}://${location.host}/ws/plugin/rpc/siyuan-plugin-bullet-journal?token=${encodeURIComponent(token)}`
+    : `${protocol}://${location.host}/ws/plugin/rpc/siyuan-plugin-bullet-journal`
+  const ws = new WebSocket(wsUrl)
   ws.onmessage = (event) => {
+    // RPC broadcast 消息格式为 JSON-RPC 2.0 Notification（无 id 字段）
     const data = JSON.parse(event.data)
     if (data.method === 'timer-expired') {
       eventBus.emit(Events.KERNEL_NOTIFICATION, data.params)
@@ -414,7 +464,7 @@ function connectKernelWebSocket() {
 }
 ```
 
-WebSocket 连接需要携带认证 token（通过 query 参数 `token`），从 `window.siyuan.config.accessToken` 获取。
+WebSocket 认证说明：浏览器场景下 Cookie 自动携带（`CheckAuth` 中间件优先检查 session cookie），无需手动传 token。Docker 或跨域场景下通过 query 参数 `?token=xxx` 传递 API token。
 
 ### reminderService 改造
 
@@ -553,6 +603,22 @@ siyuan.plugin.lifecycle.onrunning = async function() {
   initMcpServer()
   // 5. 注册 siyuan.event.handler（处理 fsnotify 事件）
   initEventHandler()
+}
+
+siyuan.plugin.lifecycle.onunload = async function() {
+  // 1. 停止调度器（清理 setInterval）
+  stopScheduler()
+  // 2. 持久化提醒计时器注册表
+  await persistTimerRegistry()
+  // 3. 清理 HTTP/SSE handler（置 null）
+  siyuan.server.private.http.handler = null
+  siyuan.server.private.es.handler = null
+  // 4. 清理 event handler
+  siyuan.event.handler = null
+  // 5. 取消 fsnotify 监听
+  await siyuan.storage.watcher.remove('.')
+  // 注意：setInterval/setTimeout 由 goja runtime Stop() 自动清理，无需手动清除
+  // 注意：RPC 方法由内核 p.rpcMethods.Clear() 自动清理，无需手动 unbind
 }
 ```
 
