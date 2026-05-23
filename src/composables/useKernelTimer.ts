@@ -6,6 +6,8 @@ export const kernelAvailable = ref(false)
 
 let ws: WebSocket | null = null
 let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null
+let wsReconnectAttempts = 0
+const WS_MAX_RECONNECT_ATTEMPTS = 10
 
 export async function rpcCall<T = any>(method: string, params?: Record<string, any>): Promise<T> {
   const resp = await fetch(`/api/plugin/rpc/${PLUGIN_NAME}`, {
@@ -48,6 +50,9 @@ export function connectKernelWebSocket(): void {
     : `${protocol}://${location.host}/ws/plugin/rpc/${PLUGIN_NAME}`
 
   ws = new WebSocket(wsUrl)
+  ws.onopen = () => {
+    wsReconnectAttempts = 0
+  }
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
@@ -63,6 +68,11 @@ export function connectKernelWebSocket(): void {
   }
   ws.onclose = () => {
     ws = null
+    if (wsReconnectAttempts >= WS_MAX_RECONNECT_ATTEMPTS) {
+      kernelAvailable.value = false
+      return
+    }
+    wsReconnectAttempts++
     wsReconnectTimer = setTimeout(connectKernelWebSocket, 5000)
   }
   ws.onerror = () => {

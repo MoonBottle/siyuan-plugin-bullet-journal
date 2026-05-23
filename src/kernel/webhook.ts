@@ -65,33 +65,50 @@ function buildTemplateVars(entry: TimerEntry): Record<string, string> {
   }
 }
 
+function buildPathText(projectName: string, taskName: string): string {
+  if (projectName && taskName) return '**' + projectName + ' > ' + taskName + '**'
+  if (projectName) return '**' + projectName + '**'
+  if (taskName) return '**' + taskName + '**'
+  return ''
+}
+
 function buildPlatformPayload(channelType: string, entry: TimerEntry): any {
   var vars = buildTemplateVars(entry)
+  var pathText = buildPathText(vars.projectName, vars.taskName)
   if (channelType === 'dingtalk') {
+    var text = '### ' + vars.title
+    if (pathText) text += '\n' + pathText
+    text += '\n> ' + vars.content
     return {
       msgtype: 'markdown',
       markdown: {
         title: vars.title,
-        text: '### ' + vars.title + '\n**' + vars.projectName + ' > ' + vars.taskName + '**\n> ' + vars.content,
+        text: text,
       },
     }
   }
   if (channelType === 'feishu') {
+    var content = ''
+    if (pathText) content += pathText + '\n'
+    content += vars.content
     return {
       msg_type: 'interactive',
       card: {
         header: { title: { tag: 'plain_text', content: vars.title } },
         elements: [
-          { tag: 'markdown', content: '**' + vars.projectName + ' > ' + vars.taskName + '**\n' + vars.content },
+          { tag: 'markdown', content: content },
         ],
       },
     }
   }
   if (channelType === 'wecom') {
+    var mdContent = '### ' + vars.title
+    if (pathText) mdContent += '\n> ' + pathText
+    mdContent += '\n> ' + vars.content
     return {
       msgtype: 'markdown',
       markdown: {
-        content: '### ' + vars.title + '\n> **' + vars.projectName + ' > ' + vars.taskName + '**\n> ' + vars.content,
+        content: mdContent,
       },
     }
   }
@@ -149,4 +166,4 @@ async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<
   }
 }
 
-export function initWebhook(): void {}
+

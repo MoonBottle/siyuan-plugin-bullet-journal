@@ -140,7 +140,7 @@ export class ReminderService {
     if (!this.projectStore) return;
 
     if (kernelAvailable.value) {
-      this.rebuildScheduleKernel();
+      void this.rebuildScheduleKernel();
       return;
     }
 
@@ -401,7 +401,7 @@ export class ReminderService {
     });
   }
 
-  private rebuildScheduleKernel(): void {
+  private async rebuildScheduleKernel(): Promise<void> {
     if (!this.projectStore) return;
 
     const now = Date.now();
@@ -465,8 +465,10 @@ export class ReminderService {
       });
     }
 
-    rpcCall('cancelTimersByType', { type: 'reminder' }).catch(() => {})
-    rpcCall('cancelTimersByType', { type: 'habit' }).catch(() => {})
+    await Promise.all([
+      rpcCall('cancelTimersByType', { type: 'reminder' }).catch(() => {}),
+      rpcCall('cancelTimersByType', { type: 'habit' }).catch(() => {}),
+    ])
 
     if (entries.length > 0) {
       rpcCall('registerTimers', { entries }).catch((err) => {

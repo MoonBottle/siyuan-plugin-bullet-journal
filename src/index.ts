@@ -600,6 +600,12 @@ export default class TaskAssistantPlugin extends Plugin {
     reminderService.stop();
     // 断开内核计时器连接
     disconnectKernelWebSocket();
+    // 清理内核通知监听器
+    const pinia = getSharedPinia();
+    if (pinia) {
+      const pomodoroStore = usePomodoroStore(pinia);
+      pomodoroStore.teardownKernelNotificationListener();
+    }
 
     debugState.activeInstanceIds = debugState.activeInstanceIds.filter(
       (id) => id !== this.debugInstanceId,

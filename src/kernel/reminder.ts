@@ -3,6 +3,7 @@ import { calculateReminderTime } from './utils'
 import { registerTimers, cancelTimersByType } from './scheduler'
 
 var fsNotifyDebounceTimer: ReturnType<typeof setTimeout> | null = null
+var pendingPaths: Record<string, boolean> = {}
 var reloadWebhookConfigFn: (() => Promise<void>) | null = null
 
 export function setReloadWebhookConfig(fn: () => Promise<void>): void {
@@ -94,14 +95,16 @@ export async function rebuildReminderSchedule(): Promise<void> {
 
 export function handleFsNotify(event: { type: string, detail: any }): void {
   if (event.type !== 'fs-notify') return
+  var path = event.detail.path.replace(/\\/g, '/')
+  pendingPaths[path] = true
   if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
   fsNotifyDebounceTimer = setTimeout(function () {
-    var path = event.detail.path.replace(/\\/g, '/')
-    if (path === 'kernel-data.json') {
+    if (pendingPaths['kernel-data.json']) {
       void rebuildReminderSchedule()
     }
-    if (path === 'webhook-config.json') {
+    if (pendingPaths['webhook-config.json']) {
       if (reloadWebhookConfigFn) void reloadWebhookConfigFn()
     }
+    pendingPaths = {}
   }, 200)
 }
