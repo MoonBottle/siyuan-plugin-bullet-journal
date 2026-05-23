@@ -154,6 +154,323 @@ describe('writeBlock', () => {
     );
   });
 
+  it('keeps minute precision when rewriting dated items', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '周会 📅2026-03-17 14:00~16:00\n{: id="abc"}',
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'addDate',
+        date: '2026-03-18',
+        startTime: '15:30:00',
+        endTime: '17:30:00',
+        allDay: false,
+        originalDate: '2026-03-17',
+        timePrecision: 'minute',
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '周会 📅2026-03-18 15:30~17:30\n{: id="abc"}',
+      'block123',
+    );
+  });
+
+  it('adds abandoned status label for non-task items during date rewrites', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '整理资料 📅2024-01-01, 2024-01-03\n{: id="abc"}',
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'addDate',
+        date: '2024-01-02',
+        allDay: true,
+        originalDate: '2024-01-01',
+        siblingItems: [{ date: '2024-01-03' }],
+        status: 'abandoned',
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 📅2024-01-02~01-03 ❌\n{: id="abc"}',
+      'block123',
+    );
+  });
+
+  it('preserves pomodoro lines when addDate rewrites a task list item', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: `[ ] 工作事项 📅2026-03-08
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      {
+        type: 'addDate',
+        date: '2026-03-09',
+        startTime: '10:00:00',
+        endTime: '11:00:00',
+        allDay: false,
+        originalDate: '2026-03-08',
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 工作事项 📅2026-03-09 10:00:00~11:00:00
+  🍅2026-03-08 09:00:00~09:25:00 第一个番茄
+  {: id="yyy"}`,
+      'block123',
+    );
+  });
+
+  it('rewrites parent task-list block when addDate is requested from a content child', async () => {
+    vi.mocked(getBlockByID)
+      .mockResolvedValueOnce({ id: 'content-block-1', parent_id: 'parent-block-1', type: 'NodeParagraph' } as any)
+      .mockResolvedValueOnce({ id: 'parent-block-1', type: 'NodeListItem', subtype: 't' } as any)
+      .mockResolvedValueOnce({ id: 'parent-block-1', type: 'NodeListItem', subtype: 't' } as any);
+    vi.mocked(getBlockKramdown).mockImplementationOnce(async (id: string) => {
+      if (id === 'parent-block-1') {
+        return {
+          id: 'parent-block-1',
+          kramdown: `- {: id="parent-block-1"}[x] ddd 📅2026-03-12
+  {: id="content-block-1"}`,
+        } as any;
+      }
+      return {
+        id,
+        kramdown: 'ddd 📅2026-03-12\n{: id="content-block-1"}',
+      } as any;
+    });
+
+    const result = await writeBlock(
+      { blockId: 'content-block-1' },
+      {
+        type: 'addDate',
+        date: '2026-03-15',
+        allDay: true,
+        originalDate: '2026-03-12',
+        status: 'completed',
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[x] ddd 📅2026-03-15
+  {: id="content-block-1"}`,
+      'parent-block-1',
+    );
+  });
+
+  it('updates only the current block when parent context is a document block', async () => {
+    vi.mocked(getBlockByID).mockResolvedValueOnce({ id: 'content-block-1', parent_id: 'doc-block-1', type: 'NodeParagraph' } as any);
+    vi.mocked(getBlockKramdown).mockImplementationOnce(async (id: string) => {
+      if (id === 'doc-block-1') {
+        return {
+          id: 'doc-block-1',
+          kramdown: `- {: id="list-parent-1"}测试独立事项 📌 📅2026-05-09 🔁每天
+  {: id="list-content-1"}
+{: id="list-sep-1"}
+
+测试独立事项 📌 📅2026-05-09 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`,
+        } as any;
+      }
+      return {
+        id,
+        kramdown: `测试独立事项 📌 📅2026-05-09 🔁每天 /jt
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`,
+      } as any;
+    });
+
+    const result = await writeBlock(
+      { blockId: 'content-block-1' },
+      {
+        type: 'addDate',
+        date: '2026-05-10',
+        allDay: true,
+        siblingItems: [{ date: '2026-05-09' }],
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `测试独立事项 📌 📅2026-05-09~05-10 🔁每天
+((20260510074935-sch6ybk '测试独立事项2  📌  '))
+{: id="content-block-1" updated="20260510140956"}`,
+      'content-block-1',
+    );
+  });
+
+  it('appends non-status suffix content through setContent', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '整理资料 📅2024-01-01\n{: id="abc"}',
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      { type: 'setContent', suffix: '#重要' },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      '整理资料 📅2024-01-01 #重要\n{: id="abc"}',
+      'block123',
+    );
+  });
+
+  it('replaces item content while preserving markers before applying completed status', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: `[ ] 旧任务名称 🌱 📅2026-03-08 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`,
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      [
+        { type: 'setContent', newItemContent: '新任务名称' },
+        { type: 'setStatus', status: 'completed' },
+      ],
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[x] 新任务名称 🌱 📅2026-03-08 ⏰14:00 🔁每月 截止到2026-12-31
+  {: id="yyy"}`,
+      'block123',
+    );
+  });
+
+  it('preserves empty replacement content and appended suffix ordering', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: `[ ] 旧任务名称 📅2026-03-08
+  {: id="yyy"}`,
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      [
+        { type: 'setContent', newItemContent: '' },
+        { type: 'setContent', suffix: '#标签' },
+      ],
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 📅2026-03-08 #标签
+  {: id="yyy"}`,
+      'block123',
+    );
+  });
+
+  it('rewrites parent task-list content when setContent is triggered from a content child', async () => {
+    vi.mocked(getBlockByID).mockResolvedValueOnce({ id: 'parent-block-1', type: 'NodeListItem', subtype: 't' } as any);
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'parent-block-1',
+      kramdown: `- {: id="parent-block-1"}[ ] 旧任务名称 @2026-03-08
+  {: id="content-block-1"}`,
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'content-block-1', listItemBlockId: 'parent-block-1' },
+      [
+        { type: 'setContent', newItemContent: '新任务名称' },
+        { type: 'setStatus', status: 'completed' },
+      ],
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"} [x] 新任务名称 @2026-03-08
+  {: id="content-block-1"}`,
+      'parent-block-1',
+    );
+  });
+
+  it('adds and clears priority markers while preserving reminder and recurring markers', async () => {
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: `[ ] 周会 📅2026-03-17 ⏰09:00 🔁每周
+  {: id="yyy"}`,
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'block123' },
+      { type: 'setPriority', priority: 'high' },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `[ ] 周会 📅2026-03-17 ⏰09:00 🔁每周 🔥
+  {: id="yyy"}`,
+      'block123',
+    );
+
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'abc',
+      kramdown: '整理资料 🔥 📅2024-01-01\n{: id="abc"}',
+    } as any);
+
+    const clearResult = await writeBlock(
+      { blockId: 'block123' },
+      { type: 'setPriority', priority: undefined },
+    );
+
+    expect(clearResult).toBe(true);
+    expect(updateBlock).toHaveBeenLastCalledWith(
+      'markdown',
+      '整理资料 📅2024-01-01\n{: id="abc"}',
+      'block123',
+    );
+  });
+
+  it('updates parent task-list block when setting priority from a content child', async () => {
+    vi.mocked(getBlockByID).mockResolvedValueOnce({ id: 'parent-block-1', type: 'NodeListItem', subtype: 't' } as any);
+    vi.mocked(getBlockKramdown).mockResolvedValueOnce({
+      id: 'parent-block-1',
+      kramdown: `- {: id="parent-block-1"}[ ] 任务名称 @2026-03-08
+  {: id="content-block-1"}`,
+    } as any);
+
+    const result = await writeBlock(
+      { blockId: 'content-block-1', listItemBlockId: 'parent-block-1' },
+      { type: 'setPriority', priority: 'high' },
+    );
+
+    expect(result).toBe(true);
+    expect(updateBlock).toHaveBeenCalledWith(
+      'markdown',
+      `- {: id="parent-block-1"}[ ] 任务名称 @2026-03-08 🔥
+  {: id="content-block-1"}`,
+      'parent-block-1',
+    );
+  });
+
   it('does not fall back to API after a successful Protyle write', async () => {
     const div = document.createElement('div');
     div.setAttribute('data-node-id', 'block123');

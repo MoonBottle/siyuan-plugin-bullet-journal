@@ -21,7 +21,11 @@ async function resolveUpdateTargetBlockId(intent: Extract<BlockMutationIntent, {
     return datePatchSource.finalTargetBlockId;
   }
 
-  if (!intent.patches.some(patch => patch.type === 'setStatus')) {
+  const shouldResolveTaskListAncestor = intent.patches.some((patch) => {
+    return patch.type === 'setStatus' || patch.type === 'setPriority' || patch.type === 'setContent';
+  });
+
+  if (!shouldResolveTaskListAncestor) {
     return intent.context.listItemBlockId || intent.context.blockId;
   }
 

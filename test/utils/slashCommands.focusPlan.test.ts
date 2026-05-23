@@ -36,12 +36,6 @@ vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => null),
 }));
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockContent: vi.fn(),
-  updateBlockDateTime: vi.fn(),
-  updateBlockPriority: vi.fn(),
-}));
-
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: vi.fn().mockResolvedValue(true),
 }));

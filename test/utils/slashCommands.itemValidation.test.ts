@@ -62,12 +62,6 @@ vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => ({})),
 }));
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockContent: vi.fn(),
-  updateBlockDateTime: vi.fn(),
-  updateBlockPriority: vi.fn(),
-}));
-
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: vi.fn().mockResolvedValue(true),
   createProtyleMarkdownWriter: vi.fn(),
@@ -117,7 +111,6 @@ vi.mock('@/services/habitService', () => ({
   checkInCount: vi.fn(),
 }));
 
-import { updateBlockContent } from '@/utils/fileUtils';
 import { writeBlock } from '@/utils/blockWriter';
 import { showDatePickerDialog, showPrioritySettingDialog, showReminderSettingDialog, showRecurringSettingDialog } from '@/utils/dialog';
 import { extractDatesFromBlock } from '@/utils/slashCommandUtils';
@@ -179,7 +172,6 @@ describe('item-only slash command validation', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(vi.mocked(updateBlockContent)).not.toHaveBeenCalled();
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
       expect.objectContaining({ blockId: 'block-non-item', nodeElement: node, protyle }),
       { type: 'removeSlashCommand' },

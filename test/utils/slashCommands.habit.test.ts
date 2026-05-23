@@ -45,11 +45,6 @@ vi.mock('@/utils/sharedPinia', () => ({
   getSharedPinia: vi.fn(() => null),
 }));
 
-vi.mock('@/utils/fileUtils', () => ({
-  updateBlockContent: vi.fn(),
-  updateBlockPriority: vi.fn(),
-}));
-
 vi.mock('@/utils/blockWriter', () => ({
   writeBlock: vi.fn().mockResolvedValue(true),
   insertBlockAfter: vi.fn().mockResolvedValue(true),
@@ -178,11 +173,11 @@ describe('habit slash commands', () => {
 
     handler(protyle as any, node);
 
-    expect(writeBlock).toHaveBeenCalledWith({
+    expect(writeBlock).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-zwsp',
       nodeElement: node,
       protyle,
-    }, {
+    }), {
       type: 'removeSlashCommand',
     });
     expect(showSpy).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
@@ -339,11 +334,11 @@ describe('habit slash commands', () => {
     await vi.advanceTimersByTimeAsync(250);
 
     expect(writeBlock).toHaveBeenCalledTimes(1);
-    expect(writeBlock).toHaveBeenCalledWith({
+    expect(writeBlock).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-today',
       nodeElement: node,
       protyle,
-    }, [
+    }), [
       {
         type: 'removeSlashCommand',
       },
@@ -387,11 +382,11 @@ describe('habit slash commands', () => {
     await vi.advanceTimersByTimeAsync(250);
 
     expect(writeBlock).toHaveBeenCalledTimes(1);
-    expect(writeBlock).toHaveBeenCalledWith({
+    expect(writeBlock).toHaveBeenCalledWith(expect.objectContaining({
       blockId: 'block-tomorrow',
       nodeElement: node,
       protyle,
-    }, [
+    }), [
       {
         type: 'removeSlashCommand',
       },
