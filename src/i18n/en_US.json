@@ -83,6 +83,7 @@
     "configure": "Configure",
     "widgetRenamePrompt": "Enter a widget name",
     "delete": "Delete",
+    "edit": "Edit",
     "deleteConfirm": "Delete \"{name}\"?",
     "widgetDeleteConfirm": "Delete widget \"{name}\"?",
     "emptyState": "Select a workbench item",

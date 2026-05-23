@@ -267,6 +267,9 @@ defineExpose({ buildResult })
 
 .form-label {
   min-width: 80px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 8px;
   font-size: 13px;
 }
 

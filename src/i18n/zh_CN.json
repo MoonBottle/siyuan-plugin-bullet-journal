@@ -83,6 +83,7 @@
     "configure": "配置",
     "widgetRenamePrompt": "请输入组件名称",
     "delete": "删除",
+    "edit": "编辑",
     "deleteConfirm": "确定要删除“{name}”吗？",
     "widgetDeleteConfirm": "确定要删除组件“{name}”吗？",
     "emptyState": "请选择一个工作台条目",

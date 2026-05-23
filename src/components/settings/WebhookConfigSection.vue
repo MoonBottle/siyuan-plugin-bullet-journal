@@ -32,7 +32,7 @@
             <div class="custom-item-actions">
               <SyButton
                 icon="iconEdit"
-                :aria-label="t('settings').webhook.editChannel"
+                :aria-label="t('common').edit"
                 @click="editChannel(channel)"
               />
               <SyButton
