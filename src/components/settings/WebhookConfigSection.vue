@@ -30,18 +30,16 @@
               <span class="channel-type">{{ getTypeLabel(channel.type) }}</span>
             </div>
             <div class="custom-item-actions">
-              <button
-                class="b3-button b3-button--small"
+              <SyButton
+                icon="iconEdit"
+                :aria-label="t('settings').webhook.editChannel"
                 @click="editChannel(channel)"
-              >
-                <svg><use xlink:href="#iconEdit" /></svg>
-              </button>
-              <button
-                class="b3-button b3-button--small b3-button--error"
+              />
+              <SyButton
+                icon="iconTrashcan"
+                :aria-label="t('common').delete"
                 @click="deleteChannel(channel.id)"
-              >
-                <svg><use xlink:href="#iconTrashcan" /></svg>
-              </button>
+              />
               <SySwitch v-model="channel.enabled" />
             </div>
           </div>
@@ -92,6 +90,7 @@ import SySettingsSection from '@/components/settings/SySettingsSection.vue'
 import SySettingItemList from '@/components/SiyuanTheme/SySettingItemList.vue'
 import SySettingItem from '@/components/SiyuanTheme/SySettingItem.vue'
 import SySwitch from '@/components/SiyuanTheme/SySwitch.vue'
+import SyButton from '@/components/SiyuanTheme/SyButton.vue'
 import SySettingsActionButton from '@/components/settings/SySettingsActionButton.vue'
 import WebhookChannelEditForm from '@/components/settings/WebhookChannelEditForm.vue'
 
