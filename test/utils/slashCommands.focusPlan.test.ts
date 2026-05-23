@@ -130,6 +130,8 @@ describe('focus plan slash commands', () => {
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
       expect.objectContaining({

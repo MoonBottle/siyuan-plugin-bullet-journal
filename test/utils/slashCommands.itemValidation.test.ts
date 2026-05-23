@@ -393,6 +393,8 @@ describe('item-only slash command validation', () => {
     handler(protyle as any, node);
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(vi.mocked(showPrioritySettingDialog)).toHaveBeenCalledOnce();
     expect(vi.mocked(showMessage)).not.toHaveBeenCalledWith('当前块不是有效的事项', 2000, 'error');
@@ -432,6 +434,8 @@ describe('item-only slash command validation', () => {
     };
 
     handler(protyle as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
@@ -483,16 +487,15 @@ describe('item-only slash command validation', () => {
 
     const protyle = {};
     handler(protyle as any, node);
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        blockId: 'block-item',
-        slashRange: expect.any(Range),
-      }),
-      { type: 'removeSlashCommand' },
-    );
+    await vi.waitFor(() => {
+      expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          blockId: 'block-item',
+          slashRange: expect.any(Range),
+        }),
+        { type: 'removeSlashCommand' },
+      );
+    });
     expect(vi.mocked(showReminderSettingDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         blockId: 'block-item',
@@ -521,16 +524,15 @@ describe('item-only slash command validation', () => {
 
     const protyle = {};
     handler(protyle as any, node);
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        blockId: 'block-item',
-        slashRange: expect.any(Range),
-      }),
-      { type: 'removeSlashCommand' },
-    );
+    await vi.waitFor(() => {
+      expect(vi.mocked(writeBlock)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          blockId: 'block-item',
+          slashRange: expect.any(Range),
+        }),
+        { type: 'removeSlashCommand' },
+      );
+    });
     expect(vi.mocked(showRecurringSettingDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         blockId: 'block-item',
@@ -558,6 +560,8 @@ describe('item-only slash command validation', () => {
     setCaretToCommandEnd(node, '/yxj');
 
     handler({} as any, node);
+    await Promise.resolve();
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 

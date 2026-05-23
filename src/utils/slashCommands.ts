@@ -1208,7 +1208,7 @@ async function markAsDateItem(
   const blockId = nodeElement.getAttribute('data-node-id');
   if (!blockId) return;
 
-  void removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
+  await removeSlashCommandViaWriter(protyle, nodeElement, { blockId });
 
   const existingItems = await extractDatesFromBlock(blockId);
 
@@ -1434,7 +1434,7 @@ async function setReminderForBlock(
     return;
   }
 
-  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
   showReminderSettingDialog(targetItem);
 }
@@ -1457,7 +1457,7 @@ async function setFocusPlanForBlock(
     return;
   }
 
-  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
   showFocusPlanDialog(targetItem);
 }
@@ -1483,7 +1483,7 @@ async function setRecurringForBlock(
     return;
   }
 
-  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
   showRecurringSettingDialog(targetItem);
 }
@@ -1610,7 +1610,7 @@ async function setPriorityForBlock(
   const blockContent = nodeElement.textContent || targetItem.content || '';
   const currentPriority = parsePriorityFromLine(blockContent);
 
-  void removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
+  await removeSlashCommandViaWriter(protyle, nodeElement, { writeContext: capturedWriteContext });
 
   showPrioritySettingDialog(currentPriority, async (priority) => {
     const success = await writeBlock(
