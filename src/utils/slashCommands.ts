@@ -12,7 +12,6 @@ import { showDatePickerDialog, showItemDetailModal, createDialog, showReminderSe
 import { usePlugin } from '@/main';
 import { resolveItemForSlashCommand } from '@/utils/slashCommandItemResolver';
 import {
-  generateSlashPatterns,
   processLineText,
   formatDate,
   extractDatesFromBlock,
@@ -107,6 +106,7 @@ function captureDeferredSlashWriteContext(
 
   context.slashRange = activeSlash.range.cloneRange();
   context.slashStartOffset = activeSlash.slashStartOffset;
+  context.slashEndOffset = activeSlash.slashEndOffset;
   return context;
 }
 
@@ -132,6 +132,7 @@ function resolveSlashAwareWriteContext(
     protyle: options.protyle ?? capturedContext?.protyle,
     slashRange: capturedContext?.slashRange,
     slashStartOffset: capturedContext?.slashStartOffset,
+    slashEndOffset: capturedContext?.slashEndOffset,
   };
 }
 

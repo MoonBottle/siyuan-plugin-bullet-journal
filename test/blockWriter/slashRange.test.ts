@@ -21,6 +21,7 @@ describe('slashRange', () => {
     const slash = getActiveSlashRange();
 
     expect(slash?.slashStartOffset).toBe('keep '.length);
+    expect(slash?.slashEndOffset).toBe('keep /first'.length);
 
     document.body.removeChild(div);
   });
@@ -43,17 +44,22 @@ describe('slashRange', () => {
     const slash = getActiveSlashRange();
 
     expect(slash?.slashStartOffset).toBe('keep '.length);
+    expect(slash?.slashEndOffset).toBe(div.textContent.length);
 
     document.body.removeChild(div);
   });
 
-  it('deletes from slash start to the current range end', () => {
+  it('deletes from slash start to the explicit command end', () => {
     const textNode = document.createTextNode('keep /bwtest then /bwtest');
     const range = document.createRange();
     range.setStart(textNode, 'keep /bwtest then /bwtest'.length);
     range.collapse(true);
 
-    deleteSlashRangeText(range, 'keep /bwtest then '.length);
+    deleteSlashRangeText(
+      range,
+      'keep /bwtest then '.length,
+      'keep /bwtest then /bwtest'.length,
+    );
 
     expect(textNode.textContent).toBe('keep /bwtest then ');
   });
@@ -64,7 +70,7 @@ describe('slashRange', () => {
     range.setStart(textNode, 'keep 、wc'.length);
     range.collapse(true);
 
-    deleteSlashRangeText(range, 'keep '.length);
+    deleteSlashRangeText(range, 'keep '.length, 'keep 、wc'.length);
 
     expect(textNode.textContent).toBe('keep ');
   });
@@ -86,7 +92,11 @@ describe('slashRange', () => {
     range.setStart(textNode, '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0'.length);
     range.collapse(true);
 
-    deleteSlashRangeText(range, '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0'.length);
+    deleteSlashRangeText(
+      range,
+      '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0'.length,
+      '评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:0/yxj'.length,
+    );
 
     expect(textNode.textContent).toBe('评审视觉稿 📅2026-05-15,2026-05-20 ⏰14:00');
   });

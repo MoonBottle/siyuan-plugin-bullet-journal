@@ -40,6 +40,7 @@ function buildCandidateSemanticLine(
   nodeElement: HTMLElement,
   slashRange: Range,
   slashStartOffset: number,
+  slashEndOffset: number,
 ): string | null {
   const editable = nodeElement.querySelector('[contenteditable="true"]') as HTMLElement | null;
   const root = editable ?? nodeElement;
@@ -57,7 +58,7 @@ function buildCandidateSemanticLine(
   const draftRange = document.createRange();
   draftRange.setStart(draftStartNode, slashRange.startOffset);
   draftRange.collapse(true);
-  deleteSlashRangeText(draftRange, slashStartOffset);
+  deleteSlashRangeText(draftRange, slashStartOffset, slashEndOffset);
 
   return draftRoot.textContent?.trim() ?? null;
 }
@@ -129,7 +130,7 @@ export async function resolveItemForSlashCommand(options: ResolveSlashItemOption
     && (activeSlash.blockId === blockId || nodeElement.contains(activeSlash.range.startContainer))
   ) {
     const candidate = parseCandidateLine(
-      buildCandidateSemanticLine(nodeElement, activeSlash.range, activeSlash.slashStartOffset),
+      buildCandidateSemanticLine(nodeElement, activeSlash.range, activeSlash.slashStartOffset, activeSlash.slashEndOffset),
       blockId,
     );
     if (candidate) {

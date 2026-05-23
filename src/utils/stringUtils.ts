@@ -3,59 +3,77 @@
  * 纯函数，无外部依赖，便于测试
  */
 
-/**
- * 生成所有可能的子集命令（如 /sx -> /s）
- * 同时生成中文顿号（、）和英文斜杠（/）版本，以支持中文输入法场景
- * @param filters 可能的斜杠命令前缀数组
- * @returns 所有子集命令的集合
- */
-export function generateSlashPatterns(filters: string[]): Set<string> {
-  const allPatterns = new Set<string>();
-  for (const filter of filters) {
-    // 添加完整 filter
-    allPatterns.add(filter);
-    
-    // 为长度大于 2 的 filter 生成中文顿号版本（如 /mt -> 、mt）
-    // 这支持中文输入法场景：用户输入 / 时可能被转换成 、
-    if (filter.startsWith('/') && filter.length > 2) {
-      const chineseFilter = '、' + filter.slice(1);
-      allPatterns.add(chineseFilter);
+const SLASH_COMMAND_START_CHARS = ['/', '、'] as const;
+const ZERO_WIDTH_CHARS = /[\u200B\u200C\u200D\uFEFF]/u;
+
+function isSlashCommandStartChar(char: string | undefined): boolean {
+  return SLASH_COMMAND_START_CHARS.some(candidate => candidate === char);
+}
+
+function findSlashTokenEnd(text: string, startOffset: number): number {
+  let endOffset = startOffset + 1;
+  while (endOffset < text.length) {
+    const char = text[endOffset];
+    if (!char || /\s/u.test(char) || ZERO_WIDTH_CHARS.test(char)) {
+      break;
     }
-    
-    // 添加所有前缀（从 / 后开始，至少保留 / 和一个字符）
-    for (let i = 2; i < filter.length; i++) {
-      allPatterns.add(filter.substring(0, i));
+    endOffset += 1;
+  }
+  return endOffset;
+}
+
+function buildSlashCommandTokenSet(filters: string[]): Set<string> {
+  const tokenSet = new Set<string>();
+  for (const filter of filters) {
+    if (!filter) {
+      continue;
+    }
+    tokenSet.add(filter);
+    if (filter.startsWith('/')) {
+      tokenSet.add(`、${filter.slice(1)}`);
+    } else if (filter.startsWith('、')) {
+      tokenSet.add(`/${filter.slice(1)}`);
     }
   }
-  return allPatterns;
+  return tokenSet;
 }
 
 /**
  * 处理行文本，删除所有匹配的斜杠命令
- * 简化逻辑：删除整行中所有出现的斜杠命令（包括子集），保留其他内容
+ * 仅删除完整的斜杠命令 token，保留普通文本和路径斜杠
  * @param lineText 行文本
- * @param filters 可能的斜杠命令前缀数组
+ * @param filters 允许删除的完整斜杠命令数组
  * @returns 处理后的行文本
  */
 export function processLineText(lineText: string, filters: string[]): string {
-  const allPatterns = generateSlashPatterns(filters);
+  const slashCommandTokens = buildSlashCommandTokenSet(filters);
+  if (slashCommandTokens.size === 0) {
+    return lineText.trimEnd();
+  }
 
-  // 将 patterns 按长度降序排序，确保从长到短匹配（/gtt -> /gt -> /g）
-  const sortedPatterns = Array.from(allPatterns).sort((a, b) => b.length - a.length);
+  let result = '';
+  let index = 0;
+  while (index < lineText.length) {
+    const currentChar = lineText[index];
+    if (!isSlashCommandStartChar(currentChar)) {
+      result += currentChar;
+      index += 1;
+      continue;
+    }
 
-  // 删除行中所有匹配的 pattern
-  let result = lineText;
-  for (const pattern of sortedPatterns) {
-    if (result.includes(pattern)) {
-      // 使用正则全局替换，删除所有出现的 pattern
-      const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(escaped, 'g');
-      result = result.replace(regex, '');
+    const tokenEnd = findSlashTokenEnd(lineText, index);
+    const token = lineText.slice(index, tokenEnd);
+    if (!slashCommandTokens.has(token)) {
+      result += token;
+      index = tokenEnd;
+      continue;
+    }
+
+    index = tokenEnd;
+    while (index < lineText.length && ZERO_WIDTH_CHARS.test(lineText[index])) {
+      index += 1;
     }
   }
 
-  // 去除尾部空格
-  result = result.trimEnd();
-
-  return result;
+  return result.trimEnd();
 }

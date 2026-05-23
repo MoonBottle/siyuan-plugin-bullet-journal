@@ -51,7 +51,6 @@ vi.mock('@/utils/blockWriter', () => ({
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({
-  generateSlashPatterns: vi.fn(),
   processLineText: vi.fn((text: string) => text),
   formatDate: vi.fn(() => '2026-04-30'),
   extractDatesFromBlock: vi.fn(),

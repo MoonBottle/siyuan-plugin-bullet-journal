@@ -4,11 +4,11 @@
 
 import { getSharedPinia } from '@/utils/sharedPinia';
 import { useProjectStore } from '@/stores';
-import { generateSlashPatterns, processLineText } from './stringUtils';
+import { processLineText } from './stringUtils';
 
 import type { Item } from '@/types/models';
 
-export { generateSlashPatterns, processLineText };
+export { processLineText };
 
 /**
  * 格式化日期为 YYYY-MM-DD

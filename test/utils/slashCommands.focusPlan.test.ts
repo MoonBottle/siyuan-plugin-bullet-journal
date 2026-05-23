@@ -41,7 +41,6 @@ vi.mock('@/utils/blockWriter', () => ({
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({
-  generateSlashPatterns: vi.fn(),
   processLineText: vi.fn((text: string, filters?: string[]) => {
     let result = text;
     for (const filter of filters ?? []) {

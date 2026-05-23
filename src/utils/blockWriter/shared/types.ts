@@ -21,6 +21,7 @@ export interface BlockWriteContext {
   nodeElement?: HTMLElement;
   slashRange?: Range;
   slashStartOffset?: number;
+  slashEndOffset?: number;
 }
 
 export type DatePatch = {

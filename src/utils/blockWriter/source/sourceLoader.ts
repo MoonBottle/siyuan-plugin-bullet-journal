@@ -113,11 +113,14 @@ function createSlashCleanedDraft(
     return draftTarget;
   }
 
+  const slashEndOffset = plan.context.slashEndOffset
+    ?? (range.endContainer === range.startContainer ? range.endOffset : range.startOffset);
   const beforeText = draftTarget.textContent ?? '';
-  deleteSlashRangeText(draftRange, slashStartOffset);
+  deleteSlashRangeText(draftRange, slashStartOffset, slashEndOffset);
   console.log('[BWDBG][sourceLoader] slash cleaned draft', {
     targetBlockId: plan.targetBlockId,
     slashStartOffset,
+    slashEndOffset,
     rangeStartOffset: range.startOffset,
     beforePreview: previewText(beforeText),
     afterPreview: previewText(draftTarget.textContent),

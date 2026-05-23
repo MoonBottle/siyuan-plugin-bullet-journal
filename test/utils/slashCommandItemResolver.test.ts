@@ -25,10 +25,10 @@ vi.mock('@/utils/sharedPinia', () => ({
 
 vi.mock('@/utils/blockWriter/shared/slashRange', () => ({
   getActiveSlashRange: getActiveSlashRangeMock,
-  deleteSlashRangeText: vi.fn((range: Range, slashStartOffset: number) => {
+  deleteSlashRangeText: vi.fn((range: Range, slashStartOffset: number, slashEndOffset?: number) => {
     const textNode = range.startContainer as Text;
     const text = textNode.textContent ?? '';
-    textNode.textContent = `${text.slice(0, slashStartOffset)}${text.slice(range.startOffset)}`;
+    textNode.textContent = `${text.slice(0, slashStartOffset)}${text.slice(slashEndOffset ?? range.startOffset)}`;
     range.setStart(textNode, slashStartOffset);
     range.collapse(true);
   }),
@@ -90,6 +90,7 @@ describe('slashCommandItemResolver', () => {
       blockId: 'paragraph-1',
       range: range.cloneRange(),
       slashStartOffset: textNode.textContent?.indexOf('/fq') ?? -1,
+      slashEndOffset: textNode.textContent?.length ?? 0,
     });
 
     const result = await resolveItemForSlashCommand({
@@ -124,6 +125,7 @@ describe('slashCommandItemResolver', () => {
       blockId: 'paragraph-1',
       range: range.cloneRange(),
       slashStartOffset: textNode.textContent?.indexOf('/fq') ?? -1,
+      slashEndOffset: textNode.textContent?.length ?? 0,
     });
 
     const result = await resolveItemForSlashCommand({

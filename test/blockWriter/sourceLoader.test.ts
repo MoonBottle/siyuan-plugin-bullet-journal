@@ -84,6 +84,7 @@ describe('sourceLoader', () => {
         nodeElement: node as any,
         slashRange: savedRange,
         slashStartOffset: textNode.textContent!.indexOf('/rq'),
+        slashEndOffset: textNode.textContent!.length,
       },
       patches: [{ type: 'removeSlashCommand' }],
     });

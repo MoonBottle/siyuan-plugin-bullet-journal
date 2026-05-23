@@ -33,23 +33,25 @@ function getNodeByPath(root: Node, path: number[]): Node | null {
   return current;
 }
 
-function resolveSlashContext(context: Pick<BlockWriteContext, 'blockId' | 'nodeElement' | 'slashRange' | 'slashStartOffset'>): {
+function resolveSlashContext(context: Pick<BlockWriteContext, 'blockId' | 'nodeElement' | 'slashRange' | 'slashStartOffset' | 'slashEndOffset'>): {
   blockId: string;
   nodeElement: HTMLElement;
   slashRange: Range;
   slashStartOffset: number;
+  slashEndOffset: number;
 } | null {
-  const { blockId, nodeElement, slashRange, slashStartOffset } = context;
+  const { blockId, nodeElement, slashRange, slashStartOffset, slashEndOffset } = context;
   if (!nodeElement) {
     return null;
   }
 
-  if (slashRange && slashStartOffset !== undefined) {
+  if (slashRange && slashStartOffset !== undefined && slashEndOffset !== undefined) {
     return {
       blockId,
       nodeElement,
       slashRange,
       slashStartOffset,
+      slashEndOffset,
     };
   }
 
@@ -71,6 +73,7 @@ function resolveSlashContext(context: Pick<BlockWriteContext, 'blockId' | 'nodeE
     nodeElement: activeSlash.blockElement,
     slashRange: activeSlash.range,
     slashStartOffset: activeSlash.slashStartOffset,
+    slashEndOffset: activeSlash.slashEndOffset,
   };
 }
 
@@ -125,7 +128,7 @@ function commitProtyleUpdate(protyle: any, id: string, targetElement: HTMLElemen
 }
 
 export async function writeStatusWithSlashCleanup(
-  context: Pick<BlockWriteContext, 'blockId' | 'listItemBlockId' | 'protyle' | 'nodeElement' | 'slashRange' | 'slashStartOffset'>,
+  context: Pick<BlockWriteContext, 'blockId' | 'listItemBlockId' | 'protyle' | 'nodeElement' | 'slashRange' | 'slashStartOffset' | 'slashEndOffset'>,
   patch: StatusPatch,
 ): Promise<boolean> {
   const { protyle, nodeElement } = context;
@@ -175,7 +178,7 @@ export async function writeStatusWithSlashCleanup(
   const draftRange = document.createRange();
   draftRange.setStart(draftStartNode, slashContext.slashRange.startOffset);
   draftRange.collapse(true);
-  deleteSlashRangeText(draftRange, slashContext.slashStartOffset);
+  deleteSlashRangeText(draftRange, slashContext.slashStartOffset, slashContext.slashEndOffset);
 
   const currentMarkdown = blockElementToMarkdownContent(protyle, draftTarget);
   if (!currentMarkdown) {

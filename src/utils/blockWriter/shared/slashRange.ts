@@ -1,20 +1,28 @@
-import { ALL_SLASH_COMMAND_FILTERS } from '@/constants';
-import { generateSlashPatterns } from '@/utils/stringUtils';
-
 export interface ActiveSlashRange {
   blockId: string;
   blockElement: HTMLElement;
   range: Range;
   slashStartOffset: number;
+  slashEndOffset: number;
 }
 
 const SLASH_COMMAND_START_CHARS = ['/', '、'] as const;
 const ZERO_WIDTH_CHARS = /[\u200B\u200C\u200D\uFEFF]/u;
-const KNOWN_SLASH_PATTERNS = Array.from(generateSlashPatterns(ALL_SLASH_COMMAND_FILTERS))
-  .sort((a, b) => b.length - a.length);
 
 function isSlashCommandStartChar(char: string | undefined): boolean {
   return SLASH_COMMAND_START_CHARS.some(candidate => candidate === char);
+}
+
+function isSlashCommandBodyChar(char: string | undefined): boolean {
+  return Boolean(char) && !/\s/u.test(char) && !ZERO_WIDTH_CHARS.test(char);
+}
+
+function extendThroughTrailingZeroWidth(text: string, offset: number): number {
+  let endOffset = offset;
+  while (endOffset < text.length && ZERO_WIDTH_CHARS.test(text[endOffset])) {
+    endOffset += 1;
+  }
+  return endOffset;
 }
 
 function resolveSlashCommandEndOffset(
@@ -23,44 +31,39 @@ function resolveSlashCommandEndOffset(
   currentEndOffset: number,
 ): number {
   if (currentEndOffset > slashStartOffset) {
-    return currentEndOffset;
-  }
-
-  const trailingText = text.slice(slashStartOffset);
-  const matchedPattern = KNOWN_SLASH_PATTERNS.find(pattern => trailingText.startsWith(pattern));
-  if (matchedPattern) {
-    let endOffset = slashStartOffset + matchedPattern.length;
-    while (endOffset < text.length && ZERO_WIDTH_CHARS.test(text[endOffset])) {
-      endOffset += 1;
-    }
-    return endOffset;
+    return extendThroughTrailingZeroWidth(text, currentEndOffset);
   }
 
   let endOffset = slashStartOffset + 1;
   while (endOffset < text.length) {
     const char = text[endOffset];
-    if (!char || /\s/u.test(char) || ZERO_WIDTH_CHARS.test(char)) {
+    if (!isSlashCommandBodyChar(char)) {
       break;
     }
     endOffset += 1;
   }
-  while (endOffset < text.length && ZERO_WIDTH_CHARS.test(text[endOffset])) {
-    endOffset += 1;
-  }
-  return endOffset;
+  return extendThroughTrailingZeroWidth(text, endOffset);
 }
 
 export function findSlashCommandStartOffset(textContent: string, cursorOffset: number): number {
-  let startOffset = -1;
+  const boundedCursorOffset = Math.max(0, Math.min(cursorOffset, textContent.length));
+  const searchStart = Math.min(boundedCursorOffset, Math.max(textContent.length - 1, 0));
 
-  for (const marker of SLASH_COMMAND_START_CHARS) {
-    const markerOffset = textContent.lastIndexOf(marker, cursorOffset);
-    if (markerOffset > startOffset) {
-      startOffset = markerOffset;
+  for (let index = searchStart; index >= 0; index -= 1) {
+    if (!isSlashCommandStartChar(textContent[index])) {
+      continue;
+    }
+
+    const commandText = textContent.slice(index + 1, boundedCursorOffset);
+    if (commandText.trimStart() !== commandText) {
+      continue;
+    }
+    if ([...commandText].every(char => isSlashCommandBodyChar(char))) {
+      return index;
     }
   }
 
-  return startOffset;
+  return -1;
 }
 
 export function getActiveSlashRange(): ActiveSlashRange | null {
@@ -84,15 +87,21 @@ export function getActiveSlashRange(): ActiveSlashRange | null {
 
   if (slashIdx === -1) return null;
 
+  const collapsedEndOffset = range.endContainer === startNode
+    ? range.endOffset
+    : range.startOffset;
+  const slashEndOffset = resolveSlashCommandEndOffset(textContent, slashIdx, collapsedEndOffset);
+
   return {
     blockId,
     blockElement,
     range,
     slashStartOffset: slashIdx,
+    slashEndOffset,
   };
 }
 
-export function deleteSlashRangeText(range: Range, slashStartOffset: number): void {
+export function deleteSlashRangeText(range: Range, slashStartOffset: number, explicitSlashEndOffset?: number): void {
   if (range.startContainer.nodeType !== Node.TEXT_NODE) {
     throw new Error('Slash range must start in a text node');
   }
@@ -102,13 +111,13 @@ export function deleteSlashRangeText(range: Range, slashStartOffset: number): vo
   const text = range.startContainer.textContent ?? '';
   if (!isSlashCommandStartChar(text[slashStartOffset])) return;
 
-  const slashEndOffset = resolveSlashCommandEndOffset(
+  const resolvedSlashEndOffset = resolveSlashCommandEndOffset(
     text,
     slashStartOffset,
-    range.endContainer === range.startContainer ? range.endOffset : range.startOffset,
+    explicitSlashEndOffset ?? (range.endContainer === range.startContainer ? range.endOffset : range.startOffset),
   );
 
   range.setStart(range.startContainer, slashStartOffset);
-  range.setEnd(range.startContainer, Math.max(slashStartOffset, slashEndOffset));
+  range.setEnd(range.startContainer, Math.max(slashStartOffset, resolvedSlashEndOffset));
   range.deleteContents();
 }

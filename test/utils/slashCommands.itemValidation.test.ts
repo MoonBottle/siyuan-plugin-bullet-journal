@@ -68,7 +68,6 @@ vi.mock('@/utils/blockWriter', () => ({
 }));
 
 vi.mock('@/utils/slashCommandUtils', () => ({
-  generateSlashPatterns: vi.fn(),
   processLineText: vi.fn((text: string, filters?: string[]) => {
     let result = text;
     for (const filter of filters ?? []) {
@@ -481,6 +480,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /tx'));
     const slashStartOffset = setCaretToCommandEnd(node, '/tx');
+    const slashEndOffset = slashStartOffset + '/tx'.length;
 
     const protyle = {};
     handler(protyle as any, node);
@@ -502,6 +502,7 @@ describe('item-only slash command validation', () => {
           nodeElement: node,
           protyle,
           slashStartOffset,
+          slashEndOffset,
           slashRange: expect.any(Range),
         }),
       }),
@@ -523,6 +524,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /cf'));
     const slashStartOffset = setCaretToCommandEnd(node, '/cf');
+    const slashEndOffset = slashStartOffset + '/cf'.length;
 
     const protyle = {};
     handler(protyle as any, node);
@@ -544,6 +546,7 @@ describe('item-only slash command validation', () => {
           nodeElement: node,
           protyle,
           slashStartOffset,
+          slashEndOffset,
           slashRange: expect.any(Range),
         }),
       }),
@@ -591,6 +594,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /yxj'));
     const slashStartOffset = setCaretToCommandEnd(node, '/yxj');
+    const slashEndOffset = slashStartOffset + '/yxj'.length;
     const protyle = {};
 
     handler(protyle as any, node);
@@ -604,6 +608,7 @@ describe('item-only slash command validation', () => {
         nodeElement: node,
         protyle,
         slashStartOffset,
+        slashEndOffset,
         slashRange: expect.any(Range),
       }),
       [
@@ -644,6 +649,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 @2026-05-14 /rq'));
     const slashStartOffset = setCaretToCommandEnd(node, '/rq');
+    const slashEndOffset = slashStartOffset + '/rq'.length;
     const protyle = {
       transaction: vi.fn(),
       wysiwyg: { element: node },
@@ -661,6 +667,7 @@ describe('item-only slash command validation', () => {
         nodeElement: node,
         protyle,
         slashStartOffset,
+        slashEndOffset,
         slashRange: expect.any(Range),
       }),
       [
@@ -709,6 +716,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 /fq'));
     const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const slashEndOffset = slashStartOffset + '/fq'.length;
     const protyle = { transaction: vi.fn() };
 
     handler(protyle as any, node);
@@ -723,6 +731,7 @@ describe('item-only slash command validation', () => {
         nodeElement: node,
         protyle,
         slashStartOffset,
+        slashEndOffset,
         slashRange: expect.any(Range),
       }),
       [
@@ -754,6 +763,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-paragraph');
     node.appendChild(document.createTextNode('整理资料 /fq'));
     const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const slashEndOffset = slashStartOffset + '/fq'.length;
     const protyle = { transaction: vi.fn() };
     listItem.appendChild(node);
     document.body.appendChild(listItem);
@@ -771,6 +781,7 @@ describe('item-only slash command validation', () => {
         nodeElement: node,
         protyle,
         slashStartOffset,
+        slashEndOffset,
         slashRange: expect.any(Range),
       }),
       [
@@ -796,6 +807,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 ❌ /fq'));
     const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const slashEndOffset = slashStartOffset + '/fq'.length;
     const protyle = { transaction: vi.fn() };
 
     handler(protyle as any, node);
@@ -809,6 +821,7 @@ describe('item-only slash command validation', () => {
         nodeElement: node,
         protyle,
         slashStartOffset,
+        slashEndOffset,
         slashRange: expect.any(Range),
       }),
       { type: 'removeSlashCommand' },
@@ -831,6 +844,7 @@ describe('item-only slash command validation', () => {
     node.setAttribute('data-node-id', 'block-item');
     node.appendChild(document.createTextNode('整理资料 /fq ❌'));
     const slashStartOffset = setCaretToCommandEnd(node, '/fq');
+    const slashEndOffset = slashStartOffset + '/fq'.length;
     const protyle = { transaction: vi.fn() };
 
     handler(protyle as any, node);
@@ -843,6 +857,7 @@ describe('item-only slash command validation', () => {
         nodeElement: node,
         protyle,
         slashStartOffset,
+        slashEndOffset,
         slashRange: expect.any(Range),
       }),
       { type: 'removeSlashCommand' },
