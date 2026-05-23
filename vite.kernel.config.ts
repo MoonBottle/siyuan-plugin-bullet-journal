@@ -12,7 +12,7 @@ export default defineConfig({
     emptyOutDir: false,
     sourcemap: false,
     lib: {
-      entry: resolve(__dirname, 'src/mcp/kernel.ts'),
+      entry: resolve(__dirname, 'src/kernel/index.ts'),
       fileName: () => 'kernel.js',
       formats: ['iife'],
       name: 'kernel',

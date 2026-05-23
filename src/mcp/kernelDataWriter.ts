@@ -1,0 +1,132 @@
+import { putFile } from '@/api'
+import type { Project, Item, ProjectGroup, Habit } from '@/types/models'
+
+export interface KernelData {
+  version: 2
+  updatedAt: string
+  groups: Array<{ id: string, name: string }>
+  projects: Array<{
+    id: string
+    name: string
+    description: string | undefined
+    path: string
+    groupId: string | undefined
+    taskCount: number
+  }>
+  items: Array<{
+    id: string
+    content: string
+    date: string
+    startDateTime: string | undefined
+    endDateTime: string | undefined
+    status: string
+    projectName: string | undefined
+    taskName: string | undefined
+    projectId: string
+    links: Array<{ name: string, url: string }> | undefined
+    pomodoros: Array<{
+      id: string
+      date: string
+      startTime: string
+      endTime: string | undefined
+      durationMinutes: number
+      actualDurationMinutes: number | undefined
+      description: string | undefined
+    }>
+    reminder?: {
+      enabled: boolean
+      type: 'absolute' | 'relative'
+      time?: string
+      alertMode?: {
+        type: 'ontime' | 'before' | 'custom'
+        minutes?: number
+      }
+      relativeTo?: 'start' | 'end'
+      offsetMinutes?: number
+    }
+    startTime?: string
+    endTime?: string
+  }>
+  habits: Array<{
+    id: string
+    name: string
+    type: string
+    reminder?: {
+      enabled: boolean
+      type: 'absolute' | 'relative'
+      time?: string
+      alertMode?: {
+        type: 'ontime' | 'before' | 'custom'
+        minutes?: number
+      }
+      relativeTo?: 'start' | 'end'
+      offsetMinutes?: number
+    }
+    targetDate: string
+    blockId: string
+  }>
+}
+
+const KERNEL_DATA_PATH = '/data/storage/petal/siyuan-plugin-bullet-journal/kernel-data.json'
+
+function extractTime(dateTimeStr: string | undefined): string | undefined {
+  if (!dateTimeStr) return undefined
+  const match = dateTimeStr.match(/T(\d{2}:\d{2})/)
+  return match ? match[1] : undefined
+}
+
+export async function writeKernelData(
+  projects: Project[],
+  items: Item[],
+  groups: ProjectGroup[],
+  habits: Habit[],
+): Promise<void> {
+  const data: KernelData = {
+    version: 2,
+    updatedAt: new Date().toISOString(),
+    groups: groups.map(g => ({ id: g.id, name: g.name })),
+    projects: projects.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      path: p.path,
+      groupId: p.groupId,
+      taskCount: p.tasks.length,
+    })),
+    items: items.map(i => ({
+      id: i.id,
+      content: i.content,
+      date: i.date,
+      startDateTime: i.startDateTime,
+      endDateTime: i.endDateTime,
+      status: i.status,
+      projectName: i.project?.name,
+      taskName: i.task?.name,
+      projectId: i.project?.id ?? i.docId,
+      links: i.links,
+      pomodoros: (i.pomodoros ?? []).map(p => ({
+        id: p.id,
+        date: p.date,
+        startTime: p.startTime,
+        endTime: p.endTime,
+        durationMinutes: p.durationMinutes,
+        actualDurationMinutes: p.actualDurationMinutes,
+        description: p.description,
+      })),
+      reminder: i.reminder,
+      startTime: extractTime(i.startDateTime),
+      endTime: extractTime(i.endDateTime),
+    })),
+    habits: habits.map(h => ({
+      id: h.blockId,
+      name: h.content,
+      type: h.type,
+      reminder: h.reminder,
+      targetDate: h.startDate,
+      blockId: h.blockId,
+    })),
+  }
+
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' })
+  await putFile(KERNEL_DATA_PATH, false, blob)
+}

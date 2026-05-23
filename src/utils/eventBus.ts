@@ -114,4 +114,6 @@ export const Events = {
   BREAK_ENDED: 'break:ended',
   POMODORO_AUTO_EXTENDED: 'pomodoro:auto-extended', // 自动延迟番茄钟，通知弹窗关闭
   WIDGET_DATE_RANGE_CHANGED: 'widget:date-range-changed',
+  KERNEL_NOTIFICATION: 'kernel:notification',
+  KERNEL_DATE_CHANGED: 'kernel:date-changed',
 };

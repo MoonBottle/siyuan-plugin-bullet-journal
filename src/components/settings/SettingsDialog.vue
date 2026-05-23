@@ -90,6 +90,12 @@
         <div id="section-mcp" class="sy-settings-section-wrapper">
           <McpConfigSection v-show="sectionVisible('mcp')" />
         </div>
+        <div id="section-webhook" class="sy-settings-section-wrapper">
+          <WebhookConfigSection
+            v-show="sectionVisible('webhook')"
+            v-model:webhook="local.webhook"
+          />
+        </div>
       </div>
     </div>
     <div class="sy-settings-dialog__footer">
@@ -126,6 +132,7 @@ import CalendarConfigSection from './CalendarConfigSection.vue';
 import HabitConfigSection from './HabitConfigSection.vue';
 import AiConfigSection from './AiConfigSection.vue';
 import McpConfigSection from './McpConfigSection.vue';
+import WebhookConfigSection from './WebhookConfigSection.vue';
 import LunchBreakConfigSection from './LunchBreakConfigSection.vue';
 import SlashCommandConfigSection from './SlashCommandConfigSection.vue';
 
@@ -157,6 +164,7 @@ const menuItems = computed<MenuItem[]>(() => {
     { key: 'slash', title: settings.slashCommands?.title ?? '斜杠命令', icon: 'iconCode', sectionId: 'section-slash' },
     { key: 'ai', title: settings.ai?.title ?? 'AI 服务配置', icon: 'iconSparkles', sectionId: 'section-ai' },
     { key: 'mcp', title: settings.mcp?.title ?? 'MCP 配置', icon: 'iconLink', sectionId: 'section-mcp' },
+    { key: 'webhook', title: settings.webhook?.title ?? 'Webhook 通知', icon: 'iconLink', sectionId: 'section-webhook' },
   ];
 });
 
@@ -219,6 +227,7 @@ const sectionKeywords: Record<string, string> = computed(() => {
     habit: collectStrings(s.habitSettings).join(' '),
     ai: collectStrings(s.ai).join(' '),
     mcp: collectStrings(s.mcp).join(' '),
+    webhook: collectStrings(s.webhook).join(' '),
     lunch: collectStrings(s.lunchBreak).join(' '),
     slash: collectStrings(s.slashCommands).join(' ')
   };

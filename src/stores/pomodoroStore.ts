@@ -13,6 +13,7 @@ import {
   submitRefreshRequest,
 } from '@/utils/refreshRequests';
 import { eventBus, Events } from '@/utils/eventBus';
+import { kernelAvailable, rpcCall } from '@/composables/useKernelTimer';
 import {
   saveActivePomodoro,
   loadActivePomodoro,
@@ -224,6 +225,24 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const mode = timerMode === 'stopwatch' ? t('pomodoro').startFocusStatusStopwatch : `${durationMinutes}${t('common').minutes}`;
         const msg = t('pomodoro').startFocusStatus.replace('{content}', item.content).replace('{mode}', mode);
         showMessage(msg);
+
+        if (kernelAvailable.value && timerMode === 'countdown') {
+          const endTime = Math.floor((Date.now() + durationMinutes * 60 * 1000) / 1000);
+          rpcCall('registerTimer', {
+            id: `pomodoro-${parentBlockId}`,
+            type: 'pomodoro',
+            endTime,
+            metadata: {
+              blockId: parentBlockId,
+              content: item.content,
+              projectName: item.project?.name,
+              taskName: item.task?.name,
+            },
+          }).catch((err) => {
+            console.error('[Pomodoro] Failed to register kernel timer:', err);
+          });
+        }
+
         return true;
       } catch (error) {
         console.error('[Pomodoro] 开始专注失败:', error);
@@ -255,6 +274,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
         this.stopTimer();
 
         cancelMobileFocusEnd(plugin);
+
+        if (kernelAvailable.value && this.activePomodoro?.blockId) {
+          rpcCall('cancelTimer', { id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {});
+        }
 
         // 保存状态
         if (plugin) {
@@ -307,6 +330,22 @@ export const usePomodoroStore = defineStore('pomodoro', {
         this.startTimer();
 
         await scheduleMobileFocusEnd(this, plugin);
+
+        if (kernelAvailable.value && this.activePomodoro?.blockId && this.activePomodoro.timerMode === 'countdown') {
+          const remainingSec = this.activePomodoro.remainingSeconds;
+          const endTime = Math.floor((Date.now() + remainingSec * 1000) / 1000);
+          rpcCall('registerTimer', {
+            id: `pomodoro-${this.activePomodoro.blockId}`,
+            type: 'pomodoro',
+            endTime,
+            metadata: {
+              blockId: this.activePomodoro.blockId,
+              content: this.activePomodoro.itemContent,
+              projectName: this.activePomodoro.projectName,
+              taskName: this.activePomodoro.taskName,
+            },
+          }).catch(() => {});
+        }
 
         // 保存状态
         if (plugin) {
@@ -381,7 +420,9 @@ export const usePomodoroStore = defineStore('pomodoro', {
       // 检查是否达到目标时长（正计时不自动完成，由用户手动结束）
       const isStopwatch = this.activePomodoro.timerMode === 'stopwatch';
       if (!isStopwatch && this.activePomodoro.accumulatedSeconds >= targetSeconds) {
-        this.completePomodoro();
+        if (!kernelAvailable.value) {
+          this.completePomodoro();
+        }
       }
 
       // 触发每秒更新事件，供外部（悬浮按钮、底栏）订阅
@@ -507,6 +548,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
         const now = Date.now();
         const actualMinutes = Math.floor(ap.accumulatedSeconds / 60);
         cancelMobileFocusEnd(pluginToUse);
+
+        if (kernelAvailable.value && ap.blockId) {
+          rpcCall('cancelTimer', { id: `pomodoro-${ap.blockId}` }).catch(() => {});
+        }
 
         // 1. 构建并持久化待完成记录
         const pending: PendingPomodoroCompletion = {
@@ -676,6 +721,10 @@ export const usePomodoroStore = defineStore('pomodoro', {
         }
 
         cancelMobileFocusEnd(plugin);
+
+        if (kernelAvailable.value && this.activePomodoro?.blockId) {
+          rpcCall('cancelTimer', { id: `pomodoro-${this.activePomodoro.blockId}` }).catch(() => {});
+        }
 
         // 清理状态
         this.stopTimer();
@@ -879,6 +928,22 @@ export const usePomodoroStore = defineStore('pomodoro', {
         if (!data.isPaused) {
           this.startTimer();
           await scheduleMobileFocusEnd(this, plugin);
+
+          if (kernelAvailable.value && data.timerMode !== 'stopwatch') {
+            const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000);
+            rpcCall('registerTimer', {
+              id: `pomodoro-${data.blockId}`,
+              type: 'pomodoro',
+              endTime,
+              metadata: {
+                blockId: data.blockId,
+                content: data.itemContent,
+                projectName: data.projectName,
+                taskName: data.taskName,
+              },
+            }).catch(() => {});
+          }
+
           console.log('[Pomodoro] 专注状态已恢复，剩余时间:', remainingSeconds, '秒');
           showMessage(`🔄 已恢复专注「${data.itemContent}」`);
         } else {
@@ -987,6 +1052,19 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
       await scheduleMobileBreakEnd(totalSeconds, plugin);
 
+      if (kernelAvailable.value) {
+        const endTime = Math.floor((Date.now() + totalSeconds * 1000) / 1000);
+        rpcCall('registerTimer', {
+          id: `break-${Date.now()}`,
+          type: 'break',
+          endTime,
+          metadata: {
+            blockId: '',
+            content: t('settings').pomodoro.breakLabel,
+          },
+        }).catch(() => {});
+      }
+
       this.breakInterval = window.setInterval(() => {
         this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
         eventBus.emit(Events.BREAK_TICK, {
@@ -994,9 +1072,11 @@ export const usePomodoroStore = defineStore('pomodoro', {
           totalSeconds: this.breakTotalSeconds
         });
         if (this.breakRemainingSeconds <= 0) {
-          this.stopBreak(plugin ?? usePlugin()); // 会 emit BREAK_ENDED
-          showMessage(t('settings').pomodoro.breakEndMessage);
-          this.playNotificationSound();
+          if (!kernelAvailable.value) {
+            this.stopBreak(plugin ?? usePlugin());
+            showMessage(t('settings').pomodoro.breakEndMessage);
+            this.playNotificationSound();
+          }
         }
       }, 1000);
 
@@ -1032,9 +1112,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
       this.isBreakActive = false;
       this.breakRemainingSeconds = 0;
       this.breakTotalSeconds = 0;
-      // 休息结束时关闭弹窗
       this.isBreakOverlayVisible = false;
       cancelMobileBreakEnd(plugin);
+
+      if (kernelAvailable.value && wasActive) {
+        rpcCall('cancelTimersByType', { type: 'break' }).catch(() => {});
+      }
+
       if (wasActive && plugin) {
         await removeActiveBreak(plugin);
       }
@@ -1056,6 +1140,19 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
       void scheduleMobileBreakEnd(remainingSeconds, plugin);
 
+      if (kernelAvailable.value) {
+        const endTime = Math.floor((Date.now() + remainingSeconds * 1000) / 1000);
+        rpcCall('registerTimer', {
+          id: `break-restore-${Date.now()}`,
+          type: 'break',
+          endTime,
+          metadata: {
+            blockId: '',
+            content: t('settings').pomodoro.breakLabel,
+          },
+        }).catch(() => {});
+      }
+
       this.breakInterval = window.setInterval(() => {
         this.breakRemainingSeconds = Math.max(0, this.breakRemainingSeconds - 1);
         eventBus.emit(Events.BREAK_TICK, {
@@ -1063,13 +1160,29 @@ export const usePomodoroStore = defineStore('pomodoro', {
           totalSeconds: this.breakTotalSeconds
         });
         if (this.breakRemainingSeconds <= 0) {
-          this.stopBreak(plugin);
-          showMessage(t('settings').pomodoro.breakEndMessage);
-          this.playNotificationSound();
+          if (!kernelAvailable.value) {
+            this.stopBreak(plugin);
+            showMessage(t('settings').pomodoro.breakEndMessage);
+            this.playNotificationSound();
+          }
         }
       }, 1000);
 
       eventBus.emit(Events.BREAK_STARTED);
+    },
+
+    setupKernelNotificationListener(): void {
+      eventBus.on(Events.KERNEL_NOTIFICATION, (params: any) => {
+        if (params.type === 'pomodoro' && this.activePomodoro) {
+          this.completePomodoro();
+        }
+        if (params.type === 'break' && this.isBreakActive) {
+          const plugin = usePlugin();
+          this.stopBreak(plugin);
+          showMessage(t('settings').pomodoro.breakEndMessage);
+          this.playNotificationSound();
+        }
+      });
     }
   }
 });

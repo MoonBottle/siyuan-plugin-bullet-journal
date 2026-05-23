@@ -96,6 +96,25 @@ export interface CustomSlashCommand {
   action: CustomSlashCommandAction;
 }
 
+export interface WebhookChannel {
+  id: string
+  name: string
+  type: 'dingtalk' | 'feishu' | 'wecom' | 'custom'
+  url: string
+  enabled: boolean
+  events: ('reminder' | 'pomodoro' | 'break' | 'habit')[]
+  customTemplate?: {
+    method: 'POST' | 'GET'
+    headers: Record<string, string>
+    bodyTemplate: string
+  }
+}
+
+export interface WebhookConfig {
+  enabled: boolean
+  channels: WebhookChannel[]
+}
+
 // 设置数据结构
 export interface SettingsData {
   // 扫描模式
@@ -126,6 +145,7 @@ export interface SettingsData {
   };
   pomodoro?: PomodoroSettings;
   customSlashCommands?: CustomSlashCommand[];
+  webhook?: WebhookConfig;
 }
 
 export const defaultPomodoroSettings: PomodoroSettings = {
@@ -189,7 +209,11 @@ export const defaultSettings: SettingsData = {
     activeProviderId: null
   },
   pomodoro: defaultPomodoroSettings,
-  customSlashCommands: []
+  customSlashCommands: [],
+  webhook: {
+    enabled: false,
+    channels: [],
+  },
 };
 
 export const defaultChatHistory: AIChatHistory = {

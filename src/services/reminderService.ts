@@ -12,6 +12,8 @@ import { calculateReminderTime } from '@/parser/reminderParser';
 import { requestNotificationPermission, showSystemNotification } from '@/utils/notification';
 import { getHabitReminderEntries } from '@/services/habitReminder';
 import dayjs from '@/utils/dayjs';
+import { kernelAvailable, rpcCall } from '@/composables/useKernelTimer';
+import { Events, eventBus } from '@/utils/eventBus';
 
 type ProjectStoreType = ReturnType<typeof useProjectStore>;
 const MISSED_THRESHOLD_MS = 5 * 60 * 1000;
@@ -33,6 +35,8 @@ export class ReminderService {
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
   private visibilityHandler: (() => void) | null = null;
   private midnightRefreshJob: Cron | null = null;
+  private kernelNotificationUnsubscribe: (() => void) | null = null;
+  private kernelDateChangedUnsubscribe: (() => void) | null = null;
 
   /**
    * 启动提醒服务
@@ -48,7 +52,12 @@ export class ReminderService {
     void requestNotificationPermission();
     this.setupVisibilityListener();
     this.rebuildSchedulesFromNow();
-    this.scheduleMidnightRefresh();
+
+    if (kernelAvailable.value) {
+      this.setupKernelListeners();
+    } else {
+      this.scheduleMidnightRefresh();
+    }
 
     console.log('[ReminderService] Started with croner');
   }
@@ -65,6 +74,14 @@ export class ReminderService {
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
+    }
+    if (this.kernelNotificationUnsubscribe) {
+      this.kernelNotificationUnsubscribe();
+      this.kernelNotificationUnsubscribe = null;
+    }
+    if (this.kernelDateChangedUnsubscribe) {
+      this.kernelDateChangedUnsubscribe();
+      this.kernelDateChangedUnsubscribe = null;
     }
     this.projectStore = null;
     console.log('[ReminderService] Stopped');
@@ -121,6 +138,11 @@ export class ReminderService {
    */
   private rebuildSchedule(): void {
     if (!this.projectStore) return;
+
+    if (kernelAvailable.value) {
+      this.rebuildScheduleKernel();
+      return;
+    }
 
     const now = Date.now();
     const newEntries = new Map<string, { item: Item; reminderTime: number }>();
@@ -355,6 +377,135 @@ export class ReminderService {
    */
   private scheduleCleanup(key: string): void {
     setTimeout(() => this.notifiedKeys.delete(key), 24 * 60 * 60 * 1000);
+  }
+
+  private setupKernelListeners(): void {
+    this.kernelNotificationUnsubscribe = eventBus.on(Events.KERNEL_NOTIFICATION, (params: any) => {
+      if (params.type === 'reminder') {
+        this.triggerNotificationByMetadata(params.metadata);
+      }
+      if (params.type === 'habit') {
+        this.triggerHabitNotificationByMetadata(params.metadata);
+      }
+    });
+
+    this.kernelDateChangedUnsubscribe = eventBus.on(Events.KERNEL_DATE_CHANGED, (params: any) => {
+      if (params.date && this.projectStore) {
+        if (typeof (this.projectStore as any).setCurrentDate === 'function') {
+          (this.projectStore as any).setCurrentDate(params.date);
+        } else {
+          this.projectStore.currentDate = params.date;
+        }
+        this.rebuildSchedule();
+      }
+    });
+  }
+
+  private rebuildScheduleKernel(): void {
+    if (!this.projectStore) return;
+
+    const now = Date.now();
+    const entries: Array<{
+      id: string
+      type: 'reminder' | 'habit'
+      endTime: number
+      metadata: { blockId: string, content: string, projectName?: string, taskName?: string }
+    }> = [];
+
+    for (const project of this.projectStore.projects) {
+      for (const task of project.tasks) {
+        for (const item of task.items) {
+          if (item.status === 'completed' || item.status === 'abandoned') continue;
+          if (!item.reminder?.enabled) continue;
+
+          const reminderTime = calculateReminderTime(
+            item.date,
+            item.startDateTime,
+            item.endDateTime,
+            undefined,
+            undefined,
+            item.reminder,
+          );
+
+          if (reminderTime <= 0) continue;
+          if (reminderTime <= now - MISSED_THRESHOLD_MS) continue;
+          if (reminderTime >= now + FUTURE_WINDOW_MS) continue;
+
+          entries.push({
+            id: `reminder-${item.id}-${item.date}-${reminderTime}`,
+            type: 'reminder',
+            endTime: Math.floor(reminderTime / 1000),
+            metadata: {
+              blockId: item.blockId || item.id,
+              content: item.content,
+              projectName: item.project?.name,
+              taskName: item.task?.name,
+            },
+          });
+        }
+      }
+    }
+
+    const habits = typeof this.projectStore.getHabits === 'function'
+      ? this.projectStore.getHabits('')
+      : [];
+
+    for (const entry of getHabitReminderEntries(habits, this.projectStore.currentDate)) {
+      if (entry.reminderTime <= now - MISSED_THRESHOLD_MS) continue;
+      if (entry.reminderTime >= now + FUTURE_WINDOW_MS) continue;
+
+      entries.push({
+        id: entry.key,
+        type: 'habit',
+        endTime: Math.floor(entry.reminderTime / 1000),
+        metadata: {
+          blockId: entry.habit.blockId,
+          content: entry.habit.name,
+        },
+      });
+    }
+
+    rpcCall('cancelTimersByType', { type: 'reminder' }).catch(() => {})
+    rpcCall('cancelTimersByType', { type: 'habit' }).catch(() => {})
+
+    if (entries.length > 0) {
+      rpcCall('registerTimers', { entries }).catch((err) => {
+        console.error('[ReminderService] Failed to register timers to kernel:', err)
+      })
+    }
+
+    console.log(`[ReminderService] Kernel schedule rebuilt: ${entries.length} entries registered`);
+  }
+
+  private triggerNotificationByMetadata(metadata: any): void {
+    const title = `⏰ ${metadata.projectName || '提醒'}`;
+    const body = metadata.taskName
+      ? `${metadata.taskName}: ${metadata.content}`
+      : metadata.content;
+
+    void showSystemNotification(title, body, {
+      tag: `reminder-${metadata.blockId}`,
+      icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+      onClick: () => {
+        this.openBlock(metadata.blockId);
+      },
+    }).catch((error) => {
+      console.error('[ReminderService] Failed to show kernel notification:', error);
+    });
+  }
+
+  private triggerHabitNotificationByMetadata(metadata: any): void {
+    const title = `🎯 ${metadata.content}`;
+
+    void showSystemNotification(title, metadata.content, {
+      tag: `habit-reminder-${metadata.blockId}`,
+      icon: '/plugins/siyuan-plugin-bullet-journal/icon.png',
+      onClick: () => {
+        this.openBlock(metadata.blockId);
+      },
+    }).catch((error) => {
+      console.error('[ReminderService] Failed to show kernel habit notification:', error);
+    });
   }
 }
 

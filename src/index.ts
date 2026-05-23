@@ -125,6 +125,11 @@ import {
   type DetachedPomodoroWindowHost,
 } from "@/utils/detachedPomodoroWindow";
 import { createRefreshCoordinator } from "@/services/refreshCoordinator";
+import {
+  checkKernelAvailable,
+  connectKernelWebSocket,
+  disconnectKernelWebSocket,
+} from "@/composables/useKernelTimer";
 
 let PluginInfo = {
   version: "",
@@ -355,6 +360,19 @@ export default class TaskAssistantPlugin extends Plugin {
       reminderService.start(this, projectStore);
     }
 
+    // 初始化内核计时器连接
+    void checkKernelAvailable().then((available) => {
+      if (available) {
+        connectKernelWebSocket();
+        const pinia = getSharedPinia();
+        if (pinia) {
+          const pomodoroStore = usePomodoroStore(pinia);
+          pomodoroStore.setupKernelNotificationListener();
+        }
+        console.log("[Task Assistant] Kernel timer connected");
+      }
+    });
+
     // 初始化技能存储服务
     this.initSkillStorage();
 
@@ -580,6 +598,8 @@ export default class TaskAssistantPlugin extends Plugin {
     mobileNotificationScheduler.detachRuntime();
     // 停止提醒服务
     reminderService.stop();
+    // 断开内核计时器连接
+    disconnectKernelWebSocket();
 
     debugState.activeInstanceIds = debugState.activeInstanceIds.filter(
       (id) => id !== this.debugInstanceId,
@@ -675,6 +695,7 @@ export default class TaskAssistantPlugin extends Plugin {
             ? { ...defaultPomodoroSettings, ...data.pomodoro }
             : defaultPomodoroSettings,
           customSlashCommands: data.customSlashCommands || [],
+          webhook: data.webhook || { enabled: false, channels: [] },
         };
       }
       // 加载聊天记录（从单独的文件）

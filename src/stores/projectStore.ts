@@ -289,9 +289,9 @@ function buildTodoTagOptions(items: Item[]): TodoTagOption[] {
 
 import { useSettingsStore } from './settingsStore';
 import dayjs from '@/utils/dayjs';
-import { writeMcpCache } from '@/mcp/mcpCacheWriter';
+import { writeKernelData } from '@/mcp/kernelDataWriter';
 
-let mcpCacheTimer: ReturnType<typeof setTimeout> | null = null;
+let kernelDataTimer: ReturnType<typeof setTimeout> | null = null;
 const INITIAL_LOAD_PROJECT_BATCH_SIZE = 25;
 const PROJECT_NAME_DEBUG_PREFIX = '[Task Assistant][ProjectNameDebug]';
 
@@ -302,15 +302,16 @@ function logProjectNameDebug(
   console.log(`${PROJECT_NAME_DEBUG_PREFIX} ${stage}:`, payload);
 }
 
-function debouncedWriteMcpCache(
+function debouncedWriteKernelData(
   projects: Project[],
   items: Item[],
-  groups: Array<{ id: string; name: string }>
+  groups: Array<{ id: string; name: string }>,
+  habits: Habit[],
 ) {
-  if (mcpCacheTimer) clearTimeout(mcpCacheTimer);
-  mcpCacheTimer = setTimeout(() => {
-    writeMcpCache(projects, items, groups).catch((err) => {
-      console.error('[Task Assistant] Failed to write MCP cache:', err);
+  if (kernelDataTimer) clearTimeout(kernelDataTimer);
+  kernelDataTimer = setTimeout(() => {
+    writeKernelData(projects, items, groups, habits).catch((err) => {
+      console.error('[Task Assistant] Failed to write kernel data:', err);
     });
   }, 2000);
 }
@@ -984,7 +985,7 @@ export const useProjectStore = defineStore('project', {
 
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
         const settingsStore = useSettingsStore();
-        debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
+        debouncedWriteKernelData(this.projects, this.items, settingsStore.groups, this.habits);
       } catch (error) {
         console.error('[Task Assistant] Failed to load projects:', error);
       } finally {
@@ -1053,7 +1054,7 @@ export const useProjectStore = defineStore('project', {
         this.currentDate = newDate;
         eventBus.emit(Events.DATA_REFRESHED, { plugin: _plugin, items: this.items });
         const settingsStore = useSettingsStore();
-        debouncedWriteMcpCache(this.projects, this.items, settingsStore.groups);
+        debouncedWriteKernelData(this.projects, this.items, settingsStore.groups, this.habits);
       } catch (error) {
         console.error('[Task Assistant] Refresh failed, falling back to full refresh:', {
           refreshKey: this.refreshKey,
