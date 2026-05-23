@@ -122,8 +122,13 @@ fs-notify 事件（文件变更时）:
 
 ```javascript
 siyuan.event.handler = function(event) {
-  if (event.type === 'fs-notify' && event.detail.path === 'kernel-data.json') {
-    rebuildReminderSchedule()
+  if (event.type === 'fs-notify') {
+    if (event.detail.path === 'kernel-data.json') {
+      rebuildReminderSchedule()
+    }
+    if (event.detail.path === 'webhook-config.json') {
+      reloadWebhookConfig()
+    }
   }
 }
 ```
@@ -136,7 +141,7 @@ siyuan.event.handler = function(event) {
 | items 新增字段 | `reminder`（ReminderConfig）、`startTime`/`endTime`（HH:mm，提醒计算需要） |
 | habits 新增顶层数组 | 包含 `id`、`name`、`type`、`reminder`、`targetDate` 等习惯提醒所需字段 |
 
-前端 `mcpCacheWriter.ts` 重构为 `src/kernel/kernelDataWriter.ts`，写入时包含上述新增字段。`projectStore` 中的缓存写入调用同步更新。
+前端 `mcpCacheWriter.ts` 重构为 `src/mcp/kernelDataWriter.ts`（保留在 `src/mcp/` 目录下，因为它是浏览器端模块，使用 `@/api` 的 `putFile` 调用思源 HTTP API，不属于 QuickJS 内核运行时），写入时包含上述新增字段。`projectStore` 中的缓存写入调用同步更新。
 
 MCP 功能重构：`src/kernel/mcp.ts` 中读取路径从 `mcp-cache.json` 更新为 `kernel-data.json`，类型从 `McpCache` 更新为 `KernelData`。`mcpTools.ts` 的过滤函数对新增字段透明，无需修改逻辑。
 
@@ -389,8 +394,10 @@ async function checkKernelAvailable(): Promise<boolean> {
 
 ```typescript
 function connectKernelWebSocket() {
+  const token = (window as any).siyuan?.config?.accessToken || ''
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
   const ws = new WebSocket(
-    `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/plugin/rpc/siyuan-plugin-bullet-journal`
+    `${protocol}://${location.host}/ws/plugin/rpc/siyuan-plugin-bullet-journal?token=${encodeURIComponent(token)}`
   )
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data)
@@ -402,11 +409,12 @@ function connectKernelWebSocket() {
     }
   }
   ws.onclose = () => {
-    // 断线重连
     setTimeout(connectKernelWebSocket, 5000)
   }
 }
 ```
+
+WebSocket 连接需要携带认证 token（通过 query 参数 `token`），从 `window.siyuan.config.accessToken` 获取。
 
 ### reminderService 改造
 
@@ -550,19 +558,102 @@ siyuan.plugin.lifecycle.onrunning = async function() {
 
 **2. 类型集中管理** — `src/kernel/types.ts`
 
-从各模块中抽取共享类型，替代现有的 `McpCache` 接口：
+从各模块中抽取共享类型，替代现有的 `McpCache` 接口。同时包含 `siyuan` 全局对象的完整类型声明（现有 `kernel.ts` 内联声明不完整，缺少 `siyuan.rpc`、`siyuan.client.fetch`、`siyuan.storage.watcher`、`siyuan.event` 等新增 API）：
 
 ```typescript
-interface KernelData {
-  version: number
-  updatedAt: string
-  groups: KernelDataGroup[]
-  projects: KernelDataProject[]
-  items: KernelDataItem[]
-  habits: KernelDataHabit[]
+// siyuan 全局对象类型声明（QuickJS 运行时注入）
+declare const siyuan: {
+  plugin: {
+    name: string
+    version: string
+    displayName: string
+    platform: string
+    lifecycle: {
+      onload: (() => Promise<void>) | null
+      onloaded: (() => Promise<void>) | null
+      onrunning: (() => Promise<void>) | null
+      onunload: (() => Promise<void>) | null
+    }
+  }
+  logger: {
+    trace: (...args: any[]) => Promise<void>
+    debug: (...args: any[]) => Promise<void>
+    info: (...args: any[]) => Promise<void>
+    warn: (...args: any[]) => Promise<void>
+    error: (...args: any[]) => Promise<void>
+  }
+  storage: {
+    get: (path: string) => Promise<{ text: () => Promise<string>; json: () => Promise<any> }>
+    put: (path: string, content: string) => Promise<void>
+    remove: (path: string) => Promise<void>
+    watcher: {
+      add: (path: string) => Promise<void>
+      remove: (path: string) => Promise<void>
+    }
+  }
+  rpc: {
+    bind: (name: string, fn: (...args: any[]) => any, ...descs: string[]) => void
+    unbind: (name: string) => void
+    broadcast: (method: string, params: any) => void
+  }
+  client: {
+    fetch: (path: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => Promise<{
+      ok: boolean
+      status: number
+      headers: Record<string, string>
+      text: () => Promise<string>
+      json: () => Promise<any>
+    }>
+  }
+  event: {
+    handler: ((event: { type: string; detail: any }) => void) | null
+    emit: (topic: string, event: any) => void
+  }
+  server: {
+    private: {
+      http: { handler: ((req: any) => Promise<any>) | null }
+      es: { handler: ((req: any) => Promise<void>) | null }
+      ws: { handler: ((req: any) => Promise<void>) | null }
+    }
+  }
 }
 
-interface KernelDataItem extends McpCacheItem {
+// 数据类型（自包含，不依赖 McpCacheItem）
+```
+interface KernelDataGroup {
+  id: string
+  name: string
+}
+
+interface KernelDataProject {
+  id: string
+  name: string
+  description: string | undefined
+  path: string
+  groupId: string | undefined
+  taskCount: number
+}
+
+interface KernelDataItem {
+  id: string
+  content: string
+  date: string
+  startDateTime: string | undefined
+  endDateTime: string | undefined
+  status: string
+  projectName: string | undefined
+  taskName: string | undefined
+  projectId: string
+  links: Array<{ name: string; url: string }> | undefined
+  pomodoros: Array<{
+    id: string
+    date: string
+    startTime: string
+    endTime: string | undefined
+    durationMinutes: number
+    actualDurationMinutes: number | undefined
+    description: string | undefined
+  }>
   reminder?: ReminderConfig
   startTime?: string   // HH:mm
   endTime?: string     // HH:mm
@@ -575,6 +666,15 @@ interface KernelDataHabit {
   reminder?: ReminderConfig
   targetDate: string
   blockId: string
+}
+
+interface KernelData {
+  version: number
+  updatedAt: string
+  groups: KernelDataGroup[]
+  projects: KernelDataProject[]
+  items: KernelDataItem[]
+  habits: KernelDataHabit[]
 }
 ```
 
@@ -647,7 +747,7 @@ export default defineConfig({
 |--------|---------|
 | `src/mcp/kernel.ts` | 删除（功能已迁移到 `src/kernel/`） |
 | `src/mcp/kernelTools.ts` | 删除（已迁移到 `src/kernel/mcpTools.ts`） |
-| `src/mcp/mcpCacheWriter.ts` | 重命名为 `src/kernel/kernelDataWriter.ts` |
+| `src/mcp/mcpCacheWriter.ts` | 重构为 `src/mcp/kernelDataWriter.ts`（浏览器端模块，保留在 src/mcp/） |
 | `src/mcp/` 目录 | 保留其他文件（`server.ts`、`dataLoader.ts` 等属于 Stdio MCP Server，不变） |
 
 ### 兼容性矩阵
@@ -672,7 +772,7 @@ export default defineConfig({
 | `WebhookChannelEditForm.vue` | 新增 | Channel 编辑表单（参考 AiProviderEditForm 布局） |
 | `useKernelTimer.ts` | 新增 | 内核可用性检测 + RPC 封装 |
 | `eventBus.ts` | 追加 | 新增 KERNEL_NOTIFICATION / KERNEL_DATE_CHANGED 事件 |
-| `mcpCacheWriter.ts` | 删除+重建 | → `src/kernel/kernelDataWriter.ts`，新增 reminder/habit 字段，文件名改为 `kernel-data.json` |
+| `mcpCacheWriter.ts` | 重构 | → `src/mcp/kernelDataWriter.ts`，新增 reminder/habit 字段，文件名改为 `kernel-data.json` |
 | `projectStore.ts` | 追加 | 更新缓存写入调用（指向 kernelDataWriter） |
 | `mcp/kernel.ts` | 删除 | 功能迁移到 `src/kernel/` |
 | `mcp/kernelTools.ts` | 删除 | 迁移到 `src/kernel/mcpTools.ts` |
