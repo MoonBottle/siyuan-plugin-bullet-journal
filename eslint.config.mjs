@@ -34,6 +34,10 @@ export default antfu(
     },
   },
   {
+    files: [
+      'src/**/*.{ts,js,mjs,vue}',
+      '*.{ts,js,mjs}',
+    ],
     plugins: {
       i18n: i18nPlugin,
     },

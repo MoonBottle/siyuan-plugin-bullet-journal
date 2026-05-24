@@ -20,7 +20,9 @@
     "mcp": "node dist/mcp-server.js",
     "build:kernel": "vite build --config vite.kernel.config.ts",
     "test": "npm run check:deprecated-fileutils-imports && npm run check:direct-updateblock-imports && vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.17",
