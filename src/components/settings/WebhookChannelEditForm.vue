@@ -322,6 +322,12 @@ defineExpose({ buildResult })
   .form-label {
     text-align: left;
     padding-right: 0;
+    min-width: auto;
+  }
+
+  .form-input {
+    flex: 0 0 auto;
+    min-width: 120px;
   }
 }
 
