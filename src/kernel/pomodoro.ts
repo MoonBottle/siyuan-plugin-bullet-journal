@@ -74,10 +74,3 @@ export function handleDiagnose(): any {
     now: now,
   }
 }
-
-export function handleTestBroadcast(): any {
-  void siyuan.logger.info('[pomodoro] handleTestBroadcast: sending test-event')
-  siyuan.rpc.broadcast('test-event', { ts: Date.now(), source: 'kernel-test' })
-  void siyuan.logger.info('[pomodoro] handleTestBroadcast: broadcast called')
-  return { ok: true }
-}
