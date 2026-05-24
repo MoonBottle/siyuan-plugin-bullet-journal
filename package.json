@@ -22,7 +22,8 @@
     "test": "npm run check:deprecated-fileutils-imports && npm run check:direct-updateblock-imports && vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.17",
