@@ -31,7 +31,7 @@ export async function reloadWebhookConfig(): Promise<void> {
 }
 
 export function dispatchNotification(entry: TimerEntry): void {
-  void siyuan.logger.info('[webhook] dispatchNotification: type=' + entry.type + ' id=' + entry.id)
+  console.log('[webhook] dispatchNotification: type=' + entry.type + ' id=' + entry.id)
 
   var broadcastParams = {
     id: entry.id,
@@ -39,35 +39,35 @@ export function dispatchNotification(entry: TimerEntry): void {
     metadata: entry.metadata,
     endTime: entry.endTime,
   }
-  void siyuan.logger.info('[webhook] broadcast params: ' + JSON.stringify(broadcastParams))
-  void siyuan.logger.info('[webhook] calling siyuan.rpc.broadcast...')
+  console.log('[webhook] broadcast params: ' + JSON.stringify(broadcastParams))
+  console.log('[webhook] calling siyuan.rpc.broadcast...')
   var result = siyuan.rpc.broadcast('timer-expired', broadcastParams)
-  void siyuan.logger.info('[webhook] siyuan.rpc.broadcast returned: type=' + typeof result + ' isPromise=' + (result && typeof result.then === 'function'))
-  void siyuan.logger.info('[webhook] broadcast call done')
+  console.log('[webhook] siyuan.rpc.broadcast returned: type=' + typeof result + ' isPromise=' + (result && typeof result.then === 'function'))
+  console.log('[webhook] broadcast call done')
 
   if (!webhookConfig.enabled) {
-    void siyuan.logger.info('[webhook] webhook disabled, skipping push')
+    console.log('[webhook] webhook disabled, skipping push')
     return
   }
 
-  void siyuan.logger.info('[webhook] webhook enabled, checking ' + webhookConfig.channels.length + ' channel(s)')
+  console.log('[webhook] webhook enabled, checking ' + webhookConfig.channels.length + ' channel(s)')
   var matchedCount = 0
   for (var i = 0; i < webhookConfig.channels.length; i++) {
     var channel = webhookConfig.channels[i]
     if (!channel.enabled) {
-      void siyuan.logger.info('[webhook]   channel[' + i + '] "' + channel.name + '" disabled, skipping')
+      console.log('[webhook]   channel[' + i + '] "' + channel.name + '" disabled, skipping')
       continue
     }
     if (channel.events.indexOf(entry.type) === -1) {
-      void siyuan.logger.info('[webhook]   channel[' + i + '] "' + channel.name + '" events=' + channel.events.join(',') + ' does not include type=' + entry.type + ', skipping')
+      console.log('[webhook]   channel[' + i + '] "' + channel.name + '" events=' + channel.events.join(',') + ' does not include type=' + entry.type + ', skipping')
       continue
     }
     matchedCount++
-    void siyuan.logger.info('[webhook]   channel[' + i + '] "' + channel.name + '" matched! type=' + channel.type)
+    console.log('[webhook]   channel[' + i + '] "' + channel.name + '" matched! type=' + channel.type)
     void sendWebhook(channel, entry)
   }
   if (matchedCount === 0) {
-    void siyuan.logger.info('[webhook] no channel matched for type=' + entry.type)
+    console.log('[webhook] no channel matched for type=' + entry.type)
   }
 }
 
