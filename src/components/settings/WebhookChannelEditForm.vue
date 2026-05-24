@@ -31,8 +31,9 @@
       />
     </div>
 
-    <div class="form-label-row">{{ t('settings').webhook.subscribeEvents }}</div>
-    <div class="event-checkboxes">
+    <div class="form-row fn__flex">
+      <span class="form-label">{{ t('settings').webhook.subscribeEvents }}</span>
+      <div class="form-input event-checkboxes">
       <label
         v-for="evt in eventOptions"
         :key="evt.value"
@@ -46,29 +47,32 @@
         />
         <span>{{ evt.label }}</span>
       </label>
+      </div>
     </div>
 
     <template v-if="channel.type === 'custom'">
-      <div class="form-label-row">{{ t('settings').webhook.customTemplate }}</div>
-      <div class="custom-template-section">
-        <div class="form-row fn__flex">
-          <span class="form-label">{{ t('settings').webhook.requestMethod }}</span>
-          <SySelect
-            v-model="customMethod"
-            :options="methodOptions"
-            option-label="label"
-            option-value="value"
-            class="form-input"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ t('settings').webhook.bodyTemplate }}</label>
-          <textarea
-            v-model="customBodyTemplate"
-            class="b3-text-field form-textarea"
-            rows="5"
-            :placeholder="t('settings').webhook.bodyTemplateHint"
-          />
+      <div class="form-row fn__flex">
+        <span class="form-label">{{ t('settings').webhook.customTemplate }}</span>
+        <div class="form-input custom-template-section">
+          <div class="form-row fn__flex">
+            <span class="form-label">{{ t('settings').webhook.requestMethod }}</span>
+            <SySelect
+              v-model="customMethod"
+              :options="methodOptions"
+              option-label="label"
+              option-value="value"
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ t('settings').webhook.bodyTemplate }}</label>
+            <textarea
+              v-model="customBodyTemplate"
+              class="b3-text-field form-textarea"
+              rows="5"
+              :placeholder="t('settings').webhook.bodyTemplateHint"
+            />
+          </div>
         </div>
       </div>
     </template>
@@ -266,7 +270,7 @@ defineExpose({ buildResult })
 }
 
 .form-label {
-  min-width: 80px;
+  min-width: 100px;
   flex-shrink: 0;
   text-align: right;
   padding-right: 8px;
@@ -276,10 +280,6 @@ defineExpose({ buildResult })
 .form-input {
   flex: 1;
   min-width: 0;
-}
-
-.form-label-row {
-  font-size: 13px;
 }
 
 .form-group {
@@ -318,6 +318,11 @@ defineExpose({ buildResult })
   padding: 8px;
   background: var(--b3-theme-surface-lighter);
   border-radius: var(--b3-border-radius);
+
+  .form-label {
+    text-align: left;
+    padding-right: 0;
+  }
 }
 
 .test-row {
