@@ -36,6 +36,7 @@ export default antfu(
   {
     files: [
       'src/**/*.{ts,js,mjs,vue}',
+      'test/**/*.{ts,js,mjs,vue}',
       '*.{ts,js,mjs}',
     ],
     plugins: {
