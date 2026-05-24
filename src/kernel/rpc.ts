@@ -8,10 +8,16 @@ import {
 } from './pomodoro'
 
 export function initRpcApi(): void {
-  siyuan.rpc.bind('ping', handlePing, '心跳检测')
-  siyuan.rpc.bind('registerTimer', handleRegisterTimer, '注册计时器')
-  siyuan.rpc.bind('registerTimers', handleRegisterTimers, '批量注册计时器')
-  siyuan.rpc.bind('cancelTimer', handleCancelTimer, '取消计时器')
-  siyuan.rpc.bind('cancelTimersByType', handleCancelTimersByType, '按类型取消计时器')
-  siyuan.rpc.bind('getActiveTimers', handleGetActiveTimers, '查询活跃计时器')
+  var methods = [
+    { name: 'ping', handler: handlePing, desc: '心跳检测' },
+    { name: 'registerTimer', handler: handleRegisterTimer, desc: '注册计时器' },
+    { name: 'registerTimers', handler: handleRegisterTimers, desc: '批量注册计时器' },
+    { name: 'cancelTimer', handler: handleCancelTimer, desc: '取消计时器' },
+    { name: 'cancelTimersByType', handler: handleCancelTimersByType, desc: '按类型取消计时器' },
+    { name: 'getActiveTimers', handler: handleGetActiveTimers, desc: '查询活跃计时器' },
+  ]
+  for (var i = 0; i < methods.length; i++) {
+    siyuan.rpc.bind(methods[i].name, methods[i].handler, methods[i].desc)
+    console.log('[rpc] bound: ' + methods[i].name + ' (' + methods[i].desc + ')')
+  }
 }

@@ -3,15 +3,26 @@ import { renderTemplate } from './utils'
 
 var webhookConfig: WebhookConfig = { enabled: false, channels: [] }
 
+export function getWebhookConfig(): WebhookConfig {
+  return webhookConfig
+}
+
 export async function loadWebhookConfig(): Promise<void> {
   try {
-    var result = await siyuan.storage.get('webhook-config.json')
-    var data: WebhookConfig = await result.json()
-    if (data) {
-      webhookConfig = data
+    var result = await siyuan.storage.get('settings')
+    var data = await result.json()
+    if (data && data.webhook) {
+      webhookConfig = data.webhook
+      console.log('[webhook] config loaded from settings: enabled=' + webhookConfig.enabled + ' channels=' + webhookConfig.channels.length)
+      for (var i = 0; i < webhookConfig.channels.length; i++) {
+        var ch = webhookConfig.channels[i]
+        console.log('[webhook]   channel: name=' + ch.name + ' type=' + ch.type + ' enabled=' + ch.enabled + ' events=' + ch.events.join(','))
+      }
+    } else {
+      console.log('[webhook] no webhook field in settings file')
     }
   } catch (e) {
-    await siyuan.logger.warn('[webhook] failed to load config: ' + String(e))
+    console.log('[webhook] failed to load config from settings: ' + String(e))
   }
 }
 
@@ -20,20 +31,39 @@ export async function reloadWebhookConfig(): Promise<void> {
 }
 
 export function dispatchNotification(entry: TimerEntry): void {
+  console.log('[webhook] dispatchNotification: type=' + entry.type + ' id=' + entry.id + ' content=' + entry.metadata.content)
+
   siyuan.rpc.broadcast('timer-expired', {
     id: entry.id,
     type: entry.type,
     metadata: entry.metadata,
     endTime: entry.endTime,
   })
+  console.log('[webhook] broadcast sent: timer-expired')
 
-  if (webhookConfig.enabled) {
-    for (var i = 0; i < webhookConfig.channels.length; i++) {
-      var channel = webhookConfig.channels[i]
-      if (!channel.enabled) continue
-      if (channel.events.indexOf(entry.type) === -1) continue
-      void sendWebhook(channel, entry)
+  if (!webhookConfig.enabled) {
+    console.log('[webhook] webhook disabled, skipping push')
+    return
+  }
+
+  console.log('[webhook] webhook enabled, checking ' + webhookConfig.channels.length + ' channel(s)')
+  var matchedCount = 0
+  for (var i = 0; i < webhookConfig.channels.length; i++) {
+    var channel = webhookConfig.channels[i]
+    if (!channel.enabled) {
+      console.log('[webhook]   channel[' + i + '] "' + channel.name + '" disabled, skipping')
+      continue
     }
+    if (channel.events.indexOf(entry.type) === -1) {
+      console.log('[webhook]   channel[' + i + '] "' + channel.name + '" events=' + channel.events.join(',') + ' does not include type=' + entry.type + ', skipping')
+      continue
+    }
+    matchedCount++
+    console.log('[webhook]   channel[' + i + '] "' + channel.name + '" matched! type=' + channel.type + ' url=' + channel.url.substring(0, 50) + '...')
+    void sendWebhook(channel, entry)
+  }
+  if (matchedCount === 0) {
+    console.log('[webhook] no channel matched for type=' + entry.type)
   }
 }
 
@@ -131,6 +161,8 @@ async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<
     method = 'POST'
   }
 
+  console.log('[webhook] sendWebhook: channel="' + channel.name + '" type=' + channel.type + ' method=' + method + ' payloadLen=' + payload.length)
+
   var headerArray: Record<string, string>[] = []
   for (var key in headers) {
     var obj: Record<string, string> = {}
@@ -151,18 +183,22 @@ async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<
       }),
     })
 
+    console.log('[webhook] forwardProxy response: ok=' + resp.ok + ' status=' + resp.status)
+
     if (resp.ok) {
       var result = await resp.json()
       if (result.code !== 0) {
-        await siyuan.logger.warn('[webhook] forwardProxy failed: code=' + result.code + ' msg=' + result.msg)
+        console.log('[webhook] forwardProxy failed: code=' + result.code + ' msg=' + result.msg)
       } else if (result.data && result.data.status >= 400) {
-        await siyuan.logger.warn('[webhook] target returned status=' + result.data.status)
+        console.log('[webhook] target returned status=' + result.data.status + ' body=' + JSON.stringify(result.data).substring(0, 200))
+      } else {
+        console.log('[webhook] send SUCCESS: channel="' + channel.name + '" type=' + channel.type)
       }
     } else {
-      await siyuan.logger.warn('[webhook] siyuan.client.fetch failed: status=' + resp.status)
+      console.log('[webhook] siyuan.client.fetch failed: status=' + resp.status)
     }
   } catch (e) {
-    await siyuan.logger.warn('[webhook] send failed: ' + String(e))
+    console.log('[webhook] send FAILED: channel="' + channel.name + '" error=' + String(e))
   }
 }
 

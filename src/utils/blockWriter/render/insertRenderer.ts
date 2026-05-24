@@ -3,10 +3,17 @@
  *
  * 流程：patch → markdown（via renderInsertableBlockPatch）→ DOM HTML
  * 插入操作仅支持 API 提交，优先用 DOM 格式（保留样式），失败回退 markdown
+ *
+ * 关键：插入新块时必须清空 data-node-id，否则 SiYuan 内核会保留已有 ID，
+ * 导致新块与锚点块 ID 冲突（dataType="dom" 时合法 ID 不会被自动替换）。
  */
 import { markdownToBlockDOM } from '@/utils/blockWriter/render/domSerializer';
 import { renderInsertableBlockPatch } from '@/utils/blockWriter/render/kramdownModifier';
 import type { LoadedMutationSource, PreparedMutationPayload, ResolvedMutationPlan } from '@/utils/blockWriter/shared/types';
+
+function stripDataNodeIds(dom: string): string {
+  return dom.replace(/data-node-id="[^"]*"/g, 'data-node-id=""');
+}
 
 /** 准备插入载荷：将 patch 渲染为 markdown 和 DOM HTML */
 export function prepareInsertPayload(
@@ -14,11 +21,12 @@ export function prepareInsertPayload(
   _source: Extract<LoadedMutationSource, { kind: 'insertAfter' }>,
 ): Extract<PreparedMutationPayload, { kind: 'insertAfter' }> {
   const fallbackMarkdown = renderInsertableBlockPatch(plan.patch);
+  const rawDom = markdownToBlockDOM(fallbackMarkdown);
   return {
     kind: 'insertAfter',
     anchorBlockId: plan.anchorBlockId,
     preferredDataType: 'dom',
-    domHtml: markdownToBlockDOM(fallbackMarkdown) ?? undefined,
+    domHtml: rawDom ? stripDataNodeIds(rawDom) : undefined,
     fallbackMarkdown,
     resultMode: plan.resultMode,
   };

@@ -1,11 +1,5 @@
-/**
- * 意图归一化：将外部调用转化为内部标准意图
- *
- * 两种入口：
- * - normalizeUpdateIntent：更新已有块，patch 序列经排序后生成 update 意图
- * - normalizeInsertIntent：在锚点块后插入新块，生成 insertAfter 意图
- */
 import { normalizePatchSequence } from '@/utils/blockWriter/intent/normalizePatchSequence';
+import { snapshotStatusBeforeCompletion } from '@/utils/blockWriter/statusSnapshot';
 import type {
   BatchBlockPatch,
   BlockMutationIntent,
@@ -20,6 +14,12 @@ export function normalizeUpdateIntent(
   patches: BlockPatch | BatchBlockPatch,
 ): Extract<BlockMutationIntent, { kind: 'update' }> {
   const patchArray = normalizePatchSequence(Array.isArray(patches) ? patches : [patches]);
+  const hasSetStatusCompleted = patchArray.some(
+    p => p.type === 'setStatus' && p.status === 'completed',
+  );
+  if (hasSetStatusCompleted && context.blockId) {
+    snapshotStatusBeforeCompletion(context.blockId);
+  }
   return {
     kind: 'update',
     context,

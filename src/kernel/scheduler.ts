@@ -56,12 +56,15 @@ function schedulePersist(): void {
 }
 
 export function registerTimer(entry: TimerEntry): void {
+  console.log('[scheduler] registerTimer: id=' + entry.id + ' type=' + entry.type + ' endTime=' + entry.endTime + ' content=' + entry.metadata.content)
   timers.set(entry.id, entry)
   schedulePersist()
 }
 
 export function registerTimers(entries: TimerEntry[]): void {
+  console.log('[scheduler] registerTimers: count=' + entries.length)
   for (var i = 0; i < entries.length; i++) {
+    console.log('[scheduler]   - id=' + entries[i].id + ' type=' + entries[i].type + ' endTime=' + entries[i].endTime)
     timers.set(entries[i].id, entries[i])
   }
   schedulePersist()
@@ -82,6 +85,9 @@ export function cancelTimersByType(type: string): void {
   for (var i = 0; i < toDelete.length; i++) {
     timers.delete(toDelete[i])
   }
+  if (toDelete.length > 0) {
+    console.log('[scheduler] cancelTimersByType: type=' + type + ' cancelled=' + toDelete.length)
+  }
   schedulePersist()
 }
 
@@ -97,15 +103,18 @@ export function getActiveTimers(type?: string): TimerEntry[] {
 
 export function initScheduler(): void {
   lastKnownDate = formatDate(new Date())
+  console.log('[scheduler] initScheduler: existing timers=' + timers.size + ' today=' + lastKnownDate)
   var now = Date.now() / 1000
   timers.forEach(function (entry) {
     if (!entry.notified && entry.endTime <= now) {
       var diffMs = (now - entry.endTime) * 1000
       if (diffMs <= MISSED_THRESHOLD_MS) {
         entry.notified = true
+        console.log('[scheduler] missed timer (within ' + Math.round(diffMs / 1000) + 's): id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content)
         dispatchNotification(entry)
       } else {
         entry.notified = true
+        console.log('[scheduler] stale timer (' + Math.round(diffMs / 60000) + 'min ago), skipping: id=' + entry.id + ' type=' + entry.type)
       }
     }
   })
@@ -122,12 +131,18 @@ export function stopScheduler(): void {
 
 function checkTimers(): void {
   var now = Date.now() / 1000
+  var firedCount = 0
   timers.forEach(function (entry) {
     if (!entry.notified && now >= entry.endTime) {
       entry.notified = true
+      firedCount++
+      console.log('[scheduler] timer FIRED: id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content + ' endTime=' + entry.endTime + ' now=' + now)
       dispatchNotification(entry)
     }
   })
+  if (firedCount > 0) {
+    console.log('[scheduler] checkTimers: ' + firedCount + ' timer(s) fired, active=' + timers.size)
+  }
 
   var toDelete: string[] = []
   timers.forEach(function (entry, key) {

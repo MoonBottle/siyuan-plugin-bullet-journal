@@ -12,6 +12,7 @@ export function setReloadWebhookConfig(fn: () => Promise<void>): void {
 
 export async function initReminderScheduler(): Promise<void> {
   await siyuan.storage.watcher.add('.')
+  console.log('[reminder] storage watcher added')
   await rebuildReminderSchedule()
 }
 
@@ -19,7 +20,12 @@ export async function rebuildReminderSchedule(): Promise<void> {
   try {
     var result = await siyuan.storage.get('kernel-data.json')
     var data: KernelData = await result.json()
-    if (!data) return
+    if (!data) {
+      console.log('[reminder] kernel-data.json is empty or null')
+      return
+    }
+
+    console.log('[reminder] kernel-data loaded: items=' + (data.items ? data.items.length : 0) + ' habits=' + (data.habits ? data.habits.length : 0))
 
     cancelTimersByType('reminder')
     cancelTimersByType('habit')
@@ -88,21 +94,24 @@ export async function rebuildReminderSchedule(): Promise<void> {
     if (entries.length > 0) {
       registerTimers(entries)
     }
+
+    console.log('[reminder] schedule rebuilt: ' + entries.length + ' timer entries registered (reminder + habit)')
   } catch (e) {
-    await siyuan.logger.warn('[reminder] failed to rebuild schedule: ' + String(e))
+    console.log('[reminder] failed to rebuild schedule: ' + String(e))
   }
 }
 
 export function handleFsNotify(event: { type: string, detail: any }): void {
   if (event.type !== 'fs-notify') return
   var path = event.detail.path.replace(/\\/g, '/')
+  console.log('[reminder] fs-notify: path=' + path)
   pendingPaths[path] = true
   if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
   fsNotifyDebounceTimer = setTimeout(function () {
     if (pendingPaths['kernel-data.json']) {
       void rebuildReminderSchedule()
     }
-    if (pendingPaths['webhook-config.json']) {
+    if (pendingPaths['settings']) {
       if (reloadWebhookConfigFn) void reloadWebhookConfigFn()
     }
     pendingPaths = {}

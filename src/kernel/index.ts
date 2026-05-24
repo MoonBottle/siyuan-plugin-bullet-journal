@@ -2,29 +2,37 @@ import { initScheduler, stopScheduler, loadTimerRegistry, persistTimerRegistry, 
 import { initReminderScheduler, handleFsNotify, rebuildReminderSchedule, setReloadWebhookConfig } from './reminder'
 import { initRpcApi } from './rpc'
 import { initMcpServer } from './mcp'
-import { dispatchNotification, loadWebhookConfig, reloadWebhookConfig } from './webhook'
+import { dispatchNotification, loadWebhookConfig, reloadWebhookConfig, getWebhookConfig } from './webhook'
 
 siyuan.plugin.lifecycle.onrunning = async function () {
-  await siyuan.logger.info('[kernel] initializing...')
+  console.log('[kernel] onrunning fired, platform=' + siyuan.plugin.platform)
 
   setDispatchNotification(dispatchNotification)
   setRebuildReminderSchedule(rebuildReminderSchedule)
   setReloadWebhookConfig(reloadWebhookConfig)
 
   await loadTimerRegistry()
+  console.log('[kernel] timer registry loaded')
   initScheduler()
+  console.log('[kernel] scheduler started')
 
   await initReminderScheduler()
+  console.log('[kernel] reminder scheduler initialized')
   await loadWebhookConfig()
+  var whConfig = getWebhookConfig()
+  console.log('[kernel] webhook config loaded, enabled=' + whConfig.enabled + ' channels=' + whConfig.channels.length)
 
   initRpcApi()
+  console.log('[kernel] rpc api bound')
   initMcpServer()
+  console.log('[kernel] mcp server initialized')
 
   siyuan.event.handler = function (event: { type: string, detail: any }) {
+    console.log('[kernel] event received: type=' + event.type + ' path=' + (event.detail && event.detail.path))
     handleFsNotify(event)
   }
 
-  await siyuan.logger.info('[kernel] initialized successfully')
+  console.log('[kernel] initialized successfully')
 }
 
 siyuan.plugin.lifecycle.onunload = async function () {

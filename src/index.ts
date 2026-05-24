@@ -103,6 +103,7 @@ import {
   createNextOccurrence,
   shouldCreateNextOccurrence,
 } from "@/services/recurringService";
+import { consumeStatusSnapshot, registerStatusResolver } from "@/utils/blockWriter/statusSnapshot";
 import {
   initializeChinaWorkdayCalendar,
   refreshChinaWorkdayCalendar,
@@ -277,6 +278,11 @@ export default class TaskAssistantPlugin extends Plugin {
     // 创建唯一 Pinia 实例，供所有 Tab/Dock 复用，避免多实例导致 store 不同步
     const pinia = createPinia();
     setSharedPinia(pinia);
+
+    registerStatusResolver((blockId: string) => {
+      const store = useProjectStore(pinia);
+      return store.getItemByBlockId(blockId)?.status;
+    });
 
     // 注册自定义 Tab
     this.registerTabs();
@@ -2177,15 +2183,32 @@ export default class TaskAssistantPlugin extends Plugin {
           const undoOp = transaction.undoOperations?.find(
             (u: any) => u.id === op.id && u.action === "update",
           );
+          const hasUndoOp = Boolean(undoOp);
           const hadDoneClass = undoOp?.data?.includes("protyle-task--done");
           const hadDoneMarker =
             undoOp?.data?.includes("✅") ||
             undoOp?.data?.includes("#done") ||
             undoOp?.data?.includes("#已完成");
 
-          const isNewCompletion =
-            (hasDoneClass && !hadDoneClass) ||
-            (hasDoneMarker && !hadDoneMarker);
+          // 新完成判定逻辑：
+          // - protyle 提交（hasUndoOp=true）：可可靠对比 do/undo 判断是否新完成
+          // - API 提交（hasUndoOp=false）：undoOp 缺失，用 writeBlock 调用前的快照判断
+          //   - 快照 status=pending → 是新完成（writeBlock 刚标记完成）
+          //   - 快照 status=completed → 不是新完成（修改已完成事项的属性）
+          //   - 无快照 → 无法判断，保守跳过（思源原生勾选走 protyle 路径，不会到这）
+          let isNewCompletion = false;
+          if (hasUndoOp) {
+            isNewCompletion = (hasDoneClass && !hadDoneClass) || (hasDoneMarker && !hadDoneMarker);
+          } else if (hasDoneMarker || hasDoneClass) {
+            const snapshotStatus = consumeStatusSnapshot(op.id);
+            isNewCompletion = snapshotStatus !== undefined && snapshotStatus !== "completed";
+            console.log(
+              "[Task Assistant] API path completion check, snapshot status:",
+              snapshotStatus,
+              "isNewCompletion:",
+              isNewCompletion,
+            );
+          }
 
           console.log(
             "[Task Assistant] Operation is update, has protyle-task--done:",
@@ -2196,31 +2219,11 @@ export default class TaskAssistantPlugin extends Plugin {
             hasDoneMarker,
             "had:",
             hadDoneMarker,
+            "hasUndoOp:",
+            hasUndoOp,
             "isNewCompletion:",
             isNewCompletion,
           );
-
-          // [DIAG] 诊断日志：钉住已完成重复事项被斜杠命令误触发的根因
-          if (isNewCompletion) {
-            const hasUndoOp = Boolean(undoOp);
-            const undoOpId = undoOp?.id ?? "N/A";
-            const doDataPreview = op.data.substring(0, 300);
-            const undoDataPreview = undoOp?.data?.substring?.(0, 300) ?? "NO_UNDO_DATA";
-            console.log(
-              "[Task Assistant][DIAG] isNewCompletion=true details:",
-              JSON.stringify({
-                opId: op.id,
-                hasUndoOp,
-                undoOpId,
-                hasDoneClass,
-                hadDoneClass,
-                hasDoneMarker,
-                hadDoneMarker,
-                doDataPreview,
-                undoDataPreview,
-              }),
-            );
-          }
 
           if (isNewCompletion) {
             console.log(
@@ -2251,12 +2254,9 @@ export default class TaskAssistantPlugin extends Plugin {
       listItemBlockId,
     );
 
-    // 从 HTML 中提取第二个 data-node-id（内容块 ID）
-    // 格式：<div data-node-id="列表项块ID">...<div data-node-id="内容块ID">...
     let contentBlockId = listItemBlockId;
     const dataNodeIdMatches = op.data.match(/data-node-id="([^"]+)"/g);
     if (dataNodeIdMatches && dataNodeIdMatches.length >= 2) {
-      // 第二个 data-node-id 是内容块的 ID
       const secondMatch = dataNodeIdMatches[1];
       const idMatch = secondMatch.match(/data-node-id="([^"]+)"/);
       if (idMatch) {
@@ -2336,20 +2336,6 @@ export default class TaskAssistantPlugin extends Plugin {
       return;
     }
 
-    // [DIAG] 诊断日志：记录 store 中 item 的真实状态
-    console.log(
-      "[Task Assistant][DIAG] doHandleTaskListCompletion item state:",
-      JSON.stringify({
-        contentBlockId,
-        listItemBlockId,
-        itemContent: item.content?.substring(0, 80),
-        itemStatus: item.status,
-        itemRepeatRule: item.repeatRule,
-        itemDate: item.date,
-        itemBlockId: item.blockId,
-      }),
-    );
-
     if (!item.repeatRule) {
       console.log(
         "[Task Assistant] Task completed but no repeat rule:",
@@ -2358,20 +2344,7 @@ export default class TaskAssistantPlugin extends Plugin {
       return;
     }
 
-    // [DIAG] 诊断日志：记录 shouldCreateNextOccurrence 的输入和结果
-    const itemWithCompletedStatus = { ...item, status: "completed" };
-    const canCreateNext = shouldCreateNextOccurrence(itemWithCompletedStatus);
-    console.log(
-      "[Task Assistant][DIAG] shouldCreateNextOccurrence check:",
-      JSON.stringify({
-        originalItemStatus: item.status,
-        forcedStatus: "completed",
-        repeatRule: item.repeatRule,
-        canCreateNext,
-      }),
-    );
-
-    if (!canCreateNext) {
+    if (!shouldCreateNextOccurrence({ ...item, status: "completed" })) {
       console.log(
         "[Task Assistant] Cannot create next occurrence for:",
         item.content,
