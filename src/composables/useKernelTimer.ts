@@ -94,7 +94,9 @@ export function connectKernelWebSocket(): void {
   }
   ws.onmessage = (event) => {
     try {
+      console.log('[KernelTimer] WS raw: ' + (typeof event.data) + ' len=' + (event.data && event.data.length) + ' preview=' + String(event.data).substring(0, 300))
       const data = JSON.parse(event.data)
+      console.log('[KernelTimer] WS parsed: method=' + data.method + ' keys=' + Object.keys(data).join(','))
       if (data.method === 'timer-expired') {
         console.log('[KernelTimer] received timer-expired: type=' + (data.params && data.params.type) + ' id=' + (data.params && data.params.id))
         eventBus.emit(Events.KERNEL_NOTIFICATION, data.params)
