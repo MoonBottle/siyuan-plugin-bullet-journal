@@ -4,6 +4,14 @@ import { initRpcApi } from './rpc'
 import { initMcpServer } from './mcp'
 import { dispatchNotification, loadWebhookConfig, reloadWebhookConfig, getWebhookConfig } from './webhook'
 
+siyuan.plugin.lifecycle.onload = async function () {
+  console.log('[kernel] onload fired')
+}
+
+siyuan.plugin.lifecycle.onloaded = async function () {
+  console.log('[kernel] onloaded fired')
+}
+
 siyuan.plugin.lifecycle.onrunning = async function () {
   console.log('[kernel] onrunning fired, platform=' + siyuan.plugin.platform)
 

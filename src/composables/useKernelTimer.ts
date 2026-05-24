@@ -90,3 +90,28 @@ export function disconnectKernelWebSocket(): void {
     ws = null
   }
 }
+
+export interface KernelDiagnoseResult {
+  timers: Array<{
+    id: string
+    type: string
+    endTime: number
+    notified: boolean
+    content: string
+    remaining: number
+  }>
+  webhook: {
+    enabled: boolean
+    channels: Array<{
+      name: string
+      type: string
+      enabled: boolean
+      events: string[]
+    }>
+  }
+  now: number
+}
+
+export async function diagnoseKernel(): Promise<KernelDiagnoseResult> {
+  return rpcCall<KernelDiagnoseResult>('diagnose')
+}

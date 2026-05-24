@@ -5,6 +5,7 @@ import {
   handleCancelTimer,
   handleCancelTimersByType,
   handleGetActiveTimers,
+  handleDiagnose,
 } from './pomodoro'
 
 export function initRpcApi(): void {
@@ -15,6 +16,7 @@ export function initRpcApi(): void {
     { name: 'cancelTimer', handler: handleCancelTimer, desc: '取消计时器' },
     { name: 'cancelTimersByType', handler: handleCancelTimersByType, desc: '按类型取消计时器' },
     { name: 'getActiveTimers', handler: handleGetActiveTimers, desc: '查询活跃计时器' },
+    { name: 'diagnose', handler: handleDiagnose, desc: '诊断内核状态' },
   ]
   for (var i = 0; i < methods.length; i++) {
     siyuan.rpc.bind(methods[i].name, methods[i].handler, methods[i].desc)
