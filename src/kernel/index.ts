@@ -35,6 +35,14 @@ siyuan.plugin.lifecycle.onrunning = async function () {
   initMcpServer()
   console.log('[kernel] mcp server initialized')
 
+  try {
+    var testResp = await siyuan.client.fetch('/api/system/version')
+    var testText = await testResp.text()
+    console.log('[kernel] siyuan.client.fetch test: ok=' + testResp.ok + ' body=' + testText.substring(0, 100))
+  } catch (e) {
+    console.log('[kernel] siyuan.client.fetch test FAILED: ' + String(e))
+  }
+
   siyuan.event.handler = function (event: { type: string, detail: any }) {
     console.log('[kernel] event received: type=' + event.type + ' path=' + (event.detail && event.detail.path))
     handleFsNotify(event)

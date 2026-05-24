@@ -147,55 +147,37 @@ function buildPlatformPayload(channelType: string, entry: TimerEntry): any {
 
 async function sendWebhook(channel: WebhookChannel, entry: TimerEntry): Promise<void> {
   var payload: string
-  var headers: Record<string, string>
   var method: string
 
   if (channel.type === 'custom') {
     var vars = buildTemplateVars(entry)
     payload = renderTemplate(channel.customTemplate!.bodyTemplate, vars)
-    headers = channel.customTemplate!.headers
     method = channel.customTemplate!.method || 'POST'
   } else {
     payload = JSON.stringify(buildPlatformPayload(channel.type, entry))
-    headers = { 'Content-Type': 'application/json' }
     method = 'POST'
   }
 
   console.log('[webhook] sendWebhook: channel="' + channel.name + '" type=' + channel.type + ' method=' + method + ' payloadLen=' + payload.length)
 
-  var headerArray: Record<string, string>[] = []
-  for (var key in headers) {
-    var obj: Record<string, string> = {}
-    obj[key] = headers[key]
-    headerArray.push(obj)
-  }
-
   try {
-    var resp = await siyuan.client.fetch('/api/network/forwardProxy', {
-      method: 'POST',
+    var proxyPath = `/api/network/proxy?u=${Buffer.from(channel.url).toString('base64Url')}`
+
+    console.log('[webhook] calling siyuan.client.fetch with path=/api/network/proxy')
+    var resp = await siyuan.client.fetch(proxyPath, {
+      method: method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: channel.url,
-        method: method,
-        headers: headerArray,
-        payload: payload,
-        timeout: 5000,
-      }),
+      body: payload,
     })
 
-    console.log('[webhook] forwardProxy response: ok=' + resp.ok + ' status=' + resp.status)
+    console.log('[webhook] proxy response: ok=' + resp.ok + ' status=' + resp.status)
 
     if (resp.ok) {
-      var result = await resp.json()
-      if (result.code !== 0) {
-        console.log('[webhook] forwardProxy failed: code=' + result.code + ' msg=' + result.msg)
-      } else if (result.data && result.data.status >= 400) {
-        console.log('[webhook] target returned status=' + result.data.status + ' body=' + JSON.stringify(result.data).substring(0, 200))
-      } else {
-        console.log('[webhook] send SUCCESS: channel="' + channel.name + '" type=' + channel.type)
-      }
+      console.log('[webhook] send SUCCESS: channel="' + channel.name + '" type=' + channel.type)
     } else {
-      console.log('[webhook] siyuan.client.fetch failed: status=' + resp.status)
+      var respText = ''
+      try { respText = await resp.text() } catch (_) {}
+      console.log('[webhook] target returned status=' + resp.status + ' body=' + respText.substring(0, 200))
     }
   } catch (e) {
     console.log('[webhook] send FAILED: channel="' + channel.name + '" error=' + String(e))
