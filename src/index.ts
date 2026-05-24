@@ -20,7 +20,7 @@ import {
   isWsMainFullRefreshCommand,
   type RefreshRequestPayload,
 } from "@/utils/refreshRequests";
-import { createApp } from "vue";
+import { createApp, watch } from "vue";
 import { createPinia } from "pinia";
 import { getSharedPinia, setSharedPinia } from "@/utils/sharedPinia";
 import { mountVueAppInHost, unmountVueAppFromHost } from "@/utils/vueHostMount";
@@ -130,6 +130,9 @@ import {
   checkKernelAvailable,
   connectKernelWebSocket,
   disconnectKernelWebSocket,
+  startKernelAvailabilityCheck,
+  stopKernelAvailabilityCheck,
+  kernelAvailable,
 } from "@/composables/useKernelTimer";
 
 let PluginInfo = {
@@ -366,18 +369,17 @@ export default class TaskAssistantPlugin extends Plugin {
       reminderService.start(this, projectStore);
     }
 
-    // 初始化内核计时器连接
-    void checkKernelAvailable().then((available) => {
-      if (available) {
-        connectKernelWebSocket();
-        const pinia = getSharedPinia();
-        if (pinia) {
-          const pomodoroStore = usePomodoroStore(pinia);
-          pomodoroStore.setupKernelNotificationListener();
+    // 初始化内核计时器连接（带重试，解决前端 onload 早于内核 onrunning 的时序问题）
+    startKernelAvailabilityCheck()
+    {
+      const pomodoroStore = usePomodoroStore(pinia)
+      watch(kernelAvailable, (available) => {
+        if (available) {
+          pomodoroStore.setupKernelNotificationListener()
+          console.log('[Task Assistant] Kernel timer connected, notification listener set up')
         }
-        console.log("[Task Assistant] Kernel timer connected");
-      }
-    });
+      }, { immediate: true })
+    }
 
     // 初始化技能存储服务
     this.initSkillStorage();
@@ -605,6 +607,7 @@ export default class TaskAssistantPlugin extends Plugin {
     // 停止提醒服务
     reminderService.stop();
     // 断开内核计时器连接
+    stopKernelAvailabilityCheck()
     disconnectKernelWebSocket();
     // 清理内核通知监听器
     const pinia = getSharedPinia();

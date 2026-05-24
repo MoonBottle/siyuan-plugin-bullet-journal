@@ -30,7 +30,7 @@ siyuan.plugin.lifecycle.onrunning = async function () {
   var whConfig = getWebhookConfig()
   console.log('[kernel] webhook config loaded, enabled=' + whConfig.enabled + ' channels=' + whConfig.channels.length)
 
-  initRpcApi()
+  await initRpcApi()
   console.log('[kernel] rpc api bound')
   initMcpServer()
   console.log('[kernel] mcp server initialized')

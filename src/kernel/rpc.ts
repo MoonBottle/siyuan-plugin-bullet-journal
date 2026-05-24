@@ -8,7 +8,7 @@ import {
   handleDiagnose,
 } from './pomodoro'
 
-export function initRpcApi(): void {
+export async function initRpcApi(): Promise<void> {
   var methods = [
     { name: 'ping', handler: handlePing, desc: '心跳检测' },
     { name: 'registerTimer', handler: handleRegisterTimer, desc: '注册计时器' },
@@ -19,7 +19,7 @@ export function initRpcApi(): void {
     { name: 'diagnose', handler: handleDiagnose, desc: '诊断内核状态' },
   ]
   for (var i = 0; i < methods.length; i++) {
-    siyuan.rpc.bind(methods[i].name, methods[i].handler, methods[i].desc)
+    await siyuan.rpc.bind(methods[i].name, methods[i].handler, methods[i].desc)
     console.log('[rpc] bound: ' + methods[i].name + ' (' + methods[i].desc + ')')
   }
 }

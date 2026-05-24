@@ -228,6 +228,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
 
         if (kernelAvailable.value && timerMode === 'countdown') {
           const endTime = Math.floor((Date.now() + durationMinutes * 60 * 1000) / 1000);
+          console.log('[Pomodoro] registering kernel timer: id=pomodoro-' + parentBlockId + ' endTime=' + endTime + ' kernelAvailable=' + kernelAvailable.value);
           rpcCall('registerTimer', {
             id: `pomodoro-${parentBlockId}`,
             type: 'pomodoro',
@@ -238,9 +239,13 @@ export const usePomodoroStore = defineStore('pomodoro', {
               projectName: item.project?.name,
               taskName: item.task?.name,
             },
+          }).then(() => {
+            console.log('[Pomodoro] kernel timer registered successfully');
           }).catch((err) => {
             console.error('[Pomodoro] Failed to register kernel timer:', err);
           });
+        } else {
+          console.log('[Pomodoro] skipping kernel timer: kernelAvailable=' + kernelAvailable.value + ' timerMode=' + timerMode);
         }
 
         return true;
@@ -420,6 +425,7 @@ export const usePomodoroStore = defineStore('pomodoro', {
       // 检查是否达到目标时长（正计时不自动完成，由用户手动结束）
       const isStopwatch = this.activePomodoro.timerMode === 'stopwatch';
       if (!isStopwatch && this.activePomodoro.accumulatedSeconds >= targetSeconds) {
+        console.log('[Pomodoro] countdown reached target: kernelAvailable=' + kernelAvailable.value);
         if (!kernelAvailable.value) {
           this.completePomodoro();
         }
@@ -1172,11 +1178,15 @@ export const usePomodoroStore = defineStore('pomodoro', {
     },
 
     setupKernelNotificationListener(): void {
+      console.log('[Pomodoro] setting up kernel notification listener');
       eventBus.on(Events.KERNEL_NOTIFICATION, (params: any) => {
+        console.log('[Pomodoro] KERNEL_NOTIFICATION received: type=' + params.type + ' id=' + params.id);
         if (params.type === 'pomodoro' && this.activePomodoro) {
+          console.log('[Pomodoro] kernel pomodoro expired, calling completePomodoro');
           this.completePomodoro();
         }
         if (params.type === 'break' && this.isBreakActive) {
+          console.log('[Pomodoro] kernel break expired, calling stopBreak');
           const plugin = usePlugin();
           this.stopBreak(plugin);
           showMessage(t('settings').pomodoro.breakEndMessage);
