@@ -6,7 +6,12 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const zhCNPath = resolve(__dirname, '../../i18n/zh_CN.json')
-const zhCN = JSON.parse(readFileSync(zhCNPath, 'utf-8'))
+let zhCN
+try {
+  zhCN = JSON.parse(readFileSync(zhCNPath, 'utf-8'))
+} catch (e) {
+  throw new Error(`[i18n/validate-keys] Failed to load ${zhCNPath}: ${e.message}`)
+}
 
 function hasKey(obj, keyPath) {
   const keys = keyPath.split('.')
@@ -40,7 +45,7 @@ export default {
         return {
           ImportDeclaration(node) {
             const source = node.source.value
-            if (source === '@/i18n' || source.endsWith('/i18n') || source.endsWith('/i18n/index')) {
+            if (source === '@/i18n' || source === '@/i18n/index') {
               for (const specifier of node.specifiers) {
                 if (specifier.type === 'ImportSpecifier' && specifier.imported.name === 't') {
                   tImportNames.add(specifier.local.name)
