@@ -390,6 +390,7 @@ export interface GanttTask {
   open?: boolean;
   progress?: number;
   render?: string;
+  split_placement?: string;
   /** 仅事项节点有，用于点击弹框和右键菜单 */
   extendedProps?: GanttTaskExtendedProps;
 }

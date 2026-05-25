@@ -312,7 +312,7 @@ export class DataConverter {
                 parent: taskId,
                 type: 'project',
                 render: 'split',
-                open: true,
+                open: false,
                 progress: 0,
               });
 
@@ -339,6 +339,7 @@ export class DataConverter {
                     end_date: endDate,
                     parent: `split-${blockKey}`,
                     type: 'task',
+                    split_placement: 'inline',
                     progress: 0,
                     extendedProps: {
                       project: project.name,
