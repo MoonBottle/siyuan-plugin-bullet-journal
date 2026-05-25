@@ -24,17 +24,18 @@ export async function init(pluginInstance: Plugin) {
   plugin = pluginInstance;
   appInstance = pluginInstance.app;
 
-  // 参考 siyuan-plugin-task-note-management：语言存储在 window.siyuan.config.lang
   const win = window as any;
   const langFromConfig = win?.siyuan?.config?.lang;
-  const language = langFromConfig || pluginInstance?.app?.i18n?.['core'] || pluginInstance?.languages?.[0] || 'zh_CN';
+  const appWithI18n = pluginInstance.app as typeof pluginInstance.app & { i18n?: Record<string, string> };
+  const pluginWithLangs = pluginInstance as Plugin & { languages?: string[] };
+  const language = langFromConfig || appWithI18n?.i18n?.['core'] || pluginWithLangs?.languages?.[0] || 'zh_CN';
 
   console.log('[Bullet Journal i18n] main.ts init:', {
     hasSiyuan: !!win?.siyuan,
     hasConfig: !!win?.siyuan?.config,
     langFromConfig,
-    appI18n: pluginInstance?.app?.i18n,
-    languagesFromPlugin: pluginInstance?.languages,
+    appI18n: appWithI18n?.i18n,
+    languagesFromPlugin: pluginWithLangs?.languages,
     resolvedLanguage: language,
   });
 

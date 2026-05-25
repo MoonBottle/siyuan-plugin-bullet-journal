@@ -697,6 +697,7 @@ export default class TaskAssistantPlugin extends Plugin {
               data.todoDock.sortRules.length > 0
                 ? data.todoDock.sortRules
                 : [...defaultTodoSortRules],
+            selectedGroup: data.todoDock?.selectedGroup ?? '',
           },
           ai: {
             providers: data.ai?.providers || [],
@@ -1455,10 +1456,10 @@ export default class TaskAssistantPlugin extends Plugin {
       data: {},
       type: DOCK_TYPES.TODO,
       init() {
-        this.element.style.height = "100%";
-        this.element.style.overflow = "hidden";
-        this.element.style.display = "flex";
-        this.element.style.flexDirection = "column";
+        (this.element as HTMLElement).style.height = "100%";
+        (this.element as HTMLElement).style.overflow = "hidden";
+        (this.element as HTMLElement).style.display = "flex";
+        (this.element as HTMLElement).style.flexDirection = "column";
         const pinia = getSharedPinia() ?? createPinia();
         const app = createApp(TodoDock, { plugin });
         app.use(pinia);
@@ -1481,8 +1482,7 @@ export default class TaskAssistantPlugin extends Plugin {
         data: {},
         type: DOCK_TYPES.AI_CHAT,
         init() {
-          this.element.style.height = "100%";
-          // 不设置 overflow: hidden，让 Vue 组件内部控制滚动
+          (this.element as HTMLElement).style.height = "100%";
           const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(AiChatDock);
           app.use(pinia);
@@ -1506,8 +1506,8 @@ export default class TaskAssistantPlugin extends Plugin {
         data: {},
         type: DOCK_TYPES.POMODORO,
         init() {
-          this.element.style.height = "100%";
-          this.element.style.overflow = "hidden";
+          (this.element as HTMLElement).style.height = "100%";
+          (this.element as HTMLElement).style.overflow = "hidden";
           const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(PomodoroDock);
           app.use(pinia);
@@ -1532,10 +1532,10 @@ export default class TaskAssistantPlugin extends Plugin {
         data: {},
         type: DOCK_TYPES.HABIT,
         init() {
-          this.element.style.height = "100%";
-          this.element.style.overflow = "hidden";
-          this.element.style.display = "flex";
-          this.element.style.flexDirection = "column";
+          (this.element as HTMLElement).style.height = "100%";
+          (this.element as HTMLElement).style.overflow = "hidden";
+          (this.element as HTMLElement).style.display = "flex";
+          (this.element as HTMLElement).style.flexDirection = "column";
           const pinia = getSharedPinia() ?? createPinia();
           const app = createApp(HabitDock, { plugin });
           app.use(pinia);
@@ -3282,7 +3282,7 @@ export default class TaskAssistantPlugin extends Plugin {
       }
       // 空闲时不添加任何状态 class，保持主题色
 
-      iconEl.dataset.tooltip = isBreak
+      (iconEl as HTMLElement).dataset.tooltip = isBreak
         ? t("settings").pomodoro.breakLabel
         : t("pomodoro").dockTitle;
       if (isBreak) {
@@ -3298,9 +3298,9 @@ export default class TaskAssistantPlugin extends Plugin {
     if (textEl) {
       if (hasActiveTimer) {
         textEl.textContent = timeStr;
-        textEl.style.display = "block";
+        (textEl as HTMLElement).style.display = "block";
       } else {
-        textEl.style.display = "none";
+        (textEl as HTMLElement).style.display = "none";
       }
     }
 

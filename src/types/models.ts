@@ -93,6 +93,7 @@ export interface Project {
   tasks: Task[];           // 任务列表
   habits: Habit[];         // 习惯列表
   path: string;            // 文档路径
+  box?: string;            // 笔记本 ID（SiYuan Block.box）
   groupId?: string;        // 分组 ID
   links?: Link[];          // 项目链接
   pomodoros?: PomodoroRecord[]; // 项目级别番茄钟记录
