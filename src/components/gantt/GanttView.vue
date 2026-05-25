@@ -78,7 +78,6 @@ const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
     if (taskId == null || !gantt.isTaskExists(taskId)) return;
     const task = gantt.getTask(taskId);
     if (!task?.extendedProps?.item) return;
-    if (String(task.id).startsWith('split-')) return;
 
     const props = task.extendedProps;
     const start = props.originalStartDateTime || props.date || '';
@@ -178,7 +177,6 @@ const openPomodoroDialog = (item: Item) => {
 const handleGanttTaskClick = (id: string | number) => {
   const task = gantt.getTask(id);
   if (!task?.extendedProps?.item) return;
-  if (String(task.id).startsWith('split-')) return;
 
   const props = task.extendedProps;
   const start = props.originalStartDateTime || props.date || '';
@@ -219,7 +217,6 @@ const handleGanttTaskClick = (id: string | number) => {
 const handleGanttContextMenu = (taskId: string | number, _linkId: string | number, event: MouseEvent) => {
   const task = gantt.getTask(taskId);
   if (!task?.extendedProps?.item) return true;
-  if (String(task.id).startsWith('split-')) return true;
 
   const props = task.extendedProps;
   const item = {
@@ -379,15 +376,25 @@ onMounted(() => {
 
   // 自定义任务条样式 - 项目/任务/事项区分
   gantt.templates.task_class = function(_start, _end, task) {
-    if (String(task.id).startsWith('split-')) return 'gantt-split-parent';
+    if (task.extendedProps?.isMultiDate) return 'gantt-multidate-item';
     if (task.type === 'project') return 'gantt-project';
     if (String(task.id).startsWith('item-')) return 'gantt-item';
     return 'gantt-task';
   };
 
   // 自定义任务文本 - 项目/任务/事项对应文字颜色
-  gantt.templates.task_text = function(_start, _end, task) {
-    if (String(task.id).startsWith('split-')) return '';
+  gantt.templates.task_text = function(start, end, task) {
+    if (task.extendedProps?.isMultiDate && task.extendedProps?.segments?.length) {
+      const totalDuration = end.getTime() - start.getTime();
+      if (totalDuration <= 0) return '';
+      let html = '';
+      for (const seg of task.extendedProps.segments) {
+        const left = ((seg.startTs - start.getTime()) / totalDuration) * 100;
+        const width = ((seg.endTs - start.getTime()) / totalDuration) * 100 - left;
+        html += `<div class="gantt-segment-bar" style="left:${left}%;width:${Math.max(width, 0.5)}%"></div>`;
+      }
+      return html;
+    }
     const text = task.text ?? '';
     const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const textColor = task.type === 'project'
@@ -412,7 +419,6 @@ onMounted(() => {
   const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000;
   const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6;
   gantt.templates.rightside_text = function(start, end, task) {
-    if (String(task.id).startsWith('split-')) return '';
     const text = task.text ?? '';
     const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0);
     if (duration > SHORT_BAR_THRESHOLD_MS || !text) return '';
@@ -432,7 +438,6 @@ onMounted(() => {
   // 设置初始视图模式
   setScaleConfig(props.viewMode);
 
-  gantt.config.open_split_tasks = true;
   gantt.init(ganttEl.value);
   ganttInitialized = true;
 
@@ -563,12 +568,24 @@ const loadGanttStyles = () => {
     .gantt_grid_data {
       background-color: var(--b3-theme-background) !important;
     }
-    .gantt-split-parent {
-      visibility: hidden !important;
+    .gantt-multidate-item {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
     }
-    .gantt_split_subtask {
-      background-color: var(--b3-theme-success) !important;
-      border-color: var(--b3-theme-success) !important;
+    .gantt-multidate-item .gantt_task_progress {
+      display: none !important;
+    }
+    .gantt-multidate-item .gantt_task_content {
+      padding: 0 !important;
+    }
+    .gantt-segment-bar {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      background-color: var(--b3-theme-success);
+      border-radius: 2px;
+      border: 1px solid var(--b3-theme-success);
     }
   `;
   document.head.appendChild(style);
