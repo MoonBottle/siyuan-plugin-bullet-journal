@@ -110,7 +110,6 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue';
 import ProjectTreeNode from '@/components/project/ProjectTreeNode.vue';
 import { t } from '@/i18n';
-import type { Project } from '@/types/models';
 import type { Item, Project } from '@/types/models';
 import type { MergedItem, ProjectTaskTreeNode } from '@/utils/projectTaskTree';
 
