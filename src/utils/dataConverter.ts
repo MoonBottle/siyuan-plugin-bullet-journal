@@ -319,7 +319,7 @@ export class DataConverter {
               for (const segment of segments) {
                 const segFirst = segment.items[0];
                 const segStart = segFirst.startDateTime || segFirst.date;
-                const segLast = segment.items[segment.items.length - 1];
+                const segLast = segment.items.at(-1);
                 const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date;
 
                 if (segStart) {
@@ -468,7 +468,7 @@ export class DataConverter {
       }
 
       if (current) {
-        const lastDate = current.items[current.items.length - 1].date;
+        const lastDate = current.items.at(-1)!.date;
         const nextDay = dayjs(lastDate).add(1, 'day').format('YYYY-MM-DD');
         if (item.date === nextDay) {
           current.items.push(item);
