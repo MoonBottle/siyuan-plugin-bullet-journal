@@ -1,8 +1,19 @@
 import type { Item, Project, Task } from '@/types/models';
 
+export interface MergedItem {
+  isMerged: true;
+  blockId: string;
+  items: Item[];
+  content: string;
+  status: Item['status'];
+  priority?: string;
+  dateRange: string;
+  firstItemId: string;
+}
+
 export interface ProjectTaskTreeNode {
   task: Task;
-  items: Item[];
+  items: (Item | MergedItem)[];
   children: ProjectTaskTreeNode[];
   depth: number;
   orphaned: boolean;
@@ -205,4 +216,13 @@ function normalizeSelectedTags(tags?: string[]): Set<string> {
 function itemMatchesTags(item: Item, normalizedTags: Set<string>): boolean {
   if (!item.tags || item.tags.length === 0) return false;
   return item.tags.some(tag => normalizedTags.has(tag.trim().toLocaleLowerCase()));
+}
+
+export function formatDateRange(start: string, end: string): string {
+  if (start === end) return start;
+  const [sy, sm] = start.split('-');
+  const [ey, em, ed] = end.split('-');
+  if (sy === ey && sm === em) return `${start} ~ ${ed}`;
+  if (sy === ey) return `${start} ~ ${em}-${ed}`;
+  return `${start} ~ ${end}`;
 }

@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
+import type { Item, Project, Task } from '@/types/models'
 import {
   buildProjectTaskTree,
   filterProjectTaskTree,
+  formatDateRange,
   getTaskItemProgress,
-} from '@/utils/projectTaskTree';
-import type { Item, Project, Task } from '@/types/models';
+} from '@/utils/projectTaskTree'
 
 function item(partial: Partial<Item>): Item {
   return {
@@ -119,3 +120,22 @@ describe('projectTaskTree', () => {
     });
   });
 });
+
+
+describe('formatDateRange', () => {
+  it('同年同月只显示日', () => {
+    expect(formatDateRange('2026-05-20', '2026-05-23')).toBe('2026-05-20 ~ 23')
+  })
+
+  it('同年不同月显示月-日', () => {
+    expect(formatDateRange('2026-05-20', '2026-06-03')).toBe('2026-05-20 ~ 06-03')
+  })
+
+  it('不同年显示完整日期', () => {
+    expect(formatDateRange('2025-12-28', '2026-01-03')).toBe('2025-12-28 ~ 2026-01-03')
+  })
+
+  it('起止日期相同只返回单个日期', () => {
+    expect(formatDateRange('2026-05-20', '2026-05-20')).toBe('2026-05-20')
+  })
+})
