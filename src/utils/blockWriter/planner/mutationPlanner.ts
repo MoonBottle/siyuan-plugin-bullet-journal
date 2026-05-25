@@ -12,10 +12,12 @@ import { normalizeUpdateIntent } from '@/utils/blockWriter/intent/intent';
 import { resolveMutationTarget } from '@/utils/blockWriter/resolve/targetResolver';
 import type {
   BlockMutationIntent,
+  BlockWriteContext,
   MutationExecutionPlan,
   MutationPatchCapability,
   MutationPatchUnit,
   MutationPlannerResult,
+  ResolvedMutationPlan,
 } from '@/utils/blockWriter/shared/types';
 
 /** 光标策略取强：任一方需要 wbr 则结果为 wbr */
@@ -47,7 +49,8 @@ async function annotateCapabilities(intent: BlockMutationIntent, units: Mutation
   const capabilities: MutationPatchCapability[] = [];
 
   for (const unit of units) {
-    const resolved = await resolveMutationTarget(normalizeUpdateIntent(intent.context, unit.patch));
+    const resolved = await resolveMutationTarget(normalizeUpdateIntent(intent.context as BlockWriteContext, unit.patch));
+    if (resolved.kind !== 'update') continue;
     capabilities.push({
       unit,
       targetBlockId: resolved.targetBlockId,
@@ -130,13 +133,13 @@ export async function buildMutationPlans(intent: BlockMutationIntent): Promise<M
     const first = group[0];
     const patches = group.map(capability => capability.unit.patch);
     const datePatchSource = group.map(capability => capability.datePatchSource).find(Boolean);
-    const resolvedPlan = {
+    const resolvedPlan: Extract<ResolvedMutationPlan, { kind: 'update' }> = {
       kind: 'update' as const,
       targetBlockId: first.targetBlockId!,
       targetKind: first.targetKind!,
       sourceKind: first.sourceKind,
       sourceBlockId: first.sourceBlockId,
-      commitKind: first.commitKind,
+      commitKind: (first.commitKind === 'api-insert' ? 'api-update' : first.commitKind) as 'protyle-update' | 'api-update',
       preferDataType: 'dom' as const,
       fallbackDataType: 'markdown' as const,
       context: intent.context,

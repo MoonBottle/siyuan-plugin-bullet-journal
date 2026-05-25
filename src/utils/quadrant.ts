@@ -1,11 +1,9 @@
-import type { PriorityLevel } from '@/types/models';
-import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId } from '@/types/quadrant';
-import type { WorkbenchQuadrantKey } from '@/types/workbench';
+import type { QuadrantConfigFile, QuadrantPanelConfig, QuadrantPanelId, QuadrantPriorityValue } from '@/types/quadrant';
 
 export type QuadrantDefinition = {
-  key: WorkbenchQuadrantKey;
+  key: QuadrantPriorityValue;
   titleKey: string;
-  priorities: PriorityLevel[];
+  priorities: QuadrantPriorityValue[];
   includeNoPriority: boolean;
 };
 
@@ -36,7 +34,7 @@ export const QUADRANT_DEFINITIONS: QuadrantDefinition[] = [
   },
 ];
 
-export function getQuadrantDefinition(key: WorkbenchQuadrantKey | undefined): QuadrantDefinition {
+export function getQuadrantDefinition(key: QuadrantPriorityValue | undefined): QuadrantDefinition {
   return QUADRANT_DEFINITIONS.find(item => item.key === key) ?? QUADRANT_DEFINITIONS[0];
 }
 
@@ -54,7 +52,7 @@ export function getDefaultQuadrantPanel(id: QuadrantPanelId) {
   return DEFAULT_QUADRANT_CONFIG.panels.find(panel => panel.id === id)!;
 }
 
-function isSamePriorityRule(a?: PriorityLevel[], b?: PriorityLevel[]) {
+function isSamePriorityRule(a?: QuadrantPriorityValue[], b?: QuadrantPriorityValue[]) {
   if ((a?.length ?? 0) !== (b?.length ?? 0)) return false;
   return (a ?? []).every((value, index) => value === (b ?? [])[index]);
 }
