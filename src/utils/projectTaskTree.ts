@@ -154,10 +154,19 @@ function filterNode(
     ...(node.task.links ?? []).map(link => link.name),
   ].filter(Boolean).join(' ')).includes(query);
 
-  const matchedItems = node.items.filter(item =>
-    (!query || itemMatchesQuery(item, query))
-    && (!hasTagFilter || itemMatchesTags(item, normalizedTags)),
-  );
+  const matchedItems = node.items.filter((entry) => {
+    if ('isMerged' in entry) {
+      const mi = entry as MergedItem;
+      const matchQuery = !query || mi.content.toLowerCase().includes(query)
+        || mi.dateRange.toLowerCase().includes(query)
+        || mi.items.some(it => itemMatchesQuery(it, query));
+      const matchTags = !hasTagFilter || mi.items.some(it => itemMatchesTags(it, normalizedTags));
+      return matchQuery && matchTags;
+    }
+    const it = entry as Item;
+    return (!query || itemMatchesQuery(it, query))
+      && (!hasTagFilter || itemMatchesTags(it, normalizedTags));
+  });
   const children = node.children
     .map(child => filterNode(child, query, normalizedTags, hasTagFilter, matchedTaskIds, matchedItemIds, autoExpandedTaskIds))
     .filter(Boolean) as ProjectTaskTreeNode[];
@@ -170,7 +179,13 @@ function filterNode(
 
   if (matchedItems.length > 0 || children.length > 0) {
     autoExpandedTaskIds.add(node.task.id);
-    matchedItems.forEach(item => matchedItemIds.add(item.id));
+    matchedItems.forEach((entry) => {
+      if ('isMerged' in entry) {
+        matchedItemIds.add((entry as MergedItem).firstItemId);
+      } else {
+        matchedItemIds.add((entry as Item).id);
+      }
+    });
     return {
       ...node,
       items: matchedItems,

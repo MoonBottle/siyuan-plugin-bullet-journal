@@ -182,6 +182,28 @@ describe('projectTaskTree', () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ id: 'i1' });
   });
+
+  it('搜索命中合并事项时保留该项', () => {
+    const tree = buildProjectTaskTree(project([
+      task({
+        id: 'l1',
+        level: 'L1',
+        items: [
+          item({ id: 'i1', blockId: 'blk-a', content: '写周报', date: '2026-05-19' }),
+          item({ id: 'i2', blockId: 'blk-a', content: '写周报', date: '2026-05-26' }),
+          item({ id: 'i3', content: '开会', date: '2026-05-20' }),
+        ],
+      }),
+    ]));
+
+    const result = filterProjectTaskTree(tree, '周报');
+
+    expect(result.nodes[0].items).toHaveLength(1);
+    const merged = result.nodes[0].items[0] as MergedItem;
+    expect(merged.isMerged).toBe(true);
+    expect(merged.dateRange).toBe('2026-05-19 ~ 26');
+    expect(result.matchedItemIds).toContain('i1');
+  });
 });
 
 
