@@ -96,10 +96,11 @@ import TodoTypedLinks from '@/components/todo/TodoTypedLinks.vue';
 import { t } from '@/i18n';
 import { formatTimeRange, formatDateLabel, calculateDuration } from '@/utils/dateUtils';
 import { formatFocusDuration, calculateTotalFocusMinutes } from '@/utils/dialog';
+import { optimizeDateTimeExpressions } from '@/utils/fileUtils';
 import { useSettingsStore } from '@/stores';
 import dayjs from '@/utils/dayjs';
 import { getDateRangeStatus, getTimeRangeStatus } from '@/utils/dateRangeUtils';
-import type { Link, PomodoroRecord } from '@/types/models';
+import type { Link, PomodoroRecord, ItemDateTimeInfo } from '@/types/models';
 
 interface Props {
   // 项目
@@ -129,6 +130,9 @@ interface Props {
 
   // 番茄钟
   pomodoros?: PomodoroRecord[];
+
+  // 多日期
+  siblingItems?: ItemDateTimeInfo[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -147,13 +151,21 @@ const props = withDefaults(defineProps<Props>(), {
   allDay: false,
   dateRangeStart: '',
   dateRangeEnd: '',
-  pomodoros: () => []
+  pomodoros: () => [],
+  siblingItems: () => []
 });
 
 const settingsStore = useSettingsStore();
 
 // 时间显示
 const timeDisplay = computed(() => {
+  if (props.siblingItems?.length) {
+    const allItems: Array<{ date: string; startDateTime?: string; endDateTime?: string }> = [
+      { date: props.date || dayjs().format('YYYY-MM-DD'), startDateTime: props.startDateTime || undefined, endDateTime: props.endDateTime || undefined },
+      ...props.siblingItems,
+    ];
+    return optimizeDateTimeExpressions(allItems).replace(/^(?:@|📅)/, '');
+  }
   const dateLabel = formatDateLabel(props.date || dayjs().format('YYYY-MM-DD'), t('todo').today, t('todo').tomorrow);
   const timeRange = formatTimeRange(props.startDateTime, props.endDateTime);
   return `${dateLabel}${timeRange ? ' · ' + timeRange : ''}`;

@@ -487,6 +487,7 @@ export function buildEventDetailContent(
     dateRangeStart: props.dateRangeStart,
     dateRangeEnd: props.dateRangeEnd,
     pomodoros: props.pomodoros || [],
+    siblingItems: props.siblingItems || [],
     preview: preview
   });
 
