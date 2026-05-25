@@ -29,23 +29,23 @@
 
     <template v-if="expanded">
       <button
-        v-for="item in node.items"
-        :key="item.id"
+        v-for="entry in node.items"
+        :key="getItemId(entry)"
         type="button"
         :class="[
           'project-item-row',
           {
-            'project-item-row--active': selectedItemId === item.id,
-            'project-item-row--matched': matchedItemIds.has(item.id),
+            'project-item-row--active': selectedItemId === getItemId(entry),
+            'project-item-row--matched': matchedItemIds.has(getItemId(entry)),
           },
         ]"
-        :data-item-id="item.id"
+        :data-item-id="getItemId(entry)"
         :style="{ paddingLeft: `${12 + (node.depth + 1) * 18}px` }"
-        @click="$emit('select-item', item.id)"
+        @click="$emit('select-item', getItemId(entry))"
       >
-        <span :class="['project-item-row__status', `project-item-row__status--${item.status}`]"></span>
-        <span class="project-item-row__content">{{ item.content }}</span>
-        <span class="project-item-row__meta">{{ getItemMeta(item) }}</span>
+        <span :class="['project-item-row__status', `project-item-row__status--${'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status}`]"></span>
+        <span class="project-item-row__content">{{ 'isMerged' in entry ? (entry as MergedItem).content : (entry as Item).content }}</span>
+        <span class="project-item-row__meta">{{ getItemMeta(entry) }}</span>
       </button>
 
       <ProjectTreeNode
@@ -69,7 +69,7 @@
 import { computed } from 'vue';
 import { getTaskItemProgress } from '@/utils/projectTaskTree';
 import type { Item } from '@/types/models';
-import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree';
+import type { ProjectTaskTreeNode, MergedItem } from '@/utils/projectTaskTree';
 
 const props = defineProps<{
   node: ProjectTaskTreeNode;
@@ -87,10 +87,17 @@ defineEmits<{
 }>();
 
 const expanded = computed(() => props.expandedTaskIds.has(props.node.task.id));
-const progress = computed(() => getTaskItemProgress(props.node.task));
+const progress = computed(() => getTaskItemProgress(props.node.items));
 
-function getItemMeta(item: Item): string {
-  return [item.date, item.priority].filter(Boolean).join(' · ');
+function getItemId(entry: Item | MergedItem): string {
+  return 'isMerged' in entry ? entry.firstItemId : entry.id;
+}
+
+function getItemMeta(entry: Item | MergedItem): string {
+  if ('isMerged' in entry) {
+    return [entry.dateRange, entry.priority].filter(Boolean).join(' · ');
+  }
+  return [entry.date, entry.priority].filter(Boolean).join(' · ');
 }
 </script>
 
