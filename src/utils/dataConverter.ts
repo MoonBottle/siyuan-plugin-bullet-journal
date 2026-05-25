@@ -6,7 +6,12 @@ import type { Project, Task, Item, CalendarEvent, GanttTask, PomodoroRecord } fr
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 
-export interface ItemSegment {
+export interface GanttSegment {
+  startTs: number;
+  endTs: number;
+}
+
+interface ItemSegment {
   items: Item[];
 }
 
@@ -298,74 +303,63 @@ export class DataConverter {
             } else {
               const segments = this.mergeItemsToSegments(group);
               const firstItem = group[0];
-              const blockKey = firstItem.blockId ?? firstItem.id;
 
               const allDates = group.map(i => i.startDateTime || i.date).filter(Boolean) as string[];
               const minDate = allDates.reduce((a, b) => a < b ? a : b);
               const maxDate = (group.map(i => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b);
 
-              ganttTasks.push({
-                id: `split-${blockKey}`,
-                text: firstItem.content,
-                start_date: this.parseGanttDate(minDate, 'start'),
-                end_date: this.parseGanttDate(maxDate, 'end'),
-                parent: taskId,
-                type: 'project',
-                render: 'split',
-                open: false,
-                progress: 0,
+              const ganttSegments: GanttSegment[] = segments.map(seg => {
+                const segFirst = seg.items[0];
+                const segLast = seg.items.at(-1)!;
+                const segStart = segFirst.startDateTime || segFirst.date;
+                const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date;
+                return {
+                  startTs: this.parseGanttDate(segStart, 'start').getTime(),
+                  endTs: segEnd
+                    ? (this.parseGanttDate(segEnd, 'end').getTime())
+                    : this.parseGanttDate(segStart, 'end').getTime(),
+                };
               });
 
-              for (const segment of segments) {
-                const segFirst = segment.items[0];
-                const segStart = segFirst.startDateTime || segFirst.date;
-                const segLast = segment.items.at(-1);
-                const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date;
-
-                if (segStart) {
-                  const startDate = this.parseGanttDate(segStart, 'start');
-                  let endDate = segEnd
-                    ? this.parseGanttDate(segEnd, 'end')
-                    : this.parseGanttDate(segStart, 'end');
-
-                  if (startDate.getTime() === endDate.getTime()) {
-                    endDate = this.getGanttEndDate(segStart);
-                  }
-
-                  ganttTasks.push({
-                    id: `item-${segFirst.id}`,
-                    text: segFirst.content,
-                    start_date: startDate,
-                    end_date: endDate,
-                    parent: `split-${blockKey}`,
-                    type: 'task',
-                    split_placement: 'inline',
-                    progress: 0,
-                    extendedProps: {
-                      project: project.name,
-                      projectLinks: project.links,
-                      task: task.name,
-                      taskLinks: task.links,
-                      level: task.level,
-                      item: segFirst.content,
-                      itemStatus: segFirst.status,
-                      itemLinks: segFirst.links,
-                      hasItems: true,
-                      docId: segFirst.docId,
-                      lineNumber: segFirst.lineNumber,
-                      blockId: segFirst.blockId,
-                      date: segFirst.date,
-                      originalStartDateTime: segFirst.startDateTime,
-                      originalEndDateTime: segFirst.endDateTime,
-                      timePrecision: segFirst.timePrecision,
-                      siblingItems: segFirst.siblingItems,
-                      dateRangeStart: segFirst.dateRangeStart,
-                      dateRangeEnd: segFirst.dateRangeEnd,
-                      pomodoros: segFirst.pomodoros,
-                    },
-                  });
-                }
+              const startDate = this.parseGanttDate(minDate, 'start');
+              let endDate = this.parseGanttDate(maxDate, 'end');
+              if (startDate.getTime() === endDate.getTime()) {
+                endDate = this.getGanttEndDate(maxDate);
               }
+
+              ganttTasks.push({
+                id: `item-${firstItem.id}`,
+                text: firstItem.content,
+                start_date: startDate,
+                end_date: endDate,
+                parent: taskId,
+                type: 'task',
+                progress: 0,
+                extendedProps: {
+                  project: project.name,
+                  projectLinks: project.links,
+                  task: task.name,
+                  taskLinks: task.links,
+                  level: task.level,
+                  item: firstItem.content,
+                  itemStatus: firstItem.status,
+                  itemLinks: firstItem.links,
+                  hasItems: true,
+                  docId: firstItem.docId,
+                  lineNumber: firstItem.lineNumber,
+                  blockId: firstItem.blockId,
+                  date: firstItem.date,
+                  originalStartDateTime: firstItem.startDateTime,
+                  originalEndDateTime: firstItem.endDateTime,
+                  timePrecision: firstItem.timePrecision,
+                  siblingItems: firstItem.siblingItems,
+                  dateRangeStart: firstItem.dateRangeStart,
+                  dateRangeEnd: firstItem.dateRangeEnd,
+                  pomodoros: firstItem.pomodoros,
+                  isMultiDate: true,
+                  segments: ganttSegments,
+                },
+              });
             }
           }
         }

@@ -174,7 +174,7 @@ describe('DataConverter.projectsToGanttTasks', () => {
     expect(tasks.some(t => t.id === 'task-task-1')).toBe(true);
   });
 
-  it('多日期全天事项合并为 split 结构', () => {
+  it('多日期全天事项合并为单条 + segments', () => {
     const tasks = DataConverter.projectsToGanttTasks([
       projectWithTasks([
         {
@@ -225,25 +225,18 @@ describe('DataConverter.projectsToGanttTasks', () => {
     ], true);
 
     const splitParent = tasks.find(t => t.id === 'split-block-1');
-    expect(splitParent).toBeDefined();
-    expect(splitParent!.type).toBe('project');
-    expect(splitParent!.render).toBe('split');
-    expect(splitParent!.parent).toBe('task-task-1');
-    expect(splitParent!.text).toBe('整理资料');
+    expect(splitParent).toBeUndefined();
 
-    const segmentItems = tasks.filter(t => t.parent === 'split-block-1');
-    expect(segmentItems).toHaveLength(2);
-
-    const seg1 = segmentItems.find(t => t.id === 'item-item-1');
-    expect(seg1).toBeDefined();
-
-    const seg2 = segmentItems.find(t => t.id === 'item-item-2');
-    expect(seg2).toBeDefined();
-    expect(seg2!.start_date).toBeInstanceOf(Date);
-    expect(seg2!.end_date).toBeInstanceOf(Date);
+    const item = tasks.find(t => t.id === 'item-item-1');
+    expect(item).toBeDefined();
+    expect(item!.parent).toBe('task-task-1');
+    expect(item!.extendedProps?.isMultiDate).toBe(true);
+    expect(item!.extendedProps?.segments).toHaveLength(2);
+    expect(item!.extendedProps?.segments![0].startTs).toBeTypeOf('number');
+    expect(item!.extendedProps?.segments![0].endTs).toBeTypeOf('number');
   });
 
-  it('多日期有时间事项合并为 split 结构，每个日期独立分段', () => {
+  it('多日期有时间事项合并为单条，每个日期独立 segment', () => {
     const tasks = DataConverter.projectsToGanttTasks([
       projectWithTasks([
         {
@@ -279,14 +272,13 @@ describe('DataConverter.projectsToGanttTasks', () => {
       ]),
     ], true);
 
-    const splitParent = tasks.find(t => t.id === 'split-block-1');
-    expect(splitParent).toBeDefined();
-
-    const segmentItems = tasks.filter(t => t.parent === 'split-block-1');
-    expect(segmentItems).toHaveLength(2);
+    const item = tasks.find(t => t.id === 'item-item-1');
+    expect(item).toBeDefined();
+    expect(item!.extendedProps?.isMultiDate).toBe(true);
+    expect(item!.extendedProps?.segments).toHaveLength(2);
   });
 
-  it('单日期事项不生成 split 结构', () => {
+  it('单日期事项不生成 isMultiDate 标记', () => {
     const tasks = DataConverter.projectsToGanttTasks([
       projectWithTasks([
         {
@@ -309,12 +301,11 @@ describe('DataConverter.projectsToGanttTasks', () => {
       ]),
     ], true);
 
-    const splitParent = tasks.find(t => t.id === 'split-block-1');
-    expect(splitParent).toBeUndefined();
-
     const item = tasks.find(t => t.id === 'item-item-1');
     expect(item).toBeDefined();
     expect(item!.parent).toBe('task-task-1');
+    expect(item!.extendedProps?.isMultiDate).toBeFalsy();
+    expect(item!.extendedProps?.segments).toBeUndefined();
   });
 });
 
