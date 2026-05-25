@@ -108,7 +108,7 @@
             <div v-if="selectedItem" class="focus-workbench-view__detail-panel-body">
               <ItemDetailContent
                 :item="selectedItem"
-                :show-all-dates="!!selectedItem.siblingItems?.length"
+                :show-all-dates="false"
                 :show-action-row="false"
                 :close-on-siyuan-link="false"
               />
