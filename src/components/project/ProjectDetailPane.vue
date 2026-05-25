@@ -43,7 +43,7 @@
       <div class="project-detail-pane__item-main">
         <ItemDetailContent
           :item="item"
-          :show-all-dates="false"
+          :show-all-dates="!!item?.siblingItems?.length"
           :show-action-row="false"
           :close-on-siyuan-link="false"
           :embedded="true"
