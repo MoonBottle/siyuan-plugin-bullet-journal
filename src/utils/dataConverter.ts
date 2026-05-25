@@ -240,51 +240,131 @@ export class DataConverter {
 
         // 添加工作事项
         if (showItems && task.items.length > 0) {
+          const itemGroups = new Map<string, Item[]>();
           for (const item of task.items) {
-            const itemStart = item.startDateTime || item.date;
-            const itemEnd = item.endDateTime || item.startDateTime || item.date;
+            const key = item.blockId ?? item.id;
+            if (!itemGroups.has(key)) itemGroups.set(key, []);
+            itemGroups.get(key)!.push(item);
+          }
 
-            if (itemStart) {
-              const startDate = this.parseGanttDate(itemStart, 'start');
-              let endDate = itemEnd
-                ? this.parseGanttDate(itemEnd, 'end')
-                : this.parseGanttDate(itemStart, 'end');
+          for (const [, group] of itemGroups) {
+            if (group.length === 1) {
+              const item = group[0];
+              const itemStart = item.startDateTime || item.date;
+              const itemEnd = item.endDateTime || item.startDateTime || item.date;
 
-              if (startDate.getTime() === endDate.getTime()) {
-                endDate = this.getGanttEndDate(itemStart);
+              if (itemStart) {
+                const startDate = this.parseGanttDate(itemStart, 'start');
+                let endDate = itemEnd
+                  ? this.parseGanttDate(itemEnd, 'end')
+                  : this.parseGanttDate(itemStart, 'end');
+
+                if (startDate.getTime() === endDate.getTime()) {
+                  endDate = this.getGanttEndDate(itemStart);
+                }
+
+                ganttTasks.push({
+                  id: `item-${item.id}`,
+                  text: item.content,
+                  start_date: startDate,
+                  end_date: endDate,
+                  parent: taskId,
+                  type: 'task',
+                  progress: 0,
+                  extendedProps: {
+                    project: project.name,
+                    projectLinks: project.links,
+                    task: task.name,
+                    taskLinks: task.links,
+                    level: task.level,
+                    item: item.content,
+                    itemStatus: item.status,
+                    itemLinks: item.links,
+                    hasItems: true,
+                    docId: item.docId,
+                    lineNumber: item.lineNumber,
+                    blockId: item.blockId,
+                    date: item.date,
+                    originalStartDateTime: item.startDateTime,
+                    originalEndDateTime: item.endDateTime,
+                    timePrecision: item.timePrecision,
+                    siblingItems: item.siblingItems,
+                    dateRangeStart: item.dateRangeStart,
+                    dateRangeEnd: item.dateRangeEnd,
+                    pomodoros: item.pomodoros,
+                  },
+                });
               }
+            } else {
+              const segments = this.mergeItemsToSegments(group);
+              const firstItem = group[0];
+              const blockKey = firstItem.blockId ?? firstItem.id;
+
+              const allDates = group.map(i => i.startDateTime || i.date).filter(Boolean) as string[];
+              const minDate = allDates.reduce((a, b) => a < b ? a : b);
+              const maxDate = (group.map(i => i.endDateTime || i.startDateTime || i.date).filter(Boolean) as string[]).reduce((a, b) => a > b ? a : b);
 
               ganttTasks.push({
-                id: `item-${item.id}`,
-                text: item.content,
-                start_date: startDate,
-                end_date: endDate,
+                id: `split-${blockKey}`,
+                text: firstItem.content,
+                start_date: this.parseGanttDate(minDate, 'start'),
+                end_date: this.parseGanttDate(maxDate, 'end'),
                 parent: taskId,
-                type: 'task',
+                type: 'project',
+                render: 'split',
+                open: true,
                 progress: 0,
-                extendedProps: {
-                  project: project.name,
-                  projectLinks: project.links,
-                  task: task.name,
-                  taskLinks: task.links,
-                  level: task.level,
-                  item: item.content,
-                  itemStatus: item.status,
-                  itemLinks: item.links,
-                  hasItems: true,
-                  docId: item.docId,
-                  lineNumber: item.lineNumber,
-                  blockId: item.blockId,
-                  date: item.date,
-                  originalStartDateTime: item.startDateTime,
-                  originalEndDateTime: item.endDateTime,
-                  timePrecision: item.timePrecision,
-                  siblingItems: item.siblingItems,
-                  dateRangeStart: item.dateRangeStart,
-                  dateRangeEnd: item.dateRangeEnd,
-                  pomodoros: item.pomodoros
-                }
               });
+
+              for (const segment of segments) {
+                const segFirst = segment.items[0];
+                const segStart = segFirst.startDateTime || segFirst.date;
+                const segLast = segment.items[segment.items.length - 1];
+                const segEnd = segLast.endDateTime || segLast.startDateTime || segLast.date;
+
+                if (segStart) {
+                  const startDate = this.parseGanttDate(segStart, 'start');
+                  let endDate = segEnd
+                    ? this.parseGanttDate(segEnd, 'end')
+                    : this.parseGanttDate(segStart, 'end');
+
+                  if (startDate.getTime() === endDate.getTime()) {
+                    endDate = this.getGanttEndDate(segStart);
+                  }
+
+                  ganttTasks.push({
+                    id: `item-${segFirst.id}`,
+                    text: segFirst.content,
+                    start_date: startDate,
+                    end_date: endDate,
+                    parent: `split-${blockKey}`,
+                    type: 'task',
+                    progress: 0,
+                    extendedProps: {
+                      project: project.name,
+                      projectLinks: project.links,
+                      task: task.name,
+                      taskLinks: task.links,
+                      level: task.level,
+                      item: segFirst.content,
+                      itemStatus: segFirst.status,
+                      itemLinks: segFirst.links,
+                      hasItems: true,
+                      docId: segFirst.docId,
+                      lineNumber: segFirst.lineNumber,
+                      blockId: segFirst.blockId,
+                      date: segFirst.date,
+                      originalStartDateTime: segFirst.startDateTime,
+                      originalEndDateTime: segFirst.endDateTime,
+                      timePrecision: segFirst.timePrecision,
+                      siblingItems: segFirst.siblingItems,
+                      dateRangeStart: segFirst.dateRangeStart,
+                      dateRangeEnd: segFirst.dateRangeEnd,
+                      pomodoros: segFirst.pomodoros,
+                    },
+                  });
+                }
+              }
             }
           }
         }
