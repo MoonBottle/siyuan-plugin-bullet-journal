@@ -96,6 +96,7 @@ export interface Project {
   groupId?: string;        // 分组 ID
   links?: Link[];          // 项目链接
   pomodoros?: PomodoroRecord[]; // 项目级别番茄钟记录
+  items?: Item[];          // 扁平化事项列表（运行时计算，用于调试日志等）
 }
 
 // 任务
@@ -176,6 +177,7 @@ export interface CheckInRecord {
 // 习惯
 export interface Habit {
   name: string;                  // 习惯名（如"喝水"、""早起""）
+  content?: string;              // 习惯内容（部分场景使用，如 MCP 数据导出）
   project?: Project;             // 所属项目（反向引用，运行时设置）
   docId: string;                 // 所属文档 ID
   blockId: string;               // SiYuan block ID，作为唯一标识
@@ -341,6 +343,7 @@ export interface CalendarEvent {
     dateRangeStart?: string;
     dateRangeEnd?: string;
     pomodoros?: PomodoroRecord[];
+    priority?: PriorityLevel;
     reminder?: ReminderConfig;
     repeatRule?: RepeatRule;
     endCondition?: EndCondition;
@@ -369,7 +372,10 @@ export interface GanttTaskExtendedProps {
   originalEndDateTime?: string;
   timePrecision?: TimePrecision;
   siblingItems?: ItemDateTimeInfo[];
+  dateRangeStart?: string;
+  dateRangeEnd?: string;
   pomodoros?: PomodoroRecord[];
+  priority?: PriorityLevel;
 }
 
 // 甘特图数据

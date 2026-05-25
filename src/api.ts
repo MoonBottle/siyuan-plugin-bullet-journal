@@ -43,7 +43,7 @@ export async function renameNotebook(notebook: NotebookId, name: string) {
   return request(url, { notebook: notebook, name: name });
 }
 
-export async function createNotebook(name: string): Promise<Notebook> {
+export async function createNotebook(name: string): Promise<{ notebook: Notebook }> {
   let url = "/api/notebook/createNotebook";
   return request(url, { name: name });
 }

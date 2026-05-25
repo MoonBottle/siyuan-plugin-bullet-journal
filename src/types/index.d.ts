@@ -120,6 +120,7 @@ declare interface LuteInstance {
 
 declare interface LuteConstructor {
   New: () => LuteInstance;
+  BlockDOM2Content?: (html: string) => string;
 }
 
 interface Window {

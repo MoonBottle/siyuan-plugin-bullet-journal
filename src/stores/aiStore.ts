@@ -1299,7 +1299,7 @@ export const useAIStore = defineStore('ai', () => {
           console.log('[AIStore] ReAct onStreamUpdate, content长度:', content?.length);
         },
         onStepComplete: (step) => {
-          console.log('[AIStore] ReAct onStepComplete:', step.type, step.tool || '');
+          console.log('[AIStore] ReAct onStepComplete:', step.type, step.type === 'action' ? step.tool : '');
         }
       });
       

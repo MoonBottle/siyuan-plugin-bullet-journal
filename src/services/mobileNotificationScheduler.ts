@@ -207,7 +207,7 @@ export class MobileNotificationScheduler {
   }
 
   isMobileNotificationsEnabled(plugin?: MobilePluginLike): boolean {
-    const runtimePlugin = plugin ?? getCurrentPlugin?.();
+    const runtimePlugin = plugin ?? (getCurrentPlugin?.() as MobilePluginLike);
     return !!runtimePlugin?.isMobile;
   }
 
