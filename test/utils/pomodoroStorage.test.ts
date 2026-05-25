@@ -2,7 +2,7 @@
  * pomodoroStorage 单元测试
  * savePendingCompletion、loadPendingCompletion、removePendingCompletion
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   savePendingCompletion,
   loadPendingCompletion,

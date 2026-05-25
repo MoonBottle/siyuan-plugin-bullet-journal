@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type {
   FloatingPomodoroBreakSourceState,
   FloatingPomodoroFocusSourceState,
+  FloatingPomodoroFocusViewState,
   FloatingPomodoroLabels,
 } from '@/utils/floatingPomodoroViewState';
 import { buildFloatingPomodoroViewState } from '@/utils/floatingPomodoroViewState';
@@ -74,7 +75,7 @@ describe('buildFloatingPomodoroViewState', () => {
     expect(viewState.secondaryText).toBe('已专注 12 分钟');
     expect(viewState.status).toBe('专注中');
     expect(viewState.progress).toBeCloseTo((12 * 60 + 34) / (25 * 60), 5);
-    expect(viewState.pauseResumeLabel).toBe('暂停');
+    expect((viewState as FloatingPomodoroFocusViewState).pauseResumeLabel).toBe('暂停');
     expect('skipBreakLabel' in viewState).toBe(false);
   });
 
@@ -84,7 +85,7 @@ describe('buildFloatingPomodoroViewState', () => {
     }));
 
     expect(viewState.status).toBe('已暂停');
-    expect(viewState.pauseResumeLabel).toBe('继续');
+    expect((viewState as FloatingPomodoroFocusViewState).pauseResumeLabel).toBe('继续');
     expect(viewState.isPaused).toBe(true);
     expect(viewState.progress).toBe(0.36);
     expect(viewState.secondaryText).toBe('已专注 9 分钟 / 目标 25 分钟');

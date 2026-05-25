@@ -45,15 +45,17 @@ vi.mock('@/stores/aiStore', () => ({
 }));
 
 function installBrowserNotification() {
-  const BrowserNotification = vi.fn(function MockNotification() {
-    return {
-      close: vi.fn(),
-    };
-  });
-  Object.assign(BrowserNotification, {
-    permission: 'granted',
-    requestPermission: vi.fn(),
-  });
+  const BrowserNotification = Object.assign(
+    vi.fn(function MockNotification() {
+      return {
+        close: vi.fn(),
+      };
+    }),
+    {
+      permission: 'granted' as string,
+      requestPermission: vi.fn(),
+    },
+  );
   vi.stubGlobal('Notification', BrowserNotification);
   return BrowserNotification;
 }

@@ -6,7 +6,7 @@ import {
   updateItemWithRecurring,
   updateItemWithReminder,
 } from '@/utils/itemSettingUtils';
-import { eventBus, Events } from '@/utils/eventBus';
+import { Events } from '@/utils/eventBus';
 import type { Item, ReminderConfig, RepeatRule } from '@/types/models';
 
 const mockWriteBlock = vi.hoisted(() => vi.fn());
