@@ -6,6 +6,10 @@ import type { Project, Task, Item, CalendarEvent, GanttTask, PomodoroRecord } fr
 import { t } from '@/i18n';
 import dayjs from '@/utils/dayjs';
 
+export interface ItemSegment {
+  items: Item[];
+}
+
 export class DataConverter {
   private static isDateOnly(value: string): boolean {
     return /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -366,5 +370,36 @@ export class DataConverter {
     const taskEndInRange = !filterStart || end >= filterStart;
 
     return taskStartInRange && taskEndInRange;
+  }
+
+  public static mergeItemsToSegments(items: Item[]): ItemSegment[] {
+    if (items.length === 0) return [];
+
+    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
+
+    const segments: ItemSegment[] = [];
+    let current: ItemSegment | null = null;
+
+    for (const item of sorted) {
+      if (item.startDateTime) {
+        segments.push({ items: [item] });
+        current = null;
+        continue;
+      }
+
+      if (current) {
+        const lastDate = current.items[current.items.length - 1].date;
+        const nextDay = dayjs(lastDate).add(1, 'day').format('YYYY-MM-DD');
+        if (item.date === nextDay) {
+          current.items.push(item);
+          continue;
+        }
+      }
+
+      current = { items: [item] };
+      segments.push(current);
+    }
+
+    return segments;
   }
 }

@@ -174,3 +174,94 @@ describe('DataConverter.projectsToGanttTasks', () => {
     expect(tasks.some(t => t.id === 'task-task-1')).toBe(true);
   });
 });
+
+describe('DataConverter.mergeItemsToSegments', () => {
+  const mkItem = (date: string, startDateTime?: string, endDateTime?: string) => ({
+    id: `item-${date}`,
+    content: '事项',
+    date,
+    startDateTime,
+    endDateTime,
+    docId: 'doc-1',
+    lineNumber: 1,
+    status: 'pending' as const,
+    blockId: 'block-1',
+  });
+
+  it('全天连续日期合并为一段', () => {
+    const items = [
+      mkItem('2026-03-10'),
+      mkItem('2026-03-11'),
+      mkItem('2026-03-12'),
+    ];
+    const segments = DataConverter.mergeItemsToSegments(items);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].items).toHaveLength(3);
+  });
+
+  it('全天不连续日期拆为多段', () => {
+    const items = [
+      mkItem('2026-03-01'),
+      mkItem('2026-03-10'),
+      mkItem('2026-03-12'),
+    ];
+    const segments = DataConverter.mergeItemsToSegments(items);
+    expect(segments).toHaveLength(3);
+  });
+
+  it('全天混合连续与不连续', () => {
+    const items = [
+      mkItem('2026-03-01'),
+      mkItem('2026-03-10'),
+      mkItem('2026-03-11'),
+      mkItem('2026-03-12'),
+    ];
+    const segments = DataConverter.mergeItemsToSegments(items);
+    expect(segments).toHaveLength(2);
+    expect(segments[0].items).toHaveLength(1);
+    expect(segments[1].items).toHaveLength(3);
+  });
+
+  it('有时间的事项各自独立成段', () => {
+    const items = [
+      mkItem('2026-03-10', '2026-03-10 14:00:00', '2026-03-10 15:00:00'),
+      mkItem('2026-03-11', '2026-03-11 14:00:00', '2026-03-11 15:00:00'),
+      mkItem('2026-03-12', '2026-03-12 14:00:00', '2026-03-12 15:00:00'),
+    ];
+    const segments = DataConverter.mergeItemsToSegments(items);
+    expect(segments).toHaveLength(3);
+  });
+
+  it('全天与有时间混合', () => {
+    const items = [
+      mkItem('2026-03-01'),
+      mkItem('2026-03-10', '2026-03-10 14:00:00', '2026-03-10 15:00:00'),
+    ];
+    const segments = DataConverter.mergeItemsToSegments(items);
+    expect(segments).toHaveLength(2);
+  });
+
+  it('全天连续后接有时间事项，全天段合并、时间项独立', () => {
+    const items = [
+      mkItem('2026-03-10'),
+      mkItem('2026-03-11'),
+      mkItem('2026-03-12', '2026-03-12 09:00:00', '2026-03-12 10:00:00'),
+    ];
+    const segments = DataConverter.mergeItemsToSegments(items);
+    expect(segments).toHaveLength(2);
+    expect(segments[0].items).toHaveLength(2);
+    expect(segments[1].items).toHaveLength(1);
+  });
+
+  it('单日全天返回一段', () => {
+    const items = [mkItem('2026-03-10')];
+    const segments = DataConverter.mergeItemsToSegments(items);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].items).toHaveLength(1);
+  });
+
+  it('空数组返回空', () => {
+    const segments = DataConverter.mergeItemsToSegments([]);
+    expect(segments).toHaveLength(0);
+  });
+});
