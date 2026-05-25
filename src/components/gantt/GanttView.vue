@@ -78,6 +78,7 @@ const showGanttEventTooltip = (e: MouseEvent, anchorEl: HTMLElement) => {
     if (taskId == null || !gantt.isTaskExists(taskId)) return;
     const task = gantt.getTask(taskId);
     if (!task?.extendedProps?.item) return;
+    if (String(task.id).startsWith('split-')) return;
 
     const props = task.extendedProps;
     const start = props.originalStartDateTime || props.date || '';
@@ -177,6 +178,7 @@ const openPomodoroDialog = (item: Item) => {
 const handleGanttTaskClick = (id: string | number) => {
   const task = gantt.getTask(id);
   if (!task?.extendedProps?.item) return;
+  if (String(task.id).startsWith('split-')) return;
 
   const props = task.extendedProps;
   const start = props.originalStartDateTime || props.date || '';
@@ -217,6 +219,7 @@ const handleGanttTaskClick = (id: string | number) => {
 const handleGanttContextMenu = (taskId: string | number, _linkId: string | number, event: MouseEvent) => {
   const task = gantt.getTask(taskId);
   if (!task?.extendedProps?.item) return true;
+  if (String(task.id).startsWith('split-')) return true;
 
   const props = task.extendedProps;
   const item = {
@@ -376,6 +379,7 @@ onMounted(() => {
 
   // 自定义任务条样式 - 项目/任务/事项区分
   gantt.templates.task_class = function(_start, _end, task) {
+    if (String(task.id).startsWith('split-')) return 'gantt-split-parent';
     if (task.type === 'project') return 'gantt-project';
     if (String(task.id).startsWith('item-')) return 'gantt-item';
     return 'gantt-task';
@@ -383,6 +387,7 @@ onMounted(() => {
 
   // 自定义任务文本 - 项目/任务/事项对应文字颜色
   gantt.templates.task_text = function(_start, _end, task) {
+    if (String(task.id).startsWith('split-')) return '';
     const text = task.text ?? '';
     const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const textColor = task.type === 'project'
@@ -407,6 +412,7 @@ onMounted(() => {
   const SHORT_BAR_THRESHOLD_MS = 24 * 60 * 60 * 1000;
   const MIN_TEXT_LENGTH_FOR_RIGHTSIDE = 6;
   gantt.templates.rightside_text = function(start, end, task) {
+    if (String(task.id).startsWith('split-')) return '';
     const text = task.text ?? '';
     const duration = (end?.getTime?.() ?? 0) - (start?.getTime?.() ?? 0);
     if (duration > SHORT_BAR_THRESHOLD_MS || !text) return '';
@@ -426,6 +432,7 @@ onMounted(() => {
   // 设置初始视图模式
   setScaleConfig(props.viewMode);
 
+  gantt.config.open_split_tasks = true;
   gantt.init(ganttEl.value);
   ganttInitialized = true;
 
@@ -555,6 +562,13 @@ const loadGanttStyles = () => {
     }
     .gantt_grid_data {
       background-color: var(--b3-theme-background) !important;
+    }
+    .gantt-split-parent {
+      visibility: hidden !important;
+    }
+    .gantt_split_subtask {
+      background-color: var(--b3-theme-success) !important;
+      border-color: var(--b3-theme-success) !important;
     }
   `;
   document.head.appendChild(style);
