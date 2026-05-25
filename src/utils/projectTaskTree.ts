@@ -1,4 +1,4 @@
-import type { Item, Project, Task } from '@/types/models';
+import type { Item, ItemStatus, Project, Task } from '@/types/models';
 
 export interface MergedItem {
   isMerged: true;
@@ -117,10 +117,12 @@ export function filterProjectTaskTree(
   };
 }
 
-export function getTaskItemProgress(task: Task): TaskItemProgress {
-  return (task.items ?? []).reduce<TaskItemProgress>((progress, item) => {
+export function getTaskItemProgress(itemsOrTask: Task | (Item | MergedItem)[]): TaskItemProgress {
+  const items = Array.isArray(itemsOrTask) ? itemsOrTask : (itemsOrTask.items ?? []);
+  return items.reduce<TaskItemProgress>((progress, entry) => {
+    const status: ItemStatus = 'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status;
     progress.total += 1;
-    progress[item.status] += 1;
+    progress[status] += 1;
     return progress;
   }, {
     total: 0,

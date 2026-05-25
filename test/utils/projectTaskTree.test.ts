@@ -122,6 +122,33 @@ describe('projectTaskTree', () => {
     });
   });
 
+  it('统计含合并事项的进度（合并项计为1个）', () => {
+    const mergedItems: (Item | MergedItem)[] = [
+      {
+        isMerged: true,
+        blockId: 'blk-1',
+        items: [
+          item({ id: 'a1', blockId: 'blk-1', status: 'completed', date: '2026-05-01' }),
+          item({ id: 'a2', blockId: 'blk-1', status: 'completed', date: '2026-05-02' }),
+        ],
+        content: '写文档',
+        status: 'completed',
+        dateRange: '2026-05-01 ~ 02',
+        firstItemId: 'a1',
+      },
+      item({ id: 'b', status: 'pending', date: '2026-05-03' }),
+    ];
+
+    const progress = getTaskItemProgress(mergedItems);
+
+    expect(progress).toEqual({
+      total: 2,
+      completed: 1,
+      pending: 1,
+      abandoned: 0,
+    });
+  });
+
   it('mergeItemsByBlockId 按blockId分组合并多日期Item', () => {
     const items = [
       item({ id: 'i1', blockId: 'blk-a', content: '写文档', date: '2026-05-20', status: 'pending' }),
