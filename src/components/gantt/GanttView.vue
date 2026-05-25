@@ -387,7 +387,9 @@ onMounted(() => {
     if (task.extendedProps?.isMultiDate && task.extendedProps?.segments?.length) {
       const totalDuration = end.getTime() - start.getTime();
       if (totalDuration <= 0) return '';
-      let html = '';
+      const text = task.text ?? '';
+      const escapedText = text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      let html = `<span class="gantt-multidate-label" data-gantt-tooltip="${escapedText}" aria-label="${escapedText}">${text}</span>`;
       for (const seg of task.extendedProps.segments) {
         const left = ((seg.startTs - start.getTime()) / totalDuration) * 100;
         const width = ((seg.endTs - start.getTime()) / totalDuration) * 100 - left;
@@ -586,6 +588,24 @@ const loadGanttStyles = () => {
       background-color: var(--b3-theme-success);
       border-radius: 2px;
       border: 1px solid var(--b3-theme-success);
+    }
+    .gantt-multidate-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      color: var(--b3-theme-on-success);
+      font-weight: 500;
+      font-size: 12px;
+      padding: 2px 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      z-index: 1;
+      pointer-events: none;
     }
   `;
   document.head.appendChild(style);
