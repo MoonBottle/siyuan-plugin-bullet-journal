@@ -41,7 +41,7 @@ export function buildProjectTaskTree(project: Project | null | undefined): Proje
   for (const task of project?.tasks ?? []) {
     const node: ProjectTaskTreeNode = {
       task,
-      items: task.items ?? [],
+      items: mergeItemsByBlockId(task.items ?? []),
       children: [],
       depth: 0,
       orphaned: false,
@@ -225,4 +225,41 @@ export function formatDateRange(start: string, end: string): string {
   if (sy === ey && sm === em) return `${start} ~ ${ed}`;
   if (sy === ey) return `${start} ~ ${em}-${ed}`;
   return `${start} ~ ${end}`;
+}
+
+export function mergeItemsByBlockId(items: Item[]): (Item | MergedItem)[] {
+  const groups = new Map<string, Item[]>();
+  const order: string[] = [];
+
+  for (const it of items) {
+    const key = it.blockId ?? it.id;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key)!.push(it);
+  }
+
+  const result: (Item | MergedItem)[] = [];
+  for (const key of order) {
+    const group = groups.get(key)!;
+    if (group.length === 1) {
+      result.push(group[0]);
+      continue;
+    }
+    const sorted = [...group].sort((a, b) => a.date.localeCompare(b.date));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    result.push({
+      isMerged: true,
+      blockId: key,
+      items: sorted,
+      content: first.content,
+      status: first.status,
+      priority: first.priority,
+      dateRange: formatDateRange(first.date, last.date),
+      firstItemId: first.id,
+    });
+  }
+  return result;
 }

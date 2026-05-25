@@ -5,7 +5,9 @@ import {
   filterProjectTaskTree,
   formatDateRange,
   getTaskItemProgress,
+  mergeItemsByBlockId,
 } from '@/utils/projectTaskTree'
+import type { MergedItem } from '@/utils/projectTaskTree'
 
 function item(partial: Partial<Item>): Item {
   return {
@@ -118,6 +120,40 @@ describe('projectTaskTree', () => {
       pending: 1,
       abandoned: 1,
     });
+  });
+
+  it('mergeItemsByBlockId 按blockId分组合并多日期Item', () => {
+    const items = [
+      item({ id: 'i1', blockId: 'blk-a', content: '写文档', date: '2026-05-20', status: 'pending' }),
+      item({ id: 'i2', blockId: 'blk-a', content: '写文档', date: '2026-05-22', status: 'pending' }),
+      item({ id: 'i3', blockId: 'blk-a', content: '写文档', date: '2026-05-25', status: 'pending' }),
+      item({ id: 'i4', blockId: 'blk-b', content: '测试', date: '2026-05-21', status: 'completed' }),
+      item({ id: 'i5', content: '无blockId', date: '2026-05-21', status: 'pending' }),
+    ];
+
+    const result = mergeItemsByBlockId(items);
+
+    expect(result).toHaveLength(3);
+    const merged = result[0] as MergedItem;
+    expect(merged.isMerged).toBe(true);
+    expect(merged.blockId).toBe('blk-a');
+    expect(merged.dateRange).toBe('2026-05-20 ~ 25');
+    expect(merged.firstItemId).toBe('i1');
+    expect(merged.status).toBe('pending');
+    expect(merged.items).toHaveLength(3);
+    expect(result[1]).toMatchObject({ id: 'i4', content: '测试' });
+    expect(result[2]).toMatchObject({ id: 'i5', content: '无blockId' });
+  });
+
+  it('mergeItemsByBlockId 单个blockId不合并', () => {
+    const items = [
+      item({ id: 'i1', blockId: 'blk-a', content: '写文档', date: '2026-05-20' }),
+    ];
+
+    const result = mergeItemsByBlockId(items);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ id: 'i1' });
   });
 });
 
