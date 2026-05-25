@@ -2,8 +2,8 @@
   <div class="project-tree-node">
     <button
       type="button"
+      class="project-task-row"
       :class="[
-        'project-task-row',
         `project-task-row--${node.task.level.toLowerCase()}`,
         {
           'project-task-row--active': selectedTaskId === node.task.id,
@@ -32,8 +32,8 @@
         v-for="entry in node.items"
         :key="getItemId(entry)"
         type="button"
+        class="project-item-row"
         :class="[
-          'project-item-row',
           {
             'project-item-row--active': selectedItemId === getItemId(entry),
             'project-item-row--matched': matchedItemIds.has(getItemId(entry)),
@@ -43,9 +43,20 @@
         :style="{ paddingLeft: `${12 + (node.depth + 1) * 18}px` }"
         @click="$emit('select-item', getItemId(entry))"
       >
-        <span :class="['project-item-row__status', `project-item-row__status--${'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status}`]"></span>
+        <span
+          class="project-item-row__status"
+          :class="[`project-item-row__status--${'isMerged' in entry ? (entry as MergedItem).status : (entry as Item).status}`]"
+        ></span>
         <span class="project-item-row__content">{{ 'isMerged' in entry ? (entry as MergedItem).content : (entry as Item).content }}</span>
         <span class="project-item-row__meta">{{ getItemMeta(entry) }}</span>
+        <span
+          v-if="getItemPriority(entry)"
+          class="project-item-row__priority"
+          @mouseenter="handlePriorityMouseEnter($event, getItemPriority(entry)!)"
+          @mouseleave="handlePriorityMouseLeave"
+        >
+          {{ PRIORITY_CONFIG[getItemPriority(entry)!].emoji }}
+        </span>
       </button>
 
       <ProjectTreeNode
@@ -66,38 +77,63 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { getTaskItemProgress } from '@/utils/projectTaskTree';
-import type { Item } from '@/types/models';
-import type { ProjectTaskTreeNode, MergedItem } from '@/utils/projectTaskTree';
+import type {
+  Item,
+  PriorityLevel,
+} from '@/types/models'
+import type {
+  MergedItem,
+  ProjectTaskTreeNode,
+} from '@/utils/projectTaskTree'
+import { computed } from 'vue'
+import { PRIORITY_CONFIG } from '@/parser/priorityParser'
+import {
+  hideIconTooltip,
+  showIconTooltip,
+} from '@/utils/dialog'
+import { getTaskItemProgress } from '@/utils/projectTaskTree'
 
 const props = defineProps<{
-  node: ProjectTaskTreeNode;
-  expandedTaskIds: Set<string>;
-  matchedTaskIds: Set<string>;
-  matchedItemIds: Set<string>;
-  selectedTaskId: string;
-  selectedItemId: string;
-}>();
+  node: ProjectTaskTreeNode
+  expandedTaskIds: Set<string>
+  matchedTaskIds: Set<string>
+  matchedItemIds: Set<string>
+  selectedTaskId: string
+  selectedItemId: string
+}>()
 
 defineEmits<{
-  (event: 'toggle-task', taskId: string): void;
-  (event: 'select-task', taskId: string): void;
-  (event: 'select-item', itemId: string): void;
-}>();
+  (event: 'toggle-task', taskId: string): void
+  (event: 'select-task', taskId: string): void
+  (event: 'select-item', itemId: string): void
+}>()
 
-const expanded = computed(() => props.expandedTaskIds.has(props.node.task.id));
-const progress = computed(() => getTaskItemProgress(props.node.items));
+const expanded = computed(() => props.expandedTaskIds.has(props.node.task.id))
+const progress = computed(() => getTaskItemProgress(props.node.items))
 
 function getItemId(entry: Item | MergedItem): string {
-  return 'isMerged' in entry ? entry.firstItemId : entry.id;
+  return 'isMerged' in entry ? entry.firstItemId : entry.id
+}
+
+function getItemPriority(entry: Item | MergedItem): PriorityLevel | undefined {
+  return entry.priority
 }
 
 function getItemMeta(entry: Item | MergedItem): string {
   if ('isMerged' in entry) {
-    return [entry.dateRange, entry.priority].filter(Boolean).join(' · ');
+    return [entry.dateRange].filter(Boolean).join(' · ')
   }
-  return [entry.date, entry.priority].filter(Boolean).join(' · ');
+  return [entry.date].filter(Boolean).join(' · ')
+}
+
+function handlePriorityMouseEnter(event: MouseEvent, priority: PriorityLevel) {
+  const el = event.currentTarget as HTMLElement | null
+  if (!el) return
+  showIconTooltip(el, PRIORITY_CONFIG[priority].label)
+}
+
+function handlePriorityMouseLeave() {
+  hideIconTooltip()
 }
 </script>
 
@@ -164,5 +200,15 @@ function getItemMeta(entry: Item | MergedItem): string {
 
 .project-item-row__status--abandoned {
   background: var(--b3-theme-on-surface);
+}
+
+.project-item-row__priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  cursor: default;
 }
 </style>
