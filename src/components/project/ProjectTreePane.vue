@@ -111,7 +111,8 @@ import ProjectPaneSearchBox from '@/components/project/ProjectPaneSearchBox.vue'
 import ProjectTreeNode from '@/components/project/ProjectTreeNode.vue';
 import { t } from '@/i18n';
 import type { Project } from '@/types/models';
-import type { ProjectTaskTreeNode } from '@/utils/projectTaskTree';
+import type { Item, Project } from '@/types/models';
+import type { MergedItem, ProjectTaskTreeNode } from '@/utils/projectTaskTree';
 
 type TagOption = { name: string; count: number };
 
@@ -279,7 +280,8 @@ const visibleNodes = computed(() => {
       result.push({ type: 'task', id: node.task.id });
       if (props.expandedTaskIds.has(node.task.id)) {
         for (const item of node.items) {
-          result.push({ type: 'item', id: item.id, parentTaskId: node.task.id });
+          const itemId = 'isMerged' in item ? (item as MergedItem).firstItemId : (item as Item).id;
+          result.push({ type: 'item', id: itemId, parentTaskId: node.task.id });
         }
         traverse(node.children);
       }
