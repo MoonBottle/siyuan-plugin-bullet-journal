@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 思源原生弹框封装
  * 提供统一的弹框创建和管理
  */
@@ -551,8 +551,11 @@ export function showEventDetailModal(
   };
 
   // 创建 Vue 应用
+  const hasSiblingItems = !!(props.siblingItems?.length);
+
   const app = createApp(ItemDetailDialog, {
     item,
+    showAllDates: hasSiblingItems,
     onClose: () => {
       dialog.destroy();
     },
