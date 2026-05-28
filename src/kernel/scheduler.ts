@@ -2,6 +2,12 @@ import type { TimerEntry } from './types'
 import { formatDate } from './utils'
 
 var timers = new Map<string, TimerEntry>()
+var notifiedTimerIds = new Set<string>()
+
+export function isTimerNotified(id: string): boolean {
+  return notifiedTimerIds.has(id)
+}
+
 var checkInterval: ReturnType<typeof setInterval> | null = null
 var lastKnownDate = ''
 var persistTimer: ReturnType<typeof setTimeout> | null = null
@@ -110,10 +116,12 @@ export function initScheduler(): void {
       var diffMs = (now - entry.endTime) * 1000
       if (diffMs <= MISSED_THRESHOLD_MS) {
         entry.notified = true
+        notifiedTimerIds.add(entry.id)
         console.log('[scheduler] missed timer (within ' + Math.round(diffMs / 1000) + 's): id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content)
         dispatchNotification(entry)
       } else {
         entry.notified = true
+        notifiedTimerIds.add(entry.id)
         console.log('[scheduler] stale timer (' + Math.round(diffMs / 60000) + 'min ago), skipping: id=' + entry.id + ' type=' + entry.type)
       }
     }
@@ -135,6 +143,7 @@ function checkTimers(): void {
   timers.forEach(function (entry) {
     if (!entry.notified && now >= entry.endTime) {
       entry.notified = true
+      notifiedTimerIds.add(entry.id)
       firedCount++
       console.log('[scheduler] timer FIRED: id=' + entry.id + ' type=' + entry.type + ' content=' + entry.metadata.content + ' endTime=' + entry.endTime + ' now=' + now)
       dispatchNotification(entry)
@@ -148,6 +157,7 @@ function checkTimers(): void {
   timers.forEach(function (entry, key) {
     if (entry.notified && (now - entry.endTime) > PURGE_THRESHOLD_S) {
       toDelete.push(key)
+      notifiedTimerIds.delete(key)
     }
   })
   for (var i = 0; i < toDelete.length; i++) {

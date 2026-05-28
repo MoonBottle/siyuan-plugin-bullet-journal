@@ -1,6 +1,6 @@
 import type { KernelData, TimerEntry } from './types'
 import { calculateReminderTime } from './utils'
-import { registerTimers, cancelTimersByType } from './scheduler'
+import { registerTimers, cancelTimersByType, isTimerNotified } from './scheduler'
 
 var fsNotifyDebounceTimer: ReturnType<typeof setTimeout> | null = null
 var pendingPaths: Record<string, boolean> = {}
@@ -91,6 +91,12 @@ export async function rebuildReminderSchedule(): Promise<void> {
       }
     }
 
+    for (var k = 0; k < entries.length; k++) {
+      if (isTimerNotified(entries[k].id)) {
+        entries[k].notified = true
+      }
+    }
+
     if (entries.length > 0) {
       registerTimers(entries)
     }
@@ -104,6 +110,7 @@ export async function rebuildReminderSchedule(): Promise<void> {
 export function handleFsNotify(event: { type: string, detail: any }): void {
   if (event.type !== 'fs-notify') return
   var path = event.detail.path.replace(/\\/g, '/')
+  if (path.endsWith('.tmp')) return
   console.log('[reminder] fs-notify: path=' + path)
   pendingPaths[path] = true
   if (fsNotifyDebounceTimer) clearTimeout(fsNotifyDebounceTimer)
