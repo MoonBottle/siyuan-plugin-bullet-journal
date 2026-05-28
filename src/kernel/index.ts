@@ -20,7 +20,7 @@ siyuan.plugin.lifecycle.onload = async function () {
   // 初始化文件系统事件处理
   console.log('[kernel] storage watcher added')
   siyuan.event.handler = function (event: { type: string, detail: any }) {
-    console.log('[kernel] event received: type=' + event.type + ' path=' + (event.detail && event.detail.path))
+    // console.log('[kernel] event received: type=' + event.type + ' path=' + (event.detail && event.detail.path))
     handleFsNotify(event)
   }
 
